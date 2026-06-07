@@ -1247,28 +1247,100 @@ function SeriesRow({ emoji, title, sub, active, last }) {
 }
 
 function ContactForm() {
-  const [sent, setSent] = useState(false);
-  const handleSubmit = (e) => {
+  // 送信状態: 'idle' | 'sending' | 'sent' | 'error'
+  const [status, setStatus] = useState('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xrevejjr';
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSent(true);
-    setTimeout(() => setSent(false), 3000);
+    if (status === 'sending') return;
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    setStatus('sending');
+    setErrorMsg('');
+
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        body: formData,
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (res.ok) {
+        setStatus('sent');
+        form.reset();
+        // GA イベント
+        if (typeof window.trackEvent === 'function') {
+          window.trackEvent('contact_form_submit', { result: 'success' });
+        }
+        // 5秒後に idle に戻す
+        setTimeout(() => setStatus('idle'), 5000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        const msg = (data.errors && data.errors[0] && data.errors[0].message)
+          || '送信に失敗しました。時間をおいて再度お試しください。';
+        setStatus('error');
+        setErrorMsg(msg);
+      }
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg('通信エラーが発生しました。ネット接続を確認してください。');
+    }
   };
+
+  const sending = status === 'sending';
+  const sent = status === 'sent';
+  const error = status === 'error';
+
   return (
     <form onSubmit={handleSubmit}>
-      <input placeholder="お名前" style={inputStyle} />
-      <input placeholder="メールアドレス" type="email" style={inputStyle} />
-      <textarea placeholder="メッセージ" rows={4} style={{...inputStyle, resize: 'none'}} />
-      <button type="submit" style={{
+      {/* Formspree: 件名を指定 */}
+      <input type="hidden" name="_subject" value="streetboardgame.com お問い合わせ" />
+      {/* スパム対策 honeypot (人間は触らない隠しフィールド) */}
+      <input type="text" name="_gotcha" style={{ display: 'none' }} tabIndex="-1" autoComplete="off" />
+
+      <input name="name" placeholder="お名前" required style={inputStyle} disabled={sending} />
+      <input name="email" type="email" placeholder="メールアドレス" required style={inputStyle} disabled={sending} />
+      <textarea name="message" placeholder="メッセージ" rows={4} required style={{...inputStyle, resize: 'none'}} disabled={sending} />
+
+      {error && (
+        <div style={{
+          marginTop: 4, marginBottom: 8, padding: '8px 12px',
+          background: '#FFE5E5', color: '#C8323C',
+          border: `1.5px solid #C8323C`, borderRadius: 8,
+          fontSize: 11, fontWeight: 600, lineHeight: 1.5,
+        }}>⚠ {errorMsg}</div>
+      )}
+
+      <button type="submit" disabled={sending || sent} style={{
         width: '100%', padding: '12px', marginTop: 4,
-        background: sent ? '#06C755' : proto.pink,
+        background: sent ? '#06C755' : (sending ? '#7A5A62' : proto.pink),
         color: proto.white,
         border: `2.5px solid ${proto.black}`,
         borderRadius: 12,
         fontSize: 13, fontWeight: 800, fontFamily: proto.body,
-        boxShadow: '3px 3px 0 #000', cursor: 'pointer',
+        boxShadow: '3px 3px 0 #000',
+        cursor: (sending || sent) ? 'default' : 'pointer',
+        opacity: sending ? 0.7 : 1,
       }}>
-        {sent ? '✓ 送信しました' : '送信する ✉'}
+        {sent ? '✓ 送信しました' : (sending ? '送信中…' : '送信する ✉')}
       </button>
+
+      {sent && (
+        <div style={{
+          marginTop: 10, padding: '10px 12px',
+          background: 'rgba(6,199,85,0.1)', color: proto.text,
+          borderRadius: 8, fontSize: 11, fontWeight: 600,
+          textAlign: 'center', lineHeight: 1.6,
+        }}>
+          お問い合わせありがとうございます ♡<br/>
+          内容を確認後、ご返信いたします
+        </div>
+      )}
     </form>
   );
 }
