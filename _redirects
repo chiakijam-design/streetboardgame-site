@@ -1,0 +1,11 @@
+# Cloudflare Pages 用リダイレクト/リライト設定
+# https://developers.cloudflare.com/pages/configuration/redirects/
+#
+# 旧Wix URLは index.html を内部的に返す (SPAなのでHTMLは同じ、URLパスを保つ)
+# 200 ステータスを指定 = リライト (URLは変わらない、ブラウザのURLバーはそのまま)
+
+/watachan    /index.html  200
+/contact     /index.html  200
+
+# 万が一の404もトップへフォールバック (URLバーは変わる)
+/*           /index.html  200
