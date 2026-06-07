@@ -1,0 +1,10 @@
+// Cloudflare Workers/Pages 統合形式のための設定ファイル
+// https://developers.cloudflare.com/workers/static-assets/
+{
+  "name": "streetboardgame",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./",
+    "not_found_handling": "single-page-application"
+  }
+}
