@@ -1,24 +1,17 @@
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const path = decodeURIComponent(url.pathname).replace(/\/+$/, '');
+    const pathname = url.pathname;
 
-    const redirectMap = {
-      '/watachan': '/?screen=intro',
-      '/contact':  '/?screen=about&to=contact',
-    };
-
-    if (redirectMap[path]) {
-      const target = new URL(redirectMap[path], url.origin);
-      return Response.redirect(target.toString(), 302);
+    // 旧Wix URL → クエリパラメータ形式へ
+    if (pathname === '/watachan' || pathname === '/watachan/') {
+      return Response.redirect(url.origin + '/?screen=intro', 302);
+    }
+    if (pathname === '/contact' || pathname === '/contact/') {
+      return Response.redirect(url.origin + '/?screen=about&to=contact', 302);
     }
 
-    const response = await env.ASSETS.fetch(request);
-
-    if (response.status === 404) {
-      return Response.redirect(url.origin + '/', 302);
-    }
-
-    return response;
+    // それ以外は静的アセットを返す (env.ASSETS は wrangler.jsonc の binding)
+    return env.ASSETS.fetch(request);
   },
 };
