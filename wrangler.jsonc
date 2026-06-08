@@ -1,9 +1,10 @@
 {
   "name": "streetboardgame",
   "compatibility_date": "2025-01-01",
-  "main": "./_worker.js",
+  "main": "_worker.js",
   "assets": {
     "directory": "./",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
   }
 }
