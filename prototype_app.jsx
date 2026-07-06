@@ -247,7 +247,7 @@ function App() {
 // ─────────────────────────────────────────────────────
 function TopScreen({ onStart, hasProgress, onResume, onAbout, onProduct }) {
   return (
-    <div style={{
+    <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
       background: proto.pink,
       color: proto.white,
@@ -257,6 +257,12 @@ function TopScreen({ onStart, hasProgress, onResume, onAbout, onProduct }) {
     }}>
       {/* 背景ノイズ感 (薄いハート散らし) */}
       <Decor />
+      <h1 id="site-title" style={srOnlyStyle()}>
+        私のこと、ちゃんと分かってるよね？ 無料カップル診断ゲーム・彼氏の愛情判定
+      </h1>
+      <p style={srOnlyStyle()}>
+        彼氏が彼女の答えを予想し、全42問からランダムに出る5問で理解度をチェックするスマホ向けゲームです。
+      </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <PillLabel>彼氏の愛情判定ゲーム</PillLabel>
@@ -357,7 +363,7 @@ function TopScreen({ onStart, hasProgress, onResume, onAbout, onProduct }) {
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
         <FooterLink onClick={onProduct}>製品版</FooterLink>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -1858,6 +1864,20 @@ function secondaryBtn() {
     touchAction: 'manipulation',
     userSelect: 'none',
     cursor: 'pointer',
+  };
+}
+
+function srOnlyStyle() {
+  return {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    padding: 0,
+    margin: -1,
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    border: 0,
   };
 }
 

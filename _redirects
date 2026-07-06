@@ -5,6 +5,8 @@
 #   既知の旧Wix URL は内部リライト (200) で index.html を返す → URLは保たれる
 #   未知パスは 404.html (index.htmlのコピー) で受ける → JS側でtop画面表示
 
+/index.html  /  301
+
 /watachan    /index.html  200
 /watachan/   /index.html  200
 /contact     /index.html  200
