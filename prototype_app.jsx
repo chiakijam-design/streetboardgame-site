@@ -36,6 +36,10 @@ const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
 const ROUND_SIZE = 5;
 const FRIEND_ROUND_SIZE = 5;
 const AMAZON_URL = 'https://www.amazon.co.jp/dp/B0G87M4ZYK';
+function normalizeFriendPlayerCount(value) {
+  const n = Number(value);
+  return [2, 3, 4].includes(n) ? n : 2;
+}
 function loadState() {
   try { return normalizeSavedState(JSON.parse(localStorage.getItem(LS_KEY) || 'null')); } catch (e) { return null; }
 }
@@ -44,12 +48,13 @@ function saveState(s) {
 }
 
 function normalizeSavedState(s) {
-  const screens = ['top', 'intro', 'play', 'result', 'about', 'product'];
+  const screens = ['top', 'intro', 'play', 'result', 'friendIntro', 'friendPlay', 'friendResult', 'about', 'product'];
   if (!s || !screens.includes(s.screen)) return null;
 
   const cards = Array.isArray(s.cards) ? s.cards : [];
   const answers = Array.isArray(s.answers) ? s.answers : [];
   const qIdx = Number.isInteger(s.qIdx) ? s.qIdx : 0;
+  const playerCount = normalizeFriendPlayerCount(s.playerCount);
 
   if (s.screen === 'play') {
     if (!cards.length || qIdx < 0 || qIdx >= cards.length) return null;
@@ -61,7 +66,17 @@ function normalizeSavedState(s) {
     return { screen: 'result', qIdx: 0, answers, cards };
   }
 
-  return { screen: s.screen, qIdx: 0, answers: [], cards: [] };
+  if (s.screen === 'friendPlay') {
+    if (!cards.length || qIdx < 0 || qIdx >= cards.length) return null;
+    return { screen: 'friendPlay', qIdx, answers: answers.slice(0, qIdx), cards, playerCount };
+  }
+
+  if (s.screen === 'friendResult') {
+    if (!cards.length || !answers.length) return null;
+    return { screen: 'friendResult', qIdx: 0, answers, cards, playerCount };
+  }
+
+  return { screen: s.screen, qIdx: 0, answers: [], cards: [], playerCount };
 }
 
 // ─────────────────────────────────────────────────────
@@ -164,7 +179,7 @@ function App() {
   const [qIdx, setQIdx] = useState(initial.qIdx);
   const [answers, setAnswers] = useState(initial.answers);
   const [cards, setCards] = useState(initial.cards || []);
-  const [playerCount, setPlayerCount] = useState(2);
+  const [playerCount, setPlayerCount] = useState(normalizeFriendPlayerCount(initial.playerCount));
 
   // contact 指定だった場合、About にしてからフォームへスクロール
   useEffect(() => {
@@ -183,8 +198,8 @@ function App() {
   }, []); // 初回マウントのみ
 
   useEffect(() => {
-    saveState({ screen, qIdx, answers, cards });
-  }, [screen, qIdx, answers, cards]);
+    saveState({ screen, qIdx, answers, cards, playerCount });
+  }, [screen, qIdx, answers, cards, playerCount]);
 
   const startNewRound = () => {
     const picked = window.pickRandomCards(ROUND_SIZE);
@@ -196,7 +211,7 @@ function App() {
 
   const startFriendRound = (count) => {
     const picked = window.pickRandomFriendCards(FRIEND_ROUND_SIZE);
-    setPlayerCount(count);
+    setPlayerCount(normalizeFriendPlayerCount(count));
     setCards(picked);
     setQIdx(0);
     setAnswers([]);
@@ -1588,6 +1603,12 @@ function AnswerPick({ label, choice, opt, accent }) {
 // FRIEND MODE
 // ─────────────────────────────────────────────────────
 const FRIEND_PLAYERS = ['本人', '友達A', '友達B', '友達C'];
+function getFriendPlayers(playerCount) {
+  return FRIEND_PLAYERS.slice(0, normalizeFriendPlayerCount(playerCount));
+}
+function getFriendPlayersLabel(playerCount) {
+  return getFriendPlayers(playerCount).join(' + ');
+}
 
 function FriendIntroScreen({ onStart, onBack }) {
   return (
@@ -1640,7 +1661,10 @@ function FriendIntroScreen({ onStart, onBack }) {
                 fontWeight: 900,
                 cursor: 'pointer',
               }}>
-                {count}人
+                <div>{count}人</div>
+                <div style={{ marginTop: 4, fontSize: 8, fontWeight: 800, lineHeight: 1.3 }}>
+                  {getFriendPlayersLabel(count)}
+                </div>
               </button>
             ))}
           </div>
@@ -1693,7 +1717,9 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
   };
 
   if (!card) return null;
-  const currentPlayer = FRIEND_PLAYERS[turn];
+  const friendPlayers = getFriendPlayers(playerCount);
+  const currentPlayer = friendPlayers[turn] || friendPlayers[1] || '友達A';
+  const playerLabel = getFriendPlayersLabel(playerCount);
 
   return (
     <div style={{
@@ -1708,8 +1734,15 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             fontFamily: proto.caption, fontSize: 11,
             letterSpacing: '0.15em', whiteSpace: 'nowrap',
           }}>FRIEND Q {qIdx + 1} / {total}</div>
-          <div style={{ fontFamily: proto.caption, fontSize: 11, color: proto.yellow, fontWeight: 700 }}>
-            {playerCount} PLAYERS
+          <div style={{
+            fontFamily: proto.body,
+            fontSize: 10,
+            color: proto.yellow,
+            fontWeight: 900,
+            textAlign: 'right',
+            lineHeight: 1.3,
+          }}>
+            {playerLabel}
           </div>
         </div>
         <div style={{ width: '100%', height: 6, borderRadius: 99, background: 'rgba(0,0,0,0.2)' }}>
