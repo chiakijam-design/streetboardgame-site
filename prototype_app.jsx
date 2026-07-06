@@ -710,12 +710,12 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
   const onGirlPick = (i) => {
     if (girlPick !== null) return;
     setGirlPick(i);
-    setTimeout(() => setPhase('boy'), 400);
+    setTimeout(() => setPhase('boy'), 220);
   };
   const onBoyPick = (i) => {
     if (boyPick !== null) return;
     setBoyPick(i);
-    setTimeout(() => onAnswer(girlPick, i), 400);
+    setTimeout(() => onAnswer(girlPick, i), 220);
   };
 
   if (!card) return null;
@@ -1717,7 +1717,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
   const handlePick = (i) => {
     if (phase === 'answer') {
       setTargetPick(i);
-      setTimeout(() => setPhase('guess'), 350);
+      setTimeout(() => setPhase('guess'), 220);
       return;
     }
     const next = [...guesses, i];
@@ -1727,7 +1727,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         target: targetPick,
         guesses: next,
         matches: next.map(g => g === targetPick),
-      }), 350);
+      }), 220);
     } else {
       setTurn(turn + 1);
     }
