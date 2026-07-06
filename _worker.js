@@ -2,8 +2,8 @@
 // https://developers.cloudflare.com/pages/functions/advanced-mode/
 //
 // 動作:
-//   /watachan         → /?screen=intro にリダイレクト
-//   /watachan/        → /?screen=intro にリダイレクト
+//   /watachan         → / にリダイレクト
+//   /watachan/        → / にリダイレクト
 //   /friends          → /?screen=friendIntro にリダイレクト
 //   /friends/         → /?screen=friendIntro にリダイレクト
 //   /contact          → /?screen=about&to=contact にリダイレクト
@@ -16,16 +16,16 @@ export default {
     const url = new URL(request.url);
     const path = decodeURIComponent(url.pathname).replace(/\/+$/, '');
 
-    // 旧Wix URL → クエリパラメータ形式へリダイレクト
+    // 旧Wix URL → 正規URLへ恒久リダイレクト
     const redirectMap = {
-      '/watachan': '/?screen=intro',
+      '/watachan': '/',
       '/friends': '/?screen=friendIntro',
       '/contact':  '/?screen=about&to=contact',
     };
 
     if (redirectMap[path]) {
       const target = new URL(redirectMap[path], url.origin);
-      return Response.redirect(target.toString(), 302);
+      return Response.redirect(target.toString(), 301);
     }
 
     // 静的アセットをそのまま返す (env.ASSETS は wrangler.jsonc の assets binding)
@@ -33,7 +33,7 @@ export default {
 
     // 404 になったら / にフォールバック
     if (response.status === 404) {
-      return Response.redirect(url.origin + '/', 302);
+      return Response.redirect(url.origin + '/', 301);
     }
 
     return response;
