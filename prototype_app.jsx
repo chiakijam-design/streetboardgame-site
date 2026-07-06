@@ -35,10 +35,31 @@ const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
 const ROUND_SIZE = 5;
 const AMAZON_URL = 'https://www.amazon.co.jp/dp/B0G87M4ZYK';
 function loadState() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (e) { return null; }
+  try { return normalizeSavedState(JSON.parse(localStorage.getItem(LS_KEY) || 'null')); } catch (e) { return null; }
 }
 function saveState(s) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {}
+}
+
+function normalizeSavedState(s) {
+  const screens = ['top', 'intro', 'play', 'result', 'about', 'product'];
+  if (!s || !screens.includes(s.screen)) return null;
+
+  const cards = Array.isArray(s.cards) ? s.cards : [];
+  const answers = Array.isArray(s.answers) ? s.answers : [];
+  const qIdx = Number.isInteger(s.qIdx) ? s.qIdx : 0;
+
+  if (s.screen === 'play') {
+    if (!cards.length || qIdx < 0 || qIdx >= cards.length) return null;
+    return { screen: 'play', qIdx, answers: answers.slice(0, qIdx), cards };
+  }
+
+  if (s.screen === 'result') {
+    if (!cards.length || !answers.length) return null;
+    return { screen: 'result', qIdx: 0, answers, cards };
+  }
+
+  return { screen: s.screen, qIdx: 0, answers: [], cards: [] };
 }
 
 // ─────────────────────────────────────────────────────
@@ -1621,9 +1642,9 @@ function ContactForm() {
       {/* スパム対策 honeypot (人間は触らない隠しフィールド) */}
       <input type="text" name="_gotcha" style={{ display: 'none' }} tabIndex="-1" autoComplete="off" />
 
-      <input name="name" placeholder="お名前" required style={inputStyle} disabled={sending} />
-      <input name="email" type="email" placeholder="メールアドレス" required style={inputStyle} disabled={sending} />
-      <textarea name="message" placeholder="メッセージ" rows={4} required style={{...inputStyle, resize: 'none'}} disabled={sending} />
+      <input name="name" aria-label="お名前" placeholder="お名前" required style={inputStyle} disabled={sending} />
+      <input name="email" type="email" aria-label="メールアドレス" placeholder="メールアドレス" required style={inputStyle} disabled={sending} />
+      <textarea name="message" aria-label="メッセージ" placeholder="メッセージ" rows={4} required style={{...inputStyle, resize: 'none'}} disabled={sending} />
 
       {error && (
         <div style={{
