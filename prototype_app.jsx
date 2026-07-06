@@ -2456,51 +2456,109 @@ function ProductScreen({ onBack }) {
           <div style={{ background: proto.white, borderRadius: 16, padding: 16 }}>
             {/* 商品プレースホルダ画像: 本物のパッケージレイアウト再現 */}
             <div style={{
-              width: '100%', height: 300, borderRadius: 12,
+              width: '100%', minHeight: 330, borderRadius: 12,
               background: proto.pink,
               border: `2.5px solid ${proto.black}`,
               position: 'relative', overflow: 'hidden',
             }}>
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'radial-gradient(circle at 18% 18%, rgba(255,255,255,0.18) 0 24px, transparent 25px), radial-gradient(circle at 72% 74%, rgba(255,226,107,0.16) 0 42px, transparent 43px)',
+                pointerEvents: 'none',
+              }} />
               {/* 上部のキャプション */}
               <div style={{
-                position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
-                padding: '3px 14px', borderRadius: 999,
+                position: 'absolute', top: 14, left: 16,
+                padding: '5px 14px', borderRadius: 999,
                 background: proto.white, color: proto.pinkDeep,
-                fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap',
+                fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap',
                 fontFamily: proto.body, zIndex: 3,
               }}>彼氏の愛情判定ゲーム</div>
 
+              <div style={{
+                position: 'absolute',
+                top: 52,
+                left: 18,
+                zIndex: 3,
+                background: proto.black,
+                color: proto.yellow,
+                borderRadius: 5,
+                padding: '4px 9px',
+                fontFamily: proto.caption,
+                fontSize: 9,
+                letterSpacing: '0.14em',
+                transform: 'rotate(-2deg)',
+              }}>54 QUESTIONS</div>
+
               {/* 女の子 (左下、全身ポーズ) */}
               <div style={{
-                position: 'absolute', left: -8, bottom: 0,
-                filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.18))',
+                position: 'absolute', left: 6, bottom: 4,
+                filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.22))',
                 zIndex: 2,
               }}>
-                <Girl variant="full" height={250} />
+                <Girl variant="full" height={285} />
               </div>
 
               {/* タイトルテキスト (右上寄り、縦組み風) */}
               <div style={{
                 position: 'absolute',
-                top: 40, right: 10,
+                top: 48, right: 12,
                 textAlign: 'right',
-                zIndex: 1,
+                zIndex: 4,
               }}>
-                <LogoText size={15}>私のこと、</LogoText>
-                <div style={{ marginTop: 4 }}><LogoText size={15}>ちゃんと</LogoText></div>
-                <div style={{ marginTop: 4 }}><LogoText size={15}>分かってる</LogoText></div>
-                <div style={{ marginTop: 4 }}><LogoText size={15}>よね？</LogoText></div>
+                <LogoText size={21}>私のこと、</LogoText>
+                <div style={{ marginTop: 3 }}><LogoText size={21}>ちゃんと</LogoText></div>
+                <div style={{ marginTop: 3 }}><LogoText size={21}>分かってる</LogoText></div>
+                <div style={{ marginTop: 3 }}><LogoText size={21}>よね？</LogoText></div>
+              </div>
+
+              <div style={{
+                position: 'absolute',
+                right: 16,
+                bottom: 86,
+                zIndex: 3,
+                display: 'grid',
+                gap: 5,
+              }}>
+                {['2人〜', '10分〜', 'カード54問'].map((label) => (
+                  <div key={label} style={{
+                    minWidth: 86,
+                    textAlign: 'center',
+                    background: proto.white,
+                    color: proto.black,
+                    border: `2px solid ${proto.black}`,
+                    borderRadius: 999,
+                    padding: '5px 9px',
+                    fontSize: 11,
+                    fontWeight: 900,
+                    boxShadow: '2px 2px 0 #000',
+                  }}>{label}</div>
+                ))}
               </div>
 
               {/* 付箋: 右下隅、タイトルとは離れた位置に配置 */}
-              <div style={{ position: 'absolute', bottom: 8, right: 8, zIndex: 3 }}>
-                <StickyNote rotate={-6} size={72}>
-                  <div style={{ fontSize: 7, lineHeight: 1.35, whiteSpace: 'nowrap' }}>
+              <div style={{ position: 'absolute', bottom: 12, right: 18, zIndex: 5 }}>
+                <StickyNote rotate={-6} size={86}>
+                  <div style={{ fontSize: 8, lineHeight: 1.35, whiteSpace: 'nowrap' }}>
                     別れても<br/>責任は<br/>
                     <span style={{ color: proto.pinkDeep, fontWeight: 800 }}>負いません</span>
                   </div>
                 </StickyNote>
               </div>
+
+              <div style={{
+                position: 'absolute',
+                left: 18,
+                right: 18,
+                bottom: 14,
+                zIndex: 1,
+                height: 46,
+                borderRadius: 10,
+                background: 'rgba(0,0,0,0.12)',
+                border: '1.5px dashed rgba(255,255,255,0.45)',
+              }} />
             </div>
 
             <div style={{
