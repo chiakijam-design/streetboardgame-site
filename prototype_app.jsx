@@ -297,7 +297,13 @@ function App() {
             onAbout={() => setScreen('about')}
           />
         )}
-        {screen === 'about' && <AboutScreen onBack={() => setScreen('top')} />}
+        {screen === 'about' && (
+          <AboutScreen
+            onBack={() => setScreen('top')}
+            onLove={() => setScreen('intro')}
+            onFriend={() => setScreen('friendIntro')}
+          />
+        )}
         {screen === 'product' && <ProductScreen onBack={() => setScreen('top')} />}
       </div>
     </div>
@@ -2175,7 +2181,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
 // ─────────────────────────────────────────────────────
 // ABOUT
 // ─────────────────────────────────────────────────────
-function AboutScreen({ onBack }) {
+function AboutScreen({ onBack, onLove, onFriend }) {
   return (
     <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
       <div style={{
@@ -2215,8 +2221,8 @@ function AboutScreen({ onBack }) {
 
         <SectionTitle style={{ marginTop: 22 }}>♡ シリーズ展開</SectionTitle>
         <Card>
-          <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="公開中" active />
-          <SeriesRow emoji="👯" title="友達の友情判定" sub="公開中" active />
+          <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="公開中" active onClick={onLove} />
+          <SeriesRow emoji="👯" title="友達の友情判定" sub="公開中" active onClick={onFriend} />
           <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="準備中" last />
         </Card>
 
@@ -2264,15 +2270,12 @@ function Card({ children }) {
   );
 }
 
-function SeriesRow({ emoji, title, sub, active, last }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 12,
-      padding: '8px 0',
-      borderBottom: last ? 'none' : `1px dashed ${proto.pink}`,
-    }}>
+function SeriesRow({ emoji, title, sub, active, last, onClick }) {
+  const clickable = typeof onClick === 'function';
+  const content = (
+    <>
       <div style={{ fontSize: 22 }}>{emoji}</div>
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, textAlign: 'left' }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: proto.text }}>{title}</div>
         <div style={{
           fontFamily: proto.caption, fontSize: 10,
@@ -2286,6 +2289,32 @@ function SeriesRow({ emoji, title, sub, active, last }) {
         border: `1.5px solid ${proto.black}`,
         fontSize: 9, fontWeight: 800, letterSpacing: '0.05em',
       }}>NEW</div>}
+    </>
+  );
+  const style = {
+    width: '100%',
+    display: 'flex', alignItems: 'center', gap: 12,
+    padding: '8px 0',
+    borderTop: 'none',
+    borderLeft: 'none',
+    borderRight: 'none',
+    borderBottom: last ? 'none' : `1px dashed ${proto.pink}`,
+    background: 'transparent',
+    fontFamily: proto.body,
+    cursor: clickable ? 'pointer' : 'default',
+  };
+
+  if (clickable) {
+    return (
+      <button type="button" onClick={onClick} style={style} aria-label={`${title}を開く`}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div style={style}>
+      {content}
     </div>
   );
 }
