@@ -1793,8 +1793,8 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 
 function FriendQuestionCard({ card }) {
   const titleLines = splitCardTitle(card.title);
-  const lineYs = [37, 111, 184, 258, 331, 405, 478, 551, 625, 699, 772, 846, 920, 993, 1066];
-  const choiceYs = [294, 368, 442, 515, 588];
+  const lineYs = [40, 113, 186, 260, 333, 407, 480, 553, 627, 701, 773, 848, 922, 996, 1068];
+  const choiceYs = [302, 444, 591, 738, 874];
   const holes = [36, 120, 204, 288, 372, 456, 540, 624, 708];
 
   return (
@@ -1823,11 +1823,11 @@ function FriendQuestionCard({ card }) {
           <line key={y} x1="0" y1={y} x2="756" y2={y} stroke="rgba(91,212,232,0.34)" strokeWidth="4" />
         ))}
         {/* title tape */}
-        <rect x="78" y="76" width="600" height="150" fill="rgba(91,212,232,0.68)" />
-        <rect x="78" y="76" width="600" height="150" fill="#5BD4E8" opacity="0.34" />
+        <rect x="68" y="57" width="620" height="150" fill="rgba(91,212,232,0.68)" />
+        <rect x="68" y="57" width="620" height="150" fill="#5BD4E8" opacity="0.34" />
         <g fontFamily={proto.handwrite} fontWeight="400" fill={proto.text} textAnchor="middle">
           {titleLines.map((line, i) => (
-            <text key={line} x="378" y={titleLines.length === 1 ? 154 : 130 + i * 48} fontSize={titleLines.length === 1 ? 44 : 40} dominantBaseline="middle">
+            <text key={line} x="378" y={titleLines.length === 1 ? 150 : 126 + i * 48} fontSize={titleLines.length === 1 ? 44 : 40} dominantBaseline="middle">
               {line}
             </text>
           ))}
@@ -1839,9 +1839,9 @@ function FriendQuestionCard({ card }) {
           const fontSize = choice.length >= 12 ? 32 : choice.length >= 8 ? 36 : 40;
           return (
             <g key={choice}>
-              <circle cx="91" cy={choiceYs[i]} r="41" fill={opt.color} filter="url(#friendCardDotShadow)" />
+              <circle cx="77" cy={choiceYs[i]} r="41" fill={opt.color} filter="url(#friendCardDotShadow)" />
               <text
-                x="306"
+                x="406"
                 y={choiceYs[i] + 2}
                 fontFamily={proto.handwrite}
                 fontSize={fontSize}
