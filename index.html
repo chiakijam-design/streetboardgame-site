@@ -14,6 +14,8 @@
 <meta name="apple-mobile-web-app-title" content="わたちゃん" />
 <meta name="theme-color" content="#FF3D7F" />
 <link rel="canonical" href="https://www.streetboardgame.com/" />
+<link rel="alternate" hreflang="ja" href="https://www.streetboardgame.com/" />
+<link rel="alternate" hreflang="x-default" href="https://www.streetboardgame.com/" />
 
 <!-- favicon -->
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
@@ -43,12 +45,42 @@
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "Organization",
+      "@id": "https://www.streetboardgame.com/#organization",
+      "name": "streetboardgame.com",
+      "url": "https://www.streetboardgame.com/",
+      "logo": "https://www.streetboardgame.com/favicon.svg"
+    },
+    {
       "@type": "WebSite",
       "@id": "https://www.streetboardgame.com/#website",
       "url": "https://www.streetboardgame.com/",
       "name": "streetboardgame.com",
       "inLanguage": "ja",
-      "description": "無料で遊べるオリジナルボードゲームを公開しているサイトです。"
+      "description": "無料で遊べるオリジナルボードゲームを公開しているサイトです。",
+      "publisher": {
+        "@id": "https://www.streetboardgame.com/#organization"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://www.streetboardgame.com/#webpage",
+      "url": "https://www.streetboardgame.com/",
+      "name": "私のこと、ちゃんと分かってるよね？｜無料カップル診断ゲーム・彼氏の愛情判定",
+      "description": "彼氏が彼女の答えを予想して理解度をチェックする、スマホで無料で遊べるカップル向け診断ゲームの公式ページです。",
+      "inLanguage": "ja",
+      "isPartOf": {
+        "@id": "https://www.streetboardgame.com/#website"
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://www.streetboardgame.com/assets/ogp.jpg",
+        "width": 1200,
+        "height": 630
+      },
+      "mainEntity": {
+        "@id": "https://www.streetboardgame.com/#watachan"
+      }
     },
     {
       "@type": ["WebApplication", "Game"],
@@ -66,10 +98,11 @@
       "keywords": "カップルゲーム, カップル診断, 彼氏診断, 愛情判定, ボードゲーム, わたちゃん",
       "image": "https://www.streetboardgame.com/assets/ogp.jpg",
       "inLanguage": "ja",
+      "mainEntityOfPage": {
+        "@id": "https://www.streetboardgame.com/#webpage"
+      },
       "publisher": {
-        "@type": "Organization",
-        "name": "streetboardgame.com",
-        "url": "https://www.streetboardgame.com/"
+        "@id": "https://www.streetboardgame.com/#organization"
       }
     }
   ]
@@ -204,7 +237,13 @@
     <p>JavaScriptを有効にすると、ゲーム本編をプレイできます。Amazonで販売中のボードゲーム版も紹介しています。</p>
   </main>
 </noscript>
-<div id="root"></div>
+<div id="root">
+  <main style="max-width: 720px; margin: 32px auto; padding: 24px; font-family: sans-serif; line-height: 1.8; color: #1A1A1A; background: #FFFFFF;">
+    <h1>私のこと、ちゃんと分かってるよね？</h1>
+    <p>スマホで無料で遊べるカップル診断ゲームです。彼氏が彼女の答えを予想し、全42問からランダムに出る5問で理解度をチェックできます。</p>
+    <p>結果はSNSでシェアでき、Amazonで販売中のボードゲーム版でも遊べます。</p>
+  </main>
+</div>
 
 <script src="prototype_quiz_data.js"></script>
 <script type="text/babel" src="prototype_character.jsx"></script>
