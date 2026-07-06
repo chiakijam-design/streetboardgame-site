@@ -817,10 +817,20 @@ const MISS_MESSAGES = [
   <>気持ちは近い。答えは遠い。<br/>次で名誉挽回しよ ✦</>,
 ];
 
+const HIT_MESSAGES = [
+  <>彼氏、今日の読心術キレてます。<br/>その調子で次も当てて ♡</>,
+  <>それ当てるの、普通にすごい。<br/>彼女検定、単位出ます ✦</>,
+  <>ちゃんと見てるじゃん。<br/>今のは加点ポイント高め ♡</>,
+  <>気持ちのWi-Fiつながってます。<br/>通信状態かなり良好 ✦</>,
+  <>彼女の取扱説明書、<br/>ちゃんと読み込んでるタイプ。</>,
+  <>今の正解はうれしいやつ。<br/>ちょっと自慢していい ♡</>,
+];
+
 function Reveal({ card, girlPick, boyPick, onNext }) {
   const girlOpt = window.COLOR_OPTIONS[girlPick];
   const boyOpt = window.COLOR_OPTIONS[boyPick];
   const match = girlPick === boyPick;
+  const hitMessage = HIT_MESSAGES[(card.id + girlPick + boyPick) % HIT_MESSAGES.length];
   const missMessage = MISS_MESSAGES[(card.id + girlPick + boyPick) % MISS_MESSAGES.length];
 
   return (
@@ -863,7 +873,7 @@ function Reveal({ card, girlPick, boyPick, onNext }) {
         textAlign: 'center', lineHeight: 1.7, fontWeight: 600,
       }}>
         {match
-          ? <>彼はあなたの気持ちを<br/>ちゃんと分かってる ♡</>
+          ? hitMessage
           : missMessage
         }
       </div>
