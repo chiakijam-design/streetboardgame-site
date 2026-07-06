@@ -702,21 +702,10 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
   const [phase, setPhase] = useState('girl');
   const [girlPick, setGirlPick] = useState(null);
   const [boyPick, setBoyPick] = useState(null);
-  const [countdown, setCountdown] = useState(null);
 
   useEffect(() => {
-    setPhase('girl'); setGirlPick(null); setBoyPick(null); setCountdown(null);
+    setPhase('girl'); setGirlPick(null); setBoyPick(null);
   }, [qIdx, card && card.id]);
-
-  useEffect(() => {
-    if (countdown === null) return;
-    if (countdown > 0) {
-      const t = setTimeout(() => setCountdown(countdown - 1), 700);
-      return () => clearTimeout(t);
-    } else {
-      setPhase('reveal');
-    }
-  }, [countdown]);
 
   const onGirlPick = (i) => {
     if (girlPick !== null) return;
@@ -726,7 +715,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
   const onBoyPick = (i) => {
     if (boyPick !== null) return;
     setBoyPick(i);
-    setTimeout(() => setPhase('reveal'), 400);
+    setTimeout(() => onAnswer(girlPick, i), 400);
   };
 
   if (!card) return null;
@@ -827,14 +816,6 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
               instruction="♂ 彼氏のターン  ── タップして予想する"
             />
           </>
-        )}
-        {phase === 'reveal' && (
-          <Reveal
-            card={card}
-            girlPick={girlPick}
-            boyPick={boyPick}
-            onNext={() => onAnswer(girlPick, boyPick)}
-          />
         )}
       </div>
     </div>
@@ -1682,24 +1663,13 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
   const [targetPick, setTargetPick] = useState(null);
   const [guesses, setGuesses] = useState([]);
   const [turn, setTurn] = useState(1);
-  const [countdown, setCountdown] = useState(null);
 
   useEffect(() => {
     setPhase('answer');
     setTargetPick(null);
     setGuesses([]);
     setTurn(1);
-    setCountdown(null);
   }, [qIdx, card && card.id, playerCount]);
-
-  useEffect(() => {
-    if (countdown === null) return;
-    if (countdown > 0) {
-      const t = setTimeout(() => setCountdown(countdown - 1), 700);
-      return () => clearTimeout(t);
-    }
-    setPhase('reveal');
-  }, [countdown]);
 
   const handlePick = (i) => {
     if (phase === 'answer') {
@@ -1710,7 +1680,11 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     const next = [...guesses, i];
     setGuesses(next);
     if (turn >= playerCount - 1) {
-      setTimeout(() => setPhase('reveal'), 350);
+      setTimeout(() => onAnswer({
+        target: targetPick,
+        guesses: next,
+        matches: next.map(g => g === targetPick),
+      }), 350);
     } else {
       setTurn(turn + 1);
     }
@@ -1747,7 +1721,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
         <div style={{ width: '100%', height: 6, borderRadius: 99, background: 'rgba(0,0,0,0.2)' }}>
           <div style={{
-            width: `${((qIdx + (phase === 'reveal' ? 1 : 0)) / total) * 100}%`,
+            width: `${(qIdx / total) * 100}%`,
             height: '100%', borderRadius: 99, background: proto.yellow,
             transition: 'width 0.4s ease',
           }} />
@@ -1801,19 +1775,6 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
               instruction={`${currentPlayer}のターン ── 直感でタップ`}
             />
           </>
-        )}
-        {phase === 'reveal' && (
-          <FriendReveal
-            card={card}
-            targetPick={targetPick}
-            guesses={guesses}
-            playerCount={playerCount}
-            onNext={() => onAnswer({
-              target: targetPick,
-              guesses,
-              matches: guesses.map(g => g === targetPick),
-            })}
-          />
         )}
       </div>
     </div>
