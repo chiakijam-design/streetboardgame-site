@@ -932,7 +932,7 @@ function PickCard({ label, opt, accent }) {
 // RESULT
 // ─────────────────────────────────────────────────────
 const RESULT_TIERS = [
-  { score: 0, title: '彼女理解、初期設定中', emoji: '💔', tag: 'START', tagBg: proto.black,
+  { score: 0, title: '彼女理解は初期設定中', emoji: '💔', tag: '初期設定', tagBg: proto.black,
     msg: '0問正解は逆にレア。\nここから覚えることが多すぎて、デートの話題には困らない。\n今日の答え合わせから始めよ ♡',
     shareHook: '彼氏の彼女理解、まだ初期設定中でした' },
   { score: 1, title: '彼女クイズ見習い中', emoji: '🌱', tag: '見習い', tagBg: '#F4A261',
@@ -944,11 +944,11 @@ const RESULT_TIERS = [
   { score: 3, title: 'ドヤ顔まであと一歩', emoji: '💞', tag: '惜しい', tagBg: '#FF7A92',
     msg: '半分以上わかってるのはちゃんと強い。\nただし満点彼氏を名乗るには、あと少し。\n外した問題、次回までに要復習 ♡',
     shareHook: '彼氏、ドヤ顔まであと一歩でした' },
-  { score: 4, title: '彼女マスターまであと1問', emoji: '💖', tag: 'GREAT', tagBg: proto.pink,
+  { score: 4, title: '彼女マスターまであと1問', emoji: '💖', tag: 'あと1問', tagBg: proto.pink,
     msg: 'これはかなり分かってる。\nあと1問で満点なのがいちばん悔しいやつ。\nもう一回やったら伝説、ある ♡',
     shareHook: '彼氏、彼女マスターまであと1問でした' },
   { score: 5, title: '彼女公認・理解王', emoji: '💕', tag: '♡ PERFECT ♡', tagBg: proto.yellow,
-    msg: '全問正解はさすがに強すぎ。\n好きなところも迷うところも、ちゃんと見てる彼氏。\nこれは堂々と自慢していいやつ ♡',
+    msg: '全問正解はさすがに強すぎ。\n好みも迷いどころも、ちゃんと見てる彼氏。\nこれは堂々と自慢していいやつ ♡',
     shareHook: '全問正解、彼氏が彼女公認の理解王でした' },
 ];
 
@@ -957,10 +957,15 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
-  const shouldBreakTitle = tier.title.length >= 12 && tier.title.endsWith('カップル');
-  const titleSize = shouldBreakTitle ? 21 : (tier.title.length >= 14 ? 18 : 23);
-  const titleNode = shouldBreakTitle
-    ? <>{tier.title.replace(/カップル$/, '')}<br/>カップル</>
+  const titleBreaks = {
+    '彼女理解は初期設定中': ['彼女理解は', '初期設定中'],
+    '彼女クイズ見習い中': ['彼女クイズ', '見習い中'],
+    '彼女マスターまであと1問': ['彼女マスターまで', 'あと1問'],
+  };
+  const titleLines = titleBreaks[tier.title];
+  const titleSize = titleLines ? 22 : (tier.title.length >= 14 ? 18 : 23);
+  const titleNode = titleLines
+    ? <>{titleLines[0]}<br/>{titleLines[1]}</>
     : tier.title;
 
   const shareUrl = window.location.href;
