@@ -1793,7 +1793,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 
 function FriendQuestionCard({ card }) {
   const titleLines = splitCardTitle(card.title);
-  const lineYs = [37, 258, 331, 405, 478, 551, 625, 699, 772, 846, 920, 993, 1066];
+  const lineYs = [37, 111, 184, 258, 331, 405, 478, 551, 625, 699, 772, 846, 920, 993, 1066];
   const choiceYs = [294, 368, 442, 515, 588];
   const holes = [36, 120, 204, 288, 372, 456, 540, 624, 708];
 
