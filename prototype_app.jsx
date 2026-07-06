@@ -330,10 +330,10 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
       {/* 背景ノイズ感 (薄いハート散らし) */}
       <Decor />
       <h1 id="site-title" style={srOnlyStyle()}>
-        私のこと、ちゃんと分かってるよね？ 無料カップル診断・友情確認ゲーム
+        わたちゃん 彼氏の愛情判定ゲーム
       </h1>
       <p style={srOnlyStyle()}>
-        カップル版では彼氏が彼女の答えを予想し、友情確認版では2〜4人で友達の答えを予想するスマホ向け理解度チェックゲームです。
+        彼氏が彼女の答えを予想して愛情理解度を判定する無料カップル診断ゲームです。シリーズとして友達の友情判定を公開中で、家族の絆判定も準備中です。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -411,7 +411,7 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
           opacity: 0.88,
           fontWeight: 700,
         }}>
-          カップルでも、友達同士でも。スマホ1台でその場の理解度チェック。
+          まずは彼氏の愛情判定から。友達版は公開中、家族版も準備中。
         </div>
       </div>
 
@@ -437,7 +437,7 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
           fontFamily: proto.caption, fontSize: 10,
           color: proto.white, letterSpacing: '0.25em',
           marginBottom: 10, paddingLeft: 4,
-        }}>PLAY SERIES ✦</div>
+        }}>MAIN GAME / SERIES ✦</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <SeriesCard emoji="💕" title="彼氏の愛情判定" status="公開中" onClick={onStart} />
           <SeriesCard emoji="👯" title="友達の友情判定" status="公開中" onClick={onFriend} />
@@ -2213,9 +2213,10 @@ function AboutScreen({ onBack, onLove, onFriend }) {
         <SectionTitle>♡ コンセプト</SectionTitle>
         <Card>
           <div style={{ fontSize: 12, lineHeight: 1.8, color: proto.text, fontWeight: 600 }}>
-            ストリートボードゲームは、誰でも無料で遊べるオリジナルボードゲームを公開している
-            サイトです。2人〜数人で気軽に遊べる、ちょっと特別な時間を生み出すゲームを
-            配信しています。
+            ストリートボードゲームは、彼氏が彼女の答えを当てる
+            「彼氏の愛情判定ゲーム」をメインにしたオリジナルゲームサイトです。
+            そのシリーズとして、友達の友情判定や家族の絆判定など、
+            2人〜数人で気軽に遊べるゲームを展開しています。
           </div>
         </Card>
 
