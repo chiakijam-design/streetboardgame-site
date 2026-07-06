@@ -824,25 +824,66 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
 
 function PhaseBadge({ phase }) {
   const conf = {
-    girl: { label: 'STEP 1 / 3 — 彼女のターン', color: proto.yellow, textColor: proto.black },
-    boy:  { label: 'STEP 2 / 3 — 彼氏のターン', color: proto.cyan,   textColor: proto.black },
-    reveal:{ label: 'STEP 3 / 3 — 同時発表 ♡', color: proto.white,  textColor: proto.pink },
+    girl: {
+      eyebrow: 'STEP 1 / 2',
+      title: '彼女のターン',
+      note: '彼氏には見せずに、自分の答えを選んでね',
+      color: proto.yellow,
+    },
+    boy: {
+      eyebrow: 'STEP 2 / 2',
+      title: '彼氏の予想ターン',
+      note: '彼女が選んだ答えを予想してね',
+      color: proto.cyan,
+    },
   }[phase];
   return (
     <div style={{
-      display: 'inline-block', padding: '5px 16px',
-      background: conf.color, color: conf.textColor,
-      borderRadius: 999, fontSize: 10, fontWeight: 800,
-      letterSpacing: '0.15em', fontFamily: proto.body,
-      border: `2px solid ${proto.black}`,
-      boxShadow: '2px 2px 0 #000',
-    }}>{conf.label}</div>
+      display: 'inline-block',
+      minWidth: 220,
+      maxWidth: '100%',
+      padding: '9px 18px 10px',
+      background: conf.color,
+      color: proto.black,
+      borderRadius: 16,
+      fontFamily: proto.body,
+      border: `2.5px solid ${proto.black}`,
+      boxShadow: '3px 3px 0 #000',
+      textAlign: 'center',
+    }}>
+      <div style={{
+        fontFamily: proto.caption,
+        fontSize: 9,
+        fontWeight: 900,
+        letterSpacing: '0.16em',
+        opacity: 0.78,
+      }}>{conf.eyebrow}</div>
+      <div style={{
+        marginTop: 2,
+        fontSize: 17,
+        fontWeight: 900,
+        lineHeight: 1.25,
+      }}>{conf.title}</div>
+      <div style={{
+        marginTop: 3,
+        fontSize: 10,
+        fontWeight: 800,
+        lineHeight: 1.4,
+      }}>{conf.note}</div>
+    </div>
   );
 }
 
 function ColorPicker({ selected, onPick, highlight, instruction }) {
   return (
     <>
+      <style>{`
+        @keyframes chipPop {
+          0% { transform: scale(1); }
+          58% { transform: scale(1.18); }
+          100% { transform: scale(1.08); }
+        }
+      `}</style>
       {instruction && (
         <div style={{
           fontSize: 11, color: proto.white, textAlign: 'center',
@@ -871,7 +912,7 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
                 cursor: 'pointer', fontFamily: proto.body,
                 touchAction: 'manipulation',
                 transition: 'all 0.18s',
-                transform: isSelected ? 'translateY(-4px)' : 'none',
+                transform: isSelected ? 'translateY(-6px) scale(1.12)' : 'none',
               }}>
                 <ColorChip
                   color={opt.color}
@@ -905,7 +946,9 @@ function ColorChip({ color, size = 44, selected = false, highlight }) {
         ? `0 0 0 3px #FFF, 0 0 0 6px ${ringColor}, 0 8px 18px rgba(0,0,0,0.3), inset 0 -3px 6px rgba(0,0,0,0.18), inset 0 2px 3px rgba(255,255,255,0.4)`
         : `0 4px 10px rgba(0,0,0,0.25), inset 0 -3px 6px rgba(0,0,0,0.15), inset 0 2px 3px rgba(255,255,255,0.35)`,
       flexShrink: 0,
-      transition: 'box-shadow 0.18s',
+      transform: selected ? 'scale(1.08)' : 'scale(1)',
+      animation: selected ? 'chipPop 0.24s ease-out' : 'none',
+      transition: 'box-shadow 0.18s, transform 0.18s',
     }} />
   );
 }
@@ -1730,14 +1773,33 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 
       <div style={{ padding: '14px 22px 8px', textAlign: 'center' }}>
         <div style={{
-          display: 'inline-block', padding: '5px 16px',
+          display: 'inline-block',
+          minWidth: 220,
+          maxWidth: '100%',
+          padding: '9px 18px 10px',
           background: phase === 'answer' ? proto.yellow : phase === 'guess' ? proto.cyan : proto.white,
           color: proto.black,
-          borderRadius: 999, fontSize: 10, fontWeight: 900,
-          letterSpacing: '0.12em', border: `2px solid ${proto.black}`,
-          boxShadow: '2px 2px 0 #000',
+          borderRadius: 16,
+          fontWeight: 900,
+          border: `2.5px solid ${proto.black}`,
+          boxShadow: '3px 3px 0 #000',
+          fontFamily: proto.body,
+          lineHeight: 1.3,
         }}>
-          {phase === 'answer' ? '本人のターン' : phase === 'guess' ? `${currentPlayer}の予想` : 'せーの発表'}
+          <div style={{
+            fontFamily: proto.caption,
+            fontSize: 9,
+            letterSpacing: '0.16em',
+            opacity: 0.78,
+          }}>
+            {phase === 'answer' ? 'STEP 1' : `STEP ${turn + 1}`}
+          </div>
+          <div style={{ marginTop: 2, fontSize: 17 }}>
+            {phase === 'answer' ? '本人のターン' : `${currentPlayer}の予想`}
+          </div>
+          <div style={{ marginTop: 3, fontSize: 10, lineHeight: 1.4 }}>
+            {phase === 'answer' ? '友達には見せずに、自分の答えを選んでね' : '本人が選んだ答えを予想してね'}
+          </div>
         </div>
       </div>
 
