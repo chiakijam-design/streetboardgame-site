@@ -1787,67 +1787,85 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 function FriendQuestionCard({ card }) {
   return (
     <div style={{
-      background: proto.black,
-      border: `3px solid ${proto.black}`,
-      borderRadius: 24,
-      boxShadow: '4px 6px 0 #1A1A1A',
+      position: 'relative',
+      background: proto.white,
+      border: `3px solid ${proto.white}`,
+      borderRadius: 18,
+      boxShadow: '0 14px 30px rgba(0,0,0,0.22)',
       overflow: 'hidden',
       maxWidth: 560,
       margin: '0 auto',
+      minHeight: 520,
     }}>
       <div style={{
-        background: proto.black,
-        color: proto.yellow,
-        padding: '10px 18px 9px',
-        fontFamily: proto.caption,
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: '0.12em',
-        minHeight: 36,
-        display: 'flex',
-        alignItems: 'center',
-      }}>{card.category || 'FRIEND QUESTION'}</div>
+        position: 'absolute',
+        inset: 0,
+        background:
+          'linear-gradient(90deg, transparent 0 60px, rgba(236,79,136,0.28) 61px, transparent 63px), repeating-linear-gradient(0deg, #FFFFFF 0 46px, rgba(91,212,232,0.38) 47px, rgba(91,212,232,0.38) 49px, #FFFFFF 50px)',
+      }} />
       <div style={{
-        background: proto.white,
-        border: `2px solid ${proto.black}`,
-        borderTop: 'none',
-        borderRadius: '0 0 18px 18px',
-        padding: '26px 20px 20px',
-      }}>
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 32,
+        background:
+          'radial-gradient(circle at 22px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 70px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 118px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 166px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 214px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 262px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 310px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 358px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 406px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 454px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 502px -8px, #EC4F88 0 15px, transparent 16px)',
+        borderBottom: '2px solid rgba(91,212,232,0.34)',
+      }} />
+      <div style={{ position: 'relative', zIndex: 1, padding: '64px 20px 22px' }}>
         <div style={{
+          width: '72%',
+          margin: '0 auto 24px',
+          padding: '12px 10px 10px',
+          background: 'rgba(91,212,232,0.72)',
+          boxShadow: '0 2px 10px rgba(91,212,232,0.35)',
           color: proto.text,
-          fontFamily: proto.display,
+          fontFamily: '"Klee One", "Zen Maru Gothic", sans-serif',
           fontSize: 23,
-          fontWeight: 900,
+          fontWeight: 600,
           lineHeight: 1.35,
           textAlign: 'center',
-          marginBottom: 22,
           letterSpacing: '0',
+          position: 'relative',
+          zIndex: 2,
         }}>{card.title}</div>
-        <div style={{ display: 'grid', gap: 9 }}>
+        <div style={{ display: 'grid', gap: 18, position: 'relative', zIndex: 2 }}>
           {card.choices.map((choice, i) => (
             <div key={choice} style={{
+              position: 'relative',
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
-              minHeight: 45,
-              padding: '8px 14px',
-              borderRadius: 13,
-              background: proto.cream,
-              border: `2px solid ${proto.black}`,
+              gap: 18,
+              minHeight: 58,
+              padding: '4px 8px 4px 6px',
+              background: 'transparent',
             }}>
-              <ColorChip color={window.COLOR_OPTIONS[i].color} size={25} />
+              <ColorChip color={window.COLOR_OPTIONS[i].color} size={38} />
               <span style={{
                 color: proto.text,
-                fontFamily: proto.display,
-                fontSize: 16,
-                fontWeight: 900,
+                fontFamily: '"Klee One", "Zen Maru Gothic", sans-serif',
+                fontSize: choice.length >= 12 ? 18 : 21,
+                fontWeight: 600,
                 lineHeight: 1.35,
                 letterSpacing: '0',
               }}>{choice}</span>
             </div>
           ))}
         </div>
+        <div style={{
+          position: 'absolute',
+          right: -12,
+          bottom: -18,
+          width: 48,
+          height: 164,
+          transform: 'rotate(13deg)',
+          borderRadius: '18px 18px 4px 4px',
+          background: 'linear-gradient(90deg, #D9D9D9, #FFFFFF 42%, #BEBEBE)',
+          boxShadow: '-6px 4px 16px rgba(0,0,0,0.16)',
+          opacity: 0.9,
+          zIndex: 1,
+        }} />
       </div>
     </div>
   );
