@@ -1261,6 +1261,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const titleBreaks = {
     '彼女理解は初期設定中': ['彼女理解は', '初期設定中'],
     '彼女クイズ見習い中': ['彼女クイズ', '見習い中'],
@@ -1506,10 +1507,27 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
 
       {/* 詳細 */}
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
+        <button onClick={() => setShowDetails(!showDetails)} style={{
+          width: '100%',
+          minHeight: 48,
+          background: proto.white,
+          color: proto.black,
+          border: `2.5px solid ${proto.black}`,
+          borderRadius: 12,
+          boxShadow: '3px 3px 0 #000',
+          fontFamily: proto.body,
+          fontSize: 14,
+          fontWeight: 900,
+          cursor: 'pointer',
+        }}>
+          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る'}
+        </button>
+        {showDetails && (
+          <>
         <div style={{
           fontFamily: proto.caption, fontSize: 10,
           color: proto.white, letterSpacing: '0.25em',
-          marginBottom: 8, paddingLeft: 4,
+          margin: '14px 0 8px', paddingLeft: 4,
         }}>ANSWER DETAILS</div>
         <div style={{ display: 'grid', gap: 10 }}>
           {answers.map((a, i) => {
@@ -1572,6 +1590,8 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
             );
           })}
         </div>
+          </>
+        )}
       </div>
 
       {/* シェア */}
@@ -2174,6 +2194,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const ratio = score / maxScore;
   const tier = [...FRIEND_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FRIEND_RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const shareUrl = `${location.origin}/?screen=friendIntro`;
   const shareText = `友達の友情確認ゲームで${score}/${maxScore}的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n友達とやったら何問当たる？\n#わたちゃん #友情確認ゲーム #streetboardgame`;
 
@@ -2279,10 +2300,27 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       </div>
 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
+        <button onClick={() => setShowDetails(!showDetails)} style={{
+          width: '100%',
+          minHeight: 48,
+          background: proto.white,
+          color: proto.black,
+          border: `2.5px solid ${proto.black}`,
+          borderRadius: 12,
+          boxShadow: '3px 3px 0 #000',
+          fontFamily: proto.body,
+          fontSize: 14,
+          fontWeight: 900,
+          cursor: 'pointer',
+        }}>
+          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る'}
+        </button>
+        {showDetails && (
+          <>
         <div style={{
           fontFamily: proto.caption, fontSize: 10,
           color: proto.white, letterSpacing: '0.25em',
-          marginBottom: 8, paddingLeft: 4,
+          margin: '14px 0 8px', paddingLeft: 4,
         }}>ANSWER DETAILS</div>
         <div style={{ display: 'grid', gap: 10 }}>
           {answers.map((a, i) => {
@@ -2334,6 +2372,8 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
             );
           })}
         </div>
+          </>
+        )}
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
