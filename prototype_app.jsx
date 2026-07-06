@@ -1791,7 +1791,14 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 }
 
 function FriendQuestionCard({ card }) {
-  const choiceTops = [28.7, 40.4, 52.1, 63.8, 75.5];
+  const lineYs = [6.6, 14.6, 24.8, 36.5, 48.2, 59.9, 71.6, 83.3, 95.0];
+  const choiceRows = [
+    { top: 24.8, bottom: 36.5 },
+    { top: 36.5, bottom: 48.2 },
+    { top: 48.2, bottom: 59.9 },
+    { top: 59.9, bottom: 71.6 },
+    { top: 71.6, bottom: 83.3 },
+  ];
   return (
     <div style={{
       position: 'relative',
@@ -1807,10 +1814,29 @@ function FriendQuestionCard({ card }) {
       <div style={{
         position: 'absolute',
         inset: 0,
-        background:
-          'linear-gradient(90deg, transparent 0 17.5%, rgba(236,79,136,0.22) 17.8%, transparent 18.2%), repeating-linear-gradient(0deg, #FFFFFF 0 9.35%, rgba(91,212,232,0.34) 9.62%, rgba(91,212,232,0.34) 10.05%, #FFFFFF 10.35%, #FFFFFF 11.7%)',
-        backgroundPosition: '0 5.8%',
+        background: proto.white,
       }} />
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: '17.7%',
+        width: 2,
+        background: 'rgba(236,79,136,0.18)',
+        zIndex: 1,
+      }} />
+      {lineYs.map((y) => (
+        <div key={y} style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: `${y}%`,
+          height: 3,
+          background: 'rgba(91,212,232,0.30)',
+          boxShadow: '0 1px 0 rgba(91,212,232,0.16)',
+          zIndex: 1,
+        }} />
+      ))}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -1824,10 +1850,10 @@ function FriendQuestionCard({ card }) {
       <div style={{
         position: 'absolute',
         zIndex: 2,
-        top: '14.6%',
+        top: '16.1%',
         left: '18%',
         width: '64%',
-        height: '9.2%',
+        height: '7.7%',
         padding: '0 12px',
         boxSizing: 'border-box',
         background: 'rgba(91,212,232,0.72)',
@@ -1844,14 +1870,16 @@ function FriendQuestionCard({ card }) {
         justifyContent: 'center',
       }}>{card.title}</div>
 
-      {card.choices.map((choice, i) => (
+      {card.choices.map((choice, i) => {
+        const row = choiceRows[i];
+        return (
         <div key={choice} style={{
           position: 'absolute',
           zIndex: 2,
-          top: `${choiceTops[i]}%`,
+          top: `${row.top}%`,
           left: '7.5%',
           right: '7%',
-          height: '8.6%',
+          height: `${row.bottom - row.top}%`,
           display: 'flex',
           alignItems: 'center',
           background: 'transparent',
@@ -1867,7 +1895,8 @@ function FriendQuestionCard({ card }) {
             letterSpacing: '0',
           }}>{choice}</span>
         </div>
-      ))}
+        );
+      })}
 
       <div style={{
         position: 'absolute',
