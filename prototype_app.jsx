@@ -1791,8 +1791,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 }
 
 function FriendQuestionCard({ card }) {
-  const lineRow = 76;
-  const lineOffset = 52;
+  const choiceTops = [28.7, 40.4, 52.1, 63.8, 75.5];
   return (
     <div style={{
       position: 'relative',
@@ -1803,13 +1802,14 @@ function FriendQuestionCard({ card }) {
       overflow: 'hidden',
       maxWidth: 560,
       margin: '0 auto',
-      minHeight: 520,
+      aspectRatio: '756 / 1122',
     }}>
       <div style={{
         position: 'absolute',
         inset: 0,
         background:
-          `linear-gradient(90deg, transparent 0 60px, rgba(236,79,136,0.26) 61px, transparent 63px), repeating-linear-gradient(0deg, #FFFFFF 0 ${lineOffset}px, rgba(91,212,232,0.36) ${lineOffset + 1}px, rgba(91,212,232,0.36) ${lineOffset + 3}px, #FFFFFF ${lineOffset + 4}px, #FFFFFF ${lineRow}px)`,
+          'linear-gradient(90deg, transparent 0 17.5%, rgba(236,79,136,0.22) 17.8%, transparent 18.2%), repeating-linear-gradient(0deg, #FFFFFF 0 9.35%, rgba(91,212,232,0.34) 9.62%, rgba(91,212,232,0.34) 10.05%, #FFFFFF 10.35%, #FFFFFF 11.7%)',
+        backgroundPosition: '0 5.8%',
       }} />
       <div style={{
         position: 'absolute',
@@ -1821,66 +1821,68 @@ function FriendQuestionCard({ card }) {
           'radial-gradient(circle at 22px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 70px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 118px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 166px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 214px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 262px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 310px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 358px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 406px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 454px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 502px -8px, #EC4F88 0 15px, transparent 16px)',
         borderBottom: '2px solid rgba(91,212,232,0.34)',
       }} />
-      <div style={{ position: 'relative', zIndex: 1, padding: '70px 20px 22px' }}>
-        <div style={{
-          width: '72%',
-          height: 54,
-          margin: '0 auto 12px',
-          padding: '8px 10px',
-          boxSizing: 'border-box',
-          background: 'rgba(91,212,232,0.72)',
-          boxShadow: '0 2px 10px rgba(91,212,232,0.35)',
-          color: proto.text,
-          fontFamily: '"Klee One", "Zen Maru Gothic", sans-serif',
-          fontSize: 23,
-          fontWeight: 600,
-          lineHeight: 1.28,
-          textAlign: 'center',
-          letterSpacing: '0',
-          position: 'relative',
+      <div style={{
+        position: 'absolute',
+        zIndex: 2,
+        top: '14.6%',
+        left: '18%',
+        width: '64%',
+        height: '9.2%',
+        padding: '0 12px',
+        boxSizing: 'border-box',
+        background: 'rgba(91,212,232,0.72)',
+        boxShadow: '0 2px 10px rgba(91,212,232,0.35)',
+        color: proto.text,
+        fontFamily: '"Klee One", "Zen Maru Gothic", sans-serif',
+        fontSize: card.title.length >= 13 ? 'clamp(20px, 5vw, 30px)' : 'clamp(23px, 5.8vw, 34px)',
+        fontWeight: 600,
+        lineHeight: 1.3,
+        textAlign: 'center',
+        letterSpacing: '0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>{card.title}</div>
+
+      {card.choices.map((choice, i) => (
+        <div key={choice} style={{
+          position: 'absolute',
           zIndex: 2,
+          top: `${choiceTops[i]}%`,
+          left: '7.5%',
+          right: '7%',
+          height: '8.6%',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-        }}>{card.title}</div>
-        <div style={{ display: 'grid', gap: 16, position: 'relative', zIndex: 2 }}>
-          {card.choices.map((choice, i) => (
-            <div key={choice} style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 18,
-              minHeight: 60,
-              padding: '0 8px 0 6px',
-              background: 'transparent',
-            }}>
-              <ColorChip color={window.COLOR_OPTIONS[i].color} size={38} />
-              <span style={{
-                color: proto.text,
-                fontFamily: '"Klee One", "Zen Maru Gothic", sans-serif',
-                fontSize: choice.length >= 12 ? 18 : 21,
-                fontWeight: 600,
-                lineHeight: 1.35,
-                letterSpacing: '0',
-              }}>{choice}</span>
-            </div>
-          ))}
+          background: 'transparent',
+        }}>
+          <ColorChip color={window.COLOR_OPTIONS[i].color} size="clamp(40px, 10.5vw, 58px)" />
+          <span style={{
+            marginLeft: '7%',
+            color: proto.text,
+            fontFamily: '"Klee One", "Zen Maru Gothic", sans-serif',
+            fontSize: choice.length >= 12 ? 'clamp(19px, 4.8vw, 28px)' : 'clamp(23px, 5.8vw, 34px)',
+            fontWeight: 600,
+            lineHeight: 1.25,
+            letterSpacing: '0',
+          }}>{choice}</span>
         </div>
-        <div style={{
-          position: 'absolute',
-          right: -12,
-          bottom: -18,
-          width: 48,
-          height: 164,
-          transform: 'rotate(13deg)',
-          borderRadius: '18px 18px 4px 4px',
-          background: 'linear-gradient(90deg, #D9D9D9, #FFFFFF 42%, #BEBEBE)',
-          boxShadow: '-6px 4px 16px rgba(0,0,0,0.16)',
-          opacity: 0.9,
-          zIndex: 1,
-        }} />
+      ))}
+
+      <div style={{
+        position: 'absolute',
+        right: '-2%',
+        bottom: '-1%',
+        width: '11%',
+        height: '24%',
+        transform: 'rotate(13deg)',
+        borderRadius: '18px 18px 4px 4px',
+        background: 'linear-gradient(90deg, #D9D9D9, #FFFFFF 42%, #BEBEBE)',
+        boxShadow: '-6px 4px 16px rgba(0,0,0,0.16)',
+        opacity: 0.9,
+        zIndex: 1,
+      }} />
       </div>
-    </div>
   );
 }
 
