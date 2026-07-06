@@ -765,7 +765,10 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       </div>
 
       {/* phase ラベル */}
-      <div style={{ padding: '14px 22px 8px', textAlign: 'center' }}>
+      <div style={{ padding: '12px 22px 6px', textAlign: 'center' }}>
+        <QuestionProgress qIdx={qIdx} total={total} />
+      </div>
+      <div style={{ padding: '8px 22px 8px', textAlign: 'center' }}>
         <PhaseBadge phase={phase} />
       </div>
 
@@ -870,6 +873,43 @@ function PhaseBadge({ phase }) {
         fontWeight: 800,
         lineHeight: 1.4,
       }}>{conf.note}</div>
+    </div>
+  );
+}
+
+function QuestionProgress({ qIdx, total, label = 'QUESTION' }) {
+  const current = Math.min(total, qIdx + 1);
+  const remaining = Math.max(0, total - current);
+  return (
+    <div style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      minWidth: 190,
+      padding: '8px 14px',
+      background: proto.white,
+      color: proto.black,
+      border: `2.5px solid ${proto.black}`,
+      borderRadius: 999,
+      boxShadow: '3px 3px 0 #000',
+      fontFamily: proto.body,
+      fontWeight: 900,
+    }}>
+      <span style={{
+        fontFamily: proto.caption,
+        fontSize: 9,
+        letterSpacing: '0.14em',
+        color: proto.pinkDeep,
+      }}>{label}</span>
+      <span style={{ fontSize: 18, lineHeight: 1 }}>
+        {current}<span style={{ fontSize: 12 }}> / {total}問</span>
+      </span>
+      <span style={{
+        fontSize: 10,
+        color: proto.textSoft,
+        whiteSpace: 'nowrap',
+      }}>あと{remaining}問</span>
     </div>
   );
 }
@@ -1771,7 +1811,11 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '14px 22px 8px', textAlign: 'center' }}>
+      <div style={{ padding: '12px 22px 6px', textAlign: 'center' }}>
+        <QuestionProgress qIdx={qIdx} total={total} label="FRIEND Q" />
+      </div>
+
+      <div style={{ padding: '8px 22px 8px', textAlign: 'center' }}>
         <div style={{
           display: 'inline-block',
           minWidth: 220,
