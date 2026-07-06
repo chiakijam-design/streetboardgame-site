@@ -1791,14 +1791,11 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 }
 
 function FriendQuestionCard({ card }) {
-  const lineYs = [6.6, 14.6, 24.8, 36.5, 48.2, 59.9, 71.6, 83.3, 95.0];
-  const choiceRows = [
-    { top: 24.8, bottom: 36.5 },
-    { top: 36.5, bottom: 48.2 },
-    { top: 48.2, bottom: 59.9 },
-    { top: 59.9, bottom: 71.6 },
-    { top: 71.6, bottom: 83.3 },
-  ];
+  const titleLines = splitCardTitle(card.title);
+  const lineYs = [70, 150, 255, 365, 475, 585, 695, 805, 915, 1025];
+  const choiceYs = [310, 420, 530, 640, 750];
+  const holes = [36, 120, 204, 288, 372, 456, 540, 624, 708];
+
   return (
     <div style={{
       position: 'relative',
@@ -1811,108 +1808,76 @@ function FriendQuestionCard({ card }) {
       margin: '0 auto',
       aspectRatio: '756 / 1122',
     }}>
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: proto.white,
-      }} />
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        bottom: 0,
-        left: '17.7%',
-        width: 2,
-        background: 'rgba(236,79,136,0.18)',
-        zIndex: 1,
-      }} />
-      {lineYs.map((y) => (
-        <div key={y} style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: `${y}%`,
-          height: 3,
-          background: 'rgba(91,212,232,0.30)',
-          boxShadow: '0 1px 0 rgba(91,212,232,0.16)',
-          zIndex: 1,
-        }} />
-      ))}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 32,
-        background:
-          'radial-gradient(circle at 22px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 70px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 118px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 166px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 214px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 262px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 310px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 358px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 406px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 454px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 502px -8px, #EC4F88 0 15px, transparent 16px)',
-        borderBottom: '2px solid rgba(91,212,232,0.34)',
-      }} />
-      <div style={{
-        position: 'absolute',
-        zIndex: 2,
-        top: '16.1%',
-        left: '18%',
-        width: '64%',
-        height: '7.7%',
-        padding: '0 12px',
-        boxSizing: 'border-box',
-        background: 'rgba(91,212,232,0.72)',
-        boxShadow: '0 2px 10px rgba(91,212,232,0.35)',
-        color: proto.text,
-        fontFamily: '"Klee One", "Zen Maru Gothic", sans-serif',
-        fontSize: card.title.length >= 13 ? 'clamp(20px, 5vw, 30px)' : 'clamp(23px, 5.8vw, 34px)',
-        fontWeight: 600,
-        lineHeight: 1.3,
-        textAlign: 'center',
-        letterSpacing: '0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>{card.title}</div>
+      <svg viewBox="0 0 756 1122" width="100%" height="100%" role="img" aria-label={card.title} style={{ display: 'block' }}>
+        <rect width="756" height="1122" fill="#FFFFFF" />
 
-      {card.choices.map((choice, i) => {
-        const row = choiceRows[i];
-        return (
-        <div key={choice} style={{
-          position: 'absolute',
-          zIndex: 2,
-          top: `${row.top}%`,
-          left: '7.5%',
-          right: '7%',
-          height: `${row.bottom - row.top}%`,
-          display: 'flex',
-          alignItems: 'center',
-          background: 'transparent',
-        }}>
-          <ColorChip color={window.COLOR_OPTIONS[i].color} size="clamp(40px, 10.5vw, 58px)" />
-          <span style={{
-            marginLeft: '7%',
-            color: proto.text,
-            fontFamily: '"Klee One", "Zen Maru Gothic", sans-serif',
-            fontSize: choice.length >= 12 ? 'clamp(19px, 4.8vw, 28px)' : 'clamp(23px, 5.8vw, 34px)',
-            fontWeight: 600,
-            lineHeight: 1.25,
-            letterSpacing: '0',
-          }}>{choice}</span>
-        </div>
-        );
-      })}
+        {/* notebook holes */}
+        {holes.map((x) => (
+          <circle key={x} cx={x} cy="-12" r="31" fill={proto.pink} opacity="0.96" />
+        ))}
 
-      <div style={{
-        position: 'absolute',
-        right: '-2%',
-        bottom: '-1%',
-        width: '11%',
-        height: '24%',
-        transform: 'rotate(13deg)',
-        borderRadius: '18px 18px 4px 4px',
-        background: 'linear-gradient(90deg, #D9D9D9, #FFFFFF 42%, #BEBEBE)',
-        boxShadow: '-6px 4px 16px rgba(0,0,0,0.16)',
-        opacity: 0.9,
-        zIndex: 1,
-      }} />
-      </div>
+        {/* notebook ruled lines */}
+        <line x1="134" y1="0" x2="134" y2="1122" stroke="rgba(236,79,136,0.18)" strokeWidth="2.5" />
+        {lineYs.map((y) => (
+          <line key={y} x1="0" y1={y} x2="756" y2={y} stroke="rgba(91,212,232,0.34)" strokeWidth="4" />
+        ))}
+        <line x1="0" y1="70" x2="756" y2="70" stroke="rgba(91,212,232,0.28)" strokeWidth="3" />
+
+        {/* title tape */}
+        <rect x="178" y="176" width="400" height="92" fill="rgba(91,212,232,0.72)" />
+        <rect x="178" y="176" width="400" height="92" fill="#5BD4E8" opacity="0.38" />
+        <g fontFamily='"Klee One", "Zen Maru Gothic", sans-serif' fontWeight="600" fill={proto.text} textAnchor="middle">
+          {titleLines.map((line, i) => (
+            <text key={line} x="378" y={titleLines.length === 1 ? 231 : 214 + i * 42} fontSize={titleLines.length === 1 ? 40 : 36} dominantBaseline="middle">
+              {line}
+            </text>
+          ))}
+        </g>
+
+        {/* choices */}
+        {card.choices.map((choice, i) => {
+          const opt = window.COLOR_OPTIONS[i];
+          const fontSize = choice.length >= 12 ? 34 : choice.length >= 8 ? 38 : 42;
+          return (
+            <g key={choice}>
+              <circle cx="91" cy={choiceYs[i]} r="39" fill={opt.color} filter="url(#friendCardDotShadow)" />
+              <text
+                x="190"
+                y={choiceYs[i] + 2}
+                fontFamily='"Klee One", "Zen Maru Gothic", sans-serif'
+                fontSize={fontSize}
+                fontWeight="600"
+                fill={proto.text}
+                dominantBaseline="middle"
+              >
+                {choice}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* curl */}
+        <defs>
+          <filter id="friendCardDotShadow" x="-35%" y="-35%" width="170%" height="170%">
+            <feDropShadow dx="0" dy="8" stdDeviation="7" floodColor="#000000" floodOpacity="0.24" />
+          </filter>
+          <linearGradient id="friendCardCurl" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#DDDDDD" />
+            <stop offset="0.45" stopColor="#FFFFFF" />
+            <stop offset="1" stopColor="#CFCFCF" />
+          </linearGradient>
+        </defs>
+        <path d="M690 920 C725 930 746 1004 736 1122 L652 1122 C668 1055 676 982 690 920 Z" fill="url(#friendCardCurl)" opacity="0.9" />
+        <path d="M680 932 C715 952 730 1014 724 1122" stroke="rgba(0,0,0,0.10)" strokeWidth="4" fill="none" />
+      </svg>
+    </div>
   );
+}
+
+function splitCardTitle(title) {
+  if (!title || title.length <= 9) return [title || ''];
+  const breakAt = Math.ceil(title.length / 2);
+  return [title.slice(0, breakAt), title.slice(breakAt)];
 }
 
 function FriendReveal({ card, targetPick, guesses, playerCount, onNext }) {
