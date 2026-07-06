@@ -394,7 +394,7 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
           marginTop: 10,
           background: proto.yellow,
         }}>
-          友達版で遊ぶ
+          友達の友情を判定する
         </button>
         <div style={{
           marginTop: 9,
