@@ -432,7 +432,8 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
           color: proto.white, letterSpacing: '0.25em',
           marginBottom: 10, paddingLeft: 4,
         }}>PLAY SERIES ✦</div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <SeriesCard emoji="💕" title="彼氏の愛情判定" status="公開中" onClick={onStart} />
           <SeriesCard emoji="👯" title="友達の友情判定" status="公開中" onClick={onFriend} />
           <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="準備中" />
         </div>
@@ -552,7 +553,7 @@ function SeriesCard({ emoji, title, status = 'COMING SOON', onClick }) {
   );
 
   const style = {
-    flex: 1, padding: 12,
+    flex: '1 1 112px', padding: 12,
     background: active ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.15)',
     backdropFilter: 'blur(8px)',
     borderRadius: 14,
