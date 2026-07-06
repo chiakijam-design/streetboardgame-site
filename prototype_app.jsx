@@ -500,7 +500,7 @@ function IntroScreen({ onStart, onBack }) {
         textAlign: 'center', position: 'relative',
         overflow: 'hidden',
       }}>
-        <BackBtn onClick={onBack} top={50} dark />
+        <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
         {/* 女の子: ヘッダー右端から覗く */}
         <div style={{
           position: 'absolute',
@@ -602,8 +602,16 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
     }
   }, [countdown]);
 
-  const onGirlPick = (i) => { setGirlPick(i); setTimeout(() => setPhase('boy'), 400); };
-  const onBoyPick = (i) => { setBoyPick(i); setTimeout(() => setCountdown(2), 400); };
+  const onGirlPick = (i) => {
+    if (girlPick !== null) return;
+    setGirlPick(i);
+    setTimeout(() => setPhase('boy'), 400);
+  };
+  const onBoyPick = (i) => {
+    if (boyPick !== null) return;
+    setBoyPick(i);
+    setTimeout(() => setCountdown(2), 400);
+  };
 
   if (!card) return null;
 
@@ -623,7 +631,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       </div>
       {/* progress */}
       <div style={{ padding: '50px 22px 0', position: 'relative', zIndex: 1 }}>
-        <BackBtn onClick={onBack} top={20} dark />
+        <BackBtn onClick={onBack} top={20} dark label="遊び方に戻る" />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div style={{
             fontFamily: proto.caption, fontSize: 11, color: proto.white,
@@ -1305,10 +1313,10 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
           marginBottom: 10, paddingLeft: 4,
         }}>SHARE YOUR RESULT</div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <ShareBtn label="X" bg={proto.black} fg={proto.white} onClick={() => handleShare('x')} />
-          <ShareBtn label={copied === 'instagram' ? '✓' : 'IG'} bg="#E4405F" fg={proto.white} onClick={() => handleShare('instagram')} />
-          <ShareBtn label="LINE" bg="#06C755" fg={proto.white} onClick={() => handleShare('line')} />
-          <ShareBtn label={copied === 'copy' ? '✓' : '🔗'} bg={proto.white} fg={proto.black} onClick={() => handleShare('copy')} />
+          <ShareBtn label="X" ariaLabel="Xで結果をシェア" bg={proto.black} fg={proto.white} onClick={() => handleShare('x')} />
+          <ShareBtn label={copied === 'instagram' ? '✓' : 'IG'} ariaLabel="Instagram用のシェア文をコピー" bg="#E4405F" fg={proto.white} onClick={() => handleShare('instagram')} />
+          <ShareBtn label="LINE" ariaLabel="LINEで結果をシェア" bg="#06C755" fg={proto.white} onClick={() => handleShare('line')} />
+          <ShareBtn label={copied === 'copy' ? '✓' : '🔗'} ariaLabel="結果のシェア文をコピー" bg={proto.white} fg={proto.black} onClick={() => handleShare('copy')} />
         </div>
         {copied && (
           <div style={{
@@ -1338,7 +1346,18 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
 
       {/* 製品誘導 */}
       <div style={{ padding: '24px 18px 0', position: 'relative', zIndex: 1 }}>
-        <div onClick={onProduct} style={{
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="カードゲーム版の詳細を見る"
+          onClick={onProduct}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onProduct();
+            }
+          }}
+          style={{
           padding: 14, borderRadius: 16,
           background: proto.white,
           border: `2.5px solid ${proto.black}`,
@@ -1404,9 +1423,9 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   );
 }
 
-function ShareBtn({ label, bg, fg, onClick }) {
+function ShareBtn({ label, ariaLabel, bg, fg, onClick }) {
   return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} aria-label={ariaLabel || label} style={{
       flex: 1, minHeight: 50, borderRadius: 12,
       background: bg, color: fg,
       border: `2.5px solid ${proto.black}`,
@@ -1478,7 +1497,7 @@ function AboutScreen({ onBack }) {
         textAlign: 'center', position: 'relative',
         overflow: 'hidden',
       }}>
-        <BackBtn onClick={onBack} top={50} dark />
+        <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
         {/* 女の子: ヘッダー左下から覗く (左向きに反転) */}
         <div style={{
           position: 'absolute',
@@ -1703,7 +1722,7 @@ function ProductScreen({ onBack }) {
         background: proto.black, padding: '50px 24px 24px',
         textAlign: 'center', position: 'relative',
       }}>
-        <BackBtn onClick={onBack} top={50} dark />
+        <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
         <PillLabel>MORE FUN ♡</PillLabel>
         <div style={{ marginTop: 14 }}>
           <LogoText size={22}>製品版もあります</LogoText>
@@ -1903,9 +1922,9 @@ function srOnlyStyle() {
 }
 
 // 戻るボタン
-function BackBtn({ onClick, top = 20, dark = false }) {
+function BackBtn({ onClick, top = 20, dark = false, label = '戻る' }) {
   return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} aria-label={label} style={{
       position: 'absolute', top, left: 18,
       width: 44, height: 44, borderRadius: 999,
       background: dark ? proto.white : 'rgba(255,255,255,0.85)',
