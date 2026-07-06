@@ -36,6 +36,7 @@ const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
 const ROUND_SIZE = 5;
 const FRIEND_ROUND_SIZE = 5;
 const AMAZON_URL = 'https://www.amazon.co.jp/dp/B0G87M4ZYK';
+const COLOR_LABELS = ['緑', '青', '黄', '赤', '橙'];
 function normalizeFriendPlayerCount(value) {
   const n = Number(value);
   return [2, 3, 4].includes(n) ? n : 2;
@@ -302,7 +303,7 @@ function App() {
           <ResultReadyScreen
             title="5問終了！"
             subtitle="答え合わせは結果画面でまとめて見られます"
-            detail="ふたりの理解度、そろそろ発表します。"
+            detail="スマホをふたりの真ん中に置いて、結果を見るを押してね。"
             buttonLabel="結果を見る"
             onResult={() => setScreen('result')}
             onHome={backToTop}
@@ -322,7 +323,7 @@ function App() {
           <ResultReadyScreen
             title="5問終了！"
             subtitle="友情チェックの答え合わせをまとめて発表します"
-            detail="誰がどれだけ本人を分かっていたか、結果で確認しよう。"
+            detail="スマホをみんなの真ん中に置いて、結果を見るを押してね。"
             buttonLabel="友情結果を見る"
             onResult={() => setScreen('friendResult')}
             onHome={backToTop}
@@ -727,15 +728,20 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
   const [phase, setPhase] = useState('girl');
   const [girlPick, setGirlPick] = useState(null);
   const [boyPick, setBoyPick] = useState(null);
+  const [handoffMessage, setHandoffMessage] = useState('');
 
   useEffect(() => {
-    setPhase('girl'); setGirlPick(null); setBoyPick(null);
+    setPhase('girl'); setGirlPick(null); setBoyPick(null); setHandoffMessage('');
   }, [qIdx, card && card.id]);
 
   const onGirlPick = (i) => {
     if (girlPick !== null) return;
     setGirlPick(i);
-    setTimeout(() => setPhase('boy'), 220);
+    setHandoffMessage('彼氏に渡してね');
+    setTimeout(() => {
+      setHandoffMessage('');
+      setPhase('boy');
+    }, 800);
   };
   const onBoyPick = (i) => {
     if (boyPick !== null) return;
@@ -760,7 +766,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
         <Girl variant="full" height={240} />
       </div>
       {/* progress */}
-      <div style={{ padding: '50px 22px 0', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '44px 22px 0', position: 'relative', zIndex: 1 }}>
         <BackBtn onClick={onBack} top={20} dark label="遊び方に戻る" />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div style={{
@@ -790,15 +796,15 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       </div>
 
       {/* phase ラベル */}
-      <div style={{ padding: '12px 22px 6px', textAlign: 'center' }}>
+      <div style={{ padding: '10px 22px 5px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} />
       </div>
-      <div style={{ padding: '8px 22px 8px', textAlign: 'center' }}>
+      <div style={{ padding: '6px 22px 7px', textAlign: 'center' }}>
         <PhaseBadge phase={phase} />
       </div>
 
       {/* お題カード画像 */}
-      <div style={{ padding: '0 22px 12px' }}>
+      <div style={{ padding: '0 20px 10px' }}>
         <div style={{
           position: 'relative',
           borderRadius: 14, overflow: 'hidden',
@@ -813,7 +819,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       </div>
 
       {/* メインエリア */}
-      <div style={{ flex: 1, padding: '0 18px 28px' }}>
+      <div style={{ flex: 1, padding: '0 18px 22px' }}>
         {phase === 'girl' && (
           <ColorPicker
             selected={girlPick}
@@ -846,6 +852,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
           </>
         )}
       </div>
+      {handoffMessage && <HandoffOverlay message={handoffMessage} />}
     </div>
   );
 }
@@ -1006,6 +1013,52 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
   );
 }
 
+function HandoffOverlay({ message }) {
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 20,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+      boxSizing: 'border-box',
+      background: 'rgba(0,0,0,0.28)',
+      pointerEvents: 'none',
+    }}>
+      <div style={{
+        width: 'min(320px, 100%)',
+        background: proto.yellow,
+        color: proto.black,
+        border: `3px solid ${proto.black}`,
+        borderRadius: 18,
+        boxShadow: '6px 6px 0 #000',
+        padding: '22px 18px',
+        textAlign: 'center',
+        fontFamily: proto.body,
+        animation: 'handoffPop 0.22s ease-out',
+      }}>
+        <div style={{
+          fontFamily: proto.caption,
+          fontSize: 10,
+          letterSpacing: '0.18em',
+          marginBottom: 8,
+        }}>PASS THE PHONE</div>
+        <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.35 }}>
+          {message}
+        </div>
+      </div>
+      <style>{`
+        @keyframes handoffPop {
+          0% { transform: translateY(10px) scale(0.94); opacity: 0; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function ColorPicker({ selected, onPick, highlight, instruction }) {
   return (
     <>
@@ -1019,27 +1072,28 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
       {instruction && (
         <div style={{
           fontSize: 11, color: proto.white, textAlign: 'center',
-          marginBottom: 14, fontWeight: 600, letterSpacing: '0.05em',
+          marginBottom: 10, fontWeight: 600, letterSpacing: '0.05em',
         }}>{instruction}</div>
       )}
       <div style={{
         background: 'rgba(255,255,255,0.18)',
         backdropFilter: 'blur(8px)',
         border: '1.5px solid rgba(255,255,255,0.4)',
-        borderRadius: 18, padding: '16px 12px',
+        borderRadius: 18, padding: '12px 10px',
       }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: 8,
+          gap: 6,
         }}>
           {window.COLOR_OPTIONS.map((opt, i) => {
             const isSelected = selected === i;
             return (
               <button key={opt.id} onClick={() => onPick(i)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                minHeight: 52, minWidth: 52,
-                aspectRatio: '1 / 1', padding: 0,
+                flexDirection: 'column',
+                minHeight: 62, minWidth: 50,
+                padding: 0,
                 background: 'transparent', border: 'none',
                 cursor: 'pointer', fontFamily: proto.body,
                 touchAction: 'manipulation',
@@ -1048,17 +1102,25 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
               }}>
                 <ColorChip
                   color={opt.color}
-                  size="100%"
+                  size={50}
                   selected={isSelected}
                   highlight={highlight}
                 />
+                <span style={{
+                  marginTop: 7,
+                  fontSize: 10,
+                  fontWeight: 900,
+                  color: proto.white,
+                  textShadow: '1px 1px 0 rgba(0,0,0,0.35)',
+                  lineHeight: 1,
+                }}>{COLOR_LABELS[i] || opt.name}</span>
               </button>
             );
           })}
         </div>
       </div>
       <div style={{
-        marginTop: 12, fontSize: 10, color: proto.white,
+        marginTop: 9, fontSize: 10, color: proto.white,
         textAlign: 'center', lineHeight: 1.5, opacity: 0.85,
       }}>
         ドットの色はお題カード左側の5色と対応しています
@@ -1332,7 +1394,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
     }}>
       <Decor />
 
-      <div style={{ padding: '42px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '58px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <PillLabel>YOUR RESULT</PillLabel>
       </div>
       <style>{`
@@ -1596,10 +1658,11 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
 
       {/* シェア */}
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
+        <ScreenshotHint />
         <div style={{
           fontFamily: proto.caption, fontSize: 10,
           color: proto.white, letterSpacing: '0.25em',
-          marginBottom: 10, paddingLeft: 4,
+          margin: '14px 0 10px', paddingLeft: 4,
         }}>SHARE YOUR RESULT</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <ShareBtn label="X" ariaLabel="Xで結果をシェア" bg={proto.black} fg={proto.white} onClick={() => handleShare('x')} />
@@ -1707,6 +1770,27 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
         <div style={{ textAlign: 'center', marginTop: 18 }}>
           <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ScreenshotHint() {
+  return (
+    <div style={{
+      background: proto.white,
+      color: proto.black,
+      border: `2.5px solid ${proto.black}`,
+      borderRadius: 12,
+      boxShadow: '3px 3px 0 #000',
+      padding: '10px 12px',
+      textAlign: 'center',
+      fontWeight: 900,
+      lineHeight: 1.45,
+    }}>
+      <div style={{ fontSize: 14 }}>スクショしてシェア</div>
+      <div style={{ marginTop: 2, fontSize: 10, color: proto.textSoft }}>
+        結果カードが見える位置で撮るとSNSに載せやすいです
       </div>
     </div>
   );
@@ -1827,18 +1911,19 @@ function FriendIntroScreen({ onStart, onBack }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {[2, 3, 4].map((count) => (
               <button key={count} onClick={() => onStart(count)} style={{
-                minHeight: 62,
+                minHeight: 76,
                 background: count === 2 ? proto.cyan : count === 3 ? proto.yellow : proto.white,
                 color: proto.black,
                 border: `2.5px solid ${proto.black}`,
                 borderRadius: 12,
                 boxShadow: '3px 3px 0 #000',
-                fontSize: 16,
                 fontWeight: 900,
                 cursor: 'pointer',
+                padding: '8px 4px',
+                lineHeight: 1.25,
               }}>
-                <div>{count}人</div>
-                <div style={{ marginTop: 4, fontSize: 8, fontWeight: 800, lineHeight: 1.3 }}>
+                <div style={{ fontSize: 14 }}>{count}人で遊ぶ</div>
+                <div style={{ marginTop: 6, fontSize: 10, fontWeight: 900, lineHeight: 1.35 }}>
                   {getFriendPlayersLabel(count)}
                 </div>
               </button>
@@ -1858,18 +1943,25 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
   const [targetPick, setTargetPick] = useState(null);
   const [guesses, setGuesses] = useState([]);
   const [turn, setTurn] = useState(1);
+  const [handoffMessage, setHandoffMessage] = useState('');
 
   useEffect(() => {
     setPhase('answer');
     setTargetPick(null);
     setGuesses([]);
     setTurn(1);
+    setHandoffMessage('');
   }, [qIdx, card && card.id, playerCount]);
 
   const handlePick = (i) => {
     if (phase === 'answer') {
       setTargetPick(i);
-      setTimeout(() => setPhase('guess'), 220);
+      const nextPlayer = getFriendPlayers(playerCount)[1] || '友達A';
+      setHandoffMessage(`${nextPlayer}に渡してね`);
+      setTimeout(() => {
+        setHandoffMessage('');
+        setPhase('guess');
+      }, 800);
       return;
     }
     const next = [...guesses, i];
@@ -1881,7 +1973,12 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         matches: next.map(g => g === targetPick),
       }), 220);
     } else {
-      setTurn(turn + 1);
+      const nextPlayer = getFriendPlayers(playerCount)[turn + 1] || `友達${turn + 1}`;
+      setHandoffMessage(`${nextPlayer}に渡してね`);
+      setTimeout(() => {
+        setHandoffMessage('');
+        setTurn(turn + 1);
+      }, 800);
     }
   };
 
@@ -1896,7 +1993,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
       position: 'relative', overflowX: 'hidden', paddingBottom: 28,
     }}>
       <Decor />
-      <div style={{ padding: '50px 22px 0', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '44px 22px 0', position: 'relative', zIndex: 1 }}>
         <BackBtn onClick={onBack} top={20} dark label="友情版の遊び方に戻る" />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div style={{
@@ -1923,11 +2020,11 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '12px 22px 6px', textAlign: 'center' }}>
+      <div style={{ padding: '10px 22px 5px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} label="FRIEND Q" />
       </div>
 
-      <div style={{ padding: '8px 22px 8px', textAlign: 'center' }}>
+      <div style={{ padding: '6px 22px 7px', textAlign: 'center' }}>
         <div style={{
           display: 'inline-block',
           minWidth: 220,
@@ -1959,7 +2056,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '0 18px 14px' }}>
+      <div style={{ padding: '0 18px 10px' }}>
         <FriendQuestionCard card={card} />
       </div>
 
@@ -1995,6 +2092,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
           </>
         )}
       </div>
+      {handoffMessage && <HandoffOverlay message={handoffMessage} />}
     </div>
   );
 }
@@ -2228,7 +2326,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       overflowX: 'hidden',
     }}>
       <Decor />
-      <div style={{ padding: '42px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '58px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <PillLabel>FRIEND RESULT</PillLabel>
       </div>
       <div style={{
@@ -2377,10 +2475,11 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
+        <ScreenshotHint />
         <div style={{
           fontFamily: proto.caption, fontSize: 10,
           color: proto.white, letterSpacing: '0.25em',
-          marginBottom: 10, paddingLeft: 4,
+          margin: '14px 0 10px', paddingLeft: 4,
         }}>SHARE YOUR RESULT</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <ShareBtn label="X" ariaLabel="Xで友情判定結果をシェア" bg={proto.black} fg={proto.white} onClick={openX} />
