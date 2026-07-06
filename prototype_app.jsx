@@ -33,6 +33,7 @@ const { useState, useEffect } = React;
 // localStorage
 const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
 const ROUND_SIZE = 5;
+const FRIEND_ROUND_SIZE = 5;
 const AMAZON_URL = 'https://www.amazon.co.jp/dp/B0G87M4ZYK';
 function loadState() {
   try { return normalizeSavedState(JSON.parse(localStorage.getItem(LS_KEY) || 'null')); } catch (e) { return null; }
@@ -162,6 +163,7 @@ function App() {
   const [qIdx, setQIdx] = useState(initial.qIdx);
   const [answers, setAnswers] = useState(initial.answers);
   const [cards, setCards] = useState(initial.cards || []);
+  const [playerCount, setPlayerCount] = useState(2);
 
   // contact 指定だった場合、About にしてからフォームへスクロール
   useEffect(() => {
@@ -191,8 +193,17 @@ function App() {
     setScreen('play');
   };
 
+  const startFriendRound = (count) => {
+    const picked = window.pickRandomFriendCards(FRIEND_ROUND_SIZE);
+    setPlayerCount(count);
+    setCards(picked);
+    setQIdx(0);
+    setAnswers([]);
+    setScreen('friendPlay');
+  };
+
   const backToTop = () => {
-    setScreen('top'); setQIdx(0); setAnswers([]); setCards([]);
+    setScreen('top'); setQIdx(0); setAnswers([]); setCards([]); setPlayerCount(2);
   };
 
   const handleQAnswer = (girlIdx, boyIdx) => {
@@ -200,6 +211,16 @@ function App() {
     setAnswers(next);
     if (qIdx + 1 >= cards.length) {
       setScreen('result');
+    } else {
+      setQIdx(qIdx + 1);
+    }
+  };
+
+  const handleFriendAnswer = (round) => {
+    const next = [...answers, round];
+    setAnswers(next);
+    if (qIdx + 1 >= cards.length) {
+      setScreen('friendResult');
     } else {
       setQIdx(qIdx + 1);
     }
@@ -226,12 +247,16 @@ function App() {
             onStart={() => setScreen('intro')}
             hasProgress={hasProgress}
             onResume={() => setScreen('play')}
+            onFriend={() => setScreen('friendIntro')}
             onAbout={() => setScreen('about')}
             onProduct={() => setScreen('product')}
           />
         )}
         {screen === 'intro' && (
           <IntroScreen onStart={startNewRound} onBack={() => setScreen('top')} />
+        )}
+        {screen === 'friendIntro' && (
+          <FriendIntroScreen onStart={startFriendRound} onBack={() => setScreen('top')} />
         )}
         {screen === 'play' && cards.length > 0 && (
           <PlayScreen
@@ -242,6 +267,16 @@ function App() {
             onBack={() => setScreen('intro')}
           />
         )}
+        {screen === 'friendPlay' && cards.length > 0 && (
+          <FriendPlayScreen
+            card={cards[qIdx]}
+            qIdx={qIdx}
+            total={cards.length}
+            playerCount={playerCount}
+            onAnswer={handleFriendAnswer}
+            onBack={() => setScreen('friendIntro')}
+          />
+        )}
         {screen === 'result' && (
           <ResultScreen
             answers={answers}
@@ -250,6 +285,16 @@ function App() {
             onHome={backToTop}
             onAbout={() => setScreen('about')}
             onProduct={() => setScreen('product')}
+          />
+        )}
+        {screen === 'friendResult' && (
+          <FriendResultScreen
+            answers={answers}
+            cards={cards}
+            playerCount={playerCount}
+            onReplay={() => startFriendRound(playerCount)}
+            onHome={backToTop}
+            onAbout={() => setScreen('about')}
           />
         )}
         {screen === 'about' && <AboutScreen onBack={() => setScreen('top')} />}
@@ -266,7 +311,7 @@ function App() {
 // ・中央に巨大な白+シアン縁取りロゴ
 // ・右下に黄色注意書きシール
 // ─────────────────────────────────────────────────────
-function TopScreen({ onStart, hasProgress, onResume, onAbout, onProduct }) {
+function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduct }) {
   return (
     <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
@@ -343,6 +388,13 @@ function TopScreen({ onStart, hasProgress, onResume, onAbout, onProduct }) {
             color: proto.yellow, fontSize: 18,
             textShadow: '1px 1px 0 #000',
           }}>▶</span>
+        </button>
+        <button onClick={onFriend} style={{
+          ...secondaryBtn(),
+          marginTop: 10,
+          background: proto.yellow,
+        }}>
+          友達の友情確認バージョン
         </button>
       </div>
 
@@ -1481,6 +1533,563 @@ function AnswerPick({ label, choice, opt, accent }) {
           color: proto.text,
           overflowWrap: 'anywhere',
         }}>{choice}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
+// FRIEND MODE
+// ─────────────────────────────────────────────────────
+const FRIEND_PLAYERS = ['本人', '友達A', '友達B', '友達C'];
+
+function FriendIntroScreen({ onStart, onBack }) {
+  return (
+    <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
+      <div style={{
+        background: proto.black, padding: '50px 22px 28px',
+        textAlign: 'center', position: 'relative', overflow: 'hidden',
+      }}>
+        <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <PillLabel>FRIEND CHECK</PillLabel>
+          <div style={{ marginTop: 14 }}>
+            <LogoText size={26}>友達の友情確認</LogoText>
+          </div>
+          <div style={{
+            marginTop: 8, color: proto.white, fontSize: 12,
+            lineHeight: 1.7, fontWeight: 700,
+          }}>
+            2〜4人で、友達の答えをどれだけ当てられるか勝負。
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '24px 22px' }}>
+        <StepCard n="1" text="最初に人数を選ぶ。2人・3人・4人で遊べます" />
+        <StepCard n="2" text="本人が、友達に見せずに自分の答えを選ぶ" />
+        <StepCard n="3" text="他の友達が順番に「本人の答え」を予想する" />
+        <StepCard n="4" text="せーので発表。当たった数で友情理解度を判定" />
+
+        <div style={{
+          marginTop: 18, padding: '14px 16px',
+          background: proto.black,
+          borderRadius: 12,
+          color: proto.white,
+        }}>
+          <div style={{
+            fontFamily: proto.caption, fontSize: 10, color: proto.yellow,
+            letterSpacing: '0.15em', marginBottom: 4,
+          }}>★ SELECT PLAYERS ★</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {[2, 3, 4].map((count) => (
+              <button key={count} onClick={() => onStart(count)} style={{
+                minHeight: 62,
+                background: count === 2 ? proto.cyan : count === 3 ? proto.yellow : proto.white,
+                color: proto.black,
+                border: `2.5px solid ${proto.black}`,
+                borderRadius: 12,
+                boxShadow: '3px 3px 0 #000',
+                fontSize: 16,
+                fontWeight: 900,
+                cursor: 'pointer',
+              }}>
+                {count}人
+              </button>
+            ))}
+          </div>
+          <div style={{ marginTop: 12, fontSize: 11, lineHeight: 1.6, opacity: 0.9 }}>
+            全 {window.FRIEND_CARDS ? window.FRIEND_CARDS.length : 54} 問からランダムに5問出題します。
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) {
+  const [phase, setPhase] = useState('answer');
+  const [targetPick, setTargetPick] = useState(null);
+  const [guesses, setGuesses] = useState([]);
+  const [turn, setTurn] = useState(1);
+  const [countdown, setCountdown] = useState(null);
+
+  useEffect(() => {
+    setPhase('answer');
+    setTargetPick(null);
+    setGuesses([]);
+    setTurn(1);
+    setCountdown(null);
+  }, [qIdx, card && card.id, playerCount]);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown > 0) {
+      const t = setTimeout(() => setCountdown(countdown - 1), 700);
+      return () => clearTimeout(t);
+    }
+    setPhase('reveal');
+  }, [countdown]);
+
+  const handlePick = (i) => {
+    if (phase === 'answer') {
+      setTargetPick(i);
+      setTimeout(() => setPhase('guess'), 350);
+      return;
+    }
+    const next = [...guesses, i];
+    setGuesses(next);
+    if (turn >= playerCount - 1) {
+      setTimeout(() => setCountdown(2), 350);
+    } else {
+      setTurn(turn + 1);
+    }
+  };
+
+  if (!card) return null;
+  const currentPlayer = FRIEND_PLAYERS[turn];
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: proto.pink, color: proto.white,
+      position: 'relative', overflowX: 'hidden', paddingBottom: 28,
+    }}>
+      <Decor />
+      <div style={{ padding: '50px 22px 0', position: 'relative', zIndex: 1 }}>
+        <BackBtn onClick={onBack} top={20} dark label="友情版の遊び方に戻る" />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div style={{
+            fontFamily: proto.caption, fontSize: 11,
+            letterSpacing: '0.15em', whiteSpace: 'nowrap',
+          }}>FRIEND Q {qIdx + 1} / {total}</div>
+          <div style={{ fontFamily: proto.caption, fontSize: 11, color: proto.yellow, fontWeight: 700 }}>
+            {playerCount} PLAYERS
+          </div>
+        </div>
+        <div style={{ width: '100%', height: 6, borderRadius: 99, background: 'rgba(0,0,0,0.2)' }}>
+          <div style={{
+            width: `${((qIdx + (phase === 'reveal' ? 1 : 0)) / total) * 100}%`,
+            height: '100%', borderRadius: 99, background: proto.yellow,
+            transition: 'width 0.4s ease',
+          }} />
+        </div>
+      </div>
+
+      <div style={{ padding: '14px 22px 8px', textAlign: 'center' }}>
+        <div style={{
+          display: 'inline-block', padding: '5px 16px',
+          background: phase === 'answer' ? proto.yellow : phase === 'guess' ? proto.cyan : proto.white,
+          color: proto.black,
+          borderRadius: 999, fontSize: 10, fontWeight: 900,
+          letterSpacing: '0.12em', border: `2px solid ${proto.black}`,
+          boxShadow: '2px 2px 0 #000',
+        }}>
+          {phase === 'answer' ? '本人のターン' : phase === 'guess' ? `${currentPlayer}の予想` : 'せーの発表'}
+        </div>
+      </div>
+
+      <div style={{ padding: '0 18px 14px' }}>
+        <FriendQuestionCard card={card} />
+      </div>
+
+      <div style={{ padding: '0 18px' }}>
+        {phase === 'answer' && (
+          <ColorPicker
+            selected={targetPick}
+            onPick={handlePick}
+            highlight={proto.yellow}
+            instruction="本人だけが見て、自分の答えを選んでね"
+          />
+        )}
+        {phase === 'guess' && (
+          <>
+            <div style={{
+              padding: '10px 14px', marginBottom: 12,
+              background: 'rgba(0,0,0,0.25)',
+              border: `1.5px dashed ${proto.yellow}`,
+              borderRadius: 12, fontSize: 12,
+              textAlign: 'center', fontWeight: 700,
+            }}>
+              本人の答えは受付完了。<br/>
+              <span style={{ fontSize: 10, color: proto.yellow }}>
+                {currentPlayer}は「本人が選んだ答え」を予想してね
+              </span>
+            </div>
+            <ColorPicker
+              selected={guesses[turn - 1]}
+              onPick={handlePick}
+              highlight={proto.cyan}
+              instruction={`${currentPlayer}のターン ── 直感でタップ`}
+            />
+          </>
+        )}
+        {phase === 'reveal' && countdown !== null && countdown > 0 && <Countdown n={countdown} />}
+        {phase === 'reveal' && (countdown === 0 || countdown === null) && (
+          <FriendReveal
+            card={card}
+            targetPick={targetPick}
+            guesses={guesses}
+            playerCount={playerCount}
+            onNext={() => onAnswer({
+              target: targetPick,
+              guesses,
+              matches: guesses.map(g => g === targetPick),
+            })}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FriendQuestionCard({ card }) {
+  return (
+    <div style={{
+      background: proto.white,
+      border: `3px solid ${proto.black}`,
+      borderRadius: 16,
+      boxShadow: proto.shadowHard,
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        background: proto.black,
+        color: proto.yellow,
+        padding: '8px 12px',
+        fontFamily: proto.caption,
+        fontSize: 10,
+        letterSpacing: '0.14em',
+      }}>{card.category || 'FRIEND QUESTION'}</div>
+      <div style={{ padding: '16px 14px 12px' }}>
+        <div style={{
+          color: proto.text,
+          fontSize: 20,
+          fontWeight: 900,
+          lineHeight: 1.45,
+          textAlign: 'center',
+          marginBottom: 14,
+        }}>{card.title}</div>
+        <div style={{ display: 'grid', gap: 7 }}>
+          {card.choices.map((choice, i) => (
+            <div key={choice} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 9,
+              padding: '7px 10px',
+              borderRadius: 10,
+              background: proto.cream,
+              border: `1.5px solid ${proto.black}`,
+            }}>
+              <ColorChip color={window.COLOR_OPTIONS[i].color} size={18} />
+              <span style={{
+                color: proto.text,
+                fontSize: 13,
+                fontWeight: 800,
+                lineHeight: 1.35,
+              }}>{choice}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FriendReveal({ card, targetPick, guesses, playerCount, onNext }) {
+  const hitCount = guesses.filter(g => g === targetPick).length;
+  return (
+    <div style={{ paddingBottom: 'calc(84px + env(safe-area-inset-bottom))' }}>
+      <div style={{ textAlign: 'center', marginBottom: 14 }}>
+        <LogoText size={38} color={hitCount ? proto.yellow : proto.white} outline="#000000">
+          {hitCount ? `${hitCount}人正解！` : '全員ハズレ…'}
+        </LogoText>
+      </div>
+      <div style={{
+        padding: 12,
+        background: proto.white,
+        border: `2.5px solid ${proto.black}`,
+        borderRadius: 14,
+        boxShadow: proto.shadowHard,
+        color: proto.text,
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          paddingBottom: 10,
+          marginBottom: 10,
+          borderBottom: `2px dashed ${proto.pink}`,
+          fontWeight: 900,
+        }}>
+          <ColorChip color={window.COLOR_OPTIONS[targetPick].color} size={24} />
+          <span>本人の答え：{card.choices[targetPick]}</span>
+        </div>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {guesses.map((g, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              padding: '8px 10px',
+              borderRadius: 10,
+              background: g === targetPick ? proto.yellow : proto.pinkSoft,
+              border: `1.5px solid ${proto.black}`,
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 900 }}>{FRIEND_PLAYERS[i + 1]}</span>
+              <span style={{ flex: 1, fontSize: 12, fontWeight: 800 }}>{card.choices[g]}</span>
+              <span style={{ fontSize: 13, fontWeight: 900 }}>{g === targetPick ? '当たり' : 'ハズレ'}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{
+        marginTop: 14,
+        padding: '12px 14px',
+        background: hitCount === playerCount - 1 ? proto.yellow : proto.white,
+        border: `2.5px solid ${proto.black}`,
+        borderRadius: 12,
+        boxShadow: '3px 3px 0 #000',
+        color: proto.text,
+        fontSize: 12,
+        lineHeight: 1.7,
+        textAlign: 'center',
+        fontWeight: 800,
+      }}>
+        {hitCount === playerCount - 1
+          ? '全員当てるの、友情の解像度高すぎ。'
+          : hitCount > 0
+            ? '当てた人、ちゃんと見てる。外した人は今からアップデート。'
+            : '全員外しは逆に盛り上がる。本人、まだまだ謎多き友達です。'}
+      </div>
+      <button onClick={onNext} style={{
+        ...primaryBtn(),
+        marginTop: 20,
+        position: 'fixed',
+        left: '50%',
+        bottom: 'calc(12px + env(safe-area-inset-bottom))',
+        width: 'min(444px, calc(100vw - 36px))',
+        transform: 'translateX(-50%)',
+        zIndex: 5,
+      }}>
+        次の問題へ
+        <span style={{ marginLeft: 6, color: proto.yellow, textShadow: '1px 1px 0 #000' }}>→</span>
+      </button>
+    </div>
+  );
+}
+
+const FRIEND_RESULT_TIERS = [
+  { min: 0, title: '友情、まだチュートリアル中', tag: 'START', emoji: '🫶',
+    msg: '外した分だけ、まだ知らない話がある。\nこれは負けじゃなくて、次の飲み会の議題です。',
+    shareHook: '友情理解、ただいま初期設定中でした' },
+  { min: 0.35, title: '友達データ更新中', tag: 'UPDATE', emoji: '🌟',
+    msg: '知ってるようで、意外と外す。\nでもそのズレがいちばん笑える友情です。',
+    shareHook: '友達データ、まだまだ更新余地ありでした' },
+  { min: 0.7, title: 'かなり分かってる友達軍団', tag: 'GOOD', emoji: '✨',
+    msg: 'これはちゃんと見てる。\nノリだけじゃなくて、好みまでそこそこ同期済み。',
+    shareHook: 'うちら、かなり分かってる友達軍団でした' },
+  { min: 1, title: '友情シンクロ率100%', tag: 'PERFECT', emoji: '🏆',
+    msg: '全問レベルで当てるのは強すぎ。\nもはや会話しなくても注文が通る関係です。',
+    shareHook: '友情シンクロ率100%でした' },
+];
+
+function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
+  const maxScore = Math.max(1, answers.length * (playerCount - 1));
+  const score = answers.reduce((sum, a) => sum + a.matches.filter(Boolean).length, 0);
+  const ratio = score / maxScore;
+  const tier = [...FRIEND_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FRIEND_RESULT_TIERS[0];
+  const [copied, setCopied] = useState(false);
+  const shareUrl = `${location.origin}/friends`;
+  const shareText = `友達の友情確認ゲームで${score}/${maxScore}的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n友達とやったら何問当たる？\n#わたちゃん #友情確認ゲーム #streetboardgame`;
+
+  const copyShareText = () => {
+    const value = `${shareText}\n${shareUrl}`;
+    const done = () => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(value).then(done).catch(done);
+    } else {
+      done();
+    }
+  };
+
+  const openX = () => {
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
+      '_blank',
+      'noopener,noreferrer,width=600,height=500'
+    );
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: proto.pink,
+      position: 'relative',
+      paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+      overflowX: 'hidden',
+    }}>
+      <Decor />
+      <div style={{ padding: '42px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        <PillLabel>FRIEND RESULT</PillLabel>
+      </div>
+      <div style={{
+        margin: '18px 18px 0',
+        background: proto.white,
+        border: `3px solid ${proto.black}`,
+        borderRadius: 16,
+        boxShadow: '6px 6px 0 #000',
+        textAlign: 'center',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          background: proto.black,
+          color: proto.white,
+          padding: '9px 14px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 10,
+          fontFamily: proto.caption,
+          fontSize: 10,
+          letterSpacing: '0.18em',
+        }}>
+          <span>FRIEND CHECK RESULT</span>
+          <span style={{
+            background: tier.min >= 0.7 ? proto.yellow : proto.cyan,
+            color: proto.black,
+            padding: '4px 9px',
+            borderRadius: 999,
+            border: `1.5px solid ${proto.white}`,
+            fontFamily: proto.body,
+            fontSize: 9,
+            fontWeight: 900,
+          }}>{tier.tag}</span>
+        </div>
+        <div style={{
+          margin: '14px 16px 0',
+          padding: 14,
+          border: `2.5px dashed ${proto.pink}`,
+          borderRadius: 14,
+          background: proto.cream,
+        }}>
+          <div style={{ fontFamily: proto.caption, fontSize: 10, color: proto.pink, fontWeight: 900 }}>
+            友情理解度
+          </div>
+          <LogoText size={54} color={proto.pink} outline={proto.black} lineHeight={1}>
+            {score}/{maxScore}
+          </LogoText>
+          <div style={{ marginTop: 4, fontSize: 32 }}>{tier.emoji}</div>
+        </div>
+        <div style={{ margin: '14px 18px 0' }}>
+          <LogoText size={tier.title.length >= 13 ? 19 : 23} color={proto.pink} outline={proto.black} lineHeight={1.25}>
+            {tier.title}
+          </LogoText>
+        </div>
+        <div style={{
+          margin: '13px 18px 18px',
+          padding: '12px 12px',
+          background: ratio >= 0.7 ? proto.yellow : proto.white,
+          border: `2.5px solid ${proto.black}`,
+          borderRadius: 12,
+          boxShadow: '3px 3px 0 #000',
+          fontSize: 12,
+          color: proto.text,
+          lineHeight: 1.75,
+          whiteSpace: 'pre-line',
+          fontWeight: 700,
+        }}>{tier.msg}</div>
+      </div>
+
+      <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
+        <div style={{
+          fontFamily: proto.caption, fontSize: 10,
+          color: proto.white, letterSpacing: '0.25em',
+          marginBottom: 8, paddingLeft: 4,
+        }}>ANSWER DETAILS</div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          {answers.map((a, i) => {
+            const card = cards[i];
+            return (
+              <div key={i} style={{
+                background: proto.white,
+                border: `2.5px solid ${proto.black}`,
+                borderRadius: 12,
+                boxShadow: '3px 3px 0 #000',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  padding: '8px 10px',
+                  background: proto.black,
+                  color: proto.white,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                  <span style={{ fontFamily: proto.caption, fontSize: 10 }}>Q{i + 1}</span>
+                  <span style={{ flex: 1, fontSize: 12, fontWeight: 900, textAlign: 'left' }}>{card.title}</span>
+                </div>
+                <div style={{ padding: 10, color: proto.text }}>
+                  <div style={{ fontSize: 12, fontWeight: 900, marginBottom: 8 }}>
+                    本人：{card.choices[a.target]}
+                  </div>
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    {a.guesses.map((g, gi) => (
+                      <div key={gi} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                        padding: '7px 9px',
+                        borderRadius: 9,
+                        background: g === a.target ? proto.yellow : proto.pinkSoft,
+                        border: `1.5px solid ${proto.black}`,
+                        fontSize: 11,
+                        fontWeight: 800,
+                      }}>
+                        <span>{FRIEND_PLAYERS[gi + 1]}</span>
+                        <span>{card.choices[g]}</span>
+                        <span>{g === a.target ? '当たり' : 'ハズレ'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
+        <div style={{
+          fontFamily: proto.caption, fontSize: 10,
+          color: proto.white, letterSpacing: '0.25em',
+          marginBottom: 10, paddingLeft: 4,
+        }}>SHARE YOUR RESULT</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <ShareBtn label="X" ariaLabel="Xで友情判定結果をシェア" bg={proto.black} fg={proto.white} onClick={openX} />
+          <ShareBtn label={copied ? '✓' : 'コピー'} ariaLabel="友情判定結果をコピー" bg={proto.white} fg={proto.black} onClick={copyShareText} />
+        </div>
+        {copied && (
+          <div style={{
+            marginTop: 8, padding: '6px 10px', borderRadius: 8,
+            background: proto.yellow, color: proto.black, fontSize: 11,
+            textAlign: 'center', fontWeight: 700,
+            border: `2px solid ${proto.black}`,
+          }}>
+            シェア文をコピーしました
+          </div>
+        )}
+        <button onClick={onReplay} style={{ ...primaryBtn(), marginTop: 14 }}>
+          同じ人数でもう一度
+        </button>
+        <button onClick={onHome} style={{ ...secondaryBtn(), marginTop: 8 }}>
+          トップに戻る
+        </button>
+        <div style={{ textAlign: 'center', marginTop: 18 }}>
+          <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
+        </div>
       </div>
     </div>
   );

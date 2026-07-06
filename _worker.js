@@ -4,6 +4,8 @@
 // 動作:
 //   /watachan         → /?screen=intro にリダイレクト
 //   /watachan/        → /?screen=intro にリダイレクト
+//   /friends          → /?screen=friendIntro にリダイレクト
+//   /friends/         → /?screen=friendIntro にリダイレクト
 //   /contact          → /?screen=about&to=contact にリダイレクト
 //   /contact/         → /?screen=about&to=contact にリダイレクト
 //   その他の存在しないパス → / にリダイレクト
@@ -17,6 +19,7 @@ export default {
     // 旧Wix URL → クエリパラメータ形式へリダイレクト
     const redirectMap = {
       '/watachan': '/?screen=intro',
+      '/friends': '/?screen=friendIntro',
       '/contact':  '/?screen=about&to=contact',
     };
 
