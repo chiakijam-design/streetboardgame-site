@@ -1,0 +1,11 @@
+// Cloudflare Workers/Pages 統合形式 設定
+// _worker.js と組み合わせて、リダイレクト+静的配信を制御する
+{
+  "name": "streetboardgame",
+  "compatibility_date": "2025-01-01",
+  "main": "./_worker.js",
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS"
+  }
+}

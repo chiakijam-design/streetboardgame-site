@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- =========================
+  Basic SEO
+========================= -->
+<title>私のこと、ちゃんと分かってるよね？ ｜ 彼氏の愛情判定ゲーム ｜ streetboardgame.com</title>
+<meta name="description" content="無料で遊べるボードゲーム『私のこと、ちゃんと分かってるよね？』彼氏の愛情判定編。全42問のお題からランダム5問。同時発表で2人の心の距離をチェック ♡" />
+<meta name="theme-color" content="#FF3D7F" />
+<link rel="canonical" href="https://www.streetboardgame.com/" />
+
+<!-- favicon -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+<!-- =========================
+  OGP (SNSシェア用)
+========================= -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="streetboardgame.com" />
+<meta property="og:title" content="私のこと、ちゃんと分かってるよね？" />
+<meta property="og:description" content="彼氏の愛情判定ゲーム ♡ 無料で遊べるボードゲーム — 全42問からランダム5問、同時発表でカップルの理解度チェック" />
+<meta property="og:url" content="https://www.streetboardgame.com/" />
+<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="ja_JP" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="私のこと、ちゃんと分かってるよね？" />
+<meta name="twitter:description" content="彼氏の愛情判定ゲーム ♡ 無料で遊べるボードゲーム" />
+<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp.jpg" />
+
+<!-- =========================
+  Google Analytics 4
+  計測ID: G-X07PVDQWYX (GA4 - streetboardgame.com)
+========================= -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X07PVDQWYX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X07PVDQWYX', {
+    // localhostなどでは送信しない
+    send_page_view: location.hostname !== 'localhost' && !location.hostname.endsWith('.local')
+  });
+  // 結果画面到達などのカスタムイベントを発火するためのヘルパー
+  window.trackEvent = function(name, params) {
+    if (typeof gtag === 'function') gtag('event', name, params || {});
+  };
+</script>
+
+<!-- =========================
+  旧Wix URL からのルーティング
+  ※ SPA なので物理ページは1つ(index.html)。URL パスに応じて
+    アプリの初期画面を切り替えるために window.__INITIAL_SCREEN を立てる。
+
+  マッピング:
+    /          → トップ画面
+    /watachan  → 遊び方(How to play)画面
+    /contact   → お問い合わせ(About のフォーム位置までスクロール)
+    その他     → トップ画面 (旧URLからの誘導は全部トップへ)
+========================= -->
+<script>
+  (function() {
+    // テスト用: ?screen=intro|about|top で強制的に初期画面を指定可能
+    var query = new URLSearchParams(location.search);
+    var forceScreen = query.get('screen');
+    if (forceScreen && ['top','intro','about'].indexOf(forceScreen) >= 0) {
+      window.__INITIAL_SCREEN = forceScreen;
+      if (forceScreen === 'about' && query.get('to') === 'contact') {
+        window.__SCROLL_TO_CONTACT = true;
+      }
+      return;
+    }
+
+    // ルーティングは全環境で発動 (Genspark Hosted の一時URLでも /watachan 等のパス想定)
+    var path = decodeURIComponent(location.pathname);
+
+    // Genspark Hosted のプレビュー環境などで pathの先頭に余計なプレフィックスが入る場合の
+    // 簡易対応: pathの末尾だけを見る
+    var lastSegment = path.replace(/\/+$/,'').split('/').pop().toLowerCase();
+
+    // ルーティングテーブル: [パス末尾] → 初期screen
+    var routes = {
+      '': 'top',
+      'index.html': 'top',
+      'watachan': 'intro',
+      'contact': 'about',
+    };
+
+    // 既知ルートに hit
+    if (routes.hasOwnProperty(lastSegment)) {
+      window.__INITIAL_SCREEN = routes[lastSegment];
+      // contact の場合は スクロール先指定
+      if (lastSegment === 'contact') {
+        window.__SCROLL_TO_CONTACT = true;
+      }
+      // GA に旧URLアクセスを記録
+      if (lastSegment !== '' && lastSegment !== 'index.html' && typeof gtag === 'function') {
+        gtag('event', 'legacy_url_route', { from: path, to: routes[lastSegment] });
+      }
+      return;
+    }
+
+    // 未知パスはトップに集約
+    window.__INITIAL_SCREEN = 'top';
+    if (typeof gtag === 'function') {
+      gtag('event', 'unknown_url_route', { from: path });
+    }
+  })();
+</script>
+
+<!-- =========================
+  フォント
+========================= -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Maru+Gothic:wght@400;500;700;900&family=RocknRoll+One&family=DotGothic16&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+
+<style>
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    font-family: "Zen Maru Gothic", "Klee One", sans-serif;
+    color: #3D2B30;
+    -webkit-font-smoothing: antialiased;
+    background: #FFE8EC;
+  }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+  button:active { transform: scale(0.98); }
+  input:focus, textarea:focus { border-color: #FF4D6D !important; }
+</style>
+
+<!-- =========================
+  React + Babel
+  注: 本番では precompile したJSを使うのが理想だが、
+  暫定的に CDN の Babel をそのまま利用。
+========================= -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="prototype_quiz_data.js"></script>
+<script type="text/babel" src="prototype_character.jsx"></script>
+<script type="text/babel" src="prototype_app.jsx"></script>
+</body>
+</html>
