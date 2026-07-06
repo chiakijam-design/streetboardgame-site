@@ -711,7 +711,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
   const onBoyPick = (i) => {
     if (boyPick !== null) return;
     setBoyPick(i);
-    setTimeout(() => setCountdown(2), 400);
+    setTimeout(() => setPhase('reveal'), 400);
   };
 
   if (!card) return null;
@@ -813,10 +813,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
             />
           </>
         )}
-        {phase === 'reveal' && countdown !== null && countdown > 0 && (
-          <Countdown n={countdown} />
-        )}
-        {phase === 'reveal' && (countdown === 0 || countdown === null) && (
+        {phase === 'reveal' && (
           <Reveal
             card={card}
             girlPick={girlPick}
@@ -1689,7 +1686,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     const next = [...guesses, i];
     setGuesses(next);
     if (turn >= playerCount - 1) {
-      setTimeout(() => setCountdown(2), 350);
+      setTimeout(() => setPhase('reveal'), 350);
     } else {
       setTurn(turn + 1);
     }
@@ -1772,8 +1769,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             />
           </>
         )}
-        {phase === 'reveal' && countdown !== null && countdown > 0 && <Countdown n={countdown} />}
-        {phase === 'reveal' && (countdown === 0 || countdown === null) && (
+        {phase === 'reveal' && (
           <FriendReveal
             card={card}
             targetPick={targetPick}
