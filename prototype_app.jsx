@@ -962,21 +962,48 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
     ? <>{tier.title.replace(/カップル$/, '')}<br/>カップル</>
     : tier.title;
 
-  const shareText = `彼氏の愛情判定ゲームで${score}/${total}問正解！結果は『${tier.title}』でした。\n${tier.shareHook} ♡\nあなたたちは何問当たる？`;
   const shareUrl = window.location.href;
+  const xShareText = `彼氏の愛情判定ゲームで${score}/${total}問正解！\n結果は「${tier.title}」でした。\n${tier.shareHook} ♡\n\nみんなは何問当たる？\n#私のことちゃんと分かってるよね #彼氏の愛情判定`;
+  const instagramShareText = `彼氏の愛情判定ゲーム\n${score}/${total}問正解\n「${tier.title}」\n${tier.shareHook} ♡\n\nストーリーに載せて\n「うちら何問当たると思う？」って聞いてみて👇\n${shareUrl}`;
+  const lineShareText = `彼氏の愛情判定ゲームで${score}/${total}問正解！結果は「${tier.title}」でした。${tier.shareHook} ♡`;
+  const copyShareText = `${xShareText}\n${shareUrl}`;
+
+  const copyToClipboard = (value, type) => {
+    const done = () => {
+      setCopied(type);
+      setTimeout(() => setCopied(false), 2000);
+    };
+    const fallback = () => {
+      const el = document.createElement('textarea');
+      el.value = value;
+      el.setAttribute('readonly', '');
+      el.style.position = 'fixed';
+      el.style.left = '-9999px';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      done();
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(value).then(done).catch(fallback);
+    } else {
+      fallback();
+    }
+  };
 
   const handleShare = (platform) => {
-    const text = encodeURIComponent(shareText);
+    const text = encodeURIComponent(platform === 'line' ? lineShareText : xShareText);
     const url = encodeURIComponent(shareUrl);
     let target = '';
     if (platform === 'x') target = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
     if (platform === 'line') target = `https://social-plugins.line.me/lineit/share?url=${url}&text=${text}`;
-    if (platform === 'fb') target = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+    if (platform === 'instagram') {
+      copyToClipboard(instagramShareText, 'instagram');
+      return;
+    }
     if (platform === 'copy') {
-      navigator.clipboard?.writeText(`${shareText}\n${shareUrl}`).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
+      copyToClipboard(copyShareText, 'copy');
       return;
     }
     window.open(target, '_blank', 'noopener,noreferrer,width=600,height=500');
@@ -1176,9 +1203,9 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
         }}>SHARE YOUR RESULT</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <ShareBtn label="X" bg={proto.black} fg={proto.white} onClick={() => handleShare('x')} />
+          <ShareBtn label={copied === 'instagram' ? '✓' : 'IG'} bg="#E4405F" fg={proto.white} onClick={() => handleShare('instagram')} />
           <ShareBtn label="LINE" bg="#06C755" fg={proto.white} onClick={() => handleShare('line')} />
-          <ShareBtn label="FB" bg="#1877F2" fg={proto.white} onClick={() => handleShare('fb')} />
-          <ShareBtn label={copied ? '✓' : '🔗'} bg={proto.white} fg={proto.black} onClick={() => handleShare('copy')} />
+          <ShareBtn label={copied === 'copy' ? '✓' : '🔗'} bg={proto.white} fg={proto.black} onClick={() => handleShare('copy')} />
         </div>
         {copied && (
           <div style={{
@@ -1187,7 +1214,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
             textAlign: 'center', fontWeight: 700,
             border: `2px solid ${proto.black}`,
           }}>
-            結果リンクをコピーしました ♡
+            {copied === 'instagram' ? 'Instagram用の文章をコピーしました ♡' : 'シェア文をコピーしました ♡'}
           </div>
         )}
 
