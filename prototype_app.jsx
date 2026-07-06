@@ -509,7 +509,7 @@ function IntroScreen({ onStart, onBack }) {
           <div style={{ fontSize: 12, lineHeight: 1.7 }}>
             全 <span style={{ color: proto.yellow, fontWeight: 800, fontSize: 16 }}>{window.ALL_CARDS.length}</span> 問のお題から
             <span style={{ color: proto.yellow, fontWeight: 800, fontSize: 16 }}> ランダムに 5 問</span> 出題！<br/>
-            5問正解で「最強カップル」認定 ♡
+            5問正解で「脳内シェアハウス級」認定 ♡
           </div>
         </div>
 
@@ -896,18 +896,24 @@ function PickCard({ label, opt, accent }) {
 // RESULT
 // ─────────────────────────────────────────────────────
 const RESULT_TIERS = [
-  { score: 0, title: 'まだまだカップル', emoji: '💔', tag: 'OH NO...', tagBg: proto.black,
-    msg: 'もしかしてすれ違い中？\nゆっくり話す時間を\nつくってみよう ✦' },
-  { score: 1, title: 'マイペースカップル', emoji: '🌱', tag: 'CAUTION', tagBg: '#F4A261',
-    msg: '彼は少しマイペース？\n気持ちをちゃんと\n伝えてみるのが大事 ♡' },
-  { score: 2, title: 'これからカップル', emoji: '🌷', tag: 'NORMAL', tagBg: proto.cyan,
-    msg: 'お互いを知るのはこれから ♡\nもっとデートを重ねよう！\nまだまだ伸びしろあり' },
-  { score: 3, title: 'いい感じカップル', emoji: '💞', tag: 'GOOD', tagBg: '#FF7A92',
-    msg: 'まずまずの理解度 ♡\n会話を増やせばもっと\n仲良くなれるかも' },
-  { score: 4, title: 'ラブラブカップル', emoji: '💖', tag: 'GREAT', tagBg: proto.pink,
-    msg: 'もうほぼ分かってる ♡\nあと少しでパーフェクト！\n次は5問正解めざそう' },
-  { score: 5, title: '最強カップル ♡', emoji: '💕', tag: '♡ PERFECT ♡', tagBg: proto.yellow,
-    msg: '彼はあなたのことを\nちゃんと分かってくれてる ♡\n末永くお幸せに ✦' },
+  { score: 0, title: '逆にここから始まるカップル', emoji: '💔', tag: '伸びしろ100%', tagBg: proto.black,
+    msg: 'ここまで外すのも才能かも。\n今日から彼氏の研修スタート！\nまずは好きな食べ物から覚えよ ♡',
+    shareHook: '彼氏、まさかの研修初日でした' },
+  { score: 1, title: '彼氏まだチュートリアル中', emoji: '🌱', tag: 'TUTORIAL', tagBg: '#F4A261',
+    msg: '分かってる風だけは一人前？\nでも1問当てたなら可能性あり。\n次のデートで復習しよ ✦',
+    shareHook: 'うちの彼氏、まだチュートリアル中' },
+  { score: 2, title: '探り合い期間カップル', emoji: '🌷', tag: 'NOW LOADING', tagBg: proto.cyan,
+    msg: 'まだ知らない一面が多め。\nでもそれ、つまり会話のネタだらけ。\n伸びしろしかないふたり ♡',
+    shareHook: 'まだまだ探り合い期間だった' },
+  { score: 3, title: 'いい感じだけど油断禁止カップル', emoji: '💞', tag: 'GOOD?', tagBg: '#FF7A92',
+    msg: '半分以上わかってるのはえらい。\nただし油断するとすぐ外す距離感。\nあと2問ぶん、愛を詰めよう ♡',
+    shareHook: 'いい感じだけど油断禁止らしい' },
+  { score: 4, title: 'だいたい分かってるラブラブ勢', emoji: '💖', tag: 'GREAT', tagBg: proto.pink,
+    msg: 'かなり分かってる。\nあと1問で伝説だったのに惜しい！\nこれはもう再挑戦案件 ♡',
+    shareHook: 'だいたい分かってるラブラブ勢でした' },
+  { score: 5, title: '脳内シェアハウス級カップル', emoji: '💕', tag: '♡ PERFECT ♡', tagBg: proto.yellow,
+    msg: '彼、あなたの脳内に住んでる？\n全問正解はさすがに強すぎ。\n堂々と自慢していいやつ ♡',
+    shareHook: '全問正解、もはや脳内シェアハウス級' },
 ];
 
 function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) {
@@ -916,7 +922,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
 
-  const shareText = `「私のこと、ちゃんと分かってるよね？」彼氏の愛情判定 → ${score}/${total}問正解で『${tier.title}』でした ♡`;
+  const shareText = `彼氏の愛情判定ゲームで${score}/${total}問正解！結果は『${tier.title}』でした。\n${tier.shareHook} ♡\nあなたたちは何問当たる？`;
   const shareUrl = window.location.href;
 
   const handleShare = (platform) => {
