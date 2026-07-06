@@ -222,6 +222,11 @@ function App() {
     setScreen('top'); setQIdx(0); setAnswers([]); setCards([]); setPlayerCount(2);
   };
 
+  const confirmLeaveGame = (nextScreen) => {
+    const ok = window.confirm('ゲームを中断して戻りますか？\n今の問題の途中経過は保存されません。');
+    if (ok) setScreen(nextScreen);
+  };
+
   const handleQAnswer = (girlIdx, boyIdx) => {
     const next = [...answers, { girl: girlIdx, boy: boyIdx, match: girlIdx === boyIdx }];
     setAnswers(next);
@@ -280,7 +285,7 @@ function App() {
             qIdx={qIdx}
             total={cards.length}
             onAnswer={handleQAnswer}
-            onBack={() => setScreen('intro')}
+            onBack={() => confirmLeaveGame('intro')}
           />
         )}
         {screen === 'friendPlay' && cards.length > 0 && (
@@ -290,7 +295,7 @@ function App() {
             total={cards.length}
             playerCount={playerCount}
             onAnswer={handleFriendAnswer}
-            onBack={() => setScreen('friendIntro')}
+            onBack={() => confirmLeaveGame('friendIntro')}
           />
         )}
         {screen === 'resultReady' && (
