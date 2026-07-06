@@ -187,16 +187,17 @@ function App() {
 
   return (
     <div style={{
-      width: '100vw', minHeight: '100vh',
+      width: '100%', minHeight: '100dvh',
       background: proto.pink,
       display: 'flex', justifyContent: 'center',
+      overflowX: 'hidden',
       fontFamily: proto.body,
     }}>
       <div style={{
-        width: '100%', maxWidth: 480, minHeight: '100vh',
+        width: '100%', maxWidth: 480, minHeight: '100dvh',
         background: proto.pink,
         boxShadow: '0 0 60px rgba(0,0,0,0.15)',
-        position: 'relative', overflow: 'hidden',
+        position: 'relative', overflowX: 'hidden',
       }}>
         {screen === 'top' && (
           <TopScreen
@@ -582,7 +583,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
     <div style={{
       display: 'flex', flexDirection: 'column',
       minHeight: '100vh', background: proto.pink, color: proto.white,
-      position: 'relative', overflow: 'hidden',
+      position: 'relative', overflowX: 'hidden',
     }}>
       {/* キャラ装飾: 右下のコーナーから小さく覗く */}
       <div style={{
@@ -727,16 +728,18 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: 10,
+          gap: 8,
         }}>
           {window.COLOR_OPTIONS.map((opt, i) => {
             const isSelected = selected === i;
             return (
               <button key={opt.id} onClick={() => onPick(i)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                minHeight: 52, minWidth: 52,
                 aspectRatio: '1 / 1', padding: 0,
                 background: 'transparent', border: 'none',
                 cursor: 'pointer', fontFamily: proto.body,
+                touchAction: 'manipulation',
                 transition: 'all 0.18s',
                 transform: isSelected ? 'translateY(-4px)' : 'none',
               }}>
@@ -811,7 +814,10 @@ function Reveal({ card, girlPick, boyPick, onNext }) {
   const match = girlPick === boyPick;
 
   return (
-    <div style={{ animation: 'revealFade 0.5s ease' }}>
+    <div style={{
+      animation: 'revealFade 0.5s ease',
+      paddingBottom: 'calc(84px + env(safe-area-inset-bottom))',
+    }}>
       <style>{`
         @keyframes revealFade {
           0% { opacity: 0; transform: translateY(10px); }
@@ -852,7 +858,16 @@ function Reveal({ card, girlPick, boyPick, onNext }) {
         }
       </div>
 
-      <button onClick={onNext} style={{ ...primaryBtn(), marginTop: 20 }}>
+      <button onClick={onNext} style={{
+        ...primaryBtn(),
+        marginTop: 20,
+        position: 'fixed',
+        left: '50%',
+        bottom: 'calc(12px + env(safe-area-inset-bottom))',
+        width: 'min(444px, calc(100vw - 36px))',
+        transform: 'translateX(-50%)',
+        zIndex: 5,
+      }}>
         次の問題へ
         <span style={{ marginLeft: 6, color: proto.yellow, textShadow: '1px 1px 0 #000' }}>→</span>
       </button>
@@ -948,7 +963,9 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
     <div style={{
       minHeight: '100vh',
       background: proto.pink,
-      position: 'relative', paddingBottom: 40,
+      position: 'relative',
+      paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+      overflowX: 'hidden',
     }}>
       <Decor />
 
@@ -1123,7 +1140,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
 function ShareBtn({ label, bg, fg, onClick }) {
   return (
     <button onClick={onClick} style={{
-      flex: 1, height: 44, borderRadius: 12,
+      flex: 1, minHeight: 50, borderRadius: 12,
       background: bg, color: fg,
       border: `2.5px solid ${proto.black}`,
       fontSize: 12, fontWeight: 800, fontFamily: proto.body,
@@ -1526,13 +1543,16 @@ function Feature({ label }) {
 // ─────────────────────────────────────────────────────
 function primaryBtn() {
   return {
-    width: '100%', padding: '15px',
+    width: '100%', minHeight: 54, padding: '15px 16px',
     background: proto.black, color: proto.white,
     border: `2.5px solid ${proto.black}`,
     borderRadius: 14,
     fontSize: 16, fontWeight: 800, fontFamily: proto.display,
+    lineHeight: 1.25,
     boxShadow: '4px 4px 0 #5BD4E8', // シアンの落影
     letterSpacing: '0.08em', cursor: 'pointer',
+    touchAction: 'manipulation',
+    userSelect: 'none',
     transition: 'transform 0.1s',
     textShadow: '1px 1px 0 #5BD4E8',
   };
@@ -1540,12 +1560,14 @@ function primaryBtn() {
 
 function secondaryBtn() {
   return {
-    width: '100%', padding: '12px',
+    width: '100%', minHeight: 50, padding: '12px 16px',
     background: proto.white, color: proto.black,
     border: `2.5px solid ${proto.black}`,
     borderRadius: 14,
     fontSize: 13, fontWeight: 800, fontFamily: proto.body,
     boxShadow: '3px 3px 0 #000',
+    touchAction: 'manipulation',
+    userSelect: 'none',
     cursor: 'pointer',
   };
 }
@@ -1555,7 +1577,7 @@ function BackBtn({ onClick, top = 20, dark = false }) {
   return (
     <button onClick={onClick} style={{
       position: 'absolute', top, left: 18,
-      width: 36, height: 36, borderRadius: 999,
+      width: 44, height: 44, borderRadius: 999,
       background: dark ? proto.white : 'rgba(255,255,255,0.85)',
       backdropFilter: 'blur(10px)',
       border: `2px solid ${proto.black}`,
