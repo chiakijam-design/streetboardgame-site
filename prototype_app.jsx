@@ -21,6 +21,7 @@ const proto = {
   display:    '"RocknRoll One", "Zen Maru Gothic", "Klee One", sans-serif',
   body:       '"Zen Maru Gothic", "Noto Sans JP", sans-serif',
   caption:    '"DotGothic16", monospace',
+  handwrite:  '"HuiFontP109", "HuiFont", "ふい字", "Yomogi", "Klee One", "Zen Maru Gothic", sans-serif',
 
   // シャドウ
   shadow:     '0 8px 24px rgba(236,79,136,0.25)',
@@ -1826,7 +1827,7 @@ function FriendQuestionCard({ card }) {
         {/* title tape */}
         <rect x="178" y="176" width="400" height="92" fill="rgba(91,212,232,0.72)" />
         <rect x="178" y="176" width="400" height="92" fill="#5BD4E8" opacity="0.38" />
-        <g fontFamily='"Klee One", "Zen Maru Gothic", sans-serif' fontWeight="600" fill={proto.text} textAnchor="middle">
+        <g fontFamily={proto.handwrite} fontWeight="400" fill={proto.text} textAnchor="middle">
           {titleLines.map((line, i) => (
             <text key={line} x="378" y={titleLines.length === 1 ? 231 : 214 + i * 42} fontSize={titleLines.length === 1 ? 40 : 36} dominantBaseline="middle">
               {line}
@@ -1844,9 +1845,9 @@ function FriendQuestionCard({ card }) {
               <text
                 x="190"
                 y={choiceYs[i] + 2}
-                fontFamily='"Klee One", "Zen Maru Gothic", sans-serif'
+                fontFamily={proto.handwrite}
                 fontSize={fontSize}
-                fontWeight="600"
+                fontWeight="400"
                 fill={proto.text}
                 dominantBaseline="middle"
               >
