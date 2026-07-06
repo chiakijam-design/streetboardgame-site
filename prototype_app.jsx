@@ -1194,6 +1194,76 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
         </div>
       </div>
 
+      {/* 詳細 */}
+      <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
+        <div style={{
+          fontFamily: proto.caption, fontSize: 10,
+          color: proto.white, letterSpacing: '0.25em',
+          marginBottom: 8, paddingLeft: 4,
+        }}>ANSWER DETAILS</div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          {answers.map((a, i) => {
+            const card = cards[i];
+            const girlChoice = card && card.choices ? card.choices[a.girl] : window.COLOR_OPTIONS[a.girl]?.name;
+            const boyChoice = card && card.choices ? card.choices[a.boy] : window.COLOR_OPTIONS[a.boy]?.name;
+            return (
+              <div key={i} style={{
+                background: a.match ? proto.yellow : proto.white,
+                border: `2.5px solid ${proto.black}`,
+                borderRadius: 12,
+                boxShadow: '3px 3px 0 #000',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '8px 10px',
+                  background: a.match ? proto.black : proto.pinkSoft,
+                  color: a.match ? proto.white : proto.black,
+                  borderBottom: `2px solid ${proto.black}`,
+                }}>
+                  <div style={{
+                    fontFamily: proto.caption,
+                    fontSize: 10,
+                    letterSpacing: '0.12em',
+                    fontWeight: 800,
+                  }}>Q{i + 1}</div>
+                  <div style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: 12,
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                    textAlign: 'left',
+                  }}>{card ? card.title : 'お題'}</div>
+                  <div style={{
+                    flexShrink: 0,
+                    padding: '3px 8px',
+                    borderRadius: 999,
+                    background: a.match ? proto.yellow : proto.white,
+                    color: proto.black,
+                    border: `1.5px solid ${proto.black}`,
+                    fontSize: 10,
+                    fontWeight: 900,
+                  }}>{a.match ? '当たり' : 'ハズレ'}</div>
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 8,
+                  padding: 10,
+                }}>
+                  <AnswerPick label="彼女" choice={girlChoice} opt={window.COLOR_OPTIONS[a.girl]} accent={proto.yellow} />
+                  <AnswerPick label="彼氏" choice={boyChoice} opt={window.COLOR_OPTIONS[a.boy]} accent={proto.cyan} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* シェア */}
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
@@ -1282,6 +1352,55 @@ function ShareBtn({ label, bg, fg, onClick }) {
       boxShadow: '3px 3px 0 #000',
       cursor: 'pointer', transition: 'transform 0.1s',
     }}>{label}</button>
+  );
+}
+
+function AnswerPick({ label, choice, opt, accent }) {
+  return (
+    <div style={{
+      padding: '9px 8px',
+      background: proto.white,
+      border: `2px solid ${proto.black}`,
+      borderRadius: 10,
+      minWidth: 0,
+    }}>
+      <div style={{
+        display: 'inline-block',
+        padding: '2px 8px',
+        background: accent,
+        color: proto.black,
+        border: `1.5px solid ${proto.black}`,
+        borderRadius: 999,
+        fontSize: 9,
+        fontWeight: 900,
+        marginBottom: 7,
+      }}>{label}</div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 7,
+        minHeight: 30,
+      }}>
+        <span style={{
+          width: 18,
+          height: 18,
+          borderRadius: '50%',
+          background: opt ? opt.color : proto.textSoft,
+          border: `1.5px solid ${proto.black}`,
+          boxShadow: '1px 1px 0 #000',
+          flexShrink: 0,
+        }} />
+        <span style={{
+          minWidth: 0,
+          fontSize: 12,
+          lineHeight: 1.35,
+          fontWeight: 900,
+          color: proto.text,
+          overflowWrap: 'anywhere',
+        }}>{choice}</span>
+      </div>
+    </div>
   );
 }
 
