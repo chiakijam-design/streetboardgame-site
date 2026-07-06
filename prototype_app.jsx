@@ -2198,7 +2198,7 @@ function AboutScreen({ onBack }) {
         <SectionTitle style={{ marginTop: 22 }}>♡ シリーズ展開</SectionTitle>
         <Card>
           <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="公開中" active />
-          <SeriesRow emoji="👯" title="友達の友情判定" sub="準備中" />
+          <SeriesRow emoji="👯" title="友達の友情判定" sub="公開中" active />
           <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="準備中" last />
         </Card>
 
