@@ -2489,7 +2489,7 @@ function ProductScreen({ onBack }) {
           <div style={{ background: proto.white, borderRadius: 16, padding: 16 }}>
             {/* 商品プレースホルダ画像: 本物のパッケージレイアウト再現 */}
             <div style={{
-              width: '100%', minHeight: 330, borderRadius: 12,
+              width: '100%', aspectRatio: '1 / 1', borderRadius: 12,
               background: proto.pink,
               border: `2.5px solid ${proto.black}`,
               position: 'relative', overflow: 'hidden',
@@ -2498,13 +2498,13 @@ function ProductScreen({ onBack }) {
                 position: 'absolute',
                 inset: 0,
                 background:
-                  'radial-gradient(circle at 18% 18%, rgba(255,255,255,0.18) 0 24px, transparent 25px), radial-gradient(circle at 72% 74%, rgba(255,226,107,0.16) 0 42px, transparent 43px)',
+                  'radial-gradient(circle at 22% 26%, rgba(255,255,255,0.16) 0 24px, transparent 25px), radial-gradient(circle at 76% 72%, rgba(255,226,107,0.18) 0 58px, transparent 59px)',
                 pointerEvents: 'none',
               }} />
               {/* 上部のキャプション */}
               <div style={{
-                position: 'absolute', top: 14, left: 16,
-                padding: '5px 14px', borderRadius: 999,
+                position: 'absolute', top: 18, left: 18,
+                padding: '6px 16px', borderRadius: 999,
                 background: proto.white, color: proto.pinkDeep,
                 fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap',
                 fontFamily: proto.body, zIndex: 3,
@@ -2512,7 +2512,7 @@ function ProductScreen({ onBack }) {
 
               <div style={{
                 position: 'absolute',
-                top: 52,
+                top: 70,
                 left: 18,
                 zIndex: 3,
                 background: proto.black,
@@ -2527,19 +2527,20 @@ function ProductScreen({ onBack }) {
 
               {/* 女の子 (左下、全身ポーズ) */}
               <div style={{
-                position: 'absolute', left: 6, bottom: 4,
+                position: 'absolute', left: 20, bottom: 42,
                 filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.22))',
                 zIndex: 2,
               }}>
-                <Girl variant="full" height={285} />
+                <Girl variant="full" height={230} />
               </div>
 
               {/* タイトルテキスト (右上寄り、縦組み風) */}
               <div style={{
                 position: 'absolute',
-                top: 48, right: 12,
+                top: 74, right: 18,
                 textAlign: 'right',
                 zIndex: 4,
+                maxWidth: '48%',
               }}>
                 <LogoText size={21}>私のこと、</LogoText>
                 <div style={{ marginTop: 3 }}><LogoText size={21}>ちゃんと</LogoText></div>
@@ -2552,7 +2553,7 @@ function ProductScreen({ onBack }) {
                 right: 16,
                 bottom: 86,
                 zIndex: 3,
-                display: 'grid',
+                display: 'none',
                 gap: 5,
               }}>
                 {['2人〜', '10分〜', 'カード54問'].map((label) => (
@@ -2572,8 +2573,8 @@ function ProductScreen({ onBack }) {
               </div>
 
               {/* 付箋: 右下隅、タイトルとは離れた位置に配置 */}
-              <div style={{ position: 'absolute', bottom: 12, right: 18, zIndex: 5 }}>
-                <StickyNote rotate={-6} size={86}>
+              <div style={{ position: 'absolute', bottom: 14, right: 18, zIndex: 5 }}>
+                <StickyNote rotate={-6} size={76}>
                   <div style={{ fontSize: 8, lineHeight: 1.35, whiteSpace: 'nowrap' }}>
                     別れても<br/>責任は<br/>
                     <span style={{ color: proto.pinkDeep, fontWeight: 800 }}>負いません</span>
@@ -2585,9 +2586,9 @@ function ProductScreen({ onBack }) {
                 position: 'absolute',
                 left: 18,
                 right: 18,
-                bottom: 14,
+                bottom: 20,
                 zIndex: 1,
-                height: 46,
+                height: 42,
                 borderRadius: 10,
                 background: 'rgba(0,0,0,0.12)',
                 border: '1.5px dashed rgba(255,255,255,0.45)',
