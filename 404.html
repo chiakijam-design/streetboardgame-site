@@ -244,10 +244,15 @@
     -webkit-font-smoothing: antialiased;
     background: #EC4F88;
     min-height: 100dvh;
-    touch-action: manipulation;
-    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
   }
-  #root { min-height: 100dvh; overflow-x: hidden; }
+  #root {
+    min-height: 100dvh;
+    overflow-x: hidden;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
   * { box-sizing: border-box; }
   img { max-width: 100%; }
   button, a {
