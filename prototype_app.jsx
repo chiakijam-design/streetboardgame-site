@@ -1899,7 +1899,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const ratio = score / maxScore;
   const tier = [...FRIEND_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FRIEND_RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
-  const shareUrl = `${location.origin}/friends`;
+  const shareUrl = `${location.origin}/?screen=friendIntro`;
   const shareText = `友達の友情確認ゲームで${score}/${maxScore}的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n友達とやったら何問当たる？\n#わたちゃん #友情確認ゲーム #streetboardgame`;
 
   const copyShareText = () => {
