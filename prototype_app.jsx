@@ -1786,46 +1786,63 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 function FriendQuestionCard({ card }) {
   return (
     <div style={{
-      background: proto.white,
+      background: proto.black,
       border: `3px solid ${proto.black}`,
-      borderRadius: 16,
-      boxShadow: proto.shadowHard,
+      borderRadius: 24,
+      boxShadow: '4px 6px 0 #1A1A1A',
       overflow: 'hidden',
+      maxWidth: 560,
+      margin: '0 auto',
     }}>
       <div style={{
         background: proto.black,
         color: proto.yellow,
-        padding: '8px 12px',
+        padding: '10px 18px 9px',
         fontFamily: proto.caption,
         fontSize: 10,
-        letterSpacing: '0.14em',
+        fontWeight: 700,
+        letterSpacing: '0.12em',
+        minHeight: 36,
+        display: 'flex',
+        alignItems: 'center',
       }}>{card.category || 'FRIEND QUESTION'}</div>
-      <div style={{ padding: '16px 14px 12px' }}>
+      <div style={{
+        background: proto.white,
+        border: `2px solid ${proto.black}`,
+        borderTop: 'none',
+        borderRadius: '0 0 18px 18px',
+        padding: '26px 20px 20px',
+      }}>
         <div style={{
           color: proto.text,
-          fontSize: 20,
+          fontFamily: proto.display,
+          fontSize: 23,
           fontWeight: 900,
-          lineHeight: 1.45,
+          lineHeight: 1.35,
           textAlign: 'center',
-          marginBottom: 14,
+          marginBottom: 22,
+          letterSpacing: '0',
         }}>{card.title}</div>
-        <div style={{ display: 'grid', gap: 7 }}>
+        <div style={{ display: 'grid', gap: 9 }}>
           {card.choices.map((choice, i) => (
             <div key={choice} style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 9,
-              padding: '7px 10px',
-              borderRadius: 10,
+              gap: 12,
+              minHeight: 45,
+              padding: '8px 14px',
+              borderRadius: 13,
               background: proto.cream,
-              border: `1.5px solid ${proto.black}`,
+              border: `2px solid ${proto.black}`,
             }}>
-              <ColorChip color={window.COLOR_OPTIONS[i].color} size={18} />
+              <ColorChip color={window.COLOR_OPTIONS[i].color} size={25} />
               <span style={{
                 color: proto.text,
-                fontSize: 13,
-                fontWeight: 800,
+                fontFamily: proto.display,
+                fontSize: 16,
+                fontWeight: 900,
                 lineHeight: 1.35,
+                letterSpacing: '0',
               }}>{choice}</span>
             </div>
           ))}
