@@ -48,7 +48,7 @@ function saveState(s) {
 }
 
 function normalizeSavedState(s) {
-  const screens = ['top', 'intro', 'play', 'result', 'friendIntro', 'friendPlay', 'friendResult', 'about', 'product'];
+  const screens = ['top', 'intro', 'play', 'resultReady', 'result', 'friendIntro', 'friendPlay', 'friendResultReady', 'friendResult', 'about', 'product'];
   if (!s || !screens.includes(s.screen)) return null;
 
   const cards = Array.isArray(s.cards) ? s.cards : [];
@@ -61,9 +61,9 @@ function normalizeSavedState(s) {
     return { screen: 'play', qIdx, answers: answers.slice(0, qIdx), cards };
   }
 
-  if (s.screen === 'result') {
+  if (s.screen === 'resultReady' || s.screen === 'result') {
     if (!cards.length || !answers.length) return null;
-    return { screen: 'result', qIdx: 0, answers, cards };
+    return { screen: s.screen, qIdx: 0, answers, cards };
   }
 
   if (s.screen === 'friendPlay') {
@@ -71,9 +71,9 @@ function normalizeSavedState(s) {
     return { screen: 'friendPlay', qIdx, answers: answers.slice(0, qIdx), cards, playerCount };
   }
 
-  if (s.screen === 'friendResult') {
+  if (s.screen === 'friendResultReady' || s.screen === 'friendResult') {
     if (!cards.length || !answers.length) return null;
-    return { screen: 'friendResult', qIdx: 0, answers, cards, playerCount };
+    return { screen: s.screen, qIdx: 0, answers, cards, playerCount };
   }
 
   return { screen: s.screen, qIdx: 0, answers: [], cards: [], playerCount };
@@ -226,7 +226,7 @@ function App() {
     const next = [...answers, { girl: girlIdx, boy: boyIdx, match: girlIdx === boyIdx }];
     setAnswers(next);
     if (qIdx + 1 >= cards.length) {
-      setScreen('result');
+      setScreen('resultReady');
     } else {
       setQIdx(qIdx + 1);
     }
@@ -236,7 +236,7 @@ function App() {
     const next = [...answers, round];
     setAnswers(next);
     if (qIdx + 1 >= cards.length) {
-      setScreen('friendResult');
+      setScreen('friendResultReady');
     } else {
       setQIdx(qIdx + 1);
     }
@@ -293,6 +293,16 @@ function App() {
             onBack={() => setScreen('friendIntro')}
           />
         )}
+        {screen === 'resultReady' && (
+          <ResultReadyScreen
+            title="5問終了！"
+            subtitle="答え合わせは結果画面でまとめて見られます"
+            detail="ふたりの理解度、そろそろ発表します。"
+            buttonLabel="結果を見る"
+            onResult={() => setScreen('result')}
+            onHome={backToTop}
+          />
+        )}
         {screen === 'result' && (
           <ResultScreen
             answers={answers}
@@ -301,6 +311,16 @@ function App() {
             onHome={backToTop}
             onAbout={() => setScreen('about')}
             onProduct={() => setScreen('product')}
+          />
+        )}
+        {screen === 'friendResultReady' && (
+          <ResultReadyScreen
+            title="5問終了！"
+            subtitle="友情チェックの答え合わせをまとめて発表します"
+            detail="誰がどれだけ本人を分かっていたか、結果で確認しよう。"
+            buttonLabel="友情結果を見る"
+            onResult={() => setScreen('friendResult')}
+            onHome={backToTop}
           />
         )}
         {screen === 'friendResult' && (
@@ -910,6 +930,73 @@ function QuestionProgress({ qIdx, total, label = 'QUESTION' }) {
         color: proto.textSoft,
         whiteSpace: 'nowrap',
       }}>あと{remaining}問</span>
+    </div>
+  );
+}
+
+function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onHome }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: proto.pink,
+      color: proto.white,
+      padding: '54px 22px 34px',
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      <Decor />
+      <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+        <PillLabel>RESULT READY</PillLabel>
+        <div style={{ marginTop: 18 }}>
+          <LogoText size={40} color={proto.yellow} outline="#000000" lineHeight={1.15}>
+            {title}
+          </LogoText>
+        </div>
+        <div style={{
+          margin: '22px auto 0',
+          maxWidth: 360,
+          background: proto.white,
+          color: proto.black,
+          border: `3px solid ${proto.black}`,
+          borderRadius: 18,
+          boxShadow: proto.shadowHard,
+          padding: '22px 18px',
+          boxSizing: 'border-box',
+        }}>
+          <div style={{
+            fontSize: 18,
+            fontWeight: 900,
+            lineHeight: 1.45,
+          }}>{subtitle}</div>
+          <div style={{
+            marginTop: 12,
+            fontSize: 13,
+            fontWeight: 700,
+            lineHeight: 1.7,
+            color: proto.textSoft,
+          }}>{detail}</div>
+        </div>
+        <button onClick={onResult} style={{ ...primaryBtn(), marginTop: 24 }}>
+          {buttonLabel}
+        </button>
+        <button onClick={onHome} style={{
+          marginTop: 12,
+          background: 'transparent',
+          border: 'none',
+          color: proto.white,
+          fontSize: 12,
+          fontWeight: 800,
+          textDecoration: 'underline',
+          textUnderlineOffset: 4,
+          cursor: 'pointer',
+        }}>
+          トップに戻る
+        </button>
+      </div>
     </div>
   );
 }
