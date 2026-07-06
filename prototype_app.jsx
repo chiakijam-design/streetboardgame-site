@@ -956,6 +956,11 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
+  const shouldBreakTitle = tier.title.length >= 12 && tier.title.endsWith('カップル');
+  const titleSize = shouldBreakTitle ? 21 : (tier.title.length >= 14 ? 18 : 23);
+  const titleNode = shouldBreakTitle
+    ? <>{tier.title.replace(/カップル$/, '')}<br/>カップル</>
+    : tier.title;
 
   const shareText = `彼氏の愛情判定ゲームで${score}/${total}問正解！結果は『${tier.title}』でした。\n${tier.shareHook} ♡\nあなたたちは何問当たる？`;
   const shareUrl = window.location.href;
@@ -989,18 +994,8 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
     }}>
       <Decor />
 
-      <div style={{ padding: '50px 22px 16px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '42px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <PillLabel>YOUR RESULT</PillLabel>
-        <div style={{
-          marginTop: 14,
-          animation: 'scorePop 0.8s ease',
-        }}>
-          <LogoText size={88} lineHeight={1}>{score}/{total}</LogoText>
-        </div>
-        <div style={{
-          fontFamily: proto.caption, fontSize: 11,
-          color: proto.white, marginTop: 4, letterSpacing: '0.2em', opacity: 0.85,
-        }}>問正解</div>
       </div>
       <style>{`
         @keyframes scorePop {
@@ -1011,47 +1006,139 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
       `}</style>
 
       <div style={{
-        margin: '20px 18px 0', padding: '24px 20px',
+        margin: '18px 18px 0',
+        padding: '0 0 18px',
         background: proto.white,
         border: `3px solid ${proto.black}`,
-        borderRadius: 18,
-        boxShadow: '5px 5px 0 #000',
+        borderRadius: 16,
+        boxShadow: '6px 6px 0 #000',
         textAlign: 'center', position: 'relative',
+        overflow: 'hidden',
       }}>
         <div style={{
-          position: 'absolute', top: -16, left: '50%',
-          transform: 'translateX(-50%) rotate(-2deg)',
-          background: tier.tagBg, color: tagTextColor,
-          padding: '5px 16px', borderRadius: 8,
-          border: `2.5px solid ${proto.black}`,
-          fontSize: 10, fontWeight: 800, letterSpacing: '0.2em',
-          whiteSpace: 'nowrap', fontFamily: proto.body,
-          boxShadow: '2px 2px 0 #000',
-        }}>{tier.tag}</div>
-        {/* キャラクター: 点数によって表情変化 */}
-        <div style={{
-          marginTop: 14,
-          display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 6,
+          background: proto.black,
+          color: proto.white,
+          padding: '9px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          fontFamily: proto.caption,
+          fontSize: 10,
+          letterSpacing: '0.18em',
         }}>
-          <div style={{
-            filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.12))',
-          }}>
-            <Girl variant={girlVariantForScore(score, total)} height={170} />
+          <span>LOVE CHECK RESULT</span>
+          <span style={{
+            background: tier.tagBg,
+            color: tagTextColor,
+            padding: '4px 9px',
+            borderRadius: 999,
+            border: `1.5px solid ${proto.white}`,
+            fontFamily: proto.body,
+            fontSize: 9,
+            fontWeight: 900,
+            letterSpacing: '0.08em',
+            whiteSpace: 'nowrap',
+          }}>{tier.tag}</span>
+        </div>
+
+        <div style={{
+          margin: '14px 16px 0',
+          padding: '12px 12px',
+          border: `2.5px dashed ${proto.pink}`,
+          borderRadius: 14,
+          background: proto.cream,
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 118px',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <div style={{ textAlign: 'left', paddingLeft: 2 }}>
+            <div style={{
+              fontFamily: proto.caption,
+              fontSize: 10,
+              color: proto.pink,
+              letterSpacing: '0.15em',
+              marginBottom: 3,
+              fontWeight: 800,
+            }}>彼氏理解度</div>
+            <div style={{ animation: 'scorePop 0.8s ease' }}>
+              <LogoText size={54} color={proto.pink} outline={proto.black} lineHeight={1}>
+                {score}/{total}
+              </LogoText>
+            </div>
+            <div style={{
+              display: 'inline-block',
+              marginTop: 4,
+              padding: '3px 9px',
+              background: proto.yellow,
+              color: proto.black,
+              border: `2px solid ${proto.black}`,
+              borderRadius: 999,
+              fontSize: 10,
+              fontWeight: 900,
+            }}>問正解</div>
           </div>
           <div style={{
-            fontSize: 36, marginBottom: 10,
-            animation: 'scorePop 0.8s ease 0.2s both',
-          }}>{tier.emoji}</div>
+            position: 'relative',
+            minHeight: 138,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}>
+            <div style={{
+              position: 'absolute',
+              right: 0,
+              top: 4,
+              fontSize: 34,
+              animation: 'scorePop 0.8s ease 0.2s both',
+              zIndex: 2,
+            }}>{tier.emoji}</div>
+            <div style={{
+              filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.12))',
+              transform: 'translateY(8px)',
+            }}>
+              <Girl variant={girlVariantForScore(score, total)} height={150} />
+            </div>
+          </div>
         </div>
-        <div style={{ marginTop: 14 }}>
-          <LogoText size={22} color={proto.pink} outline={proto.black}>
-            {tier.title}
+
+        <div style={{
+          margin: '14px 18px 0',
+          padding: '4px 0 0',
+        }}>
+          <LogoText size={titleSize} color={proto.pink} outline={proto.black} lineHeight={1.25}>
+            {titleNode}
           </LogoText>
         </div>
         <div style={{
-          fontSize: 12, color: proto.text, marginTop: 12,
-          lineHeight: 1.8, whiteSpace: 'pre-line', fontWeight: 600,
+          margin: '13px 18px 0',
+          padding: '12px 12px',
+          background: score >= 4 ? proto.yellow : proto.white,
+          border: `2.5px solid ${proto.black}`,
+          borderRadius: 12,
+          boxShadow: '3px 3px 0 #000',
+          fontSize: 12,
+          color: proto.text,
+          lineHeight: 1.75,
+          whiteSpace: 'pre-line',
+          fontWeight: 700,
         }}>{tier.msg}</div>
+
+        <div style={{
+          margin: '14px 18px 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          fontFamily: proto.caption,
+          color: proto.textSoft,
+          fontSize: 9,
+          letterSpacing: '0.12em',
+        }}>
+          <span>streetboardgame.com</span>
+          <span style={{ color: proto.pink, fontWeight: 900 }}>何問当たる？</span>
+        </div>
       </div>
 
       {/* 内訳 */}
