@@ -29,7 +29,7 @@ const proto = {
   shadowHard: '4px 4px 0 #1A1A1A',
 };
 
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 // localStorage
 const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
@@ -46,6 +46,45 @@ function loadState() {
 }
 function saveState(s) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {}
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function captureResultImage(node) {
+  if (!node || !window.html2canvas) throw new Error('capture-unavailable');
+  const canvas = await window.html2canvas(node, {
+    backgroundColor: null,
+    scale: Math.min(3, window.devicePixelRatio || 2),
+    useCORS: true,
+  });
+  return await new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('blob-failed')), 'image/png');
+  });
+}
+
+async function shareResultImage({ node, filename, title, text, url }) {
+  const blob = await captureResultImage(node);
+  const file = new File([blob], filename, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({ title, text, url, files: [file] });
+    return 'shared';
+  }
+  if (navigator.share) {
+    await navigator.share({ title, text, url });
+    downloadBlob(blob, filename);
+    return 'shared-download';
+  }
+  downloadBlob(blob, filename);
+  return 'downloaded';
 }
 
 function normalizeSavedState(s) {
@@ -1324,6 +1363,8 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
+  const resultCardRef = useRef(null);
   const titleBreaks = {
     '彼女理解は初期設定中': ['彼女理解は', '初期設定中'],
     '彼女クイズ見習い中': ['彼女クイズ', '見習い中'],
@@ -1382,6 +1423,36 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
     window.open(target, '_blank', 'noopener,noreferrer,width=600,height=500');
   };
 
+  const handleSaveImage = async () => {
+    setImageBusy(true);
+    try {
+      const blob = await captureResultImage(resultCardRef.current);
+      downloadBlob(blob, `watachan-love-result-${score}-${total}.png`);
+    } catch (e) {
+      alert('画像の作成に失敗しました。もう一度試してみてください。');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
+  const handleShareImage = async () => {
+    setImageBusy(true);
+    try {
+      await shareResultImage({
+        node: resultCardRef.current,
+        filename: `watachan-love-result-${score}-${total}.png`,
+        title: 'わたちゃん 彼氏の愛情判定ゲーム',
+        text: xShareText,
+        url: shareUrl,
+      });
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
   const tagTextColor = tier.tagBg === proto.yellow || tier.tagBg === proto.cyan ? proto.black : proto.white;
 
   return (
@@ -1405,7 +1476,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
         }
       `}</style>
 
-      <div style={{
+      <div ref={resultCardRef} style={{
         margin: '18px 18px 0',
         padding: '0 0 18px',
         background: proto.white,
@@ -1658,7 +1729,11 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
 
       {/* シェア */}
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
-        <ScreenshotHint />
+        <ResultImageActions
+          busy={imageBusy}
+          onSave={handleSaveImage}
+          onShare={handleShareImage}
+        />
         <div style={{
           fontFamily: proto.caption, fontSize: 10,
           color: proto.white, letterSpacing: '0.25em',
@@ -1775,7 +1850,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   );
 }
 
-function ScreenshotHint() {
+function ResultImageActions({ busy, onSave, onShare }) {
   return (
     <div style={{
       background: proto.white,
@@ -1788,9 +1863,39 @@ function ScreenshotHint() {
       fontWeight: 900,
       lineHeight: 1.45,
     }}>
-      <div style={{ fontSize: 14 }}>スクショしてシェア</div>
+      <div style={{ fontSize: 14 }}>結果画像をかんたん保存・シェア</div>
       <div style={{ marginTop: 2, fontSize: 10, color: proto.textSoft }}>
-        結果カードが見える位置で撮るとSNSに載せやすいです
+        画像とハッシュタグつき文面で、そのままSNSに投稿できます
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+        <button onClick={onSave} disabled={busy} style={{
+          minHeight: 44,
+          borderRadius: 10,
+          border: `2px solid ${proto.black}`,
+          background: proto.yellow,
+          color: proto.black,
+          fontFamily: proto.body,
+          fontSize: 12,
+          fontWeight: 900,
+          boxShadow: '2px 2px 0 #000',
+          opacity: busy ? 0.65 : 1,
+        }}>
+          {busy ? '作成中...' : '画像を保存'}
+        </button>
+        <button onClick={onShare} disabled={busy} style={{
+          minHeight: 44,
+          borderRadius: 10,
+          border: `2px solid ${proto.black}`,
+          background: proto.black,
+          color: proto.white,
+          fontFamily: proto.body,
+          fontSize: 12,
+          fontWeight: 900,
+          boxShadow: '2px 2px 0 #000',
+          opacity: busy ? 0.65 : 1,
+        }}>
+          {busy ? '作成中...' : '画像でシェア'}
+        </button>
       </div>
     </div>
   );
@@ -2293,6 +2398,8 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const tier = [...FRIEND_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FRIEND_RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
+  const resultCardRef = useRef(null);
   const shareUrl = `${location.origin}/?screen=friendIntro`;
   const shareText = `友達の友情確認ゲームで${score}/${maxScore}的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n友達とやったら何問当たる？\n#わたちゃん #友情確認ゲーム #streetboardgame`;
 
@@ -2317,6 +2424,36 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
     );
   };
 
+  const handleSaveImage = async () => {
+    setImageBusy(true);
+    try {
+      const blob = await captureResultImage(resultCardRef.current);
+      downloadBlob(blob, `watachan-friend-result-${score}-${maxScore}.png`);
+    } catch (e) {
+      alert('画像の作成に失敗しました。もう一度試してみてください。');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
+  const handleShareImage = async () => {
+    setImageBusy(true);
+    try {
+      await shareResultImage({
+        node: resultCardRef.current,
+        filename: `watachan-friend-result-${score}-${maxScore}.png`,
+        title: 'わたちゃん 友達の友情判定ゲーム',
+        text: shareText,
+        url: shareUrl,
+      });
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -2329,7 +2466,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       <div style={{ padding: '58px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <PillLabel>FRIEND RESULT</PillLabel>
       </div>
-      <div style={{
+      <div ref={resultCardRef} style={{
         margin: '18px 18px 0',
         background: proto.white,
         border: `3px solid ${proto.black}`,
@@ -2475,7 +2612,11 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
-        <ScreenshotHint />
+        <ResultImageActions
+          busy={imageBusy}
+          onSave={handleSaveImage}
+          onShare={handleShareImage}
+        />
         <div style={{
           fontFamily: proto.caption, fontSize: 10,
           color: proto.white, letterSpacing: '0.25em',
