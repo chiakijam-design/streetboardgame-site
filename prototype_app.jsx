@@ -808,10 +808,20 @@ function Countdown({ n }) {
   );
 }
 
+const MISS_MESSAGES = [
+  <>彼氏、今日は読心術お休みです。<br/>あとで答え合わせ会しよ ♡</>,
+  <>そこ外すの、逆に才能。<br/>彼女検定、追試決定です ✦</>,
+  <>彼女の取扱説明書、<br/>まだ第1章で止まってます。</>,
+  <>惜しいようで惜しくないかも。<br/>でも伸びしろは満点 ♡</>,
+  <>今のは彼女からの小テスト。<br/>彼氏、補習入りました。</>,
+  <>気持ちは近い。答えは遠い。<br/>次で名誉挽回しよ ✦</>,
+];
+
 function Reveal({ card, girlPick, boyPick, onNext }) {
   const girlOpt = window.COLOR_OPTIONS[girlPick];
   const boyOpt = window.COLOR_OPTIONS[boyPick];
   const match = girlPick === boyPick;
+  const missMessage = MISS_MESSAGES[(card.id + girlPick + boyPick) % MISS_MESSAGES.length];
 
   return (
     <div style={{
@@ -854,7 +864,7 @@ function Reveal({ card, girlPick, boyPick, onNext }) {
       }}>
         {match
           ? <>彼はあなたの気持ちを<br/>ちゃんと分かってる ♡</>
-          : <>彼女の気持ち、伝えてあげて ✦<br/>これからもっと知っていこう</>
+          : missMessage
         }
       </div>
 
