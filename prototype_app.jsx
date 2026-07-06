@@ -33,6 +33,7 @@ const { useState, useEffect } = React;
 // localStorage
 const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
 const ROUND_SIZE = 5;
+const AMAZON_URL = 'https://www.amazon.co.jp/dp/B0G87M4ZYK';
 function loadState() {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (e) { return null; }
 }
@@ -1327,6 +1328,36 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
             }}>
               54問入り・カードゲーム版
             </div>
+            <div style={{
+              fontSize: 11, color: proto.textSoft, marginTop: 4,
+              lineHeight: 1.45, fontWeight: 700,
+            }}>
+              飲み会・旅行・おうちデートでもっと深掘り
+            </div>
+            <a
+              href={AMAZON_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 9,
+                minHeight: 34,
+                padding: '0 12px',
+                borderRadius: 999,
+                background: '#FF9900',
+                color: proto.white,
+                border: `2px solid ${proto.black}`,
+                boxShadow: '2px 2px 0 #000',
+                fontSize: 11,
+                fontWeight: 900,
+                textDecoration: 'none',
+              }}
+            >
+              Amazon版を見る
+            </a>
           </div>
           <div style={{
             color: proto.pink, fontSize: 20, fontWeight: 800,
@@ -1729,7 +1760,7 @@ function ProductScreen({ onBack }) {
             </div>
 
             <a
-              href="https://www.amazon.co.jp/dp/B0G87M4ZYK"
+              href={AMAZON_URL}
               target="_blank" rel="noopener noreferrer"
               style={{
                 display: 'block', textAlign: 'center', textDecoration: 'none',
