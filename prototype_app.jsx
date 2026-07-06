@@ -21,7 +21,7 @@ const proto = {
   display:    '"RocknRoll One", "Zen Maru Gothic", "Klee One", sans-serif',
   body:       '"Zen Maru Gothic", "Noto Sans JP", sans-serif',
   caption:    '"DotGothic16", monospace',
-  handwrite:  '"HuiFontP109", "HuiFont", "ふい字", "Yomogi", "Klee One", "Zen Maru Gothic", sans-serif',
+  handwrite:  '"HuiFontP29", "HuiFontP109", "HuiFont", "ふい字", "Yomogi", "Klee One", "Zen Maru Gothic", sans-serif',
 
   // シャドウ
   shadow:     '0 8px 24px rgba(236,79,136,0.25)',
