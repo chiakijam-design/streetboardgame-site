@@ -324,10 +324,10 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
       {/* 背景ノイズ感 (薄いハート散らし) */}
       <Decor />
       <h1 id="site-title" style={srOnlyStyle()}>
-        私のこと、ちゃんと分かってるよね？ 無料カップル診断ゲーム・彼氏の愛情判定
+        私のこと、ちゃんと分かってるよね？ 無料カップル診断・友情確認ゲーム
       </h1>
       <p style={srOnlyStyle()}>
-        彼氏が彼女の答えを予想し、全42問からランダムに出る5問で理解度をチェックするスマホ向けゲームです。
+        カップル版では彼氏が彼女の答えを予想し、友情確認版では2〜4人で友達の答えを予想するスマホ向け理解度チェックゲームです。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -382,7 +382,7 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
           }}>つづきから ↻</button>
         )}
         <button onClick={onStart} style={primaryBtn()}>
-          はじめる
+          カップル版をはじめる
           <span style={{
             display: 'inline-block', marginLeft: 6,
             color: proto.yellow, fontSize: 18,
@@ -394,8 +394,19 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
           marginTop: 10,
           background: proto.yellow,
         }}>
-          友達の友情確認バージョン
+          友達版で遊ぶ
         </button>
+        <div style={{
+          marginTop: 9,
+          fontSize: 11,
+          lineHeight: 1.55,
+          textAlign: 'center',
+          color: proto.white,
+          opacity: 0.88,
+          fontWeight: 700,
+        }}>
+          カップルでも、友達同士でも。スマホ1台でその場の理解度チェック。
+        </div>
       </div>
 
       {/* 注意書きシール */}
@@ -414,16 +425,16 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
         </StickyNote>
       </div>
 
-      {/* シリーズ予告 */}
+      {/* シリーズ */}
       <div style={{ padding: '28px 24px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
           fontFamily: proto.caption, fontSize: 10,
           color: proto.white, letterSpacing: '0.25em',
           marginBottom: 10, paddingLeft: 4,
-        }}>COMING SOON ✦</div>
+        }}>PLAY SERIES ✦</div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <SeriesCard emoji="👯" title="友達の友情判定" />
-          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" />
+          <SeriesCard emoji="👯" title="友達の友情判定" status="公開中" onClick={onFriend} />
+          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="準備中" />
         </div>
       </div>
 
@@ -517,25 +528,55 @@ function CardStack() {
   );
 }
 
-function SeriesCard({ emoji, title }) {
-  return (
-    <div style={{
-      flex: 1, padding: 12,
-      background: 'rgba(255,255,255,0.15)',
-      backdropFilter: 'blur(8px)',
-      borderRadius: 14,
-      border: '1.5px dashed rgba(255,255,255,0.5)',
-      textAlign: 'center',
-    }}>
+function SeriesCard({ emoji, title, status = 'COMING SOON', onClick }) {
+  const active = Boolean(onClick);
+  const inner = (
+    <>
       <div style={{ fontSize: 28, marginBottom: 4 }}>{emoji}</div>
       <div style={{
-        fontFamily: proto.body, fontSize: 11, fontWeight: 600,
+        fontFamily: proto.body, fontSize: 11, fontWeight: 700,
         color: proto.white,
       }}>{title}</div>
       <div style={{
+        display: 'inline-block',
         fontFamily: proto.caption, fontSize: 9,
-        color: proto.yellow, marginTop: 3, letterSpacing: '0.1em',
-      }}>COMING SOON</div>
+        color: active ? proto.black : proto.yellow,
+        background: active ? proto.yellow : 'transparent',
+        marginTop: 6,
+        padding: active ? '3px 8px' : 0,
+        borderRadius: 999,
+        letterSpacing: '0.1em',
+        fontWeight: 800,
+      }}>{status}</div>
+    </>
+  );
+
+  const style = {
+    flex: 1, padding: 12,
+    background: active ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.15)',
+    backdropFilter: 'blur(8px)',
+    borderRadius: 14,
+    border: active ? `2px solid ${proto.yellow}` : '1.5px dashed rgba(255,255,255,0.5)',
+    textAlign: 'center',
+    cursor: active ? 'pointer' : 'default',
+    boxShadow: active ? '3px 3px 0 #000' : 'none',
+    minHeight: 96,
+  };
+
+  if (active) {
+    return (
+      <button onClick={onClick} style={{
+        ...style,
+        fontFamily: proto.body,
+      }}>
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <div style={style}>
+      {inner}
     </div>
   );
 }
