@@ -1794,7 +1794,8 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 function FriendQuestionCard({ card }) {
   const titleLines = splitCardTitle(card.title);
   const lineYs = [40, 113, 186, 260, 333, 407, 480, 553, 627, 701, 773, 848, 922, 996, 1068];
-  const choiceYs = [302, 444, 591, 738, 874];
+  const choiceRows = [3, 5, 7, 9, 11];
+  const choiceYs = choiceRows.map((row) => Math.round((lineYs[row] + lineYs[row + 1]) / 2));
   const holes = [36, 120, 204, 288, 372, 456, 540, 624, 708];
 
   return (
