@@ -382,7 +382,7 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
           }}>つづきから ↻</button>
         )}
         <button onClick={onStart} style={primaryBtn()}>
-          カップル版をはじめる
+          彼氏の愛情を判定する
           <span style={{
             display: 'inline-block', marginLeft: 6,
             color: proto.yellow, fontSize: 18,
