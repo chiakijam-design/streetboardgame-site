@@ -1791,6 +1791,8 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 }
 
 function FriendQuestionCard({ card }) {
+  const lineRow = 76;
+  const lineOffset = 52;
   return (
     <div style={{
       position: 'relative',
@@ -1807,7 +1809,7 @@ function FriendQuestionCard({ card }) {
         position: 'absolute',
         inset: 0,
         background:
-          'linear-gradient(90deg, transparent 0 60px, rgba(236,79,136,0.28) 61px, transparent 63px), repeating-linear-gradient(0deg, #FFFFFF 0 46px, rgba(91,212,232,0.38) 47px, rgba(91,212,232,0.38) 49px, #FFFFFF 50px)',
+          `linear-gradient(90deg, transparent 0 60px, rgba(236,79,136,0.26) 61px, transparent 63px), repeating-linear-gradient(0deg, #FFFFFF 0 ${lineOffset}px, rgba(91,212,232,0.36) ${lineOffset + 1}px, rgba(91,212,232,0.36) ${lineOffset + 3}px, #FFFFFF ${lineOffset + 4}px, #FFFFFF ${lineRow}px)`,
       }} />
       <div style={{
         position: 'absolute',
@@ -1819,32 +1821,37 @@ function FriendQuestionCard({ card }) {
           'radial-gradient(circle at 22px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 70px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 118px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 166px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 214px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 262px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 310px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 358px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 406px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 454px -8px, #EC4F88 0 15px, transparent 16px), radial-gradient(circle at 502px -8px, #EC4F88 0 15px, transparent 16px)',
         borderBottom: '2px solid rgba(91,212,232,0.34)',
       }} />
-      <div style={{ position: 'relative', zIndex: 1, padding: '64px 20px 22px' }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: '70px 20px 22px' }}>
         <div style={{
           width: '72%',
-          margin: '0 auto 24px',
-          padding: '12px 10px 10px',
+          height: 54,
+          margin: '0 auto 12px',
+          padding: '8px 10px',
+          boxSizing: 'border-box',
           background: 'rgba(91,212,232,0.72)',
           boxShadow: '0 2px 10px rgba(91,212,232,0.35)',
           color: proto.text,
           fontFamily: '"Klee One", "Zen Maru Gothic", sans-serif',
           fontSize: 23,
           fontWeight: 600,
-          lineHeight: 1.35,
+          lineHeight: 1.28,
           textAlign: 'center',
           letterSpacing: '0',
           position: 'relative',
           zIndex: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>{card.title}</div>
-        <div style={{ display: 'grid', gap: 18, position: 'relative', zIndex: 2 }}>
+        <div style={{ display: 'grid', gap: 16, position: 'relative', zIndex: 2 }}>
           {card.choices.map((choice, i) => (
             <div key={choice} style={{
               position: 'relative',
               display: 'flex',
               alignItems: 'center',
               gap: 18,
-              minHeight: 58,
-              padding: '4px 8px 4px 6px',
+              minHeight: 60,
+              padding: '0 8px 0 6px',
               background: 'transparent',
             }}>
               <ColorChip color={window.COLOR_OPTIONS[i].color} size={38} />
