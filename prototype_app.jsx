@@ -643,7 +643,7 @@ function TopScreen({ onStart, hasProgress, resumeLabel, onResume, onFriend, onFa
               color: proto.pinkDeep,
               fontWeight: 900,
               lineHeight: 1.3,
-            }}>{resumeLabel || '前回のゲームを再開できます'}</span>
+            }}>{resumeLabel || '途中で閉じても、前回のゲームを再開できます'}</span>
           </button>
         )}
         <button onClick={onStart} style={primaryBtn()}>
@@ -1024,6 +1024,9 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       <div style={{ padding: '6px 18px 3px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} />
       </div>
+      <div style={{ padding: '0 18px 5px', textAlign: 'center' }}>
+        <AutoSaveHint />
+      </div>
       <div style={{ padding: '4px 18px 5px', textAlign: 'center' }}>
         <PhaseBadge phase={phase} />
       </div>
@@ -1169,6 +1172,32 @@ function QuestionProgress({ qIdx, total, label = 'QUESTION' }) {
         color: proto.textSoft,
         whiteSpace: 'nowrap',
       }}>あと{remaining}問</span>
+    </div>
+  );
+}
+
+function AutoSaveHint({ text = '途中で閉じても、トップからつづきに戻れます' }) {
+  return (
+    <div style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      maxWidth: '100%',
+      minHeight: 28,
+      padding: '5px 10px',
+      borderRadius: 999,
+      background: 'rgba(255,255,255,0.18)',
+      border: '1px solid rgba(255,255,255,0.4)',
+      color: proto.white,
+      fontSize: 10,
+      fontWeight: 800,
+      lineHeight: 1.35,
+      textAlign: 'center',
+      boxSizing: 'border-box',
+    }}>
+      <span aria-hidden="true" style={{ color: proto.yellow }}>↻</span>
+      <span>{text}</span>
     </div>
   );
 }
@@ -2374,6 +2403,9 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
       <div style={{ padding: '6px 18px 3px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} label="FRIEND Q" />
       </div>
+      <div style={{ padding: '0 18px 5px', textAlign: 'center' }}>
+        <AutoSaveHint text="途中で閉じても、トップから友情判定のつづきに戻れます" />
+      </div>
 
       <div style={{ padding: '3px 18px 5px', textAlign: 'center' }}>
         <div style={{
@@ -3176,6 +3208,9 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 
       <div style={{ padding: '6px 18px 3px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} label="FAMILY Q" />
+      </div>
+      <div style={{ padding: '0 18px 5px', textAlign: 'center' }}>
+        <AutoSaveHint text="途中で閉じても、トップから家族判定のつづきに戻れます" />
       </div>
 
       <div style={{ padding: '3px 18px 5px', textAlign: 'center' }}>
