@@ -1651,7 +1651,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
     ? <>{titleLines[0]}<br/>{titleLines[1]}</>
     : tier.title;
 
-  const shareUrl = window.location.href;
+  const shareUrl = `${location.origin}/`;
   const xShareText = `彼氏の愛情判定ゲームで${score}/${total}問正解！\n結果は「${tier.title}」でした。\n${tier.shareHook} ♡\n\nみんなは何問当たる？\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
   const instagramShareText = `彼氏の愛情判定ゲーム\n${score}/${total}問正解\n「${tier.title}」\n${tier.shareHook} ♡\n\nストーリーに載せて\n「うちら何問当たると思う？」って聞いてみて👇\n\n#わたちゃん\n${shareUrl}`;
   const lineShareText = `彼氏の愛情判定ゲームで${score}/${total}問正解！結果は「${tier.title}」でした。${tier.shareHook} ♡`;
