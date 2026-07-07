@@ -2646,32 +2646,32 @@ function PlayerScoreBoard({ answers, players, label }) {
 
   return (
     <div style={{
-      margin: '12px 16px 0',
-      padding: '10px 10px',
-      background: proto.white,
-      border: `2px solid ${proto.black}`,
-      borderRadius: 12,
-      boxShadow: '3px 3px 0 #000',
+      margin: '14px 16px 0',
+      padding: '12px 10px',
+      background: proto.black,
+      border: `2.5px solid ${proto.black}`,
+      borderRadius: 14,
+      boxShadow: '4px 4px 0 #000',
     }}>
       <div style={{
         fontFamily: proto.caption,
         fontSize: 9,
-        color: proto.pink,
+        color: proto.yellow,
         fontWeight: 900,
         letterSpacing: '0.12em',
-        marginBottom: 8,
+        marginBottom: 9,
       }}>{label}</div>
       <div style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${Math.max(1, scores.length)}, minmax(0, 1fr))`,
-        gap: 7,
+        gap: 8,
       }}>
         {scores.map((item) => (
           <div key={item.name} style={{
             minWidth: 0,
-            padding: '8px 5px',
+            padding: '10px 5px',
             background: item.score === total ? proto.yellow : proto.pinkSoft,
-            border: `1.5px solid ${proto.black}`,
+            border: `2px solid ${proto.white}`,
             borderRadius: 10,
             color: proto.text,
             fontWeight: 900,
@@ -2683,9 +2683,9 @@ function PlayerScoreBoard({ answers, players, label }) {
             }}>{item.name}</div>
             <div style={{
               marginTop: 3,
-              fontSize: 17,
+              fontSize: 22,
               lineHeight: 1,
-              fontFamily: proto.caption,
+              fontFamily: proto.display,
               color: item.score === total ? proto.black : proto.pinkDeep,
             }}>{item.score}/{total}</div>
             <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.2 }}>
@@ -2695,6 +2695,92 @@ function PlayerScoreBoard({ answers, players, label }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
+  return (
+    <>
+      <div style={{
+        fontFamily: proto.caption, fontSize: 10,
+        color: proto.white, letterSpacing: '0.25em',
+        margin: '14px 0 8px', paddingLeft: 4,
+      }}>{label}</div>
+      <div style={{ display: 'grid', gap: 10 }}>
+        {answers.map((a, i) => {
+          const card = cards[i];
+          const choices = card && card.choices ? card.choices : [];
+          const rows = [
+            { name: players[0] || '本人', pick: a.target, isTarget: true, match: true },
+            ...a.guesses.map((g, gi) => ({
+              name: players[gi + 1] || `参加者${gi + 1}`,
+              pick: g,
+              isTarget: false,
+              match: g === a.target,
+            })),
+          ];
+          return (
+            <div key={i} style={{
+              background: proto.white,
+              border: `2.5px solid ${proto.black}`,
+              borderRadius: 12,
+              boxShadow: '3px 3px 0 #000',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                padding: '8px 10px',
+                background: proto.black,
+                color: proto.white,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}>
+                <span style={{ fontFamily: proto.caption, fontSize: 10 }}>Q{i + 1}</span>
+                <span style={{ flex: 1, fontSize: 12, fontWeight: 900, textAlign: 'left' }}>{card ? card.title : ''}</span>
+              </div>
+              <div style={{
+                padding: 10,
+                color: proto.text,
+                display: 'grid',
+                gridTemplateColumns: `repeat(${Math.max(2, rows.length)}, minmax(0, 1fr))`,
+                gap: 7,
+              }}>
+                {rows.map((row) => (
+                  <div key={row.name} style={{
+                    minWidth: 0,
+                    padding: '8px 5px',
+                    borderRadius: 10,
+                    background: row.isTarget ? proto.cyan : (row.match ? proto.yellow : proto.pinkSoft),
+                    border: `1.5px solid ${proto.black}`,
+                    fontWeight: 900,
+                    textAlign: 'center',
+                  }}>
+                    <div style={{
+                      fontSize: 9,
+                      lineHeight: 1.2,
+                      color: proto.pinkDeep,
+                      overflowWrap: 'anywhere',
+                    }}>{row.name}</div>
+                    <div style={{
+                      marginTop: 5,
+                      fontSize: 11,
+                      lineHeight: 1.25,
+                      overflowWrap: 'anywhere',
+                    }}>{choices[row.pick] || '-'}</div>
+                    <div style={{
+                      marginTop: 5,
+                      fontSize: 9,
+                      lineHeight: 1,
+                      color: row.isTarget ? proto.black : (row.match ? proto.black : proto.textSoft),
+                    }}>{row.isTarget ? '本人' : (row.match ? '当たり' : 'ハズレ')}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -2823,6 +2909,11 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
             fontWeight: 900,
           }}>{tier.tag}</span>
         </div>
+        <PlayerScoreBoard
+          answers={answers}
+          players={getFriendPlayers(playerCount)}
+          label="それぞれ何問当たった？"
+        />
         <div style={{
           margin: '14px 16px 0',
           padding: 14,
@@ -2838,11 +2929,6 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           </LogoText>
           <div style={{ marginTop: 4, fontSize: 32 }}>{tier.emoji}</div>
         </div>
-        <PlayerScoreBoard
-          answers={answers}
-          players={getFriendPlayers(playerCount)}
-          label="個別スコア"
-        />
         <div style={{ margin: '14px 18px 0' }}>
           <LogoText size={tier.title.length >= 13 ? 19 : 23} color={proto.pink} outline={proto.black} lineHeight={1.25}>
             {tier.title}
@@ -2883,63 +2969,12 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           {showDetails ? '答え合わせを閉じる' : '答え合わせを見る ▼'}
         </button>
         {showDetails && (
-          <>
-        <div style={{
-          fontFamily: proto.caption, fontSize: 10,
-          color: proto.white, letterSpacing: '0.25em',
-          margin: '14px 0 8px', paddingLeft: 4,
-        }}>ANSWER DETAILS</div>
-        <div style={{ display: 'grid', gap: 10 }}>
-          {answers.map((a, i) => {
-            const card = cards[i];
-            return (
-              <div key={i} style={{
-                background: proto.white,
-                border: `2.5px solid ${proto.black}`,
-                borderRadius: 12,
-                boxShadow: '3px 3px 0 #000',
-                overflow: 'hidden',
-              }}>
-                <div style={{
-                  padding: '8px 10px',
-                  background: proto.black,
-                  color: proto.white,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}>
-                  <span style={{ fontFamily: proto.caption, fontSize: 10 }}>Q{i + 1}</span>
-                  <span style={{ flex: 1, fontSize: 12, fontWeight: 900, textAlign: 'left' }}>{card.title}</span>
-                </div>
-                <div style={{ padding: 10, color: proto.text }}>
-                  <div style={{ fontSize: 12, fontWeight: 900, marginBottom: 8 }}>
-                    本人：{card.choices[a.target]}
-                  </div>
-                  <div style={{ display: 'grid', gap: 6 }}>
-                    {a.guesses.map((g, gi) => (
-                      <div key={gi} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: 8,
-                        padding: '7px 9px',
-                        borderRadius: 9,
-                        background: g === a.target ? proto.yellow : proto.pinkSoft,
-                        border: `1.5px solid ${proto.black}`,
-                        fontSize: 11,
-                        fontWeight: 800,
-                      }}>
-                        <span>{FRIEND_PLAYERS[gi + 1]}</span>
-                        <span>{card.choices[g]}</span>
-                        <span>{g === a.target ? '当たり' : 'ハズレ'}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-          </>
+          <MultiPlayerAnswerDetails
+            answers={answers}
+            cards={cards}
+            players={getFriendPlayers(playerCount)}
+            label="ANSWER DETAILS"
+          />
         )}
       </div>
 
@@ -3352,6 +3387,11 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
             fontWeight: 900,
           }}>{tier.tag}</span>
         </div>
+        <PlayerScoreBoard
+          answers={answers}
+          players={getFamilyPlayers(playerCount)}
+          label="それぞれ何問当たった？"
+        />
         <div style={{
           margin: '14px 16px 0',
           padding: 14,
@@ -3367,11 +3407,6 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           </LogoText>
           <div style={{ marginTop: 4, fontSize: 32 }}>{tier.emoji}</div>
         </div>
-        <PlayerScoreBoard
-          answers={answers}
-          players={getFamilyPlayers(playerCount)}
-          label="個別スコア"
-        />
         <div style={{ margin: '14px 18px 0' }}>
           <LogoText size={tier.title.length >= 13 ? 19 : 23} color={proto.pink} outline={proto.black} lineHeight={1.25}>
             {tier.title}
@@ -3412,63 +3447,12 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           {showDetails ? '答え合わせを閉じる' : '答え合わせを見る ▼'}
         </button>
         {showDetails && (
-          <>
-            <div style={{
-              fontFamily: proto.caption, fontSize: 10,
-              color: proto.white, letterSpacing: '0.25em',
-              margin: '14px 0 8px', paddingLeft: 4,
-            }}>ANSWER DETAILS</div>
-            <div style={{ display: 'grid', gap: 10 }}>
-              {answers.map((a, i) => {
-                const card = cards[i];
-                return (
-                  <div key={i} style={{
-                    background: proto.white,
-                    border: `2.5px solid ${proto.black}`,
-                    borderRadius: 12,
-                    boxShadow: '3px 3px 0 #000',
-                    overflow: 'hidden',
-                  }}>
-                    <div style={{
-                      padding: '8px 10px',
-                      background: proto.black,
-                      color: proto.white,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                    }}>
-                      <span style={{ fontFamily: proto.caption, fontSize: 10 }}>Q{i + 1}</span>
-                      <span style={{ flex: 1, fontSize: 12, fontWeight: 900, textAlign: 'left' }}>{card.title}</span>
-                    </div>
-                    <div style={{ padding: 10, color: proto.text }}>
-                      <div style={{ fontSize: 12, fontWeight: 900, marginBottom: 8 }}>
-                        本人：{card.choices[a.target]}
-                      </div>
-                      <div style={{ display: 'grid', gap: 6 }}>
-                        {a.guesses.map((g, gi) => (
-                          <div key={gi} style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            gap: 8,
-                            padding: '7px 9px',
-                            borderRadius: 9,
-                            background: g === a.target ? proto.yellow : proto.pinkSoft,
-                            border: `1.5px solid ${proto.black}`,
-                            fontSize: 11,
-                            fontWeight: 800,
-                          }}>
-                            <span>{FAMILY_PLAYERS[gi + 1]}</span>
-                            <span>{card.choices[g]}</span>
-                            <span>{g === a.target ? '当たり' : 'ハズレ'}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
+          <MultiPlayerAnswerDetails
+            answers={answers}
+            cards={cards}
+            players={getFamilyPlayers(playerCount)}
+            label="ANSWER DETAILS"
+          />
         )}
       </div>
 
