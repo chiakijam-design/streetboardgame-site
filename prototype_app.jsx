@@ -3295,6 +3295,19 @@ const GROUP_RESULT_RANKS = {
   ],
 };
 
+const GROUP_RANK_COLORS = {
+  5: { bg: '#FFE26B', chip: '#FF4F8B', text: proto.black },
+  4: { bg: '#DDF7FF', chip: '#5BD4E8', text: proto.black },
+  3: { bg: '#E8F7D9', chip: '#79BD5F', text: proto.black },
+  2: { bg: '#FFF0C6', chip: '#F59A32', text: proto.black },
+  1: { bg: '#FFE4EE', chip: '#EC4F88', text: proto.black },
+  0: { bg: '#EFE9FF', chip: '#8E6BE8', text: proto.black },
+};
+
+function getGroupRankColors(score) {
+  return GROUP_RANK_COLORS[score] || GROUP_RANK_COLORS[0];
+}
+
 function getGroupResultRank(kind, score) {
   const ranks = GROUP_RESULT_RANKS[kind] || GROUP_RESULT_RANKS.friend;
   return ranks.find((rank) => rank.score === score) || ranks[ranks.length - 1];
@@ -3323,8 +3336,8 @@ function PlayerScoreBoard({ answers, players, label, kind = 'friend' }) {
         marginBottom: 9,
       }}>{label}</div>
       <div style={{
-        padding: '11px 11px',
-        background: proto.white,
+        padding: '11px 10px',
+        background: '#FFF8F1',
         border: `2px solid ${proto.white}`,
         borderRadius: 12,
         color: proto.text,
@@ -3340,21 +3353,43 @@ function PlayerScoreBoard({ answers, players, label, kind = 'friend' }) {
           fontSize: 10,
           fontWeight: 900,
         }}>ランク表</div>
-        <div style={{ display: 'grid', gap: 5 }}>
-          {ranks.map((rank) => (
+        <div style={{ display: 'grid', gap: 6 }}>
+          {ranks.map((rank) => {
+            const colors = getGroupRankColors(rank.score);
+            return (
             <div key={rank.score} style={{
               display: 'grid',
-              gridTemplateColumns: '54px minmax(0, 1fr)',
+              gridTemplateColumns: '64px minmax(0, 1fr)',
               alignItems: 'baseline',
               gap: 8,
+              padding: '7px 8px',
+              background: colors.bg,
+              border: `1.5px solid ${proto.black}`,
+              borderRadius: 10,
+              boxShadow: '2px 2px 0 rgba(0,0,0,0.18)',
               fontSize: 11,
               lineHeight: 1.35,
               fontWeight: 900,
             }}>
-              <span style={{ color: proto.pinkDeep }}>{rank.score}問正解</span>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 28,
+                padding: '0 6px',
+                borderRadius: 999,
+                background: colors.chip,
+                color: proto.white,
+                border: `1.5px solid ${proto.black}`,
+                boxShadow: '1.5px 1.5px 0 #000',
+                fontSize: 10,
+                textShadow: '1px 1px 0 rgba(0,0,0,0.28)',
+                whiteSpace: 'nowrap',
+              }}>{rank.score}問</span>
               <span>{rank.name}<span style={{ display: 'block', color: proto.textSoft, fontSize: 10, marginTop: 1 }}>{rank.note}</span></span>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       <div style={{
@@ -3477,16 +3512,35 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillText('ランク表', 540, rankTop + 44);
   ranks.forEach((rank, index) => {
     const y = rankTop + 88 + index * 43;
-    ctx.fillStyle = proto.pinkDeep;
-    ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`${rank.score}問正解`, 190, y);
+    const colors = getGroupRankColors(rank.score);
+    ctx.fillStyle = colors.bg;
+    roundRect(ctx, 176, y - 28, 728, 39, 14);
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = proto.black;
+    roundRect(ctx, 176, y - 28, 728, 39, 14);
+    ctx.stroke();
+
+    ctx.fillStyle = colors.chip;
+    roundRect(ctx, 198, y - 22, 104, 28, 14);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = proto.black;
+    roundRect(ctx, 198, y - 22, 104, 28, 14);
+    ctx.stroke();
+
+    ctx.fillStyle = proto.white;
+    ctx.font = '900 20px "Zen Maru Gothic", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${rank.score}問`, 250, y - 2);
+
     ctx.fillStyle = proto.black;
-    ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
-    ctx.fillText(rank.name, 330, y);
+    ctx.font = '900 23px "Zen Maru Gothic", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(rank.name, 326, y - 6);
     ctx.fillStyle = proto.textSoft;
-    ctx.font = '800 19px "Zen Maru Gothic", sans-serif';
-    ctx.fillText(rank.note, 330, y + 25);
+    ctx.font = '800 17px "Zen Maru Gothic", sans-serif';
+    ctx.fillText(rank.note, 326, y + 15);
   });
 
   ctx.fillStyle = proto.black;
