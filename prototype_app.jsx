@@ -116,6 +116,19 @@ function showTemporaryStatus(setStatus, message, ms = 2800) {
   setTimeout(() => setStatus(''), ms);
 }
 
+function openInstagramApp() {
+  const ua = navigator.userAgent || '';
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  if (!isMobile) {
+    window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
+    return;
+  }
+  window.location.href = 'instagram://story-camera';
+  setTimeout(() => {
+    window.location.href = 'https://www.instagram.com/';
+  }, 900);
+}
+
 function getLoveResultImageSrc(score) {
   const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
   return `/assets/results/love-${safeScore}.png`;
@@ -1702,6 +1715,25 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
     }
   };
 
+  const handleInstagramShare = async () => {
+    setImageBusy(true);
+    try {
+      copyToClipboard(instagramShareText, 'instagram');
+      const result = await savePreparedImage({
+        src: preparedResultImageSrc,
+        filename: `watachan-love-result-${score}-${total}.png`,
+        title: 'わたちゃん 彼氏の愛情判定ゲーム',
+      });
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます`);
+      setTimeout(openInstagramApp, 450);
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      alert('画像の準備に失敗しました。もう一度試してみてください。');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
   const handleShareImage = async () => {
     setImageBusy(true);
     try {
@@ -2005,7 +2037,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
           busy={imageBusy}
           onShare={handleShareImage}
           onX={() => handleShare('x')}
-          onInstagram={handleSaveImage}
+          onInstagram={handleInstagramShare}
           status={imageStatus}
         />
         <button onClick={() => handleShare('copy')} style={textOnlyBtn()}>
@@ -2141,7 +2173,7 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '' }) {
       }}>SHARE YOUR RESULT</div>
       <div style={{ fontSize: 16 }}>答え合わせを見たら結果をシェア</div>
       <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
-        Xは投稿画面へ、Instagramは画像保存からストーリーへ
+        Xは投稿画面へ、Instagramは画像保存後にアプリを開きます
       </div>
       <div style={{
         display: 'grid',
@@ -2177,7 +2209,7 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '' }) {
           opacity: busy ? 0.65 : 1,
           cursor: busy ? 'default' : 'pointer',
         }}>
-          IG用に保存
+          IG用に保存→開く
         </button>
       </div>
       <button onClick={onShare} disabled={busy} style={{
@@ -3254,6 +3286,25 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
     }
   };
 
+  const handleInstagramShare = async () => {
+    setImageBusy(true);
+    try {
+      copyShareText();
+      const result = await savePreparedImage({
+        src: preparedResultImageSrc,
+        filename: `watachan-friend-result-${totalQuestions}.png`,
+        title: 'わたちゃん 友達の友情判定ゲーム',
+      });
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます`);
+      setTimeout(openInstagramApp, 450);
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      alert('画像の準備に失敗しました。もう一度試してみてください。');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
   const handleShareImage = async () => {
     setImageBusy(true);
     try {
@@ -3374,7 +3425,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           busy={imageBusy}
           onShare={handleShareImage}
           onX={openX}
-          onInstagram={handleSaveImage}
+          onInstagram={handleInstagramShare}
           status={imageStatus}
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
@@ -3706,6 +3757,25 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
     }
   };
 
+  const handleInstagramShare = async () => {
+    setImageBusy(true);
+    try {
+      copyShareText();
+      const result = await savePreparedImage({
+        src: preparedResultImageSrc,
+        filename: `watachan-family-result-${totalQuestions}.png`,
+        title: 'わたちゃん 家族の絆判定ゲーム',
+      });
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます`);
+      setTimeout(openInstagramApp, 450);
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      alert('画像の準備に失敗しました。もう一度試してみてください。');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
   const handleShareImage = async () => {
     setImageBusy(true);
     try {
@@ -3826,7 +3896,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           busy={imageBusy}
           onShare={handleShareImage}
           onX={openX}
-          onInstagram={handleSaveImage}
+          onInstagram={handleInstagramShare}
           status={imageStatus}
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
