@@ -42,6 +42,7 @@ const COLOR_LABELS = ['緑', '青', '黄', '赤', '橙'];
 const RESULT_IMAGE_VERSION = 'results-20260707-2';
 const HANDOFF_DELAY_MS = 600;
 const FINAL_HANDOFF_DELAY_MS = 1000;
+const LOVE_RETURN_DELAY_MS = 1300;
 function normalizeFriendPlayerCount(value) {
   const n = Number(value);
   return [2, 3, 4].includes(n) ? n : 2;
@@ -974,7 +975,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
     if (boyPick !== null) return;
     setBoyPick(i);
     setHandoffMessage(qIdx + 1 >= total ? '彼女に渡して結果を見てね' : '彼女に渡して次の問題へ');
-    setTimeout(() => onAnswer(girlPick, i), FINAL_HANDOFF_DELAY_MS);
+    setTimeout(() => onAnswer(girlPick, i), LOVE_RETURN_DELAY_MS);
   };
 
   if (!card) return null;
