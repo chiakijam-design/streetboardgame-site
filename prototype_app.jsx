@@ -1075,6 +1075,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
             selected={girlPick}
             onPick={onGirlPick}
             highlight={proto.yellow}
+            mode="answer"
             instruction="♀ 彼女のターン  ── 彼氏には見せずに、自分が思った答えの色を選んでね"
           />
         )}
@@ -1097,6 +1098,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
               selected={boyPick}
               onPick={onBoyPick}
               highlight={proto.cyan}
+              mode="guess"
               instruction="♂ 彼氏のターン  ── 彼女が選んだ色を予想してタップ"
             />
           </>
@@ -1418,8 +1420,21 @@ function HandoffOverlay({ message }) {
   );
 }
 
-function ColorPicker({ selected, onPick, highlight, instruction }) {
+function getTurnColorTheme(mode, highlight) {
+  const isGuess = mode === 'guess';
+  const color = isGuess ? proto.cyan : proto.yellow;
+  return {
+    color: highlight || color,
+    label: isGuess ? '予想の番' : '本人の番',
+    panelBg: isGuess ? 'rgba(91,212,232,0.32)' : 'rgba(255,226,107,0.32)',
+    panelBorder: isGuess ? 'rgba(91,212,232,0.78)' : 'rgba(255,226,107,0.82)',
+    labelBg: color,
+  };
+}
+
+function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer' }) {
   const isLocked = selected !== null && selected !== undefined;
+  const theme = getTurnColorTheme(mode, highlight);
   return (
     <div style={{
       position: 'fixed',
@@ -1444,12 +1459,12 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
         }}>{instruction}</div>
       )}
       <div style={{
-        background: 'rgba(255,255,255,0.24)',
+        background: theme.panelBg,
         backdropFilter: 'blur(8px)',
-        border: '2px solid rgba(255,255,255,0.55)',
+        border: `2.5px solid ${theme.panelBorder}`,
         borderRadius: 18,
         padding: '9px 10px 9px',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+        boxShadow: `0 8px 24px rgba(0,0,0,0.18), inset 0 0 0 1px ${theme.color}`,
       }}>
         <div style={{
           display: 'flex',
@@ -1460,10 +1475,22 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
           color: proto.white,
           fontWeight: 900,
         }}>
-          <span style={{ fontSize: 11 }}>色を選ぶ</span>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            minHeight: 22,
+            padding: '2px 9px',
+            borderRadius: 999,
+            background: theme.labelBg,
+            color: proto.black,
+            border: `1.5px solid ${proto.black}`,
+            boxShadow: '2px 2px 0 rgba(0,0,0,0.55)',
+            fontSize: 11,
+            lineHeight: 1,
+          }}>{theme.label}</span>
           <span style={{
             fontSize: 10,
-            color: isLocked ? proto.yellow : proto.white,
+            color: isLocked ? theme.color : proto.white,
             opacity: isLocked ? 1 : 0.78,
           }}>{isLocked ? `${COLOR_LABELS[selected]}を選択済み` : 'タップで決定'}</span>
         </div>
@@ -1498,7 +1525,7 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
                   color={opt.color}
                   size={40}
                   selected={isSelected}
-                  highlight={highlight}
+                  highlight={theme.color}
                 />
                 <span style={{
                   marginTop: 4,
@@ -2567,6 +2594,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             selected={targetPick}
             onPick={handlePick}
             highlight={proto.yellow}
+            mode="answer"
             instruction="本人だけが見て、自分が思ったものを選んでね"
           />
         )}
@@ -2588,6 +2616,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
               selected={guesses[turn - 1]}
               onPick={handlePick}
               highlight={proto.cyan}
+              mode="guess"
               instruction={`${currentPlayer}のターン ── 本人が選んだ色を予想`}
             />
           </>
@@ -3452,6 +3481,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             selected={targetPick}
             onPick={handlePick}
             highlight={proto.yellow}
+            mode="answer"
             instruction="本人だけが見て、自分が思ったものを選んでね"
           />
         )}
@@ -3473,6 +3503,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
               selected={guesses[turn - 1]}
               onPick={handlePick}
               highlight={proto.cyan}
+              mode="guess"
               instruction={`${currentPlayer}のターン ── 本人が選んだ色を予想`}
             />
           </>
