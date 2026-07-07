@@ -3788,18 +3788,6 @@ function ProductScreen({ onBack }) {
                   </div>
                 </StickyNote>
               </div>
-
-              <div style={{
-                position: 'absolute',
-                left: 18,
-                right: 18,
-                bottom: 20,
-                zIndex: 1,
-                height: 42,
-                borderRadius: 10,
-                background: 'rgba(0,0,0,0.12)',
-                border: '1.5px dashed rgba(255,255,255,0.45)',
-              }} />
             </div>
 
             <div style={{
