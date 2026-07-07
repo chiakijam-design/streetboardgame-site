@@ -40,6 +40,44 @@ const RESULT_IMAGE_VERSION = 'results-20260707-2';
 const HANDOFF_DELAY_MS = 600;
 const FINAL_HANDOFF_DELAY_MS = 1000;
 const LOVE_RETURN_DELAY_MS = 1300;
+const PLAYER_NAME_STORAGE_KEY = 'watachan-player-names-v1';
+const DEFAULT_PLAYER_NAMES = {
+  love: ['彼女', '彼氏'],
+  friend: ['本人', '友達A', '友達B', '友達C'],
+  family: ['本人', '家族A', '家族B', '家族C'],
+};
+
+function sanitizePlayerName(value, fallback) {
+  const text = String(value || '').trim().replace(/\s+/g, ' ');
+  return (text || fallback).slice(0, 12);
+}
+
+function normalizePlayerNames(value = {}) {
+  const result = {};
+  Object.keys(DEFAULT_PLAYER_NAMES).forEach((kind) => {
+    const defaults = DEFAULT_PLAYER_NAMES[kind];
+    const source = Array.isArray(value[kind]) ? value[kind] : [];
+    result[kind] = defaults.map((fallback, index) => sanitizePlayerName(source[index], fallback));
+  });
+  return result;
+}
+
+function loadPlayerNames() {
+  if (typeof window === 'undefined') return normalizePlayerNames();
+  try {
+    return normalizePlayerNames(JSON.parse(window.localStorage.getItem(PLAYER_NAME_STORAGE_KEY) || '{}'));
+  } catch (e) {
+    return normalizePlayerNames();
+  }
+}
+
+function savePlayerNames(names) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(PLAYER_NAME_STORAGE_KEY, JSON.stringify(normalizePlayerNames(names)));
+  } catch (e) {}
+}
+
 function normalizeFriendPlayerCount(value) {
   const n = Number(value);
   return [2, 3, 4].includes(n) ? n : 2;
@@ -251,6 +289,7 @@ function App() {
   const [answers, setAnswers] = useState(initial.answers);
   const [cards, setCards] = useState(initial.cards || []);
   const [playerCount, setPlayerCount] = useState(normalizeFriendPlayerCount(initial.playerCount));
+  const [playerNames, setPlayerNames] = useState(loadPlayerNames);
 
   // contact 指定だった場合、About にしてからフォームへスクロール
   useEffect(() => {
@@ -267,6 +306,21 @@ function App() {
       }, 350);
     }
   }, []); // 初回マウントのみ
+
+  useEffect(() => {
+    savePlayerNames(playerNames);
+  }, [playerNames]);
+
+  const updatePlayerName = (kind, index, value) => {
+    setPlayerNames((current) => {
+      const normalized = normalizePlayerNames(current);
+      const fallback = DEFAULT_PLAYER_NAMES[kind] && DEFAULT_PLAYER_NAMES[kind][index];
+      if (!fallback) return normalized;
+      normalized[kind] = [...normalized[kind]];
+      normalized[kind][index] = sanitizePlayerName(value, fallback);
+      return normalized;
+    });
+  };
 
   const startNewRound = () => {
     const picked = window.pickRandomCards(ROUND_SIZE);
@@ -357,19 +411,34 @@ function App() {
           />
         )}
         {screen === 'intro' && (
-          <IntroScreen onStart={startNewRound} onBack={() => setScreen('top')} />
+          <IntroScreen
+            onStart={startNewRound}
+            onBack={() => setScreen('top')}
+            playerNames={playerNames.love}
+            onPlayerNameChange={(index, value) => updatePlayerName('love', index, value)}
+          />
         )}
         {screen === 'friendIntro' && (
-          <FriendIntroScreen onStart={startFriendRound} onBack={() => setScreen('top')} />
+          <FriendIntroScreen
+            onStart={startFriendRound}
+            onBack={() => setScreen('top')}
+            playerNames={playerNames.friend}
+            onPlayerNameChange={(index, value) => updatePlayerName('friend', index, value)}
+          />
         )}
         {screen === 'familyIntro' && (
-          <FamilyIntroScreen onStart={startFamilyRound} onBack={() => setScreen('top')} />
+          <FamilyIntroScreen
+            onStart={startFamilyRound}
+            onBack={() => setScreen('top')}
+            playerNames={playerNames.family}
+            onPlayerNameChange={(index, value) => updatePlayerName('family', index, value)}
+          />
         )}
         {screen === 'friendOrder' && (
           <PassOrderScreen
             label="FRIEND ORDER"
             title="スマホを回す順番"
-            players={getFriendPlayers(playerCount)}
+            players={getFriendPlayers(playerCount, playerNames.friend)}
             guessName="友達"
             onStart={() => setScreen('friendPlay')}
             onBack={() => setScreen('friendIntro')}
@@ -379,7 +448,7 @@ function App() {
           <PassOrderScreen
             label="FAMILY ORDER"
             title="スマホを回す順番"
-            players={getFamilyPlayers(playerCount)}
+            players={getFamilyPlayers(playerCount, playerNames.family)}
             guessName="家族"
             onStart={() => setScreen('familyPlay')}
             onBack={() => setScreen('familyIntro')}
@@ -390,6 +459,7 @@ function App() {
             card={cards[qIdx]}
             qIdx={qIdx}
             total={cards.length}
+            players={playerNames.love}
             onAnswer={handleQAnswer}
             onBack={() => confirmLeaveGame('intro')}
           />
@@ -400,6 +470,7 @@ function App() {
             qIdx={qIdx}
             total={cards.length}
             playerCount={playerCount}
+            playerNames={playerNames.friend}
             onAnswer={handleFriendAnswer}
             onBack={() => confirmLeaveGame('friendIntro')}
           />
@@ -410,6 +481,7 @@ function App() {
             qIdx={qIdx}
             total={cards.length}
             playerCount={playerCount}
+            playerNames={playerNames.family}
             onAnswer={handleFamilyAnswer}
             onBack={() => confirmLeaveGame('familyIntro')}
           />
@@ -418,7 +490,7 @@ function App() {
           <ResultReadyScreen
             title="5問終了！"
             subtitle="答え合わせいくよ"
-            detail="彼女の答えを、彼氏が何問当てられたか発表します。ふたりで一緒に見てね。"
+            detail={`${playerNames.love[0]}の答えを、${playerNames.love[1]}が何問当てられたか発表します。ふたりで一緒に見てね。`}
             buttonLabel="答え合わせへ"
             onResult={() => setScreen('result')}
             onHome={backToTop}
@@ -428,6 +500,7 @@ function App() {
           <ResultScreen
             answers={answers}
             cards={cards}
+            players={playerNames.love}
             onReplay={startNewRound}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
@@ -438,7 +511,7 @@ function App() {
           <ResultReadyScreen
             title="5問終了！"
             subtitle="答え合わせいくよ"
-            detail="本人の答えを、友達が何問当てられたか発表します。みんなで一緒に見てね。"
+            detail={`${playerNames.friend[0]}の答えを、みんなが何問当てられたか発表します。一緒に見てね。`}
             buttonLabel="答え合わせへ"
             onResult={() => setScreen('friendResult')}
             onHome={backToTop}
@@ -449,6 +522,7 @@ function App() {
             answers={answers}
             cards={cards}
             playerCount={playerCount}
+            playerNames={playerNames.friend}
             onReplay={() => startFriendRound(playerCount)}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
@@ -458,7 +532,7 @@ function App() {
           <ResultReadyScreen
             title="5問終了！"
             subtitle="答え合わせいくよ"
-            detail="本人の答えを、家族が何問当てられたか発表します。みんなで一緒に見てね。"
+            detail={`${playerNames.family[0]}の答えを、みんなが何問当てられたか発表します。一緒に見てね。`}
             buttonLabel="答え合わせへ"
             onResult={() => setScreen('familyResult')}
             onHome={backToTop}
@@ -469,6 +543,7 @@ function App() {
             answers={answers}
             cards={cards}
             playerCount={playerCount}
+            playerNames={playerNames.family}
             onReplay={() => startFamilyRound(playerCount)}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
@@ -772,7 +847,10 @@ function SeriesCard({ emoji, title, status = 'COMING SOON', onClick }) {
 // ─────────────────────────────────────────────────────
 // INTRO — 黒背景 × ピンクのコントラスト
 // ─────────────────────────────────────────────────────
-function IntroScreen({ onStart, onBack }) {
+function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange }) {
+  const lovePlayers = normalizePlayerNames({ love: playerNames }).love;
+  const girlName = lovePlayers[0];
+  const boyName = lovePlayers[1];
   return (
     <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
       {/* ヘッダー */}
@@ -801,10 +879,16 @@ function IntroScreen({ onStart, onBack }) {
       </div>
 
       <div style={{ padding: '24px 22px' }}>
-        <StepCard n="1" text="彼女は、彼氏に見せずに自分が思った答えを選ぶ" />
-        <StepCard n="2" text="彼氏は、彼女が選んだ答えを予想して同じ色を選ぶ" />
+        <StepCard n="1" text={`${girlName}は、${boyName}に見せずに自分が思った答えを選ぶ`} />
+        <StepCard n="2" text={`${boyName}は、${girlName}が選んだ答えを予想して同じ色を選ぶ`} />
         <StepCard n="3" text="5問終わったら、何問当たったか結果発表" />
         <StepCard n="4" text="最後に当たった問題・外した問題をまとめて確認" />
+        <NameEditorPanel
+          title="名前を変える（任意）"
+          names={playerNames}
+          defaults={DEFAULT_PLAYER_NAMES.love}
+          onChange={onPlayerNameChange}
+        />
 
         <div style={{
           marginTop: 18, padding: '14px 16px',
@@ -819,7 +903,7 @@ function IntroScreen({ onStart, onBack }) {
           <div style={{ fontSize: 12, lineHeight: 1.7 }}>
             全 <span style={{ color: proto.yellow, fontWeight: 800, fontSize: 16 }}>{window.ALL_CARDS.length}</span> 問のお題から
             <span style={{ color: proto.yellow, fontWeight: 800, fontSize: 16 }}> ランダムに 5 問</span> 出題！<br/>
-            彼女の本音を、彼氏がどれだけ当てられるかをチェック。<br/>
+            {girlName}の本音を、{boyName}がどれだけ当てられるかをチェック。<br/>
             答え合わせは最後にまとめて表示されます ♡
           </div>
         </div>
@@ -861,14 +945,78 @@ function StepCard({ n, text }) {
   );
 }
 
+function NameEditorPanel({ title, names, defaults, onChange, visibleCount }) {
+  const count = visibleCount || defaults.length;
+  return (
+    <div style={{
+      marginTop: 16,
+      padding: '12px 12px',
+      background: proto.white,
+      color: proto.text,
+      border: `2.5px solid ${proto.black}`,
+      borderRadius: 14,
+      boxShadow: '3px 3px 0 #000',
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10,
+        marginBottom: 10,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 900 }}>✎ {title}</div>
+        <div style={{ fontSize: 9, color: proto.textSoft, fontWeight: 800 }}>12文字まで</div>
+      </div>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {defaults.slice(0, count).map((fallback, index) => (
+          <label key={`${fallback}-${index}`} style={{
+            display: 'grid',
+            gridTemplateColumns: '74px minmax(0, 1fr)',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 11,
+            fontWeight: 900,
+          }}>
+            <span>{fallback}</span>
+            <input
+              value={(names && names[index]) || fallback}
+              onChange={(e) => onChange(index, e.target.value)}
+              onFocus={(e) => e.target.select()}
+              placeholder={fallback}
+              aria-label={`${fallback}の表示名`}
+              maxLength={12}
+              style={{
+                minWidth: 0,
+                height: 38,
+                padding: '0 10px',
+                borderRadius: 10,
+                border: `2px solid ${proto.black}`,
+                background: '#FFF8F1',
+                color: proto.text,
+                fontFamily: proto.body,
+                fontSize: 13,
+                fontWeight: 900,
+                boxSizing: 'border-box',
+              }}
+            />
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────
 // PLAY — 同時発表式
 // ─────────────────────────────────────────────────────
-function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
+function PlayScreen({ card, qIdx, total, players, onAnswer, onBack }) {
   const [phase, setPhase] = useState('girl');
   const [girlPick, setGirlPick] = useState(null);
   const [boyPick, setBoyPick] = useState(null);
   const [handoffMessage, setHandoffMessage] = useState('');
+  const lovePlayers = normalizePlayerNames({ love: players }).love;
+  const girlName = lovePlayers[0];
+  const boyName = lovePlayers[1];
 
   useEffect(() => {
     setPhase('girl'); setGirlPick(null); setBoyPick(null); setHandoffMessage('');
@@ -877,7 +1025,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
   const onGirlPick = (i) => {
     if (girlPick !== null) return;
     setGirlPick(i);
-    setHandoffMessage('彼氏に渡してね');
+    setHandoffMessage(`${boyName}に渡してね`);
     setTimeout(() => {
       setHandoffMessage('');
       setPhase('boy');
@@ -886,7 +1034,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
   const onBoyPick = (i) => {
     if (boyPick !== null) return;
     setBoyPick(i);
-    setHandoffMessage(qIdx + 1 >= total ? '彼女に渡して結果を見てね' : '彼女に渡して次の問題へ');
+    setHandoffMessage(qIdx + 1 >= total ? `${girlName}に渡して結果を見てね` : `${girlName}に渡して次の問題へ`);
     setTimeout(() => onAnswer(girlPick, i), LOVE_RETURN_DELAY_MS);
   };
 
@@ -942,7 +1090,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
         <QuestionProgress qIdx={qIdx} total={total} />
       </div>
       <div style={{ padding: '2px 18px 4px', textAlign: 'center' }}>
-        <PhaseBadge phase={phase} />
+        <PhaseBadge phase={phase} players={lovePlayers} />
       </div>
 
       {/* お題カード画像 */}
@@ -970,8 +1118,8 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
             onPick={onGirlPick}
             highlight={proto.yellow}
             mode="answer"
-            turnHint={handoffMessage || '今は彼女の番'}
-            instruction="♀ 彼女のターン  ── 彼氏には見せずに、自分が思った答えの色を選んでね"
+            turnHint={handoffMessage || `今は${girlName}の番`}
+            instruction={`${girlName}のターン  ── ${boyName}には見せずに、自分が思った答えの色を選んでね`}
           />
         )}
         {phase === 'boy' && (
@@ -984,9 +1132,9 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
               color: proto.yellow,
               textAlign: 'center', fontWeight: 600,
             }}>
-              ✦ 彼女の選択 受付完了 ✦<br/>
+              ✦ {girlName}の選択 受付完了 ✦<br/>
               <span style={{ fontSize: 9, color: proto.white, fontWeight: 500, opacity: 0.85 }}>
-                次は彼氏が「彼女が選んだ色」を予想してね
+                次は{boyName}が「{girlName}が選んだ色」を予想してね
               </span>
             </div>
             <ColorPicker
@@ -994,8 +1142,8 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
               onPick={onBoyPick}
               highlight={proto.cyan}
               mode="guess"
-              turnHint={handoffMessage || '今は彼氏の番'}
-              instruction="♂ 彼氏のターン  ── 彼女が選んだ色を予想してタップ"
+              turnHint={handoffMessage || `今は${boyName}の番`}
+              instruction={`${boyName}のターン  ── ${girlName}が選んだ色を予想してタップ`}
             />
           </>
         )}
@@ -1005,18 +1153,21 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
   );
 }
 
-function PhaseBadge({ phase }) {
+function PhaseBadge({ phase, players }) {
+  const names = normalizePlayerNames({ love: players }).love;
+  const girlName = names[0];
+  const boyName = names[1];
   const conf = {
     girl: {
       eyebrow: 'STEP 1 / 2',
-      title: '彼女が本音で選ぶターン',
-      note: '彼氏には見せずに、自分が思った答えを選んでね',
+      title: `${girlName}が本音で選ぶターン`,
+      note: `${boyName}には見せずに、自分が思った答えを選んでね`,
       color: proto.yellow,
     },
     boy: {
       eyebrow: 'STEP 2 / 2',
-      title: '彼氏が彼女の答えを予想',
-      note: '彼女がさっき選んだ答えを当ててね',
+      title: `${boyName}が${girlName}の答えを予想`,
+      note: `${girlName}がさっき選んだ答えを当ててね`,
       color: proto.cyan,
     },
   }[phase];
@@ -1627,10 +1778,13 @@ const RESULT_TIERS = [
     shareHook: '全問正解、彼氏が彼女公認の理解王でした' },
 ];
 
-function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) {
+function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onProduct }) {
   const score = answers.filter(a => a.match).length;
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
+  const lovePlayers = normalizePlayerNames({ love: players }).love;
+  const girlName = lovePlayers[0];
+  const boyName = lovePlayers[1];
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
@@ -2020,8 +2174,8 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
                   gap: 6,
                   padding: 8,
                 }}>
-                  <AnswerPick label="彼女" choice={girlChoice} opt={window.COLOR_OPTIONS[a.girl]} accent={proto.yellow} />
-                  <AnswerPick label="彼氏" choice={boyChoice} opt={window.COLOR_OPTIONS[a.boy]} accent={proto.cyan} />
+                  <AnswerPick label={girlName} choice={girlChoice} opt={window.COLOR_OPTIONS[a.girl]} accent={proto.yellow} />
+                  <AnswerPick label={boyName} choice={boyChoice} opt={window.COLOR_OPTIONS[a.boy]} accent={proto.cyan} />
                 </div>
               </div>
             );
@@ -2375,6 +2529,7 @@ function AnswerPick({ label, choice, opt, accent }) {
 }
 
 function PassOrderScreen({ label, title, players, guessName, onStart, onBack }) {
+  const mainPlayer = players[0] || '本人';
   return (
     <div style={{
       minHeight: '100dvh',
@@ -2422,8 +2577,8 @@ function PassOrderScreen({ label, title, players, guessName, onStart, onBack }) 
           lineHeight: 1.5,
           marginBottom: 14,
         }}>
-          本人は「自分の答え」<br />
-          {guessName}は「本人の答え」を予想
+          {mainPlayer}は「自分の答え」<br />
+          {guessName}は「{mainPlayer}の答え」を予想
         </div>
 
         <div style={{ display: 'grid', gap: 9 }}>
@@ -2517,14 +2672,17 @@ function PassOrderScreen({ label, title, players, guessName, onStart, onBack }) 
 // FRIEND MODE
 // ─────────────────────────────────────────────────────
 const FRIEND_PLAYERS = ['本人', '友達A', '友達B', '友達C'];
-function getFriendPlayers(playerCount) {
-  return FRIEND_PLAYERS.slice(0, normalizeFriendPlayerCount(playerCount));
+function getFriendPlayers(playerCount, names) {
+  const source = normalizePlayerNames({ friend: names }).friend;
+  return source.slice(0, normalizeFriendPlayerCount(playerCount));
 }
-function getFriendPlayersLabel(playerCount) {
-  return getFriendPlayers(playerCount).join(' + ');
+function getFriendPlayersLabel(playerCount, names) {
+  return getFriendPlayers(playerCount, names).join(' + ');
 }
 
-function FriendIntroScreen({ onStart, onBack }) {
+function FriendIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange }) {
+  const friendPlayers = normalizePlayerNames({ friend: playerNames }).friend;
+  const mainPlayer = friendPlayers[0];
   return (
     <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
       <div style={{
@@ -2549,9 +2707,15 @@ function FriendIntroScreen({ onStart, onBack }) {
 
       <div style={{ padding: '24px 22px' }}>
         <StepCard n="1" text="人数を選ぶ" />
-        <StepCard n="2" text="本人は、友達に見せずに自分が思った答えを選ぶ" />
-        <StepCard n="3" text="友達は、本人が選んだ答えを予想して同じ色を選ぶ" />
+        <StepCard n="2" text={`${mainPlayer}は、友達に見せずに自分が思った答えを選ぶ`} />
+        <StepCard n="3" text={`友達は、${mainPlayer}が選んだ答えを予想して同じ色を選ぶ`} />
         <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
+        <NameEditorPanel
+          title="名前を変える（任意）"
+          names={playerNames}
+          defaults={DEFAULT_PLAYER_NAMES.friend}
+          onChange={onPlayerNameChange}
+        />
 
         <div style={{
           marginTop: 18, padding: '14px 16px',
@@ -2584,7 +2748,7 @@ function FriendIntroScreen({ onStart, onBack }) {
               }}>
                 <div style={{ fontSize: 20, whiteSpace: 'nowrap' }}>{count}人で遊ぶ</div>
                 <div style={{ fontSize: 11, fontWeight: 900, lineHeight: 1.35, textAlign: 'right' }}>
-                  {getFriendPlayersLabel(count)}
+                  {getFriendPlayersLabel(count, playerNames)}
                 </div>
               </button>
             ))}
@@ -2598,7 +2762,7 @@ function FriendIntroScreen({ onStart, onBack }) {
   );
 }
 
-function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) {
+function FriendPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswer, onBack }) {
   const [phase, setPhase] = useState('answer');
   const [targetPick, setTargetPick] = useState(null);
   const [guesses, setGuesses] = useState([]);
@@ -2613,10 +2777,15 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     setHandoffMessage('');
   }, [qIdx, card && card.id, playerCount]);
 
+  const friendPlayers = getFriendPlayers(playerCount, playerNames);
+  const currentPlayer = friendPlayers[turn] || friendPlayers[1] || '友達A';
+  const mainPlayer = friendPlayers[0] || '本人';
+  const playerLabel = getFriendPlayersLabel(playerCount, playerNames);
+
   const handlePick = (i) => {
     if (phase === 'answer') {
       setTargetPick(i);
-      const nextPlayer = getFriendPlayers(playerCount)[1] || '友達A';
+      const nextPlayer = getFriendPlayers(playerCount, playerNames)[1] || '友達A';
       setHandoffMessage(`${nextPlayer}に渡してね`);
       setTimeout(() => {
         setHandoffMessage('');
@@ -2627,14 +2796,14 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     const next = [...guesses, i];
     setGuesses(next);
     if (turn >= playerCount - 1) {
-      setHandoffMessage(qIdx + 1 >= total ? '本人に渡して結果を見てね' : '本人に渡して次の問題へ');
+      setHandoffMessage(qIdx + 1 >= total ? `${mainPlayer}に渡して結果を見てね` : `${mainPlayer}に渡して次の問題へ`);
       setTimeout(() => onAnswer({
         target: targetPick,
         guesses: next,
         matches: next.map(g => g === targetPick),
       }), FINAL_HANDOFF_DELAY_MS);
     } else {
-      const nextPlayer = getFriendPlayers(playerCount)[turn + 1] || `友達${turn + 1}`;
+      const nextPlayer = getFriendPlayers(playerCount, playerNames)[turn + 1] || `友達${turn + 1}`;
       setHandoffMessage(`${nextPlayer}に渡してね`);
       setTimeout(() => {
         setHandoffMessage('');
@@ -2644,9 +2813,6 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
   };
 
   if (!card) return null;
-  const friendPlayers = getFriendPlayers(playerCount);
-  const currentPlayer = friendPlayers[turn] || friendPlayers[1] || '友達A';
-  const playerLabel = getFriendPlayersLabel(playerCount);
 
   return (
     <div style={{
@@ -2709,10 +2875,10 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             {phase === 'answer' ? 'STEP 1' : `STEP ${turn + 1}`}
           </div>
           <div style={{ marginTop: 1, fontSize: 14 }}>
-            {phase === 'answer' ? '本人が本音で選ぶターン' : `${currentPlayer}が本人の答えを予想`}
+            {phase === 'answer' ? `${mainPlayer}が本音で選ぶターン` : `${currentPlayer}が${mainPlayer}の答えを予想`}
           </div>
           <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.35 }}>
-            {phase === 'answer' ? '友達には見せずに、本人が思ったものを選んでね' : '本人がさっき選んだものを当ててね'}
+            {phase === 'answer' ? `友達には見せずに、${mainPlayer}が思ったものを選んでね` : `${mainPlayer}がさっき選んだものを当ててね`}
           </div>
         </div>
       </div>
@@ -2728,8 +2894,8 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             onPick={handlePick}
             highlight={proto.yellow}
             mode="answer"
-            turnHint={handoffMessage || '今は本人の番'}
-            instruction="本人だけが見て、自分が思ったものを選んでね"
+            turnHint={handoffMessage || `今は${mainPlayer}の番`}
+            instruction={`${mainPlayer}だけが見て、自分が思ったものを選んでね`}
           />
         )}
         {phase === 'guess' && (
@@ -2741,9 +2907,9 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
               borderRadius: 12, fontSize: 11,
               textAlign: 'center', fontWeight: 700,
             }}>
-              本人の答えは受付完了。<br/>
+              {mainPlayer}の答えは受付完了。<br/>
               <span style={{ fontSize: 9, color: proto.yellow }}>
-                {currentPlayer}は「本人が選んだもの」を予想してね
+                {currentPlayer}は「{mainPlayer}が選んだもの」を予想してね
               </span>
             </div>
             <ColorPicker
@@ -2752,7 +2918,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
               highlight={proto.cyan}
               mode="guess"
               turnHint={handoffMessage || `今は${currentPlayer}の番`}
-              instruction={`${currentPlayer}のターン ── 本人が選んだ色を予想`}
+              instruction={`${currentPlayer}のターン ── ${mainPlayer}が選んだ色を予想`}
             />
           </>
         )}
@@ -2853,8 +3019,9 @@ function splitCardTitle(title) {
   return [title.slice(0, breakAt), title.slice(breakAt)];
 }
 
-function FriendReveal({ card, targetPick, guesses, playerCount, onNext }) {
+function FriendReveal({ card, targetPick, guesses, playerCount, players = FRIEND_PLAYERS, onNext }) {
   const hitCount = guesses.filter(g => g === targetPick).length;
+  const mainPlayer = players[0] || '本人';
   return (
     <div style={{ paddingBottom: 'calc(84px + env(safe-area-inset-bottom))' }}>
       <div style={{ textAlign: 'center', marginBottom: 14 }}>
@@ -2880,7 +3047,7 @@ function FriendReveal({ card, targetPick, guesses, playerCount, onNext }) {
           fontWeight: 900,
         }}>
           <ColorChip color={window.COLOR_OPTIONS[targetPick].color} size={24} />
-          <span>本人の答え：{card.choices[targetPick]}</span>
+          <span>{mainPlayer}の答え：{card.choices[targetPick]}</span>
         </div>
         <div style={{ display: 'grid', gap: 8 }}>
           {guesses.map((g, i) => (
@@ -2894,7 +3061,7 @@ function FriendReveal({ card, targetPick, guesses, playerCount, onNext }) {
               background: g === targetPick ? proto.yellow : proto.pinkSoft,
               border: `1.5px solid ${proto.black}`,
             }}>
-              <span style={{ fontSize: 12, fontWeight: 900 }}>{FRIEND_PLAYERS[i + 1]}</span>
+              <span style={{ fontSize: 12, fontWeight: 900 }}>{players[i + 1] || FRIEND_PLAYERS[i + 1]}</span>
               <span style={{ flex: 1, fontSize: 12, fontWeight: 800 }}>{card.choices[g]}</span>
               <span style={{ fontSize: 13, fontWeight: 900 }}>{g === targetPick ? '当たり' : 'ハズレ'}</span>
             </div>
@@ -3315,9 +3482,9 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
   );
 }
 
-function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
+function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
-  const friendPlayers = useMemo(() => getFriendPlayers(playerCount), [playerCount]);
+  const friendPlayers = useMemo(() => getFriendPlayers(playerCount, playerNames), [playerCount, playerNames]);
   const scoreSummary = getPlayerScoreSummary(answers, friendPlayers, 'friend');
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
@@ -3528,14 +3695,17 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
 // FAMILY MODE
 // ─────────────────────────────────────────────────────
 const FAMILY_PLAYERS = ['本人', '家族A', '家族B', '家族C'];
-function getFamilyPlayers(playerCount) {
-  return FAMILY_PLAYERS.slice(0, normalizeFriendPlayerCount(playerCount));
+function getFamilyPlayers(playerCount, names) {
+  const source = normalizePlayerNames({ family: names }).family;
+  return source.slice(0, normalizeFriendPlayerCount(playerCount));
 }
-function getFamilyPlayersLabel(playerCount) {
-  return getFamilyPlayers(playerCount).join(' + ');
+function getFamilyPlayersLabel(playerCount, names) {
+  return getFamilyPlayers(playerCount, names).join(' + ');
 }
 
-function FamilyIntroScreen({ onStart, onBack }) {
+function FamilyIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange }) {
+  const familyPlayers = normalizePlayerNames({ family: playerNames }).family;
+  const mainPlayer = familyPlayers[0];
   return (
     <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
       <div style={{
@@ -3560,9 +3730,15 @@ function FamilyIntroScreen({ onStart, onBack }) {
 
       <div style={{ padding: '24px 22px' }}>
         <StepCard n="1" text="人数を選ぶ" />
-        <StepCard n="2" text="本人は、家族に見せずに自分が思った答えを選ぶ" />
-        <StepCard n="3" text="家族は、本人が選んだ答えを予想して同じ色を選ぶ" />
+        <StepCard n="2" text={`${mainPlayer}は、家族に見せずに自分が思った答えを選ぶ`} />
+        <StepCard n="3" text={`家族は、${mainPlayer}が選んだ答えを予想して同じ色を選ぶ`} />
         <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
+        <NameEditorPanel
+          title="名前を変える（任意）"
+          names={playerNames}
+          defaults={DEFAULT_PLAYER_NAMES.family}
+          onChange={onPlayerNameChange}
+        />
 
         <div style={{
           marginTop: 18, padding: '14px 16px',
@@ -3595,7 +3771,7 @@ function FamilyIntroScreen({ onStart, onBack }) {
               }}>
                 <div style={{ fontSize: 20, whiteSpace: 'nowrap' }}>{count}人で遊ぶ</div>
                 <div style={{ fontSize: 11, fontWeight: 900, lineHeight: 1.35, textAlign: 'right' }}>
-                  {getFamilyPlayersLabel(count)}
+                  {getFamilyPlayersLabel(count, playerNames)}
                 </div>
               </button>
             ))}
@@ -3609,7 +3785,7 @@ function FamilyIntroScreen({ onStart, onBack }) {
   );
 }
 
-function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) {
+function FamilyPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswer, onBack }) {
   const [phase, setPhase] = useState('answer');
   const [targetPick, setTargetPick] = useState(null);
   const [guesses, setGuesses] = useState([]);
@@ -3624,10 +3800,15 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     setHandoffMessage('');
   }, [qIdx, card && card.id, playerCount]);
 
+  const familyPlayers = getFamilyPlayers(playerCount, playerNames);
+  const currentPlayer = familyPlayers[turn] || familyPlayers[1] || '家族A';
+  const mainPlayer = familyPlayers[0] || '本人';
+  const playerLabel = getFamilyPlayersLabel(playerCount, playerNames);
+
   const handlePick = (i) => {
     if (phase === 'answer') {
       setTargetPick(i);
-      const nextPlayer = getFamilyPlayers(playerCount)[1] || '家族A';
+      const nextPlayer = getFamilyPlayers(playerCount, playerNames)[1] || '家族A';
       setHandoffMessage(`${nextPlayer}に渡してね`);
       setTimeout(() => {
         setHandoffMessage('');
@@ -3638,14 +3819,14 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     const next = [...guesses, i];
     setGuesses(next);
     if (turn >= playerCount - 1) {
-      setHandoffMessage(qIdx + 1 >= total ? '本人に渡して結果を見てね' : '本人に渡して次の問題へ');
+      setHandoffMessage(qIdx + 1 >= total ? `${mainPlayer}に渡して結果を見てね` : `${mainPlayer}に渡して次の問題へ`);
       setTimeout(() => onAnswer({
         target: targetPick,
         guesses: next,
         matches: next.map(g => g === targetPick),
       }), FINAL_HANDOFF_DELAY_MS);
     } else {
-      const nextPlayer = getFamilyPlayers(playerCount)[turn + 1] || `家族${turn + 1}`;
+      const nextPlayer = getFamilyPlayers(playerCount, playerNames)[turn + 1] || `家族${turn + 1}`;
       setHandoffMessage(`${nextPlayer}に渡してね`);
       setTimeout(() => {
         setHandoffMessage('');
@@ -3655,9 +3836,6 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
   };
 
   if (!card) return null;
-  const familyPlayers = getFamilyPlayers(playerCount);
-  const currentPlayer = familyPlayers[turn] || familyPlayers[1] || '家族A';
-  const playerLabel = getFamilyPlayersLabel(playerCount);
 
   return (
     <div style={{
@@ -3720,10 +3898,10 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             {phase === 'answer' ? 'STEP 1' : `STEP ${turn + 1}`}
           </div>
           <div style={{ marginTop: 1, fontSize: 14 }}>
-            {phase === 'answer' ? '本人が本音で選ぶターン' : `${currentPlayer}が本人の答えを予想`}
+            {phase === 'answer' ? `${mainPlayer}が本音で選ぶターン` : `${currentPlayer}が${mainPlayer}の答えを予想`}
           </div>
           <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.35 }}>
-            {phase === 'answer' ? '家族には見せずに、本人が思ったものを選んでね' : '本人がさっき選んだものを当ててね'}
+            {phase === 'answer' ? `家族には見せずに、${mainPlayer}が思ったものを選んでね` : `${mainPlayer}がさっき選んだものを当ててね`}
           </div>
         </div>
       </div>
@@ -3739,8 +3917,8 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             onPick={handlePick}
             highlight={proto.yellow}
             mode="answer"
-            turnHint={handoffMessage || '今は本人の番'}
-            instruction="本人だけが見て、自分が思ったものを選んでね"
+            turnHint={handoffMessage || `今は${mainPlayer}の番`}
+            instruction={`${mainPlayer}だけが見て、自分が思ったものを選んでね`}
           />
         )}
         {phase === 'guess' && (
@@ -3752,9 +3930,9 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
               borderRadius: 12, fontSize: 11,
               textAlign: 'center', fontWeight: 700,
             }}>
-              本人の答えは受付完了！<br/>
+              {mainPlayer}の答えは受付完了！<br/>
               <span style={{ fontSize: 9, color: proto.yellow }}>
-                {currentPlayer}は「本人が選んだもの」を予想してね
+                {currentPlayer}は「{mainPlayer}が選んだもの」を予想してね
               </span>
             </div>
             <ColorPicker
@@ -3763,7 +3941,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
               highlight={proto.cyan}
               mode="guess"
               turnHint={handoffMessage || `今は${currentPlayer}の番`}
-              instruction={`${currentPlayer}のターン ── 本人が選んだ色を予想`}
+              instruction={`${currentPlayer}のターン ── ${mainPlayer}が選んだ色を予想`}
             />
           </>
         )}
@@ -3773,9 +3951,9 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
   );
 }
 
-function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
+function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
-  const familyPlayers = useMemo(() => getFamilyPlayers(playerCount), [playerCount]);
+  const familyPlayers = useMemo(() => getFamilyPlayers(playerCount, playerNames), [playerCount, playerNames]);
   const scoreSummary = getPlayerScoreSummary(answers, familyPlayers, 'family');
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
