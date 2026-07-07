@@ -2174,10 +2174,9 @@ function FriendIntroScreen({ onStart, onBack }) {
       </div>
 
       <div style={{ padding: '24px 22px' }}>
-        <StepCard n="1" text="最初に人数を選ぶ。2人・3人・4人で遊べます" />
-        <StepCard n="2" text="本人が、友達に見せずに自分の答えを選ぶ" />
-        <StepCard n="3" text="他の友達が順番に「本人の答え」を予想する" />
-        <StepCard n="4" text="せーので発表。当たった数で友情理解度を判定" />
+        <StepCard n="1" text="人数を選ぶ" />
+        <StepCard n="2" text="本人が答える" />
+        <StepCard n="3" text="友達が予想。5問後に結果発表" />
 
         <div style={{
           marginTop: 18, padding: '14px 16px',
@@ -2211,7 +2210,7 @@ function FriendIntroScreen({ onStart, onBack }) {
             ))}
           </div>
           <div style={{ marginTop: 12, fontSize: 11, lineHeight: 1.6, opacity: 0.9 }}>
-            全 {window.FRIEND_CARDS ? window.FRIEND_CARDS.length : 54} 問からランダムに5問出題します。
+            ランダムに5問だけ出ます。
           </div>
         </div>
       </div>
@@ -2931,10 +2930,9 @@ function FamilyIntroScreen({ onStart, onBack }) {
       </div>
 
       <div style={{ padding: '24px 22px' }}>
-        <StepCard n="1" text="最初に人数を選ぶ。2人・3人・4人で遊べます" />
-        <StepCard n="2" text="本人が、家族に見せずに自分の答えを選ぶ" />
-        <StepCard n="3" text="ほかの家族が順番に、本人の答えを予想する" />
-        <StepCard n="4" text="5問まとめて発表。当たった数で家族理解度を判定" />
+        <StepCard n="1" text="人数を選ぶ" />
+        <StepCard n="2" text="本人が答える" />
+        <StepCard n="3" text="家族が予想。5問後に結果発表" />
 
         <div style={{
           marginTop: 18, padding: '14px 16px',
@@ -2968,7 +2966,7 @@ function FamilyIntroScreen({ onStart, onBack }) {
             ))}
           </div>
           <div style={{ marginTop: 12, fontSize: 11, lineHeight: 1.6, opacity: 0.9 }}>
-            全 {window.FAMILY_CARDS ? window.FAMILY_CARDS.length : 54} 問からランダムに5問出題します。
+            ランダムに5問だけ出ます。
           </div>
         </div>
       </div>
