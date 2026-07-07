@@ -29,7 +29,7 @@ const proto = {
   shadowHard: '4px 4px 0 #1A1A1A',
 };
 
-const { useState, useEffect, useMemo } = React;
+const { useState, useEffect, useMemo, useRef } = React;
 
 // localStorage
 const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
@@ -1500,6 +1500,20 @@ function vibrateOnPick() {
   } catch (e) {}
 }
 
+function useAutoScrollToAnswerDetails(ref, deps) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!ref.current) return;
+      const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      ref.current.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    }, 950);
+    return () => clearTimeout(timer);
+  }, deps);
+}
+
 function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer', turnHint = '' }) {
   const isLocked = selected !== null && selected !== undefined;
   const theme = getTurnColorTheme(mode, highlight);
@@ -1810,11 +1824,13 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const answerDetailsRef = useRef(null);
   const preparedResultImageSrc = getLoveResultImageSrc(score);
 
   useEffect(() => {
     preloadPreparedResultImages('love');
   }, []);
+  useAutoScrollToAnswerDetails(answerDetailsRef, [score, total]);
 
   const titleBreaks = {
     '彼女理解は初期設定中': ['彼女理解は', '初期設定中'],
@@ -2104,7 +2120,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
       </div>
 
       {/* 詳細 */}
-      <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
+      <div ref={answerDetailsRef} style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
           width: '100%',
           minHeight: 54,
@@ -3366,10 +3382,12 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const answerDetailsRef = useRef(null);
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('friend', answers, friendPlayers),
     [answers, friendPlayers]
   );
+  useAutoScrollToAnswerDetails(answerDetailsRef, [playerCount, totalQuestions]);
 
   const shareUrl = `${location.origin}/friends`;
   const shareText = `友達の友情判定ゲームをやってみた！\n${scoreSummary}\n\n友達とやったら何問当たる？\n#わたちゃん #友情判定ゲーム #streetboardgame`;
@@ -3503,7 +3521,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
 
       <NextActionPrompt />
 
-      <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
+      <div ref={answerDetailsRef} style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
           width: '100%',
           minHeight: 54,
@@ -3824,10 +3842,12 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const answerDetailsRef = useRef(null);
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('family', answers, familyPlayers),
     [answers, familyPlayers]
   );
+  useAutoScrollToAnswerDetails(answerDetailsRef, [playerCount, totalQuestions]);
 
   const shareUrl = `${location.origin}/family`;
   const shareText = `家族の絆判定ゲームをやってみた！\n${scoreSummary}\n\n家族でやったら何問当たる？\n#わたちゃん #家族の絆判定 #streetboardgame`;
@@ -3961,7 +3981,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
 
       <NextActionPrompt />
 
-      <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
+      <div ref={answerDetailsRef} style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
           width: '100%',
           minHeight: 54,
