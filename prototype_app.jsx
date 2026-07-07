@@ -1017,7 +1017,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       display: 'flex', flexDirection: 'column',
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden',
-      paddingBottom: 'calc(132px + env(safe-area-inset-bottom))',
+      paddingBottom: 'calc(164px + env(safe-area-inset-bottom))',
     }}>
       {/* キャラ装飾: 右下のコーナーから小さく覗く */}
       <div style={{
@@ -1093,6 +1093,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
             onPick={onGirlPick}
             highlight={proto.yellow}
             mode="answer"
+            turnHint={handoffMessage || '今は彼女の番'}
             instruction="♀ 彼女のターン  ── 彼氏には見せずに、自分が思った答えの色を選んでね"
           />
         )}
@@ -1116,6 +1117,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
               onPick={onBoyPick}
               highlight={proto.cyan}
               mode="guess"
+              turnHint={handoffMessage || '今は彼氏の番'}
               instruction="♂ 彼氏のターン  ── 彼女が選んだ色を予想してタップ"
             />
           </>
@@ -1428,6 +1430,26 @@ function HandoffOverlay({ message }) {
           画面を見せずにスマホを渡してね
         </div>
       </div>
+      <div style={{
+        position: 'absolute',
+        left: '50%',
+        bottom: 'calc(16px + env(safe-area-inset-bottom))',
+        transform: 'translateX(-50%)',
+        width: 'min(360px, calc(100% - 32px))',
+        padding: '9px 12px',
+        borderRadius: 999,
+        background: proto.black,
+        color: proto.yellow,
+        border: `2px solid ${proto.yellow}`,
+        boxShadow: '3px 3px 0 rgba(0,0,0,0.55)',
+        textAlign: 'center',
+        fontSize: 13,
+        fontWeight: 900,
+        lineHeight: 1.25,
+        overflowWrap: 'anywhere',
+      }}>
+        {message}
+      </div>
       <style>{`
         @keyframes handoffPop {
           0% { transform: translateY(10px) scale(0.94); opacity: 0; }
@@ -1458,7 +1480,7 @@ function vibrateOnPick() {
   } catch (e) {}
 }
 
-function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer' }) {
+function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer', turnHint = '' }) {
   const isLocked = selected !== null && selected !== undefined;
   const theme = getTurnColorTheme(mode, highlight);
   return (
@@ -1483,6 +1505,26 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
           marginBottom: 4, fontWeight: 600, letterSpacing: '0.05em',
           textShadow: '1px 1px 0 rgba(0,0,0,0.4)',
         }}>{instruction}</div>
+      )}
+      {turnHint && (
+        <div style={{
+          width: 'fit-content',
+          maxWidth: '100%',
+          margin: '0 auto 5px',
+          padding: '5px 12px',
+          borderRadius: 999,
+          background: proto.black,
+          color: theme.color,
+          border: `2px solid ${theme.color}`,
+          boxShadow: '2px 2px 0 rgba(0,0,0,0.55)',
+          fontSize: 12,
+          fontWeight: 900,
+          lineHeight: 1.25,
+          textAlign: 'center',
+          overflowWrap: 'anywhere',
+        }}>
+          {turnHint}
+        </div>
       )}
       <div style={{
         background: theme.panelBg,
@@ -2573,7 +2615,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden',
-      paddingBottom: 'calc(132px + env(safe-area-inset-bottom))',
+      paddingBottom: 'calc(164px + env(safe-area-inset-bottom))',
     }}>
       <Decor />
       <div style={{ padding: '34px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -2653,6 +2695,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             onPick={handlePick}
             highlight={proto.yellow}
             mode="answer"
+            turnHint={handoffMessage || '今は本人の番'}
             instruction="本人だけが見て、自分が思ったものを選んでね"
           />
         )}
@@ -2675,6 +2718,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
               onPick={handlePick}
               highlight={proto.cyan}
               mode="guess"
+              turnHint={handoffMessage || `今は${currentPlayer}の番`}
               instruction={`${currentPlayer}のターン ── 本人が選んだ色を予想`}
             />
           </>
@@ -3464,7 +3508,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden',
-      paddingBottom: 'calc(132px + env(safe-area-inset-bottom))',
+      paddingBottom: 'calc(164px + env(safe-area-inset-bottom))',
     }}>
       <Decor />
       <div style={{ padding: '34px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -3544,6 +3588,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             onPick={handlePick}
             highlight={proto.yellow}
             mode="answer"
+            turnHint={handoffMessage || '今は本人の番'}
             instruction="本人だけが見て、自分が思ったものを選んでね"
           />
         )}
@@ -3566,6 +3611,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
               onPick={handlePick}
               highlight={proto.cyan}
               mode="guess"
+              turnHint={handoffMessage || `今は${currentPlayer}の番`}
               instruction={`${currentPlayer}のターン ── 本人が選んだ色を予想`}
             />
           </>
