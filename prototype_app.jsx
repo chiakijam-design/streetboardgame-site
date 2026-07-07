@@ -548,6 +548,13 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onFamily, onAbout
         }}>
           友達の友情を判定する
         </button>
+        <button onClick={onFamily} style={{
+          ...secondaryBtn(),
+          marginTop: 10,
+          background: proto.white,
+        }}>
+          家族の絆を判定する
+        </button>
         <div style={{
           marginTop: 9,
           fontSize: 11,
