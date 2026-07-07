@@ -375,7 +375,7 @@ function App() {
     setCards(picked);
     setQIdx(0);
     setAnswers([]);
-    setScreen('friendPlay');
+    setScreen('friendOrder');
   };
 
   const startFamilyRound = (count) => {
@@ -386,7 +386,7 @@ function App() {
     setCards(picked);
     setQIdx(0);
     setAnswers([]);
-    setScreen('familyPlay');
+    setScreen('familyOrder');
   };
 
   const backToTop = () => {
@@ -481,6 +481,26 @@ function App() {
         )}
         {screen === 'familyIntro' && (
           <FamilyIntroScreen onStart={startFamilyRound} onBack={() => setScreen('top')} />
+        )}
+        {screen === 'friendOrder' && (
+          <PassOrderScreen
+            label="FRIEND ORDER"
+            title="スマホを回す順番"
+            players={getFriendPlayers(playerCount)}
+            guessName="友達"
+            onStart={() => setScreen('friendPlay')}
+            onBack={() => setScreen('friendIntro')}
+          />
+        )}
+        {screen === 'familyOrder' && (
+          <PassOrderScreen
+            label="FAMILY ORDER"
+            title="スマホを回す順番"
+            players={getFamilyPlayers(playerCount)}
+            guessName="家族"
+            onStart={() => setScreen('familyPlay')}
+            onBack={() => setScreen('familyIntro')}
+          />
         )}
         {screen === 'play' && cards.length > 0 && (
           <PlayScreen
@@ -2506,6 +2526,145 @@ function AnswerPick({ label, choice, opt, accent }) {
           overflowWrap: 'anywhere',
         }}>{choice}</span>
       </div>
+    </div>
+  );
+}
+
+function PassOrderScreen({ label, title, players, guessName, onStart, onBack }) {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: proto.pink,
+      padding: '42px 20px 150px',
+      boxSizing: 'border-box',
+      position: 'relative',
+    }}>
+      <BackBtn onClick={onBack} top={42} label="人数選択に戻る" />
+
+      <div style={{ textAlign: 'center', paddingTop: 42 }}>
+        <PillLabel>{label}</PillLabel>
+        <div style={{ marginTop: 14 }}>
+          <LogoText size={27}>{title}</LogoText>
+        </div>
+        <p style={{
+          margin: '10px auto 0',
+          maxWidth: 330,
+          color: proto.white,
+          fontSize: 13,
+          lineHeight: 1.75,
+          fontWeight: 900,
+          textShadow: '0 2px 0 rgba(0,0,0,0.18)',
+        }}>
+          1問ごとに、この順番でスマホを渡してね。
+        </p>
+      </div>
+
+      <div style={{
+        marginTop: 22,
+        background: proto.white,
+        border: `3px solid ${proto.black}`,
+        borderRadius: 18,
+        boxShadow: '6px 6px 0 #000',
+        padding: '18px 16px',
+      }}>
+        <div style={{
+          background: proto.black,
+          color: proto.yellow,
+          borderRadius: 12,
+          padding: '12px 10px',
+          textAlign: 'center',
+          fontSize: 13,
+          fontWeight: 900,
+          lineHeight: 1.5,
+          marginBottom: 14,
+        }}>
+          本人は「自分の答え」<br />
+          {guessName}は「本人の答え」を予想
+        </div>
+
+        <div style={{ display: 'grid', gap: 9 }}>
+          {players.map((player, index) => {
+            const isMain = index === 0;
+            return (
+              <React.Fragment key={player}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '46px 1fr',
+                  gap: 12,
+                  alignItems: 'center',
+                  minHeight: 68,
+                  padding: '10px 12px',
+                  background: isMain ? proto.yellow : proto.cyan,
+                  border: `2.5px solid ${proto.black}`,
+                  borderRadius: 14,
+                  boxShadow: '3px 3px 0 #000',
+                }}>
+                  <div style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 12,
+                    background: proto.white,
+                    border: `2px solid ${proto.black}`,
+                    display: 'grid',
+                    placeItems: 'center',
+                    fontFamily: proto.caption,
+                    fontSize: 14,
+                    fontWeight: 900,
+                  }}>
+                    {index + 1}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 20,
+                      fontWeight: 900,
+                      lineHeight: 1.25,
+                    }}>{player}</div>
+                    <div style={{
+                      marginTop: 3,
+                      fontSize: 12,
+                      fontWeight: 900,
+                      lineHeight: 1.45,
+                    }}>
+                      {isMain ? '自分が思った答えを選ぶ' : '本人が選んだ答えを予想する'}
+                    </div>
+                  </div>
+                </div>
+                {index < players.length - 1 && (
+                  <div style={{
+                    textAlign: 'center',
+                    fontSize: 20,
+                    fontWeight: 900,
+                    color: proto.black,
+                    lineHeight: 1,
+                  }}>↓</div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+        <div style={{
+          marginTop: 16,
+          padding: '12px 14px',
+          background: '#FFF7D8',
+          border: `2px dashed ${proto.black}`,
+          borderRadius: 12,
+          fontSize: 12,
+          lineHeight: 1.65,
+          fontWeight: 900,
+          textAlign: 'center',
+        }}>
+          5問ぜんぶ終わったら、全員分の答え合わせをまとめて見ます。
+        </div>
+      </div>
+
+      <FixedActionBar
+        primaryLabel="この順番で始める ▶"
+        onPrimary={onStart}
+        secondaryLabel="人数を選び直す"
+        onSecondary={onBack}
+        largePrimary
+      />
     </div>
   );
 }
