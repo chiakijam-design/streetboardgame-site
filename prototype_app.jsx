@@ -3568,7 +3568,7 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillStyle = proto.yellow;
   ctx.font = '900 30px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('それぞれ何問当たった？', 540, 916);
+  ctx.fillText(title, 540, 916);
 
   const cardTop = 982;
   const cardGap = 18;
@@ -3850,7 +3850,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           answers={answers}
           players={friendPlayers}
           kind="friend"
-          label="それぞれ何問当たった？"
+          label="友達の友情判定"
         />
       </div>
       </div>
@@ -4319,7 +4319,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           answers={answers}
           players={familyPlayers}
           kind="family"
-          label="それぞれ何問当たった？"
+          label="家族の絆判定"
         />
       </div>
       </div>
