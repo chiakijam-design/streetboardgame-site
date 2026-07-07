@@ -868,10 +868,10 @@ function IntroScreen({ onStart, onBack }) {
       </div>
 
       <div style={{ padding: '24px 22px' }}>
-        <StepCard n="1" text="お題カードを見て、彼女は1番当てはまる色を選ぶ" />
-        <StepCard n="2" text="彼氏は、彼女が何色を選んだか予想する" />
-        <StepCard n="3" text='画面を「せーの！」で同時に確認' />
-        <StepCard n="4" text="彼氏が当てられたら正解 ♡" />
+        <StepCard n="1" text="彼女が、自分の答えを選ぶ" />
+        <StepCard n="2" text="彼氏が、彼女の答えを予想する" />
+        <StepCard n="3" text="5問終わったら結果発表" />
+        <StepCard n="4" text="当たった問題・外した問題も見られます" />
 
         <div style={{
           marginTop: 18, padding: '14px 16px',
@@ -886,7 +886,7 @@ function IntroScreen({ onStart, onBack }) {
           <div style={{ fontSize: 12, lineHeight: 1.7 }}>
             全 <span style={{ color: proto.yellow, fontWeight: 800, fontSize: 16 }}>{window.ALL_CARDS.length}</span> 問のお題から
             <span style={{ color: proto.yellow, fontWeight: 800, fontSize: 16 }}> ランダムに 5 問</span> 出題！<br/>
-            5問正解で「脳内シェアハウス級」認定 ♡
+            答え合わせは最後にまとめて表示されます ♡
           </div>
         </div>
 
