@@ -102,6 +102,16 @@ async function saveResultImage({ node, filename, title }) {
   return 'downloaded';
 }
 
+function canShareImageFile(filename = 'result.png') {
+  try {
+    if (!navigator.canShare || !window.File) return false;
+    const file = new File(['x'], filename, { type: 'image/png' });
+    return navigator.canShare({ files: [file] });
+  } catch (e) {
+    return false;
+  }
+}
+
 function normalizeSavedState(s) {
   const screens = ['top', 'intro', 'play', 'resultReady', 'result', 'friendIntro', 'friendPlay', 'friendResultReady', 'friendResult', 'familyIntro', 'familyPlay', 'familyResultReady', 'familyResult', 'about', 'product'];
   if (!s || !screens.includes(s.screen)) return null;
@@ -1493,6 +1503,10 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   };
 
   const handleShare = (platform) => {
+    if (platform === 'x' && canShareImageFile(`watachan-love-result-${score}-${total}.png`)) {
+      handleShareImage();
+      return;
+    }
     const text = encodeURIComponent(platform === 'line' ? lineShareText : xShareText);
     const url = encodeURIComponent(shareUrl);
     let target = '';
@@ -2569,6 +2583,10 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   };
 
   const openX = () => {
+    if (canShareImageFile(`watachan-friend-result-${score}-${maxScore}.png`)) {
+      handleShareImage();
+      return;
+    }
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
       '_blank',
@@ -3090,6 +3108,10 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   };
 
   const openX = () => {
+    if (canShareImageFile(`watachan-family-result-${score}-${maxScore}.png`)) {
+      handleShareImage();
+      return;
+    }
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
       '_blank',
