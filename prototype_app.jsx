@@ -1319,6 +1319,9 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
 }
 
 function HandoffOverlay({ message }) {
+  const parts = String(message || '').split('に渡して');
+  const targetName = parts[0] || message;
+  const actionText = parts.length > 1 ? `に渡して${parts.slice(1).join('に渡して')}` : '';
   return (
     <div style={{
       position: 'fixed',
@@ -1333,13 +1336,13 @@ function HandoffOverlay({ message }) {
       pointerEvents: 'none',
     }}>
       <div style={{
-        width: 'min(320px, 100%)',
+        width: 'min(360px, 100%)',
         background: proto.yellow,
         color: proto.black,
         border: `3px solid ${proto.black}`,
         borderRadius: 18,
-        boxShadow: '6px 6px 0 #000',
-        padding: '22px 18px',
+        boxShadow: '7px 7px 0 #000',
+        padding: '24px 18px 22px',
         textAlign: 'center',
         fontFamily: proto.body,
         animation: 'handoffPop 0.22s ease-out',
@@ -1350,10 +1353,39 @@ function HandoffOverlay({ message }) {
           fontFamily: proto.caption,
           fontSize: 10,
           letterSpacing: '0.18em',
-          marginBottom: 8,
+          marginBottom: 10,
         }}>PASS THE PHONE</div>
-        <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.35 }}>
-          {message}
+        <div style={{
+          display: 'inline-block',
+          maxWidth: '100%',
+          padding: '6px 14px 8px',
+          borderRadius: 14,
+          background: proto.white,
+          border: `2.5px solid ${proto.black}`,
+          boxShadow: '3px 3px 0 #000',
+          fontSize: targetName.length >= 7 ? 28 : 34,
+          fontWeight: 900,
+          lineHeight: 1.15,
+          overflowWrap: 'anywhere',
+        }}>
+          {targetName}
+        </div>
+        <div style={{
+          marginTop: 12,
+          fontSize: 22,
+          fontWeight: 900,
+          lineHeight: 1.35,
+        }}>
+          {actionText || message}
+        </div>
+        <div style={{
+          marginTop: 8,
+          fontSize: 11,
+          fontWeight: 900,
+          lineHeight: 1.45,
+          opacity: 0.72,
+        }}>
+          画面を見せずにスマホを渡してね
         </div>
       </div>
       <style>{`
