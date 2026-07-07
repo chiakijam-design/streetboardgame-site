@@ -173,13 +173,25 @@ function getLoveResultImageSrc(score) {
   return `/assets/results/love-${safeScore}.png`;
 }
 
-function preloadLoveResultImages() {
-  if (window.__watachanLoveResultsPreloaded) return;
-  window.__watachanLoveResultsPreloaded = true;
+function getPreparedResultImageSrc(kind, score) {
+  const safeKind = ['love', 'friend', 'family'].includes(kind) ? kind : 'love';
+  const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
+  return `/assets/results/${safeKind}-${safeScore}.png`;
+}
+
+function preloadPreparedResultImages(kind) {
+  const safeKind = ['love', 'friend', 'family'].includes(kind) ? kind : 'love';
+  const key = `__watachan_${safeKind}_results_preloaded`;
+  if (window[key]) return;
+  window[key] = true;
   for (let i = 0; i <= 5; i += 1) {
     const img = new Image();
-    img.src = getLoveResultImageSrc(i);
+    img.src = getPreparedResultImageSrc(safeKind, i);
   }
+}
+
+function getQuestionHitScore(answers) {
+  return answers.reduce((sum, answer) => sum + (answer.matches && answer.matches.some(Boolean) ? 1 : 0), 0);
 }
 
 function normalizeSavedState(s) {
@@ -1574,7 +1586,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const preparedResultImageSrc = getLoveResultImageSrc(score);
 
   useEffect(() => {
-    preloadLoveResultImages();
+    preloadPreparedResultImages('love');
   }, []);
 
   const titleBreaks = {
@@ -2689,14 +2701,22 @@ function PlayerScoreBoard({ answers, players, label }) {
 function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
   const maxScore = Math.max(1, answers.length * (playerCount - 1));
   const score = answers.reduce((sum, a) => sum + a.matches.filter(Boolean).length, 0);
+  const questionScore = getQuestionHitScore(answers);
+  const totalQuestions = Math.max(1, answers.length || 5);
   const ratio = score / maxScore;
   const tier = [...FRIEND_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FRIEND_RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const resultCardRef = useRef(null);
+  const preparedResultImageSrc = getPreparedResultImageSrc('friend', questionScore);
+
+  useEffect(() => {
+    preloadPreparedResultImages('friend');
+  }, []);
+
   const shareUrl = `${location.origin}/?screen=friendIntro`;
-  const shareText = `友達の友情確認ゲームで${score}/${maxScore}的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n友達とやったら何問当たる？\n#わたちゃん #友情確認ゲーム #streetboardgame`;
+  const shareText = `友達の友情判定ゲームで${questionScore}/${totalQuestions}問的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n友達とやったら何問当たる？\n#わたちゃん #友情確認ゲーム #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -2712,7 +2732,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   };
 
   const openX = () => {
-    if (canShareImageFile(`watachan-friend-result-${score}-${maxScore}.png`)) {
+    if (canShareImageFile(`watachan-friend-result-${questionScore}-${totalQuestions}.png`)) {
       handleShareImage();
       return;
     }
@@ -2726,14 +2746,14 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
-      await saveResultImage({
-        node: resultCardRef.current,
-        filename: `watachan-friend-result-${score}-${maxScore}.png`,
+      await savePreparedImage({
+        src: preparedResultImageSrc,
+        filename: `watachan-friend-result-${questionScore}-${totalQuestions}.png`,
         title: 'わたちゃん 友達の友情判定ゲーム',
       });
     } catch (e) {
       if (e && e.name === 'AbortError') return;
-      alert('画像の作成に失敗しました。もう一度試してみてください。');
+      alert('画像の準備に失敗しました。もう一度試してみてください。');
     } finally {
       setImageBusy(false);
     }
@@ -2742,9 +2762,9 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const handleShareImage = async () => {
     setImageBusy(true);
     try {
-      await shareResultImage({
-        node: resultCardRef.current,
-        filename: `watachan-friend-result-${score}-${maxScore}.png`,
+      await sharePreparedImage({
+        src: preparedResultImageSrc,
+        filename: `watachan-friend-result-${questionScore}-${totalQuestions}.png`,
         title: 'わたちゃん 友達の友情判定ゲーム',
         text: shareText,
         url: shareUrl,
@@ -3210,14 +3230,22 @@ const FAMILY_RESULT_TIERS = [
 function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
   const maxScore = Math.max(1, answers.length * (playerCount - 1));
   const score = answers.reduce((sum, a) => sum + a.matches.filter(Boolean).length, 0);
+  const questionScore = getQuestionHitScore(answers);
+  const totalQuestions = Math.max(1, answers.length || 5);
   const ratio = score / maxScore;
   const tier = [...FAMILY_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FAMILY_RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const resultCardRef = useRef(null);
+  const preparedResultImageSrc = getPreparedResultImageSrc('family', questionScore);
+
+  useEffect(() => {
+    preloadPreparedResultImages('family');
+  }, []);
+
   const shareUrl = `${location.origin}/?screen=familyIntro`;
-  const shareText = `家族の絆判定ゲームで${score}/${maxScore}的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n家族でやったら何問当たる？\n#わたちゃん #家族の絆判定 #streetboardgame`;
+  const shareText = `家族の絆判定ゲームで${questionScore}/${totalQuestions}問的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n家族でやったら何問当たる？\n#わたちゃん #家族の絆判定 #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -3233,7 +3261,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   };
 
   const openX = () => {
-    if (canShareImageFile(`watachan-family-result-${score}-${maxScore}.png`)) {
+    if (canShareImageFile(`watachan-family-result-${questionScore}-${totalQuestions}.png`)) {
       handleShareImage();
       return;
     }
@@ -3247,14 +3275,14 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
-      await saveResultImage({
-        node: resultCardRef.current,
-        filename: `watachan-family-result-${score}-${maxScore}.png`,
+      await savePreparedImage({
+        src: preparedResultImageSrc,
+        filename: `watachan-family-result-${questionScore}-${totalQuestions}.png`,
         title: 'わたちゃん 家族の絆判定ゲーム',
       });
     } catch (e) {
       if (e && e.name === 'AbortError') return;
-      alert('画像の作成に失敗しました。もう一度試してみてください。');
+      alert('画像の準備に失敗しました。もう一度試してみてください。');
     } finally {
       setImageBusy(false);
     }
@@ -3263,9 +3291,9 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const handleShareImage = async () => {
     setImageBusy(true);
     try {
-      await shareResultImage({
-        node: resultCardRef.current,
-        filename: `watachan-family-result-${score}-${maxScore}.png`,
+      await sharePreparedImage({
+        src: preparedResultImageSrc,
+        filename: `watachan-family-result-${questionScore}-${totalQuestions}.png`,
         title: 'わたちゃん 家族の絆判定ゲーム',
         text: shareText,
         url: shareUrl,
