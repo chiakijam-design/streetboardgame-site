@@ -1456,6 +1456,29 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
       overflow: 'hidden',
     }}>
       <Decor />
+      <button
+        type="button"
+        onClick={onHome}
+        style={{
+          position: 'absolute',
+          top: 'calc(18px + env(safe-area-inset-top))',
+          left: 18,
+          zIndex: 2,
+          padding: '8px 12px',
+          borderRadius: 999,
+          border: `2px solid ${proto.white}`,
+          background: 'rgba(0,0,0,0.22)',
+          color: proto.white,
+          fontFamily: proto.body,
+          fontSize: 11,
+          fontWeight: 900,
+          cursor: 'pointer',
+          touchAction: 'manipulation',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        ← トップに戻る
+      </button>
       <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
         <PillLabel>FINAL CHECK</PillLabel>
         <div style={{ marginTop: 18 }}>
@@ -1506,8 +1529,6 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
       <FixedActionBar
         primaryLabel={buttonLabel}
         onPrimary={onResult}
-        secondaryLabel="トップに戻る"
-        onSecondary={onHome}
         largePrimary
       />
     </div>
