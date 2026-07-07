@@ -1069,10 +1069,10 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       </div>
 
       {/* お題カード画像 */}
-      <div style={{ padding: '0 22px 7px' }}>
+      <div style={{ padding: '0 22px 4px' }}>
         <div style={{
           position: 'relative',
-          width: 'min(100%, 330px)',
+          width: 'min(100%, 300px)',
           margin: '0 auto',
           borderRadius: 14, overflow: 'hidden',
           boxShadow: '0 12px 28px rgba(0,0,0,0.25)',
@@ -2718,7 +2718,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '0 22px 7px' }}>
+      <div style={{ padding: '0 22px 4px' }}>
         <FriendQuestionCard card={card} />
       </div>
 
@@ -2778,7 +2778,7 @@ function FriendQuestionCard({ card }) {
       borderRadius: 18,
       boxShadow: '0 14px 30px rgba(0,0,0,0.22)',
       overflow: 'hidden',
-      width: 'min(100%, 330px)',
+      width: 'min(100%, 300px)',
       maxWidth: 560,
       margin: '0 auto',
       aspectRatio: '756 / 1122',
@@ -3613,7 +3613,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '0 22px 7px' }}>
+      <div style={{ padding: '0 22px 4px' }}>
         <FriendQuestionCard card={card} />
       </div>
 
