@@ -2171,7 +2171,7 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '' }) {
       }}>SHARE YOUR RESULT</div>
       <div style={{ fontSize: 16 }}>答え合わせを見たら結果をシェア</div>
       <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
-        Xは投稿画面へ、Instagramは画像保存後にアプリを開きます
+        XとInstagramで、結果画像とシェア文をかんたん投稿
       </div>
       <div style={{
         display: 'grid',
@@ -2207,7 +2207,7 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '' }) {
           opacity: busy ? 0.65 : 1,
           cursor: busy ? 'default' : 'pointer',
         }}>
-          IG用に保存→開く
+          Instagramでシェア
         </button>
       </div>
       <button onClick={onShare} disabled={busy} style={{
