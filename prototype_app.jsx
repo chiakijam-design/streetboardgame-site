@@ -1559,6 +1559,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
     }}>
       <Decor />
 
+      <div style={resultHeroStyle()}>
       <div style={{ padding: '58px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <PillLabel>YOUR RESULT</PillLabel>
       </div>
@@ -1704,6 +1705,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
           <span>streetboardgame.com</span>
           <span style={{ color: proto.pink, fontWeight: 900 }}>何問当たる？</span>
         </div>
+      </div>
       </div>
 
       {/* 内訳 */}
@@ -2637,6 +2639,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       overflowX: 'hidden',
     }}>
       <Decor />
+      <div style={resultHeroStyle()}>
       <div style={{ padding: '58px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <PillLabel>FRIEND RESULT</PillLabel>
       </div>
@@ -2711,6 +2714,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           whiteSpace: 'pre-line',
           fontWeight: 700,
         }}>{tier.msg}</div>
+      </div>
       </div>
 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -3155,6 +3159,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       overflowX: 'hidden',
     }}>
       <Decor />
+      <div style={resultHeroStyle()}>
       <div style={{ padding: '58px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <PillLabel>FAMILY RESULT</PillLabel>
       </div>
@@ -3229,6 +3234,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           whiteSpace: 'pre-line',
           fontWeight: 700,
         }}>{tier.msg}</div>
+      </div>
       </div>
 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -3862,6 +3868,19 @@ function textOnlyBtn() {
     textDecoration: 'underline',
     textUnderlineOffset: 4,
     cursor: 'pointer',
+  };
+}
+
+function resultHeroStyle() {
+  return {
+    minHeight: 'calc(100dvh - 142px)',
+    padding: '34px 0 20px',
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    position: 'relative',
+    zIndex: 1,
   };
 }
 
