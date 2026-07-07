@@ -889,7 +889,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
-      minHeight: '100vh', background: proto.pink, color: proto.white,
+      minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden',
     }}>
       {/* キャラ装飾: 右下のコーナーから小さく覗く */}
@@ -901,7 +901,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
         <Girl variant="full" height={240} />
       </div>
       {/* progress */}
-      <div style={{ padding: '44px 22px 0', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '34px 18px 0', position: 'relative', zIndex: 1 }}>
         <BackBtn onClick={onBack} top={20} dark label="遊び方に戻る" />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div style={{
@@ -931,15 +931,15 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       </div>
 
       {/* phase ラベル */}
-      <div style={{ padding: '10px 22px 5px', textAlign: 'center' }}>
+      <div style={{ padding: '6px 18px 3px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} />
       </div>
-      <div style={{ padding: '6px 22px 7px', textAlign: 'center' }}>
+      <div style={{ padding: '4px 18px 5px', textAlign: 'center' }}>
         <PhaseBadge phase={phase} />
       </div>
 
       {/* お題カード画像 */}
-      <div style={{ padding: '0 20px 10px' }}>
+      <div style={{ padding: '0 22px 7px' }}>
         <div style={{
           position: 'relative',
           borderRadius: 14, overflow: 'hidden',
@@ -948,13 +948,13 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
           border: `3px solid ${proto.white}`,
         }}>
           <img src={card.image} alt={card.title} style={{
-            width: '100%', display: 'block',
+            width: '100%', maxHeight: 'calc(100dvh - 330px)', objectFit: 'contain', display: 'block',
           }} />
         </div>
       </div>
 
       {/* メインエリア */}
-      <div style={{ flex: 1, padding: '0 18px 22px' }}>
+      <div style={{ flex: 1, padding: '0 18px 14px' }}>
         {phase === 'girl' && (
           <ColorPicker
             selected={girlPick}
@@ -966,15 +966,15 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
         {phase === 'boy' && (
           <>
             <div style={{
-              padding: '10px 14px', marginBottom: 12,
+              padding: '7px 12px', marginBottom: 7,
               background: 'rgba(0,0,0,0.25)',
               border: `1.5px dashed ${proto.yellow}`,
-              borderRadius: 12, fontSize: 12,
+              borderRadius: 12, fontSize: 11,
               color: proto.yellow,
               textAlign: 'center', fontWeight: 600,
             }}>
               ✦ 彼女の選択 受付完了 ✦<br/>
-              <span style={{ fontSize: 10, color: proto.white, fontWeight: 500, opacity: 0.85 }}>
+              <span style={{ fontSize: 9, color: proto.white, fontWeight: 500, opacity: 0.85 }}>
                 次は彼氏が「彼女が何色を選んだか」予想してね
               </span>
             </div>
@@ -1197,14 +1197,14 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
       {instruction && (
         <div style={{
           fontSize: 11, color: proto.white, textAlign: 'center',
-          marginBottom: 10, fontWeight: 600, letterSpacing: '0.05em',
+          marginBottom: 6, fontWeight: 600, letterSpacing: '0.05em',
         }}>{instruction}</div>
       )}
       <div style={{
         background: 'rgba(255,255,255,0.18)',
         backdropFilter: 'blur(8px)',
         border: '1.5px solid rgba(255,255,255,0.4)',
-        borderRadius: 18, padding: '12px 10px',
+        borderRadius: 16, padding: '8px 8px',
       }}>
         <div style={{
           display: 'grid',
@@ -1217,7 +1217,7 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
               <button key={opt.id} onClick={() => onPick(i)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexDirection: 'column',
-                minHeight: 62, minWidth: 50,
+                minHeight: 52, minWidth: 46,
                 padding: 0,
                 background: 'transparent', border: 'none',
                 cursor: 'pointer', fontFamily: proto.body,
@@ -1227,13 +1227,13 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
               }}>
                 <ColorChip
                   color={opt.color}
-                  size={50}
+                  size={42}
                   selected={isSelected}
                   highlight={highlight}
                 />
                 <span style={{
-                  marginTop: 7,
-                  fontSize: 10,
+                  marginTop: 5,
+                  fontSize: 9,
                   fontWeight: 900,
                   color: proto.white,
                   textShadow: '1px 1px 0 rgba(0,0,0,0.35)',
@@ -1245,7 +1245,7 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
         </div>
       </div>
       <div style={{
-        marginTop: 9, fontSize: 10, color: proto.white,
+        marginTop: 5, fontSize: 9, color: proto.white,
         textAlign: 'center', lineHeight: 1.5, opacity: 0.85,
       }}>
         ドットの色はお題カード左側の5色と対応しています
@@ -2197,11 +2197,11 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 
   return (
     <div style={{
-      minHeight: '100vh', background: proto.pink, color: proto.white,
+      minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden', paddingBottom: 28,
     }}>
       <Decor />
-      <div style={{ padding: '44px 22px 0', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '34px 18px 0', position: 'relative', zIndex: 1 }}>
         <BackBtn onClick={onBack} top={20} dark label="友情版の遊び方に戻る" />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div style={{
@@ -2228,16 +2228,16 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '10px 22px 5px', textAlign: 'center' }}>
+      <div style={{ padding: '6px 18px 3px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} label="FRIEND Q" />
       </div>
 
-      <div style={{ padding: '6px 22px 7px', textAlign: 'center' }}>
+      <div style={{ padding: '3px 18px 5px', textAlign: 'center' }}>
         <div style={{
           display: 'inline-block',
           minWidth: 220,
           maxWidth: '100%',
-          padding: '9px 18px 10px',
+          padding: '7px 16px 8px',
           background: phase === 'answer' ? proto.yellow : phase === 'guess' ? proto.cyan : proto.white,
           color: proto.black,
           borderRadius: 16,
@@ -2255,20 +2255,20 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
           }}>
             {phase === 'answer' ? 'STEP 1' : `STEP ${turn + 1}`}
           </div>
-          <div style={{ marginTop: 2, fontSize: 17 }}>
+          <div style={{ marginTop: 1, fontSize: 15 }}>
             {phase === 'answer' ? '本人のターン' : `${currentPlayer}の予想`}
           </div>
-          <div style={{ marginTop: 3, fontSize: 10, lineHeight: 1.4 }}>
+          <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.35 }}>
             {phase === 'answer' ? '友達には見せずに、自分の答えを選んでね' : '本人が選んだ答えを予想してね'}
           </div>
         </div>
       </div>
 
-      <div style={{ padding: '0 18px 10px' }}>
+      <div style={{ padding: '0 22px 7px' }}>
         <FriendQuestionCard card={card} />
       </div>
 
-      <div style={{ padding: '0 18px' }}>
+      <div style={{ padding: '0 18px 14px' }}>
         {phase === 'answer' && (
           <ColorPicker
             selected={targetPick}
@@ -2280,14 +2280,14 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         {phase === 'guess' && (
           <>
             <div style={{
-              padding: '10px 14px', marginBottom: 12,
+              padding: '7px 12px', marginBottom: 7,
               background: 'rgba(0,0,0,0.25)',
               border: `1.5px dashed ${proto.yellow}`,
-              borderRadius: 12, fontSize: 12,
+              borderRadius: 12, fontSize: 11,
               textAlign: 'center', fontWeight: 700,
             }}>
               本人の答えは受付完了。<br/>
-              <span style={{ fontSize: 10, color: proto.yellow }}>
+              <span style={{ fontSize: 9, color: proto.yellow }}>
                 {currentPlayer}は「本人が選んだ答え」を予想してね
               </span>
             </div>
@@ -2320,6 +2320,7 @@ function FriendQuestionCard({ card }) {
       borderRadius: 18,
       boxShadow: '0 14px 30px rgba(0,0,0,0.22)',
       overflow: 'hidden',
+      width: 'min(100%, 330px)',
       maxWidth: 560,
       margin: '0 auto',
       aspectRatio: '756 / 1122',
@@ -2951,11 +2952,11 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 
   return (
     <div style={{
-      minHeight: '100vh', background: proto.pink, color: proto.white,
+      minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden', paddingBottom: 28,
     }}>
       <Decor />
-      <div style={{ padding: '44px 22px 0', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '34px 18px 0', position: 'relative', zIndex: 1 }}>
         <BackBtn onClick={onBack} top={20} dark label="家族版の遊び方に戻る" />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div style={{
@@ -2982,16 +2983,16 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '10px 22px 5px', textAlign: 'center' }}>
+      <div style={{ padding: '6px 18px 3px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} label="FAMILY Q" />
       </div>
 
-      <div style={{ padding: '6px 22px 7px', textAlign: 'center' }}>
+      <div style={{ padding: '3px 18px 5px', textAlign: 'center' }}>
         <div style={{
           display: 'inline-block',
           minWidth: 220,
           maxWidth: '100%',
-          padding: '9px 18px 10px',
+          padding: '7px 16px 8px',
           background: phase === 'answer' ? proto.yellow : proto.cyan,
           color: proto.black,
           borderRadius: 16,
@@ -3009,20 +3010,20 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
           }}>
             {phase === 'answer' ? 'STEP 1' : `STEP ${turn + 1}`}
           </div>
-          <div style={{ marginTop: 2, fontSize: 17 }}>
+          <div style={{ marginTop: 1, fontSize: 15 }}>
             {phase === 'answer' ? '本人のターン' : `${currentPlayer}の予想`}
           </div>
-          <div style={{ marginTop: 3, fontSize: 10, lineHeight: 1.4 }}>
+          <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.35 }}>
             {phase === 'answer' ? '家族には見せずに、自分の答えを選んでね' : '本人が選んだ答えを予想してね'}
           </div>
         </div>
       </div>
 
-      <div style={{ padding: '0 18px 10px' }}>
+      <div style={{ padding: '0 22px 7px' }}>
         <FriendQuestionCard card={card} />
       </div>
 
-      <div style={{ padding: '0 18px' }}>
+      <div style={{ padding: '0 18px 14px' }}>
         {phase === 'answer' && (
           <ColorPicker
             selected={targetPick}
@@ -3034,14 +3035,14 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         {phase === 'guess' && (
           <>
             <div style={{
-              padding: '10px 14px', marginBottom: 12,
+              padding: '7px 12px', marginBottom: 7,
               background: 'rgba(0,0,0,0.25)',
               border: `1.5px dashed ${proto.yellow}`,
-              borderRadius: 12, fontSize: 12,
+              borderRadius: 12, fontSize: 11,
               textAlign: 'center', fontWeight: 700,
             }}>
               本人の答えは受付完了！<br/>
-              <span style={{ fontSize: 10, color: proto.yellow }}>
+              <span style={{ fontSize: 9, color: proto.yellow }}>
                 {currentPlayer}は「本人が選んだ答え」を予想してね
               </span>
             </div>
