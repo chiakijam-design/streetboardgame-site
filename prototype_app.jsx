@@ -3394,6 +3394,7 @@ function PlayerScoreBoard({ answers, players, label, kind = 'friend' }) {
       </div>
       <div style={{
         display: 'grid',
+        gridTemplateColumns: `repeat(${Math.max(1, scores.length)}, minmax(0, 1fr))`,
         gap: 8,
         marginTop: 12,
       }}>
@@ -3401,10 +3402,10 @@ function PlayerScoreBoard({ answers, players, label, kind = 'friend' }) {
           <div key={item.name} style={{
             minWidth: 0,
             display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) auto',
+            justifyItems: 'center',
             alignItems: 'center',
-            gap: 10,
-            padding: '11px 12px',
+            gap: 4,
+            padding: '10px 7px',
             background: item.score === total ? proto.yellow : proto.pinkSoft,
             border: `2px solid ${proto.white}`,
             borderRadius: 10,
@@ -3415,14 +3416,19 @@ function PlayerScoreBoard({ answers, players, label, kind = 'friend' }) {
               fontSize: 12,
               lineHeight: 1.25,
               overflowWrap: 'anywhere',
-              textAlign: 'left',
+              textAlign: 'center',
             }}>{item.name}</div>
             <div style={{
-              fontSize: 26,
+              fontSize: 28,
               lineHeight: 1,
               fontFamily: proto.display,
               color: item.score === total ? proto.black : proto.pinkDeep,
             }}>{item.score}/{total}</div>
+            <div style={{
+              fontSize: 10,
+              lineHeight: 1,
+              color: proto.textSoft,
+            }}>問正解</div>
           </div>
         ))}
       </div>
@@ -3551,32 +3557,34 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.textAlign = 'center';
   ctx.fillText('それぞれ何問当たった？', 540, 916);
 
-  const cardTop = 972;
-  const cardGap = 22;
-  const cardHeight = 88;
+  const cardTop = 982;
+  const cardGap = 18;
+  const cardHeight = 126;
+  const cardCount = Math.max(1, scores.length);
+  const cardWidth = (740 - cardGap * (cardCount - 1)) / cardCount;
   scores.forEach((item, index) => {
-    const y = cardTop + index * (cardHeight + cardGap);
+    const x = 170 + index * (cardWidth + cardGap);
+    const y = cardTop;
     ctx.fillStyle = item.score === total ? proto.yellow : proto.pinkSoft;
-    roundRect(ctx, 170, y, 740, cardHeight, 24);
+    roundRect(ctx, x, y, cardWidth, cardHeight, 24);
     ctx.fill();
     ctx.lineWidth = 5;
     ctx.strokeStyle = proto.black;
-    roundRect(ctx, 170, y, 740, cardHeight, 24);
+    roundRect(ctx, x, y, cardWidth, cardHeight, 24);
     ctx.stroke();
 
     ctx.fillStyle = proto.black;
-    ctx.font = '900 36px "Zen Maru Gothic", sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(item.name, 220, y + 57);
+    ctx.font = '900 30px "Zen Maru Gothic", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(item.name, x + cardWidth / 2, y + 38);
 
     ctx.fillStyle = proto.pinkDeep;
-    ctx.font = '900 62px "RocknRoll One", sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(`${item.score}/${total}`, 780, y + 62);
+    ctx.font = '900 60px "RocknRoll One", sans-serif';
+    ctx.fillText(`${item.score}/${total}`, x + cardWidth / 2, y + 88);
 
-    ctx.fillStyle = proto.black;
-    ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
-    ctx.fillText('問', 848, y + 62);
+    ctx.fillStyle = proto.textSoft;
+    ctx.font = '900 22px "Zen Maru Gothic", sans-serif';
+    ctx.fillText('問正解', x + cardWidth / 2, y + 112);
   });
 
   ctx.fillStyle = proto.black;
