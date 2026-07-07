@@ -2937,14 +2937,39 @@ function FriendReveal({ card, targetPick, guesses, playerCount, onNext }) {
   );
 }
 
-function PlayerScoreBoard({ answers, players, label }) {
+const GROUP_RESULT_RANKS = {
+  friend: [
+    { score: 5, name: '神友レベル', note: 'ほぼ心の同居人' },
+    { score: 4, name: '以心伝心', note: 'かなり分かってる' },
+    { score: 3, name: '仲良し理解者', note: '普通に強い' },
+    { score: 2, name: 'まだ探り中', note: '伸びしろ友情' },
+    { score: 1, name: '謎多き友達', note: 'ここから深掘り' },
+    { score: 0, name: '初対面モード', note: '逆に盛り上がる' },
+  ],
+  family: [
+    { score: 5, name: '絆MAX', note: '家族データ完全同期' },
+    { score: 4, name: 'かなり分かる家族', note: '空気で伝わる' },
+    { score: 3, name: 'ちょうど家族', note: '分かる所は分かる' },
+    { score: 2, name: '実家アップデート中', note: 'まだ更新できる' },
+    { score: 1, name: '家族ミステリー', note: '意外と知らない' },
+    { score: 0, name: '遠い親戚モード', note: '今日から再確認' },
+  ],
+};
+
+function getGroupResultRank(kind, score) {
+  const ranks = GROUP_RESULT_RANKS[kind] || GROUP_RESULT_RANKS.friend;
+  return ranks.find((rank) => rank.score === score) || ranks[ranks.length - 1];
+}
+
+function PlayerScoreBoard({ answers, players, label, kind = 'friend' }) {
   const total = Math.max(1, answers.length);
   const scores = getPlayerScores(answers, players);
+  const ranks = GROUP_RESULT_RANKS[kind] || GROUP_RESULT_RANKS.friend;
 
   return (
     <div style={{
       margin: '14px 16px 0',
-      padding: '12px 10px',
+      padding: '12px 10px 14px',
       background: proto.black,
       border: `2.5px solid ${proto.black}`,
       borderRadius: 14,
@@ -2960,13 +2985,19 @@ function PlayerScoreBoard({ answers, players, label }) {
       }}>{label}</div>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: `repeat(${Math.max(1, scores.length)}, minmax(0, 1fr))`,
         gap: 8,
       }}>
         {scores.map((item) => (
+          (() => {
+            const rank = getGroupResultRank(kind, item.score);
+            return (
           <div key={item.name} style={{
             minWidth: 0,
-            padding: '10px 5px',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(58px, 0.8fr) minmax(56px, 0.7fr) minmax(0, 1.5fr)',
+            alignItems: 'center',
+            gap: 7,
+            padding: '9px 9px',
             background: item.score === total ? proto.yellow : proto.pinkSoft,
             border: `2px solid ${proto.white}`,
             borderRadius: 10,
@@ -2974,22 +3005,71 @@ function PlayerScoreBoard({ answers, players, label }) {
             fontWeight: 900,
           }}>
             <div style={{
-              fontSize: 10,
+              fontSize: 11,
               lineHeight: 1.2,
               overflowWrap: 'anywhere',
             }}>{item.name}</div>
             <div style={{
-              marginTop: 3,
-              fontSize: 22,
+              fontSize: 24,
               lineHeight: 1,
               fontFamily: proto.display,
               color: item.score === total ? proto.black : proto.pinkDeep,
             }}>{item.score}/{total}</div>
-            <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.2 }}>
-              問正解
+            <div style={{ textAlign: 'left', minWidth: 0 }}>
+              <div style={{
+                fontSize: 12,
+                lineHeight: 1.2,
+                color: proto.black,
+                overflowWrap: 'anywhere',
+              }}>{rank.name}</div>
+              <div style={{
+                marginTop: 2,
+                fontSize: 9,
+                lineHeight: 1.25,
+                color: proto.textSoft,
+                overflowWrap: 'anywhere',
+              }}>{rank.note}</div>
             </div>
           </div>
+            );
+          })()
         ))}
+      </div>
+      <div style={{
+        marginTop: 12,
+        padding: '11px 11px',
+        background: proto.white,
+        border: `2px solid ${proto.white}`,
+        borderRadius: 12,
+        color: proto.text,
+        textAlign: 'left',
+      }}>
+        <div style={{
+          display: 'inline-block',
+          padding: '3px 9px',
+          marginBottom: 7,
+          borderRadius: 999,
+          background: proto.yellow,
+          border: `1.5px solid ${proto.black}`,
+          fontSize: 10,
+          fontWeight: 900,
+        }}>ランク表</div>
+        <div style={{ display: 'grid', gap: 5 }}>
+          {ranks.map((rank) => (
+            <div key={rank.score} style={{
+              display: 'grid',
+              gridTemplateColumns: '54px minmax(0, 1fr)',
+              alignItems: 'baseline',
+              gap: 8,
+              fontSize: 11,
+              lineHeight: 1.35,
+              fontWeight: 900,
+            }}>
+              <span style={{ color: proto.pinkDeep }}>{rank.score}問正解</span>
+              <span>{rank.name}<span style={{ color: proto.textSoft, fontSize: 10, marginLeft: 5 }}> {rank.note}</span></span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -3002,10 +3082,10 @@ function getPlayerScores(answers, players) {
   }));
 }
 
-function getPlayerScoreSummary(answers, players) {
+function getPlayerScoreSummary(answers, players, kind = 'friend') {
   const total = Math.max(1, answers.length);
   return getPlayerScores(answers, players)
-    .map((item) => `${item.name} ${item.score}/${total}問`)
+    .map((item) => `${item.name} ${item.score}/${total}問「${getGroupResultRank(kind, item.score).name}」`)
     .join('、');
 }
 
@@ -3015,7 +3095,8 @@ function createGroupResultImageSrc(kind, answers, players) {
   const scores = getPlayerScores(answers, players);
   const isFamily = kind === 'family';
   const title = isFamily ? '家族の絆判定' : '友達の友情判定';
-  const headline = isFamily ? '家族それぞれの結果' : '友達それぞれの結果';
+  const headline = isFamily ? '家族それぞれの結果一覧' : '友達それぞれの結果一覧';
+  const ranks = GROUP_RESULT_RANKS[kind] || GROUP_RESULT_RANKS.friend;
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
@@ -3056,16 +3137,17 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillText(title, 540, 310);
 
   ctx.fillStyle = proto.black;
-  roundRect(ctx, 150, 370, 780, 92, 22);
+  roundRect(ctx, 140, 350, 800, 86, 22);
   ctx.fill();
   ctx.fillStyle = proto.yellow;
-  ctx.font = '900 36px "Zen Maru Gothic", sans-serif';
-  ctx.fillText(headline, 540, 430);
+  ctx.font = '900 34px "Zen Maru Gothic", sans-serif';
+  ctx.fillText(headline, 540, 405);
 
-  const cardTop = 520;
-  const cardGap = 34;
-  const cardHeight = 150;
+  const cardTop = 480;
+  const cardGap = 24;
+  const cardHeight = 124;
   scores.forEach((item, index) => {
+    const rank = getGroupResultRank(kind, item.score);
     const y = cardTop + index * (cardHeight + cardGap);
     ctx.fillStyle = item.score === total ? proto.yellow : proto.pinkSoft;
     roundRect(ctx, 170, y, 740, cardHeight, 26);
@@ -3078,22 +3160,56 @@ function createGroupResultImageSrc(kind, answers, players) {
     ctx.fillStyle = proto.black;
     ctx.font = '900 36px "Zen Maru Gothic", sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(item.name, 220, y + 62);
+    ctx.fillText(item.name, 220, y + 54);
 
     ctx.fillStyle = proto.pinkDeep;
-    ctx.font = '900 70px "RocknRoll One", sans-serif';
+    ctx.font = '900 62px "RocknRoll One", sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`${item.score}/${total}`, 790, y + 76);
+    ctx.fillText(`${item.score}/${total}`, 790, y + 64);
 
     ctx.fillStyle = proto.black;
+    ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
+    ctx.fillText('問正解', 880, y + 64);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = proto.black;
     ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
-    ctx.fillText('問正解', 880, y + 76);
+    ctx.fillText(rank.name, 220, y + 98);
+    ctx.fillStyle = proto.textSoft;
+    ctx.font = '800 22px "Zen Maru Gothic", sans-serif';
+    ctx.fillText(rank.note, 430, y + 98);
+  });
+
+  const rankTop = 930;
+  ctx.fillStyle = proto.white;
+  roundRect(ctx, 160, rankTop, 760, 166, 24);
+  ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = proto.black;
+  roundRect(ctx, 160, rankTop, 760, 166, 24);
+  ctx.stroke();
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 26px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('ランク表', 540, rankTop + 42);
+  ranks.forEach((rank, index) => {
+    const col = index < 3 ? 0 : 1;
+    const row = index % 3;
+    const x = col === 0 ? 220 : 570;
+    const y = rankTop + 78 + row * 32;
+    ctx.fillStyle = proto.pinkDeep;
+    ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${rank.score}問`, x, y);
+    ctx.fillStyle = proto.black;
+    ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
+    ctx.fillText(rank.name, x + 58, y);
   });
 
   ctx.fillStyle = proto.black;
-  ctx.font = '900 34px "Zen Maru Gothic", sans-serif';
+  ctx.font = '900 30px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('答え合わせで、どの問題を当てたか確認してね', 540, 1110);
+  ctx.fillText('答え合わせで、どの問題を当てたか確認してね', 540, 1160);
 
   ctx.fillStyle = proto.textSoft;
   ctx.font = '700 26px "DotGothic16", monospace';
@@ -3202,7 +3318,7 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
 function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const friendPlayers = useMemo(() => getFriendPlayers(playerCount), [playerCount]);
-  const scoreSummary = getPlayerScoreSummary(answers, friendPlayers);
+  const scoreSummary = getPlayerScoreSummary(answers, friendPlayers, 'friend');
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
@@ -3339,20 +3455,9 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         <PlayerScoreBoard
           answers={answers}
           players={friendPlayers}
+          kind="friend"
           label="それぞれ何問当たった？"
         />
-        <div style={{
-          margin: '14px 18px 18px',
-          padding: '12px 12px',
-          background: proto.white,
-          border: `2.5px solid ${proto.black}`,
-          borderRadius: 12,
-          boxShadow: '3px 3px 0 #000',
-          fontSize: 12,
-          color: proto.text,
-          lineHeight: 1.75,
-          fontWeight: 700,
-        }}>答え合わせで、誰がどの問題を当てたかまとめて確認できます。</div>
       </div>
       </div>
 
@@ -3671,7 +3776,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const familyPlayers = useMemo(() => getFamilyPlayers(playerCount), [playerCount]);
-  const scoreSummary = getPlayerScoreSummary(answers, familyPlayers);
+  const scoreSummary = getPlayerScoreSummary(answers, familyPlayers, 'family');
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
@@ -3808,20 +3913,9 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         <PlayerScoreBoard
           answers={answers}
           players={familyPlayers}
+          kind="family"
           label="それぞれ何問当たった？"
         />
-        <div style={{
-          margin: '14px 18px 18px',
-          padding: '12px 12px',
-          background: proto.white,
-          border: `2.5px solid ${proto.black}`,
-          borderRadius: 12,
-          boxShadow: '3px 3px 0 #000',
-          fontSize: 12,
-          color: proto.text,
-          lineHeight: 1.75,
-          fontWeight: 700,
-        }}>答え合わせで、誰がどの問題を当てたかまとめて確認できます。</div>
       </div>
       </div>
 
