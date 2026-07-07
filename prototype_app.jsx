@@ -1274,7 +1274,7 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
       minHeight: '100vh',
       background: proto.pink,
       color: proto.white,
-      padding: '54px 22px calc(128px + env(safe-area-inset-bottom))',
+      padding: '54px 22px calc(152px + env(safe-area-inset-bottom))',
       boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column',
@@ -1335,6 +1335,7 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
         onPrimary={onResult}
         secondaryLabel="トップに戻る"
         onSecondary={onHome}
+        largePrimary
       />
     </div>
   );
@@ -2281,7 +2282,8 @@ function ResultReplayActions({ primaryLabel, onPrimary, secondaryLabel, onSecond
   );
 }
 
-function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary }) {
+function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary, largePrimary = false }) {
+  const primaryStyle = primaryBtn();
   return (
     <div style={{
       position: 'fixed',
@@ -2295,8 +2297,16 @@ function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary }
       zIndex: 30,
       pointerEvents: 'none',
     }}>
-      <div style={{ display: 'grid', gap: 12, pointerEvents: 'auto' }}>
-        <button onClick={onPrimary} style={primaryBtn()}>
+      <div style={{ display: 'grid', gap: largePrimary ? 14 : 12, pointerEvents: 'auto' }}>
+        <button onClick={onPrimary} style={{
+          ...primaryStyle,
+          minHeight: largePrimary ? 84 : primaryStyle.minHeight,
+          padding: largePrimary ? '22px 16px' : primaryStyle.padding,
+          fontSize: largePrimary ? 21 : primaryStyle.fontSize,
+          borderRadius: largePrimary ? 18 : primaryStyle.borderRadius,
+          boxShadow: largePrimary ? '6px 6px 0 #5BD4E8' : primaryStyle.boxShadow,
+          letterSpacing: largePrimary ? '0.1em' : primaryStyle.letterSpacing,
+        }}>
           {primaryLabel}
         </button>
         {secondaryLabel && onSecondary && (
