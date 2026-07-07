@@ -42,7 +42,6 @@ const COLOR_LABELS = ['緑', '青', '黄', '赤', '橙'];
 const RESULT_IMAGE_VERSION = 'results-20260707-2';
 const HANDOFF_DELAY_MS = 600;
 const FINAL_HANDOFF_DELAY_MS = 1000;
-const ANSWER_ADVANCE_DELAY_MS = 160;
 function normalizeFriendPlayerCount(value) {
   const n = Number(value);
   return [2, 3, 4].includes(n) ? n : 2;
@@ -974,7 +973,8 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
   const onBoyPick = (i) => {
     if (boyPick !== null) return;
     setBoyPick(i);
-    setTimeout(() => onAnswer(girlPick, i), ANSWER_ADVANCE_DELAY_MS);
+    setHandoffMessage(qIdx + 1 >= total ? '彼女に渡して結果を見てね' : '彼女に渡して次の問題へ');
+    setTimeout(() => onAnswer(girlPick, i), FINAL_HANDOFF_DELAY_MS);
   };
 
   if (!card) return null;
@@ -2164,36 +2164,47 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
 function ResultImageActions({ busy, onShare }) {
   return (
     <div style={{
-      background: proto.white,
+      background: proto.yellow,
       color: proto.black,
-      border: `2.5px solid ${proto.black}`,
-      borderRadius: 12,
-      boxShadow: '3px 3px 0 #000',
-      padding: '10px 12px',
+      border: `3px solid ${proto.black}`,
+      borderRadius: 14,
+      boxShadow: '5px 5px 0 #000',
+      padding: '14px 12px',
       textAlign: 'center',
       fontWeight: 900,
       lineHeight: 1.45,
     }}>
-      <div style={{ fontSize: 14 }}>結果画像をかんたん保存・シェア</div>
-      <div style={{ marginTop: 2, fontSize: 10, color: proto.textSoft }}>
-        保存もSNS投稿も、このボタンからできます
+      <div style={{
+        display: 'inline-block',
+        padding: '3px 10px',
+        borderRadius: 999,
+        background: proto.black,
+        color: proto.white,
+        fontFamily: proto.caption,
+        fontSize: 10,
+        letterSpacing: '0.12em',
+        marginBottom: 8,
+      }}>SHARE YOUR RESULT</div>
+      <div style={{ fontSize: 16 }}>答え合わせを見たら結果をシェア</div>
+      <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
+        結果画像とシェア文をまとめて出せます
       </div>
       <button onClick={onShare} disabled={busy} style={{
         width: '100%',
-        minHeight: 58,
+        minHeight: 62,
         marginTop: 14,
         borderRadius: 12,
         border: `2.5px solid ${proto.black}`,
         background: proto.black,
         color: proto.white,
         fontFamily: proto.body,
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: 900,
-        boxShadow: '3px 3px 0 #000',
+        boxShadow: '3px 3px 0 #5BD4E8',
         opacity: busy ? 0.65 : 1,
         cursor: busy ? 'default' : 'pointer',
       }}>
-        {busy ? '準備中...' : '結果画像を保存・シェアする'}
+        {busy ? '準備中...' : '結果画像を保存・シェアする ▶'}
       </button>
     </div>
   );
