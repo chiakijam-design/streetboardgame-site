@@ -2287,10 +2287,10 @@ function FriendIntroScreen({ onStart, onBack }) {
             fontFamily: proto.caption, fontSize: 10, color: proto.yellow,
             letterSpacing: '0.15em', marginBottom: 4,
           }}>★ SELECT PLAYERS ★</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
             {[2, 3, 4].map((count) => (
               <button key={count} onClick={() => onStart(count)} style={{
-                minHeight: 84,
+                minHeight: 72,
                 background: count === 2 ? proto.cyan : count === 3 ? proto.yellow : proto.white,
                 color: proto.black,
                 border: `2.5px solid ${proto.black}`,
@@ -2298,11 +2298,16 @@ function FriendIntroScreen({ onStart, onBack }) {
                 boxShadow: '3px 3px 0 #000',
                 fontWeight: 900,
                 cursor: 'pointer',
-                padding: '10px 4px',
+                padding: '12px 14px',
                 lineHeight: 1.25,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                textAlign: 'left',
               }}>
-                <div style={{ fontSize: 14 }}>{count}人で遊ぶ</div>
-                <div style={{ marginTop: 6, fontSize: 10, fontWeight: 900, lineHeight: 1.35 }}>
+                <div style={{ fontSize: 20, whiteSpace: 'nowrap' }}>{count}人で遊ぶ</div>
+                <div style={{ fontSize: 11, fontWeight: 900, lineHeight: 1.35, textAlign: 'right' }}>
                   {getFriendPlayersLabel(count)}
                 </div>
               </button>
@@ -3093,10 +3098,10 @@ function FamilyIntroScreen({ onStart, onBack }) {
             fontFamily: proto.caption, fontSize: 10, color: proto.yellow,
             letterSpacing: '0.15em', marginBottom: 4,
           }}>★ SELECT PLAYERS ★</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
             {[2, 3, 4].map((count) => (
               <button key={count} onClick={() => onStart(count)} style={{
-                minHeight: 84,
+                minHeight: 72,
                 background: count === 2 ? proto.cyan : count === 3 ? proto.yellow : proto.white,
                 color: proto.black,
                 border: `2.5px solid ${proto.black}`,
@@ -3104,11 +3109,16 @@ function FamilyIntroScreen({ onStart, onBack }) {
                 boxShadow: '3px 3px 0 #000',
                 fontWeight: 900,
                 cursor: 'pointer',
-                padding: '10px 4px',
+                padding: '12px 14px',
                 lineHeight: 1.25,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                textAlign: 'left',
               }}>
-                <div style={{ fontSize: 14 }}>{count}人で遊ぶ</div>
-                <div style={{ marginTop: 6, fontSize: 10, fontWeight: 900, lineHeight: 1.35 }}>
+                <div style={{ fontSize: 20, whiteSpace: 'nowrap' }}>{count}人で遊ぶ</div>
+                <div style={{ fontSize: 11, fontWeight: 900, lineHeight: 1.35, textAlign: 'right' }}>
                   {getFamilyPlayersLabel(count)}
                 </div>
               </button>
