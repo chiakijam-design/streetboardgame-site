@@ -1118,42 +1118,54 @@ function NameEditorPanel({ title, names, defaults, onChange, visibleCount }) {
         marginBottom: 10,
       }}>
         <div style={{ fontSize: 12, fontWeight: 900 }}>✎ {title}</div>
-        <div style={{ fontSize: 9, color: proto.textSoft, fontWeight: 800 }}>{PLAYER_NAME_MAX_LENGTH}文字まで・未入力なら元の名前</div>
+        <div style={{ fontSize: 9, color: proto.textSoft, fontWeight: 800 }}>名前は{PLAYER_NAME_MAX_LENGTH}文字まで</div>
       </div>
       <div style={{ display: 'grid', gap: 8 }}>
-        {defaults.slice(0, count).map((fallback, index) => (
+        {defaults.slice(0, count).map((fallback, index) => {
+          const value = (names && names[index]) || '';
+          return (
           <label key={`${fallback}-${index}`} style={{
             display: 'grid',
             gridTemplateColumns: '74px minmax(0, 1fr)',
-            alignItems: 'center',
+            alignItems: 'start',
             gap: 8,
             fontSize: 11,
             fontWeight: 900,
           }}>
-            <span>{fallback}</span>
-            <input
-              value={(names && names[index]) || ''}
-              onChange={(e) => onChange(index, e.target.value)}
-              onFocus={(e) => e.target.select()}
-              placeholder={fallback}
-              aria-label={`${fallback}の表示名`}
-              maxLength={PLAYER_NAME_MAX_LENGTH}
-              style={{
-                minWidth: 0,
-                height: 38,
-                padding: '0 10px',
-                borderRadius: 10,
-                border: `2px solid ${proto.black}`,
-                background: '#FFF8F1',
-                color: proto.text,
-                fontFamily: proto.body,
-                fontSize: 13,
+            <span style={{ paddingTop: 11 }}>{fallback}</span>
+            <span style={{ display: 'grid', gap: 4 }}>
+              <input
+                value={value}
+                onChange={(e) => onChange(index, e.target.value)}
+                onFocus={(e) => e.target.select()}
+                placeholder={`${fallback}（${PLAYER_NAME_MAX_LENGTH}文字まで）`}
+                aria-label={`${fallback}の表示名。${PLAYER_NAME_MAX_LENGTH}文字まで`}
+                maxLength={PLAYER_NAME_MAX_LENGTH}
+                style={{
+                  minWidth: 0,
+                  height: 38,
+                  padding: '0 10px',
+                  borderRadius: 10,
+                  border: `2px solid ${proto.black}`,
+                  background: '#FFF8F1',
+                  color: proto.text,
+                  fontFamily: proto.body,
+                  fontSize: 13,
+                  fontWeight: 900,
+                  boxSizing: 'border-box',
+                }}
+              />
+              <span style={{
+                justifySelf: 'end',
+                color: value.length >= PLAYER_NAME_MAX_LENGTH ? proto.pinkDeep : proto.textSoft,
+                fontSize: 9,
                 fontWeight: 900,
-                boxSizing: 'border-box',
-              }}
-            />
+                lineHeight: 1,
+              }}>{value.length}/{PLAYER_NAME_MAX_LENGTH}文字</span>
+            </span>
           </label>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
