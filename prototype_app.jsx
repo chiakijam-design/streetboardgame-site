@@ -1000,6 +1000,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       display: 'flex', flexDirection: 'column',
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden',
+      paddingBottom: 'calc(132px + env(safe-area-inset-bottom))',
     }}>
       {/* キャラ装飾: 右下のコーナーから小さく覗く */}
       <div style={{
@@ -1421,10 +1422,12 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
   const isLocked = selected !== null && selected !== undefined;
   return (
     <div style={{
-      position: 'sticky',
-      bottom: 'calc(8px + env(safe-area-inset-bottom))',
-      zIndex: 12,
-      marginTop: 4,
+      position: 'fixed',
+      left: '50%',
+      bottom: 'calc(4px + env(safe-area-inset-bottom))',
+      zIndex: 120,
+      width: 'min(560px, calc(100% - 28px))',
+      transform: 'translateX(-50%)',
     }}>
       <style>{`
         @keyframes chipPop {
@@ -1436,7 +1439,8 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
       {instruction && (
         <div style={{
           fontSize: 11, color: proto.white, textAlign: 'center',
-          marginBottom: 6, fontWeight: 600, letterSpacing: '0.05em',
+          marginBottom: 4, fontWeight: 600, letterSpacing: '0.05em',
+          textShadow: '1px 1px 0 rgba(0,0,0,0.4)',
         }}>{instruction}</div>
       )}
       <div style={{
@@ -1444,7 +1448,7 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
         backdropFilter: 'blur(8px)',
         border: '2px solid rgba(255,255,255,0.55)',
         borderRadius: 18,
-        padding: '11px 10px 10px',
+        padding: '9px 10px 9px',
         boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
       }}>
         <div style={{
@@ -1452,7 +1456,7 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 8,
-          marginBottom: 8,
+          marginBottom: 6,
           color: proto.white,
           fontWeight: 900,
         }}>
@@ -1466,7 +1470,7 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: 10,
+          gap: 8,
         }}>
           {window.COLOR_OPTIONS.map((opt, i) => {
             const isSelected = selected === i;
@@ -1481,7 +1485,7 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
                 style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexDirection: 'column',
-                minHeight: 58, minWidth: 50,
+                minHeight: 54, minWidth: 48,
                 padding: 0,
                 background: 'transparent', border: 'none',
                 cursor: isLocked ? 'default' : 'pointer', fontFamily: proto.body,
@@ -1492,12 +1496,12 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
               }}>
                 <ColorChip
                   color={opt.color}
-                  size={42}
+                  size={40}
                   selected={isSelected}
                   highlight={highlight}
                 />
                 <span style={{
-                  marginTop: 5,
+                  marginTop: 4,
                   fontSize: 9,
                   fontWeight: 900,
                   color: proto.white,
@@ -1510,8 +1514,9 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
         </div>
       </div>
       <div style={{
-        marginTop: 5, fontSize: 9, color: proto.white,
+        marginTop: 3, fontSize: 9, color: proto.white,
         textAlign: 'center', lineHeight: 1.5, opacity: 0.85,
+        textShadow: '1px 1px 0 rgba(0,0,0,0.35)',
       }}>
         ドットの色はお題カード左側の5色と対応しています
       </div>
@@ -2482,7 +2487,8 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
   return (
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
-      position: 'relative', overflowX: 'hidden', paddingBottom: 28,
+      position: 'relative', overflowX: 'hidden',
+      paddingBottom: 'calc(132px + env(safe-area-inset-bottom))',
     }}>
       <Decor />
       <div style={{ padding: '34px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -3366,7 +3372,8 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
   return (
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
-      position: 'relative', overflowX: 'hidden', paddingBottom: 28,
+      position: 'relative', overflowX: 'hidden',
+      paddingBottom: 'calc(132px + env(safe-area-inset-bottom))',
     }}>
       <Decor />
       <div style={{ padding: '34px 18px 0', position: 'relative', zIndex: 1 }}>
