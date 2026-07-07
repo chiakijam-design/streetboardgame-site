@@ -611,9 +611,9 @@ function TopScreen({ onStart, hasProgress, resumeLabel, onResume, onFriend, onFa
         {hasProgress && (
           <button onClick={onResume} style={{
             ...secondaryBtn(),
-            marginBottom: 10,
+            marginBottom: 14,
             background: proto.white,
-            minHeight: 64,
+            minHeight: 68,
             display: 'block',
             textAlign: 'center',
           }}>
@@ -638,14 +638,14 @@ function TopScreen({ onStart, hasProgress, resumeLabel, onResume, onFriend, onFa
         </button>
         <button onClick={onFriend} style={{
           ...secondaryBtn(),
-          marginTop: 10,
+          marginTop: 14,
           background: proto.yellow,
         }}>
           友達の友情を判定する
         </button>
         <button onClick={onFamily} style={{
           ...secondaryBtn(),
-          marginTop: 10,
+          marginTop: 14,
           background: proto.white,
         }}>
           家族の絆を判定する
@@ -1275,12 +1275,12 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
         background: 'rgba(255,255,255,0.18)',
         backdropFilter: 'blur(8px)',
         border: '1.5px solid rgba(255,255,255,0.4)',
-        borderRadius: 16, padding: '8px 8px',
+        borderRadius: 16, padding: '10px 10px',
       }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: 6,
+          gap: 10,
         }}>
           {window.COLOR_OPTIONS.map((opt, i) => {
             const isSelected = selected === i;
@@ -1288,7 +1288,7 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
               <button key={opt.id} onClick={() => onPick(i)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexDirection: 'column',
-                minHeight: 52, minWidth: 46,
+                minHeight: 58, minWidth: 50,
                 padding: 0,
                 background: 'transparent', border: 'none',
                 cursor: 'pointer', fontFamily: proto.body,
@@ -2026,8 +2026,8 @@ function ResultImageActions({ busy, onShare }) {
       </div>
       <button onClick={onShare} disabled={busy} style={{
         width: '100%',
-        minHeight: 54,
-        marginTop: 10,
+        minHeight: 58,
+        marginTop: 14,
         borderRadius: 12,
         border: `2.5px solid ${proto.black}`,
         background: proto.black,
@@ -2053,21 +2053,21 @@ function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary }
       bottom: 0,
       transform: 'translateX(-50%)',
       width: 'min(480px, 100vw)',
-      padding: '10px 18px calc(12px + env(safe-area-inset-bottom))',
+      padding: '12px 18px calc(14px + env(safe-area-inset-bottom))',
       boxSizing: 'border-box',
       background: 'linear-gradient(180deg, rgba(236,79,136,0), rgba(236,79,136,0.98) 18%, rgba(236,79,136,1))',
       zIndex: 30,
       pointerEvents: 'none',
     }}>
-      <div style={{ display: 'grid', gap: 8, pointerEvents: 'auto' }}>
+      <div style={{ display: 'grid', gap: 12, pointerEvents: 'auto' }}>
         <button onClick={onPrimary} style={primaryBtn()}>
           {primaryLabel}
         </button>
         {secondaryLabel && onSecondary && (
           <button onClick={onSecondary} style={{
             ...secondaryBtn(),
-            minHeight: 44,
-            padding: '10px 14px',
+            minHeight: 50,
+            padding: '12px 14px',
           }}>
             {secondaryLabel}
           </button>
@@ -2080,7 +2080,7 @@ function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary }
 function ShareBtn({ label, ariaLabel, bg, fg, onClick }) {
   return (
     <button onClick={onClick} aria-label={ariaLabel || label} style={{
-      flex: 1, minHeight: 50, borderRadius: 12,
+      flex: 1, minHeight: 56, borderRadius: 12,
       background: bg, color: fg,
       border: `2.5px solid ${proto.black}`,
       fontSize: 12, fontWeight: 800, fontFamily: proto.body,
@@ -2188,10 +2188,10 @@ function FriendIntroScreen({ onStart, onBack }) {
             fontFamily: proto.caption, fontSize: 10, color: proto.yellow,
             letterSpacing: '0.15em', marginBottom: 4,
           }}>★ SELECT PLAYERS ★</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {[2, 3, 4].map((count) => (
               <button key={count} onClick={() => onStart(count)} style={{
-                minHeight: 76,
+                minHeight: 84,
                 background: count === 2 ? proto.cyan : count === 3 ? proto.yellow : proto.white,
                 color: proto.black,
                 border: `2.5px solid ${proto.black}`,
@@ -2199,7 +2199,7 @@ function FriendIntroScreen({ onStart, onBack }) {
                 boxShadow: '3px 3px 0 #000',
                 fontWeight: 900,
                 cursor: 'pointer',
-                padding: '8px 4px',
+                padding: '10px 4px',
                 lineHeight: 1.25,
               }}>
                 <div style={{ fontSize: 14 }}>{count}人で遊ぶ</div>
@@ -2944,10 +2944,10 @@ function FamilyIntroScreen({ onStart, onBack }) {
             fontFamily: proto.caption, fontSize: 10, color: proto.yellow,
             letterSpacing: '0.15em', marginBottom: 4,
           }}>★ SELECT PLAYERS ★</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {[2, 3, 4].map((count) => (
               <button key={count} onClick={() => onStart(count)} style={{
-                minHeight: 76,
+                minHeight: 84,
                 background: count === 2 ? proto.cyan : count === 3 ? proto.yellow : proto.white,
                 color: proto.black,
                 border: `2.5px solid ${proto.black}`,
@@ -2955,7 +2955,7 @@ function FamilyIntroScreen({ onStart, onBack }) {
                 boxShadow: '3px 3px 0 #000',
                 fontWeight: 900,
                 cursor: 'pointer',
-                padding: '8px 4px',
+                padding: '10px 4px',
                 lineHeight: 1.25,
               }}>
                 <div style={{ fontSize: 14 }}>{count}人で遊ぶ</div>
@@ -3893,7 +3893,7 @@ function Feature({ label }) {
 // ─────────────────────────────────────────────────────
 function primaryBtn() {
   return {
-    width: '100%', minHeight: 54, padding: '15px 16px',
+    width: '100%', minHeight: 60, padding: '17px 16px',
     background: proto.black, color: proto.white,
     border: `2.5px solid ${proto.black}`,
     borderRadius: 14,
@@ -3910,7 +3910,7 @@ function primaryBtn() {
 
 function secondaryBtn() {
   return {
-    width: '100%', minHeight: 50, padding: '12px 16px',
+    width: '100%', minHeight: 56, padding: '14px 16px',
     background: proto.white, color: proto.black,
     border: `2.5px solid ${proto.black}`,
     borderRadius: 14,
