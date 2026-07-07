@@ -8,7 +8,7 @@
   Basic SEO
 ========================= -->
 <title>わたちゃん｜彼氏の愛情判定ゲーム・無料カップル診断</title>
-<meta name="description" content="『わたちゃん』は、彼氏が彼女の答えを当てる無料カップル診断ゲーム。スマホ1台で2人の愛情理解度を判定でき、シリーズとして友達の友情判定を公開中、家族の絆判定も展開予定です。" />
+<meta name="description" content="『わたちゃん』は、彼氏が彼女の答えを当てる無料カップル診断ゲーム。スマホ1台で2人の愛情理解度を判定でき、シリーズとして友達の友情判定、家族の絆判定も公開中です。" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <meta name="application-name" content="私のこと、ちゃんと分かってるよね？" />
 <meta name="apple-mobile-web-app-title" content="わたちゃん" />
@@ -67,7 +67,7 @@
       "@id": "https://www.streetboardgame.com/#webpage",
       "url": "https://www.streetboardgame.com/",
       "name": "わたちゃん｜彼氏の愛情判定ゲーム・無料カップル診断",
-      "description": "彼氏が彼女の答えを当てる無料カップル診断ゲームをメインに、公開中の友達の友情判定や準備中の家族の絆判定へ広がるシリーズの公式ページです。",
+      "description": "彼氏が彼女の答えを当てる無料カップル診断ゲームをメインに、公開中の友達の友情判定や家族の絆判定へ広がるシリーズの公式ページです。",
       "inLanguage": "ja",
       "isPartOf": {
         "@id": "https://www.streetboardgame.com/#website"
@@ -84,6 +84,9 @@
       "hasPart": [
         {
           "@id": "https://www.streetboardgame.com/#friend-game"
+        },
+        {
+          "@id": "https://www.streetboardgame.com/#family-game"
         }
       ]
     },
@@ -141,6 +144,33 @@
       "publisher": {
         "@id": "https://www.streetboardgame.com/#organization"
       }
+    },
+    {
+      "@type": ["WebApplication", "Game"],
+      "@id": "https://www.streetboardgame.com/#family-game",
+      "url": "https://www.streetboardgame.com/?screen=familyIntro",
+      "name": "わたちゃん 家族の絆判定",
+      "headline": "彼氏の愛情判定ゲームから広がる家族の絆判定シリーズ",
+      "description": "わたちゃんシリーズの続編として、2〜4人で家族の答えを予想し、家族の理解度をチェックできるスマホ向け無料診断ゲームです。",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript",
+      "isAccessibleForFree": true,
+      "genre": ["家族ゲーム", "絆ゲーム", "診断ゲーム", "ボードゲーム"],
+      "keywords": "家族ゲーム, 家族診断, 絆判定, 家族の絆, スマホゲーム, わたちゃん",
+      "image": "https://www.streetboardgame.com/assets/ogp.jpg",
+      "inLanguage": "ja",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "JPY"
+      },
+      "mainEntityOfPage": {
+        "@id": "https://www.streetboardgame.com/#webpage"
+      },
+      "publisher": {
+        "@id": "https://www.streetboardgame.com/#organization"
+      }
     }
   ]
 }
@@ -174,15 +204,16 @@
     /          → トップ画面
     /watachan  → 遊び方(How to play)画面
     /friends   → 友達の友情確認バージョン
+    /family    → 家族の絆判定バージョン
     /contact   → お問い合わせ(About のフォーム位置までスクロール)
     その他     → トップ画面 (旧URLからの誘導は全部トップへ)
 ========================= -->
 <script>
   (function() {
-    // テスト用: ?screen=intro|friendIntro|about|top で強制的に初期画面を指定可能
+    // テスト用: ?screen=intro|friendIntro|familyIntro|about|top で強制的に初期画面を指定可能
     var query = new URLSearchParams(location.search);
     var forceScreen = query.get('screen');
-    if (forceScreen && ['top','intro','friendIntro','about'].indexOf(forceScreen) >= 0) {
+    if (forceScreen && ['top','intro','friendIntro','familyIntro','about'].indexOf(forceScreen) >= 0) {
       window.__INITIAL_SCREEN = forceScreen;
       if (forceScreen === 'about' && query.get('to') === 'contact') {
         window.__SCROLL_TO_CONTACT = true;
@@ -203,6 +234,7 @@
       'index.html': 'top',
       'watachan': 'intro',
       'friends': 'friendIntro',
+      'family': 'familyIntro',
       'contact': 'about',
     };
 
@@ -284,15 +316,16 @@
   <main style="max-width: 720px; margin: 32px auto; padding: 24px; font-family: sans-serif; line-height: 1.8; color: #1A1A1A; background: #FFFFFF;">
     <h1>わたちゃん｜彼氏の愛情判定ゲーム</h1>
     <p>スマホ1台で無料で遊べるカップル診断ゲームです。彼氏が彼女の答えを予想し、全42問からランダムに出る5問で2人の愛情理解度を判定できます。</p>
-    <p>シリーズとして、友達の友情判定を公開中で、家族の絆判定も準備中です。JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/?screen=friendIntro">友情確認版を開く</a></p>
+    <p>シリーズとして、友達の友情判定、家族の絆判定も公開中です。JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
+    <p><a href="/?screen=friendIntro">友情確認版を開く</a> / <a href="/?screen=familyIntro">家族の絆判定を開く</a></p>
   </main>
 </noscript>
 <div id="root" aria-live="polite"></div>
 
 <script src="prototype_quiz_data.js?v=seo-1"></script>
 <script src="prototype_friend_data.js?v=seo-1"></script>
+<script src="prototype_family_data.js?v=family-1"></script>
 <script type="text/babel" src="prototype_character.jsx"></script>
-<script type="text/babel" src="prototype_app.jsx?v=result-image-share-1"></script>
+<script type="text/babel" src="prototype_app.jsx?v=family-1"></script>
 </body>
 </html>

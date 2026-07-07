@@ -11,5 +11,7 @@
 /watachan/   /  301
 /friends     /?screen=friendIntro  301
 /friends/    /?screen=friendIntro  301
+/family      /?screen=familyIntro  301
+/family/     /?screen=familyIntro  301
 /contact     /?screen=about&to=contact  301
 /contact/    /?screen=about&to=contact  301

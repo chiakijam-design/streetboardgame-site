@@ -6,6 +6,8 @@
 //   /watachan/        → / にリダイレクト
 //   /friends          → /?screen=friendIntro にリダイレクト
 //   /friends/         → /?screen=friendIntro にリダイレクト
+//   /family           → /?screen=familyIntro にリダイレクト
+//   /family/          → /?screen=familyIntro にリダイレクト
 //   /contact          → /?screen=about&to=contact にリダイレクト
 //   /contact/         → /?screen=about&to=contact にリダイレクト
 //   その他の存在しないパス → / にリダイレクト
@@ -20,6 +22,7 @@ export default {
     const redirectMap = {
       '/watachan': '/',
       '/friends': '/?screen=friendIntro',
+      '/family': '/?screen=familyIntro',
       '/contact':  '/?screen=about&to=contact',
     };
 

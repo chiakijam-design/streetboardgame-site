@@ -35,6 +35,7 @@ const { useState, useEffect, useRef } = React;
 const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
 const ROUND_SIZE = 5;
 const FRIEND_ROUND_SIZE = 5;
+const FAMILY_ROUND_SIZE = 5;
 const AMAZON_URL = 'https://www.amazon.co.jp/dp/B0G87M4ZYK';
 const COLOR_LABELS = ['緑', '青', '黄', '赤', '橙'];
 function normalizeFriendPlayerCount(value) {
@@ -88,7 +89,7 @@ async function shareResultImage({ node, filename, title, text, url }) {
 }
 
 function normalizeSavedState(s) {
-  const screens = ['top', 'intro', 'play', 'resultReady', 'result', 'friendIntro', 'friendPlay', 'friendResultReady', 'friendResult', 'about', 'product'];
+  const screens = ['top', 'intro', 'play', 'resultReady', 'result', 'friendIntro', 'friendPlay', 'friendResultReady', 'friendResult', 'familyIntro', 'familyPlay', 'familyResultReady', 'familyResult', 'about', 'product'];
   if (!s || !screens.includes(s.screen)) return null;
 
   const cards = Array.isArray(s.cards) ? s.cards : [];
@@ -112,6 +113,16 @@ function normalizeSavedState(s) {
   }
 
   if (s.screen === 'friendResultReady' || s.screen === 'friendResult') {
+    if (!cards.length || !answers.length) return null;
+    return { screen: s.screen, qIdx: 0, answers, cards, playerCount };
+  }
+
+  if (s.screen === 'familyPlay') {
+    if (!cards.length || qIdx < 0 || qIdx >= cards.length) return null;
+    return { screen: 'familyPlay', qIdx, answers: answers.slice(0, qIdx), cards, playerCount };
+  }
+
+  if (s.screen === 'familyResultReady' || s.screen === 'familyResult') {
     if (!cards.length || !answers.length) return null;
     return { screen: s.screen, qIdx: 0, answers, cards, playerCount };
   }
@@ -258,6 +269,15 @@ function App() {
     setScreen('friendPlay');
   };
 
+  const startFamilyRound = (count) => {
+    const picked = window.pickRandomFamilyCards(FAMILY_ROUND_SIZE);
+    setPlayerCount(normalizeFriendPlayerCount(count));
+    setCards(picked);
+    setQIdx(0);
+    setAnswers([]);
+    setScreen('familyPlay');
+  };
+
   const backToTop = () => {
     setScreen('top'); setQIdx(0); setAnswers([]); setCards([]); setPlayerCount(2);
   };
@@ -287,6 +307,16 @@ function App() {
     }
   };
 
+  const handleFamilyAnswer = (round) => {
+    const next = [...answers, round];
+    setAnswers(next);
+    if (qIdx + 1 >= cards.length) {
+      setScreen('familyResultReady');
+    } else {
+      setQIdx(qIdx + 1);
+    }
+  };
+
   const hasProgress = cards.length > 0 && answers.length > 0 && answers.length < cards.length;
 
   return (
@@ -309,6 +339,7 @@ function App() {
             hasProgress={hasProgress}
             onResume={() => setScreen('play')}
             onFriend={() => setScreen('friendIntro')}
+            onFamily={() => setScreen('familyIntro')}
             onAbout={() => setScreen('about')}
             onProduct={() => setScreen('product')}
           />
@@ -318,6 +349,9 @@ function App() {
         )}
         {screen === 'friendIntro' && (
           <FriendIntroScreen onStart={startFriendRound} onBack={() => setScreen('top')} />
+        )}
+        {screen === 'familyIntro' && (
+          <FamilyIntroScreen onStart={startFamilyRound} onBack={() => setScreen('top')} />
         )}
         {screen === 'play' && cards.length > 0 && (
           <PlayScreen
@@ -336,6 +370,16 @@ function App() {
             playerCount={playerCount}
             onAnswer={handleFriendAnswer}
             onBack={() => confirmLeaveGame('friendIntro')}
+          />
+        )}
+        {screen === 'familyPlay' && cards.length > 0 && (
+          <FamilyPlayScreen
+            card={cards[qIdx]}
+            qIdx={qIdx}
+            total={cards.length}
+            playerCount={playerCount}
+            onAnswer={handleFamilyAnswer}
+            onBack={() => confirmLeaveGame('familyIntro')}
           />
         )}
         {screen === 'resultReady' && (
@@ -378,11 +422,32 @@ function App() {
             onAbout={() => setScreen('about')}
           />
         )}
+        {screen === 'familyResultReady' && (
+          <ResultReadyScreen
+            title="5問終了！"
+            subtitle="家族の答え合わせをまとめて発表します。"
+            detail="スマホをみんなの真ん中に置いて、結果を見るを押してね。"
+            buttonLabel="家族の結果を見る"
+            onResult={() => setScreen('familyResult')}
+            onHome={backToTop}
+          />
+        )}
+        {screen === 'familyResult' && (
+          <FamilyResultScreen
+            answers={answers}
+            cards={cards}
+            playerCount={playerCount}
+            onReplay={() => startFamilyRound(playerCount)}
+            onHome={backToTop}
+            onAbout={() => setScreen('about')}
+          />
+        )}
         {screen === 'about' && (
           <AboutScreen
             onBack={() => setScreen('top')}
             onLove={() => setScreen('intro')}
             onFriend={() => setScreen('friendIntro')}
+            onFamily={() => setScreen('familyIntro')}
           />
         )}
         {screen === 'product' && <ProductScreen onBack={() => setScreen('top')} />}
@@ -398,7 +463,7 @@ function App() {
 // ・中央に巨大な白+シアン縁取りロゴ
 // ・右下に黄色注意書きシール
 // ─────────────────────────────────────────────────────
-function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduct }) {
+function TopScreen({ onStart, hasProgress, onResume, onFriend, onFamily, onAbout, onProduct }) {
   return (
     <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
@@ -414,7 +479,7 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
         わたちゃん 彼氏の愛情判定ゲーム
       </h1>
       <p style={srOnlyStyle()}>
-        彼氏が彼女の答えを予想して愛情理解度を判定する無料カップル診断ゲームです。シリーズとして友達の友情判定を公開中で、家族の絆判定も準備中です。
+        彼氏が彼女の答えを予想して愛情理解度を判定する無料カップル診断ゲームです。シリーズとして友達の友情判定と家族の絆判定も公開中です。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -492,7 +557,7 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
           opacity: 0.88,
           fontWeight: 700,
         }}>
-          まずは彼氏の愛情判定から。友達版は公開中、家族版も準備中。
+          まずは彼氏の愛情判定から。友達版と家族版も公開中。
         </div>
       </div>
 
@@ -522,7 +587,7 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onAbout, onProduc
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <SeriesCard emoji="💕" title="彼氏の愛情判定" status="公開中" onClick={onStart} />
           <SeriesCard emoji="👯" title="友達の友情判定" status="公開中" onClick={onFriend} />
-          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="準備中" />
+          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="公開中" onClick={onFamily} />
         </div>
       </div>
 
@@ -2651,9 +2716,521 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
 }
 
 // ─────────────────────────────────────────────────────
+// FAMILY MODE
+// ─────────────────────────────────────────────────────
+const FAMILY_PLAYERS = ['本人', '家族A', '家族B', '家族C'];
+function getFamilyPlayers(playerCount) {
+  return FAMILY_PLAYERS.slice(0, normalizeFriendPlayerCount(playerCount));
+}
+function getFamilyPlayersLabel(playerCount) {
+  return getFamilyPlayers(playerCount).join(' + ');
+}
+
+function FamilyIntroScreen({ onStart, onBack }) {
+  return (
+    <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
+      <div style={{
+        background: proto.black, padding: '50px 22px 28px',
+        textAlign: 'center', position: 'relative', overflow: 'hidden',
+      }}>
+        <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <PillLabel>FAMILY CHECK</PillLabel>
+          <div style={{ marginTop: 14 }}>
+            <LogoText size={26}>家族の絆判定</LogoText>
+          </div>
+          <div style={{
+            marginTop: 8, color: proto.white, fontSize: 12,
+            lineHeight: 1.7, fontWeight: 700,
+          }}>
+            2〜4人で、家族の答えをどれだけ当てられるか勝負。
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '24px 22px' }}>
+        <StepCard n="1" text="最初に人数を選ぶ。2人・3人・4人で遊べます" />
+        <StepCard n="2" text="本人が、家族に見せずに自分の答えを選ぶ" />
+        <StepCard n="3" text="ほかの家族が順番に、本人の答えを予想する" />
+        <StepCard n="4" text="5問まとめて発表。当たった数で家族理解度を判定" />
+
+        <div style={{
+          marginTop: 18, padding: '14px 16px',
+          background: proto.black,
+          borderRadius: 12,
+          color: proto.white,
+        }}>
+          <div style={{
+            fontFamily: proto.caption, fontSize: 10, color: proto.yellow,
+            letterSpacing: '0.15em', marginBottom: 4,
+          }}>★ SELECT PLAYERS ★</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {[2, 3, 4].map((count) => (
+              <button key={count} onClick={() => onStart(count)} style={{
+                minHeight: 76,
+                background: count === 2 ? proto.cyan : count === 3 ? proto.yellow : proto.white,
+                color: proto.black,
+                border: `2.5px solid ${proto.black}`,
+                borderRadius: 12,
+                boxShadow: '3px 3px 0 #000',
+                fontWeight: 900,
+                cursor: 'pointer',
+                padding: '8px 4px',
+                lineHeight: 1.25,
+              }}>
+                <div style={{ fontSize: 14 }}>{count}人で遊ぶ</div>
+                <div style={{ marginTop: 6, fontSize: 10, fontWeight: 900, lineHeight: 1.35 }}>
+                  {getFamilyPlayersLabel(count)}
+                </div>
+              </button>
+            ))}
+          </div>
+          <div style={{ marginTop: 12, fontSize: 11, lineHeight: 1.6, opacity: 0.9 }}>
+            全 {window.FAMILY_CARDS ? window.FAMILY_CARDS.length : 54} 問からランダムに5問出題します。
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) {
+  const [phase, setPhase] = useState('answer');
+  const [targetPick, setTargetPick] = useState(null);
+  const [guesses, setGuesses] = useState([]);
+  const [turn, setTurn] = useState(1);
+  const [handoffMessage, setHandoffMessage] = useState('');
+
+  useEffect(() => {
+    setPhase('answer');
+    setTargetPick(null);
+    setGuesses([]);
+    setTurn(1);
+    setHandoffMessage('');
+  }, [qIdx, card && card.id, playerCount]);
+
+  const handlePick = (i) => {
+    if (phase === 'answer') {
+      setTargetPick(i);
+      const nextPlayer = getFamilyPlayers(playerCount)[1] || '家族A';
+      setHandoffMessage(`${nextPlayer}に渡してね`);
+      setTimeout(() => {
+        setHandoffMessage('');
+        setPhase('guess');
+      }, 800);
+      return;
+    }
+    const next = [...guesses, i];
+    setGuesses(next);
+    if (turn >= playerCount - 1) {
+      setTimeout(() => onAnswer({
+        target: targetPick,
+        guesses: next,
+        matches: next.map(g => g === targetPick),
+      }), 220);
+    } else {
+      const nextPlayer = getFamilyPlayers(playerCount)[turn + 1] || `家族${turn + 1}`;
+      setHandoffMessage(`${nextPlayer}に渡してね`);
+      setTimeout(() => {
+        setHandoffMessage('');
+        setTurn(turn + 1);
+      }, 800);
+    }
+  };
+
+  if (!card) return null;
+  const familyPlayers = getFamilyPlayers(playerCount);
+  const currentPlayer = familyPlayers[turn] || familyPlayers[1] || '家族A';
+  const playerLabel = getFamilyPlayersLabel(playerCount);
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: proto.pink, color: proto.white,
+      position: 'relative', overflowX: 'hidden', paddingBottom: 28,
+    }}>
+      <Decor />
+      <div style={{ padding: '44px 22px 0', position: 'relative', zIndex: 1 }}>
+        <BackBtn onClick={onBack} top={20} dark label="家族版の遊び方に戻る" />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div style={{
+            fontFamily: proto.caption, fontSize: 11,
+            letterSpacing: '0.15em', whiteSpace: 'nowrap',
+          }}>FAMILY Q {qIdx + 1} / {total}</div>
+          <div style={{
+            fontFamily: proto.body,
+            fontSize: 10,
+            color: proto.yellow,
+            fontWeight: 900,
+            textAlign: 'right',
+            lineHeight: 1.3,
+          }}>
+            {playerLabel}
+          </div>
+        </div>
+        <div style={{ width: '100%', height: 6, borderRadius: 99, background: 'rgba(0,0,0,0.2)' }}>
+          <div style={{
+            width: `${(qIdx / total) * 100}%`,
+            height: '100%', borderRadius: 99, background: proto.yellow,
+            transition: 'width 0.4s ease',
+          }} />
+        </div>
+      </div>
+
+      <div style={{ padding: '10px 22px 5px', textAlign: 'center' }}>
+        <QuestionProgress qIdx={qIdx} total={total} label="FAMILY Q" />
+      </div>
+
+      <div style={{ padding: '6px 22px 7px', textAlign: 'center' }}>
+        <div style={{
+          display: 'inline-block',
+          minWidth: 220,
+          maxWidth: '100%',
+          padding: '9px 18px 10px',
+          background: phase === 'answer' ? proto.yellow : proto.cyan,
+          color: proto.black,
+          borderRadius: 16,
+          fontWeight: 900,
+          border: `2.5px solid ${proto.black}`,
+          boxShadow: '3px 3px 0 #000',
+          fontFamily: proto.body,
+          lineHeight: 1.3,
+        }}>
+          <div style={{
+            fontFamily: proto.caption,
+            fontSize: 9,
+            letterSpacing: '0.16em',
+            opacity: 0.78,
+          }}>
+            {phase === 'answer' ? 'STEP 1' : `STEP ${turn + 1}`}
+          </div>
+          <div style={{ marginTop: 2, fontSize: 17 }}>
+            {phase === 'answer' ? '本人のターン' : `${currentPlayer}の予想`}
+          </div>
+          <div style={{ marginTop: 3, fontSize: 10, lineHeight: 1.4 }}>
+            {phase === 'answer' ? '家族には見せずに、自分の答えを選んでね' : '本人が選んだ答えを予想してね'}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 18px 10px' }}>
+        <FriendQuestionCard card={card} />
+      </div>
+
+      <div style={{ padding: '0 18px' }}>
+        {phase === 'answer' && (
+          <ColorPicker
+            selected={targetPick}
+            onPick={handlePick}
+            highlight={proto.yellow}
+            instruction="本人だけが見て、自分の答えを選んでね"
+          />
+        )}
+        {phase === 'guess' && (
+          <>
+            <div style={{
+              padding: '10px 14px', marginBottom: 12,
+              background: 'rgba(0,0,0,0.25)',
+              border: `1.5px dashed ${proto.yellow}`,
+              borderRadius: 12, fontSize: 12,
+              textAlign: 'center', fontWeight: 700,
+            }}>
+              本人の答えは受付完了！<br/>
+              <span style={{ fontSize: 10, color: proto.yellow }}>
+                {currentPlayer}は「本人が選んだ答え」を予想してね
+              </span>
+            </div>
+            <ColorPicker
+              selected={guesses[turn - 1]}
+              onPick={handlePick}
+              highlight={proto.cyan}
+              instruction={`${currentPlayer}のターン —— 直感でタップ`}
+            />
+          </>
+        )}
+      </div>
+      {handoffMessage && <HandoffOverlay message={handoffMessage} />}
+    </div>
+  );
+}
+
+const FAMILY_RESULT_TIERS = [
+  { min: 0, title: '家族理解、ただいま確認中', tag: 'START', emoji: '🏠',
+    msg: '外した分だけ、まだ知らない家族ネタがあるということ。\nこれは負けではなく、次の団らんの話題です。',
+    shareHook: '家族データ、まだまだ初期設定中でした' },
+  { min: 0.35, title: '家族データ更新中', tag: 'UPDATE', emoji: '📝',
+    msg: '分かっているようで、意外とズレる。\nそのズレまで笑えるのが家族の強さです。',
+    shareHook: '家族データ、アップデート余地ありでした' },
+  { min: 0.7, title: 'かなり分かってる家族チーム', tag: 'GOOD', emoji: '✨',
+    msg: 'これはちゃんと見ています。\n普段の何気ない会話まで、けっこう同期されています。',
+    shareHook: 'かなり分かってる家族チームでした' },
+  { min: 1, title: '家族シンクロ率100%', tag: 'PERFECT', emoji: '💯',
+    msg: '全問レベルで当てるのは強すぎ。\nもはや言わなくても伝わる家族通信です。',
+    shareHook: '家族シンクロ率100%でした' },
+];
+
+function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
+  const maxScore = Math.max(1, answers.length * (playerCount - 1));
+  const score = answers.reduce((sum, a) => sum + a.matches.filter(Boolean).length, 0);
+  const ratio = score / maxScore;
+  const tier = [...FAMILY_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FAMILY_RESULT_TIERS[0];
+  const [copied, setCopied] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
+  const resultCardRef = useRef(null);
+  const shareUrl = `${location.origin}/?screen=familyIntro`;
+  const shareText = `家族の絆判定ゲームで${score}/${maxScore}的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n家族でやったら何問当たる？\n#わたちゃん #家族の絆判定 #streetboardgame`;
+
+  const copyShareText = () => {
+    const value = `${shareText}\n${shareUrl}`;
+    const done = () => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(value).then(done).catch(done);
+    } else {
+      done();
+    }
+  };
+
+  const openX = () => {
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
+      '_blank',
+      'noopener,noreferrer,width=600,height=500'
+    );
+  };
+
+  const handleSaveImage = async () => {
+    setImageBusy(true);
+    try {
+      const blob = await captureResultImage(resultCardRef.current);
+      downloadBlob(blob, `watachan-family-result-${score}-${maxScore}.png`);
+    } catch (e) {
+      alert('画像の作成に失敗しました。もう一度試してみてください。');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
+  const handleShareImage = async () => {
+    setImageBusy(true);
+    try {
+      await shareResultImage({
+        node: resultCardRef.current,
+        filename: `watachan-family-result-${score}-${maxScore}.png`,
+        title: 'わたちゃん 家族の絆判定ゲーム',
+        text: shareText,
+        url: shareUrl,
+      });
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: proto.pink,
+      position: 'relative',
+      paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+      overflowX: 'hidden',
+    }}>
+      <Decor />
+      <div style={{ padding: '58px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        <PillLabel>FAMILY RESULT</PillLabel>
+      </div>
+      <div ref={resultCardRef} style={{
+        margin: '18px 18px 0',
+        background: proto.white,
+        border: `3px solid ${proto.black}`,
+        borderRadius: 16,
+        boxShadow: '6px 6px 0 #000',
+        textAlign: 'center',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          background: proto.black,
+          color: proto.white,
+          padding: '9px 14px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 10,
+          fontFamily: proto.caption,
+          fontSize: 10,
+          letterSpacing: '0.18em',
+        }}>
+          <span>FAMILY BOND RESULT</span>
+          <span style={{
+            background: tier.min >= 0.7 ? proto.yellow : proto.cyan,
+            color: proto.black,
+            padding: '4px 9px',
+            borderRadius: 999,
+            border: `1.5px solid ${proto.white}`,
+            fontFamily: proto.body,
+            fontSize: 9,
+            fontWeight: 900,
+          }}>{tier.tag}</span>
+        </div>
+        <div style={{
+          margin: '14px 16px 0',
+          padding: 14,
+          border: `2.5px dashed ${proto.pink}`,
+          borderRadius: 14,
+          background: proto.cream,
+        }}>
+          <div style={{ fontFamily: proto.caption, fontSize: 10, color: proto.pink, fontWeight: 900 }}>
+            家族理解度
+          </div>
+          <LogoText size={54} color={proto.pink} outline={proto.black} lineHeight={1}>
+            {score}/{maxScore}
+          </LogoText>
+          <div style={{ marginTop: 4, fontSize: 32 }}>{tier.emoji}</div>
+        </div>
+        <div style={{ margin: '14px 18px 0' }}>
+          <LogoText size={tier.title.length >= 13 ? 19 : 23} color={proto.pink} outline={proto.black} lineHeight={1.25}>
+            {tier.title}
+          </LogoText>
+        </div>
+        <div style={{
+          margin: '13px 18px 18px',
+          padding: '12px 12px',
+          background: ratio >= 0.7 ? proto.yellow : proto.white,
+          border: `2.5px solid ${proto.black}`,
+          borderRadius: 12,
+          boxShadow: '3px 3px 0 #000',
+          fontSize: 12,
+          color: proto.text,
+          lineHeight: 1.75,
+          whiteSpace: 'pre-line',
+          fontWeight: 700,
+        }}>{tier.msg}</div>
+      </div>
+
+      <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
+        <button onClick={() => setShowDetails(!showDetails)} style={{
+          width: '100%',
+          minHeight: 48,
+          background: proto.white,
+          color: proto.black,
+          border: `2.5px solid ${proto.black}`,
+          borderRadius: 12,
+          boxShadow: '3px 3px 0 #000',
+          fontFamily: proto.body,
+          fontSize: 14,
+          fontWeight: 900,
+          cursor: 'pointer',
+        }}>
+          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る'}
+        </button>
+        {showDetails && (
+          <>
+            <div style={{
+              fontFamily: proto.caption, fontSize: 10,
+              color: proto.white, letterSpacing: '0.25em',
+              margin: '14px 0 8px', paddingLeft: 4,
+            }}>ANSWER DETAILS</div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {answers.map((a, i) => {
+                const card = cards[i];
+                return (
+                  <div key={i} style={{
+                    background: proto.white,
+                    border: `2.5px solid ${proto.black}`,
+                    borderRadius: 12,
+                    boxShadow: '3px 3px 0 #000',
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      padding: '8px 10px',
+                      background: proto.black,
+                      color: proto.white,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}>
+                      <span style={{ fontFamily: proto.caption, fontSize: 10 }}>Q{i + 1}</span>
+                      <span style={{ flex: 1, fontSize: 12, fontWeight: 900, textAlign: 'left' }}>{card.title}</span>
+                    </div>
+                    <div style={{ padding: 10, color: proto.text }}>
+                      <div style={{ fontSize: 12, fontWeight: 900, marginBottom: 8 }}>
+                        本人：{card.choices[a.target]}
+                      </div>
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        {a.guesses.map((g, gi) => (
+                          <div key={gi} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            gap: 8,
+                            padding: '7px 9px',
+                            borderRadius: 9,
+                            background: g === a.target ? proto.yellow : proto.pinkSoft,
+                            border: `1.5px solid ${proto.black}`,
+                            fontSize: 11,
+                            fontWeight: 800,
+                          }}>
+                            <span>{FAMILY_PLAYERS[gi + 1]}</span>
+                            <span>{card.choices[g]}</span>
+                            <span>{g === a.target ? '当たり' : 'ハズレ'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
+        <ResultImageActions
+          busy={imageBusy}
+          onSave={handleSaveImage}
+          onShare={handleShareImage}
+        />
+        <div style={{
+          fontFamily: proto.caption, fontSize: 10,
+          color: proto.white, letterSpacing: '0.25em',
+          margin: '14px 0 10px', paddingLeft: 4,
+        }}>SHARE YOUR RESULT</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <ShareBtn label="X" ariaLabel="Xで家族判定結果をシェア" bg={proto.black} fg={proto.white} onClick={openX} />
+          <ShareBtn label={copied ? '✓' : 'コピー'} ariaLabel="家族判定結果をコピー" bg={proto.white} fg={proto.black} onClick={copyShareText} />
+        </div>
+        {copied && (
+          <div style={{
+            marginTop: 8, padding: '6px 10px', borderRadius: 8,
+            background: proto.yellow, color: proto.black, fontSize: 11,
+            textAlign: 'center', fontWeight: 700,
+            border: `2px solid ${proto.black}`,
+          }}>
+            シェア文をコピーしました
+          </div>
+        )}
+        <button onClick={onReplay} style={{ ...primaryBtn(), marginTop: 14 }}>
+          同じ人数でもう一度
+        </button>
+        <button onClick={onHome} style={{ ...secondaryBtn(), marginTop: 8 }}>
+          トップに戻る
+        </button>
+        <div style={{ textAlign: 'center', marginTop: 18 }}>
+          <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────
 // ABOUT
 // ─────────────────────────────────────────────────────
-function AboutScreen({ onBack, onLove, onFriend }) {
+function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
   return (
     <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
       <div style={{
@@ -2696,7 +3273,7 @@ function AboutScreen({ onBack, onLove, onFriend }) {
         <Card>
           <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="公開中" active onClick={onLove} />
           <SeriesRow emoji="👯" title="友達の友情判定" sub="公開中" active onClick={onFriend} />
-          <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="準備中" last />
+          <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="公開中" active onClick={onFamily} last />
         </Card>
 
         <div id="contact-section" style={{ scrollMarginTop: 20 }}>
