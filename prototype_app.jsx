@@ -41,6 +41,7 @@ const HANDOFF_DELAY_MS = 600;
 const FINAL_HANDOFF_DELAY_MS = 1000;
 const LOVE_RETURN_DELAY_MS = 1300;
 const PLAYER_NAME_STORAGE_KEY = 'watachan-player-names-v1';
+const PLAYER_NAME_MAX_LENGTH = 6;
 const DEFAULT_PLAYER_NAMES = {
   love: ['彼女', '彼氏'],
   friend: ['本人', '友達A', '友達B', '友達C'],
@@ -48,10 +49,10 @@ const DEFAULT_PLAYER_NAMES = {
 };
 
 function sanitizePlayerName(value, fallback, allowEmpty = false) {
-  const text = String(value ?? '').replace(/\s+/g, ' ').slice(0, 12);
+  const text = String(value ?? '').replace(/\s+/g, ' ').slice(0, PLAYER_NAME_MAX_LENGTH);
   const trimmed = text.trim();
   if (allowEmpty) return text;
-  return (trimmed || fallback).slice(0, 12);
+  return (trimmed || fallback).slice(0, PLAYER_NAME_MAX_LENGTH);
 }
 
 function normalizePlayerNames(value = {}, allowEmpty = false) {
@@ -1117,7 +1118,7 @@ function NameEditorPanel({ title, names, defaults, onChange, visibleCount }) {
         marginBottom: 10,
       }}>
         <div style={{ fontSize: 12, fontWeight: 900 }}>✎ {title}</div>
-        <div style={{ fontSize: 9, color: proto.textSoft, fontWeight: 800 }}>未入力なら元の名前</div>
+        <div style={{ fontSize: 9, color: proto.textSoft, fontWeight: 800 }}>{PLAYER_NAME_MAX_LENGTH}文字まで・未入力なら元の名前</div>
       </div>
       <div style={{ display: 'grid', gap: 8 }}>
         {defaults.slice(0, count).map((fallback, index) => (
@@ -1136,7 +1137,7 @@ function NameEditorPanel({ title, names, defaults, onChange, visibleCount }) {
               onFocus={(e) => e.target.select()}
               placeholder={fallback}
               aria-label={`${fallback}の表示名`}
-              maxLength={12}
+              maxLength={PLAYER_NAME_MAX_LENGTH}
               style={{
                 minWidth: 0,
                 height: 38,
