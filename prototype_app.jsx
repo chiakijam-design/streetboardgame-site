@@ -88,6 +88,20 @@ async function shareResultImage({ node, filename, title, text, url }) {
   return 'downloaded';
 }
 
+async function saveResultImage({ node, filename, title }) {
+  const blob = await captureResultImage(node);
+  const file = new File([blob], filename, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({
+      title,
+      files: [file],
+    });
+    return 'shared-save-sheet';
+  }
+  downloadBlob(blob, filename);
+  return 'downloaded';
+}
+
 function normalizeSavedState(s) {
   const screens = ['top', 'intro', 'play', 'resultReady', 'result', 'friendIntro', 'friendPlay', 'friendResultReady', 'friendResult', 'familyIntro', 'familyPlay', 'familyResultReady', 'familyResult', 'about', 'product'];
   if (!s || !screens.includes(s.screen)) return null;
@@ -1498,9 +1512,13 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
-      const blob = await captureResultImage(resultCardRef.current);
-      downloadBlob(blob, `watachan-love-result-${score}-${total}.png`);
+      await saveResultImage({
+        node: resultCardRef.current,
+        filename: `watachan-love-result-${score}-${total}.png`,
+        title: 'わたちゃん 彼氏の愛情判定ゲーム',
+      });
     } catch (e) {
+      if (e && e.name === 'AbortError') return;
       alert('画像の作成に失敗しました。もう一度試してみてください。');
     } finally {
       setImageBusy(false);
@@ -1937,7 +1955,7 @@ function ResultImageActions({ busy, onSave, onShare }) {
     }}>
       <div style={{ fontSize: 14 }}>結果画像をかんたん保存・シェア</div>
       <div style={{ marginTop: 2, fontSize: 10, color: proto.textSoft }}>
-        画像とハッシュタグつき文面で、そのままSNSに投稿できます
+        スマホでは共有シートから「画像を保存」を選べます
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
         <button onClick={onSave} disabled={busy} style={{
@@ -2561,9 +2579,13 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
-      const blob = await captureResultImage(resultCardRef.current);
-      downloadBlob(blob, `watachan-friend-result-${score}-${maxScore}.png`);
+      await saveResultImage({
+        node: resultCardRef.current,
+        filename: `watachan-friend-result-${score}-${maxScore}.png`,
+        title: 'わたちゃん 友達の友情判定ゲーム',
+      });
     } catch (e) {
+      if (e && e.name === 'AbortError') return;
       alert('画像の作成に失敗しました。もう一度試してみてください。');
     } finally {
       setImageBusy(false);
@@ -3078,9 +3100,13 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
-      const blob = await captureResultImage(resultCardRef.current);
-      downloadBlob(blob, `watachan-family-result-${score}-${maxScore}.png`);
+      await saveResultImage({
+        node: resultCardRef.current,
+        filename: `watachan-family-result-${score}-${maxScore}.png`,
+        title: 'わたちゃん 家族の絆判定ゲーム',
+      });
     } catch (e) {
+      if (e && e.name === 'AbortError') return;
       alert('画像の作成に失敗しました。もう一度試してみてください。');
     } finally {
       setImageBusy(false);
