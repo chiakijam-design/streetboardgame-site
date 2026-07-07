@@ -29,7 +29,7 @@ const proto = {
   shadowHard: '4px 4px 0 #1A1A1A',
 };
 
-const { useState, useEffect } = React;
+const { useState, useEffect, useMemo } = React;
 
 // localStorage
 const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
@@ -794,7 +794,8 @@ function CardStack() {
           position: 'absolute',
           top: s.top, left: `calc(50% - 100px + ${s.left - 90}px)`,
           width: 110, height: 165,
-          transform: `rotate(${s.rotate}deg)`,
+          '--r': `${s.rotate}deg`,
+          transform: 'rotate(var(--r))',
           zIndex: s.z,
           borderRadius: 8, overflow: 'hidden',
           boxShadow: '0 12px 24px rgba(0,0,0,0.25)',
@@ -2219,7 +2220,7 @@ function ResultImageActions({ busy, onShare }) {
         opacity: busy ? 0.65 : 1,
         cursor: busy ? 'default' : 'pointer',
       }}>
-        {busy ? '準備中...' : '結果画像を保存・シェアする ▶'}
+        {busy ? '画像を準備中...' : '結果画像を保存・シェアする ▶'}
       </button>
     </div>
   );
@@ -3030,11 +3031,14 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
 
 function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
-  const friendPlayers = getFriendPlayers(playerCount);
+  const friendPlayers = useMemo(() => getFriendPlayers(playerCount), [playerCount]);
   const scoreSummary = getPlayerScoreSummary(answers, friendPlayers);
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const preparedResultImageSrc = createGroupResultImageSrc('friend', answers, friendPlayers);
+  const preparedResultImageSrc = useMemo(
+    () => createGroupResultImageSrc('friend', answers, friendPlayers),
+    [answers, friendPlayers]
+  );
 
   const shareUrl = `${location.origin}/?screen=friendIntro`;
   const shareText = `友達の友情判定ゲームをやってみた！\n${scoreSummary}\n\n友達とやったら何問当たる？\n#わたちゃん #友情判定ゲーム #streetboardgame`;
@@ -3474,11 +3478,14 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 
 function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
-  const familyPlayers = getFamilyPlayers(playerCount);
+  const familyPlayers = useMemo(() => getFamilyPlayers(playerCount), [playerCount]);
   const scoreSummary = getPlayerScoreSummary(answers, familyPlayers);
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const preparedResultImageSrc = createGroupResultImageSrc('family', answers, familyPlayers);
+  const preparedResultImageSrc = useMemo(
+    () => createGroupResultImageSrc('family', answers, familyPlayers),
+    [answers, familyPlayers]
+  );
 
   const shareUrl = `${location.origin}/?screen=familyIntro`;
   const shareText = `家族の絆判定ゲームをやってみた！\n${scoreSummary}\n\n家族でやったら何問当たる？\n#わたちゃん #家族の絆判定 #streetboardgame`;
