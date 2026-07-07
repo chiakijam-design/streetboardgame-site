@@ -95,6 +95,39 @@ async function captureResultImage(node) {
   });
 }
 
+async function fetchImageBlob(src) {
+  const res = await fetch(src, { cache: 'force-cache' });
+  if (!res.ok) throw new Error('image-fetch-failed');
+  return await res.blob();
+}
+
+async function sharePreparedImage({ src, filename, title, text, url }) {
+  const blob = await fetchImageBlob(src);
+  const file = new File([blob], filename, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({ title, text, url, files: [file] });
+    return 'shared';
+  }
+  if (navigator.share) {
+    await navigator.share({ title, text, url });
+    downloadBlob(blob, filename);
+    return 'shared-download';
+  }
+  downloadBlob(blob, filename);
+  return 'downloaded';
+}
+
+async function savePreparedImage({ src, filename, title }) {
+  const blob = await fetchImageBlob(src);
+  const file = new File([blob], filename, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({ title, files: [file] });
+    return 'shared-save-sheet';
+  }
+  downloadBlob(blob, filename);
+  return 'downloaded';
+}
+
 async function shareResultImage({ node, filename, title, text, url }) {
   const blob = await captureResultImage(node);
   const file = new File([blob], filename, { type: 'image/png' });
@@ -132,6 +165,20 @@ function canShareImageFile(filename = 'result.png') {
     return navigator.canShare({ files: [file] });
   } catch (e) {
     return false;
+  }
+}
+
+function getLoveResultImageSrc(score) {
+  const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
+  return `/assets/results/love-${safeScore}.png`;
+}
+
+function preloadLoveResultImages() {
+  if (window.__watachanLoveResultsPreloaded) return;
+  window.__watachanLoveResultsPreloaded = true;
+  for (let i = 0; i <= 5; i += 1) {
+    const img = new Image();
+    img.src = getLoveResultImageSrc(i);
   }
 }
 
@@ -1524,6 +1571,12 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const [showDetails, setShowDetails] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const resultCardRef = useRef(null);
+  const preparedResultImageSrc = getLoveResultImageSrc(score);
+
+  useEffect(() => {
+    preloadLoveResultImages();
+  }, []);
+
   const titleBreaks = {
     '彼女理解は初期設定中': ['彼女理解は', '初期設定中'],
     '彼女クイズ見習い中': ['彼女クイズ', '見習い中'],
@@ -1589,14 +1642,14 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
-      await saveResultImage({
-        node: resultCardRef.current,
+      await savePreparedImage({
+        src: preparedResultImageSrc,
         filename: `watachan-love-result-${score}-${total}.png`,
         title: 'わたちゃん 彼氏の愛情判定ゲーム',
       });
     } catch (e) {
       if (e && e.name === 'AbortError') return;
-      alert('画像の作成に失敗しました。もう一度試してみてください。');
+      alert('画像の準備に失敗しました。もう一度試してみてください。');
     } finally {
       setImageBusy(false);
     }
@@ -1605,8 +1658,8 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const handleShareImage = async () => {
     setImageBusy(true);
     try {
-      await shareResultImage({
-        node: resultCardRef.current,
+      await sharePreparedImage({
+        src: preparedResultImageSrc,
         filename: `watachan-love-result-${score}-${total}.png`,
         title: 'わたちゃん 彼氏の愛情判定ゲーム',
         text: xShareText,
@@ -2043,7 +2096,7 @@ function ResultImageActions({ busy, onShare }) {
         opacity: busy ? 0.65 : 1,
         cursor: busy ? 'default' : 'pointer',
       }}>
-        {busy ? '画像を作成中...' : '結果画像を保存・シェアする'}
+        {busy ? '準備中...' : '結果画像を保存・シェアする'}
       </button>
     </div>
   );
