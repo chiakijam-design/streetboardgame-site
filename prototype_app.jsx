@@ -172,6 +172,156 @@ function getLoveResultImageSrc(score) {
   return `/assets/results/love-${safeScore}.png`;
 }
 
+function drawCanvasLines(ctx, lines, x, y, lineHeight, options = {}) {
+  const align = options.align || 'center';
+  ctx.textAlign = align;
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + index * lineHeight);
+  });
+}
+
+function splitCanvasText(text, maxLength = 15) {
+  const value = String(text || '');
+  if (value.length <= maxLength) return [value];
+  const lines = [];
+  for (let i = 0; i < value.length; i += maxLength) {
+    lines.push(value.slice(i, i + maxLength));
+  }
+  return lines.slice(0, 3);
+}
+
+function createLoveResultImageSrc(score, total, tier, players) {
+  if (typeof document === 'undefined') return getLoveResultImageSrc(score);
+  const lovePlayers = normalizePlayerNames({ love: players }).love;
+  const girlName = lovePlayers[0];
+  const boyName = lovePlayers[1];
+  const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
+  const safeTotal = Math.max(1, Number(total) || 5);
+  const resultTier = tier || RESULT_TIERS[safeScore] || RESULT_TIERS[0];
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return getLoveResultImageSrc(score);
+
+  ctx.fillStyle = proto.pink;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = proto.black;
+  roundRect(ctx, 70, 80, 940, 1190, 38);
+  ctx.fill();
+
+  ctx.fillStyle = proto.white;
+  roundRect(ctx, 88, 98, 904, 1154, 30);
+  ctx.fill();
+
+  ctx.fillStyle = proto.black;
+  roundRect(ctx, 88, 98, 904, 120, 30);
+  ctx.fill();
+
+  ctx.fillStyle = proto.white;
+  ctx.font = '700 32px "DotGothic16", monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('LOVE CHECK RESULT', 132, 170);
+
+  ctx.fillStyle = resultTier.tagBg || proto.pink;
+  roundRect(ctx, 742, 126, 190, 54, 27);
+  ctx.fill();
+  ctx.strokeStyle = proto.white;
+  ctx.lineWidth = 4;
+  roundRect(ctx, 742, 126, 190, 54, 27);
+  ctx.stroke();
+  ctx.fillStyle = resultTier.tagBg === proto.yellow || resultTier.tagBg === proto.cyan ? proto.black : proto.white;
+  ctx.font = '900 23px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(resultTier.tag, 837, 161);
+
+  ctx.fillStyle = proto.cream;
+  roundRect(ctx, 142, 265, 796, 330, 30);
+  ctx.fill();
+  ctx.strokeStyle = proto.pink;
+  ctx.setLineDash([18, 16]);
+  ctx.lineWidth = 6;
+  roundRect(ctx, 142, 265, 796, 330, 30);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = proto.pink;
+  ctx.font = '900 32px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${boyName}の${girlName}理解度`, 205, 350);
+
+  ctx.fillStyle = proto.pink;
+  ctx.font = '900 122px "RocknRoll One", sans-serif';
+  ctx.shadowColor = proto.black;
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 8;
+  ctx.shadowOffsetY = 8;
+  ctx.fillText(`${safeScore}/${safeTotal}`, 205, 486);
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
+  ctx.fillStyle = proto.yellow;
+  roundRect(ctx, 212, 505, 140, 48, 24);
+  ctx.fill();
+  ctx.strokeStyle = proto.black;
+  ctx.lineWidth = 4;
+  roundRect(ctx, 212, 505, 140, 48, 24);
+  ctx.stroke();
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('問正解', 282, 537);
+
+  ctx.fillStyle = proto.cyan;
+  ctx.globalAlpha = 0.18;
+  ctx.beginPath();
+  ctx.arc(756, 408, 118, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = resultTier.emoji ? proto.pink : proto.yellow;
+  ctx.font = '900 82px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(resultTier.emoji || '♡', 760, 450);
+
+  ctx.fillStyle = proto.pink;
+  ctx.font = '900 54px "RocknRoll One", sans-serif';
+  drawCanvasLines(ctx, splitCanvasText(resultTier.title, 12), 540, 705, 64);
+
+  ctx.fillStyle = proto.white;
+  roundRect(ctx, 150, 815, 780, 250, 26);
+  ctx.fill();
+  ctx.strokeStyle = proto.black;
+  ctx.lineWidth = 6;
+  roundRect(ctx, 150, 815, 780, 250, 26);
+  ctx.stroke();
+
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 32px "Zen Maru Gothic", sans-serif';
+  const messageLines = String(resultTier.msg || '')
+    .split('\n')
+    .flatMap((line) => splitCanvasText(line, 20))
+    .slice(0, 4);
+  drawCanvasLines(ctx, messageLines, 540, 875, 46);
+
+  ctx.fillStyle = proto.yellow;
+  roundRect(ctx, 170, 1100, 740, 72, 24);
+  ctx.fill();
+  ctx.strokeStyle = proto.black;
+  ctx.lineWidth = 5;
+  roundRect(ctx, 170, 1100, 740, 72, 24);
+  ctx.stroke();
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
+  ctx.fillText(`${boyName}は${girlName}のこと、どこまで分かってた？`, 540, 1145);
+
+  ctx.fillStyle = proto.textSoft;
+  ctx.font = '700 25px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com / #わたちゃん', 540, 1215);
+
+  return canvas.toDataURL('image/png');
+}
+
 function getPreparedResultImageSrc(kind, score) {
   const safeKind = ['love', 'friend', 'family'].includes(kind) ? kind : 'love';
   const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
@@ -1788,11 +1938,10 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
-  const preparedResultImageSrc = getLoveResultImageSrc(score);
-
-  useEffect(() => {
-    preloadPreparedResultImages('love');
-  }, []);
+  const preparedResultImageSrc = useMemo(
+    () => createLoveResultImageSrc(score, total, tier, [girlName, boyName]),
+    [score, total, tier, girlName, boyName]
+  );
 
   const titleBreaks = {
     '彼女理解は初期設定中': ['彼女理解は', '初期設定中'],
@@ -1806,9 +1955,9 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
     : tier.title;
 
   const shareUrl = `${location.origin}/`;
-  const xShareText = `彼氏の愛情判定ゲームで${score}/${total}問正解！\n結果は「${tier.title}」でした。\n${tier.shareHook} ♡\n\nみんなは何問当たる？\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
-  const instagramShareText = `彼氏の愛情判定ゲーム\n${score}/${total}問正解\n「${tier.title}」\n${tier.shareHook} ♡\n\nストーリーに載せて\n「うちら何問当たると思う？」って聞いてみて👇\n\n#わたちゃん\n${shareUrl}`;
-  const lineShareText = `彼氏の愛情判定ゲームで${score}/${total}問正解！結果は「${tier.title}」でした。${tier.shareHook} ♡`;
+  const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n結果は「${tier.title}」でした。\n${tier.shareHook} ♡\n\nみんなは何問当たる？\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
+  const instagramShareText = `彼氏の愛情判定ゲーム\n${boyName} → ${girlName}\n${score}/${total}問正解\n「${tier.title}」\n${tier.shareHook} ♡\n\nストーリーに載せて\n「うちら何問当たると思う？」って聞いてみて👇\n\n#わたちゃん\n${shareUrl}`;
+  const lineShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！結果は「${tier.title}」でした。${tier.shareHook} ♡`;
   const copyShareText = `${xShareText}\n${shareUrl}`;
 
   const copyToClipboard = (value, type) => {
