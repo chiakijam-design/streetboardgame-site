@@ -147,16 +147,6 @@ function showTemporaryStatus(setStatus, message, ms = 2800) {
   setTimeout(() => setStatus(''), ms);
 }
 
-function canShareImageFile(filename = 'result.png') {
-  try {
-    if (!shouldUseNativeShare() || !navigator.canShare || !window.File) return false;
-    const file = new File(['x'], filename, { type: 'image/png' });
-    return navigator.canShare({ files: [file] });
-  } catch (e) {
-    return false;
-  }
-}
-
 function getLoveResultImageSrc(score) {
   const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
   return `/assets/results/love-${safeScore}.png`;
@@ -1874,10 +1864,6 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   };
 
   const handleShare = (platform) => {
-    if (platform === 'x' && canShareImageFile(`watachan-love-result-${score}-${total}.png`)) {
-      handleShareImage();
-      return;
-    }
     const text = encodeURIComponent(platform === 'line' ? lineShareText : xShareText);
     const url = encodeURIComponent(shareUrl);
     let target = '';
@@ -2213,6 +2199,8 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
         <ResultImageActions
           busy={imageBusy}
           onShare={handleShareImage}
+          onX={() => handleShare('x')}
+          onInstagram={handleSaveImage}
           status={imageStatus}
         />
         <button onClick={() => handleShare('copy')} style={textOnlyBtn()}>
@@ -2322,7 +2310,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   );
 }
 
-function ResultImageActions({ busy, onShare, status = '' }) {
+function ResultImageActions({ busy, onShare, onX, onInstagram, status = '' }) {
   return (
     <div style={{
       background: proto.yellow,
@@ -2348,24 +2336,61 @@ function ResultImageActions({ busy, onShare, status = '' }) {
       }}>SHARE YOUR RESULT</div>
       <div style={{ fontSize: 16 }}>答え合わせを見たら結果をシェア</div>
       <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
-        スマホは共有、パソコンは画像保存になります
+        Xは投稿画面へ、Instagramは画像保存からストーリーへ
+      </div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 10,
+        marginTop: 14,
+      }}>
+        <button onClick={onX || onShare} disabled={busy} style={{
+          minHeight: 58,
+          borderRadius: 12,
+          border: `2.5px solid ${proto.black}`,
+          background: proto.black,
+          color: proto.white,
+          fontFamily: proto.body,
+          fontSize: 14,
+          fontWeight: 900,
+          boxShadow: '3px 3px 0 #5BD4E8',
+          opacity: busy ? 0.65 : 1,
+          cursor: busy ? 'default' : 'pointer',
+        }}>
+          Xでシェア
+        </button>
+        <button onClick={onInstagram || onShare} disabled={busy} style={{
+          minHeight: 58,
+          borderRadius: 12,
+          border: `2.5px solid ${proto.black}`,
+          background: proto.pink,
+          color: proto.white,
+          fontFamily: proto.body,
+          fontSize: 13,
+          fontWeight: 900,
+          boxShadow: '3px 3px 0 #000',
+          opacity: busy ? 0.65 : 1,
+          cursor: busy ? 'default' : 'pointer',
+        }}>
+          IG用に保存
+        </button>
       </div>
       <button onClick={onShare} disabled={busy} style={{
         width: '100%',
-        minHeight: 62,
-        marginTop: 14,
+        minHeight: 50,
+        marginTop: 10,
         borderRadius: 12,
         border: `2.5px solid ${proto.black}`,
-        background: proto.black,
-        color: proto.white,
+        background: proto.white,
+        color: proto.black,
         fontFamily: proto.body,
-        fontSize: 15,
+        fontSize: 13,
         fontWeight: 900,
-        boxShadow: '3px 3px 0 #5BD4E8',
+        boxShadow: '3px 3px 0 #000',
         opacity: busy ? 0.65 : 1,
         cursor: busy ? 'default' : 'pointer',
       }}>
-        {busy ? '画像を準備中...' : '結果画像を保存・シェアする ▶'}
+        {busy ? '画像を準備中...' : 'その他に保存・共有する'}
       </button>
       {status && (
         <div role="status" aria-live="polite" style={{
@@ -3406,10 +3431,6 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   };
 
   const openX = () => {
-    if (canShareImageFile(`watachan-friend-result-${totalQuestions}.png`)) {
-      handleShareImage();
-      return;
-    }
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
       '_blank',
@@ -3553,6 +3574,8 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         <ResultImageActions
           busy={imageBusy}
           onShare={handleShareImage}
+          onX={openX}
+          onInstagram={handleSaveImage}
           status={imageStatus}
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
@@ -3866,10 +3889,6 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   };
 
   const openX = () => {
-    if (canShareImageFile(`watachan-family-result-${totalQuestions}.png`)) {
-      handleShareImage();
-      return;
-    }
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
       '_blank',
@@ -4013,6 +4032,8 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         <ResultImageActions
           busy={imageBusy}
           onShare={handleShareImage}
+          onX={openX}
+          onInstagram={handleSaveImage}
           status={imageStatus}
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
