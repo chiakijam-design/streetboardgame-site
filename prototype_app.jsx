@@ -1811,18 +1811,20 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <button onClick={() => setShowDetails(!showDetails)} style={{
           width: '100%',
-          minHeight: 48,
-          background: proto.white,
+          minHeight: 60,
+          background: showDetails ? proto.white : proto.yellow,
           color: proto.black,
           border: `2.5px solid ${proto.black}`,
-          borderRadius: 12,
-          boxShadow: '3px 3px 0 #000',
-          fontFamily: proto.body,
-          fontSize: 14,
+          borderRadius: 14,
+          boxShadow: showDetails ? '3px 3px 0 #000' : '4px 4px 0 #5BD4E8',
+          fontFamily: proto.display,
+          fontSize: showDetails ? 14 : 16,
           fontWeight: 900,
           cursor: 'pointer',
+          letterSpacing: showDetails ? 0 : '0.04em',
+          textShadow: showDetails ? 'none' : '1px 1px 0 #fff',
         }}>
-          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る'}
+          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る ▼'}
         </button>
         {showDetails && (
           <>
@@ -2792,18 +2794,20 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <button onClick={() => setShowDetails(!showDetails)} style={{
           width: '100%',
-          minHeight: 48,
-          background: proto.white,
+          minHeight: 60,
+          background: showDetails ? proto.white : proto.yellow,
           color: proto.black,
           border: `2.5px solid ${proto.black}`,
-          borderRadius: 12,
-          boxShadow: '3px 3px 0 #000',
-          fontFamily: proto.body,
-          fontSize: 14,
+          borderRadius: 14,
+          boxShadow: showDetails ? '3px 3px 0 #000' : '4px 4px 0 #5BD4E8',
+          fontFamily: proto.display,
+          fontSize: showDetails ? 14 : 16,
           fontWeight: 900,
           cursor: 'pointer',
+          letterSpacing: showDetails ? 0 : '0.04em',
+          textShadow: showDetails ? 'none' : '1px 1px 0 #fff',
         }}>
-          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る'}
+          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る ▼'}
         </button>
         {showDetails && (
           <>
@@ -3311,18 +3315,20 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <button onClick={() => setShowDetails(!showDetails)} style={{
           width: '100%',
-          minHeight: 48,
-          background: proto.white,
+          minHeight: 60,
+          background: showDetails ? proto.white : proto.yellow,
           color: proto.black,
           border: `2.5px solid ${proto.black}`,
-          borderRadius: 12,
-          boxShadow: '3px 3px 0 #000',
-          fontFamily: proto.body,
-          fontSize: 14,
+          borderRadius: 14,
+          boxShadow: showDetails ? '3px 3px 0 #000' : '4px 4px 0 #5BD4E8',
+          fontFamily: proto.display,
+          fontSize: showDetails ? 14 : 16,
           fontWeight: 900,
           cursor: 'pointer',
+          letterSpacing: showDetails ? 0 : '0.04em',
+          textShadow: showDetails ? 'none' : '1px 1px 0 #fff',
         }}>
-          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る'}
+          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る ▼'}
         </button>
         {showDetails && (
           <>
