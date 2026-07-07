@@ -886,10 +886,10 @@ function IntroScreen({ onStart, onBack }) {
       </div>
 
       <div style={{ padding: '24px 22px' }}>
-        <StepCard n="1" text="彼女が、自分の答えを選ぶ" />
-        <StepCard n="2" text="彼氏が、彼女の答えを予想する" />
-        <StepCard n="3" text="5問終わったら結果発表" />
-        <StepCard n="4" text="当たった問題・外した問題も見られます" />
+        <StepCard n="1" text="彼女は、彼氏に見せずに自分が思った答えを選ぶ" />
+        <StepCard n="2" text="彼氏は、彼女が選んだ答えを予想して同じ色を選ぶ" />
+        <StepCard n="3" text="5問終わったら、何問当たったか結果発表" />
+        <StepCard n="4" text="最後に当たった問題・外した問題をまとめて確認" />
 
         <div style={{
           marginTop: 18, padding: '14px 16px',
@@ -904,6 +904,7 @@ function IntroScreen({ onStart, onBack }) {
           <div style={{ fontSize: 12, lineHeight: 1.7 }}>
             全 <span style={{ color: proto.yellow, fontWeight: 800, fontSize: 16 }}>{window.ALL_CARDS.length}</span> 問のお題から
             <span style={{ color: proto.yellow, fontWeight: 800, fontSize: 16 }}> ランダムに 5 問</span> 出題！<br/>
+            彼女の本音を、彼氏がどれだけ当てられるかをチェック。<br/>
             答え合わせは最後にまとめて表示されます ♡
           </div>
         </div>
@@ -1051,7 +1052,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
             selected={girlPick}
             onPick={onGirlPick}
             highlight={proto.yellow}
-            instruction="♀ 彼女のターン  ── 彼氏には見せずに色を選んでね"
+            instruction="♀ 彼女のターン  ── 彼氏には見せずに、自分が思った答えの色を選んでね"
           />
         )}
         {phase === 'boy' && (
@@ -1066,14 +1067,14 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
             }}>
               ✦ 彼女の選択 受付完了 ✦<br/>
               <span style={{ fontSize: 9, color: proto.white, fontWeight: 500, opacity: 0.85 }}>
-                次は彼氏が「彼女が何色を選んだか」予想してね
+                次は彼氏が「彼女が選んだ色」を予想してね
               </span>
             </div>
             <ColorPicker
               selected={boyPick}
               onPick={onBoyPick}
               highlight={proto.cyan}
-              instruction="♂ 彼氏のターン  ── タップして予想する"
+              instruction="♂ 彼氏のターン  ── 彼女が選んだ色を予想してタップ"
             />
           </>
         )}
@@ -1087,14 +1088,14 @@ function PhaseBadge({ phase }) {
   const conf = {
     girl: {
       eyebrow: 'STEP 1 / 2',
-      title: '彼女のターン',
-      note: '彼氏には見せずに、自分の答えを選んでね',
+      title: '彼女が本音で選ぶターン',
+      note: '彼氏には見せずに、自分が思った答えを選んでね',
       color: proto.yellow,
     },
     boy: {
       eyebrow: 'STEP 2 / 2',
-      title: '彼氏の予想ターン',
-      note: '彼女が選んだ答えを予想してね',
+      title: '彼氏が彼女の答えを予想',
+      note: '彼女がさっき選んだ答えを当ててね',
       color: proto.cyan,
     },
   }[phase];
@@ -1654,7 +1655,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
       minHeight: '100vh',
       background: proto.pink,
       position: 'relative',
-      paddingBottom: 'calc(160px + env(safe-area-inset-bottom))',
+      paddingBottom: 40,
       overflowX: 'hidden',
     }}>
       <Decor />
@@ -1944,6 +1945,12 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
             {copied === 'instagram' ? 'Instagram用の文章をコピーしました ♡' : 'シェア文をコピーしました ♡'}
           </div>
         )}
+        <ResultReplayActions
+          primaryLabel="新しいお題でもう一度"
+          onPrimary={onReplay}
+          secondaryLabel="トップに戻る"
+          onSecondary={onHome}
+        />
 
         <div style={{
           marginTop: 12, fontFamily: proto.caption, fontSize: 10,
@@ -1952,12 +1959,6 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
           全 {window.ALL_CARDS ? window.ALL_CARDS.length : 42} 問の中からランダム出題 ✦
         </div>
       </div>
-      <FixedActionBar
-        primaryLabel="新しいお題でもう一度"
-        onPrimary={onReplay}
-        secondaryLabel="トップに戻る"
-        onSecondary={onHome}
-      />
 
       {/* 製品誘導 */}
       <div style={{ padding: '24px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -2072,6 +2073,29 @@ function ResultImageActions({ busy, onShare }) {
       }}>
         {busy ? '準備中...' : '結果画像を保存・シェアする'}
       </button>
+    </div>
+  );
+}
+
+function ResultReplayActions({ primaryLabel, onPrimary, secondaryLabel, onSecondary }) {
+  return (
+    <div style={{
+      display: 'grid',
+      gap: 12,
+      marginTop: 16,
+    }}>
+      <button onClick={onPrimary} style={primaryBtn()}>
+        {primaryLabel}
+      </button>
+      {secondaryLabel && onSecondary && (
+        <button onClick={onSecondary} style={{
+          ...secondaryBtn(),
+          minHeight: 50,
+          padding: '12px 14px',
+        }}>
+          {secondaryLabel}
+        </button>
+      )}
     </div>
   );
 }
@@ -2199,15 +2223,16 @@ function FriendIntroScreen({ onStart, onBack }) {
             marginTop: 8, color: proto.white, fontSize: 12,
             lineHeight: 1.7, fontWeight: 700,
           }}>
-            2〜4人で、友達の答えをどれだけ当てられるか勝負。
+            本人が自分の答えを選び、友達がその答えを予想するゲーム。
+            2〜4人で「本人のことをどれだけ分かっているか」を判定します。
           </div>
         </div>
       </div>
 
       <div style={{ padding: '24px 22px' }}>
         <StepCard n="1" text="人数を選ぶ" />
-        <StepCard n="2" text="本人は、自分が思った答えを選ぶ" />
-        <StepCard n="3" text="友達は、本人が選んだ答えを予想する" />
+        <StepCard n="2" text="本人は、友達に見せずに自分が思った答えを選ぶ" />
+        <StepCard n="3" text="友達は、本人が選んだ答えを予想して同じ色を選ぶ" />
         <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
 
         <div style={{
@@ -2831,7 +2856,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       minHeight: '100vh',
       background: proto.pink,
       position: 'relative',
-      paddingBottom: 'calc(160px + env(safe-area-inset-bottom))',
+      paddingBottom: 40,
       overflowX: 'hidden',
     }}>
       <Decor />
@@ -2959,16 +2984,16 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
             シェア文をコピーしました
           </div>
         )}
+        <ResultReplayActions
+          primaryLabel="同じ人数でもう一度"
+          onPrimary={onReplay}
+          secondaryLabel="トップに戻る"
+          onSecondary={onHome}
+        />
         <div style={{ textAlign: 'center', marginTop: 18 }}>
           <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
         </div>
       </div>
-      <FixedActionBar
-        primaryLabel="同じ人数でもう一度"
-        onPrimary={onReplay}
-        secondaryLabel="トップに戻る"
-        onSecondary={onHome}
-      />
     </div>
   );
 }
@@ -3001,15 +3026,16 @@ function FamilyIntroScreen({ onStart, onBack }) {
             marginTop: 8, color: proto.white, fontSize: 12,
             lineHeight: 1.7, fontWeight: 700,
           }}>
-            2〜4人で、家族の答えをどれだけ当てられるか勝負。
+            本人が自分の答えを選び、家族がその答えを予想するゲーム。
+            2〜4人で「家族のことをどれだけ分かっているか」を判定します。
           </div>
         </div>
       </div>
 
       <div style={{ padding: '24px 22px' }}>
         <StepCard n="1" text="人数を選ぶ" />
-        <StepCard n="2" text="本人は、自分が思った答えを選ぶ" />
-        <StepCard n="3" text="家族は、本人が選んだ答えを予想する" />
+        <StepCard n="2" text="本人は、家族に見せずに自分が思った答えを選ぶ" />
+        <StepCard n="3" text="家族は、本人が選んだ答えを予想して同じ色を選ぶ" />
         <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
 
         <div style={{
@@ -3310,7 +3336,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       minHeight: '100vh',
       background: proto.pink,
       position: 'relative',
-      paddingBottom: 'calc(160px + env(safe-area-inset-bottom))',
+      paddingBottom: 40,
       overflowX: 'hidden',
     }}>
       <Decor />
@@ -3438,16 +3464,16 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
             シェア文をコピーしました
           </div>
         )}
+        <ResultReplayActions
+          primaryLabel="同じ人数でもう一度"
+          onPrimary={onReplay}
+          secondaryLabel="トップに戻る"
+          onSecondary={onHome}
+        />
         <div style={{ textAlign: 'center', marginTop: 18 }}>
           <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
         </div>
       </div>
-      <FixedActionBar
-        primaryLabel="同じ人数でもう一度"
-        onPrimary={onReplay}
-        secondaryLabel="トップに戻る"
-        onSecondary={onHome}
-      />
     </div>
   );
 }
