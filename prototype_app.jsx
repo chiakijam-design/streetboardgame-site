@@ -2001,7 +2001,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
           color: proto.white, letterSpacing: '0.25em',
           margin: '14px 0 8px', paddingLeft: 4,
         }}>ANSWER DETAILS</div>
-        <div style={{ display: 'grid', gap: 10 }}>
+        <div style={{ display: 'grid', gap: 7 }}>
           {answers.map((a, i) => {
             const card = cards[i];
             const girlChoice = card && card.choices ? card.choices[a.girl] : window.COLOR_OPTIONS[a.girl]?.name;
@@ -2009,51 +2009,51 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
             return (
               <div key={i} style={{
                 background: a.match ? proto.yellow : proto.white,
-                border: `2.5px solid ${proto.black}`,
-                borderRadius: 12,
-                boxShadow: '3px 3px 0 #000',
+                border: `2px solid ${proto.black}`,
+                borderRadius: 10,
+                boxShadow: '2px 2px 0 #000',
                 overflow: 'hidden',
               }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: 8,
-                  padding: '8px 10px',
+                  gap: 6,
+                  padding: '6px 8px',
                   background: a.match ? proto.black : proto.pinkSoft,
                   color: a.match ? proto.white : proto.black,
                   borderBottom: `2px solid ${proto.black}`,
                 }}>
                   <div style={{
                     fontFamily: proto.caption,
-                    fontSize: 10,
+                    fontSize: 9,
                     letterSpacing: '0.12em',
                     fontWeight: 800,
                   }}>Q{i + 1}</div>
                   <div style={{
                     flex: 1,
                     minWidth: 0,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: 900,
                     lineHeight: 1.35,
                     textAlign: 'left',
                   }}>{card ? card.title : 'お題'}</div>
                   <div style={{
                     flexShrink: 0,
-                    padding: '3px 8px',
+                    padding: '2px 7px',
                     borderRadius: 999,
                     background: a.match ? proto.yellow : proto.white,
                     color: proto.black,
                     border: `1.5px solid ${proto.black}`,
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: 900,
                   }}>{a.match ? '当たり' : 'ハズレ'}</div>
                 </div>
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
-                  gap: 8,
-                  padding: 10,
+                  gap: 6,
+                  padding: 8,
                 }}>
                   <AnswerPick label="彼女" choice={girlChoice} opt={window.COLOR_OPTIONS[a.girl]} accent={proto.yellow} />
                   <AnswerPick label="彼氏" choice={boyChoice} opt={window.COLOR_OPTIONS[a.boy]} accent={proto.cyan} />
@@ -2298,33 +2298,33 @@ function ShareBtn({ label, ariaLabel, bg, fg, onClick }) {
 function AnswerPick({ label, choice, opt, accent }) {
   return (
     <div style={{
-      padding: '9px 8px',
+      padding: '7px 7px',
       background: proto.white,
-      border: `2px solid ${proto.black}`,
-      borderRadius: 10,
+      border: `1.5px solid ${proto.black}`,
+      borderRadius: 8,
       minWidth: 0,
     }}>
       <div style={{
         display: 'inline-block',
-        padding: '2px 8px',
+        padding: '1px 7px',
         background: accent,
         color: proto.black,
         border: `1.5px solid ${proto.black}`,
         borderRadius: 999,
         fontSize: 9,
         fontWeight: 900,
-        marginBottom: 7,
+        marginBottom: 5,
       }}>{label}</div>
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 7,
-        minHeight: 30,
+        gap: 6,
+        minHeight: 26,
       }}>
         <span style={{
-          width: 18,
-          height: 18,
+          width: 16,
+          height: 16,
           borderRadius: '50%',
           background: opt ? opt.color : proto.textSoft,
           border: `1.5px solid ${proto.black}`,
@@ -2333,8 +2333,8 @@ function AnswerPick({ label, choice, opt, accent }) {
         }} />
         <span style={{
           minWidth: 0,
-          fontSize: 12,
-          lineHeight: 1.35,
+          fontSize: 11,
+          lineHeight: 1.3,
           fontWeight: 900,
           color: proto.text,
           overflowWrap: 'anywhere',
@@ -2949,9 +2949,9 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
       <div style={{
         fontFamily: proto.caption, fontSize: 10,
         color: proto.white, letterSpacing: '0.25em',
-        margin: '14px 0 8px', paddingLeft: 4,
+        margin: '10px 0 6px', paddingLeft: 4,
       }}>{label}</div>
-      <div style={{ display: 'grid', gap: 10 }}>
+      <div style={{ display: 'grid', gap: 7 }}>
         {answers.map((a, i) => {
           const card = cards[i];
           const choices = card && card.choices ? card.choices : [];
@@ -2967,34 +2967,34 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
           return (
             <div key={i} style={{
               background: proto.white,
-              border: `2.5px solid ${proto.black}`,
-              borderRadius: 12,
-              boxShadow: '3px 3px 0 #000',
+              border: `2px solid ${proto.black}`,
+              borderRadius: 10,
+              boxShadow: '2px 2px 0 #000',
               overflow: 'hidden',
             }}>
               <div style={{
-                padding: '8px 10px',
+                padding: '6px 8px',
                 background: proto.black,
                 color: proto.white,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 6,
               }}>
-                <span style={{ fontFamily: proto.caption, fontSize: 10 }}>Q{i + 1}</span>
-                <span style={{ flex: 1, fontSize: 12, fontWeight: 900, textAlign: 'left' }}>{card ? card.title : ''}</span>
+                <span style={{ fontFamily: proto.caption, fontSize: 9 }}>Q{i + 1}</span>
+                <span style={{ flex: 1, fontSize: 11, fontWeight: 900, textAlign: 'left', lineHeight: 1.3 }}>{card ? card.title : ''}</span>
               </div>
               <div style={{
-                padding: 10,
+                padding: 7,
                 color: proto.text,
                 display: 'grid',
                 gridTemplateColumns: `repeat(${Math.max(2, rows.length)}, minmax(0, 1fr))`,
-                gap: 7,
+                gap: 5,
               }}>
                 {rows.map((row) => (
                   <div key={row.name} style={{
                     minWidth: 0,
-                    padding: '8px 5px',
-                    borderRadius: 10,
+                    padding: '6px 4px',
+                    borderRadius: 8,
                     background: row.isTarget ? proto.cyan : (row.match ? proto.yellow : proto.pinkSoft),
                     border: `1.5px solid ${proto.black}`,
                     fontWeight: 900,
@@ -3007,13 +3007,13 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
                       overflowWrap: 'anywhere',
                     }}>{row.name}</div>
                     <div style={{
-                      marginTop: 5,
+                      marginTop: 3,
                       fontSize: 11,
                       lineHeight: 1.25,
                       overflowWrap: 'anywhere',
                     }}>{choices[row.pick] || '-'}</div>
                     <div style={{
-                      marginTop: 5,
+                      marginTop: 3,
                       fontSize: 9,
                       lineHeight: 1,
                       color: row.isTarget ? proto.black : (row.match ? proto.black : proto.textSoft),
