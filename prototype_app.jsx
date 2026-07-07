@@ -630,6 +630,30 @@ function TopScreen({ onStart, hasProgress, resumeLabel, onResume, onFriend, onFa
           fontSize: 10, color: proto.white, opacity: 0.85,
           letterSpacing: '0.25em',
         }}>STREET BOARD GAME / vol.01</div>
+
+        {hasProgress && (
+          <button onClick={onResume} style={{
+            ...secondaryBtn(),
+            margin: '18px auto 0',
+            width: 'min(100%, 360px)',
+            background: proto.yellow,
+            borderWidth: 3,
+            minHeight: 72,
+            display: 'block',
+            textAlign: 'center',
+            boxShadow: '5px 5px 0 #000',
+          }}>
+            <span style={{ display: 'block', fontSize: 16, fontWeight: 900 }}>つづきから再開する ↻</span>
+            <span style={{
+              display: 'block',
+              marginTop: 4,
+              fontSize: 10,
+              color: proto.pinkDeep,
+              fontWeight: 900,
+              lineHeight: 1.3,
+            }}>{resumeLabel || '途中で閉じても、前回のゲームを再開できます'}</span>
+          </button>
+        )}
       </div>
 
       {/* ヒーローブロック: 全身の女の子 + カード3枚 */}
@@ -656,26 +680,6 @@ function TopScreen({ onStart, hasProgress, resumeLabel, onResume, onFriend, onFa
 
       {/* CTA */}
       <div style={{ padding: '0 24px', position: 'relative', zIndex: 1 }}>
-        {hasProgress && (
-          <button onClick={onResume} style={{
-            ...secondaryBtn(),
-            marginBottom: 14,
-            background: proto.white,
-            minHeight: 68,
-            display: 'block',
-            textAlign: 'center',
-          }}>
-            <span style={{ display: 'block', fontSize: 15, fontWeight: 900 }}>つづきから再開する ↻</span>
-            <span style={{
-              display: 'block',
-              marginTop: 4,
-              fontSize: 10,
-              color: proto.pinkDeep,
-              fontWeight: 900,
-              lineHeight: 1.3,
-            }}>{resumeLabel || '途中で閉じても、前回のゲームを再開できます'}</span>
-          </button>
-        )}
         <button onClick={onStart} style={primaryBtn()}>
           彼氏の愛情を判定する
           <span style={{
