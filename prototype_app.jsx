@@ -1276,8 +1276,14 @@ function HandoffOverlay({ message }) {
 }
 
 function ColorPicker({ selected, onPick, highlight, instruction }) {
+  const isLocked = selected !== null && selected !== undefined;
   return (
-    <>
+    <div style={{
+      position: 'sticky',
+      bottom: 'calc(8px + env(safe-area-inset-bottom))',
+      zIndex: 12,
+      marginTop: 4,
+    }}>
       <style>{`
         @keyframes chipPop {
           0% { transform: scale(1); }
@@ -1292,11 +1298,29 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
         }}>{instruction}</div>
       )}
       <div style={{
-        background: 'rgba(255,255,255,0.18)',
+        background: 'rgba(255,255,255,0.24)',
         backdropFilter: 'blur(8px)',
-        border: '1.5px solid rgba(255,255,255,0.4)',
-        borderRadius: 16, padding: '10px 10px',
+        border: '2px solid rgba(255,255,255,0.55)',
+        borderRadius: 18,
+        padding: '11px 10px 10px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
       }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          marginBottom: 8,
+          color: proto.white,
+          fontWeight: 900,
+        }}>
+          <span style={{ fontSize: 11 }}>色を選ぶ</span>
+          <span style={{
+            fontSize: 10,
+            color: isLocked ? proto.yellow : proto.white,
+            opacity: isLocked ? 1 : 0.78,
+          }}>{isLocked ? `${COLOR_LABELS[selected]}を選択済み` : 'タップで決定'}</span>
+        </div>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(5, 1fr)',
@@ -1305,16 +1329,24 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
           {window.COLOR_OPTIONS.map((opt, i) => {
             const isSelected = selected === i;
             return (
-              <button key={opt.id} onClick={() => onPick(i)} style={{
+              <button
+                key={opt.id}
+                onClick={() => {
+                  if (!isLocked) onPick(i);
+                }}
+                disabled={isLocked}
+                aria-label={`${COLOR_LABELS[i] || opt.name}を選ぶ`}
+                style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexDirection: 'column',
                 minHeight: 58, minWidth: 50,
                 padding: 0,
                 background: 'transparent', border: 'none',
-                cursor: 'pointer', fontFamily: proto.body,
+                cursor: isLocked ? 'default' : 'pointer', fontFamily: proto.body,
                 touchAction: 'manipulation',
-                transition: 'all 0.18s',
+                transition: 'opacity 0.18s, transform 0.18s',
                 transform: isSelected ? 'translateY(-6px) scale(1.12)' : 'none',
+                opacity: isLocked && !isSelected ? 0.45 : 1,
               }}>
                 <ColorChip
                   color={opt.color}
@@ -1341,7 +1373,7 @@ function ColorPicker({ selected, onPick, highlight, instruction }) {
       }}>
         ドットの色はお題カード左側の5色と対応しています
       </div>
-    </>
+    </div>
   );
 }
 
