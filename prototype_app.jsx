@@ -1634,7 +1634,6 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
-  const [showDetails, setShowDetails] = useState(true);
   const [imageBusy, setImageBusy] = useState(false);
   const preparedResultImageSrc = getLoveResultImageSrc(score);
 
@@ -1927,25 +1926,25 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
 
       {/* 詳細 */}
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
-        <button onClick={() => setShowDetails(!showDetails)} style={{
+        <div style={{
           width: '100%',
-          minHeight: 60,
-          background: showDetails ? proto.white : proto.black,
-          color: showDetails ? proto.black : proto.white,
+          minHeight: 54,
+          background: proto.black,
+          color: proto.white,
           border: `2.5px solid ${proto.black}`,
           borderRadius: 14,
-          boxShadow: showDetails ? '3px 3px 0 #000' : '5px 5px 0 #5BD4E8',
+          boxShadow: '5px 5px 0 #5BD4E8',
           fontFamily: proto.display,
-          fontSize: showDetails ? 14 : 16,
+          fontSize: 16,
           fontWeight: 900,
-          cursor: 'pointer',
-          letterSpacing: showDetails ? 0 : '0.04em',
-          textShadow: showDetails ? 'none' : '2px 2px 0 #5BD4E8',
+          letterSpacing: '0.04em',
+          textShadow: '2px 2px 0 #5BD4E8',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>
-          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る ▼'}
-        </button>
-        {showDetails && (
-          <>
+          答え合わせ
+        </div>
         <div style={{
           fontFamily: proto.caption, fontSize: 10,
           color: proto.white, letterSpacing: '0.25em',
@@ -2012,8 +2011,6 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
             );
           })}
         </div>
-          </>
-        )}
       </div>
 
       {/* シェア */}
@@ -2869,7 +2866,6 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const totalQuestions = Math.max(1, answers.length || 5);
   const scoreSummary = getPlayerScoreSummary(answers, getFriendPlayers(playerCount));
   const [copied, setCopied] = useState(false);
-  const [showDetails, setShowDetails] = useState(true);
   const [imageBusy, setImageBusy] = useState(false);
   const preparedResultImageSrc = getPreparedResultImageSrc('friend', questionScore);
 
@@ -3006,31 +3002,31 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       </div>
 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
-        <button onClick={() => setShowDetails(!showDetails)} style={{
+        <div style={{
           width: '100%',
-          minHeight: 60,
-          background: showDetails ? proto.white : proto.black,
-          color: showDetails ? proto.black : proto.white,
+          minHeight: 54,
+          background: proto.black,
+          color: proto.white,
           border: `2.5px solid ${proto.black}`,
           borderRadius: 14,
-          boxShadow: showDetails ? '3px 3px 0 #000' : '5px 5px 0 #5BD4E8',
+          boxShadow: '5px 5px 0 #5BD4E8',
           fontFamily: proto.display,
-          fontSize: showDetails ? 14 : 16,
+          fontSize: 16,
           fontWeight: 900,
-          cursor: 'pointer',
-          letterSpacing: showDetails ? 0 : '0.04em',
-          textShadow: showDetails ? 'none' : '2px 2px 0 #5BD4E8',
+          letterSpacing: '0.04em',
+          textShadow: '2px 2px 0 #5BD4E8',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>
-          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る ▼'}
-        </button>
-        {showDetails && (
-          <MultiPlayerAnswerDetails
-            answers={answers}
-            cards={cards}
-            players={getFriendPlayers(playerCount)}
-            label="ANSWER DETAILS"
-          />
-        )}
+          答え合わせ
+        </div>
+        <MultiPlayerAnswerDetails
+          answers={answers}
+          cards={cards}
+          players={getFriendPlayers(playerCount)}
+          label="ANSWER DETAILS"
+        />
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -3318,7 +3314,6 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const totalQuestions = Math.max(1, answers.length || 5);
   const scoreSummary = getPlayerScoreSummary(answers, getFamilyPlayers(playerCount));
   const [copied, setCopied] = useState(false);
-  const [showDetails, setShowDetails] = useState(true);
   const [imageBusy, setImageBusy] = useState(false);
   const preparedResultImageSrc = getPreparedResultImageSrc('family', questionScore);
 
@@ -3455,31 +3450,31 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       </div>
 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
-        <button onClick={() => setShowDetails(!showDetails)} style={{
+        <div style={{
           width: '100%',
-          minHeight: 60,
-          background: showDetails ? proto.white : proto.black,
-          color: showDetails ? proto.black : proto.white,
+          minHeight: 54,
+          background: proto.black,
+          color: proto.white,
           border: `2.5px solid ${proto.black}`,
           borderRadius: 14,
-          boxShadow: showDetails ? '3px 3px 0 #000' : '5px 5px 0 #5BD4E8',
+          boxShadow: '5px 5px 0 #5BD4E8',
           fontFamily: proto.display,
-          fontSize: showDetails ? 14 : 16,
+          fontSize: 16,
           fontWeight: 900,
-          cursor: 'pointer',
-          letterSpacing: showDetails ? 0 : '0.04em',
-          textShadow: showDetails ? 'none' : '2px 2px 0 #5BD4E8',
+          letterSpacing: '0.04em',
+          textShadow: '2px 2px 0 #5BD4E8',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>
-          {showDetails ? '答え合わせを閉じる' : '答え合わせを見る ▼'}
-        </button>
-        {showDetails && (
-          <MultiPlayerAnswerDetails
-            answers={answers}
-            cards={cards}
-            players={getFamilyPlayers(playerCount)}
-            label="ANSWER DETAILS"
-          />
-        )}
+          答え合わせ
+        </div>
+        <MultiPlayerAnswerDetails
+          answers={answers}
+          cards={cards}
+          players={getFamilyPlayers(playerCount)}
+          label="ANSWER DETAILS"
+        />
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
