@@ -4456,16 +4456,27 @@ function BackBtn({ onClick, top = 20, dark = false, label = '戻る' }) {
   return (
     <button onClick={onClick} aria-label={label} style={{
       position: 'absolute', top, left: 18,
-      width: 44, height: 44, borderRadius: 999,
-      background: dark ? proto.white : 'rgba(255,255,255,0.85)',
+      minWidth: 46, minHeight: 44,
+      maxWidth: 'calc(100% - 36px)',
+      padding: '0 13px 0 10px',
+      borderRadius: 999,
+      background: dark ? proto.white : 'rgba(255,255,255,0.92)',
       backdropFilter: 'blur(10px)',
       border: `2px solid ${proto.black}`,
       color: proto.black,
-      fontSize: 18, cursor: 'pointer', zIndex: 50,
+      fontSize: 12, cursor: 'pointer', zIndex: 50,
       boxShadow: '2px 2px 0 #000',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontWeight: 800,
-    }}>←</button>
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      gap: 7,
+      fontWeight: 900,
+      fontFamily: proto.body,
+      lineHeight: 1,
+      whiteSpace: 'nowrap',
+      touchAction: 'manipulation',
+    }}>
+      <span style={{ fontSize: 18, lineHeight: 1, transform: 'translateY(-1px)' }}>←</span>
+      <span>{label}</span>
+    </button>
   );
 }
 
