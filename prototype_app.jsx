@@ -2316,11 +2316,12 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     const next = [...guesses, i];
     setGuesses(next);
     if (turn >= playerCount - 1) {
+      setHandoffMessage('本人に渡してね');
       setTimeout(() => onAnswer({
         target: targetPick,
         guesses: next,
         matches: next.map(g => g === targetPick),
-      }), 220);
+      }), 800);
     } else {
       const nextPlayer = getFriendPlayers(playerCount)[turn + 1] || `友達${turn + 1}`;
       setHandoffMessage(`${nextPlayer}に渡してね`);
@@ -3117,11 +3118,12 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     const next = [...guesses, i];
     setGuesses(next);
     if (turn >= playerCount - 1) {
+      setHandoffMessage('本人に渡してね');
       setTimeout(() => onAnswer({
         target: targetPick,
         guesses: next,
         matches: next.map(g => g === targetPick),
-      }), 220);
+      }), 800);
     } else {
       const nextPlayer = getFamilyPlayers(playerCount)[turn + 1] || `家族${turn + 1}`;
       setHandoffMessage(`${nextPlayer}に渡してね`);
