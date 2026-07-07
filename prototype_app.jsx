@@ -88,7 +88,7 @@ function downloadBlob(blob, filename) {
 }
 
 async function fetchImageBlob(src) {
-  const res = await fetch(src, { cache: 'force-cache' });
+  const res = await fetch(src, src && src.startsWith('data:') ? undefined : { cache: 'force-cache' });
   if (!res.ok) throw new Error('image-fetch-failed');
   return await res.blob();
 }
@@ -2768,11 +2768,7 @@ function FriendReveal({ card, targetPick, guesses, playerCount, onNext }) {
 
 function PlayerScoreBoard({ answers, players, label }) {
   const total = Math.max(1, answers.length);
-  const guessers = players.slice(1);
-  const scores = guessers.map((name, idx) => ({
-    name,
-    score: answers.reduce((sum, answer) => sum + (answer.matches[idx] ? 1 : 0), 0),
-  }));
+  const scores = getPlayerScores(answers, players);
 
   return (
     <div style={{
@@ -2828,12 +2824,122 @@ function PlayerScoreBoard({ answers, players, label }) {
   );
 }
 
+function getPlayerScores(answers, players) {
+  return players.slice(1).map((name, idx) => ({
+    name,
+    score: answers.reduce((sum, answer) => sum + (answer.matches[idx] ? 1 : 0), 0),
+  }));
+}
+
 function getPlayerScoreSummary(answers, players) {
   const total = Math.max(1, answers.length);
-  return players.slice(1).map((name, idx) => {
-    const score = answers.reduce((sum, answer) => sum + (answer.matches[idx] ? 1 : 0), 0);
-    return `${name} ${score}/${total}問`;
-  }).join('、');
+  return getPlayerScores(answers, players)
+    .map((item) => `${item.name} ${item.score}/${total}問`)
+    .join('、');
+}
+
+function createGroupResultImageSrc(kind, answers, players) {
+  if (typeof document === 'undefined') return '';
+  const total = Math.max(1, answers.length || 5);
+  const scores = getPlayerScores(answers, players);
+  const isFamily = kind === 'family';
+  const title = isFamily ? '家族の絆判定' : '友達の友情判定';
+  const headline = isFamily ? '家族それぞれの結果' : '友達それぞれの結果';
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  ctx.fillStyle = proto.pink;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = proto.black;
+  roundRect(ctx, 70, 80, 940, 1180, 38);
+  ctx.fill();
+
+  ctx.fillStyle = proto.white;
+  roundRect(ctx, 88, 98, 904, 1144, 30);
+  ctx.fill();
+
+  ctx.fillStyle = proto.black;
+  roundRect(ctx, 88, 98, 904, 116, 30);
+  ctx.fill();
+
+  ctx.fillStyle = proto.white;
+  ctx.font = '700 32px "DotGothic16", monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(isFamily ? 'FAMILY BOND RESULT' : 'FRIEND CHECK RESULT', 132, 168);
+
+  ctx.fillStyle = proto.cyan;
+  roundRect(ctx, 782, 126, 150, 52, 26);
+  ctx.fill();
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 26px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('個別判定', 857, 161);
+
+  ctx.fillStyle = proto.pink;
+  ctx.font = '900 64px "RocknRoll One", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(title, 540, 310);
+
+  ctx.fillStyle = proto.black;
+  roundRect(ctx, 150, 370, 780, 92, 22);
+  ctx.fill();
+  ctx.fillStyle = proto.yellow;
+  ctx.font = '900 36px "Zen Maru Gothic", sans-serif';
+  ctx.fillText(headline, 540, 430);
+
+  const cardTop = 520;
+  const cardGap = 34;
+  const cardHeight = 150;
+  scores.forEach((item, index) => {
+    const y = cardTop + index * (cardHeight + cardGap);
+    ctx.fillStyle = item.score === total ? proto.yellow : proto.pinkSoft;
+    roundRect(ctx, 170, y, 740, cardHeight, 26);
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = proto.black;
+    roundRect(ctx, 170, y, 740, cardHeight, 26);
+    ctx.stroke();
+
+    ctx.fillStyle = proto.black;
+    ctx.font = '900 36px "Zen Maru Gothic", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(item.name, 220, y + 62);
+
+    ctx.fillStyle = proto.pinkDeep;
+    ctx.font = '900 70px "RocknRoll One", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${item.score}/${total}`, 790, y + 76);
+
+    ctx.fillStyle = proto.black;
+    ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
+    ctx.fillText('問正解', 880, y + 76);
+  });
+
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 34px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('答え合わせで、どの問題を当てたか確認してね', 540, 1110);
+
+  ctx.fillStyle = proto.textSoft;
+  ctx.font = '700 26px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com / #わたちゃん', 540, 1190);
+
+  return canvas.toDataURL('image/png');
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
 }
 
 function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
@@ -2923,16 +3029,12 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
 }
 
 function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
-  const questionScore = getQuestionHitScore(answers);
   const totalQuestions = Math.max(1, answers.length || 5);
-  const scoreSummary = getPlayerScoreSummary(answers, getFriendPlayers(playerCount));
+  const friendPlayers = getFriendPlayers(playerCount);
+  const scoreSummary = getPlayerScoreSummary(answers, friendPlayers);
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const preparedResultImageSrc = getPreparedResultImageSrc('friend', questionScore);
-
-  useEffect(() => {
-    preloadPreparedResultImages('friend');
-  }, []);
+  const preparedResultImageSrc = createGroupResultImageSrc('friend', answers, friendPlayers);
 
   const shareUrl = `${location.origin}/?screen=friendIntro`;
   const shareText = `友達の友情判定ゲームをやってみた！\n${scoreSummary}\n\n友達とやったら何問当たる？\n#わたちゃん #友情判定ゲーム #streetboardgame`;
@@ -2951,7 +3053,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   };
 
   const openX = () => {
-    if (canShareImageFile(`watachan-friend-result-${questionScore}-${totalQuestions}.png`)) {
+    if (canShareImageFile(`watachan-friend-result-${totalQuestions}.png`)) {
       handleShareImage();
       return;
     }
@@ -2967,7 +3069,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
     try {
       await savePreparedImage({
         src: preparedResultImageSrc,
-        filename: `watachan-friend-result-${questionScore}-${totalQuestions}.png`,
+        filename: `watachan-friend-result-${totalQuestions}.png`,
         title: 'わたちゃん 友達の友情判定ゲーム',
       });
     } catch (e) {
@@ -2983,7 +3085,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
     try {
       await sharePreparedImage({
         src: preparedResultImageSrc,
-        filename: `watachan-friend-result-${questionScore}-${totalQuestions}.png`,
+        filename: `watachan-friend-result-${totalQuestions}.png`,
         title: 'わたちゃん 友達の友情判定ゲーム',
         text: shareText,
         url: shareUrl,
@@ -3044,7 +3146,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         </div>
         <PlayerScoreBoard
           answers={answers}
-          players={getFriendPlayers(playerCount)}
+          players={friendPlayers}
           label="それぞれ何問当たった？"
         />
         <div style={{
@@ -3085,7 +3187,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         <MultiPlayerAnswerDetails
           answers={answers}
           cards={cards}
-          players={getFriendPlayers(playerCount)}
+          players={friendPlayers}
           label="ANSWER DETAILS"
         />
       </div>
@@ -3371,16 +3473,12 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
 }
 
 function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
-  const questionScore = getQuestionHitScore(answers);
   const totalQuestions = Math.max(1, answers.length || 5);
-  const scoreSummary = getPlayerScoreSummary(answers, getFamilyPlayers(playerCount));
+  const familyPlayers = getFamilyPlayers(playerCount);
+  const scoreSummary = getPlayerScoreSummary(answers, familyPlayers);
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const preparedResultImageSrc = getPreparedResultImageSrc('family', questionScore);
-
-  useEffect(() => {
-    preloadPreparedResultImages('family');
-  }, []);
+  const preparedResultImageSrc = createGroupResultImageSrc('family', answers, familyPlayers);
 
   const shareUrl = `${location.origin}/?screen=familyIntro`;
   const shareText = `家族の絆判定ゲームをやってみた！\n${scoreSummary}\n\n家族でやったら何問当たる？\n#わたちゃん #家族の絆判定 #streetboardgame`;
@@ -3399,7 +3497,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   };
 
   const openX = () => {
-    if (canShareImageFile(`watachan-family-result-${questionScore}-${totalQuestions}.png`)) {
+    if (canShareImageFile(`watachan-family-result-${totalQuestions}.png`)) {
       handleShareImage();
       return;
     }
@@ -3415,7 +3513,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
     try {
       await savePreparedImage({
         src: preparedResultImageSrc,
-        filename: `watachan-family-result-${questionScore}-${totalQuestions}.png`,
+        filename: `watachan-family-result-${totalQuestions}.png`,
         title: 'わたちゃん 家族の絆判定ゲーム',
       });
     } catch (e) {
@@ -3431,7 +3529,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
     try {
       await sharePreparedImage({
         src: preparedResultImageSrc,
-        filename: `watachan-family-result-${questionScore}-${totalQuestions}.png`,
+        filename: `watachan-family-result-${totalQuestions}.png`,
         title: 'わたちゃん 家族の絆判定ゲーム',
         text: shareText,
         url: shareUrl,
@@ -3492,7 +3590,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         </div>
         <PlayerScoreBoard
           answers={answers}
-          players={getFamilyPlayers(playerCount)}
+          players={familyPlayers}
           label="それぞれ何問当たった？"
         />
         <div style={{
@@ -3533,7 +3631,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         <MultiPlayerAnswerDetails
           answers={answers}
           cards={cards}
-          players={getFamilyPlayers(playerCount)}
+          players={familyPlayers}
           label="ANSWER DETAILS"
         />
       </div>
