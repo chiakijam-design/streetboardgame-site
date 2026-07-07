@@ -1586,7 +1586,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
   const [imageBusy, setImageBusy] = useState(false);
   const preparedResultImageSrc = getLoveResultImageSrc(score);
 
@@ -2826,7 +2826,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const ratio = score / maxScore;
   const tier = [...FRIEND_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FRIEND_RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
   const [imageBusy, setImageBusy] = useState(false);
   const preparedResultImageSrc = getPreparedResultImageSrc('friend', questionScore);
 
@@ -3309,7 +3309,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const ratio = score / maxScore;
   const tier = [...FAMILY_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FAMILY_RESULT_TIERS[0];
   const [copied, setCopied] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
   const [imageBusy, setImageBusy] = useState(false);
   const preparedResultImageSrc = getPreparedResultImageSrc('family', questionScore);
 
