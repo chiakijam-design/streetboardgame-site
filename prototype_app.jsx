@@ -40,6 +40,9 @@ const FAMILY_ROUND_SIZE = 5;
 const AMAZON_URL = 'https://www.amazon.co.jp/dp/B0G87M4ZYK';
 const COLOR_LABELS = ['緑', '青', '黄', '赤', '橙'];
 const RESULT_IMAGE_VERSION = 'results-20260707-2';
+const HANDOFF_DELAY_MS = 600;
+const FINAL_HANDOFF_DELAY_MS = 1000;
+const ANSWER_ADVANCE_DELAY_MS = 160;
 function normalizeFriendPlayerCount(value) {
   const n = Number(value);
   return [2, 3, 4].includes(n) ? n : 2;
@@ -966,12 +969,12 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
     setTimeout(() => {
       setHandoffMessage('');
       setPhase('boy');
-    }, 800);
+    }, HANDOFF_DELAY_MS);
   };
   const onBoyPick = (i) => {
     if (boyPick !== null) return;
     setBoyPick(i);
-    setTimeout(() => onAnswer(girlPick, i), 220);
+    setTimeout(() => onAnswer(girlPick, i), ANSWER_ADVANCE_DELAY_MS);
   };
 
   if (!card) return null;
@@ -2422,7 +2425,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
       setTimeout(() => {
         setHandoffMessage('');
         setPhase('guess');
-      }, 800);
+      }, HANDOFF_DELAY_MS);
       return;
     }
     const next = [...guesses, i];
@@ -2433,14 +2436,14 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         target: targetPick,
         guesses: next,
         matches: next.map(g => g === targetPick),
-      }), 1400);
+      }), FINAL_HANDOFF_DELAY_MS);
     } else {
       const nextPlayer = getFriendPlayers(playerCount)[turn + 1] || `友達${turn + 1}`;
       setHandoffMessage(`${nextPlayer}に渡してね`);
       setTimeout(() => {
         setHandoffMessage('');
         setTurn(turn + 1);
-      }, 800);
+      }, HANDOFF_DELAY_MS);
     }
   };
 
@@ -3201,7 +3204,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
       setTimeout(() => {
         setHandoffMessage('');
         setPhase('guess');
-      }, 800);
+      }, HANDOFF_DELAY_MS);
       return;
     }
     const next = [...guesses, i];
@@ -3212,14 +3215,14 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         target: targetPick,
         guesses: next,
         matches: next.map(g => g === targetPick),
-      }), 1400);
+      }), FINAL_HANDOFF_DELAY_MS);
     } else {
       const nextPlayer = getFamilyPlayers(playerCount)[turn + 1] || `家族${turn + 1}`;
       setHandoffMessage(`${nextPlayer}に渡してね`);
       setTimeout(() => {
         setHandoffMessage('');
         setTurn(turn + 1);
-      }, 800);
+      }, HANDOFF_DELAY_MS);
     }
   };
 
