@@ -2,16 +2,16 @@
 # https://developers.cloudflare.com/pages/configuration/redirects/
 #
 # 戦略:
-#   既知の旧Wix URL は恒久リダイレクト (301) で正規URLへ集約する
-#   Googleに重複ページとして扱われにくくするため、内部リライト(200)は使わない
+#   シリーズページは /friends /family のきれいなURLを正規URLとして扱う
+#   SPA なので既知ルートは index.html へ内部リライト (200) する
 
 /index.html  /  301
 
 /watachan    /  301
 /watachan/   /  301
-/friends     /?screen=friendIntro  301
-/friends/    /?screen=friendIntro  301
-/family      /?screen=familyIntro  301
-/family/     /?screen=familyIntro  301
+/friends     /index.html  200
+/friends/    /index.html  200
+/family      /index.html  200
+/family/     /index.html  200
 /contact     /?screen=about&to=contact  301
 /contact/    /?screen=about&to=contact  301

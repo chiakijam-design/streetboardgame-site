@@ -3040,7 +3040,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
     [answers, friendPlayers]
   );
 
-  const shareUrl = `${location.origin}/?screen=friendIntro`;
+  const shareUrl = `${location.origin}/friends`;
   const shareText = `友達の友情判定ゲームをやってみた！\n${scoreSummary}\n\n友達とやったら何問当たる？\n#わたちゃん #友情判定ゲーム #streetboardgame`;
 
   const copyShareText = () => {
@@ -3487,7 +3487,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
     [answers, familyPlayers]
   );
 
-  const shareUrl = `${location.origin}/?screen=familyIntro`;
+  const shareUrl = `${location.origin}/family`;
   const shareText = `家族の絆判定ゲームをやってみた！\n${scoreSummary}\n\n家族でやったら何問当たる？\n#わたちゃん #家族の絆判定 #streetboardgame`;
 
   const copyShareText = () => {
