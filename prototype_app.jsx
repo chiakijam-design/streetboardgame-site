@@ -33,6 +33,7 @@ const { useState, useEffect, useRef } = React;
 
 // localStorage
 const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
+const RESUME_LS_KEY = 'sbg_resume_state_v1';
 const ROUND_SIZE = 5;
 const FRIEND_ROUND_SIZE = 5;
 const FAMILY_ROUND_SIZE = 5;
@@ -47,6 +48,28 @@ function loadState() {
 }
 function saveState(s) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {}
+}
+function loadResumeState() {
+  try { return normalizeSavedState(JSON.parse(localStorage.getItem(RESUME_LS_KEY) || 'null')); } catch (e) { return null; }
+}
+function saveResumeState(s) {
+  try { localStorage.setItem(RESUME_LS_KEY, JSON.stringify(s)); } catch (e) {}
+}
+function clearResumeState() {
+  try { localStorage.removeItem(RESUME_LS_KEY); } catch (e) {}
+}
+
+function getResumeLabel(state) {
+  if (!state || !state.cards || !state.cards.length) return '';
+  const names = {
+    play: '彼氏の愛情判定',
+    friendPlay: '友達の友情判定',
+    familyPlay: '家族の絆判定',
+  };
+  const gameName = names[state.screen] || '前回のゲーム';
+  const done = Math.min(state.answers ? state.answers.length : 0, state.cards.length);
+  const next = Math.min(done + 1, state.cards.length);
+  return `${gameName}・${state.cards.length}問中${next}問目から`;
 }
 
 function downloadBlob(blob, filename) {
@@ -255,6 +278,7 @@ function App() {
   const [answers, setAnswers] = useState(initial.answers);
   const [cards, setCards] = useState(initial.cards || []);
   const [playerCount, setPlayerCount] = useState(normalizeFriendPlayerCount(initial.playerCount));
+  const [resumeState, setResumeState] = useState(() => loadResumeState());
 
   // contact 指定だった場合、About にしてからフォームへスクロール
   useEffect(() => {
@@ -276,7 +300,18 @@ function App() {
     saveState({ screen, qIdx, answers, cards, playerCount });
   }, [screen, qIdx, answers, cards, playerCount]);
 
+  useEffect(() => {
+    const playableScreens = ['play', 'friendPlay', 'familyPlay'];
+    if (playableScreens.includes(screen) && cards.length > 0 && answers.length < cards.length) {
+      const nextResume = { screen, qIdx, answers, cards, playerCount };
+      setResumeState(nextResume);
+      saveResumeState(nextResume);
+    }
+  }, [screen, qIdx, answers, cards, playerCount]);
+
   const startNewRound = () => {
+    clearResumeState();
+    setResumeState(null);
     const picked = window.pickRandomCards(ROUND_SIZE);
     setCards(picked);
     setQIdx(0);
@@ -285,6 +320,8 @@ function App() {
   };
 
   const startFriendRound = (count) => {
+    clearResumeState();
+    setResumeState(null);
     const picked = window.pickRandomFriendCards(FRIEND_ROUND_SIZE);
     setPlayerCount(normalizeFriendPlayerCount(count));
     setCards(picked);
@@ -294,6 +331,8 @@ function App() {
   };
 
   const startFamilyRound = (count) => {
+    clearResumeState();
+    setResumeState(null);
     const picked = window.pickRandomFamilyCards(FAMILY_ROUND_SIZE);
     setPlayerCount(normalizeFriendPlayerCount(count));
     setCards(picked);
@@ -306,8 +345,18 @@ function App() {
     setScreen('top'); setQIdx(0); setAnswers([]); setCards([]); setPlayerCount(2);
   };
 
+  const resumeGame = () => {
+    const savedResume = loadResumeState();
+    if (!savedResume) return;
+    setCards(savedResume.cards || []);
+    setQIdx(savedResume.qIdx || 0);
+    setAnswers(savedResume.answers || []);
+    setPlayerCount(normalizeFriendPlayerCount(savedResume.playerCount));
+    setScreen(savedResume.screen);
+  };
+
   const confirmLeaveGame = (nextScreen) => {
-    const ok = window.confirm('ゲームを中断して戻りますか？\n今の問題の途中経過は保存されません。');
+    const ok = window.confirm('ゲームを中断して戻りますか？\nトップの「つづきから再開する」から再開できます。');
     if (ok) setScreen(nextScreen);
   };
 
@@ -315,6 +364,8 @@ function App() {
     const next = [...answers, { girl: girlIdx, boy: boyIdx, match: girlIdx === boyIdx }];
     setAnswers(next);
     if (qIdx + 1 >= cards.length) {
+      clearResumeState();
+      setResumeState(null);
       setScreen('resultReady');
     } else {
       setQIdx(qIdx + 1);
@@ -325,6 +376,8 @@ function App() {
     const next = [...answers, round];
     setAnswers(next);
     if (qIdx + 1 >= cards.length) {
+      clearResumeState();
+      setResumeState(null);
       setScreen('friendResultReady');
     } else {
       setQIdx(qIdx + 1);
@@ -335,13 +388,16 @@ function App() {
     const next = [...answers, round];
     setAnswers(next);
     if (qIdx + 1 >= cards.length) {
+      clearResumeState();
+      setResumeState(null);
       setScreen('familyResultReady');
     } else {
       setQIdx(qIdx + 1);
     }
   };
 
-  const hasProgress = cards.length > 0 && answers.length > 0 && answers.length < cards.length;
+  const hasProgress = Boolean(resumeState && resumeState.cards && resumeState.cards.length && resumeState.answers.length < resumeState.cards.length);
+  const resumeLabel = getResumeLabel(resumeState);
 
   return (
     <div style={{
@@ -361,7 +417,8 @@ function App() {
           <TopScreen
             onStart={() => setScreen('intro')}
             hasProgress={hasProgress}
-            onResume={() => setScreen('play')}
+            resumeLabel={resumeLabel}
+            onResume={resumeGame}
             onFriend={() => setScreen('friendIntro')}
             onFamily={() => setScreen('familyIntro')}
             onAbout={() => setScreen('about')}
@@ -487,7 +544,7 @@ function App() {
 // ・中央に巨大な白+シアン縁取りロゴ
 // ・右下に黄色注意書きシール
 // ─────────────────────────────────────────────────────
-function TopScreen({ onStart, hasProgress, onResume, onFriend, onFamily, onAbout, onProduct }) {
+function TopScreen({ onStart, hasProgress, resumeLabel, onResume, onFriend, onFamily, onAbout, onProduct }) {
   return (
     <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
@@ -555,7 +612,21 @@ function TopScreen({ onStart, hasProgress, onResume, onFriend, onFamily, onAbout
           <button onClick={onResume} style={{
             ...secondaryBtn(),
             marginBottom: 10,
-          }}>つづきから ↻</button>
+            background: proto.white,
+            minHeight: 64,
+            display: 'block',
+            textAlign: 'center',
+          }}>
+            <span style={{ display: 'block', fontSize: 15, fontWeight: 900 }}>つづきから再開する ↻</span>
+            <span style={{
+              display: 'block',
+              marginTop: 4,
+              fontSize: 10,
+              color: proto.pinkDeep,
+              fontWeight: 900,
+              lineHeight: 1.3,
+            }}>{resumeLabel || '前回のゲームを再開できます'}</span>
+          </button>
         )}
         <button onClick={onStart} style={primaryBtn()}>
           彼氏の愛情を判定する
