@@ -1087,7 +1087,7 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
       minHeight: '100vh',
       background: proto.pink,
       color: proto.white,
-      padding: '54px 22px 34px',
+      padding: '54px 22px calc(140px + env(safe-area-inset-bottom))',
       boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column',
@@ -1127,23 +1127,13 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
             color: proto.textSoft,
           }}>{detail}</div>
         </div>
-        <button onClick={onResult} style={{ ...primaryBtn(), marginTop: 24 }}>
-          {buttonLabel}
-        </button>
-        <button onClick={onHome} style={{
-          marginTop: 12,
-          background: 'transparent',
-          border: 'none',
-          color: proto.white,
-          fontSize: 12,
-          fontWeight: 800,
-          textDecoration: 'underline',
-          textUnderlineOffset: 4,
-          cursor: 'pointer',
-        }}>
-          トップに戻る
-        </button>
       </div>
+      <FixedActionBar
+        primaryLabel={buttonLabel}
+        onPrimary={onResult}
+        secondaryLabel="トップに戻る"
+        onSecondary={onHome}
+      />
     </div>
   );
 }
@@ -1564,7 +1554,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
       minHeight: '100vh',
       background: proto.pink,
       position: 'relative',
-      paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+      paddingBottom: 'calc(160px + env(safe-area-inset-bottom))',
       overflowX: 'hidden',
     }}>
       <Decor />
@@ -1851,13 +1841,6 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
           </div>
         )}
 
-        <button onClick={onReplay} style={{ ...primaryBtn(), marginTop: 14 }}>
-          新しいお題でもう一度
-          <span style={{ marginLeft: 6, color: proto.yellow, textShadow: '1px 1px 0 #000' }}>♡</span>
-        </button>
-        <button onClick={onHome} style={{ ...secondaryBtn(), marginTop: 8 }}>
-          トップに戻る
-        </button>
         <div style={{
           marginTop: 12, fontFamily: proto.caption, fontSize: 10,
           color: proto.white, textAlign: 'center', lineHeight: 1.5, opacity: 0.85,
@@ -1865,6 +1848,12 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
           全 {window.ALL_CARDS ? window.ALL_CARDS.length : 42} 問の中からランダム出題 ✦
         </div>
       </div>
+      <FixedActionBar
+        primaryLabel="新しいお題でもう一度"
+        onPrimary={onReplay}
+        secondaryLabel="トップに戻る"
+        onSecondary={onHome}
+      />
 
       {/* 製品誘導 */}
       <div style={{ padding: '24px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -1979,6 +1968,38 @@ function ResultImageActions({ busy, onShare }) {
       }}>
         {busy ? '画像を作成中...' : '結果画像を保存・シェアする'}
       </button>
+    </div>
+  );
+}
+
+function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary }) {
+  return (
+    <div style={{
+      position: 'fixed',
+      left: '50%',
+      bottom: 0,
+      transform: 'translateX(-50%)',
+      width: 'min(480px, 100vw)',
+      padding: '10px 18px calc(12px + env(safe-area-inset-bottom))',
+      boxSizing: 'border-box',
+      background: 'linear-gradient(180deg, rgba(236,79,136,0), rgba(236,79,136,0.98) 18%, rgba(236,79,136,1))',
+      zIndex: 30,
+      pointerEvents: 'none',
+    }}>
+      <div style={{ display: 'grid', gap: 8, pointerEvents: 'auto' }}>
+        <button onClick={onPrimary} style={primaryBtn()}>
+          {primaryLabel}
+        </button>
+        {secondaryLabel && onSecondary && (
+          <button onClick={onSecondary} style={{
+            ...secondaryBtn(),
+            minHeight: 44,
+            padding: '10px 14px',
+          }}>
+            {secondaryLabel}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -2611,7 +2632,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       minHeight: '100vh',
       background: proto.pink,
       position: 'relative',
-      paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+      paddingBottom: 'calc(160px + env(safe-area-inset-bottom))',
       overflowX: 'hidden',
     }}>
       <Decor />
@@ -2786,16 +2807,16 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
             シェア文をコピーしました
           </div>
         )}
-        <button onClick={onReplay} style={{ ...primaryBtn(), marginTop: 14 }}>
-          同じ人数でもう一度
-        </button>
-        <button onClick={onHome} style={{ ...secondaryBtn(), marginTop: 8 }}>
-          トップに戻る
-        </button>
         <div style={{ textAlign: 'center', marginTop: 18 }}>
           <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
         </div>
       </div>
+      <FixedActionBar
+        primaryLabel="同じ人数でもう一度"
+        onPrimary={onReplay}
+        secondaryLabel="トップに戻る"
+        onSecondary={onHome}
+      />
     </div>
   );
 }
@@ -3129,7 +3150,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       minHeight: '100vh',
       background: proto.pink,
       position: 'relative',
-      paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+      paddingBottom: 'calc(160px + env(safe-area-inset-bottom))',
       overflowX: 'hidden',
     }}>
       <Decor />
@@ -3304,16 +3325,16 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
             シェア文をコピーしました
           </div>
         )}
-        <button onClick={onReplay} style={{ ...primaryBtn(), marginTop: 14 }}>
-          同じ人数でもう一度
-        </button>
-        <button onClick={onHome} style={{ ...secondaryBtn(), marginTop: 8 }}>
-          トップに戻る
-        </button>
         <div style={{ textAlign: 'center', marginTop: 18 }}>
           <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
         </div>
       </div>
+      <FixedActionBar
+        primaryLabel="同じ人数でもう一度"
+        onPrimary={onReplay}
+        secondaryLabel="トップに戻る"
+        onSecondary={onHome}
+      />
     </div>
   );
 }
