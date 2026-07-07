@@ -1914,8 +1914,6 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
       </div>
       </div>
 
-      <NextActionPrompt />
-
       {/* 内訳 */}
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
@@ -2245,38 +2243,6 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '' }) {
           {status} ♡
         </div>
       )}
-    </div>
-  );
-}
-
-function NextActionPrompt({ text = 'まず答え合わせを見てね' }) {
-  return (
-    <div style={{
-      margin: '16px 18px 0',
-      padding: '13px 14px',
-      background: proto.black,
-      color: proto.white,
-      border: `3px solid ${proto.yellow}`,
-      borderRadius: 14,
-      boxShadow: '4px 4px 0 #5BD4E8',
-      textAlign: 'center',
-      fontWeight: 900,
-      position: 'relative',
-      zIndex: 1,
-    }}>
-      <div style={{
-        fontFamily: proto.caption,
-        fontSize: 9,
-        letterSpacing: '0.16em',
-        color: proto.yellow,
-        marginBottom: 4,
-      }}>NEXT ACTION</div>
-      <div style={{
-        fontFamily: proto.display,
-        fontSize: 18,
-        lineHeight: 1.25,
-        textShadow: '2px 2px 0 #5BD4E8',
-      }}>{text} ▼</div>
     </div>
   );
 }
@@ -3390,8 +3356,6 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       </div>
       </div>
 
-      <NextActionPrompt />
-
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
           width: '100%',
@@ -3860,8 +3824,6 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         }}>答え合わせで、誰がどの問題を当てたかまとめて確認できます。</div>
       </div>
       </div>
-
-      <NextActionPrompt />
 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
