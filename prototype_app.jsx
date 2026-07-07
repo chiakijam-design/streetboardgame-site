@@ -3944,6 +3944,8 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
           </Card>
         </div>
 
+        <BottomHomeButton onClick={onBack} />
+
         <div style={{
           marginTop: 22, padding: '10px 0', textAlign: 'center',
           fontFamily: proto.caption, fontSize: 10,
@@ -4330,7 +4332,28 @@ function ProductScreen({ onBack }) {
             <div style={{ fontSize: 13, fontWeight: 700, color: proto.text }}>{t}</div>
           </div>
         ))}
+        <BottomHomeButton onClick={onBack} />
       </div>
+    </div>
+  );
+}
+
+function BottomHomeButton({ onClick }) {
+  return (
+    <div style={{ paddingTop: 22 }}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="トップページに戻る"
+        style={{
+          ...secondaryBtn(),
+          minHeight: 60,
+          fontSize: 15,
+          boxShadow: '4px 4px 0 #000',
+        }}
+      >
+        トップページに戻る
+      </button>
     </div>
   );
 }
