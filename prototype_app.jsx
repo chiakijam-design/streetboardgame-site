@@ -31,9 +31,6 @@ const proto = {
 
 const { useState, useEffect, useMemo } = React;
 
-// localStorage
-const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
-const RESUME_LS_KEY = 'sbg_resume_state_v1';
 const ROUND_SIZE = 5;
 const FRIEND_ROUND_SIZE = 5;
 const FAMILY_ROUND_SIZE = 5;
@@ -46,34 +43,6 @@ const LOVE_RETURN_DELAY_MS = 1300;
 function normalizeFriendPlayerCount(value) {
   const n = Number(value);
   return [2, 3, 4].includes(n) ? n : 2;
-}
-function loadState() {
-  try { return normalizeSavedState(JSON.parse(localStorage.getItem(LS_KEY) || 'null')); } catch (e) { return null; }
-}
-function saveState(s) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {}
-}
-function loadResumeState() {
-  try { return normalizeSavedState(JSON.parse(localStorage.getItem(RESUME_LS_KEY) || 'null')); } catch (e) { return null; }
-}
-function saveResumeState(s) {
-  try { localStorage.setItem(RESUME_LS_KEY, JSON.stringify(s)); } catch (e) {}
-}
-function clearResumeState() {
-  try { localStorage.removeItem(RESUME_LS_KEY); } catch (e) {}
-}
-
-function getResumeLabel(state) {
-  if (!state || !state.cards || !state.cards.length) return '';
-  const names = {
-    play: '彼氏の愛情判定',
-    friendPlay: '友達の友情判定',
-    familyPlay: '家族の絆判定',
-  };
-  const gameName = names[state.screen] || '前回のゲーム';
-  const done = Math.min(state.answers ? state.answers.length : 0, state.cards.length);
-  const next = Math.min(done + 1, state.cards.length);
-  return `${gameName}・${state.cards.length}問中${next}問目から`;
 }
 
 function downloadBlob(blob, filename) {
@@ -173,48 +142,6 @@ function getQuestionHitScore(answers) {
   return answers.reduce((sum, answer) => sum + (answer.matches && answer.matches.some(Boolean) ? 1 : 0), 0);
 }
 
-function normalizeSavedState(s) {
-  const screens = ['top', 'intro', 'play', 'resultReady', 'result', 'friendIntro', 'friendPlay', 'friendResultReady', 'friendResult', 'familyIntro', 'familyPlay', 'familyResultReady', 'familyResult', 'about', 'product'];
-  if (!s || !screens.includes(s.screen)) return null;
-
-  const cards = Array.isArray(s.cards) ? s.cards : [];
-  const answers = Array.isArray(s.answers) ? s.answers : [];
-  const qIdx = Number.isInteger(s.qIdx) ? s.qIdx : 0;
-  const playerCount = normalizeFriendPlayerCount(s.playerCount);
-
-  if (s.screen === 'play') {
-    if (!cards.length || qIdx < 0 || qIdx >= cards.length) return null;
-    return { screen: 'play', qIdx, answers: answers.slice(0, qIdx), cards };
-  }
-
-  if (s.screen === 'resultReady' || s.screen === 'result') {
-    if (!cards.length || !answers.length) return null;
-    return { screen: s.screen, qIdx: 0, answers, cards };
-  }
-
-  if (s.screen === 'friendPlay') {
-    if (!cards.length || qIdx < 0 || qIdx >= cards.length) return null;
-    return { screen: 'friendPlay', qIdx, answers: answers.slice(0, qIdx), cards, playerCount };
-  }
-
-  if (s.screen === 'friendResultReady' || s.screen === 'friendResult') {
-    if (!cards.length || !answers.length) return null;
-    return { screen: s.screen, qIdx: 0, answers, cards, playerCount };
-  }
-
-  if (s.screen === 'familyPlay') {
-    if (!cards.length || qIdx < 0 || qIdx >= cards.length) return null;
-    return { screen: 'familyPlay', qIdx, answers: answers.slice(0, qIdx), cards, playerCount };
-  }
-
-  if (s.screen === 'familyResultReady' || s.screen === 'familyResult') {
-    if (!cards.length || !answers.length) return null;
-    return { screen: s.screen, qIdx: 0, answers, cards, playerCount };
-  }
-
-  return { screen: s.screen, qIdx: 0, answers: [], cards: [], playerCount };
-}
-
 // ─────────────────────────────────────────────────────
 // 共通装飾: シアン縁取りロゴテキスト
 // ─────────────────────────────────────────────────────
@@ -298,16 +225,11 @@ function PillLabel({ children, dark = false }) {
 // App
 // ─────────────────────────────────────────────────────
 function App() {
-  // 初期画面の決定優先度:
-  //  1. URL からのリクエスト (旧Wix URLリダイレクト): window.__INITIAL_SCREEN
-  //  2. localStorage の続き状態
-  //  3. デフォルト 'top'
-  // URL指定があった場合は localStorage より優先 (リンクから遷移したらそこに飛ぶのが自然)
+  // URL からのリクエスト (旧Wix URLリダイレクト): window.__INITIAL_SCREEN
   const urlScreen = (typeof window !== 'undefined' && window.__INITIAL_SCREEN) || null;
-  const saved = loadState();
   const initial = urlScreen
     ? { screen: urlScreen, qIdx: 0, answers: [], cards: [] }
-    : (saved || { screen: 'top', qIdx: 0, answers: [], cards: [] });
+    : { screen: 'top', qIdx: 0, answers: [], cards: [] };
   // 使ったら消す (リロード時に二重発動しないように)
   if (typeof window !== 'undefined') window.__INITIAL_SCREEN = null;
 
@@ -316,7 +238,6 @@ function App() {
   const [answers, setAnswers] = useState(initial.answers);
   const [cards, setCards] = useState(initial.cards || []);
   const [playerCount, setPlayerCount] = useState(normalizeFriendPlayerCount(initial.playerCount));
-  const [resumeState, setResumeState] = useState(() => loadResumeState());
 
   // contact 指定だった場合、About にしてからフォームへスクロール
   useEffect(() => {
@@ -334,22 +255,7 @@ function App() {
     }
   }, []); // 初回マウントのみ
 
-  useEffect(() => {
-    saveState({ screen, qIdx, answers, cards, playerCount });
-  }, [screen, qIdx, answers, cards, playerCount]);
-
-  useEffect(() => {
-    const playableScreens = ['play', 'friendPlay', 'familyPlay'];
-    if (playableScreens.includes(screen) && cards.length > 0 && answers.length < cards.length) {
-      const nextResume = { screen, qIdx, answers, cards, playerCount };
-      setResumeState(nextResume);
-      saveResumeState(nextResume);
-    }
-  }, [screen, qIdx, answers, cards, playerCount]);
-
   const startNewRound = () => {
-    clearResumeState();
-    setResumeState(null);
     const picked = window.pickRandomCards(ROUND_SIZE);
     setCards(picked);
     setQIdx(0);
@@ -358,8 +264,6 @@ function App() {
   };
 
   const startFriendRound = (count) => {
-    clearResumeState();
-    setResumeState(null);
     const picked = window.pickRandomFriendCards(FRIEND_ROUND_SIZE);
     setPlayerCount(normalizeFriendPlayerCount(count));
     setCards(picked);
@@ -369,8 +273,6 @@ function App() {
   };
 
   const startFamilyRound = (count) => {
-    clearResumeState();
-    setResumeState(null);
     const picked = window.pickRandomFamilyCards(FAMILY_ROUND_SIZE);
     setPlayerCount(normalizeFriendPlayerCount(count));
     setCards(picked);
@@ -383,18 +285,8 @@ function App() {
     setScreen('top'); setQIdx(0); setAnswers([]); setCards([]); setPlayerCount(2);
   };
 
-  const resumeGame = () => {
-    const savedResume = loadResumeState();
-    if (!savedResume) return;
-    setCards(savedResume.cards || []);
-    setQIdx(savedResume.qIdx || 0);
-    setAnswers(savedResume.answers || []);
-    setPlayerCount(normalizeFriendPlayerCount(savedResume.playerCount));
-    setScreen(savedResume.screen);
-  };
-
   const confirmLeaveGame = (nextScreen) => {
-    const ok = window.confirm('ゲームを中断して戻りますか？\nトップの「つづきから再開する」から再開できます。');
+    const ok = window.confirm('ゲームを中断して戻りますか？');
     if (ok) setScreen(nextScreen);
   };
 
@@ -402,8 +294,6 @@ function App() {
     const next = [...answers, { girl: girlIdx, boy: boyIdx, match: girlIdx === boyIdx }];
     setAnswers(next);
     if (qIdx + 1 >= cards.length) {
-      clearResumeState();
-      setResumeState(null);
       setScreen('resultReady');
     } else {
       setQIdx(qIdx + 1);
@@ -414,8 +304,6 @@ function App() {
     const next = [...answers, round];
     setAnswers(next);
     if (qIdx + 1 >= cards.length) {
-      clearResumeState();
-      setResumeState(null);
       setScreen('friendResultReady');
     } else {
       setQIdx(qIdx + 1);
@@ -426,16 +314,11 @@ function App() {
     const next = [...answers, round];
     setAnswers(next);
     if (qIdx + 1 >= cards.length) {
-      clearResumeState();
-      setResumeState(null);
       setScreen('familyResultReady');
     } else {
       setQIdx(qIdx + 1);
     }
   };
-
-  const hasProgress = Boolean(resumeState && resumeState.cards && resumeState.cards.length && resumeState.answers.length < resumeState.cards.length);
-  const resumeLabel = getResumeLabel(resumeState);
 
   return (
     <div style={{
@@ -454,9 +337,6 @@ function App() {
         {screen === 'top' && (
           <TopScreen
             onStart={() => setScreen('intro')}
-            hasProgress={hasProgress}
-            resumeLabel={resumeLabel}
-            onResume={resumeGame}
             onFriend={() => setScreen('friendIntro')}
             onFamily={() => setScreen('familyIntro')}
             onAbout={() => setScreen('about')}
@@ -602,7 +482,7 @@ function App() {
 // ・中央に巨大な白+シアン縁取りロゴ
 // ・右下に黄色注意書きシール
 // ─────────────────────────────────────────────────────
-function TopScreen({ onStart, hasProgress, resumeLabel, onResume, onFriend, onFamily, onAbout, onProduct }) {
+function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
   return (
     <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
@@ -641,29 +521,6 @@ function TopScreen({ onStart, hasProgress, resumeLabel, onResume, onFriend, onFa
           letterSpacing: '0.25em',
         }}>STREET BOARD GAME / vol.01</div>
 
-        {hasProgress && (
-          <button onClick={onResume} style={{
-            ...secondaryBtn(),
-            margin: '18px auto 0',
-            width: 'min(100%, 360px)',
-            background: proto.yellow,
-            borderWidth: 3,
-            minHeight: 72,
-            display: 'block',
-            textAlign: 'center',
-            boxShadow: '5px 5px 0 #000',
-          }}>
-            <span style={{ display: 'block', fontSize: 16, fontWeight: 900 }}>つづきから再開する ↻</span>
-            <span style={{
-              display: 'block',
-              marginTop: 4,
-              fontSize: 10,
-              color: proto.pinkDeep,
-              fontWeight: 900,
-              lineHeight: 1.3,
-            }}>{resumeLabel || '途中で閉じても、前回のゲームを再開できます'}</span>
-          </button>
-        )}
       </div>
 
       {/* ヒーローブロック: 全身の女の子 + カード3枚 */}
@@ -1071,9 +928,6 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       <div style={{ padding: '4px 18px 2px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} />
       </div>
-      <div style={{ padding: '0 18px 3px', textAlign: 'center' }}>
-        <AutoSaveHint />
-      </div>
       <div style={{ padding: '2px 18px 4px', textAlign: 'center' }}>
         <PhaseBadge phase={phase} />
       </div>
@@ -1223,32 +1077,6 @@ function QuestionProgress({ qIdx, total, label = 'QUESTION' }) {
         color: proto.textSoft,
         whiteSpace: 'nowrap',
       }}>あと{remaining}問</span>
-    </div>
-  );
-}
-
-function AutoSaveHint({ text = '途中で閉じても、トップからつづきに戻れます' }) {
-  return (
-    <div style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      maxWidth: '100%',
-      minHeight: 22,
-      padding: '3px 9px',
-      borderRadius: 999,
-      background: 'rgba(255,255,255,0.18)',
-      border: '1px solid rgba(255,255,255,0.4)',
-      color: proto.white,
-      fontSize: 10,
-      fontWeight: 800,
-      lineHeight: 1.35,
-      textAlign: 'center',
-      boxSizing: 'border-box',
-    }}>
-      <span aria-hidden="true" style={{ color: proto.yellow }}>↻</span>
-      <span>{text}</span>
     </div>
   );
 }
@@ -2859,10 +2687,6 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
       <div style={{ padding: '4px 18px 2px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} label="FRIEND Q" />
       </div>
-      <div style={{ padding: '0 18px 3px', textAlign: 'center' }}>
-        <AutoSaveHint text="途中で閉じても、トップから友情判定のつづきに戻れます" />
-      </div>
-
       <div style={{ padding: '2px 18px 4px', textAlign: 'center' }}>
         <div style={{
           display: 'inline-block',
@@ -3752,10 +3576,6 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
       <div style={{ padding: '4px 18px 2px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} label="FAMILY Q" />
       </div>
-      <div style={{ padding: '0 18px 3px', textAlign: 'center' }}>
-        <AutoSaveHint text="途中で閉じても、トップから家族判定のつづきに戻れます" />
-      </div>
-
       <div style={{ padding: '2px 18px 4px', textAlign: 'center' }}>
         <div style={{
           display: 'inline-block',
