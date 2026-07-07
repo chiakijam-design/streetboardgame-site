@@ -225,7 +225,7 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.fillStyle = proto.white;
   ctx.font = '700 32px "DotGothic16", monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('LOVE CHECK RESULT', 132, 170);
+  ctx.fillText('彼氏の愛情判定', 132, 170);
 
   ctx.fillStyle = resultTier.tagBg || proto.pink;
   roundRect(ctx, 742, 126, 190, 54, 27);
@@ -1951,7 +1951,7 @@ const RESULT_TIERS = [
     msg: '1問当てたのはえらい。\nでもまだ「分かってる風」ゾーン。\n次のデートで一気にアップデート希望 ✦',
     shareHook: 'うちの彼氏、彼女クイズ見習い中でした' },
   { score: 2, title: '彼女データ更新中', emoji: '🌷', tag: 'UPDATE中', tagBg: proto.cyan,
-    msg: 'まだ知らない一面、多め。\nでもそれって、これから知れる余白があるってこと。\n外した答えほど、ふたりのネタになる ♡',
+    msg: 'まだ知らない一面、多め。\nでもそれって、これから知れる余白がある。\n外した答えほど、ふたりのネタになる ♡',
     shareHook: '彼女データ、ただいま更新中でした' },
   { score: 3, title: 'ドヤ顔まであと一歩', emoji: '💞', tag: '惜しい', tagBg: '#FF7A92',
     msg: '半分以上わかってるのはちゃんと強い。\nただし満点彼氏を名乗るには、あと少し。\n外した問題、次回までに要復習 ♡',
@@ -2138,7 +2138,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           fontSize: 10,
           letterSpacing: '0.18em',
         }}>
-          <span>LOVE CHECK RESULT</span>
+          <span>彼氏の愛情判定</span>
           <span style={{
             background: tier.tagBg,
             color: tagTextColor,
