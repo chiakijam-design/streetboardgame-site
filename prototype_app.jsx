@@ -2206,8 +2206,9 @@ function FriendIntroScreen({ onStart, onBack }) {
 
       <div style={{ padding: '24px 22px' }}>
         <StepCard n="1" text="人数を選ぶ" />
-        <StepCard n="2" text="本人が答える" />
-        <StepCard n="3" text="友達が予想。5問後に結果発表" />
+        <StepCard n="2" text="本人は、自分が思った答えを選ぶ" />
+        <StepCard n="3" text="友達は、本人が選んだ答えを予想する" />
+        <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
 
         <div style={{
           marginTop: 18, padding: '14px 16px',
@@ -2360,10 +2361,10 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             {phase === 'answer' ? 'STEP 1' : `STEP ${turn + 1}`}
           </div>
           <div style={{ marginTop: 1, fontSize: 15 }}>
-            {phase === 'answer' ? '本人のターン' : `${currentPlayer}の予想`}
+            {phase === 'answer' ? '本人が本音で選ぶターン' : `${currentPlayer}が本人の答えを予想`}
           </div>
           <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.35 }}>
-            {phase === 'answer' ? '友達には見せずに、自分の答えを選んでね' : '本人が選んだ答えを予想してね'}
+            {phase === 'answer' ? '友達には見せずに、本人が思ったものを選んでね' : '本人がさっき選んだものを当ててね'}
           </div>
         </div>
       </div>
@@ -2378,7 +2379,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             selected={targetPick}
             onPick={handlePick}
             highlight={proto.yellow}
-            instruction="本人だけが見て、自分の答えを選んでね"
+            instruction="本人だけが見て、自分が思ったものを選んでね"
           />
         )}
         {phase === 'guess' && (
@@ -2392,14 +2393,14 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             }}>
               本人の答えは受付完了。<br/>
               <span style={{ fontSize: 9, color: proto.yellow }}>
-                {currentPlayer}は「本人が選んだ答え」を予想してね
+                {currentPlayer}は「本人が選んだもの」を予想してね
               </span>
             </div>
             <ColorPicker
               selected={guesses[turn - 1]}
               onPick={handlePick}
               highlight={proto.cyan}
-              instruction={`${currentPlayer}のターン ── 直感でタップ`}
+              instruction={`${currentPlayer}のターン ── 本人が選んだ色を予想`}
             />
           </>
         )}
@@ -3007,8 +3008,9 @@ function FamilyIntroScreen({ onStart, onBack }) {
 
       <div style={{ padding: '24px 22px' }}>
         <StepCard n="1" text="人数を選ぶ" />
-        <StepCard n="2" text="本人が答える" />
-        <StepCard n="3" text="家族が予想。5問後に結果発表" />
+        <StepCard n="2" text="本人は、自分が思った答えを選ぶ" />
+        <StepCard n="3" text="家族は、本人が選んだ答えを予想する" />
+        <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
 
         <div style={{
           marginTop: 18, padding: '14px 16px',
@@ -3161,10 +3163,10 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             {phase === 'answer' ? 'STEP 1' : `STEP ${turn + 1}`}
           </div>
           <div style={{ marginTop: 1, fontSize: 15 }}>
-            {phase === 'answer' ? '本人のターン' : `${currentPlayer}の予想`}
+            {phase === 'answer' ? '本人が本音で選ぶターン' : `${currentPlayer}が本人の答えを予想`}
           </div>
           <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.35 }}>
-            {phase === 'answer' ? '家族には見せずに、自分の答えを選んでね' : '本人が選んだ答えを予想してね'}
+            {phase === 'answer' ? '家族には見せずに、本人が思ったものを選んでね' : '本人がさっき選んだものを当ててね'}
           </div>
         </div>
       </div>
@@ -3179,7 +3181,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             selected={targetPick}
             onPick={handlePick}
             highlight={proto.yellow}
-            instruction="本人だけが見て、自分の答えを選んでね"
+            instruction="本人だけが見て、自分が思ったものを選んでね"
           />
         )}
         {phase === 'guess' && (
@@ -3193,14 +3195,14 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
             }}>
               本人の答えは受付完了！<br/>
               <span style={{ fontSize: 9, color: proto.yellow }}>
-                {currentPlayer}は「本人が選んだ答え」を予想してね
+                {currentPlayer}は「本人が選んだもの」を予想してね
               </span>
             </div>
             <ColorPicker
               selected={guesses[turn - 1]}
               onPick={handlePick}
               highlight={proto.cyan}
-              instruction={`${currentPlayer}のターン —— 直感でタップ`}
+              instruction={`${currentPlayer}のターン ── 本人が選んだ色を予想`}
             />
           </>
         )}
