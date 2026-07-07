@@ -3255,20 +3255,20 @@ function FriendReveal({ card, targetPick, guesses, playerCount, players = FRIEND
 
 const GROUP_RESULT_RANKS = {
   friend: [
-    { score: 5, name: '神友レベル', note: 'ほぼ心の同居人' },
-    { score: 4, name: '以心伝心', note: 'かなり分かってる' },
-    { score: 3, name: '仲良し理解者', note: '普通に強い' },
-    { score: 2, name: 'まだ探り中', note: '伸びしろ友情' },
-    { score: 1, name: '謎多き友達', note: 'ここから深掘り' },
-    { score: 0, name: '初対面モード', note: '逆に盛り上がる' },
+    { score: 5, name: 'もはや本人より本人のこと知ってる友', note: '友情こわいくらい同期済み' },
+    { score: 4, name: '親友の取扱説明書ほぼ読破', note: 'あと1問で本人公認マスター' },
+    { score: 3, name: '友情データいい感じに同期中', note: '普通に分かっててちょっと照れる' },
+    { score: 2, name: '友達アップデート待ち', note: 'まだ知らない一面、残ってます' },
+    { score: 1, name: 'まだプロフィール1行目', note: 'ここから深掘りしたら化ける' },
+    { score: 0, name: '初対面より初対面', note: '逆に今日から仲良くなれる' },
   ],
   family: [
-    { score: 5, name: '絆MAX', note: '家族データ完全同期' },
-    { score: 4, name: 'かなり分かる家族', note: '空気で伝わる' },
-    { score: 3, name: 'ちょうど家族', note: '分かる所は分かる' },
-    { score: 2, name: '実家アップデート中', note: 'まだ更新できる' },
-    { score: 1, name: '家族ミステリー', note: '意外と知らない' },
-    { score: 0, name: '遠い親戚モード', note: '今日から再確認' },
+    { score: 5, name: '家族なのにテレパシー開通済み', note: '説明なしで通じるレベル' },
+    { score: 4, name: '実家のWi-Fiくらい繋がってる', note: 'たまに切れるけどかなり強い' },
+    { score: 3, name: 'ほどよく分かる、ほどよく謎', note: '家族ってだいたいこのへん' },
+    { score: 2, name: '家族データ更新通知きてます', note: '知らない一面、まだ未読です' },
+    { score: 1, name: '同じ家にいたのに初耳多め', note: '今日の答え合わせが本編' },
+    { score: 0, name: '親戚の集まりで自己紹介から', note: 'まずは近況報告から始めよう' },
   ],
 };
 
@@ -3300,59 +3300,6 @@ function PlayerScoreBoard({ answers, players, label, kind = 'friend' }) {
         marginBottom: 9,
       }}>{label}</div>
       <div style={{
-        display: 'grid',
-        gap: 8,
-      }}>
-        {scores.map((item) => (
-          (() => {
-            const rank = getGroupResultRank(kind, item.score);
-            return (
-          <div key={item.name} style={{
-            minWidth: 0,
-            display: 'grid',
-            gridTemplateColumns: 'minmax(58px, 0.8fr) minmax(56px, 0.7fr) minmax(0, 1.5fr)',
-            alignItems: 'center',
-            gap: 7,
-            padding: '9px 9px',
-            background: item.score === total ? proto.yellow : proto.pinkSoft,
-            border: `2px solid ${proto.white}`,
-            borderRadius: 10,
-            color: proto.text,
-            fontWeight: 900,
-          }}>
-            <div style={{
-              fontSize: 11,
-              lineHeight: 1.2,
-              overflowWrap: 'anywhere',
-            }}>{item.name}</div>
-            <div style={{
-              fontSize: 24,
-              lineHeight: 1,
-              fontFamily: proto.display,
-              color: item.score === total ? proto.black : proto.pinkDeep,
-            }}>{item.score}/{total}</div>
-            <div style={{ textAlign: 'left', minWidth: 0 }}>
-              <div style={{
-                fontSize: 12,
-                lineHeight: 1.2,
-                color: proto.black,
-                overflowWrap: 'anywhere',
-              }}>{rank.name}</div>
-              <div style={{
-                marginTop: 2,
-                fontSize: 9,
-                lineHeight: 1.25,
-                color: proto.textSoft,
-                overflowWrap: 'anywhere',
-              }}>{rank.note}</div>
-            </div>
-          </div>
-            );
-          })()
-        ))}
-      </div>
-      <div style={{
-        marginTop: 12,
         padding: '11px 11px',
         background: proto.white,
         border: `2px solid ${proto.white}`,
@@ -3382,10 +3329,44 @@ function PlayerScoreBoard({ answers, players, label, kind = 'friend' }) {
               fontWeight: 900,
             }}>
               <span style={{ color: proto.pinkDeep }}>{rank.score}問正解</span>
-              <span>{rank.name}<span style={{ color: proto.textSoft, fontSize: 10, marginLeft: 5 }}> {rank.note}</span></span>
+              <span>{rank.name}<span style={{ display: 'block', color: proto.textSoft, fontSize: 10, marginTop: 1 }}>{rank.note}</span></span>
             </div>
           ))}
         </div>
+      </div>
+      <div style={{
+        display: 'grid',
+        gap: 8,
+        marginTop: 12,
+      }}>
+        {scores.map((item) => (
+          <div key={item.name} style={{
+            minWidth: 0,
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) auto',
+            alignItems: 'center',
+            gap: 10,
+            padding: '11px 12px',
+            background: item.score === total ? proto.yellow : proto.pinkSoft,
+            border: `2px solid ${proto.white}`,
+            borderRadius: 10,
+            color: proto.text,
+            fontWeight: 900,
+          }}>
+            <div style={{
+              fontSize: 12,
+              lineHeight: 1.25,
+              overflowWrap: 'anywhere',
+              textAlign: 'left',
+            }}>{item.name}</div>
+            <div style={{
+              fontSize: 26,
+              lineHeight: 1,
+              fontFamily: proto.display,
+              color: item.score === total ? proto.black : proto.pinkDeep,
+            }}>{item.score}/{total}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -3401,7 +3382,7 @@ function getPlayerScores(answers, players) {
 function getPlayerScoreSummary(answers, players, kind = 'friend') {
   const total = Math.max(1, answers.length);
   return getPlayerScores(answers, players)
-    .map((item) => `${item.name} ${item.score}/${total}問「${getGroupResultRank(kind, item.score).name}」`)
+    .map((item) => `${item.name} ${item.score}/${total}問`)
     .join('、');
 }
 
@@ -3459,77 +3440,76 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.font = '900 34px "Zen Maru Gothic", sans-serif';
   ctx.fillText(headline, 540, 405);
 
-  const cardTop = 480;
-  const cardGap = 24;
-  const cardHeight = 124;
+  const rankTop = 468;
+  ctx.fillStyle = proto.white;
+  roundRect(ctx, 140, rankTop, 800, 360, 26);
+  ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = proto.black;
+  roundRect(ctx, 140, rankTop, 800, 360, 26);
+  ctx.stroke();
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 30px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('ランク表', 540, rankTop + 44);
+  ranks.forEach((rank, index) => {
+    const y = rankTop + 88 + index * 43;
+    ctx.fillStyle = proto.pinkDeep;
+    ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${rank.score}問正解`, 190, y);
+    ctx.fillStyle = proto.black;
+    ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
+    ctx.fillText(rank.name, 330, y);
+    ctx.fillStyle = proto.textSoft;
+    ctx.font = '800 19px "Zen Maru Gothic", sans-serif';
+    ctx.fillText(rank.note, 330, y + 25);
+  });
+
+  ctx.fillStyle = proto.black;
+  roundRect(ctx, 140, 870, 800, 72, 22);
+  ctx.fill();
+  ctx.fillStyle = proto.yellow;
+  ctx.font = '900 30px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('それぞれ何問当たった？', 540, 916);
+
+  const cardTop = 972;
+  const cardGap = 22;
+  const cardHeight = 88;
   scores.forEach((item, index) => {
-    const rank = getGroupResultRank(kind, item.score);
     const y = cardTop + index * (cardHeight + cardGap);
     ctx.fillStyle = item.score === total ? proto.yellow : proto.pinkSoft;
-    roundRect(ctx, 170, y, 740, cardHeight, 26);
+    roundRect(ctx, 170, y, 740, cardHeight, 24);
     ctx.fill();
     ctx.lineWidth = 5;
     ctx.strokeStyle = proto.black;
-    roundRect(ctx, 170, y, 740, cardHeight, 26);
+    roundRect(ctx, 170, y, 740, cardHeight, 24);
     ctx.stroke();
 
     ctx.fillStyle = proto.black;
     ctx.font = '900 36px "Zen Maru Gothic", sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(item.name, 220, y + 54);
+    ctx.fillText(item.name, 220, y + 57);
 
     ctx.fillStyle = proto.pinkDeep;
     ctx.font = '900 62px "RocknRoll One", sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`${item.score}/${total}`, 790, y + 64);
+    ctx.fillText(`${item.score}/${total}`, 780, y + 62);
 
     ctx.fillStyle = proto.black;
     ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
-    ctx.fillText('問正解', 880, y + 64);
-
-    ctx.textAlign = 'left';
-    ctx.fillStyle = proto.black;
-    ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
-    ctx.fillText(rank.name, 220, y + 98);
-    ctx.fillStyle = proto.textSoft;
-    ctx.font = '800 22px "Zen Maru Gothic", sans-serif';
-    ctx.fillText(rank.note, 430, y + 98);
+    ctx.fillText('問', 848, y + 62);
   });
 
-  const rankTop = 930;
-  ctx.fillStyle = proto.white;
-  roundRect(ctx, 160, rankTop, 760, 166, 24);
-  ctx.fill();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = proto.black;
-  roundRect(ctx, 160, rankTop, 760, 166, 24);
-  ctx.stroke();
   ctx.fillStyle = proto.black;
   ctx.font = '900 26px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('ランク表', 540, rankTop + 42);
-  ranks.forEach((rank, index) => {
-    const col = index < 3 ? 0 : 1;
-    const row = index % 3;
-    const x = col === 0 ? 220 : 570;
-    const y = rankTop + 78 + row * 32;
-    ctx.fillStyle = proto.pinkDeep;
-    ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`${rank.score}問`, x, y);
-    ctx.fillStyle = proto.black;
-    ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
-    ctx.fillText(rank.name, x + 58, y);
-  });
-
-  ctx.fillStyle = proto.black;
-  ctx.font = '900 30px "Zen Maru Gothic", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('答え合わせで、どの問題を当てたか確認してね', 540, 1160);
+  ctx.fillText('答え合わせで、どの問題を当てたか確認してね', 540, 1240);
 
   ctx.fillStyle = proto.textSoft;
-  ctx.font = '700 26px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com / #わたちゃん', 540, 1190);
+  ctx.font = '700 24px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com / #わたちゃん', 540, 1286);
 
   return canvas.toDataURL('image/png');
 }
