@@ -1202,6 +1202,50 @@ function AutoSaveHint({ text = '途中で閉じても、トップからつづき
   );
 }
 
+function SilentSparkles({ compact = false }) {
+  const items = [
+    { label: '♡', top: '10%', left: '12%', delay: '0s', color: proto.yellow },
+    { label: '✦', top: '18%', right: '14%', delay: '0.18s', color: proto.cyan },
+    { label: '•', bottom: '16%', left: '18%', delay: '0.32s', color: proto.white },
+    { label: '♡', bottom: '14%', right: '16%', delay: '0.48s', color: proto.yellow },
+  ];
+  return (
+    <div aria-hidden="true" style={{
+      position: 'absolute',
+      inset: compact ? -10 : -18,
+      pointerEvents: 'none',
+      overflow: 'hidden',
+      borderRadius: compact ? 18 : 24,
+    }}>
+      {items.map((item, i) => (
+        <span key={i} className="silent-sparkle-item" style={{
+          position: 'absolute',
+          top: item.top,
+          left: item.left,
+          right: item.right,
+          bottom: item.bottom,
+          color: item.color,
+          fontSize: compact ? 12 : 15,
+          fontWeight: 900,
+          opacity: 0,
+          textShadow: '1px 1px 0 rgba(0,0,0,0.3)',
+          animation: `silentSparkle 1.4s ${item.delay} ease-out both`,
+        }}>{item.label}</span>
+      ))}
+      <style>{`
+        @keyframes silentSparkle {
+          0% { transform: translateY(6px) scale(0.7); opacity: 0; }
+          25% { opacity: 0.9; }
+          100% { transform: translateY(-10px) scale(1.05); opacity: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .silent-sparkle-item { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onHome }) {
   return (
     <div style={{
@@ -1234,7 +1278,9 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
           boxShadow: proto.shadowHard,
           padding: '18px 16px',
           boxSizing: 'border-box',
+          position: 'relative',
         }}>
+          <SilentSparkles />
           <div style={{
             fontSize: 20,
             fontWeight: 900,
@@ -1297,7 +1343,9 @@ function HandoffOverlay({ message }) {
         textAlign: 'center',
         fontFamily: proto.body,
         animation: 'handoffPop 0.22s ease-out',
+        position: 'relative',
       }}>
+        <SilentSparkles compact />
         <div style={{
           fontFamily: proto.caption,
           fontSize: 10,
