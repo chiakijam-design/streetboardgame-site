@@ -1835,20 +1835,11 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
         <ResultImageActions
           busy={imageBusy}
-          onSave={handleSaveImage}
           onShare={handleShareImage}
         />
-        <div style={{
-          fontFamily: proto.caption, fontSize: 10,
-          color: proto.white, letterSpacing: '0.25em',
-          margin: '14px 0 10px', paddingLeft: 4,
-        }}>SHARE YOUR RESULT</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <ShareBtn label="X" ariaLabel="Xで結果をシェア" bg={proto.black} fg={proto.white} onClick={() => handleShare('x')} />
-          <ShareBtn label={copied === 'instagram' ? '✓' : 'IG'} ariaLabel="Instagram用のシェア文をコピー" bg="#E4405F" fg={proto.white} onClick={() => handleShare('instagram')} />
-          <ShareBtn label="LINE" ariaLabel="LINEで結果をシェア" bg="#06C755" fg={proto.white} onClick={() => handleShare('line')} />
-          <ShareBtn label={copied === 'copy' ? '✓' : '🔗'} ariaLabel="結果のシェア文をコピー" bg={proto.white} fg={proto.black} onClick={() => handleShare('copy')} />
-        </div>
+        <button onClick={() => handleShare('copy')} style={textOnlyBtn()}>
+          {copied === 'copy' ? 'シェア文をコピーしました' : '文章だけコピーする'}
+        </button>
         {copied && (
           <div style={{
             marginTop: 8, padding: '6px 10px', borderRadius: 8,
@@ -1954,7 +1945,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   );
 }
 
-function ResultImageActions({ busy, onSave, onShare }) {
+function ResultImageActions({ busy, onShare }) {
   return (
     <div style={{
       background: proto.white,
@@ -1969,38 +1960,25 @@ function ResultImageActions({ busy, onSave, onShare }) {
     }}>
       <div style={{ fontSize: 14 }}>結果画像をかんたん保存・シェア</div>
       <div style={{ marginTop: 2, fontSize: 10, color: proto.textSoft }}>
-        スマホでは共有シートから「画像を保存」を選べます
+        保存もSNS投稿も、このボタンからできます
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
-        <button onClick={onSave} disabled={busy} style={{
-          minHeight: 44,
-          borderRadius: 10,
-          border: `2px solid ${proto.black}`,
-          background: proto.yellow,
-          color: proto.black,
-          fontFamily: proto.body,
-          fontSize: 12,
-          fontWeight: 900,
-          boxShadow: '2px 2px 0 #000',
-          opacity: busy ? 0.65 : 1,
-        }}>
-          {busy ? '作成中...' : '画像を保存'}
-        </button>
-        <button onClick={onShare} disabled={busy} style={{
-          minHeight: 44,
-          borderRadius: 10,
-          border: `2px solid ${proto.black}`,
-          background: proto.black,
-          color: proto.white,
-          fontFamily: proto.body,
-          fontSize: 12,
-          fontWeight: 900,
-          boxShadow: '2px 2px 0 #000',
-          opacity: busy ? 0.65 : 1,
-        }}>
-          {busy ? '作成中...' : '画像でシェア'}
-        </button>
-      </div>
+      <button onClick={onShare} disabled={busy} style={{
+        width: '100%',
+        minHeight: 54,
+        marginTop: 10,
+        borderRadius: 12,
+        border: `2.5px solid ${proto.black}`,
+        background: proto.black,
+        color: proto.white,
+        fontFamily: proto.body,
+        fontSize: 14,
+        fontWeight: 900,
+        boxShadow: '3px 3px 0 #000',
+        opacity: busy ? 0.65 : 1,
+        cursor: busy ? 'default' : 'pointer',
+      }}>
+        {busy ? '画像を作成中...' : '結果画像を保存・シェアする'}
+      </button>
     </div>
   );
 }
@@ -2793,18 +2771,11 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
         <ResultImageActions
           busy={imageBusy}
-          onSave={handleSaveImage}
           onShare={handleShareImage}
         />
-        <div style={{
-          fontFamily: proto.caption, fontSize: 10,
-          color: proto.white, letterSpacing: '0.25em',
-          margin: '14px 0 10px', paddingLeft: 4,
-        }}>SHARE YOUR RESULT</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <ShareBtn label="X" ariaLabel="Xで友情判定結果をシェア" bg={proto.black} fg={proto.white} onClick={openX} />
-          <ShareBtn label={copied ? '✓' : 'コピー'} ariaLabel="友情判定結果をコピー" bg={proto.white} fg={proto.black} onClick={copyShareText} />
-        </div>
+        <button onClick={copyShareText} style={textOnlyBtn()}>
+          {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
+        </button>
         {copied && (
           <div style={{
             marginTop: 8, padding: '6px 10px', borderRadius: 8,
@@ -3318,18 +3289,11 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
         <ResultImageActions
           busy={imageBusy}
-          onSave={handleSaveImage}
           onShare={handleShareImage}
         />
-        <div style={{
-          fontFamily: proto.caption, fontSize: 10,
-          color: proto.white, letterSpacing: '0.25em',
-          margin: '14px 0 10px', paddingLeft: 4,
-        }}>SHARE YOUR RESULT</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <ShareBtn label="X" ariaLabel="Xで家族判定結果をシェア" bg={proto.black} fg={proto.white} onClick={openX} />
-          <ShareBtn label={copied ? '✓' : 'コピー'} ariaLabel="家族判定結果をコピー" bg={proto.white} fg={proto.black} onClick={copyShareText} />
-        </div>
+        <button onClick={copyShareText} style={textOnlyBtn()}>
+          {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
+        </button>
         {copied && (
           <div style={{
             marginTop: 8, padding: '6px 10px', borderRadius: 8,
@@ -3857,6 +3821,24 @@ function secondaryBtn() {
     boxShadow: '3px 3px 0 #000',
     touchAction: 'manipulation',
     userSelect: 'none',
+    cursor: 'pointer',
+  };
+}
+
+function textOnlyBtn() {
+  return {
+    display: 'block',
+    width: '100%',
+    marginTop: 10,
+    padding: '8px 10px',
+    background: 'transparent',
+    border: 'none',
+    color: proto.white,
+    fontFamily: proto.body,
+    fontSize: 12,
+    fontWeight: 900,
+    textDecoration: 'underline',
+    textUnderlineOffset: 4,
     cursor: 'pointer',
   };
 }
