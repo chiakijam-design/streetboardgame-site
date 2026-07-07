@@ -1013,7 +1013,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       <div style={{ padding: '0 22px 7px' }}>
         <div style={{
           position: 'relative',
-          width: 'min(100%, 380px)',
+          width: 'min(100%, 330px)',
           margin: '0 auto',
           borderRadius: 14, overflow: 'hidden',
           boxShadow: '0 12px 28px rgba(0,0,0,0.25)',
@@ -1021,7 +1021,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
           border: `3px solid ${proto.white}`,
         }}>
           <img src={card.image} alt={card.title} style={{
-            width: '100%', height: 'auto', objectFit: 'contain', display: 'block',
+            width: '100%', height: 'auto', aspectRatio: '756 / 1122', objectFit: 'contain', display: 'block',
           }} />
         </div>
       </div>
