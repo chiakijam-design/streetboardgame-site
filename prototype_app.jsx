@@ -2708,21 +2708,6 @@ function FriendReveal({ card, targetPick, guesses, playerCount, onNext }) {
   );
 }
 
-const FRIEND_RESULT_TIERS = [
-  { min: 0, title: '友情、まだチュートリアル中', tag: 'START', emoji: '🫶',
-    msg: '外した分だけ、まだ知らない話がある。\nこれは負けじゃなくて、次の飲み会の議題です。',
-    shareHook: '友情理解、ただいま初期設定中でした' },
-  { min: 0.35, title: '友達データ更新中', tag: 'UPDATE', emoji: '🌟',
-    msg: '知ってるようで、意外と外す。\nでもそのズレがいちばん笑える友情です。',
-    shareHook: '友達データ、まだまだ更新余地ありでした' },
-  { min: 0.7, title: 'かなり分かってる友達軍団', tag: 'GOOD', emoji: '✨',
-    msg: 'これはちゃんと見てる。\nノリだけじゃなくて、好みまでそこそこ同期済み。',
-    shareHook: 'うちら、かなり分かってる友達軍団でした' },
-  { min: 1, title: '友情シンクロ率100%', tag: 'PERFECT', emoji: '🏆',
-    msg: '全問レベルで当てるのは強すぎ。\nもはや会話しなくても注文が通る関係です。',
-    shareHook: '友情シンクロ率100%でした' },
-];
-
 function PlayerScoreBoard({ answers, players, label }) {
   const total = Math.max(1, answers.length);
   const guessers = players.slice(1);
@@ -2783,6 +2768,14 @@ function PlayerScoreBoard({ answers, players, label }) {
       </div>
     </div>
   );
+}
+
+function getPlayerScoreSummary(answers, players) {
+  const total = Math.max(1, answers.length);
+  return players.slice(1).map((name, idx) => {
+    const score = answers.reduce((sum, answer) => sum + (answer.matches[idx] ? 1 : 0), 0);
+    return `${name} ${score}/${total}問`;
+  }).join('、');
 }
 
 function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
@@ -2872,12 +2865,9 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
 }
 
 function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
-  const maxScore = Math.max(1, answers.length * (playerCount - 1));
-  const score = answers.reduce((sum, a) => sum + a.matches.filter(Boolean).length, 0);
   const questionScore = getQuestionHitScore(answers);
   const totalQuestions = Math.max(1, answers.length || 5);
-  const ratio = score / maxScore;
-  const tier = [...FRIEND_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FRIEND_RESULT_TIERS[0];
+  const scoreSummary = getPlayerScoreSummary(answers, getFriendPlayers(playerCount));
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(true);
   const [imageBusy, setImageBusy] = useState(false);
@@ -2888,7 +2878,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   }, []);
 
   const shareUrl = `${location.origin}/?screen=friendIntro`;
-  const shareText = `友達の友情判定ゲームで${questionScore}/${totalQuestions}問的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n友達とやったら何問当たる？\n#わたちゃん #友情判定ゲーム #streetboardgame`;
+  const shareText = `友達の友情判定ゲームをやってみた！\n${scoreSummary}\n\n友達とやったら何問当たる？\n#わたちゃん #友情判定ゲーム #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -2985,7 +2975,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         }}>
           <span>FRIEND CHECK RESULT</span>
           <span style={{
-            background: tier.min >= 0.7 ? proto.yellow : proto.cyan,
+            background: proto.cyan,
             color: proto.black,
             padding: '4px 9px',
             borderRadius: 999,
@@ -2993,7 +2983,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
             fontFamily: proto.body,
             fontSize: 9,
             fontWeight: 900,
-          }}>{tier.tag}</span>
+          }}>個別判定</span>
         </div>
         <PlayerScoreBoard
           answers={answers}
@@ -3001,38 +2991,17 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           label="それぞれ何問当たった？"
         />
         <div style={{
-          margin: '14px 16px 0',
-          padding: 14,
-          border: `2.5px dashed ${proto.pink}`,
-          borderRadius: 14,
-          background: proto.cream,
-        }}>
-          <div style={{ fontFamily: proto.caption, fontSize: 10, color: proto.pink, fontWeight: 900 }}>
-            友情理解度
-          </div>
-          <LogoText size={54} color={proto.pink} outline={proto.black} lineHeight={1}>
-            {score}/{maxScore}
-          </LogoText>
-          <div style={{ marginTop: 4, fontSize: 32 }}>{tier.emoji}</div>
-        </div>
-        <div style={{ margin: '14px 18px 0' }}>
-          <LogoText size={tier.title.length >= 13 ? 19 : 23} color={proto.pink} outline={proto.black} lineHeight={1.25}>
-            {tier.title}
-          </LogoText>
-        </div>
-        <div style={{
-          margin: '13px 18px 18px',
+          margin: '14px 18px 18px',
           padding: '12px 12px',
-          background: ratio >= 0.7 ? proto.yellow : proto.white,
+          background: proto.white,
           border: `2.5px solid ${proto.black}`,
           borderRadius: 12,
           boxShadow: '3px 3px 0 #000',
           fontSize: 12,
           color: proto.text,
           lineHeight: 1.75,
-          whiteSpace: 'pre-line',
           fontWeight: 700,
-        }}>{tier.msg}</div>
+        }}>答え合わせで、誰がどの問題を当てたかまとめて確認できます。</div>
       </div>
       </div>
 
@@ -3344,28 +3313,10 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
   );
 }
 
-const FAMILY_RESULT_TIERS = [
-  { min: 0, title: '家族理解、ただいま確認中', tag: 'START', emoji: '🏠',
-    msg: '外した分だけ、まだ知らない家族ネタがあるということ。\nこれは負けではなく、次の団らんの話題です。',
-    shareHook: '家族データ、まだまだ初期設定中でした' },
-  { min: 0.35, title: '家族データ更新中', tag: 'UPDATE', emoji: '📝',
-    msg: '分かっているようで、意外とズレる。\nそのズレまで笑えるのが家族の強さです。',
-    shareHook: '家族データ、アップデート余地ありでした' },
-  { min: 0.7, title: 'かなり分かってる家族チーム', tag: 'GOOD', emoji: '✨',
-    msg: 'これはちゃんと見ています。\n普段の何気ない会話まで、けっこう同期されています。',
-    shareHook: 'かなり分かってる家族チームでした' },
-  { min: 1, title: '家族シンクロ率100%', tag: 'PERFECT', emoji: '💯',
-    msg: '全問レベルで当てるのは強すぎ。\nもはや言わなくても伝わる家族通信です。',
-    shareHook: '家族シンクロ率100%でした' },
-];
-
 function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
-  const maxScore = Math.max(1, answers.length * (playerCount - 1));
-  const score = answers.reduce((sum, a) => sum + a.matches.filter(Boolean).length, 0);
   const questionScore = getQuestionHitScore(answers);
   const totalQuestions = Math.max(1, answers.length || 5);
-  const ratio = score / maxScore;
-  const tier = [...FAMILY_RESULT_TIERS].reverse().find(t => ratio >= t.min) || FAMILY_RESULT_TIERS[0];
+  const scoreSummary = getPlayerScoreSummary(answers, getFamilyPlayers(playerCount));
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(true);
   const [imageBusy, setImageBusy] = useState(false);
@@ -3376,7 +3327,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   }, []);
 
   const shareUrl = `${location.origin}/?screen=familyIntro`;
-  const shareText = `家族の絆判定ゲームで${questionScore}/${totalQuestions}問的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n家族でやったら何問当たる？\n#わたちゃん #家族の絆判定 #streetboardgame`;
+  const shareText = `家族の絆判定ゲームをやってみた！\n${scoreSummary}\n\n家族でやったら何問当たる？\n#わたちゃん #家族の絆判定 #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -3473,7 +3424,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
         }}>
           <span>FAMILY BOND RESULT</span>
           <span style={{
-            background: tier.min >= 0.7 ? proto.yellow : proto.cyan,
+            background: proto.cyan,
             color: proto.black,
             padding: '4px 9px',
             borderRadius: 999,
@@ -3481,7 +3432,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
             fontFamily: proto.body,
             fontSize: 9,
             fontWeight: 900,
-          }}>{tier.tag}</span>
+          }}>個別判定</span>
         </div>
         <PlayerScoreBoard
           answers={answers}
@@ -3489,38 +3440,17 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           label="それぞれ何問当たった？"
         />
         <div style={{
-          margin: '14px 16px 0',
-          padding: 14,
-          border: `2.5px dashed ${proto.pink}`,
-          borderRadius: 14,
-          background: proto.cream,
-        }}>
-          <div style={{ fontFamily: proto.caption, fontSize: 10, color: proto.pink, fontWeight: 900 }}>
-            家族理解度
-          </div>
-          <LogoText size={54} color={proto.pink} outline={proto.black} lineHeight={1}>
-            {score}/{maxScore}
-          </LogoText>
-          <div style={{ marginTop: 4, fontSize: 32 }}>{tier.emoji}</div>
-        </div>
-        <div style={{ margin: '14px 18px 0' }}>
-          <LogoText size={tier.title.length >= 13 ? 19 : 23} color={proto.pink} outline={proto.black} lineHeight={1.25}>
-            {tier.title}
-          </LogoText>
-        </div>
-        <div style={{
-          margin: '13px 18px 18px',
+          margin: '14px 18px 18px',
           padding: '12px 12px',
-          background: ratio >= 0.7 ? proto.yellow : proto.white,
+          background: proto.white,
           border: `2.5px solid ${proto.black}`,
           borderRadius: 12,
           boxShadow: '3px 3px 0 #000',
           fontSize: 12,
           color: proto.text,
           lineHeight: 1.75,
-          whiteSpace: 'pre-line',
           fontWeight: 700,
-        }}>{tier.msg}</div>
+        }}>答え合わせで、誰がどの問題を当てたかまとめて確認できます。</div>
       </div>
       </div>
 
