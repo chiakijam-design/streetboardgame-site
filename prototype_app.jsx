@@ -3591,9 +3591,12 @@ function ProductScreen({ onBack }) {
               {/* 付箋: 右下隅、タイトルとは離れた位置に配置 */}
               <div style={{ position: 'absolute', bottom: 14, right: 18, zIndex: 5 }}>
                 <StickyNote rotate={-6} size={76}>
-                  <div style={{ fontSize: 8, lineHeight: 1.35, whiteSpace: 'nowrap' }}>
-                    別れても<br/>責任は<br/>
-                    <span style={{ color: proto.pinkDeep, fontWeight: 800 }}>負いません</span>
+                  <div style={{ fontSize: 5.8, lineHeight: 1.28, fontWeight: 900, letterSpacing: 0 }}>
+                    このゲームを<br/>
+                    キッカケに<br/>
+                    別れても<br/>
+                    一切責任は<br/>
+                    <span style={{ color: proto.pinkDeep, fontWeight: 900 }}>負いません</span>
                   </div>
                 </StickyNote>
               </div>
