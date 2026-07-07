@@ -2463,6 +2463,68 @@ const FRIEND_RESULT_TIERS = [
     shareHook: '友情シンクロ率100%でした' },
 ];
 
+function PlayerScoreBoard({ answers, players, label }) {
+  const total = Math.max(1, answers.length);
+  const guessers = players.slice(1);
+  const scores = guessers.map((name, idx) => ({
+    name,
+    score: answers.reduce((sum, answer) => sum + (answer.matches[idx] ? 1 : 0), 0),
+  }));
+
+  return (
+    <div style={{
+      margin: '12px 16px 0',
+      padding: '10px 10px',
+      background: proto.white,
+      border: `2px solid ${proto.black}`,
+      borderRadius: 12,
+      boxShadow: '3px 3px 0 #000',
+    }}>
+      <div style={{
+        fontFamily: proto.caption,
+        fontSize: 9,
+        color: proto.pink,
+        fontWeight: 900,
+        letterSpacing: '0.12em',
+        marginBottom: 8,
+      }}>{label}</div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${Math.max(1, scores.length)}, minmax(0, 1fr))`,
+        gap: 7,
+      }}>
+        {scores.map((item) => (
+          <div key={item.name} style={{
+            minWidth: 0,
+            padding: '8px 5px',
+            background: item.score === total ? proto.yellow : proto.pinkSoft,
+            border: `1.5px solid ${proto.black}`,
+            borderRadius: 10,
+            color: proto.text,
+            fontWeight: 900,
+          }}>
+            <div style={{
+              fontSize: 10,
+              lineHeight: 1.2,
+              overflowWrap: 'anywhere',
+            }}>{item.name}</div>
+            <div style={{
+              marginTop: 3,
+              fontSize: 17,
+              lineHeight: 1,
+              fontFamily: proto.caption,
+              color: item.score === total ? proto.black : proto.pinkDeep,
+            }}>{item.score}/{total}</div>
+            <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.2 }}>
+              問正解
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onAbout }) {
   const maxScore = Math.max(1, answers.length * (playerCount - 1));
   const score = answers.reduce((sum, a) => sum + a.matches.filter(Boolean).length, 0);
@@ -2586,6 +2648,11 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           </LogoText>
           <div style={{ marginTop: 4, fontSize: 32 }}>{tier.emoji}</div>
         </div>
+        <PlayerScoreBoard
+          answers={answers}
+          players={getFriendPlayers(playerCount)}
+          label="個別スコア"
+        />
         <div style={{ margin: '14px 18px 0' }}>
           <LogoText size={tier.title.length >= 13 ? 19 : 23} color={proto.pink} outline={proto.black} lineHeight={1.25}>
             {tier.title}
@@ -3098,6 +3165,11 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
           </LogoText>
           <div style={{ marginTop: 4, fontSize: 32 }}>{tier.emoji}</div>
         </div>
+        <PlayerScoreBoard
+          answers={answers}
+          players={getFamilyPlayers(playerCount)}
+          label="個別スコア"
+        />
         <div style={{ margin: '14px 18px 0' }}>
           <LogoText size={tier.title.length >= 13 ? 19 : 23} color={proto.pink} outline={proto.black} lineHeight={1.25}>
             {tier.title}
