@@ -39,6 +39,7 @@ const FRIEND_ROUND_SIZE = 5;
 const FAMILY_ROUND_SIZE = 5;
 const AMAZON_URL = 'https://www.amazon.co.jp/dp/B0G87M4ZYK';
 const COLOR_LABELS = ['緑', '青', '黄', '赤', '橙'];
+const RESULT_IMAGE_VERSION = 'results-20260707-2';
 function normalizeFriendPlayerCount(value) {
   const n = Number(value);
   return [2, 3, 4].includes(n) ? n : 2;
@@ -134,7 +135,7 @@ function getLoveResultImageSrc(score) {
 function getPreparedResultImageSrc(kind, score) {
   const safeKind = ['love', 'friend', 'family'].includes(kind) ? kind : 'love';
   const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
-  return `/assets/results/${safeKind}-${safeScore}.png`;
+  return `/assets/results/${safeKind}-${safeScore}.png?v=${RESULT_IMAGE_VERSION}`;
 }
 
 function preloadPreparedResultImages(kind) {
