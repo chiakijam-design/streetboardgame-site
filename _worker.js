@@ -4,10 +4,10 @@
 // 動作:
 //   /watachan         → / にリダイレクト
 //   /watachan/        → / にリダイレクト
-//   /friends          → 友達の友情判定ページとして index.html を返す
-//   /friends/         → 友達の友情判定ページとして index.html を返す
-//   /family           → 家族の絆判定ページとして index.html を返す
-//   /family/          → 家族の絆判定ページとして index.html を返す
+//   /friends          → 友達の友情判定ページとして専用SEOメタ付きHTMLを返す
+//   /friends/         → /friends にリダイレクト
+//   /family           → 家族の絆判定ページとして専用SEOメタ付きHTMLを返す
+//   /family/          → /family にリダイレクト
 //   /contact          → /?screen=about&to=contact にリダイレクト
 //   /contact/         → /?screen=about&to=contact にリダイレクト
 //   その他の存在しないパス → / にリダイレクト
@@ -16,7 +16,8 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const path = decodeURIComponent(url.pathname).replace(/\/+$/, '');
+    const rawPath = decodeURIComponent(url.pathname);
+    const path = rawPath.replace(/\/+$/, '');
 
     const pageMap = {
       '/friends': {
@@ -44,6 +45,10 @@ export default {
         keywords: '家族ゲーム, 家族診断, 絆判定, 家族の絆, スマホゲーム, わたちゃん',
       },
     };
+
+    if (rawPath !== '/' && rawPath.endsWith('/') && pageMap[path]) {
+      return Response.redirect(url.origin + path, 301);
+    }
 
     if (pageMap[path]) {
       const indexUrl = new URL('/index.html', url.origin);
@@ -89,6 +94,8 @@ function applySeoMeta(html, page) {
     .replace(/<title>.*?<\/title>/, `<title>${page.title}</title>`)
     .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${page.description}" />`)
     .replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${page.url}" />`)
+    .replace(/<link rel="alternate" hreflang="ja" href="[^"]*" \/>/, `<link rel="alternate" hreflang="ja" href="${page.url}" />`)
+    .replace(/<link rel="alternate" hreflang="x-default" href="[^"]*" \/>/, `<link rel="alternate" hreflang="x-default" href="${page.url}" />`)
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${page.ogTitle}" />`)
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${page.description}" />`)
     .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${page.url}" />`)

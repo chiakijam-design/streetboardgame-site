@@ -2,16 +2,13 @@
 # https://developers.cloudflare.com/pages/configuration/redirects/
 #
 # 戦略:
-#   シリーズページは /friends /family のきれいなURLを正規URLとして扱う
-#   SPA なので既知ルートは index.html へ内部リライト (200) する
+#   シリーズページは /friends /family のきれいなURLを正規URLとして扱う。
+#   /friends /family は _worker.js 側で専用SEOメタを差し込むため、
+#   _redirects では内部リライトしない。
 
 /index.html  /  301
 
 /watachan    /  301
 /watachan/   /  301
-/friends     /index.html  200
-/friends/    /index.html  200
-/family      /index.html  200
-/family/     /index.html  200
 /contact     /?screen=about&to=contact  301
 /contact/    /?screen=about&to=contact  301
