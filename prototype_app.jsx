@@ -1450,6 +1450,14 @@ function getTurnColorTheme(mode, highlight) {
   };
 }
 
+function vibrateOnPick() {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(15);
+    }
+  } catch (e) {}
+}
+
 function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer' }) {
   const isLocked = selected !== null && selected !== undefined;
   const theme = getTurnColorTheme(mode, highlight);
@@ -1523,7 +1531,10 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
               <button
                 key={opt.id}
                 onClick={() => {
-                  if (!isLocked) onPick(i);
+                  if (!isLocked) {
+                    vibrateOnPick();
+                    onPick(i);
+                  }
                 }}
                 disabled={isLocked}
                 aria-label={`${COLOR_LABELS[i] || opt.name}を選ぶ`}
