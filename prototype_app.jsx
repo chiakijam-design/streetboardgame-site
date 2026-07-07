@@ -1234,7 +1234,7 @@ function HandoffOverlay({ message }) {
     <div style={{
       position: 'fixed',
       inset: 0,
-      zIndex: 20,
+      zIndex: 1000,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -2278,12 +2278,12 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     const next = [...guesses, i];
     setGuesses(next);
     if (turn >= playerCount - 1) {
-      setHandoffMessage('本人に渡してね');
+      setHandoffMessage(qIdx + 1 >= total ? '本人に渡して結果を見てね' : '本人に渡して次の問題へ');
       setTimeout(() => onAnswer({
         target: targetPick,
         guesses: next,
         matches: next.map(g => g === targetPick),
-      }), 800);
+      }), 1400);
     } else {
       const nextPlayer = getFriendPlayers(playerCount)[turn + 1] || `友達${turn + 1}`;
       setHandoffMessage(`${nextPlayer}に渡してね`);
@@ -3079,12 +3079,12 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     const next = [...guesses, i];
     setGuesses(next);
     if (turn >= playerCount - 1) {
-      setHandoffMessage('本人に渡してね');
+      setHandoffMessage(qIdx + 1 >= total ? '本人に渡して結果を見てね' : '本人に渡して次の問題へ');
       setTimeout(() => onAnswer({
         target: targetPick,
         guesses: next,
         matches: next.map(g => g === targetPick),
-      }), 800);
+      }), 1400);
     } else {
       const nextPlayer = getFamilyPlayers(playerCount)[turn + 1] || `家族${turn + 1}`;
       setHandoffMessage(`${nextPlayer}に渡してね`);
