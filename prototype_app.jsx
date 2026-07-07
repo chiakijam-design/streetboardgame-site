@@ -1027,7 +1027,7 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       display: 'flex', flexDirection: 'column',
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden',
-      paddingBottom: 'calc(164px + env(safe-area-inset-bottom))',
+      paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
     }}>
       {/* キャラ装飾: 右下のコーナーから小さく覗く */}
       <div style={{
@@ -1038,17 +1038,17 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
         <Girl variant="full" height={240} />
       </div>
       {/* progress */}
-      <div style={{ padding: '34px 18px 0', position: 'relative', zIndex: 1 }}>
-        <BackBtn onClick={onBack} top={20} dark label="遊び方に戻る" />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+      <div style={{ padding: '24px 18px 0', position: 'relative', zIndex: 1 }}>
+        <BackBtn onClick={onBack} top={14} dark label="遊び方に戻る" />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
           <div style={{
-            fontFamily: proto.caption, fontSize: 11, color: proto.white,
+            fontFamily: proto.caption, fontSize: 10, color: proto.white,
             letterSpacing: '0.15em', whiteSpace: 'nowrap',
           }}>
             QUESTION {qIdx + 1} / {total}
           </div>
           <div style={{
-            fontFamily: proto.caption, fontSize: 11, color: proto.yellow,
+            fontFamily: proto.caption, fontSize: 10, color: proto.yellow,
             fontWeight: 700, letterSpacing: '0.1em',
           }}>
             {Array(total).fill(0).map((_,i)=> i < qIdx ? '♡' : i === qIdx ? '◆' : '○').join(' ')}
@@ -1068,21 +1068,21 @@ function PlayScreen({ card, qIdx, total, onAnswer, onBack }) {
       </div>
 
       {/* phase ラベル */}
-      <div style={{ padding: '6px 18px 3px', textAlign: 'center' }}>
+      <div style={{ padding: '4px 18px 2px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} />
       </div>
-      <div style={{ padding: '0 18px 5px', textAlign: 'center' }}>
+      <div style={{ padding: '0 18px 3px', textAlign: 'center' }}>
         <AutoSaveHint />
       </div>
-      <div style={{ padding: '4px 18px 5px', textAlign: 'center' }}>
+      <div style={{ padding: '2px 18px 4px', textAlign: 'center' }}>
         <PhaseBadge phase={phase} />
       </div>
 
       {/* お題カード画像 */}
-      <div style={{ padding: '0 22px 4px' }}>
+      <div style={{ padding: '0 22px 2px' }}>
         <div style={{
           position: 'relative',
-          width: 'min(100%, 300px)',
+          width: 'min(100%, clamp(218px, 34dvh, 300px))',
           margin: '0 auto',
           borderRadius: 14, overflow: 'hidden',
           boxShadow: '0 12px 28px rgba(0,0,0,0.25)',
@@ -1156,9 +1156,9 @@ function PhaseBadge({ phase }) {
   return (
     <div style={{
       display: 'inline-block',
-      minWidth: 220,
+      minWidth: 202,
       maxWidth: '100%',
-      padding: '9px 18px 10px',
+      padding: '6px 14px 7px',
       background: conf.color,
       color: proto.black,
       borderRadius: 16,
@@ -1175,14 +1175,14 @@ function PhaseBadge({ phase }) {
         opacity: 0.78,
       }}>{conf.eyebrow}</div>
       <div style={{
-        marginTop: 2,
-        fontSize: 17,
+        marginTop: 1,
+        fontSize: 15,
         fontWeight: 900,
         lineHeight: 1.25,
       }}>{conf.title}</div>
       <div style={{
-        marginTop: 3,
-        fontSize: 10,
+        marginTop: 2,
+        fontSize: 9,
         fontWeight: 800,
         lineHeight: 1.4,
       }}>{conf.note}</div>
@@ -1199,8 +1199,8 @@ function QuestionProgress({ qIdx, total, label = 'QUESTION' }) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 10,
-      minWidth: 190,
-      padding: '8px 14px',
+      minWidth: 172,
+      padding: '6px 12px',
       background: proto.white,
       color: proto.black,
       border: `2.5px solid ${proto.black}`,
@@ -1215,11 +1215,11 @@ function QuestionProgress({ qIdx, total, label = 'QUESTION' }) {
         letterSpacing: '0.14em',
         color: proto.pinkDeep,
       }}>{label}</span>
-      <span style={{ fontSize: 18, lineHeight: 1 }}>
+      <span style={{ fontSize: 16, lineHeight: 1 }}>
         {current}<span style={{ fontSize: 12 }}> / {total}問</span>
       </span>
       <span style={{
-        fontSize: 10,
+        fontSize: 9,
         color: proto.textSoft,
         whiteSpace: 'nowrap',
       }}>あと{remaining}問</span>
@@ -1235,8 +1235,8 @@ function AutoSaveHint({ text = '途中で閉じても、トップからつづき
       justifyContent: 'center',
       gap: 6,
       maxWidth: '100%',
-      minHeight: 28,
-      padding: '5px 10px',
+      minHeight: 22,
+      padding: '3px 9px',
       borderRadius: 999,
       background: 'rgba(255,255,255,0.18)',
       border: '1px solid rgba(255,255,255,0.4)',
@@ -1432,7 +1432,7 @@ function HandoffOverlay({ message }) {
         </div>
         <div style={{
           marginTop: 8,
-          fontSize: 11,
+      fontSize: 9,
           fontWeight: 900,
           lineHeight: 1.45,
           opacity: 0.72,
@@ -1497,9 +1497,9 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
     <div style={{
       position: 'fixed',
       left: '50%',
-      bottom: 'calc(4px + env(safe-area-inset-bottom))',
+      bottom: 'calc(2px + env(safe-area-inset-bottom))',
       zIndex: 120,
-      width: 'min(560px, calc(100% - 28px))',
+      width: 'min(560px, calc(100% - 36px))',
       transform: 'translateX(-50%)',
     }}>
       <style>{`
@@ -1509,25 +1509,18 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
           100% { transform: scale(1.08); }
         }
       `}</style>
-      {instruction && (
-        <div style={{
-          fontSize: 11, color: proto.white, textAlign: 'center',
-          marginBottom: 4, fontWeight: 600, letterSpacing: '0.05em',
-          textShadow: '1px 1px 0 rgba(0,0,0,0.4)',
-        }}>{instruction}</div>
-      )}
       {turnHint && (
         <div style={{
           width: 'fit-content',
           maxWidth: '100%',
-          margin: '0 auto 5px',
-          padding: '5px 12px',
+          margin: '0 auto 3px',
+          padding: '4px 11px',
           borderRadius: 999,
           background: proto.black,
           color: theme.color,
           border: `2px solid ${theme.color}`,
           boxShadow: '2px 2px 0 rgba(0,0,0,0.55)',
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: 900,
           lineHeight: 1.25,
           textAlign: 'center',
@@ -1541,7 +1534,7 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
         backdropFilter: 'blur(8px)',
         border: `2.5px solid ${theme.panelBorder}`,
         borderRadius: 18,
-        padding: '9px 10px 9px',
+        padding: '7px 9px 7px',
         boxShadow: `0 8px 24px rgba(0,0,0,0.18), inset 0 0 0 1px ${theme.color}`,
       }}>
         <div style={{
@@ -1549,25 +1542,25 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 8,
-          marginBottom: 6,
+          marginBottom: 4,
           color: proto.white,
           fontWeight: 900,
         }}>
           <span style={{
             display: 'inline-flex',
             alignItems: 'center',
-            minHeight: 22,
-            padding: '2px 9px',
+            minHeight: 20,
+            padding: '2px 8px',
             borderRadius: 999,
             background: theme.labelBg,
             color: proto.black,
             border: `1.5px solid ${proto.black}`,
             boxShadow: '2px 2px 0 rgba(0,0,0,0.55)',
-            fontSize: 11,
+            fontSize: 10,
             lineHeight: 1,
           }}>{theme.label}</span>
           <span style={{
-            fontSize: 10,
+            fontSize: 9,
             color: isLocked ? theme.color : proto.white,
             opacity: isLocked ? 1 : 0.78,
           }}>{isLocked ? `${COLOR_LABELS[selected]}を選択済み` : 'タップで決定'}</span>
@@ -1575,7 +1568,7 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: 8,
+          gap: 7,
         }}>
           {window.COLOR_OPTIONS.map((opt, i) => {
             const isSelected = selected === i;
@@ -1593,7 +1586,7 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
                 style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexDirection: 'column',
-                minHeight: 54, minWidth: 48,
+                minHeight: 45, minWidth: 44,
                 padding: 0,
                 background: 'transparent', border: 'none',
                 cursor: isLocked ? 'default' : 'pointer', fontFamily: proto.body,
@@ -1604,12 +1597,12 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
               }}>
                 <ColorChip
                   color={opt.color}
-                  size={40}
+                  size={34}
                   selected={isSelected}
                   highlight={theme.color}
                 />
                 <span style={{
-                  marginTop: 4,
+                  marginTop: 3,
                   fontSize: 9,
                   fontWeight: 900,
                   color: proto.white,
@@ -1622,7 +1615,7 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
         </div>
       </div>
       <div style={{
-        marginTop: 3, fontSize: 9, color: proto.white,
+        marginTop: 2, fontSize: 8, color: proto.white,
         textAlign: 'center', lineHeight: 1.5, opacity: 0.85,
         textShadow: '1px 1px 0 rgba(0,0,0,0.35)',
       }}>
@@ -2833,14 +2826,14 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden',
-      paddingBottom: 'calc(164px + env(safe-area-inset-bottom))',
+      paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
     }}>
       <Decor />
-      <div style={{ padding: '34px 18px 0', position: 'relative', zIndex: 1 }}>
-        <BackBtn onClick={onBack} top={20} dark label="友情版の遊び方に戻る" />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+      <div style={{ padding: '24px 18px 0', position: 'relative', zIndex: 1 }}>
+        <BackBtn onClick={onBack} top={14} dark label="友情版の遊び方に戻る" />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
           <div style={{
-            fontFamily: proto.caption, fontSize: 11,
+            fontFamily: proto.caption, fontSize: 10,
             letterSpacing: '0.15em', whiteSpace: 'nowrap',
           }}>FRIEND Q {qIdx + 1} / {total}</div>
           <div style={{
@@ -2863,19 +2856,19 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '6px 18px 3px', textAlign: 'center' }}>
+      <div style={{ padding: '4px 18px 2px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} label="FRIEND Q" />
       </div>
-      <div style={{ padding: '0 18px 5px', textAlign: 'center' }}>
+      <div style={{ padding: '0 18px 3px', textAlign: 'center' }}>
         <AutoSaveHint text="途中で閉じても、トップから友情判定のつづきに戻れます" />
       </div>
 
-      <div style={{ padding: '3px 18px 5px', textAlign: 'center' }}>
+      <div style={{ padding: '2px 18px 4px', textAlign: 'center' }}>
         <div style={{
           display: 'inline-block',
           minWidth: 220,
           maxWidth: '100%',
-          padding: '7px 16px 8px',
+          padding: '6px 14px 7px',
           background: phase === 'answer' ? proto.yellow : phase === 'guess' ? proto.cyan : proto.white,
           color: proto.black,
           borderRadius: 16,
@@ -2893,7 +2886,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
           }}>
             {phase === 'answer' ? 'STEP 1' : `STEP ${turn + 1}`}
           </div>
-          <div style={{ marginTop: 1, fontSize: 15 }}>
+          <div style={{ marginTop: 1, fontSize: 14 }}>
             {phase === 'answer' ? '本人が本音で選ぶターン' : `${currentPlayer}が本人の答えを予想`}
           </div>
           <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.35 }}>
@@ -2902,7 +2895,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '0 22px 4px' }}>
+      <div style={{ padding: '0 22px 2px' }}>
         <FriendQuestionCard card={card} />
       </div>
 
@@ -2962,7 +2955,7 @@ function FriendQuestionCard({ card }) {
       borderRadius: 18,
       boxShadow: '0 14px 30px rgba(0,0,0,0.22)',
       overflow: 'hidden',
-      width: 'min(100%, 300px)',
+      width: 'min(100%, clamp(218px, 34dvh, 300px))',
       maxWidth: 560,
       margin: '0 auto',
       aspectRatio: '756 / 1122',
@@ -3726,14 +3719,14 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden',
-      paddingBottom: 'calc(164px + env(safe-area-inset-bottom))',
+      paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
     }}>
       <Decor />
-      <div style={{ padding: '34px 18px 0', position: 'relative', zIndex: 1 }}>
-        <BackBtn onClick={onBack} top={20} dark label="家族版の遊び方に戻る" />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+      <div style={{ padding: '24px 18px 0', position: 'relative', zIndex: 1 }}>
+        <BackBtn onClick={onBack} top={14} dark label="家族版の遊び方に戻る" />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
           <div style={{
-            fontFamily: proto.caption, fontSize: 11,
+            fontFamily: proto.caption, fontSize: 10,
             letterSpacing: '0.15em', whiteSpace: 'nowrap',
           }}>FAMILY Q {qIdx + 1} / {total}</div>
           <div style={{
@@ -3756,19 +3749,19 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '6px 18px 3px', textAlign: 'center' }}>
+      <div style={{ padding: '4px 18px 2px', textAlign: 'center' }}>
         <QuestionProgress qIdx={qIdx} total={total} label="FAMILY Q" />
       </div>
-      <div style={{ padding: '0 18px 5px', textAlign: 'center' }}>
+      <div style={{ padding: '0 18px 3px', textAlign: 'center' }}>
         <AutoSaveHint text="途中で閉じても、トップから家族判定のつづきに戻れます" />
       </div>
 
-      <div style={{ padding: '3px 18px 5px', textAlign: 'center' }}>
+      <div style={{ padding: '2px 18px 4px', textAlign: 'center' }}>
         <div style={{
           display: 'inline-block',
           minWidth: 220,
           maxWidth: '100%',
-          padding: '7px 16px 8px',
+          padding: '6px 14px 7px',
           background: phase === 'answer' ? proto.yellow : proto.cyan,
           color: proto.black,
           borderRadius: 16,
@@ -3786,7 +3779,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
           }}>
             {phase === 'answer' ? 'STEP 1' : `STEP ${turn + 1}`}
           </div>
-          <div style={{ marginTop: 1, fontSize: 15 }}>
+          <div style={{ marginTop: 1, fontSize: 14 }}>
             {phase === 'answer' ? '本人が本音で選ぶターン' : `${currentPlayer}が本人の答えを予想`}
           </div>
           <div style={{ marginTop: 2, fontSize: 9, lineHeight: 1.35 }}>
@@ -3795,7 +3788,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, onAnswer, onBack }) 
         </div>
       </div>
 
-      <div style={{ padding: '0 22px 4px' }}>
+      <div style={{ padding: '0 22px 2px' }}>
         <FriendQuestionCard card={card} />
       </div>
 
