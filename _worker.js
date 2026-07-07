@@ -13,9 +13,18 @@
 //   その他の存在しないパス → / にリダイレクト
 //   存在するファイル (HTML/画像/JSX) → そのまま配信
 
+const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.hostname === 'streetboardgame.com') {
+      url.hostname = 'www.streetboardgame.com';
+      url.protocol = 'https:';
+      return Response.redirect(url.toString(), 301);
+    }
+
     const rawPath = decodeURIComponent(url.pathname);
     const path = rawPath.replace(/\/+$/, '');
 
@@ -23,26 +32,30 @@ export default {
       '/friends': {
         title: '友達の友情判定｜わたちゃん無料友情診断ゲーム',
         description: '本人が選んだ答えを友達が予想する、スマホ1台で遊べる無料友情判定ゲーム。2〜4人で友達の理解度をチェックできます。',
-        url: url.origin + '/friends',
+        url: CANONICAL_ORIGIN + '/friends',
         ogTitle: '友達の友情判定｜わたちゃん',
-        pageId: url.origin + '/friends#webpage',
-        gameId: url.origin + '/friends#friend-game',
+        pageId: CANONICAL_ORIGIN + '/friends#webpage',
+        gameId: CANONICAL_ORIGIN + '/friends#friend-game',
         gameName: 'わたちゃん 友達の友情判定',
         headline: '本人が選んだ答えを友達が予想する無料友情判定ゲーム',
         genre: ['友情ゲーム', '友達ゲーム', '診断ゲーム', 'ボードゲーム'],
         keywords: '友情判定ゲーム, 友達ゲーム, 友情診断, 友達診断, スマホゲーム, わたちゃん',
+        noscriptTitle: '友達の友情判定｜わたちゃん無料友情診断ゲーム',
+        noscriptBody: '本人が自分の答えを選び、友達がその答えを予想する無料友情判定ゲームです。スマホ1台で2〜4人プレイに対応し、5問後に友達それぞれの理解度を確認できます。',
       },
       '/family': {
         title: '家族の絆判定｜わたちゃん無料家族診断ゲーム',
         description: '本人が選んだ答えを家族が予想する、スマホ1台で遊べる無料家族ゲーム。2〜4人で家族の絆をチェックできます。',
-        url: url.origin + '/family',
+        url: CANONICAL_ORIGIN + '/family',
         ogTitle: '家族の絆判定｜わたちゃん',
-        pageId: url.origin + '/family#webpage',
-        gameId: url.origin + '/family#family-game',
+        pageId: CANONICAL_ORIGIN + '/family#webpage',
+        gameId: CANONICAL_ORIGIN + '/family#family-game',
         gameName: 'わたちゃん 家族の絆判定',
         headline: '本人が選んだ答えを家族が予想する無料家族診断ゲーム',
         genre: ['家族ゲーム', '絆ゲーム', '診断ゲーム', 'ボードゲーム'],
         keywords: '家族ゲーム, 家族診断, 絆判定, 家族の絆, スマホゲーム, わたちゃん',
+        noscriptTitle: '家族の絆判定｜わたちゃん無料家族診断ゲーム',
+        noscriptBody: '本人が自分の答えを選び、家族がその答えを予想する無料家族診断ゲームです。スマホ1台で2〜4人プレイに対応し、5問後に家族それぞれの理解度を確認できます。',
       },
     };
 
@@ -101,7 +114,19 @@ function applySeoMeta(html, page) {
     .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${page.url}" />`)
     .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${page.ogTitle}" />`)
     .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${page.description}" />`)
-    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${JSON.stringify(buildStructuredData(page))}</script>`);
+    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${JSON.stringify(buildStructuredData(page))}</script>`)
+    .replace(/<noscript>[\s\S]*?<\/noscript>/, buildNoscript(page));
+}
+
+function buildNoscript(page) {
+  return `<noscript>
+  <main style="max-width: 720px; margin: 32px auto; padding: 24px; font-family: sans-serif; line-height: 1.8; color: #1A1A1A; background: #FFFFFF;">
+    <h1>${page.noscriptTitle || page.title}</h1>
+    <p>${page.noscriptBody || page.description}</p>
+    <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/friends">友達の友情を判定する</a> / <a href="/family">家族の絆を判定する</a></p>
+  </main>
+</noscript>`;
 }
 
 function buildStructuredData(page) {
