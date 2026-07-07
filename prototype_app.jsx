@@ -3528,8 +3528,8 @@ function ProductScreen({ onBack }) {
 
               <div style={{
                 position: 'absolute',
-                top: 70,
-                left: 18,
+                top: 23,
+                right: 20,
                 zIndex: 3,
                 background: proto.black,
                 color: proto.yellow,
