@@ -93,9 +93,23 @@ async function fetchImageBlob(src) {
   return await res.blob();
 }
 
+function shouldUseNativeShare() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const isMobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  const hasCoarsePointer = typeof window !== 'undefined'
+    && window.matchMedia
+    && window.matchMedia('(pointer: coarse)').matches;
+  return Boolean(navigator.share && (isMobileUa || hasCoarsePointer));
+}
+
 async function sharePreparedImage({ src, filename, title, text, url }) {
   const blob = await fetchImageBlob(src);
   const file = new File([blob], filename, { type: 'image/png' });
+  if (!shouldUseNativeShare()) {
+    downloadBlob(blob, filename);
+    return 'downloaded';
+  }
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     await navigator.share({ title, text, url, files: [file] });
     return 'shared';
@@ -112,7 +126,7 @@ async function sharePreparedImage({ src, filename, title, text, url }) {
 async function savePreparedImage({ src, filename, title }) {
   const blob = await fetchImageBlob(src);
   const file = new File([blob], filename, { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+  if (shouldUseNativeShare() && navigator.canShare && navigator.canShare({ files: [file] })) {
     await navigator.share({ title, files: [file] });
     return 'shared-save-sheet';
   }
@@ -122,7 +136,7 @@ async function savePreparedImage({ src, filename, title }) {
 
 function canShareImageFile(filename = 'result.png') {
   try {
-    if (!navigator.canShare || !window.File) return false;
+    if (!shouldUseNativeShare() || !navigator.canShare || !window.File) return false;
     const file = new File(['x'], filename, { type: 'image/png' });
     return navigator.canShare({ files: [file] });
   } catch (e) {
@@ -2188,7 +2202,7 @@ function ResultImageActions({ busy, onShare }) {
       }}>SHARE YOUR RESULT</div>
       <div style={{ fontSize: 16 }}>答え合わせを見たら結果をシェア</div>
       <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
-        結果画像とシェア文をまとめて出せます
+        スマホは共有、パソコンは画像保存になります
       </div>
       <button onClick={onShare} disabled={busy} style={{
         width: '100%',
