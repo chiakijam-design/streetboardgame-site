@@ -484,9 +484,9 @@ function App() {
         {screen === 'resultReady' && (
           <ResultReadyScreen
             title="5問終了！"
-            subtitle="答え合わせは結果画面でまとめて見られます"
-            detail="スマホをふたりの真ん中に置いて、結果を見るを押してね。"
-            buttonLabel="結果を見る"
+            subtitle="答え合わせいくよ"
+            detail="彼女の答えを、彼氏が何問当てられたか発表します。ふたりで一緒に見てね。"
+            buttonLabel="答え合わせへ"
             onResult={() => setScreen('result')}
             onHome={backToTop}
           />
@@ -504,9 +504,9 @@ function App() {
         {screen === 'friendResultReady' && (
           <ResultReadyScreen
             title="5問終了！"
-            subtitle="友情チェックの答え合わせをまとめて発表します"
-            detail="スマホをみんなの真ん中に置いて、結果を見るを押してね。"
-            buttonLabel="友情結果を見る"
+            subtitle="答え合わせいくよ"
+            detail="本人の答えを、友達が何問当てられたか発表します。みんなで一緒に見てね。"
+            buttonLabel="答え合わせへ"
             onResult={() => setScreen('friendResult')}
             onHome={backToTop}
           />
@@ -524,9 +524,9 @@ function App() {
         {screen === 'familyResultReady' && (
           <ResultReadyScreen
             title="5問終了！"
-            subtitle="家族の答え合わせをまとめて発表します。"
-            detail="スマホをみんなの真ん中に置いて、結果を見るを押してね。"
-            buttonLabel="家族の結果を見る"
+            subtitle="答え合わせいくよ"
+            detail="本人の答えを、家族が何問当てられたか発表します。みんなで一緒に見てね。"
+            buttonLabel="答え合わせへ"
             onResult={() => setScreen('familyResult')}
             onHome={backToTop}
           />
@@ -1179,7 +1179,7 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
       minHeight: '100vh',
       background: proto.pink,
       color: proto.white,
-      padding: '54px 22px calc(140px + env(safe-area-inset-bottom))',
+      padding: '54px 22px calc(128px + env(safe-area-inset-bottom))',
       boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column',
@@ -1189,35 +1189,48 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
     }}>
       <Decor />
       <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-        <PillLabel>RESULT READY</PillLabel>
+        <PillLabel>FINAL CHECK</PillLabel>
         <div style={{ marginTop: 18 }}>
-          <LogoText size={40} color={proto.yellow} outline="#000000" lineHeight={1.15}>
+          <LogoText size={36} color={proto.yellow} outline="#000000" lineHeight={1.15}>
             {title}
           </LogoText>
         </div>
         <div style={{
-          margin: '22px auto 0',
-          maxWidth: 360,
+          margin: '18px auto 0',
+          maxWidth: 340,
           background: proto.white,
           color: proto.black,
           border: `3px solid ${proto.black}`,
           borderRadius: 18,
           boxShadow: proto.shadowHard,
-          padding: '22px 18px',
+          padding: '18px 16px',
           boxSizing: 'border-box',
         }}>
           <div style={{
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: 900,
-            lineHeight: 1.45,
+            lineHeight: 1.35,
           }}>{subtitle}</div>
           <div style={{
-            marginTop: 12,
+            marginTop: 10,
             fontSize: 13,
             fontWeight: 700,
-            lineHeight: 1.7,
+            lineHeight: 1.65,
             color: proto.textSoft,
           }}>{detail}</div>
+          <div style={{
+            marginTop: 14,
+            padding: '8px 10px',
+            borderRadius: 12,
+            background: proto.yellow,
+            border: `2px solid ${proto.black}`,
+            color: proto.black,
+            fontSize: 12,
+            fontWeight: 900,
+            lineHeight: 1.45,
+          }}>
+            準備できたら、みんなで一緒に押してね
+          </div>
         </div>
       </div>
       <FixedActionBar
