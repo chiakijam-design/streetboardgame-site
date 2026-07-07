@@ -47,34 +47,36 @@ const DEFAULT_PLAYER_NAMES = {
   family: ['本人', '家族A', '家族B', '家族C'],
 };
 
-function sanitizePlayerName(value, fallback) {
-  const text = String(value || '').trim().replace(/\s+/g, ' ');
-  return (text || fallback).slice(0, 12);
+function sanitizePlayerName(value, fallback, allowEmpty = false) {
+  const text = String(value ?? '').replace(/\s+/g, ' ').slice(0, 12);
+  const trimmed = text.trim();
+  if (allowEmpty) return text;
+  return (trimmed || fallback).slice(0, 12);
 }
 
-function normalizePlayerNames(value = {}) {
+function normalizePlayerNames(value = {}, allowEmpty = false) {
   const result = {};
   Object.keys(DEFAULT_PLAYER_NAMES).forEach((kind) => {
     const defaults = DEFAULT_PLAYER_NAMES[kind];
     const source = Array.isArray(value[kind]) ? value[kind] : [];
-    result[kind] = defaults.map((fallback, index) => sanitizePlayerName(source[index], fallback));
+    result[kind] = defaults.map((fallback, index) => sanitizePlayerName(source[index], fallback, allowEmpty));
   });
   return result;
 }
 
 function loadPlayerNames() {
-  if (typeof window === 'undefined') return normalizePlayerNames();
+  if (typeof window === 'undefined') return normalizePlayerNames({}, true);
   try {
-    return normalizePlayerNames(JSON.parse(window.localStorage.getItem(PLAYER_NAME_STORAGE_KEY) || '{}'));
+    return normalizePlayerNames(JSON.parse(window.localStorage.getItem(PLAYER_NAME_STORAGE_KEY) || '{}'), true);
   } catch (e) {
-    return normalizePlayerNames();
+    return normalizePlayerNames({}, true);
   }
 }
 
 function savePlayerNames(names) {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(PLAYER_NAME_STORAGE_KEY, JSON.stringify(normalizePlayerNames(names)));
+    window.localStorage.setItem(PLAYER_NAME_STORAGE_KEY, JSON.stringify(normalizePlayerNames(names, true)));
   } catch (e) {}
 }
 
@@ -463,11 +465,11 @@ function App() {
 
   const updatePlayerName = (kind, index, value) => {
     setPlayerNames((current) => {
-      const normalized = normalizePlayerNames(current);
+      const normalized = normalizePlayerNames(current, true);
       const fallback = DEFAULT_PLAYER_NAMES[kind] && DEFAULT_PLAYER_NAMES[kind][index];
       if (!fallback) return normalized;
       normalized[kind] = [...normalized[kind]];
-      normalized[kind][index] = sanitizePlayerName(value, fallback);
+      normalized[kind][index] = sanitizePlayerName(value, fallback, true);
       return normalized;
     });
   };
@@ -1115,7 +1117,7 @@ function NameEditorPanel({ title, names, defaults, onChange, visibleCount }) {
         marginBottom: 10,
       }}>
         <div style={{ fontSize: 12, fontWeight: 900 }}>✎ {title}</div>
-        <div style={{ fontSize: 9, color: proto.textSoft, fontWeight: 800 }}>12文字まで</div>
+        <div style={{ fontSize: 9, color: proto.textSoft, fontWeight: 800 }}>未入力なら元の名前</div>
       </div>
       <div style={{ display: 'grid', gap: 8 }}>
         {defaults.slice(0, count).map((fallback, index) => (
@@ -1129,7 +1131,7 @@ function NameEditorPanel({ title, names, defaults, onChange, visibleCount }) {
           }}>
             <span>{fallback}</span>
             <input
-              value={(names && names[index]) || fallback}
+              value={(names && names[index]) || ''}
               onChange={(e) => onChange(index, e.target.value)}
               onFocus={(e) => e.target.select()}
               placeholder={fallback}
