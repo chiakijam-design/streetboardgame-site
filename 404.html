@@ -29,7 +29,7 @@
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="streetboardgame.com" />
 <meta property="og:title" content="わたちゃん｜彼氏の愛情判定ゲーム" />
-<meta property="og:description" content="彼氏は彼女のことをどれだけ分かってる？スマホ1台で遊べる無料カップル診断ゲーム。シリーズとして友達の友情判定も遊べます。" />
+<meta property="og:description" content="彼氏は彼女のことをどれだけ分かってる？スマホ1台で遊べる無料カップル診断ゲーム。シリーズとして友達の友情判定、家族の絆判定も遊べます。" />
 <meta property="og:url" content="https://www.streetboardgame.com/" />
 <meta property="og:image" content="https://www.streetboardgame.com/assets/ogp.jpg" />
 <meta property="og:image:alt" content="わたちゃん 彼氏の愛情判定ゲーム" />
@@ -133,7 +133,7 @@
       "browserRequirements": "Requires JavaScript",
       "isAccessibleForFree": true,
       "genre": ["友情ゲーム", "友達ゲーム", "診断ゲーム", "ボードゲーム"],
-      "keywords": "友情確認ゲーム, 友達ゲーム, 友情診断, 友達診断, スマホゲーム, わたちゃん",
+      "keywords": "友情判定ゲーム, 友達ゲーム, 友情診断, 友達診断, スマホゲーム, わたちゃん",
       "image": "https://www.streetboardgame.com/assets/ogp.jpg",
       "inLanguage": "ja",
       "offers": {
@@ -206,7 +206,7 @@
   マッピング:
     /          → トップ画面
     /watachan  → 遊び方(How to play)画面
-    /friends   → 友達の友情確認バージョン
+    /friends   → 友達の友情判定バージョン
     /family    → 家族の絆判定バージョン
     /contact   → お問い合わせ(About のフォーム位置までスクロール)
     その他     → トップ画面 (旧URLからの誘導は全部トップへ)
@@ -311,7 +311,6 @@
 ========================= -->
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -320,7 +319,7 @@
     <h1>わたちゃん｜彼氏の愛情判定ゲーム</h1>
     <p>スマホ1台で無料で遊べるカップル診断ゲームです。彼氏が彼女の答えを予想し、全42問からランダムに出る5問で2人の愛情理解度を判定できます。</p>
     <p>シリーズとして、友達の友情判定、家族の絆判定も公開中です。JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/?screen=friendIntro">友情確認版を開く</a> / <a href="/?screen=familyIntro">家族の絆判定を開く</a></p>
+    <p><a href="/?screen=friendIntro">友情判定版を開く</a> / <a href="/?screen=familyIntro">家族の絆判定を開く</a></p>
   </main>
 </noscript>
 <div id="root" aria-live="polite"></div>
@@ -329,6 +328,6 @@
 <script src="prototype_friend_data.js?v=seo-1"></script>
 <script src="prototype_family_data.js?v=family-1"></script>
 <script type="text/babel" src="prototype_character.jsx"></script>
-<script type="text/babel" src="prototype_app.jsx?v=answer-review-primary-1"></script>
+<script type="text/babel" src="prototype_app.jsx?v=site-polish-1"></script>
 </body>
 </html>

@@ -29,7 +29,7 @@ const proto = {
   shadowHard: '4px 4px 0 #1A1A1A',
 };
 
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect } = React;
 
 // localStorage
 const LS_KEY = 'sbg_quiz_state_v3'; // v3: パケDNA版
@@ -83,18 +83,6 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
-async function captureResultImage(node) {
-  if (!node || !window.html2canvas) throw new Error('capture-unavailable');
-  const canvas = await window.html2canvas(node, {
-    backgroundColor: null,
-    scale: Math.min(3, window.devicePixelRatio || 2),
-    useCORS: true,
-  });
-  return await new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('blob-failed')), 'image/png');
-  });
-}
-
 async function fetchImageBlob(src) {
   const res = await fetch(src, { cache: 'force-cache' });
   if (!res.ok) throw new Error('image-fetch-failed');
@@ -122,36 +110,6 @@ async function savePreparedImage({ src, filename, title }) {
   const file = new File([blob], filename, { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     await navigator.share({ title, files: [file] });
-    return 'shared-save-sheet';
-  }
-  downloadBlob(blob, filename);
-  return 'downloaded';
-}
-
-async function shareResultImage({ node, filename, title, text, url }) {
-  const blob = await captureResultImage(node);
-  const file = new File([blob], filename, { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({ title, text, url, files: [file] });
-    return 'shared';
-  }
-  if (navigator.share) {
-    await navigator.share({ title, text, url });
-    downloadBlob(blob, filename);
-    return 'shared-download';
-  }
-  downloadBlob(blob, filename);
-  return 'downloaded';
-}
-
-async function saveResultImage({ node, filename, title }) {
-  const blob = await captureResultImage(node);
-  const file = new File([blob], filename, { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({
-      title,
-      files: [file],
-    });
     return 'shared-save-sheet';
   }
   downloadBlob(blob, filename);
@@ -1404,34 +1362,6 @@ function ColorChip({ color, size = 44, selected = false, highlight }) {
   );
 }
 
-function Countdown({ n }) {
-  return (
-    <div style={{
-      height: 280, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{
-        fontFamily: proto.caption, fontSize: 13,
-        color: proto.white, marginBottom: 16, letterSpacing: '0.2em',
-      }}>
-        せーの…
-      </div>
-      <div key={n} style={{
-        animation: 'countdownPop 0.7s ease',
-      }}>
-        <LogoText size={140} color={proto.yellow} outline="#FFFFFF" lineHeight={1}>{n}</LogoText>
-      </div>
-      <style>{`
-        @keyframes countdownPop {
-          0% { transform: scale(0.3); opacity: 0; }
-          50% { transform: scale(1.1); opacity: 1; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
-    </div>
-  );
-}
-
 const MISS_MESSAGES = [
   <>彼氏、今日は読心術お休みです。<br/>あとで答え合わせ会しよ ♡</>,
   <>そこ外すの、逆に才能。<br/>彼女検定、追試決定です ✦</>,
@@ -1582,7 +1512,6 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const resultCardRef = useRef(null);
   const preparedResultImageSrc = getLoveResultImageSrc(score);
 
   useEffect(() => {
@@ -1709,7 +1638,7 @@ function ResultScreen({ answers, cards, onReplay, onHome, onAbout, onProduct }) 
         }
       `}</style>
 
-      <div ref={resultCardRef} style={{
+      <div style={{
         margin: '18px 18px 0',
         padding: '0 0 18px',
         background: proto.white,
@@ -2231,7 +2160,7 @@ function FriendIntroScreen({ onStart, onBack }) {
         <div style={{ position: 'relative', zIndex: 1 }}>
           <PillLabel>FRIEND CHECK</PillLabel>
           <div style={{ marginTop: 14 }}>
-            <LogoText size={26}>友達の友情確認</LogoText>
+            <LogoText size={26}>友達の友情判定</LogoText>
           </div>
           <div style={{
             marginTop: 8, color: proto.white, fontSize: 12,
@@ -2795,7 +2724,6 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const resultCardRef = useRef(null);
   const preparedResultImageSrc = getPreparedResultImageSrc('friend', questionScore);
 
   useEffect(() => {
@@ -2803,7 +2731,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   }, []);
 
   const shareUrl = `${location.origin}/?screen=friendIntro`;
-  const shareText = `友達の友情判定ゲームで${questionScore}/${totalQuestions}問的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n友達とやったら何問当たる？\n#わたちゃん #友情確認ゲーム #streetboardgame`;
+  const shareText = `友達の友情判定ゲームで${questionScore}/${totalQuestions}問的中！\n結果は「${tier.title}」でした。\n${tier.shareHook}\n\n友達とやったら何問当たる？\n#わたちゃん #友情判定ゲーム #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -2877,7 +2805,7 @@ function FriendResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       <div style={{ padding: '58px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <PillLabel>FRIEND RESULT</PillLabel>
       </div>
-      <div ref={resultCardRef} style={{
+      <div style={{
         margin: '18px 18px 0',
         background: proto.white,
         border: `3px solid ${proto.black}`,
@@ -3274,7 +3202,6 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const resultCardRef = useRef(null);
   const preparedResultImageSrc = getPreparedResultImageSrc('family', questionScore);
 
   useEffect(() => {
@@ -3356,7 +3283,7 @@ function FamilyResultScreen({ answers, cards, playerCount, onReplay, onHome, onA
       <div style={{ padding: '58px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <PillLabel>FAMILY RESULT</PillLabel>
       </div>
-      <div ref={resultCardRef} style={{
+      <div style={{
         margin: '18px 18px 0',
         background: proto.white,
         border: `3px solid ${proto.black}`,
