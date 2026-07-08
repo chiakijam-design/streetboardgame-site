@@ -487,11 +487,8 @@ function ResultReviewBox({ lines, title = 'AI総評' }) {
       }}>
         {lines.map((line, index) => (
           <div key={`${line}-${index}`} style={{
-            display: 'grid',
-            gridTemplateColumns: '18px minmax(0, 1fr)',
-            gap: 6,
+            display: 'block',
           }}>
-            <span style={{ color: proto.pink, fontWeight: 900 }}>{index + 1}</span>
             <span>{line}</span>
           </div>
         ))}
@@ -570,11 +567,8 @@ function GroupResultReviewBox({ sections, title = 'AI総評' }) {
             }}>
               {section.lines.map((line, index) => (
                 <div key={`${section.name}-${index}`} style={{
-                  display: 'grid',
-                  gridTemplateColumns: '18px minmax(0, 1fr)',
-                  gap: 6,
+                  display: 'block',
                 }}>
-                  <span style={{ color: proto.pinkDeep, fontWeight: 900 }}>{index + 1}</span>
                   <span>{line}</span>
                 </div>
               ))}
