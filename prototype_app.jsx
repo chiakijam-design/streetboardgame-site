@@ -1249,6 +1249,7 @@ function App() {
             answers={answers}
             cards={cards}
             players={lovePlayPlayers}
+            loveMode={loveMode}
             onReplay={startNewRound}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
@@ -2644,7 +2645,7 @@ const RESULT_TIERS = [
     shareHook: '全問正解、彼氏が彼女公認の理解王でした' },
 ];
 
-function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
+function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onReplay, onHome, onAbout }) {
   const score = answers.filter(a => a.match).length;
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
@@ -2688,7 +2689,10 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
   };
 
   const shareUrl = `${location.origin}/`;
-  const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n今日の称号は「${personalizedTitle}」。\n${personalizedShareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
+  const loveResultHeaderLabel = getLoveResultHeaderLabel(girlName, boyName);
+  const loveGameTitle = `わたちゃん ${loveResultHeaderLabel}ゲーム`;
+  const loveHashTag = loveMode === 'boyTarget' ? '#彼女の愛情判定' : '#彼氏の愛情判定';
+  const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n今日の称号は「${personalizedTitle}」。\n${personalizedShareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね ${loveHashTag}`;
   const lineShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！結果は「${personalizedTitle}」でした。${personalizedShareHook} ♡`;
   const copyShareText = `${xShareText}\n${shareUrl}`;
 
@@ -2738,7 +2742,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
       await savePreparedImage({
         src: preparedResultImageSrc,
         filename: `watachan-love-result-${score}-${total}.png`,
-        title: 'わたちゃん 彼氏の愛情判定ゲーム',
+        title: loveGameTitle,
       });
     } catch (e) {
       if (e && e.name === 'AbortError') return;
@@ -2754,7 +2758,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
       await sharePreparedImage({
         src: preparedResultImageSrc,
         filename: `watachan-love-result-${score}-${total}.png`,
-        title: 'わたちゃん 彼氏の愛情判定ゲーム',
+        title: loveGameTitle,
         text: xShareText,
         url: shareUrl,
       });
@@ -2768,7 +2772,6 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
 
   const tagTextColor = tier.tagBg === proto.yellow || tier.tagBg === proto.cyan ? proto.black : proto.white;
   const loveScoreLabel = getLoveScoreLabel(girlName, boyName);
-  const loveResultHeaderLabel = getLoveResultHeaderLabel(girlName, boyName);
 
   return (
     <div style={{
