@@ -966,6 +966,7 @@ function App() {
   const [cards, setCards] = useState(initial.cards || []);
   const [playerCount, setPlayerCount] = useState(normalizeFriendPlayerCount(initial.playerCount));
   const [playerNames, setPlayerNames] = useState(loadPlayerNames);
+  const [loveMode, setLoveMode] = useState('girlTarget');
 
   // contact 指定だった場合、About にしてからフォームへスクロール
   useEffect(() => {
@@ -1013,6 +1014,11 @@ function App() {
       return normalized;
     });
   };
+
+  const lovePlayPlayers = useMemo(() => {
+    const names = normalizePlayerNames(playerNames).love;
+    return loveMode === 'boyTarget' ? [names[1], names[0]] : names;
+  }, [playerNames, loveMode]);
 
   const startNewRound = () => {
     blurActiveControl();
@@ -1114,6 +1120,8 @@ function App() {
             onBack={() => setScreen('top')}
             playerNames={playerNames.love}
             onPlayerNameChange={(index, value) => updatePlayerName('love', index, value)}
+            loveMode={loveMode}
+            onLoveModeChange={setLoveMode}
           />
         )}
         {screen === 'friendIntro' && (
@@ -1157,7 +1165,7 @@ function App() {
             card={cards[qIdx]}
             qIdx={qIdx}
             total={cards.length}
-            players={playerNames.love}
+            players={lovePlayPlayers}
             onAnswer={handleQAnswer}
             onBack={() => confirmLeaveGame('intro')}
           />
@@ -1188,7 +1196,7 @@ function App() {
           <ResultReadyScreen
             title="5問終了！"
             subtitle="答え合わせいくよ"
-            detail={`${playerNames.love[0]}の答えを、${playerNames.love[1]}が何問当てられたか発表します。ふたりで一緒に見てね。`}
+            detail={`${lovePlayPlayers[0]}の答えを、${lovePlayPlayers[1]}が何問当てられたか発表します。ふたりで一緒に見てね。`}
             buttonLabel="答え合わせへ"
             onResult={() => setScreen('result')}
             onHome={backToTop}
@@ -1198,7 +1206,7 @@ function App() {
           <ResultScreen
             answers={answers}
             cards={cards}
-            players={playerNames.love}
+            players={lovePlayPlayers}
             onReplay={startNewRound}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
@@ -1283,7 +1291,7 @@ function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
         わたちゃん 彼氏の愛情判定ゲーム
       </h1>
       <p style={srOnlyStyle()}>
-        彼氏が彼女の答えを予想して愛情理解度を判定する無料カップル診断ゲームです。シリーズとして友達の友情判定と家族の絆判定も公開中です。
+        彼氏・彼女でどちらの答えを当てるか選び、愛情理解度を判定する無料カップル診断ゲームです。シリーズとして友達の友情判定と家族の絆判定も公開中です。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -1553,10 +1561,12 @@ function SeriesCard({ emoji, title, status = 'COMING SOON', onClick }) {
 // ─────────────────────────────────────────────────────
 // INTRO — 黒背景 × ピンクのコントラスト
 // ─────────────────────────────────────────────────────
-function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange }) {
+function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange, loveMode, onLoveModeChange }) {
   const lovePlayers = normalizePlayerNames({ love: playerNames }).love;
   const girlName = lovePlayers[0];
   const boyName = lovePlayers[1];
+  const targetName = loveMode === 'boyTarget' ? boyName : girlName;
+  const guesserName = loveMode === 'boyTarget' ? girlName : boyName;
   return (
     <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
       {/* ヘッダー */}
@@ -1585,8 +1595,14 @@ function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange }) {
       </div>
 
       <div style={{ padding: '24px 22px' }}>
-        <StepCard n="1" text={`${girlName}は、${boyName}に見せずに自分が思った答えを選ぶ`} />
-        <StepCard n="2" text={`${boyName}は、${girlName}が選んだ答えを予想して同じ色を選ぶ`} />
+        <LoveModePanel
+          girlName={girlName}
+          boyName={boyName}
+          loveMode={loveMode}
+          onChange={onLoveModeChange}
+        />
+        <StepCard n="1" text={`${targetName}は、${guesserName}に見せずに自分が思った答えを選ぶ`} />
+        <StepCard n="2" text={`${guesserName}は、${targetName}が選んだ答えを予想して同じ色を選ぶ`} />
         <StepCard n="3" text="5問終わったら、何問当たったか結果発表" />
         <StepCard n="4" text="最後に当たった問題・外した問題をまとめて確認" />
         <NameEditorPanel
@@ -1609,7 +1625,7 @@ function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange }) {
           <div style={{ fontSize: 12, lineHeight: 1.7 }}>
             全 <span style={{ color: proto.yellow, fontWeight: 800, fontSize: 16 }}>{window.ALL_CARDS.length}</span> 問のお題から
             <span style={{ color: proto.yellow, fontWeight: 800, fontSize: 16 }}> ランダムに 5 問</span> 出題！<br/>
-            {girlName}の本音を、{boyName}がどれだけ当てられるかをチェック。<br/>
+            {targetName}の本音を、{guesserName}がどれだけ当てられるかをチェック。<br/>
             答え合わせは最後にまとめて表示されます ♡
           </div>
         </div>
@@ -1621,6 +1637,75 @@ function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange }) {
             color: proto.yellow, fontSize: 18, textShadow: '1px 1px 0 #000',
           }}>▶</span>
         </button>
+      </div>
+    </div>
+  );
+}
+
+function LoveModePanel({ girlName, boyName, loveMode, onChange }) {
+  const options = [
+    {
+      key: 'girlTarget',
+      title: `${girlName}の答えを当てる`,
+      sub: `${girlName}が選ぶ → ${boyName}が予想`,
+      bg: proto.yellow,
+    },
+    {
+      key: 'boyTarget',
+      title: `${boyName}の答えを当てる`,
+      sub: `${boyName}が選ぶ → ${girlName}が予想`,
+      bg: proto.cyan,
+    },
+  ];
+  return (
+    <div style={{
+      marginBottom: 16,
+      padding: 12,
+      background: proto.black,
+      color: proto.white,
+      border: `3px solid ${proto.black}`,
+      borderRadius: 14,
+      boxShadow: '5px 5px 0 #000',
+    }}>
+      <div style={{
+        fontFamily: proto.caption,
+        fontSize: 10,
+        color: proto.yellow,
+        letterSpacing: '0.14em',
+        marginBottom: 8,
+      }}>どっちを当てる？</div>
+      <div style={{
+        display: 'grid',
+        gap: 10,
+      }}>
+        {options.map((option) => {
+          const active = loveMode === option.key;
+          return (
+            <button
+              key={option.key}
+              type="button"
+              onClick={() => onChange(option.key)}
+              style={{
+                width: '100%',
+                minHeight: 66,
+                borderRadius: 12,
+                border: `2.5px solid ${proto.black}`,
+                background: active ? option.bg : proto.white,
+                color: proto.black,
+                fontFamily: proto.body,
+                fontWeight: 900,
+                textAlign: 'left',
+                padding: '10px 12px',
+                boxShadow: active ? '3px 3px 0 #5BD4E8' : '3px 3px 0 rgba(0,0,0,0.55)',
+              }}
+            >
+              <span style={{ display: 'block', fontSize: 15 }}>{option.title}</span>
+              <span style={{ display: 'block', marginTop: 3, fontSize: 11, color: proto.textSoft }}>
+                {option.sub}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -5166,7 +5251,7 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
         <SectionTitle>♡ コンセプト</SectionTitle>
         <Card>
           <div style={{ fontSize: 12, lineHeight: 1.8, color: proto.text, fontWeight: 600 }}>
-            ストリートボードゲームは、彼氏が彼女の答えを当てる
+            ストリートボードゲームは、カップルでお互いの答えを当てる
             「彼氏の愛情判定ゲーム」をメインにしたオリジナルゲームサイトです。
             そのシリーズとして、友達の友情判定や家族の絆判定など、
             2人〜数人で気軽に遊べるゲームを展開しています。
