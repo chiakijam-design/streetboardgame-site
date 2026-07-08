@@ -3968,9 +3968,9 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.textAlign = 'center';
   ctx.fillText(title, 540, 978);
 
-  const cardTop = 1020;
+  const cardTop = 1014;
   const cardGap = 18;
-  const cardHeight = 102;
+  const cardHeight = 112;
   const cardCount = Math.max(1, scores.length);
   const cardWidth = (740 - cardGap * (cardCount - 1)) / cardCount;
   scores.forEach((item, index) => {
@@ -3985,17 +3985,17 @@ function createGroupResultImageSrc(kind, answers, players) {
     ctx.stroke();
 
     ctx.fillStyle = proto.black;
-    ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
+    ctx.font = '900 26px "Zen Maru Gothic", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(item.name, x + cardWidth / 2, y + 31);
+    ctx.fillText(item.name, x + cardWidth / 2, y + 29);
 
     ctx.fillStyle = proto.pinkDeep;
-    ctx.font = '900 52px "RocknRoll One", sans-serif';
-    ctx.fillText(`${item.score}/${total}`, x + cardWidth / 2, y + 72);
+    ctx.font = '900 50px "RocknRoll One", sans-serif';
+    ctx.fillText(`${item.score}/${total}`, x + cardWidth / 2, y + 82);
 
     ctx.fillStyle = proto.textSoft;
     ctx.font = '900 18px "Zen Maru Gothic", sans-serif';
-    ctx.fillText('問正解', x + cardWidth / 2, y + 93);
+    ctx.fillText('問正解', x + cardWidth / 2, y + 104);
   });
 
   ctx.fillStyle = proto.black;
