@@ -2872,7 +2872,7 @@ function ResultImageActions({ busy, onShare, onX, onLine, status = '', nextLabel
         letterSpacing: '0.12em',
         marginBottom: 8,
       }}>SHARE YOUR RESULT</div>
-      <div style={{ fontSize: 17 }}>この結果、友達に聞いてみる？</div>
+      <div style={{ fontSize: 17 }}>この結果、友達に伝えよう</div>
       <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
         XやLINEに結果文とURLをそのまま送れます
       </div>
