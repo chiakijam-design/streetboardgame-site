@@ -157,6 +157,59 @@ function showTemporaryStatus(setStatus, message, ms = 2800) {
   setTimeout(() => setStatus(''), ms);
 }
 
+const SHARE_TONES = [
+  { id: 'challenge', label: '挑戦してほしい', short: 'みんな何問？' },
+  { id: 'tease', label: 'いじられたい', short: 'ツッコミ待ち' },
+  { id: 'brag', label: 'ちょっと自慢', short: '結果見て' },
+];
+
+function ShareToneSelector({ value, onChange }) {
+  return (
+    <div style={{
+      marginTop: 10,
+      padding: 8,
+      background: proto.white,
+      border: `2px solid ${proto.black}`,
+      borderRadius: 12,
+      boxShadow: '2px 2px 0 #000',
+    }}>
+      <div style={{
+        marginBottom: 6,
+        fontSize: 10,
+        fontWeight: 900,
+        color: proto.textSoft,
+        textAlign: 'center',
+      }}>シェア文の雰囲気を選ぶ</div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gap: 6,
+      }}>
+        {SHARE_TONES.map((tone) => {
+          const active = value === tone.id;
+          return (
+            <button key={tone.id} type="button" onClick={() => onChange(tone.id)} style={{
+              minHeight: 42,
+              padding: '5px 4px',
+              borderRadius: 10,
+              border: `2px solid ${proto.black}`,
+              background: active ? proto.pink : proto.white,
+              color: active ? proto.white : proto.black,
+              fontFamily: proto.body,
+              fontSize: 10,
+              fontWeight: 900,
+              lineHeight: 1.2,
+              boxShadow: active ? '2px 2px 0 #5BD4E8' : '1px 1px 0 #000',
+            }}>
+              {tone.short}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function openInstagramApp() {
   const ua = navigator.userAgent || '';
   const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
@@ -1988,6 +2041,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const [shareTone, setShareTone] = useState('challenge');
   const preparedResultImageSrc = useMemo(
     () => createLoveResultImageSrc(score, total, tier, [girlName, boyName]),
     [score, total, tier, girlName, boyName]
@@ -2005,8 +2059,18 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
     : tier.title;
 
   const shareUrl = `${location.origin}/`;
-  const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n今日の称号は「${tier.title}」でした。\n${tier.shareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
-  const instagramShareText = `彼氏の愛情判定ゲーム\n${boyName} → ${girlName}\n${score}/${total}問正解\n「${tier.title}」\n${tier.shareHook} ♡\n\nストーリーに載せて\n「うちら何問当たると思う？」って聞いてみて👇\n\n#わたちゃん\n${shareUrl}`;
+  const loveShareOpening = shareTone === 'brag'
+    ? `${boyName}、${girlName}のこと${score}/${total}問分かってました。これはちょっと見てほしい。`
+    : shareTone === 'tease'
+      ? `${boyName}の${girlName}理解度、${score}/${total}問正解でした。ツッコミ待ってます。`
+      : `${boyName}が${girlName}の答えを${score}/${total}問正解！みんななら何問当てられる？`;
+  const loveShareCloser = shareTone === 'brag'
+    ? 'この結果、けっこう強くない？'
+    : shareTone === 'tease'
+      ? '外した答えほど、あとで盛り上がるやつ。'
+      : '次はあなたの番。';
+  const xShareText = `${loveShareOpening}\n今日の称号は「${tier.title}」。\n${tier.shareHook} ♡\n\n${loveShareCloser}\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
+  const instagramShareText = `彼氏の愛情判定ゲーム\n${boyName} → ${girlName}\n${score}/${total}問正解\n「${tier.title}」\n${loveShareCloser}\n\nストーリーに載せて\n「うちら何問当たると思う？」って聞いてみて👇\n\n#わたちゃん\n${shareUrl}`;
   const lineShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！結果は「${tier.title}」でした。${tier.shareHook} ♡`;
   const copyShareText = `${xShareText}\n${shareUrl}`;
 
@@ -2395,6 +2459,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
 
       {/* シェア */}
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
+        <ShareToneSelector value={shareTone} onChange={setShareTone} />
         <ResultImageActions
           busy={imageBusy}
           onShare={handleShareImage}
@@ -3370,10 +3435,31 @@ function getGroupResultRank(kind, score) {
   return ranks.find((rank) => rank.score === score) || ranks[ranks.length - 1];
 }
 
+function getGroupScoreHighlight(scores, total, kind = 'friend') {
+  if (!scores.length) return '';
+  const bestScore = Math.max(...scores.map((item) => item.score));
+  const lowScore = Math.min(...scores.map((item) => item.score));
+  const bestNames = scores.filter((item) => item.score === bestScore).map((item) => item.name).join('・');
+  const lowNames = scores.filter((item) => item.score === lowScore).map((item) => item.name).join('・');
+  if (bestScore === total) {
+    return `${bestNames}、${total}問正解。これはもう本人公認レベル。`;
+  }
+  if (bestScore === lowScore) {
+    return kind === 'family'
+      ? `全員${bestScore}問正解。家族の謎、まだまだ残ってます。`
+      : `全員${bestScore}問正解。友情は横並び、答え合わせで深まるやつ。`;
+  }
+  if (lowScore === 0) {
+    return `${bestNames}がトップ。${lowNames}は今日からアップデート開始。`;
+  }
+  return `${bestNames}がトップ。${lowNames}は次回の伸びしろ担当。`;
+}
+
 function PlayerScoreBoard({ answers, players, label, kind = 'friend' }) {
   const total = Math.max(1, answers.length);
   const scores = getPlayerScores(answers, players);
   const ranks = GROUP_RESULT_RANKS[kind] || GROUP_RESULT_RANKS.friend;
+  const highlight = getGroupScoreHighlight(scores, total, kind);
 
   return (
     <div style={{
@@ -3453,8 +3539,25 @@ function PlayerScoreBoard({ answers, players, label, kind = 'friend' }) {
         display: 'grid',
         gridTemplateColumns: `repeat(${Math.max(1, scores.length)}, minmax(0, 1fr))`,
         gap: 8,
-        marginTop: 12,
+        marginTop: 10,
       }}>
+        {highlight && (
+          <div style={{
+            gridColumn: '1 / -1',
+            padding: '9px 10px',
+            background: proto.yellow,
+            color: proto.black,
+            border: `2px solid ${proto.white}`,
+            borderRadius: 10,
+            boxShadow: '2px 2px 0 #000',
+            fontSize: 12,
+            lineHeight: 1.45,
+            fontWeight: 900,
+            textAlign: 'center',
+          }}>
+            今回の見どころ: {highlight}
+          </div>
+        )}
         {scores.map((item) => (
           <div key={item.name} style={{
             minWidth: 0,
@@ -3515,6 +3618,7 @@ function createGroupResultImageSrc(kind, answers, players) {
   const title = isFamily ? '家族の絆判定' : '友達の友情判定';
   const headline = isFamily ? '家族それぞれの結果一覧' : '友達それぞれの結果一覧';
   const ranks = GROUP_RESULT_RANKS[kind] || GROUP_RESULT_RANKS.friend;
+  const highlight = getGroupScoreHighlight(scores, total, kind);
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
@@ -3555,13 +3659,18 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillText(title, 540, 310);
 
   ctx.fillStyle = proto.black;
-  roundRect(ctx, 140, 350, 800, 86, 22);
+  roundRect(ctx, 140, 350, 800, 106, 22);
   ctx.fill();
   ctx.fillStyle = proto.yellow;
-  ctx.font = '900 34px "Zen Maru Gothic", sans-serif';
-  ctx.fillText(headline, 540, 405);
+  ctx.font = '900 32px "Zen Maru Gothic", sans-serif';
+  ctx.fillText(headline, 540, 392);
+  ctx.fillStyle = proto.white;
+  ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
+  splitCanvasText(highlight, 26).slice(0, 2).forEach((line, index) => {
+    ctx.fillText(line, 540, 424 + index * 24);
+  });
 
-  const rankTop = 468;
+  const rankTop = 488;
   ctx.fillStyle = proto.white;
   roundRect(ctx, 140, rankTop, 800, 360, 26);
   ctx.fill();
@@ -3762,13 +3871,26 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const [shareTone, setShareTone] = useState('challenge');
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('friend', answers, friendPlayers),
     [answers, friendPlayers]
   );
+  const groupScores = useMemo(() => getPlayerScores(answers, friendPlayers), [answers, friendPlayers]);
+  const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'friend');
 
   const shareUrl = `${location.origin}/friends`;
-  const shareText = `友達の友情判定ゲームをやってみた！\n${scoreSummary}\n\n友達なら何問当てられる？次はあなたの番。\n#わたちゃん #友情判定ゲーム #streetboardgame`;
+  const friendShareOpening = shareTone === 'brag'
+    ? `友達の友情判定、結果けっこう盛り上がった。${scoreSummary}。`
+    : shareTone === 'tease'
+      ? `友達の友情判定やったら、思ったより差が出た。${scoreSummary}。`
+      : `友達の友情判定ゲームをやってみた！${scoreSummary}。`;
+  const friendShareCloser = shareTone === 'brag'
+    ? 'この友情、なかなか強い説。'
+    : shareTone === 'tease'
+      ? '低い人ほど答え合わせでおいしい。'
+      : '友達なら何問当てられる？次はあなたの番。';
+  const shareText = `${friendShareOpening}\n${groupHighlight}\n\n${friendShareCloser}\n#わたちゃん #友情判定ゲーム #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -3930,6 +4052,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
+        <ShareToneSelector value={shareTone} onChange={setShareTone} />
         <ResultImageActions
           busy={imageBusy}
           onShare={handleShareImage}
@@ -4233,13 +4356,26 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const [shareTone, setShareTone] = useState('challenge');
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('family', answers, familyPlayers),
     [answers, familyPlayers]
   );
+  const groupScores = useMemo(() => getPlayerScores(answers, familyPlayers), [answers, familyPlayers]);
+  const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'family');
 
   const shareUrl = `${location.origin}/family`;
-  const shareText = `家族の絆判定ゲームをやってみた！\n${scoreSummary}\n\n家族なら何問当てられる？次はあなたの番。\n#わたちゃん #家族の絆判定 #streetboardgame`;
+  const familyShareOpening = shareTone === 'brag'
+    ? `家族の絆判定、思ったより分かってた。${scoreSummary}。`
+    : shareTone === 'tease'
+      ? `家族の絆判定やったら、知らない一面が出てきた。${scoreSummary}。`
+      : `家族の絆判定ゲームをやってみた！${scoreSummary}。`;
+  const familyShareCloser = shareTone === 'brag'
+    ? 'うちの家族、意外と同期できてる。'
+    : shareTone === 'tease'
+      ? '家族なのに初耳、あるあるすぎる。'
+      : '家族なら何問当てられる？次はあなたの番。';
+  const shareText = `${familyShareOpening}\n${groupHighlight}\n\n${familyShareCloser}\n#わたちゃん #家族の絆判定 #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -4401,6 +4537,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
+        <ShareToneSelector value={shareTone} onChange={setShareTone} />
         <ResultImageActions
           busy={imageBusy}
           onShare={handleShareImage}
