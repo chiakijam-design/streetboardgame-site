@@ -3904,62 +3904,62 @@ function createGroupResultImageSrc(kind, answers, players) {
     ctx.fillText(line, 540, 424 + index * 24);
   });
 
-  const rankTop = 468;
+  const rankTop = 462;
   ctx.fillStyle = proto.white;
-  roundRect(ctx, 140, rankTop, 800, 392, 26);
+  roundRect(ctx, 140, rankTop, 800, 426, 26);
   ctx.fill();
   ctx.lineWidth = 4;
   ctx.strokeStyle = proto.black;
-  roundRect(ctx, 140, rankTop, 800, 392, 26);
+  roundRect(ctx, 140, rankTop, 800, 426, 26);
   ctx.stroke();
   ctx.fillStyle = proto.black;
   ctx.font = '900 30px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('ランク表', 540, rankTop + 44);
   ranks.forEach((rank, index) => {
-    const rowTop = rankTop + 68 + index * 51;
+    const rowTop = rankTop + 68 + index * 56;
     const colors = getGroupRankColors(rank.score);
     ctx.fillStyle = colors.bg;
-    roundRect(ctx, 176, rowTop, 728, 46, 14);
+    roundRect(ctx, 176, rowTop, 728, 50, 14);
     ctx.fill();
     ctx.lineWidth = 3;
     ctx.strokeStyle = proto.black;
-    roundRect(ctx, 176, rowTop, 728, 46, 14);
+    roundRect(ctx, 176, rowTop, 728, 50, 14);
     ctx.stroke();
 
     ctx.fillStyle = colors.chip;
-    roundRect(ctx, 198, rowTop + 8, 128, 30, 15);
+    roundRect(ctx, 198, rowTop + 10, 128, 30, 15);
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = proto.black;
-    roundRect(ctx, 198, rowTop + 8, 128, 30, 15);
+    roundRect(ctx, 198, rowTop + 10, 128, 30, 15);
     ctx.stroke();
 
     ctx.fillStyle = proto.white;
     ctx.font = '900 18px "Zen Maru Gothic", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`${rank.score}問正解`, 262, rowTop + 29);
+    ctx.fillText(`${rank.score}問正解`, 262, rowTop + 31);
 
     ctx.fillStyle = proto.black;
-    ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
+    ctx.font = '900 20px "Zen Maru Gothic", sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(rank.name, 350, rowTop + 20);
     ctx.fillStyle = proto.textSoft;
-    ctx.font = '800 15px "Zen Maru Gothic", sans-serif';
-    ctx.fillText(rank.note, 350, rowTop + 39);
+    ctx.font = '800 14px "Zen Maru Gothic", sans-serif';
+    ctx.fillText(rank.note, 350, rowTop + 40);
   });
 
   ctx.fillStyle = proto.black;
-  roundRect(ctx, 140, 882, 800, 68, 22);
+  roundRect(ctx, 140, 908, 800, 62, 22);
   ctx.fill();
   ctx.fillStyle = proto.yellow;
   ctx.font = '900 30px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(title, 540, 925);
+  ctx.fillText(title, 540, 949);
 
-  const cardTop = 986;
+  const cardTop = 1004;
   const cardGap = 18;
-  const cardHeight = 126;
+  const cardHeight = 112;
   const cardCount = Math.max(1, scores.length);
   const cardWidth = (740 - cardGap * (cardCount - 1)) / cardCount;
   scores.forEach((item, index) => {
@@ -3976,27 +3976,27 @@ function createGroupResultImageSrc(kind, answers, players) {
     ctx.fillStyle = proto.black;
     ctx.font = '900 30px "Zen Maru Gothic", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(item.name, x + cardWidth / 2, y + 38);
+    ctx.fillText(item.name, x + cardWidth / 2, y + 34);
 
     ctx.fillStyle = proto.pinkDeep;
-    ctx.font = '900 60px "RocknRoll One", sans-serif';
-    ctx.fillText(`${item.score}/${total}`, x + cardWidth / 2, y + 88);
+    ctx.font = '900 56px "RocknRoll One", sans-serif';
+    ctx.fillText(`${item.score}/${total}`, x + cardWidth / 2, y + 78);
 
     ctx.fillStyle = proto.textSoft;
-    ctx.font = '900 22px "Zen Maru Gothic", sans-serif';
-    ctx.fillText('問正解', x + cardWidth / 2, y + 112);
+    ctx.font = '900 20px "Zen Maru Gothic", sans-serif';
+    ctx.fillText('問正解', x + cardWidth / 2, y + 101);
   });
 
   ctx.fillStyle = proto.black;
   ctx.font = '900 27px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(isFamily ? '家族なら何問当てられる？' : '友達なら何問当てられる？', 540, 1194);
+  ctx.fillText(isFamily ? '家族なら何問当てられる？' : '友達なら何問当てられる？', 540, 1168);
   ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('次はあなたの番 #わたちゃん', 540, 1228);
+  ctx.fillText('次はあなたの番 #わたちゃん', 540, 1200);
 
   ctx.fillStyle = proto.textSoft;
   ctx.font = '700 24px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com', 540, 1266);
+  ctx.fillText('streetboardgame.com', 540, 1232);
 
   return canvas.toDataURL('image/png');
 }
