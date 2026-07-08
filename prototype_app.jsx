@@ -2463,7 +2463,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onFr
     const url = encodeURIComponent(shareUrl);
     let target = '';
     if (platform === 'x') target = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
-    if (platform === 'line') target = `line://msg/text/${encodeURIComponent(`${lineShareText}\n${shareUrl}`)}`;
+    if (platform === 'line') target = `https://line.me/R/msg/text/?${encodeURIComponent(`${lineShareText}\n${shareUrl}`)}`;
     if (platform === 'copy') {
       copyToClipboard(copyShareText, 'copy');
       return;
@@ -4380,7 +4380,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const openLine = () => {
-    window.location.href = `line://msg/text/${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
+    window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
   };
 
   const handleSaveImage = async () => {
@@ -4858,7 +4858,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const openLine = () => {
-    window.location.href = `line://msg/text/${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
+    window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
   };
 
   const handleSaveImage = async () => {
