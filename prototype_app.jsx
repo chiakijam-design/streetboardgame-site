@@ -2870,28 +2870,27 @@ function ResultImageActions({
       done = true;
       onVisible();
     };
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver((entries) => {
-        if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.35)) {
-          trigger();
-        }
-      }, { threshold: [0.35] });
-      observer.observe(element);
-      return () => observer.disconnect();
-    }
+    const timers = [];
     const check = () => {
+      if (done) return;
       const rect = element.getBoundingClientRect();
       const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-      if (rect.top < viewportHeight * 0.82 && rect.bottom > viewportHeight * 0.2) {
+      const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+      const enoughVisible = visibleHeight >= Math.min(160, rect.height * 0.35);
+      const isCenteredEnough = rect.top < viewportHeight * 0.78 && rect.bottom > viewportHeight * 0.18;
+      if (enoughVisible || isCenteredEnough) {
         trigger();
       }
     };
     window.addEventListener('scroll', check, { passive: true });
     window.addEventListener('resize', check);
     check();
+    timers.push(setTimeout(check, 250));
+    timers.push(setTimeout(check, 800));
     return () => {
       window.removeEventListener('scroll', check);
       window.removeEventListener('resize', check);
+      timers.forEach(clearTimeout);
     };
   }, [onVisible]);
 
