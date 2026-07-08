@@ -65,6 +65,12 @@ function normalizePlayerNames(value = {}, allowEmpty = false) {
   return result;
 }
 
+function getLoveScoreLabel(girlName, boyName) {
+  const girl = sanitizePlayerName(girlName, DEFAULT_PLAYER_NAMES.love[0]);
+  const boy = sanitizePlayerName(boyName, DEFAULT_PLAYER_NAMES.love[1]);
+  return `${boy}の${girl}理解度`;
+}
+
 function loadPlayerNames() {
   if (typeof window === 'undefined') return normalizePlayerNames({}, true);
   try {
@@ -293,7 +299,7 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.setLineDash([]);
 
   ctx.fillStyle = proto.pink;
-  const loveScoreLabel = `${boyName}の${girlName}理解度`;
+  const loveScoreLabel = getLoveScoreLabel(girlName, boyName);
   ctx.font = `900 ${loveScoreLabel.length >= 13 ? 27 : 32}px "Zen Maru Gothic", sans-serif`;
   ctx.textAlign = 'left';
   ctx.fillText(loveScoreLabel, 205, 350);
@@ -2382,7 +2388,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   };
 
   const tagTextColor = tier.tagBg === proto.yellow || tier.tagBg === proto.cyan ? proto.black : proto.white;
-  const loveScoreLabel = `${boyName}の${girlName}理解度`;
+  const loveScoreLabel = getLoveScoreLabel(girlName, boyName);
 
   return (
     <div style={{
