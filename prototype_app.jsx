@@ -470,6 +470,11 @@ function getGroupReviewLines(answers, cards, players, kind = 'friend') {
       `${player.name}: ${total}問中${player.score}問正解。「${rank.name}」。`,
       `${tone}当たったのは「${listJoin(hits)}」。`,
       `外したのは「${listJoin(misses)}」。ここを聞くと${relation}トークがもう一段深まります。`,
+      player.score >= 4
+        ? `次は${subject}側からも「なんで分かったの？」を聞くと、ちょっと自慢できる流れです。`
+        : player.score >= 2
+          ? `次回は外したお題の理由まで聞くと、ただの答え合わせより仲が深まります。`
+          : `まずは外したお題を1つだけ深掘りすると、次回の正解率が一気に上がりそうです。`,
     ];
   });
 }
