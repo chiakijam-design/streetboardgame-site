@@ -57,6 +57,24 @@ export default {
         noscriptTitle: '家族の絆判定｜わたちゃん無料家族診断ゲーム',
         noscriptBody: '本人が自分の答えを選び、家族がその答えを予想する無料家族診断ゲームです。スマホ1台で2〜4人プレイに対応し、5問後に家族それぞれの理解度を確認できます。',
       },
+      '/about': {
+        title: 'About｜わたちゃん・彼氏の愛情判定ゲーム',
+        description: 'わたちゃんは、彼氏の愛情判定ゲームをメインに、友達の友情判定や家族の絆判定を展開するスマホ向け無料ゲームサイトです。',
+        url: CANONICAL_ORIGIN + '/about',
+        ogTitle: 'About｜わたちゃん',
+        pageId: CANONICAL_ORIGIN + '/about#webpage',
+        noscriptTitle: 'About｜わたちゃん',
+        noscriptBody: 'わたちゃんは、彼氏が彼女の答えを当てる「彼氏の愛情判定ゲーム」をメインにしたスマホ向け無料ゲームサイトです。シリーズとして友達の友情判定や家族の絆判定も公開しています。',
+      },
+      '/product': {
+        title: '製品版｜私のこと、ちゃんと分かってるよね？',
+        description: 'Amazonで販売中のボードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、飲み会や旅行、おうちデートでも遊べます。',
+        url: CANONICAL_ORIGIN + '/product',
+        ogTitle: '製品版｜私のこと、ちゃんと分かってるよね？',
+        pageId: CANONICAL_ORIGIN + '/product#webpage',
+        noscriptTitle: '製品版｜私のこと、ちゃんと分かってるよね？',
+        noscriptBody: 'Amazonで販売中のボードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、飲み会や旅行、おうちデートでも遊べます。',
+      },
     };
 
     if (rawPath !== '/' && rawPath.endsWith('/') && pageMap[path]) {
@@ -124,7 +142,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/friends">友達の友情を判定する</a> / <a href="/family">家族の絆を判定する</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/friends">友達の友情を判定する</a> / <a href="/family">家族の絆を判定する</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -133,75 +151,80 @@ function buildStructuredData(page) {
   const organizationId = 'https://www.streetboardgame.com/#organization';
   const websiteId = 'https://www.streetboardgame.com/#website';
 
+  const graph = [
+    {
+      '@type': 'Organization',
+      '@id': organizationId,
+      name: 'streetboardgame.com',
+      url: 'https://www.streetboardgame.com/',
+      logo: 'https://www.streetboardgame.com/assets/favicon-girl.png',
+    },
+    {
+      '@type': 'WebSite',
+      '@id': websiteId,
+      url: 'https://www.streetboardgame.com/',
+      name: 'streetboardgame.com',
+      inLanguage: 'ja',
+      description: '彼氏の愛情判定ゲームをメインに、友達の友情判定や家族の絆判定などのシリーズを展開するオリジナルゲームサイトです。',
+      publisher: {
+        '@id': organizationId,
+      },
+    },
+    {
+      '@type': 'WebPage',
+      '@id': page.pageId,
+      url: page.url,
+      name: page.title,
+      description: page.description,
+      inLanguage: 'ja',
+      isPartOf: {
+        '@id': websiteId,
+      },
+      primaryImageOfPage: {
+        '@type': 'ImageObject',
+        url: 'https://www.streetboardgame.com/assets/ogp.jpg',
+        width: 1200,
+        height: 630,
+      },
+    },
+  ];
+
+  if (page.gameId) {
+    graph[2].mainEntity = {
+      '@id': page.gameId,
+    };
+    graph.push({
+      '@type': ['WebApplication', 'Game'],
+      '@id': page.gameId,
+      url: page.url,
+      name: page.gameName,
+      alternateName: 'わたちゃん',
+      headline: page.headline,
+      description: page.description,
+      applicationCategory: 'GameApplication',
+      operatingSystem: 'Any',
+      browserRequirements: 'Requires JavaScript',
+      isAccessibleForFree: true,
+      genre: page.genre,
+      keywords: page.keywords,
+      image: 'https://www.streetboardgame.com/assets/ogp.jpg',
+      inLanguage: 'ja',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'JPY',
+      },
+      mainEntityOfPage: {
+        '@id': page.pageId,
+      },
+      publisher: {
+        '@id': organizationId,
+      },
+    });
+  }
+
   return {
     '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'Organization',
-        '@id': organizationId,
-        name: 'streetboardgame.com',
-        url: 'https://www.streetboardgame.com/',
-        logo: 'https://www.streetboardgame.com/assets/favicon-girl.png',
-      },
-      {
-        '@type': 'WebSite',
-        '@id': websiteId,
-        url: 'https://www.streetboardgame.com/',
-        name: 'streetboardgame.com',
-        inLanguage: 'ja',
-        description: '彼氏の愛情判定ゲームをメインに、友達の友情判定や家族の絆判定などのシリーズを展開するオリジナルゲームサイトです。',
-        publisher: {
-          '@id': organizationId,
-        },
-      },
-      {
-        '@type': 'WebPage',
-        '@id': page.pageId,
-        url: page.url,
-        name: page.title,
-        description: page.description,
-        inLanguage: 'ja',
-        isPartOf: {
-          '@id': websiteId,
-        },
-        primaryImageOfPage: {
-          '@type': 'ImageObject',
-          url: 'https://www.streetboardgame.com/assets/ogp.jpg',
-          width: 1200,
-          height: 630,
-        },
-        mainEntity: {
-          '@id': page.gameId,
-        },
-      },
-      {
-        '@type': ['WebApplication', 'Game'],
-        '@id': page.gameId,
-        url: page.url,
-        name: page.gameName,
-        alternateName: 'わたちゃん',
-        headline: page.headline,
-        description: page.description,
-        applicationCategory: 'GameApplication',
-        operatingSystem: 'Any',
-        browserRequirements: 'Requires JavaScript',
-        isAccessibleForFree: true,
-        genre: page.genre,
-        keywords: page.keywords,
-        image: 'https://www.streetboardgame.com/assets/ogp.jpg',
-        inLanguage: 'ja',
-        offers: {
-          '@type': 'Offer',
-          price: '0',
-          priceCurrency: 'JPY',
-        },
-        mainEntityOfPage: {
-          '@id': page.pageId,
-        },
-        publisher: {
-          '@id': organizationId,
-        },
-      },
-    ],
+    '@graph': graph,
   };
 }

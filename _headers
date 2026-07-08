@@ -7,6 +7,7 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Robots-Tag: index, follow
 
 # HTMLは短めキャッシュ (内容更新を素早く反映するため)
 /*.html
@@ -21,6 +22,10 @@
 # 結果画像は同じファイル名で改善することがあるため短めキャッシュ
 /assets/results/*
   Cache-Control: public, max-age=300, must-revalidate
+
+/assets/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
 
 # JS/JSXは短めキャッシュ (アプリ更新を素早く反映するため)
 /*.jsx

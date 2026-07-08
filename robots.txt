@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /*?screen=
 
 Sitemap: https://www.streetboardgame.com/sitemap.xml

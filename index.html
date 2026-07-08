@@ -13,6 +13,7 @@
 <meta name="application-name" content="私のこと、ちゃんと分かってるよね？" />
 <meta name="apple-mobile-web-app-title" content="わたちゃん" />
 <meta name="theme-color" content="#FF3D7F" />
+<meta name="format-detection" content="telephone=no" />
 <link rel="canonical" href="https://www.streetboardgame.com/" />
 <link rel="alternate" hreflang="ja" href="https://www.streetboardgame.com/" />
 <link rel="alternate" hreflang="x-default" href="https://www.streetboardgame.com/" />
@@ -22,6 +23,11 @@
 <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
 <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+<link rel="preload" as="image" href="/assets/character/girl-full.png" fetchpriority="high" />
+<link rel="dns-prefetch" href="https://unpkg.com" />
+<link rel="preconnect" href="https://unpkg.com" crossorigin />
+<link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
 
 <!-- =========================
   OGP (SNSシェア用)
@@ -208,15 +214,17 @@
     /watachan  → 遊び方(How to play)画面
     /friends   → 友達の友情判定バージョン
     /family    → 家族の絆判定バージョン
+    /about     → About ページ
+    /product   → 製品版ページ
     /contact   → お問い合わせ(About のフォーム位置までスクロール)
     その他     → トップ画面 (旧URLからの誘導は全部トップへ)
 ========================= -->
 <script>
   (function() {
-    // テスト用: ?screen=intro|friendIntro|familyIntro|about|top で強制的に初期画面を指定可能
+    // テスト用: ?screen=intro|friendIntro|familyIntro|about|product|top で強制的に初期画面を指定可能
     var query = new URLSearchParams(location.search);
     var forceScreen = query.get('screen');
-    if (forceScreen && ['top','intro','friendIntro','familyIntro','about'].indexOf(forceScreen) >= 0) {
+    if (forceScreen && ['top','intro','friendIntro','familyIntro','about','product'].indexOf(forceScreen) >= 0) {
       window.__INITIAL_SCREEN = forceScreen;
       if (forceScreen === 'about' && query.get('to') === 'contact') {
         window.__SCROLL_TO_CONTACT = true;
@@ -238,6 +246,8 @@
       'watachan': 'intro',
       'friends': 'friendIntro',
       'family': 'familyIntro',
+      'about': 'about',
+      'product': 'product',
       'contact': 'about',
     };
 
@@ -309,9 +319,9 @@
   注: 本番では precompile したJSを使うのが理想だが、
   暫定的に CDN の Babel をそのまま利用。
 ========================= -->
-<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script defer src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script defer src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script defer src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 </head>
 <body>
 <noscript>
@@ -327,7 +337,7 @@
 <script src="prototype_quiz_data.js?v=seo-1"></script>
 <script src="prototype_friend_data.js?v=seo-1"></script>
 <script src="prototype_family_data.js?v=family-1"></script>
-<script type="text/babel" src="prototype_character.jsx"></script>
-<script type="text/babel" src="prototype_app.jsx?v=love-personalized-tier-2"></script>
+<script type="text/babel" src="prototype_character.jsx?v=seo-performance-1"></script>
+<script type="text/babel" src="prototype_app.jsx?v=seo-performance-1"></script>
 </body>
 </html>

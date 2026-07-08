@@ -1087,7 +1087,13 @@ function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
           position: 'relative', zIndex: 2,
           filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.2))',
         }}>
-          <Girl variant="full" height={320} />
+          <Girl
+            variant="full"
+            height={320}
+            loading="eager"
+            fetchPriority="high"
+            alt="わたちゃん 彼氏の愛情判定ゲームのメインキャラクター"
+          />
         </div>
         {/* カードスタック (右側) */}
         <div style={{ flex: 1, minWidth: 0, marginBottom: 24 }}>

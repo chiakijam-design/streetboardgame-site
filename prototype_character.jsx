@@ -21,7 +21,16 @@ const VARIANTS = {
   pout:    { file: 'girl-upper.png',   aspect: 297/244 },
 };
 
-function Girl({ variant = 'default', width = 'auto', height = 200, style = {}, flip = false }) {
+function Girl({
+  variant = 'default',
+  width = 'auto',
+  height = 200,
+  style = {},
+  flip = false,
+  alt = 'わたちゃん 彼氏の愛情判定ゲームの女の子',
+  loading = 'lazy',
+  fetchPriority = 'auto',
+}) {
   const conf = VARIANTS[variant] || VARIANTS.default;
 
   let w = width, h = height;
@@ -34,7 +43,12 @@ function Girl({ variant = 'default', width = 'auto', height = 200, style = {}, f
   return (
     <img
       src={IMAGE_BASE + conf.file}
-      alt="character"
+      alt={alt}
+      width={typeof w === 'number' ? w : undefined}
+      height={typeof h === 'number' ? h : undefined}
+      loading={loading}
+      decoding="async"
+      fetchPriority={fetchPriority}
       style={{
         width: w,
         height: h,
