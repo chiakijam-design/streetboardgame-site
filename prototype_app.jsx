@@ -2463,9 +2463,13 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onFr
     const url = encodeURIComponent(shareUrl);
     let target = '';
     if (platform === 'x') target = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
-    if (platform === 'line') target = `https://social-plugins.line.me/lineit/share?url=${url}&text=${text}`;
+    if (platform === 'line') target = `line://msg/text/${encodeURIComponent(`${lineShareText}\n${shareUrl}`)}`;
     if (platform === 'copy') {
       copyToClipboard(copyShareText, 'copy');
+      return;
+    }
+    if (platform === 'line') {
+      window.location.href = target;
       return;
     }
     window.open(target, '_blank', 'noopener,noreferrer,width=600,height=500');
@@ -4376,11 +4380,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const openLine = () => {
-    window.open(
-      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`,
-      '_blank',
-      'noopener,noreferrer,width=600,height=500'
-    );
+    window.location.href = `line://msg/text/${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
   };
 
   const handleSaveImage = async () => {
@@ -4858,11 +4858,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const openLine = () => {
-    window.open(
-      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`,
-      '_blank',
-      'noopener,noreferrer,width=600,height=500'
-    );
+    window.location.href = `line://msg/text/${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
   };
 
   const handleSaveImage = async () => {
