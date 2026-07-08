@@ -411,6 +411,115 @@ function getQuestionHitScore(answers) {
   return answers.reduce((sum, answer) => sum + (answer.matches && answer.matches.some(Boolean) ? 1 : 0), 0);
 }
 
+function listJoin(items, fallback = 'なし') {
+  const clean = items.filter(Boolean);
+  if (!clean.length) return fallback;
+  return clean.slice(0, 3).join('、');
+}
+
+function getLoveReviewLines(answers, cards, players) {
+  const lovePlayers = normalizePlayerNames({ love: players }).love;
+  const girlName = lovePlayers[0];
+  const boyName = lovePlayers[1];
+  const total = Math.max(1, answers.length);
+  const score = answers.filter((answer) => answer.match).length;
+  const hitTitles = answers
+    .map((answer, index) => answer.match ? (cards[index] && cards[index].title) : '')
+    .filter(Boolean);
+  const missTitles = answers
+    .map((answer, index) => !answer.match ? (cards[index] && cards[index].title) : '')
+    .filter(Boolean);
+  const mood = score >= 4
+    ? `${boyName}は${girlName}の直感や好みをかなり拾えています。`
+    : score >= 2
+      ? `${boyName}は${girlName}のことを分かっている部分と、まだ伸びしろの部分が半々です。`
+      : `${boyName}は${girlName}の意外な一面を、今日かなり発見した回です。`;
+  return [
+    `${total}問中${score}問正解。今回の理解度は「${score >= 4 ? 'かなり近い' : score >= 2 ? 'いい感じに更新中' : 'ここから本番'}」です。`,
+    mood,
+    `当たったのは「${listJoin(hitTitles)}」あたり。ここは普段の会話や雰囲気をちゃんと見ている証拠。`,
+    `外したのは「${listJoin(missTitles)}」あたり。ここは次のデートや雑談で聞くと一気に深まります。`,
+    score === total
+      ? `全問正解はかなり強いので、${girlName}側から見ても「分かってる感」が出やすい結果です。`
+      : `外した答えは失敗というより、${girlName}の取扱説明書に新しいページが増えた感じです。`,
+    `特に外した問題は、理由まで聞くと「そういう考え方なんだ」が見えて盛り上がります。`,
+    `次にやるなら、${boyName}が迷った問題をもう一度話すと、ただの正解発表より仲良くなれます。`,
+  ];
+}
+
+function getGroupReviewLines(answers, cards, players, kind = 'friend') {
+  const total = Math.max(1, answers.length);
+  const scores = getPlayerScores(answers, players);
+  const subject = players[0] || '本人';
+  const relation = kind === 'family' ? '家族' : '友達';
+  const titleFor = (index) => (cards[index] && cards[index].title) || `Q${index + 1}`;
+  return scores.flatMap((player, playerIndex) => {
+    const hits = answers
+      .map((answer, index) => answer.matches[playerIndex] ? titleFor(index) : '')
+      .filter(Boolean);
+    const misses = answers
+      .map((answer, index) => !answer.matches[playerIndex] ? titleFor(index) : '')
+      .filter(Boolean);
+    const rank = getGroupResultRank(kind, player.score);
+    const tone = player.score >= 4
+      ? `${subject}のことをかなり読めているタイプ。`
+      : player.score >= 2
+        ? `分かっているところと、まだ謎なところがちょうど混ざっています。`
+        : `今日から${subject}データを更新していく伸びしろ枠です。`;
+    return [
+      `${player.name}: ${total}問中${player.score}問正解。「${rank.name}」。`,
+      `${tone}当たったのは「${listJoin(hits)}」。`,
+      `外したのは「${listJoin(misses)}」。ここを聞くと${relation}トークがもう一段深まります。`,
+    ];
+  });
+}
+
+function ResultReviewBox({ lines, title = 'AI総評' }) {
+  if (!lines || !lines.length) return null;
+  return (
+    <div style={{
+      marginTop: 14,
+      padding: '12px 12px',
+      background: proto.cream,
+      color: proto.text,
+      border: `2.5px solid ${proto.black}`,
+      borderRadius: 14,
+      boxShadow: '4px 4px 0 #000',
+    }}>
+      <div style={{
+        display: 'inline-block',
+        marginBottom: 8,
+        padding: '3px 10px',
+        borderRadius: 999,
+        background: proto.cyan,
+        color: proto.black,
+        border: `1.5px solid ${proto.black}`,
+        fontSize: 11,
+        fontWeight: 900,
+      }}>{title}</div>
+      <div style={{
+        display: 'grid',
+        gap: 6,
+        fontSize: 12,
+        lineHeight: 1.55,
+        fontWeight: 800,
+        textAlign: 'left',
+      }}>
+        {lines.map((line, index) => (
+          <div key={`${line}-${index}`} style={{
+            display: 'grid',
+            gridTemplateColumns: '18px minmax(0, 1fr)',
+            gap: 6,
+          }}>
+            <span style={{ color: proto.pink, fontWeight: 900 }}>{index + 1}</span>
+            <span>{line}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────
 // 共通装飾: シアン縁取りロゴテキスト
 // ─────────────────────────────────────────────────────
@@ -2057,6 +2166,10 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   const titleNode = titleLines
     ? <>{titleLines[0]}<br/>{titleLines[1]}</>
     : tier.title;
+  const reviewLines = useMemo(
+    () => getLoveReviewLines(answers, cards, [girlName, boyName]),
+    [answers, cards, girlName, boyName]
+  );
 
   const shareUrl = `${location.origin}/`;
   const loveShareOpening = shareTone === 'brag'
@@ -2455,6 +2568,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
             );
           })}
         </div>
+        <ResultReviewBox lines={reviewLines} title="AI総評" />
       </div>
 
       {/* シェア */}
@@ -3893,6 +4007,10 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   );
   const groupScores = useMemo(() => getPlayerScores(answers, friendPlayers), [answers, friendPlayers]);
   const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'friend');
+  const reviewLines = useMemo(
+    () => getGroupReviewLines(answers, cards, friendPlayers, 'friend'),
+    [answers, cards, friendPlayers]
+  );
 
   const shareUrl = `${location.origin}/friends`;
   const friendShareOpening = shareTone === 'brag'
@@ -4064,6 +4182,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           players={friendPlayers}
           label="ANSWER DETAILS"
         />
+        <ResultReviewBox lines={reviewLines} title="AI総評" />
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -4378,6 +4497,10 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   );
   const groupScores = useMemo(() => getPlayerScores(answers, familyPlayers), [answers, familyPlayers]);
   const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'family');
+  const reviewLines = useMemo(
+    () => getGroupReviewLines(answers, cards, familyPlayers, 'family'),
+    [answers, cards, familyPlayers]
+  );
 
   const shareUrl = `${location.origin}/family`;
   const familyShareOpening = shareTone === 'brag'
@@ -4549,6 +4672,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           players={familyPlayers}
           label="ANSWER DETAILS"
         />
+        <ResultReviewBox lines={reviewLines} title="AI総評" />
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
