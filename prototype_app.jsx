@@ -1448,9 +1448,9 @@ function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
           marginBottom: 10, paddingLeft: 4,
         }}>MAIN GAME / SERIES ✦</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <SeriesCard emoji="💕" title="彼氏の愛情判定" status="公開中" onClick={onStart} />
-          <SeriesCard emoji="👯" title="友達の友情判定" status="公開中" onClick={onFriend} />
-          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="公開中" onClick={onFamily} />
+          <SeriesCard emoji="💕" title="彼氏の愛情判定" status="公開中" href="/" onClick={onStart} />
+          <SeriesCard emoji="👯" title="友達の友情判定" status="公開中" href="/friends" onClick={onFriend} />
+          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="公開中" href="/family" onClick={onFamily} />
         </div>
       </div>
 
@@ -1459,24 +1459,28 @@ function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
         padding: '22px 24px 0', position: 'relative', zIndex: 1,
         display: 'flex', justifyContent: 'center', gap: 18,
       }}>
-        <FooterLink onClick={onAbout}>About</FooterLink>
+        <FooterLink href="/about" onClick={onAbout}>About</FooterLink>
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
-        <FooterLink onClick={onProduct}>製品版</FooterLink>
+        <FooterLink href="/product" onClick={onProduct}>製品版</FooterLink>
       </div>
     </main>
   );
 }
 
-function FooterLink({ children, onClick }) {
+function FooterLink({ children, href = '#', onClick }) {
   return (
-    <button onClick={onClick} style={{
+    <a href={href} onClick={(event) => {
+      if (!onClick) return;
+      event.preventDefault();
+      onClick();
+    }} style={{
       background: 'transparent', border: 'none',
       color: proto.white, fontFamily: proto.caption,
       fontSize: 11, letterSpacing: '0.2em',
       textDecoration: 'underline',
       textDecorationColor: 'rgba(255,255,255,0.5)',
       textUnderlineOffset: 4, cursor: 'pointer',
-    }}>{children}</button>
+    }}>{children}</a>
   );
 }
 
@@ -1548,7 +1552,7 @@ function CardStack() {
   );
 }
 
-function SeriesCard({ emoji, title, status = 'COMING SOON', onClick }) {
+function SeriesCard({ emoji, title, status = 'COMING SOON', href = '#', onClick }) {
   const active = Boolean(onClick);
   const inner = (
     <>
@@ -1585,12 +1589,17 @@ function SeriesCard({ emoji, title, status = 'COMING SOON', onClick }) {
 
   if (active) {
     return (
-      <button onClick={onClick} style={{
+      <a href={href} onClick={(event) => {
+        event.preventDefault();
+        onClick();
+      }} style={{
         ...style,
         fontFamily: proto.body,
+        textDecoration: 'none',
+        display: 'block',
       }}>
         {inner}
-      </button>
+      </a>
     );
   }
 
@@ -1950,7 +1959,7 @@ function PlayScreen({ card, qIdx, total, players, onAnswer, onBack }) {
           background: '#FFF',
           border: `3px solid ${proto.white}`,
         }}>
-          <img src={card.image} alt={card.title} style={{
+          <img src={card.image} alt={card.title} width="756" height="1122" loading="eager" decoding="async" fetchPriority="high" style={{
             width: '100%', height: 'auto', aspectRatio: '756 / 1122', objectFit: 'contain', display: 'block',
           }} />
         </div>
@@ -3099,7 +3108,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
       </div>
 
       <div style={{ textAlign: 'center', marginTop: 24, paddingBottom: 8, position: 'relative', zIndex: 1 }}>
-        <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
+        <FooterLink href="/about" onClick={onAbout}>About / お問い合わせ</FooterLink>
       </div>
       <ShareBottomSheet
         open={showShareSheet}
@@ -4774,7 +4783,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onSecondary={onHome}
         />
         <div style={{ textAlign: 'center', marginTop: 18 }}>
-          <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
+          <FooterLink href="/about" onClick={onAbout}>About / お問い合わせ</FooterLink>
         </div>
       </div>
       <ShareBottomSheet
@@ -5252,7 +5261,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onSecondary={onHome}
         />
         <div style={{ textAlign: 'center', marginTop: 18 }}>
-          <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
+          <FooterLink href="/about" onClick={onAbout}>About / お問い合わせ</FooterLink>
         </div>
       </div>
       <ShareBottomSheet

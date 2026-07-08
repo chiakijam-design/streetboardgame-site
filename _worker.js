@@ -240,7 +240,7 @@ function buildStructuredData(page) {
   ];
 
   if (page.gameId) {
-    graph[2].mainEntity = {
+    graph[4].mainEntity = {
       '@id': page.gameId,
     };
     graph.push({
