@@ -523,16 +523,20 @@ function ResultReviewBox({ lines, title = 'AI総評', onScrolledPast }) {
   useEffect(() => {
     if (!onScrolledPast || !lines || !lines.length) return undefined;
     let done = false;
-    let hasEnteredViewport = false;
+    let hasReadReview = false;
     let rafId = null;
+    const initialScrollY = window.scrollY || document.documentElement.scrollTop || 0;
     const check = () => {
       if (done || !boxRef.current) return;
       const rect = boxRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-      if (rect.top < viewportHeight && rect.bottom > 0) {
-        hasEnteredViewport = true;
+      const currentScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+      const requiredVisibleHeight = Math.min(140, Math.max(80, rect.height * 0.25));
+      if (currentScrollY > initialScrollY + 80 && visibleHeight >= requiredVisibleHeight) {
+        hasReadReview = true;
       }
-      if (hasEnteredViewport && rect.bottom <= 0) {
+      if (hasReadReview && rect.bottom <= 0) {
         done = true;
         onScrolledPast();
       }
@@ -546,7 +550,6 @@ function ResultReviewBox({ lines, title = 'AI総評', onScrolledPast }) {
     };
     window.addEventListener('scroll', scheduleCheck, { passive: true });
     window.addEventListener('resize', scheduleCheck);
-    scheduleCheck();
     return () => {
       window.removeEventListener('scroll', scheduleCheck);
       window.removeEventListener('resize', scheduleCheck);
@@ -600,16 +603,20 @@ function GroupResultReviewBox({ sections, title = 'AI総評', onScrolledPast }) 
   useEffect(() => {
     if (!onScrolledPast || !sections || !sections.length) return undefined;
     let done = false;
-    let hasEnteredViewport = false;
+    let hasReadReview = false;
     let rafId = null;
+    const initialScrollY = window.scrollY || document.documentElement.scrollTop || 0;
     const check = () => {
       if (done || !boxRef.current) return;
       const rect = boxRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-      if (rect.top < viewportHeight && rect.bottom > 0) {
-        hasEnteredViewport = true;
+      const currentScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+      const requiredVisibleHeight = Math.min(140, Math.max(80, rect.height * 0.25));
+      if (currentScrollY > initialScrollY + 80 && visibleHeight >= requiredVisibleHeight) {
+        hasReadReview = true;
       }
-      if (hasEnteredViewport && rect.bottom <= 0) {
+      if (hasReadReview && rect.bottom <= 0) {
         done = true;
         onScrolledPast();
       }
@@ -623,7 +630,6 @@ function GroupResultReviewBox({ sections, title = 'AI総評', onScrolledPast }) 
     };
     window.addEventListener('scroll', scheduleCheck, { passive: true });
     window.addEventListener('resize', scheduleCheck);
-    scheduleCheck();
     return () => {
       window.removeEventListener('scroll', scheduleCheck);
       window.removeEventListener('resize', scheduleCheck);
