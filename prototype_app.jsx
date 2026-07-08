@@ -1698,13 +1698,13 @@ function LoveModePanel({ girlName, boyName, loveMode, onChange }) {
   const options = [
     {
       key: 'girlTarget',
-      title: `${girlName}の答えを当てる`,
+      title: `${boyName}の${girlName}への愛情を判定する`,
       sub: `${girlName}が選ぶ → ${boyName}が予想`,
       bg: proto.yellow,
     },
     {
       key: 'boyTarget',
-      title: `${boyName}の答えを当てる`,
+      title: `${girlName}の${boyName}への愛情を判定する`,
       sub: `${boyName}が選ぶ → ${girlName}が予想`,
       bg: proto.cyan,
     },
@@ -1751,7 +1751,7 @@ function LoveModePanel({ girlName, boyName, loveMode, onChange }) {
                 boxShadow: active ? '3px 3px 0 #5BD4E8' : '3px 3px 0 rgba(0,0,0,0.55)',
               }}
             >
-              <span style={{ display: 'block', fontSize: 15 }}>{option.title}</span>
+              <span style={{ display: 'block', fontSize: 'clamp(13px, 3.7vw, 15px)', lineHeight: 1.35 }}>{option.title}</span>
               <span style={{ display: 'block', marginTop: 3, fontSize: 11, color: proto.textSoft }}>
                 {option.sub}
               </span>
