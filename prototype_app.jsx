@@ -180,19 +180,6 @@ function showTemporaryStatus(setStatus, message, ms = 2800) {
   setTimeout(() => setStatus(''), ms);
 }
 
-function openInstagramApp() {
-  const ua = navigator.userAgent || '';
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
-  if (!isMobile) {
-    window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
-    return;
-  }
-  window.location.href = 'instagram://story-camera';
-  setTimeout(() => {
-    window.location.href = 'https://www.instagram.com/';
-  }, 900);
-}
-
 function getLoveResultImageSrc(score) {
   const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
   return `/assets/results/love-${safeScore}.png`;
@@ -2377,7 +2364,6 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
 
   const shareUrl = `${location.origin}/`;
   const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n今日の称号は「${personalizedTitle}」。\n${personalizedShareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
-  const instagramShareText = `彼氏の愛情判定ゲーム\n${boyName} → ${girlName}\n${score}/${total}問正解\n「${personalizedTitle}」\nみんななら何問当てられる？次はあなたの番。\n\nストーリーに載せて\n「うちら何問当たると思う？」って聞いてみて👇\n\n#わたちゃん\n${shareUrl}`;
   const lineShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！結果は「${personalizedTitle}」でした。${personalizedShareHook} ♡`;
   const copyShareText = `${xShareText}\n${shareUrl}`;
 
@@ -2411,10 +2397,6 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
     let target = '';
     if (platform === 'x') target = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
     if (platform === 'line') target = `https://social-plugins.line.me/lineit/share?url=${url}&text=${text}`;
-    if (platform === 'instagram') {
-      copyToClipboard(instagramShareText, 'instagram');
-      return;
-    }
     if (platform === 'copy') {
       copyToClipboard(copyShareText, 'copy');
       return;
@@ -2431,25 +2413,6 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
         title: 'わたちゃん 彼氏の愛情判定ゲーム',
       });
       showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は友達版も遊べます`, 6000);
-    } catch (e) {
-      if (e && e.name === 'AbortError') return;
-      alert('画像の準備に失敗しました。もう一度試してみてください。');
-    } finally {
-      setImageBusy(false);
-    }
-  };
-
-  const handleInstagramShare = async () => {
-    setImageBusy(true);
-    try {
-      copyToClipboard(instagramShareText, 'instagram');
-      const result = await savePreparedImage({
-        src: preparedResultImageSrc,
-        filename: `watachan-love-result-${score}-${total}.png`,
-        title: 'わたちゃん 彼氏の愛情判定ゲーム',
-      });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。「画像を保存」を選んだらInstagramでストーリーに貼ってね`, 7000);
-      setTimeout(openInstagramApp, 450);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像の準備に失敗しました。もう一度試してみてください。');
@@ -2773,7 +2736,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           busy={imageBusy}
           onShare={handleShareImage}
           onX={() => handleShare('x')}
-          onInstagram={handleInstagramShare}
+          onLine={() => handleShare('line')}
           status={imageStatus}
           nextLabel="次は友達版で遊ぶ"
           onNext={onFriend}
@@ -2788,7 +2751,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
             textAlign: 'center', fontWeight: 700,
             border: `2px solid ${proto.black}`,
           }}>
-            {copied === 'instagram' ? 'Instagram用の文章をコピーしました ♡' : 'シェア文をコピーしました ♡'}
+            シェア文をコピーしました ♡
           </div>
         )}
         <ResultReplayActions
@@ -2885,7 +2848,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   );
 }
 
-function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', nextLabel = '', onNext }) {
+function ResultImageActions({ busy, onShare, onX, onLine, status = '', nextLabel = '', onNext }) {
   return (
     <div style={{
       background: proto.yellow,
@@ -2911,7 +2874,7 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', next
       }}>SHARE YOUR RESULT</div>
       <div style={{ fontSize: 17 }}>この結果、友達に聞いてみる？</div>
       <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
-        結果画像に「みんななら何問？」を付けて投稿できます
+        XやLINEに結果文とURLをそのまま送れます
       </div>
       <div style={{
         marginTop: 10,
@@ -2923,11 +2886,10 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', next
         lineHeight: 1.5,
         textAlign: 'left',
       }}>
-        <div style={{ fontWeight: 900, color: proto.pink }}>Instagramはこの順番</div>
+        <div style={{ fontWeight: 900, color: proto.pink }}>LINEで送るとこんな感じ</div>
         <div style={{ marginTop: 2, color: proto.text }}>
-          1. 出てきた画面で「画像を保存」<br />
-          2. Instagramが開いたら、保存した画像をストーリーに貼る<br />
-          <span style={{ color: proto.textSoft }}>※文章は自動でコピーされます</span>
+          結果文とURLをLINEで送れます。<br />
+          「うちらなら何問当たると思う？」ってそのまま聞けます。
         </div>
       </div>
       <div style={{
@@ -2951,20 +2913,20 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', next
         }}>
           Xでみんなに聞く
         </button>
-        <button onClick={onInstagram || onShare} disabled={busy} style={{
+        <button onClick={onLine || onShare} disabled={busy} style={{
           minHeight: 58,
           borderRadius: 12,
           border: `2.5px solid ${proto.black}`,
-          background: proto.pink,
+          background: '#06C755',
           color: proto.white,
           fontFamily: proto.body,
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 900,
           boxShadow: '3px 3px 0 #000',
           opacity: busy ? 0.65 : 1,
           cursor: busy ? 'default' : 'pointer',
         }}>
-          画像を保存 → Instagramを開く
+          LINEで友達に送る
         </button>
       </div>
       <button onClick={onShare} disabled={busy} style={{
@@ -4249,6 +4211,14 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
     );
   };
 
+  const openLine = () => {
+    window.open(
+      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`,
+      '_blank',
+      'noopener,noreferrer,width=600,height=500'
+    );
+  };
+
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
@@ -4258,25 +4228,6 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
         title: 'わたちゃん 友達の友情判定ゲーム',
       });
       showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は家族版も遊べます`, 6000);
-    } catch (e) {
-      if (e && e.name === 'AbortError') return;
-      alert('画像の準備に失敗しました。もう一度試してみてください。');
-    } finally {
-      setImageBusy(false);
-    }
-  };
-
-  const handleInstagramShare = async () => {
-    setImageBusy(true);
-    try {
-      copyShareText();
-      const result = await savePreparedImage({
-        src: preparedResultImageSrc,
-        filename: `watachan-friend-result-${totalQuestions}.png`,
-        title: 'わたちゃん 友達の友情判定ゲーム',
-      });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。「画像を保存」を選んだらInstagramでストーリーに貼ってね`, 7000);
-      setTimeout(openInstagramApp, 450);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像の準備に失敗しました。もう一度試してみてください。');
@@ -4393,7 +4344,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           busy={imageBusy}
           onShare={handleShareImage}
           onX={openX}
-          onInstagram={handleInstagramShare}
+          onLine={openLine}
           status={imageStatus}
           nextLabel="次は家族版で遊ぶ"
           onNext={onFamily}
@@ -4728,6 +4679,14 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
     );
   };
 
+  const openLine = () => {
+    window.open(
+      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`,
+      '_blank',
+      'noopener,noreferrer,width=600,height=500'
+    );
+  };
+
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
@@ -4737,25 +4696,6 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
         title: 'わたちゃん 家族の絆判定ゲーム',
       });
       showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は彼氏の愛情判定も遊べます`, 6000);
-    } catch (e) {
-      if (e && e.name === 'AbortError') return;
-      alert('画像の準備に失敗しました。もう一度試してみてください。');
-    } finally {
-      setImageBusy(false);
-    }
-  };
-
-  const handleInstagramShare = async () => {
-    setImageBusy(true);
-    try {
-      copyShareText();
-      const result = await savePreparedImage({
-        src: preparedResultImageSrc,
-        filename: `watachan-family-result-${totalQuestions}.png`,
-        title: 'わたちゃん 家族の絆判定ゲーム',
-      });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。「画像を保存」を選んだらInstagramでストーリーに貼ってね`, 7000);
-      setTimeout(openInstagramApp, 450);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像の準備に失敗しました。もう一度試してみてください。');
@@ -4872,7 +4812,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           busy={imageBusy}
           onShare={handleShareImage}
           onX={openX}
-          onInstagram={handleInstagramShare}
+          onLine={openLine}
           status={imageStatus}
           nextLabel="次は彼氏の愛情判定で遊ぶ"
           onNext={onLove}
