@@ -2844,7 +2844,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onFr
         onX={() => handleShare('x')}
         onLine={() => handleShare('line')}
         onShare={handleShareImage}
-        shareContext="XやLINEで送ると、友達に結果を見せながら聞けます"
+        shareContext="XやLINEに結果文とURLをそのまま送れます"
       />
     </div>
   );
@@ -3000,7 +3000,7 @@ function ShareBottomSheet({
   onX,
   onLine,
   onShare,
-  shareContext = '結果文とURLをそのまま送れます',
+  shareContext = 'XやLINEに結果文とURLをそのまま送れます',
 }) {
   if (!open) return null;
   const runAction = (action) => {
@@ -4541,7 +4541,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
         onX={openX}
         onLine={openLine}
         onShare={handleShareImage}
-        shareContext="XやLINEで送ると、友達に結果とURLをそのまま送れます"
+        shareContext="XやLINEに結果文とURLをそのまま送れます"
       />
     </div>
   );
@@ -5023,7 +5023,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
         onX={openX}
         onLine={openLine}
         onShare={handleShareImage}
-        shareContext="XやLINEで送ると、家族に結果とURLをそのまま送れます"
+        shareContext="XやLINEに結果文とURLをそのまま送れます"
       />
     </div>
   );
