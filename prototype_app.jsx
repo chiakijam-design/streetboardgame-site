@@ -234,7 +234,7 @@ function drawFittedCanvasText(ctx, text, x, y, maxWidth, {
   ctx.fillText(value, x, y);
 }
 
-const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.png';
+const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
 
 function preloadCanvasCharacterImage() {
   if (typeof window === 'undefined') return null;
@@ -1238,9 +1238,9 @@ function Decor() {
 function CardStack() {
   // ランダムに3枚お題カードから引いてバラ撒く
   const stacks = [
-    { rotate: -8, top: 10,  left: 30,  delay: 0,    z: 1, src: 'assets/cards/1.png' },
-    { rotate: 4,  top: 0,   left: 100, delay: 0.1,  z: 3, src: 'assets/cards/20.png' },
-    { rotate: -3, top: 18,  left: 170, delay: 0.2,  z: 2, src: 'assets/cards/15.png' },
+    { rotate: -8, top: 10,  left: 30,  delay: 0,    z: 1, src: 'assets/cards/1.png', webp: 'assets/cards/1.webp' },
+    { rotate: 4,  top: 0,   left: 100, delay: 0.1,  z: 3, src: 'assets/cards/20.png', webp: 'assets/cards/20.webp' },
+    { rotate: -3, top: 18,  left: 170, delay: 0.2,  z: 2, src: 'assets/cards/15.png', webp: 'assets/cards/15.webp' },
   ];
   return (
     <div style={{
@@ -1261,10 +1261,13 @@ function CardStack() {
           background: '#FFF',
           animation: `cardFloat 4s ${s.delay}s ease-in-out infinite`,
         }}>
-          <img src={s.src} alt="" style={{
-            width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top',
-            display: 'block',
-          }} />
+          <picture style={{ display: 'block', width: '100%', height: '100%' }}>
+            <source srcSet={s.webp} type="image/webp" />
+            <img src={s.src} alt="" width="110" height="165" loading="eager" decoding="async" style={{
+              width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top',
+              display: 'block',
+            }} />
+          </picture>
         </div>
       ))}
       <style>{`

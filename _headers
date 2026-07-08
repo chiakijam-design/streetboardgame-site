@@ -23,6 +23,14 @@
   Content-Type: image/webp
   Cache-Control: public, max-age=31536000, immutable
 
+/assets/character/*.webp
+  Content-Type: image/webp
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/cards/*.webp
+  Content-Type: image/webp
+  Cache-Control: public, max-age=31536000, immutable
+
 # 結果画像は同じファイル名で改善することがあるため短めキャッシュ
 /assets/results/*
   Cache-Control: public, max-age=300, must-revalidate
