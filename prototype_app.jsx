@@ -80,9 +80,12 @@ function personalizeLoveText(text, girlName, boyName) {
   if (girl === DEFAULT_PLAYER_NAMES.love[0] && boy === DEFAULT_PLAYER_NAMES.love[1]) {
     return String(text || '');
   }
+  const perfectBoyToken = '__WATACHAN_PERFECT_BOY__';
   return String(text || '')
+    .replace(/満点彼氏を名乗るには/g, `、${boy}が${perfectBoyToken}を名乗るには`)
     .replace(/彼女/g, girl)
-    .replace(/彼氏/g, boy);
+    .replace(/彼氏/g, boy)
+    .replace(new RegExp(perfectBoyToken, 'g'), '満点彼氏');
 }
 
 function loadPlayerNames() {
