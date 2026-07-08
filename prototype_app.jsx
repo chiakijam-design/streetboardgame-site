@@ -293,9 +293,10 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.setLineDash([]);
 
   ctx.fillStyle = proto.pink;
-  ctx.font = '900 32px "Zen Maru Gothic", sans-serif';
+  const loveScoreLabel = `${boyName}の${girlName}理解度`;
+  ctx.font = `900 ${loveScoreLabel.length >= 13 ? 27 : 32}px "Zen Maru Gothic", sans-serif`;
   ctx.textAlign = 'left';
-  ctx.fillText(`${boyName}の${girlName}理解度`, 205, 350);
+  ctx.fillText(loveScoreLabel, 205, 350);
 
   ctx.fillStyle = proto.pink;
   ctx.font = '900 122px "RocknRoll One", sans-serif';
@@ -2380,6 +2381,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   };
 
   const tagTextColor = tier.tagBg === proto.yellow || tier.tagBg === proto.cyan ? proto.black : proto.white;
+  const loveScoreLabel = `${boyName}の${girlName}理解度`;
 
   return (
     <div style={{
@@ -2459,7 +2461,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
               letterSpacing: '0.15em',
               marginBottom: 3,
               fontWeight: 800,
-            }}>彼氏理解度</div>
+            }}>{loveScoreLabel}</div>
             <div style={{ animation: 'scorePop 0.8s ease' }}>
               <LogoText size={54} color={proto.pink} outline={proto.black} lineHeight={1}>
                 {score}/{total}
