@@ -2920,6 +2920,7 @@ function ResultImageActions({
         gridTemplateColumns: '1fr 1fr',
         gap: 10,
         marginTop: 12,
+        direction: 'rtl',
       }}>
         <button onClick={onX || onShare} disabled={busy} style={{
           minHeight: 58,
@@ -2931,6 +2932,7 @@ function ResultImageActions({
           fontSize: 13,
           fontWeight: 900,
           boxShadow: '3px 3px 0 #5BD4E8',
+          direction: 'ltr',
           opacity: busy ? 0.65 : 1,
           cursor: busy ? 'default' : 'pointer',
         }}>
@@ -2946,6 +2948,7 @@ function ResultImageActions({
           fontSize: 13,
           fontWeight: 900,
           boxShadow: '3px 3px 0 #000',
+          direction: 'ltr',
           opacity: busy ? 0.65 : 1,
           cursor: busy ? 'default' : 'pointer',
         }}>
