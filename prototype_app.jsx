@@ -2792,7 +2792,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onFr
             );
           })}
         </div>
-        <ResultReviewBox lines={reviewLines} title="AI総評" onScrolledPast={showShareSheetAfterReview} />
+        <ResultReviewBox lines={reviewLines} title="AI総評" />
       </div>
 
       {/* シェア */}
@@ -2802,6 +2802,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onFr
           onShare={handleShareImage}
           onX={() => handleShare('x')}
           onLine={() => handleShare('line')}
+          onVisible={showShareSheetAfterReview}
           nextLabel="次は友達版で遊ぶ"
           onNext={onFriend}
         />
@@ -2854,11 +2855,48 @@ function ResultImageActions({
   onShare,
   onX,
   onLine,
+  onVisible,
   nextLabel = '',
   onNext,
 }) {
+  const cardRef = useRef(null);
+  useEffect(() => {
+    if (!onVisible) return undefined;
+    const element = cardRef.current;
+    if (!element) return undefined;
+    let done = false;
+    const trigger = () => {
+      if (done) return;
+      done = true;
+      onVisible();
+    };
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.35)) {
+          trigger();
+        }
+      }, { threshold: [0.35] });
+      observer.observe(element);
+      return () => observer.disconnect();
+    }
+    const check = () => {
+      const rect = element.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+      if (rect.top < viewportHeight * 0.82 && rect.bottom > viewportHeight * 0.2) {
+        trigger();
+      }
+    };
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    check();
+    return () => {
+      window.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+    };
+  }, [onVisible]);
+
   return (
-    <div style={{
+    <div ref={cardRef} style={{
       background: proto.yellow,
       color: proto.black,
       border: `3px solid ${proto.black}`,
@@ -4464,7 +4502,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           players={friendPlayers}
           label="ANSWER DETAILS"
         />
-        <GroupResultReviewBox sections={reviewSections} title="AI総評" onScrolledPast={showShareSheetAfterReview} />
+        <GroupResultReviewBox sections={reviewSections} title="AI総評" />
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -4473,6 +4511,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onShare={handleShareImage}
           onX={openX}
           onLine={openLine}
+          onVisible={showShareSheetAfterReview}
           nextLabel="次は家族版で遊ぶ"
           onNext={onFamily}
         />
@@ -4945,7 +4984,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           players={familyPlayers}
           label="ANSWER DETAILS"
         />
-        <GroupResultReviewBox sections={reviewSections} title="AI総評" onScrolledPast={showShareSheetAfterReview} />
+        <GroupResultReviewBox sections={reviewSections} title="AI総評" />
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -4954,6 +4993,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onShare={handleShareImage}
           onX={openX}
           onLine={openLine}
+          onVisible={showShareSheetAfterReview}
           nextLabel="次は彼氏の愛情判定で遊ぶ"
           onNext={onLove}
         />
