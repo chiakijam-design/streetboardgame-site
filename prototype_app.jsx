@@ -2448,7 +2448,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
         filename: `watachan-love-result-${score}-${total}.png`,
         title: 'わたちゃん 彼氏の愛情判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます。次は友達版もどうぞ`, 6000);
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。「画像を保存」を選んだらInstagramでストーリーに貼ってね`, 7000);
       setTimeout(openInstagramApp, 450);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
@@ -2923,9 +2923,11 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', next
         lineHeight: 1.5,
         textAlign: 'left',
       }}>
-        <div style={{ fontWeight: 900, color: proto.pink }}>投稿するとこんな感じ</div>
+        <div style={{ fontWeight: 900, color: proto.pink }}>Instagramはこの順番</div>
         <div style={{ marginTop: 2, color: proto.text }}>
-          結果画像 + 「みんななら何問当てられる？」の文章で、ストーリーやXにそのまま出せます。
+          1. 出てきた画面で「画像を保存」<br />
+          2. Instagramが開いたら、保存した画像をストーリーに貼る<br />
+          <span style={{ color: proto.textSoft }}>※文章は自動でコピーされます</span>
         </div>
       </div>
       <div style={{
@@ -2962,7 +2964,7 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', next
           opacity: busy ? 0.65 : 1,
           cursor: busy ? 'default' : 'pointer',
         }}>
-          ストーリーで反応をもらう
+          画像を保存 → Instagramを開く
         </button>
       </div>
       <button onClick={onShare} disabled={busy} style={{
@@ -4273,7 +4275,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
         filename: `watachan-friend-result-${totalQuestions}.png`,
         title: 'わたちゃん 友達の友情判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます。次は家族版もどうぞ`, 6000);
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。「画像を保存」を選んだらInstagramでストーリーに貼ってね`, 7000);
       setTimeout(openInstagramApp, 450);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
@@ -4752,7 +4754,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
         filename: `watachan-family-result-${totalQuestions}.png`,
         title: 'わたちゃん 家族の絆判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます。次は彼氏の愛情判定もどうぞ`, 6000);
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。「画像を保存」を選んだらInstagramでストーリーに貼ってね`, 7000);
       setTimeout(openInstagramApp, 450);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
