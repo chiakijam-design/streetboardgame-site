@@ -462,26 +462,97 @@ function getCategorySummary(answers, cards, matcher) {
   };
 }
 
-function getLoveReviewLines(answers, cards, players) {
+const LOVE_REVIEW_VARIANTS = {
+  opening: [
+    '{boyName}と{girlName}は、{level}の恋愛相性です。',
+    '{boyName}の読みは、{girlName}に対して{level}。',
+    'ふたりの答え合わせは、{level}の空気が出ています。',
+    '{boyName}から見た{girlName}理解度は、{level}でじわっと個性あり。',
+  ],
+  title: [
+    '今日の称号「{title}」は、正解数よりもズレ方に味があるタイプ。',
+    '「{title}」という結果どおり、近い部分と読めない部分が混ざっています。',
+    '称号は「{title}」。分かっているところの強さがちゃんと出ています。',
+    '今日のふたりは「{title}」寄り。答え合わせで距離が縮まる組み合わせ。',
+  ],
+  hit: [
+    '{hit}では、ふたりの感覚が自然に重なりやすい流れ。',
+    '{hit}まわりは強め。{boyName}の観察力がちゃんと働いています。',
+    '{hit}の答えは近め。普段の会話や空気から、好みを拾えている印象。',
+    '{hit}では、{girlName}の本音にかなり近いところまで届いています。',
+  ],
+  insight: [
+    '何気ない選択や普段の好みほど、{boyName}の観察力が出やすいタイプ。',
+    '言葉にしていない小さなクセほど、ふたりの関係性がにじみます。',
+    '当たった答えには、いつもの会話で拾ったヒントがちゃんと残っています。',
+    '正解した部分は、偶然というより「ちゃんと見てる」が出たところ。',
+  ],
+  miss: [
+    '一方で{miss}では、{girlName}の中にまだ読めない余白が残っています。',
+    '{miss}のズレは、知らないというより「まだ聞いたことがない」系の余白。',
+    '{miss}では、{girlName}の意外な一面が少しだけ顔を出しています。',
+    '{miss}まわりは、次に話すと盛り上がりそうな未回収ゾーン。',
+  ],
+  score: {
+    high: [
+      '全体的には、言葉にしなくても伝わる部分が多い安心シンクロ型。',
+      'かなり分かっているけれど、完璧すぎない余白がかわいいタイプ。',
+      '正解数は強め。あとは細かい好みのアップデートでさらに近づきます。',
+    ],
+    mid: [
+      'ズレもあるけど、そのズレが会話のネタになって距離を縮める組み合わせ。',
+      '分かるところと意外なところのバランスが、いちばん盛り上がるタイプ。',
+      '半分以上読めている空気感。まだ知らない部分があるから面白い状態。',
+    ],
+    low: [
+      '今はまだ予想外れも多め。でも知るほど急に伸びるポテンシャル型。',
+      '未知数が多いぶん、答え合わせで新しい発見が出やすいタイプ。',
+      'まだ読み切れていないけれど、ここから会話が増える余地はかなりあります。',
+    ],
+  },
+  close: [
+    '総合すると、ふたりは答え合わせでじわじわ仲が深まるタイプです。',
+    '恋愛相性で見ると、正解数よりも「理由を聞いた時の盛り上がり」が強み。',
+    'ふたりの距離は、当たり外れより答え合わせの会話で近づくタイプ。',
+    'まとめると、ズレまで含めてネタになる、会話強めの相性です。',
+  ],
+};
+
+function getLoveReviewLines(answers, cards, players, title = '') {
   const lovePlayers = normalizePlayerNames({ love: players }).love;
   const girlName = lovePlayers[0];
   const boyName = lovePlayers[1];
   const total = Math.max(1, answers.length);
   const score = answers.filter((answer) => answer.match).length;
   const themes = getCategorySummary(answers, cards, (answer) => answer.match);
+  const personalizedTitle = personalizeLoveText(title || '彼女データ更新中', girlName, boyName);
   const level = score >= 4 ? 'かなり近い波長' : score >= 2 ? '半分シンクロ型' : '未知数多めの開拓型';
+  const scoreBand = score >= 4 ? 'high' : score >= 2 ? 'mid' : 'low';
+  const questionSeed = cards.reduce((sum, card, index) => {
+    const text = `${card?.category || ''}${card?.title || ''}`;
+    return sum + Array.from(text).reduce((s, char) => s + char.charCodeAt(0), 0) + (answers[index]?.match ? 17 : 3);
+  }, 0);
+  const values = {
+    girlName,
+    boyName,
+    title: personalizedTitle,
+    level,
+    hit: themes.hit,
+    miss: themes.miss,
+  };
+  const fillTemplate = (template) => template.replace(/\{(\w+)\}/g, (_, key) => values[key] || '');
+  const pickVariant = (list, offset = 0) => {
+    const seed = questionSeed + (score * 13) + (themes.hit.length * 5) + (themes.miss.length * 7) + offset;
+    return list[Math.abs(seed) % list.length];
+  };
   return [
-    `${boyName}と${girlName}は、${level}の相性です。`,
-    `${themes.hit}では、ふたりの感覚が自然に重なりやすいタイプ。`,
-    `何気ない選択や普段の好みほど、${boyName}の観察力が出やすい流れです。`,
-    `一方で${themes.miss}では、${girlName}の中にまだ読めない余白が残っています。`,
-    score >= 4
-      ? `全体的には「分かってくれてる感」が強く、安心感がちゃんと伝わる組み合わせ。`
-      : score >= 2
-        ? `ズレもあるけど、そのズレが会話のネタになって距離を縮める組み合わせ。`
-        : `今はまだ予想が外れやすいぶん、知るほど急に伸びるポテンシャル型です。`,
-    `恋愛相性で見ると、正解数よりも「理由を聞いた時の盛り上がり」が強み。`,
-    `総合すると、ふたりは答え合わせでじわじわ仲が深まるタイプです。`,
+    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.opening, 1)),
+    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.title, 2)),
+    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.hit, 3)),
+    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.insight, 4)),
+    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.miss, 5)),
+    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.score[scoreBand], 6)),
+    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.close, 7)),
   ];
 }
 
@@ -2484,8 +2555,8 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onFr
     ? <>{titleLines[0]}<br/>{titleLines[1]}</>
     : personalizedTitle;
   const reviewLines = useMemo(
-    () => getLoveReviewLines(answers, cards, [girlName, boyName]),
-    [answers, cards, girlName, boyName]
+    () => getLoveReviewLines(answers, cards, [girlName, boyName], tier.title),
+    [answers, cards, girlName, boyName, tier.title]
   );
 
   const showShareSheetAfterReview = () => {
