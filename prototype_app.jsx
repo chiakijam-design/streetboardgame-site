@@ -2339,6 +2339,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const [showShareSheet, setShowShareSheet] = useState(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
     () => createLoveResultImageSrc(score, total, tier, [girlName, boyName]),
@@ -2361,6 +2362,11 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
     () => getLoveReviewLines(answers, cards, [girlName, boyName]),
     [answers, cards, girlName, boyName]
   );
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowShareSheet(true), 850);
+    return () => clearTimeout(timer);
+  }, []);
 
   const shareUrl = `${location.origin}/`;
   const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n今日の称号は「${personalizedTitle}」。\n${personalizedShareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
@@ -2741,6 +2747,14 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           nextLabel="次は友達版で遊ぶ"
           onNext={onFriend}
         />
+        <ShareBottomSheet
+          open={showShareSheet}
+          busy={imageBusy}
+          onClose={() => setShowShareSheet(false)}
+          onX={() => handleShare('x')}
+          onLine={() => handleShare('line')}
+          onShare={handleShareImage}
+        />
         <button onClick={() => handleShare('copy')} style={textOnlyBtn()}>
           {copied === 'copy' ? 'シェア文をコピーしました' : '文章だけコピーする'}
         </button>
@@ -2963,6 +2977,145 @@ function ResultImageActions({ busy, onShare, onX, onLine, status = '', nextLabel
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ShareBottomSheet({ open, busy, onClose, onX, onLine, onShare }) {
+  if (!open) return null;
+  const runAction = (action) => {
+    if (busy || !action) return;
+    if (onClose) onClose();
+    action();
+  };
+  const sheetButton = (background, color = proto.black) => ({
+    width: '100%',
+    minHeight: 58,
+    borderRadius: 13,
+    border: `2.5px solid ${proto.black}`,
+    background,
+    color,
+    fontFamily: proto.body,
+    fontSize: 14,
+    fontWeight: 900,
+    boxShadow: background === proto.black ? '3px 3px 0 #5BD4E8' : '3px 3px 0 #000',
+    opacity: busy ? 0.65 : 1,
+    cursor: busy ? 'default' : 'pointer',
+  });
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="結果をシェア"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        display: 'grid',
+        alignItems: 'end',
+        padding: '0 14px calc(14px + env(safe-area-inset-bottom))',
+        background: 'rgba(0,0,0,0.38)',
+      }}
+    >
+      <button
+        type="button"
+        aria-label="閉じる"
+        onClick={onClose}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          border: 0,
+          background: 'transparent',
+        }}
+      />
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: 560,
+        margin: '0 auto',
+        boxSizing: 'border-box',
+        padding: '16px 14px 14px',
+        borderRadius: '22px 22px 14px 14px',
+        border: `3px solid ${proto.black}`,
+        background: proto.yellow,
+        color: proto.black,
+        boxShadow: '0 -7px 0 #5BD4E8, 0 -18px 40px rgba(0,0,0,0.28)',
+        textAlign: 'center',
+        fontWeight: 900,
+      }}>
+        <div style={{
+          display: 'inline-block',
+          padding: '3px 10px',
+          borderRadius: 999,
+          background: proto.black,
+          color: proto.white,
+          fontFamily: proto.caption,
+          fontSize: 10,
+          letterSpacing: '0.12em',
+          marginBottom: 8,
+        }}>
+          SHARE YOUR RESULT
+        </div>
+        <div style={{ fontSize: 20, lineHeight: 1.35 }}>
+          この結果、友達に送る？
+        </div>
+        <div style={{
+          marginTop: 5,
+          fontSize: 12,
+          color: proto.text,
+          lineHeight: 1.55,
+        }}>
+          XやLINEで送ると、友達に「何問当たると思う？」って聞けます
+        </div>
+        <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+          <button
+            type="button"
+            onClick={() => runAction(onLine)}
+            disabled={busy}
+            style={sheetButton('#06C755', proto.white)}
+          >
+            LINEで結果を送る
+          </button>
+          <button
+            type="button"
+            onClick={() => runAction(onX)}
+            disabled={busy}
+            style={sheetButton(proto.black, proto.white)}
+          >
+            Xで結果をツイート
+          </button>
+          <button
+            type="button"
+            onClick={() => runAction(onShare)}
+            disabled={busy}
+            style={sheetButton(proto.white, proto.black)}
+          >
+            {busy ? '画像を準備中...' : '判定画像も送りたい。まずは画像を保存'}
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            marginTop: 12,
+            minHeight: 38,
+            padding: '8px 14px',
+            border: 0,
+            background: 'transparent',
+            color: proto.textSoft,
+            fontFamily: proto.body,
+            fontSize: 13,
+            fontWeight: 900,
+            textDecoration: 'underline',
+            cursor: 'pointer',
+          }}
+        >
+          あとで
+        </button>
+      </div>
     </div>
   );
 }
@@ -4159,6 +4312,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const [showShareSheet, setShowShareSheet] = useState(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('friend', answers, friendPlayers),
@@ -4170,6 +4324,11 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
     () => getGroupReviewSections(answers, cards, friendPlayers, 'friend'),
     [answers, cards, friendPlayers]
   );
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowShareSheet(true), 850);
+    return () => clearTimeout(timer);
+  }, []);
 
   const shareUrl = `${location.origin}/friends`;
   const shareText = `友達の友情判定ゲームをやってみた！${scoreSummary}。\n${groupHighlight}\n\n友達なら何問当てられる？次はあなたの番。\n#わたちゃん #友情判定ゲーム #streetboardgame`;
@@ -4332,6 +4491,14 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           status={imageStatus}
           nextLabel="次は家族版で遊ぶ"
           onNext={onFamily}
+        />
+        <ShareBottomSheet
+          open={showShareSheet}
+          busy={imageBusy}
+          onClose={() => setShowShareSheet(false)}
+          onX={openX}
+          onLine={openLine}
+          onShare={handleShareImage}
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
@@ -4627,6 +4794,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const [showShareSheet, setShowShareSheet] = useState(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('family', answers, familyPlayers),
@@ -4638,6 +4806,11 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
     () => getGroupReviewSections(answers, cards, familyPlayers, 'family'),
     [answers, cards, familyPlayers]
   );
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowShareSheet(true), 850);
+    return () => clearTimeout(timer);
+  }, []);
 
   const shareUrl = `${location.origin}/family`;
   const shareText = `家族の絆判定ゲームをやってみた！${scoreSummary}。\n${groupHighlight}\n\n家族なら何問当てられる？次はあなたの番。\n#わたちゃん #家族の絆判定 #streetboardgame`;
@@ -4800,6 +4973,14 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           status={imageStatus}
           nextLabel="次は彼氏の愛情判定で遊ぶ"
           onNext={onLove}
+        />
+        <ShareBottomSheet
+          open={showShareSheet}
+          busy={imageBusy}
+          onClose={() => setShowShareSheet(false)}
+          onX={openX}
+          onLine={openLine}
+          onShare={handleShareImage}
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
