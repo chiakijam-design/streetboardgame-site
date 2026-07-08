@@ -74,6 +74,11 @@ function getLoveScoreLabel(girlName, boyName) {
   return `${boy}の${girl}理解度`;
 }
 
+function getLoveResultHeaderLabel(girlName, boyName) {
+  const boy = sanitizePlayerName(boyName, DEFAULT_PLAYER_NAMES.love[1]);
+  return `${boy}の愛情判定`;
+}
+
 function personalizeLoveText(text, girlName, boyName) {
   const girl = sanitizePlayerName(girlName, DEFAULT_PLAYER_NAMES.love[0]);
   const boy = sanitizePlayerName(boyName, DEFAULT_PLAYER_NAMES.love[1]);
@@ -307,7 +312,7 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.fillStyle = proto.white;
   ctx.font = '700 32px "DotGothic16", monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('彼氏の愛情判定', 132, 170);
+  ctx.fillText(getLoveResultHeaderLabel(girlName, boyName), 132, 170);
 
   ctx.fillStyle = resultTier.tagBg || proto.pink;
   roundRect(ctx, 742, 126, 190, 54, 27);
@@ -2763,6 +2768,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
 
   const tagTextColor = tier.tagBg === proto.yellow || tier.tagBg === proto.cyan ? proto.black : proto.white;
   const loveScoreLabel = getLoveScoreLabel(girlName, boyName);
+  const loveResultHeaderLabel = getLoveResultHeaderLabel(girlName, boyName);
 
   return (
     <div style={{
@@ -2808,7 +2814,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
           fontSize: 10,
           letterSpacing: '0.18em',
         }}>
-          <span>彼氏の愛情判定</span>
+          <span>{loveResultHeaderLabel}</span>
           <span style={{
             background: tier.tagBg,
             color: tagTextColor,
