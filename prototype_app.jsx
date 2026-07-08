@@ -2727,6 +2727,9 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           onShare={handleShareImage}
           onX={() => handleShare('x')}
           onLine={() => handleShare('line')}
+          onOpenSheet={() => setShowShareSheet(true)}
+          shareHook={`${girlName}のこと、みんななら何問当てられる？`}
+          shareChips={['何問当たる？', '結果見て', '次はあなたの番']}
           nextLabel="次は友達版で遊ぶ"
           onNext={onFriend}
         />
@@ -2737,6 +2740,8 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           onX={() => handleShare('x')}
           onLine={() => handleShare('line')}
           onShare={handleShareImage}
+          shareHook={`${girlName}のこと、みんななら何問当てられる？`}
+          shareContext="XやLINEで送ると、友達に結果を見せながら聞けます"
         />
         <button onClick={() => handleShare('copy')} style={textOnlyBtn()}>
           {copied === 'copy' ? 'シェア文をコピーしました' : '文章だけコピーする'}
@@ -2845,7 +2850,17 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   );
 }
 
-function ResultImageActions({ busy, onShare, onX, onLine, status = '', nextLabel = '', onNext }) {
+function ResultImageActions({
+  busy,
+  onShare,
+  onX,
+  onLine,
+  onOpenSheet,
+  shareHook = '友達なら何問当てられる？',
+  shareChips = ['何問当たる？', '結果見て', '次はあなたの番'],
+  nextLabel = '',
+  onNext,
+}) {
   return (
     <div style={{
       background: proto.yellow,
@@ -2872,6 +2887,42 @@ function ResultImageActions({ busy, onShare, onX, onLine, status = '', nextLabel
       <div style={{ fontSize: 17 }}>この結果、友達に伝えよう</div>
       <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
         XやLINEに結果文とURLをそのまま送れます
+      </div>
+      <div style={{
+        marginTop: 10,
+        padding: '8px 10px',
+        borderRadius: 12,
+        background: proto.white,
+        border: `2px dashed ${proto.black}`,
+        fontSize: 12,
+        lineHeight: 1.45,
+      }}>
+        <span style={{ color: proto.pink, fontWeight: 900 }}>送るときの一言：</span>
+        <span>「{shareHook}」</span>
+      </div>
+      <div style={{
+        display: 'flex',
+        gap: 6,
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        marginTop: 9,
+      }}>
+        {shareChips.map((chip) => (
+          <span key={chip} style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            minHeight: 26,
+            padding: '0 9px',
+            borderRadius: 999,
+            background: proto.pinkSoft,
+            border: `1.5px solid ${proto.black}`,
+            fontSize: 10,
+            fontWeight: 900,
+            boxShadow: '2px 2px 0 #000',
+          }}>
+            {chip}
+          </span>
+        ))}
       </div>
       <div style={{
         display: 'grid',
@@ -2927,44 +2978,56 @@ function ResultImageActions({ busy, onShare, onX, onLine, status = '', nextLabel
       }}>
         {busy ? '画像を準備中...' : '判定画像も送りたい。まずは画像を保存'}
       </button>
-      {status && (
-        <div role="status" aria-live="polite" style={{
+      {onOpenSheet && (
+        <button type="button" onClick={onOpenSheet} disabled={busy} style={{
+          width: '100%',
+          minHeight: 42,
           marginTop: 10,
-          padding: '8px 10px',
-          borderRadius: 10,
-          background: proto.white,
-          color: proto.black,
+          borderRadius: 999,
           border: `2px solid ${proto.black}`,
-          boxShadow: '2px 2px 0 #000',
+          background: proto.cyan,
+          color: proto.black,
+          fontFamily: proto.body,
           fontSize: 12,
           fontWeight: 900,
-          lineHeight: 1.35,
+          boxShadow: '2px 2px 0 #000',
+          opacity: busy ? 0.65 : 1,
+          cursor: busy ? 'default' : 'pointer',
         }}>
-          {status} ♡
-          {nextLabel && onNext && (
-            <button type="button" onClick={onNext} style={{
-              width: '100%',
-              marginTop: 8,
-              minHeight: 38,
-              borderRadius: 999,
-              border: `2px solid ${proto.black}`,
-              background: proto.yellow,
-              color: proto.black,
-              fontFamily: proto.body,
-              fontSize: 12,
-              fontWeight: 900,
-              boxShadow: '2px 2px 0 #000',
-            }}>
-              {nextLabel}
-            </button>
-          )}
-        </div>
+          送る方法をもう一度選ぶ
+        </button>
+      )}
+      {nextLabel && onNext && (
+        <button type="button" onClick={onNext} style={{
+          width: '100%',
+          marginTop: 10,
+          minHeight: 38,
+          borderRadius: 999,
+          border: `2px solid ${proto.black}`,
+          background: proto.yellow,
+          color: proto.black,
+          fontFamily: proto.body,
+          fontSize: 12,
+          fontWeight: 900,
+          boxShadow: '2px 2px 0 #000',
+        }}>
+          {nextLabel}
+        </button>
       )}
     </div>
   );
 }
 
-function ShareBottomSheet({ open, busy, onClose, onX, onLine, onShare }) {
+function ShareBottomSheet({
+  open,
+  busy,
+  onClose,
+  onX,
+  onLine,
+  onShare,
+  shareHook = '友達なら何問当てられる？',
+  shareContext = '結果文とURLをそのまま送れます',
+}) {
   if (!open) return null;
   const runAction = (action) => {
     if (busy || !action) return;
@@ -3051,7 +3114,18 @@ function ShareBottomSheet({ open, busy, onClose, onX, onLine, onShare }) {
           color: proto.text,
           lineHeight: 1.55,
         }}>
-          XやLINEで送ると、友達に「何問当たると思う？」って聞けます
+          {shareContext}
+        </div>
+        <div style={{
+          marginTop: 10,
+          padding: '9px 10px',
+          borderRadius: 12,
+          background: proto.white,
+          border: `2px dashed ${proto.black}`,
+          fontSize: 12,
+          lineHeight: 1.5,
+        }}>
+          「{shareHook}」って送ると返事が来やすいです
         </div>
         <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
           <button
@@ -4468,6 +4542,9 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onShare={handleShareImage}
           onX={openX}
           onLine={openLine}
+          onOpenSheet={() => setShowShareSheet(true)}
+          shareHook="うちらの友情、みんななら何問当たると思う？"
+          shareChips={['友情チェック', '誰が強い？', '次は一緒に']}
           nextLabel="次は家族版で遊ぶ"
           onNext={onFamily}
         />
@@ -4478,6 +4555,8 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onX={openX}
           onLine={openLine}
           onShare={handleShareImage}
+          shareHook="うちらの友情、みんななら何問当たると思う？"
+          shareContext="XやLINEで送ると、友達に結果とURLをそのまま送れます"
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
@@ -4946,6 +5025,9 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onShare={handleShareImage}
           onX={openX}
           onLine={openLine}
+          onOpenSheet={() => setShowShareSheet(true)}
+          shareHook="家族ならこれ、何問当てられると思う？"
+          shareChips={['家族で確認', '誰が詳しい？', '次はみんなで']}
           nextLabel="次は彼氏の愛情判定で遊ぶ"
           onNext={onLove}
         />
@@ -4956,6 +5038,8 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onX={openX}
           onLine={openLine}
           onShare={handleShareImage}
+          shareHook="家族ならこれ、何問当てられると思う？"
+          shareContext="XやLINEで送ると、家族に結果とURLをそのまま送れます"
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
