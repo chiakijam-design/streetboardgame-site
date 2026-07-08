@@ -1069,7 +1069,6 @@ function App() {
             onReplay={startNewRound}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
-            onProduct={() => setScreen('product')}
           />
         )}
         {screen === 'friendResultReady' && (
@@ -2387,7 +2386,7 @@ const RESULT_TIERS = [
     shareHook: '全問正解、彼氏が彼女公認の理解王でした' },
 ];
 
-function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onProduct, onFriend, onFamily }) {
+function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onFriend, onFamily }) {
   const score = answers.filter(a => a.match).length;
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
@@ -2834,80 +2833,8 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
         </div>
       </div>
 
-      {/* 製品誘導 */}
-      <div style={{ padding: '24px 18px 0', position: 'relative', zIndex: 1 }}>
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label="カードゲーム版の詳細を見る"
-          onClick={onProduct}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onProduct();
-            }
-          }}
-          style={{
-          padding: 14, borderRadius: 16,
-          background: proto.white,
-          border: `2.5px solid ${proto.black}`,
-          boxShadow: proto.shadowHard,
-          display: 'flex', alignItems: 'center', gap: 12,
-          cursor: 'pointer',
-        }}>
-          <div style={{ fontSize: 36 }}>🎴</div>
-          <div style={{ flex: 1 }}>
-            <div style={{
-              fontFamily: proto.caption, fontSize: 10, color: proto.pink,
-              fontWeight: 800, letterSpacing: '0.1em',
-            }}>
-              MORE FUN ♡
-            </div>
-            <div style={{
-              fontSize: 12, color: proto.text, marginTop: 2,
-              lineHeight: 1.4, fontWeight: 700,
-            }}>
-              54問入り・カードゲーム版
-            </div>
-            <div style={{
-              fontSize: 11, color: proto.textSoft, marginTop: 4,
-              lineHeight: 1.45, fontWeight: 700,
-            }}>
-              飲み会・旅行・おうちデートでもっと深掘り
-            </div>
-            <a
-              href={AMAZON_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: 9,
-                minHeight: 34,
-                padding: '0 12px',
-                borderRadius: 999,
-                background: '#FF9900',
-                color: proto.white,
-                border: `2px solid ${proto.black}`,
-                boxShadow: '2px 2px 0 #000',
-                fontSize: 11,
-                fontWeight: 900,
-                textDecoration: 'none',
-              }}
-            >
-              Amazon版を見る
-            </a>
-          </div>
-          <div style={{
-            color: proto.pink, fontSize: 20, fontWeight: 800,
-          }}>→</div>
-        </div>
-
-        <div style={{ textAlign: 'center', marginTop: 18 }}>
-          <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
-        </div>
+      <div style={{ textAlign: 'center', marginTop: 24, paddingBottom: 8, position: 'relative', zIndex: 1 }}>
+        <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
       </div>
       <ShareBottomSheet
         open={showShareSheet}
