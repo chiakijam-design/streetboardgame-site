@@ -2877,26 +2877,10 @@ function ResultImageActions({ busy, onShare, onX, onLine, status = '', nextLabel
         XやLINEに結果文とURLをそのまま送れます
       </div>
       <div style={{
-        marginTop: 10,
-        padding: '9px 10px',
-        background: proto.white,
-        border: `2px dashed ${proto.black}`,
-        borderRadius: 12,
-        fontSize: 11,
-        lineHeight: 1.5,
-        textAlign: 'left',
-      }}>
-        <div style={{ fontWeight: 900, color: proto.pink }}>LINEで送るとこんな感じ</div>
-        <div style={{ marginTop: 2, color: proto.text }}>
-          結果文とURLをLINEで送れます。<br />
-          「うちらなら何問当たると思う？」ってそのまま聞けます。
-        </div>
-      </div>
-      <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: 10,
-        marginTop: 14,
+        marginTop: 12,
       }}>
         <button onClick={onX || onShare} disabled={busy} style={{
           minHeight: 58,
