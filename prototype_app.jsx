@@ -2870,25 +2870,21 @@ function ResultImageActions({
       done = true;
       onVisible();
     };
-    const timers = [];
     const check = () => {
       if (done) return;
-      const rect = element.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-      const isAtShareDecisionPoint = rect.top <= viewportHeight * 0.32 && rect.bottom <= viewportHeight * 0.74;
-      if (isAtShareDecisionPoint) {
+      const doc = document.documentElement;
+      const viewportHeight = window.innerHeight || doc.clientHeight || 0;
+      const scrollTop = window.scrollY || doc.scrollTop || 0;
+      const remainingScroll = Math.max(0, doc.scrollHeight - (scrollTop + viewportHeight));
+      if (remainingScroll <= 48) {
         trigger();
       }
     };
     window.addEventListener('scroll', check, { passive: true });
     window.addEventListener('resize', check);
-    check();
-    timers.push(setTimeout(check, 250));
-    timers.push(setTimeout(check, 800));
     return () => {
       window.removeEventListener('scroll', check);
       window.removeEventListener('resize', check);
-      timers.forEach(clearTimeout);
     };
   }, [onVisible]);
 
