@@ -2926,7 +2926,7 @@ function ResultImageActions({ busy, onShare, onX, onLine, status = '', nextLabel
           opacity: busy ? 0.65 : 1,
           cursor: busy ? 'default' : 'pointer',
         }}>
-          LINEで友達に送る
+          LINEで結果を送る
         </button>
       </div>
       <button onClick={onShare} disabled={busy} style={{
