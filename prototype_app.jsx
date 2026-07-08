@@ -1226,7 +1226,6 @@ function App() {
             onReplay={() => startFriendRound(playerCount)}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
-            onFamily={() => setScreen('familyIntro')}
           />
         )}
         {screen === 'familyResultReady' && (
@@ -1248,7 +1247,6 @@ function App() {
             onReplay={() => startFamilyRound(playerCount)}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
-            onLove={() => setScreen('intro')}
           />
         )}
         {screen === 'about' && (
@@ -2522,7 +2520,7 @@ const RESULT_TIERS = [
     shareHook: '全問正解、彼氏が彼女公認の理解王でした' },
 ];
 
-function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onFriend, onFamily }) {
+function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
   const score = answers.filter(a => a.match).length;
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
@@ -4444,7 +4442,7 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
   );
 }
 
-function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout, onFamily }) {
+function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const friendPlayers = useMemo(() => getFriendPlayers(playerCount, playerNames), [playerCount, playerNames]);
   const scoreSummary = getPlayerScoreSummary(answers, friendPlayers, 'friend');
@@ -4920,7 +4918,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswe
   );
 }
 
-function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout, onLove }) {
+function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const familyPlayers = useMemo(() => getFamilyPlayers(playerCount, playerNames), [playerCount, playerNames]);
   const scoreSummary = getPlayerScoreSummary(answers, familyPlayers, 'family');
