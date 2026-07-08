@@ -2858,8 +2858,6 @@ function ResultImageActions({
   onX,
   onLine,
   onVisible,
-  nextLabel = '',
-  onNext,
 }) {
   const cardRef = useRef(null);
   useEffect(() => {
@@ -2974,23 +2972,6 @@ function ResultImageActions({
       }}>
         {busy ? '画像を準備中...' : '判定画像も送りたい。まずは画像を保存'}
       </button>
-      {nextLabel && onNext && (
-        <button type="button" onClick={onNext} style={{
-          width: '100%',
-          marginTop: 10,
-          minHeight: 38,
-          borderRadius: 999,
-          border: `2px solid ${proto.black}`,
-          background: proto.yellow,
-          color: proto.black,
-          fontFamily: proto.body,
-          fontSize: 12,
-          fontWeight: 900,
-          boxShadow: '2px 2px 0 #000',
-        }}>
-          {nextLabel}
-        </button>
-      )}
     </div>
   );
 }
