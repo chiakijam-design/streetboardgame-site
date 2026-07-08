@@ -2895,7 +2895,7 @@ function ResultImageActions({ busy, onShare, onX, onLine, status = '', nextLabel
           opacity: busy ? 0.65 : 1,
           cursor: busy ? 'default' : 'pointer',
         }}>
-          Xでみんなに聞く
+          Xで結果をツイート
         </button>
         <button onClick={onLine || onShare} disabled={busy} style={{
           minHeight: 58,
