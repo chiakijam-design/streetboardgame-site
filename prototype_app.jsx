@@ -2875,10 +2875,8 @@ function ResultImageActions({
       if (done) return;
       const rect = element.getBoundingClientRect();
       const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-      const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
-      const enoughVisible = visibleHeight >= Math.min(240, rect.height * 0.62);
-      const isCenteredEnough = rect.top < viewportHeight * 0.48 && rect.bottom > viewportHeight * 0.18;
-      if (enoughVisible || isCenteredEnough) {
+      const isAtShareDecisionPoint = rect.top <= viewportHeight * 0.32 && rect.bottom <= viewportHeight * 0.74;
+      if (isAtShareDecisionPoint) {
         trigger();
       }
     };
