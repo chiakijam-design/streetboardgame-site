@@ -546,13 +546,10 @@ function getLoveReviewLines(answers, cards, players, title = '') {
     return list[Math.abs(seed) % list.length];
   };
   return [
-    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.opening, 1)),
-    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.title, 2)),
-    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.hit, 3)),
-    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.insight, 4)),
+    `${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.opening, 1))} ${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.title, 2))}`,
+    `${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.hit, 3))} ${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.insight, 4))}`,
     fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.miss, 5)),
-    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.score[scoreBand], 6)),
-    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.close, 7)),
+    `${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.score[scoreBand], 6))} ${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.close, 7))}`,
   ];
 }
 
