@@ -169,6 +169,53 @@ function buildStructuredData(page) {
       publisher: {
         '@id': organizationId,
       },
+      hasPart: [
+        {
+          '@id': 'https://www.streetboardgame.com/#couple-game',
+        },
+        {
+          '@id': 'https://www.streetboardgame.com/friends#friend-game',
+        },
+        {
+          '@id': 'https://www.streetboardgame.com/family#family-game',
+        },
+      ],
+    },
+    {
+      '@type': 'SiteNavigationElement',
+      '@id': 'https://www.streetboardgame.com/#site-navigation',
+      name: [
+        '彼氏の愛情判定',
+        '友達の友情判定',
+        '家族の絆判定',
+        '製品版',
+        'About',
+      ],
+      url: [
+        'https://www.streetboardgame.com/',
+        'https://www.streetboardgame.com/friends',
+        'https://www.streetboardgame.com/family',
+        'https://www.streetboardgame.com/product',
+        'https://www.streetboardgame.com/about',
+      ],
+    },
+    {
+      '@type': 'BreadcrumbList',
+      '@id': page.url + '#breadcrumb',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'わたちゃん',
+          item: 'https://www.streetboardgame.com/',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: page.ogTitle || page.title,
+          item: page.url,
+        },
+      ],
     },
     {
       '@type': 'WebPage',
@@ -179,6 +226,9 @@ function buildStructuredData(page) {
       inLanguage: 'ja',
       isPartOf: {
         '@id': websiteId,
+      },
+      breadcrumb: {
+        '@id': page.url + '#breadcrumb',
       },
       primaryImageOfPage: {
         '@type': 'ImageObject',

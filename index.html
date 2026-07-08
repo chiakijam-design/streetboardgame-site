@@ -70,7 +70,48 @@
       "description": "彼氏の愛情判定ゲームをメインに、友達の友情判定や家族の絆判定などのシリーズを展開するオリジナルゲームサイトです。",
       "publisher": {
         "@id": "https://www.streetboardgame.com/#organization"
-      }
+      },
+      "hasPart": [
+        {
+          "@id": "https://www.streetboardgame.com/#couple-game"
+        },
+        {
+          "@id": "https://www.streetboardgame.com/#friend-game"
+        },
+        {
+          "@id": "https://www.streetboardgame.com/#family-game"
+        }
+      ]
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "@id": "https://www.streetboardgame.com/#site-navigation",
+      "name": [
+        "彼氏の愛情判定",
+        "友達の友情判定",
+        "家族の絆判定",
+        "製品版",
+        "About"
+      ],
+      "url": [
+        "https://www.streetboardgame.com/",
+        "https://www.streetboardgame.com/friends",
+        "https://www.streetboardgame.com/family",
+        "https://www.streetboardgame.com/product",
+        "https://www.streetboardgame.com/about"
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://www.streetboardgame.com/#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "わたちゃん",
+          "item": "https://www.streetboardgame.com/"
+        }
+      ]
     },
     {
       "@type": "WebPage",
@@ -81,6 +122,9 @@
       "inLanguage": "ja",
       "isPartOf": {
         "@id": "https://www.streetboardgame.com/#website"
+      },
+      "breadcrumb": {
+        "@id": "https://www.streetboardgame.com/#breadcrumb"
       },
       "primaryImageOfPage": {
         "@type": "ImageObject",
@@ -332,7 +376,7 @@
     <h1>わたちゃん｜彼氏の愛情判定ゲーム</h1>
     <p>スマホ1台で無料で遊べるカップル診断ゲームです。彼氏が彼女の答えを予想し、全42問からランダムに出る5問で2人の愛情理解度を判定できます。</p>
     <p>シリーズとして、友達の友情判定、家族の絆判定も公開中です。JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/friends">友達の友情を判定する</a> / <a href="/family">家族の絆を判定する</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/friends">友達の友情を判定する</a> / <a href="/family">家族の絆を判定する</a> / <a href="/product">製品版を見る</a> / <a href="/about">About</a></p>
   </main>
 </noscript>
 <div id="root" aria-live="polite"></div>
