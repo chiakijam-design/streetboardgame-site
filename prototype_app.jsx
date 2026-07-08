@@ -2806,15 +2806,6 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           nextLabel="次は友達版で遊ぶ"
           onNext={onFriend}
         />
-        <ShareBottomSheet
-          open={showShareSheet}
-          busy={imageBusy}
-          onClose={() => setShowShareSheet(false)}
-          onX={() => handleShare('x')}
-          onLine={() => handleShare('line')}
-          onShare={handleShareImage}
-          shareContext="XやLINEで送ると、友達に結果を見せながら聞けます"
-        />
         <button onClick={() => handleShare('copy')} style={textOnlyBtn()}>
           {copied === 'copy' ? 'シェア文をコピーしました' : '文章だけコピーする'}
         </button>
@@ -2918,6 +2909,15 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
         </div>
       </div>
+      <ShareBottomSheet
+        open={showShareSheet}
+        busy={imageBusy}
+        onClose={() => setShowShareSheet(false)}
+        onX={() => handleShare('x')}
+        onLine={() => handleShare('line')}
+        onShare={handleShareImage}
+        shareContext="XやLINEで送ると、友達に結果を見せながら聞けます"
+      />
     </div>
   );
 }
@@ -4549,15 +4549,6 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           nextLabel="次は家族版で遊ぶ"
           onNext={onFamily}
         />
-        <ShareBottomSheet
-          open={showShareSheet}
-          busy={imageBusy}
-          onClose={() => setShowShareSheet(false)}
-          onX={openX}
-          onLine={openLine}
-          onShare={handleShareImage}
-          shareContext="XやLINEで送ると、友達に結果とURLをそのまま送れます"
-        />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
         </button>
@@ -4581,6 +4572,15 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
         </div>
       </div>
+      <ShareBottomSheet
+        open={showShareSheet}
+        busy={imageBusy}
+        onClose={() => setShowShareSheet(false)}
+        onX={openX}
+        onLine={openLine}
+        onShare={handleShareImage}
+        shareContext="XやLINEで送ると、友達に結果とURLをそのまま送れます"
+      />
     </div>
   );
 }
@@ -5030,15 +5030,6 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           nextLabel="次は彼氏の愛情判定で遊ぶ"
           onNext={onLove}
         />
-        <ShareBottomSheet
-          open={showShareSheet}
-          busy={imageBusy}
-          onClose={() => setShowShareSheet(false)}
-          onX={openX}
-          onLine={openLine}
-          onShare={handleShareImage}
-          shareContext="XやLINEで送ると、家族に結果とURLをそのまま送れます"
-        />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
         </button>
@@ -5062,6 +5053,15 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           <FooterLink onClick={onAbout}>About / お問い合わせ</FooterLink>
         </div>
       </div>
+      <ShareBottomSheet
+        open={showShareSheet}
+        busy={imageBusy}
+        onClose={() => setShowShareSheet(false)}
+        onX={openX}
+        onLine={openLine}
+        onShare={handleShareImage}
+        shareContext="XやLINEで送ると、家族に結果とURLをそのまま送れます"
+      />
     </div>
   );
 }
