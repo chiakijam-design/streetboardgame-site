@@ -2740,7 +2740,6 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           onX={() => handleShare('x')}
           onLine={() => handleShare('line')}
           onShare={handleShareImage}
-          shareHook={`${girlName}のこと、みんななら何問当てられる？`}
           shareContext="XやLINEで送ると、友達に結果を見せながら聞けます"
         />
         <button onClick={() => handleShare('copy')} style={textOnlyBtn()}>
@@ -3025,7 +3024,6 @@ function ShareBottomSheet({
   onX,
   onLine,
   onShare,
-  shareHook = '友達なら何問当てられる？',
   shareContext = '結果文とURLをそのまま送れます',
 }) {
   if (!open) return null;
@@ -3115,17 +3113,6 @@ function ShareBottomSheet({
           lineHeight: 1.55,
         }}>
           {shareContext}
-        </div>
-        <div style={{
-          marginTop: 10,
-          padding: '9px 10px',
-          borderRadius: 12,
-          background: proto.white,
-          border: `2px dashed ${proto.black}`,
-          fontSize: 12,
-          lineHeight: 1.5,
-        }}>
-          「{shareHook}」って送ると返事が来やすいです
         </div>
         <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
           <button
@@ -4555,7 +4542,6 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onX={openX}
           onLine={openLine}
           onShare={handleShareImage}
-          shareHook="うちらの友情、みんななら何問当たると思う？"
           shareContext="XやLINEで送ると、友達に結果とURLをそのまま送れます"
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
@@ -5038,7 +5024,6 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onX={openX}
           onLine={openLine}
           onShare={handleShareImage}
-          shareHook="家族ならこれ、何問当てられると思う？"
           shareContext="XやLINEで送ると、家族に結果とURLをそのまま送れます"
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
