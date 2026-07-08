@@ -68,6 +68,9 @@ function normalizePlayerNames(value = {}, allowEmpty = false) {
 function getLoveScoreLabel(girlName, boyName) {
   const girl = sanitizePlayerName(girlName, DEFAULT_PLAYER_NAMES.love[0]);
   const boy = sanitizePlayerName(boyName, DEFAULT_PLAYER_NAMES.love[1]);
+  if (girl === DEFAULT_PLAYER_NAMES.love[0] && boy === DEFAULT_PLAYER_NAMES.love[1]) {
+    return '彼氏の彼女理解度';
+  }
   return `${boy}の${girl}理解度`;
 }
 
@@ -2462,12 +2465,13 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
         }}>
           <div style={{ textAlign: 'left', paddingLeft: 2 }}>
             <div style={{
-              fontFamily: proto.caption,
-              fontSize: 10,
+              fontFamily: proto.body,
+              fontSize: 11,
               color: proto.pink,
-              letterSpacing: '0.15em',
+              letterSpacing: 0,
               marginBottom: 3,
-              fontWeight: 800,
+              fontWeight: 900,
+              lineHeight: 1.2,
             }}>{loveScoreLabel}</div>
             <div style={{ animation: 'scorePop 0.8s ease' }}>
               <LogoText size={54} color={proto.pink} outline={proto.black} lineHeight={1}>
