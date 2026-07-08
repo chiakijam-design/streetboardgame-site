@@ -491,28 +491,93 @@ const GROUP_REVIEW_COLORS = [
   { bg: '#FFF0C6', chip: '#F59A32' },
 ];
 
+const GROUP_REVIEW_VARIANTS = {
+  friend: {
+    opening: [
+      '{subject}との友情は{level}。「{rank}」のにおいがします。',
+      '{subject}との距離感は{level}。まだ見えてない引き出しも込みで「{rank}」タイプ。',
+      '{subject}との相性は{level}。分かるところと謎なところの混ざり方が「{rank}」っぽい。',
+      '{subject}への理解は{level}。当たった数より、ズレ方に友情のクセが出ています。',
+    ],
+    hit: [
+      '{hit}では感覚が近く、何気ないノリが自然にそろいやすい流れ。',
+      '{hit}の話になると、相手の好き嫌いやテンションを拾う力が出ています。',
+      '{hit}まわりは強め。普段の会話や空気から、ちゃんと情報を集めているタイプ。',
+      '{hit}では読みが当たりやすく、友達としての観察メモが地味に優秀。',
+    ],
+    miss: [
+      '一方で{miss}は、まだ知らない余白が残るゾーン。ここが次に盛り上がるネタです。',
+      '{miss}ではズレが出やすく、相手の中の意外な一面が顔を出しています。',
+      '{miss}の読み違いは、仲が浅いというより「そこ聞いたことなかった」系のズレ。',
+      '{miss}はまだ未回収の伏線多め。聞けば一気に距離が縮まりそう。',
+    ],
+    closing: [
+      '総合すると、分かる部分と意外な部分のバランスが楽しい発見型。',
+      '総合すると、いつものノリの奥にまだ掘れる話題が眠っているタイプ。',
+      '総合すると、答え合わせで笑いながら友情データが更新される組み合わせ。',
+      '総合すると、近いようで少しズレる、そのズレまで含めておいしい関係です。',
+    ],
+  },
+  family: {
+    opening: [
+      '{subject}との家族相性は{level}。「{rank}」タイプです。',
+      '{subject}への理解は{level}。家族なのにまだ発掘ポイントがある「{rank}」系。',
+      '{subject}との距離感は{level}。近すぎて逆に見逃すところまで含めて家族っぽい。',
+      '{subject}との絆は{level}。当たり方より、外し方に家族の味が出ています。',
+    ],
+    hit: [
+      '{hit}では感覚が合いやすく、暮らしの中で自然に情報を拾えている印象。',
+      '{hit}まわりは強め。毎日の空気感から、ちゃんと相手のクセを読めています。',
+      '{hit}の読みは近め。言葉にしない好みまで、なんとなく察しているタイプ。',
+      '{hit}では家族ならではの観察力が出ています。近くにいる強さあり。',
+    ],
+    miss: [
+      '一方で{miss}は、近いからこそ思い込みが混ざりやすいゾーン。',
+      '{miss}ではズレが出やすく、家族の中にもまだ知らない顔が残っています。',
+      '{miss}は意外と未確認。昔のイメージで止まっている可能性があります。',
+      '{miss}のズレは、家族会議より雑談でほどけるタイプの謎です。',
+    ],
+    closing: [
+      '総合すると、分かる部分と知らない部分が同居する、家族らしい発見型。',
+      '総合すると、近いのに全部は分からないところが逆におもしろい関係。',
+      '総合すると、答え合わせで家庭内データベースが静かに更新される組み合わせ。',
+      '総合すると、日常の中にまだ聞いてない話が眠っているタイプです。',
+    ],
+  },
+};
+
 function getGroupReviewSections(answers, cards, players, kind = 'friend') {
   const total = Math.max(1, answers.length);
   const scores = getPlayerScores(answers, players);
   const subject = players[0] || '本人';
   const relation = kind === 'family' ? '家族相性' : '友情相性';
+  const variants = GROUP_REVIEW_VARIANTS[kind] || GROUP_REVIEW_VARIANTS.friend;
+  const fillTemplate = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => values[key] || '');
+  const pickVariant = (list, playerIndex, score, themes, offset = 0) => {
+    const seed = (score * 7) + (playerIndex * 11) + themes.hit.length + (themes.miss.length * 3) + offset;
+    return list[Math.abs(seed) % list.length];
+  };
   return scores.map((player, playerIndex) => {
     const rank = getGroupResultRank(kind, player.score);
     const themes = getCategorySummary(answers, cards, (answer) => answer.matches[playerIndex]);
     const level = player.score >= 4 ? 'かなり高め' : player.score >= 2 ? 'じわじわ深まる途中' : 'まだ謎多め';
+    const values = {
+      subject,
+      relation,
+      level,
+      rank: rank.name,
+      hit: themes.hit,
+      miss: themes.miss,
+    };
     return {
       name: player.name,
       score: player.score,
       color: GROUP_REVIEW_COLORS[playerIndex % GROUP_REVIEW_COLORS.length],
       lines: [
-        `${subject}との${relation}は${level}。「${rank.name}」タイプです。`,
-        `${themes.hit}では感覚が合いやすく、ふだんの空気感がちゃんと近い印象。`,
-        `${themes.miss}ではズレが出やすく、そこにその人らしい個性が出ています。`,
-        player.score >= 4
-          ? `総合すると、言葉にしなくても伝わる部分が多い安心シンクロ型。`
-          : player.score >= 2
-            ? `総合すると、分かる部分と意外な部分のバランスが楽しい発見型。`
-            : `総合すると、まだ知らない一面が多くて逆に盛り上がる未開拓型。`,
+        fillTemplate(pickVariant(variants.opening, playerIndex, player.score, themes, 0), values),
+        fillTemplate(pickVariant(variants.hit, playerIndex, player.score, themes, 1), values),
+        fillTemplate(pickVariant(variants.miss, playerIndex, player.score, themes, 2), values),
+        fillTemplate(pickVariant(variants.closing, playerIndex, player.score, themes, 3), values),
       ],
     };
   });
