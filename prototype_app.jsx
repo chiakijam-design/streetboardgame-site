@@ -2928,7 +2928,7 @@ function ResultImageActions({ busy, onShare, onX, onLine, status = '', nextLabel
         opacity: busy ? 0.65 : 1,
         cursor: busy ? 'default' : 'pointer',
       }}>
-        {busy ? '画像を準備中...' : '画像だけ保存・ほかのアプリへ'}
+        {busy ? '画像を準備中...' : '判定画像も送りたい。まずは画像を保存'}
       </button>
       {status && (
         <div role="status" aria-live="polite" style={{
