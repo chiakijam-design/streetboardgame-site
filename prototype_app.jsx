@@ -3059,6 +3059,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
           onX={() => handleShare('x')}
           onLine={() => handleShare('line')}
           onVisible={showShareSheetAfterReview}
+          shareTitle="この結果、友達に伝えよう"
         />
         <button onClick={() => handleShare('copy')} style={textOnlyBtn()}>
           {copied === 'copy' ? 'シェア文をコピーしました' : '文章だけコピーする'}
@@ -3099,6 +3100,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
         onLine={() => handleShare('line')}
         onShare={handleShareImage}
         shareContext="XやLINEに結果文とURLをそのまま送れます"
+        title="この結果、友達に送る？"
       />
     </div>
   );
@@ -3110,6 +3112,7 @@ function ResultImageActions({
   onX,
   onLine,
   onVisible,
+  shareTitle = 'この結果、友達に伝えよう',
 }) {
   const cardRef = useRef(null);
   useEffect(() => {
@@ -3163,7 +3166,7 @@ function ResultImageActions({
         letterSpacing: '0.12em',
         marginBottom: 8,
       }}>SHARE YOUR RESULT</div>
-      <div style={{ fontSize: 17 }}>この結果、友達に伝えよう</div>
+      <div style={{ fontSize: 17 }}>{shareTitle}</div>
       <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
         XやLINEに結果文とURLをそのまま送れます
       </div>
@@ -3236,6 +3239,7 @@ function ShareBottomSheet({
   onLine,
   onShare,
   shareContext = 'XやLINEに結果文とURLをそのまま送れます',
+  title = 'この結果、友達に送る？',
 }) {
   if (!open) return null;
   const runAction = (action) => {
@@ -3315,7 +3319,7 @@ function ShareBottomSheet({
           SHARE YOUR RESULT
         </div>
         <div style={{ fontSize: 20, lineHeight: 1.35 }}>
-          この結果、友達に送る？
+          {title}
         </div>
         <div style={{
           marginTop: 5,
@@ -4739,6 +4743,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onX={openX}
           onLine={openLine}
           onVisible={showShareSheetAfterReview}
+          shareTitle="この結果、友達に伝えよう"
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
@@ -4771,6 +4776,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
         onLine={openLine}
         onShare={handleShareImage}
         shareContext="XやLINEに結果文とURLをそのまま送れます"
+        title="この結果、友達に送る？"
       />
     </div>
   );
@@ -5215,6 +5221,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onX={openX}
           onLine={openLine}
           onVisible={showShareSheetAfterReview}
+          shareTitle="この結果、家族に伝えよう"
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
@@ -5247,6 +5254,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
         onLine={openLine}
         onShare={handleShareImage}
         shareContext="XやLINEに結果文とURLをそのまま送れます"
+        title="この結果、家族に送る？"
       />
     </div>
   );
