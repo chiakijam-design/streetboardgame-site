@@ -10,15 +10,15 @@ const IMAGE_BASE = 'assets/character/';
 
 // 各バリアントの画像と自然なアスペクト比 (height / width)
 const VARIANTS = {
-  full:    { file: 'girl-full.png',    aspect: 3072/2088 },
-  default: { file: 'girl-default.png', aspect: 297/244 },
-  upper:   { file: 'girl-upper.png',   aspect: 297/244 },
+  full:    { file: 'girl-full.png',    webp: 'girl-full.webp',    aspect: 3072/2088 },
+  default: { file: 'girl-default.png', webp: 'girl-default.webp', aspect: 297/244 },
+  upper:   { file: 'girl-upper.png',   webp: 'girl-upper.webp',   aspect: 297/244 },
 
   // 結果画面用エイリアス。素材が増えたら差し替え
-  happy:   { file: 'girl-default.png', aspect: 297/244 },
-  smile:   { file: 'girl-default.png', aspect: 297/244 },
-  wink:    { file: 'girl-upper.png',   aspect: 297/244 },
-  pout:    { file: 'girl-upper.png',   aspect: 297/244 },
+  happy:   { file: 'girl-default.png', webp: 'girl-default.webp', aspect: 297/244 },
+  smile:   { file: 'girl-default.png', webp: 'girl-default.webp', aspect: 297/244 },
+  wink:    { file: 'girl-upper.png',   webp: 'girl-upper.webp',   aspect: 297/244 },
+  pout:    { file: 'girl-upper.png',   webp: 'girl-upper.webp',   aspect: 297/244 },
 };
 
 function Girl({
@@ -40,26 +40,31 @@ function Girl({
     h = Math.round(width * conf.aspect);
   }
 
+  const imageStyle = {
+    width: w,
+    height: h,
+    display: 'block',
+    transform: flip ? 'scaleX(-1)' : 'none',
+    pointerEvents: 'none',
+    userSelect: 'none',
+    ...style,
+  };
+
   return (
-    <img
-      src={IMAGE_BASE + conf.file}
-      alt={alt}
-      width={typeof w === 'number' ? w : undefined}
-      height={typeof h === 'number' ? h : undefined}
-      loading={loading}
-      decoding="async"
-      fetchPriority={fetchPriority}
-      style={{
-        width: w,
-        height: h,
-        display: 'block',
-        transform: flip ? 'scaleX(-1)' : 'none',
-        pointerEvents: 'none',
-        userSelect: 'none',
-        ...style,
-      }}
-      draggable={false}
-    />
+    <picture style={{ display: 'block' }}>
+      {conf.webp && <source srcSet={IMAGE_BASE + conf.webp} type="image/webp" />}
+      <img
+        src={IMAGE_BASE + conf.file}
+        alt={alt}
+        width={typeof w === 'number' ? w : undefined}
+        height={typeof h === 'number' ? h : undefined}
+        loading={loading}
+        decoding="async"
+        fetchPriority={fetchPriority}
+        style={imageStyle}
+        draggable={false}
+      />
+    </picture>
   );
 }
 

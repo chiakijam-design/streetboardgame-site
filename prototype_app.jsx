@@ -216,6 +216,24 @@ function splitCanvasText(text, maxLength = 15) {
   return lines.slice(0, 3);
 }
 
+function drawFittedCanvasText(ctx, text, x, y, maxWidth, {
+  weight = 900,
+  size = 20,
+  minSize = 12,
+  family = '"Zen Maru Gothic", sans-serif',
+  align = 'left',
+} = {}) {
+  const value = String(text || '');
+  let fontSize = size;
+  ctx.textAlign = align;
+  do {
+    ctx.font = `${weight} ${fontSize}px ${family}`;
+    if (ctx.measureText(value).width <= maxWidth || fontSize <= minSize) break;
+    fontSize -= 1;
+  } while (fontSize >= minSize);
+  ctx.fillText(value, x, y);
+}
+
 const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.png';
 
 function preloadCanvasCharacterImage() {
@@ -3979,12 +3997,17 @@ function createGroupResultImageSrc(kind, answers, players) {
     ctx.fillText(`${rank.score}問正解`, 262, rowTop + 34);
 
     ctx.fillStyle = proto.black;
-    ctx.font = '900 19px "Zen Maru Gothic", sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(rank.name, 350, rowTop + 24);
+    drawFittedCanvasText(ctx, rank.name, 350, rowTop + 24, 520, {
+      weight: 900,
+      size: 19,
+      minSize: 14,
+    });
     ctx.fillStyle = proto.textSoft;
-    ctx.font = '800 13px "Zen Maru Gothic", sans-serif';
-    ctx.fillText(rank.note, 350, rowTop + 46);
+    drawFittedCanvasText(ctx, rank.note, 350, rowTop + 46, 520, {
+      weight: 800,
+      size: 13,
+      minSize: 10,
+    });
   });
 
   ctx.fillStyle = proto.black;
@@ -4012,9 +4035,12 @@ function createGroupResultImageSrc(kind, answers, players) {
     ctx.stroke();
 
     ctx.fillStyle = proto.black;
-    ctx.font = '900 26px "Zen Maru Gothic", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(item.name, x + cardWidth / 2, y + 29);
+    drawFittedCanvasText(ctx, item.name, x + cardWidth / 2, y + 29, cardWidth - 28, {
+      weight: 900,
+      size: 26,
+      minSize: 16,
+      align: 'center',
+    });
 
     ctx.fillStyle = proto.pinkDeep;
     ctx.font = '900 50px "RocknRoll One", sans-serif';
