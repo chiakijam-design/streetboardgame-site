@@ -749,6 +749,24 @@ function PillLabel({ children, dark = false }) {
   );
 }
 
+function blurActiveControl() {
+  if (typeof document === 'undefined') return;
+  const active = document.activeElement;
+  if (active && typeof active.blur === 'function') active.blur();
+}
+
+function resetViewportPosition(behavior = 'auto') {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  window.scrollTo({ top: 0, left: 0, behavior });
+  document.documentElement.scrollLeft = 0;
+  document.body.scrollLeft = 0;
+  const root = document.getElementById('root');
+  if (root) {
+    root.scrollLeft = 0;
+    root.scrollTop = 0;
+  }
+}
+
 // ─────────────────────────────────────────────────────
 // App
 // ─────────────────────────────────────────────────────
@@ -789,6 +807,21 @@ function App() {
     savePlayerNames(playerNames);
   }, [playerNames]);
 
+  useEffect(() => {
+    if (screen === 'about' && window.__SCROLL_TO_CONTACT) return;
+    resetViewportPosition('auto');
+    const frame = window.requestAnimationFrame
+      ? window.requestAnimationFrame(() => resetViewportPosition('auto'))
+      : setTimeout(() => resetViewportPosition('auto'), 0);
+    return () => {
+      if (window.cancelAnimationFrame && typeof frame === 'number') {
+        window.cancelAnimationFrame(frame);
+      } else {
+        clearTimeout(frame);
+      }
+    };
+  }, [screen, qIdx]);
+
   const updatePlayerName = (kind, index, value) => {
     setPlayerNames((current) => {
       const normalized = normalizePlayerNames(current, true);
@@ -801,6 +834,8 @@ function App() {
   };
 
   const startNewRound = () => {
+    blurActiveControl();
+    resetViewportPosition('auto');
     const picked = window.pickRandomCards(ROUND_SIZE);
     setCards(picked);
     setQIdx(0);
@@ -809,6 +844,8 @@ function App() {
   };
 
   const startFriendRound = (count) => {
+    blurActiveControl();
+    resetViewportPosition('auto');
     const picked = window.pickRandomFriendCards(FRIEND_ROUND_SIZE);
     setPlayerCount(normalizeFriendPlayerCount(count));
     setCards(picked);
@@ -818,6 +855,8 @@ function App() {
   };
 
   const startFamilyRound = (count) => {
+    blurActiveControl();
+    resetViewportPosition('auto');
     const picked = window.pickRandomFamilyCards(FAMILY_ROUND_SIZE);
     setPlayerCount(normalizeFriendPlayerCount(count));
     setCards(picked);
