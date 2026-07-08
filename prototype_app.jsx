@@ -474,25 +474,36 @@ function getLoveReviewLines(answers, cards, players) {
   ];
 }
 
-function getGroupReviewLines(answers, cards, players, kind = 'friend') {
+const GROUP_REVIEW_COLORS = [
+  { bg: '#DDF7FF', chip: '#5BD4E8' },
+  { bg: '#FFE4EE', chip: '#EC4F88' },
+  { bg: '#FFF0C6', chip: '#F59A32' },
+];
+
+function getGroupReviewSections(answers, cards, players, kind = 'friend') {
   const total = Math.max(1, answers.length);
   const scores = getPlayerScores(answers, players);
   const subject = players[0] || '本人';
   const relation = kind === 'family' ? '家族相性' : '友情相性';
-  return scores.flatMap((player, playerIndex) => {
+  return scores.map((player, playerIndex) => {
     const rank = getGroupResultRank(kind, player.score);
     const themes = getCategorySummary(answers, cards, (answer) => answer.matches[playerIndex]);
     const level = player.score >= 4 ? 'かなり高め' : player.score >= 2 ? 'じわじわ深まる途中' : 'まだ謎多め';
-    return [
-      `${player.name}: ${subject}との${relation}は${level}。「${rank.name}」タイプです。`,
-      `${themes.hit}では感覚が合いやすく、ふだんの空気感がちゃんと近い印象。`,
-      `${themes.miss}ではズレが出やすく、そこにその人らしい個性が出ています。`,
-      player.score >= 4
-        ? `総合すると、言葉にしなくても伝わる部分が多い安心シンクロ型。`
-        : player.score >= 2
-          ? `総合すると、分かる部分と意外な部分のバランスが楽しい発見型。`
-          : `総合すると、まだ知らない一面が多くて逆に盛り上がる未開拓型。`,
-    ];
+    return {
+      name: player.name,
+      score: player.score,
+      color: GROUP_REVIEW_COLORS[playerIndex % GROUP_REVIEW_COLORS.length],
+      lines: [
+        `${subject}との${relation}は${level}。「${rank.name}」タイプです。`,
+        `${themes.hit}では感覚が合いやすく、ふだんの空気感がちゃんと近い印象。`,
+        `${themes.miss}ではズレが出やすく、そこにその人らしい個性が出ています。`,
+        player.score >= 4
+          ? `総合すると、言葉にしなくても伝わる部分が多い安心シンクロ型。`
+          : player.score >= 2
+            ? `総合すると、分かる部分と意外な部分のバランスが楽しい発見型。`
+            : `総合すると、まだ知らない一面が多くて逆に盛り上がる未開拓型。`,
+      ],
+    };
   });
 }
 
@@ -535,6 +546,92 @@ function ResultReviewBox({ lines, title = 'AI総評' }) {
           }}>
             <span style={{ color: proto.pink, fontWeight: 900 }}>{index + 1}</span>
             <span>{line}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GroupResultReviewBox({ sections, title = 'AI総評' }) {
+  if (!sections || !sections.length) return null;
+  return (
+    <div style={{
+      marginTop: 14,
+      padding: '12px 12px',
+      background: proto.cream,
+      color: proto.text,
+      border: `2.5px solid ${proto.black}`,
+      borderRadius: 14,
+      boxShadow: '4px 4px 0 #000',
+    }}>
+      <div style={{
+        display: 'inline-block',
+        marginBottom: 10,
+        padding: '3px 10px',
+        borderRadius: 999,
+        background: proto.cyan,
+        color: proto.black,
+        border: `1.5px solid ${proto.black}`,
+        fontSize: 11,
+        fontWeight: 900,
+      }}>{title}</div>
+      <div style={{ display: 'grid', gap: 10 }}>
+        {sections.map((section) => (
+          <div key={section.name} style={{
+            padding: '10px 10px',
+            background: section.color.bg,
+            border: `2px solid ${proto.black}`,
+            borderRadius: 12,
+            boxShadow: '3px 3px 0 #000',
+            textAlign: 'left',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              marginBottom: 8,
+            }}>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                minHeight: 28,
+                padding: '0 10px',
+                borderRadius: 999,
+                background: section.color.chip,
+                color: proto.white,
+                border: `1.5px solid ${proto.black}`,
+                boxShadow: '1.5px 1.5px 0 #000',
+                fontSize: 12,
+                fontWeight: 900,
+              }}>{section.name}</span>
+              <span style={{
+                flexShrink: 0,
+                fontFamily: proto.display,
+                color: proto.pinkDeep,
+                fontSize: 18,
+                lineHeight: 1,
+              }}>{section.score}/5</span>
+            </div>
+            <div style={{
+              display: 'grid',
+              gap: 6,
+              fontSize: 12,
+              lineHeight: 1.55,
+              fontWeight: 800,
+            }}>
+              {section.lines.map((line, index) => (
+                <div key={`${section.name}-${index}`} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '18px minmax(0, 1fr)',
+                  gap: 6,
+                }}>
+                  <span style={{ color: proto.pinkDeep, fontWeight: 900 }}>{index + 1}</span>
+                  <span>{line}</span>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -4029,8 +4126,8 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   );
   const groupScores = useMemo(() => getPlayerScores(answers, friendPlayers), [answers, friendPlayers]);
   const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'friend');
-  const reviewLines = useMemo(
-    () => getGroupReviewLines(answers, cards, friendPlayers, 'friend'),
+  const reviewSections = useMemo(
+    () => getGroupReviewSections(answers, cards, friendPlayers, 'friend'),
     [answers, cards, friendPlayers]
   );
 
@@ -4204,7 +4301,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           players={friendPlayers}
           label="ANSWER DETAILS"
         />
-        <ResultReviewBox lines={reviewLines} title="AI総評" />
+        <GroupResultReviewBox sections={reviewSections} title="AI総評" />
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -4519,8 +4616,8 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   );
   const groupScores = useMemo(() => getPlayerScores(answers, familyPlayers), [answers, familyPlayers]);
   const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'family');
-  const reviewLines = useMemo(
-    () => getGroupReviewLines(answers, cards, familyPlayers, 'family'),
+  const reviewSections = useMemo(
+    () => getGroupReviewSections(answers, cards, familyPlayers, 'family'),
     [answers, cards, familyPlayers]
   );
 
@@ -4694,7 +4791,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           players={familyPlayers}
           label="ANSWER DETAILS"
         />
-        <ResultReviewBox lines={reviewLines} title="AI総評" />
+        <GroupResultReviewBox sections={reviewSections} title="AI総評" />
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
