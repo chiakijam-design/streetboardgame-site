@@ -523,11 +523,16 @@ function ResultReviewBox({ lines, title = 'AI総評', onScrolledPast }) {
   useEffect(() => {
     if (!onScrolledPast || !lines || !lines.length) return undefined;
     let done = false;
+    let hasEnteredViewport = false;
     let rafId = null;
     const check = () => {
       if (done || !boxRef.current) return;
       const rect = boxRef.current.getBoundingClientRect();
-      if (rect.bottom <= 0) {
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+      if (rect.top < viewportHeight && rect.bottom > 0) {
+        hasEnteredViewport = true;
+      }
+      if (hasEnteredViewport && rect.bottom <= 0) {
         done = true;
         onScrolledPast();
       }
@@ -595,11 +600,16 @@ function GroupResultReviewBox({ sections, title = 'AI総評', onScrolledPast }) 
   useEffect(() => {
     if (!onScrolledPast || !sections || !sections.length) return undefined;
     let done = false;
+    let hasEnteredViewport = false;
     let rafId = null;
     const check = () => {
       if (done || !boxRef.current) return;
       const rect = boxRef.current.getBoundingClientRect();
-      if (rect.bottom <= 0) {
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+      if (rect.top < viewportHeight && rect.bottom > 0) {
+        hasEnteredViewport = true;
+      }
+      if (hasEnteredViewport && rect.bottom <= 0) {
         done = true;
         onScrolledPast();
       }
