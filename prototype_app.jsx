@@ -193,7 +193,7 @@ function splitCanvasText(text, maxLength = 15) {
   return lines.slice(0, 3);
 }
 
-const RESULT_GIRL_IMAGE_SRC = 'assets/character/girl-default.png';
+const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.png';
 
 function preloadCanvasCharacterImage() {
   if (typeof window === 'undefined') return null;
@@ -326,7 +326,7 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.arc(760, 416, 124, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
-  if (!drawCanvasGirl(ctx, 662, 306, 190, 232)) {
+  if (!drawCanvasGirl(ctx, 638, 286, 238, 284)) {
     ctx.fillStyle = resultTier.emoji ? proto.pink : proto.yellow;
     ctx.font = '900 82px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
     ctx.textAlign = 'center';
@@ -336,16 +336,17 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.fillStyle = proto.pink;
   ctx.font = '900 54px "RocknRoll One", sans-serif';
   ctx.fillStyle = proto.black;
-  roundRect(ctx, 408, 620, 264, 44, 22);
+  roundRect(ctx, 408, 632, 264, 44, 22);
   ctx.fill();
   ctx.fillStyle = proto.yellow;
   ctx.font = '900 26px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('今日の称号', 540, 650);
+  ctx.fillText('今日の称号', 540, 662);
 
   ctx.fillStyle = proto.pink;
-  ctx.font = '900 54px "RocknRoll One", sans-serif';
-  drawCanvasLines(ctx, splitCanvasText(resultTier.title, 12), 540, 705, 64);
+  const titleLines = splitCanvasText(resultTier.title, 11);
+  ctx.font = `900 ${titleLines.length > 1 ? 48 : 54}px "RocknRoll One", sans-serif`;
+  drawCanvasLines(ctx, titleLines, 540, 740, 58);
 
   ctx.fillStyle = proto.white;
   roundRect(ctx, 150, 815, 780, 250, 26);
