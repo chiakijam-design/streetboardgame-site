@@ -2807,8 +2807,6 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onFr
           onX={() => handleShare('x')}
           onLine={() => handleShare('line')}
           onVisible={showShareSheetAfterReview}
-          nextLabel="次は友達版で遊ぶ"
-          onNext={onFriend}
         />
         <button onClick={() => handleShare('copy')} style={textOnlyBtn()}>
           {copied === 'copy' ? 'シェア文をコピーしました' : '文章だけコピーする'}
@@ -4508,8 +4506,6 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onX={openX}
           onLine={openLine}
           onVisible={showShareSheetAfterReview}
-          nextLabel="次は家族版で遊ぶ"
-          onNext={onFamily}
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
@@ -4986,8 +4982,6 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onX={openX}
           onLine={openLine}
           onVisible={showShareSheetAfterReview}
-          nextLabel="次は彼氏の愛情判定で遊ぶ"
-          onNext={onLove}
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
