@@ -74,6 +74,17 @@ function getLoveScoreLabel(girlName, boyName) {
   return `${boy}の${girl}理解度`;
 }
 
+function personalizeLoveText(text, girlName, boyName) {
+  const girl = sanitizePlayerName(girlName, DEFAULT_PLAYER_NAMES.love[0]);
+  const boy = sanitizePlayerName(boyName, DEFAULT_PLAYER_NAMES.love[1]);
+  if (girl === DEFAULT_PLAYER_NAMES.love[0] && boy === DEFAULT_PLAYER_NAMES.love[1]) {
+    return String(text || '');
+  }
+  return String(text || '')
+    .replace(/彼女/g, girl)
+    .replace(/彼氏/g, boy);
+}
+
 function loadPlayerNames() {
   if (typeof window === 'undefined') return normalizePlayerNames({}, true);
   try {
@@ -253,6 +264,8 @@ function createLoveResultImageSrc(score, total, tier, players) {
   const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
   const safeTotal = Math.max(1, Number(total) || 5);
   const resultTier = tier || RESULT_TIERS[safeScore] || RESULT_TIERS[0];
+  const resultTitle = personalizeLoveText(resultTier.title, girlName, boyName);
+  const resultMessage = personalizeLoveText(resultTier.msg, girlName, boyName);
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
@@ -353,7 +366,7 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.fillText('今日の称号', 540, 662);
 
   ctx.fillStyle = proto.pink;
-  const titleLines = splitCanvasText(resultTier.title, 11);
+  const titleLines = splitCanvasText(resultTitle, 11);
   ctx.font = `900 ${titleLines.length > 1 ? 48 : 54}px "RocknRoll One", sans-serif`;
   drawCanvasLines(ctx, titleLines, 540, 740, 58);
 
@@ -367,7 +380,7 @@ function createLoveResultImageSrc(score, total, tier, players) {
 
   ctx.fillStyle = proto.black;
   ctx.font = '900 32px "Zen Maru Gothic", sans-serif';
-  const messageLines = String(resultTier.msg || '')
+  const messageLines = String(resultMessage || '')
     .split('\n')
     .flatMap((line) => splitCanvasText(line, 20))
     .slice(0, 4);
@@ -2264,6 +2277,9 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   const lovePlayers = normalizePlayerNames({ love: players }).love;
   const girlName = lovePlayers[0];
   const boyName = lovePlayers[1];
+  const personalizedTitle = personalizeLoveText(tier.title, girlName, boyName);
+  const personalizedMessage = personalizeLoveText(tier.msg, girlName, boyName);
+  const personalizedShareHook = personalizeLoveText(tier.shareHook, girlName, boyName);
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
@@ -2278,20 +2294,22 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
     '彼女クイズ見習い中': ['彼女クイズ', '見習い中'],
     '彼女マスターまであと1問': ['彼女マスターまで', 'あと1問'],
   };
-  const titleLines = titleBreaks[tier.title];
-  const titleSize = titleLines ? 22 : (tier.title.length >= 14 ? 18 : 23);
+  const titleLines = titleBreaks[tier.title]
+    ? titleBreaks[tier.title].map((line) => personalizeLoveText(line, girlName, boyName))
+    : null;
+  const titleSize = titleLines ? 22 : (personalizedTitle.length >= 14 ? 18 : 23);
   const titleNode = titleLines
     ? <>{titleLines[0]}<br/>{titleLines[1]}</>
-    : tier.title;
+    : personalizedTitle;
   const reviewLines = useMemo(
     () => getLoveReviewLines(answers, cards, [girlName, boyName]),
     [answers, cards, girlName, boyName]
   );
 
   const shareUrl = `${location.origin}/`;
-  const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n今日の称号は「${tier.title}」。\n${tier.shareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
-  const instagramShareText = `彼氏の愛情判定ゲーム\n${boyName} → ${girlName}\n${score}/${total}問正解\n「${tier.title}」\nみんななら何問当てられる？次はあなたの番。\n\nストーリーに載せて\n「うちら何問当たると思う？」って聞いてみて👇\n\n#わたちゃん\n${shareUrl}`;
-  const lineShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！結果は「${tier.title}」でした。${tier.shareHook} ♡`;
+  const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n今日の称号は「${personalizedTitle}」。\n${personalizedShareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
+  const instagramShareText = `彼氏の愛情判定ゲーム\n${boyName} → ${girlName}\n${score}/${total}問正解\n「${personalizedTitle}」\nみんななら何問当てられる？次はあなたの番。\n\nストーリーに載せて\n「うちら何問当たると思う？」って聞いてみて👇\n\n#わたちゃん\n${shareUrl}`;
+  const lineShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！結果は「${personalizedTitle}」でした。${personalizedShareHook} ♡`;
   const copyShareText = `${xShareText}\n${shareUrl}`;
 
   const copyToClipboard = (value, type) => {
@@ -2545,7 +2563,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           lineHeight: 1.75,
           whiteSpace: 'pre-line',
           fontWeight: 700,
-        }}>{tier.msg}</div>
+        }}>{personalizedMessage}</div>
 
         <div style={{
           margin: '14px 18px 0',
