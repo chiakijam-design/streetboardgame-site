@@ -80,11 +80,15 @@ function personalizeLoveText(text, girlName, boyName) {
   if (girl === DEFAULT_PLAYER_NAMES.love[0] && boy === DEFAULT_PLAYER_NAMES.love[1]) {
     return String(text || '');
   }
+  const girlToken = '__WATACHAN_GIRL__';
+  const boyToken = '__WATACHAN_BOY__';
   const perfectBoyToken = '__WATACHAN_PERFECT_BOY__';
   return String(text || '')
-    .replace(/満点彼氏を名乗るには/g, `、${boy}が${perfectBoyToken}を名乗るには`)
-    .replace(/彼女/g, girl)
-    .replace(/彼氏/g, boy)
+    .replace(/満点彼氏を名乗るには/g, `、${boyToken}が${perfectBoyToken}を名乗るには`)
+    .replace(/彼女/g, girlToken)
+    .replace(/彼氏/g, boyToken)
+    .replace(new RegExp(girlToken, 'g'), girl)
+    .replace(new RegExp(boyToken, 'g'), boy)
     .replace(new RegExp(perfectBoyToken, 'g'), '満点彼氏');
 }
 
@@ -134,6 +138,24 @@ function shouldUseNativeShare() {
     && window.matchMedia
     && window.matchMedia('(pointer: coarse)').matches;
   return Boolean(navigator.share && (isMobileUa || hasCoarsePointer));
+}
+
+function isMobileLike() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const hasCoarsePointer = typeof window !== 'undefined'
+    && window.matchMedia
+    && window.matchMedia('(pointer: coarse)').matches;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || hasCoarsePointer;
+}
+
+function openLineShare(message) {
+  const encoded = encodeURIComponent(message);
+  if (isMobileLike()) {
+    window.location.href = `line://msg/text/${encoded}`;
+    return;
+  }
+  window.location.href = `https://line.me/R/msg/text/?${encoded}`;
 }
 
 async function sharePreparedImage({ src, filename, title, text, url }) {
@@ -459,6 +481,8 @@ function getCategorySummary(answers, cards, matcher) {
   return {
     hit: REVIEW_CATEGORY_LABELS[topKey(hits, 'personality')],
     miss: REVIEW_CATEGORY_LABELS[topKey(misses, 'fantasy')],
+    hitCount: Object.values(hits).reduce((sum, count) => sum + count, 0),
+    missCount: Object.values(misses).reduce((sum, count) => sum + count, 0),
   };
 }
 
@@ -545,10 +569,16 @@ function getLoveReviewLines(answers, cards, players, title = '') {
     const seed = questionSeed + (score * 13) + (themes.hit.length * 5) + (themes.miss.length * 7) + offset;
     return list[Math.abs(seed) % list.length];
   };
+  const hitLine = score > 0
+    ? `${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.hit, 3))} ${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.insight, 4))}`
+    : `${boyName}にとって、${girlName}の答えはまだ意外性多め。普段のイメージだけでは読みきれない、発見が多い回です。`;
+  const missLine = score < total
+    ? fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.miss, 5))
+    : `今回は外した問題なし。${girlName}の好みや迷いどころまで、${boyName}の読みがかなり届いています。`;
   return [
     `${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.opening, 1))} ${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.title, 2))}`,
-    `${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.hit, 3))} ${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.insight, 4))}`,
-    fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.miss, 5)),
+    hitLine,
+    missLine,
     `${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.score[scoreBand], 6))} ${fillTemplate(pickVariant(LOVE_REVIEW_VARIANTS.close, 7))}`,
   ];
 }
@@ -631,20 +661,27 @@ function getGroupReviewSections(answers, cards, players, kind = 'friend') {
     const level = player.score >= 4 ? 'かなり高め' : player.score >= 2 ? 'じわじわ深まる途中' : 'まだ謎多め';
     const values = {
       subject,
+      playerName: player.name,
       relation,
       level,
       rank: rank.name,
       hit: themes.hit,
       miss: themes.miss,
     };
+    const hitLine = player.score > 0
+      ? fillTemplate(pickVariant(variants.hit, playerIndex, player.score, themes, 1), values)
+      : `${player.name}にとって、${subject}の答えはまだ意外性多め。知らない一面が多く出た回です。`;
+    const missLine = player.score < total
+      ? fillTemplate(pickVariant(variants.miss, playerIndex, player.score, themes, 2), values)
+      : `${player.name}は今回は外しなし。${subject}の好みやクセをかなり自然に読めています。`;
     return {
       name: player.name,
       score: player.score,
       color: GROUP_REVIEW_COLORS[playerIndex % GROUP_REVIEW_COLORS.length],
       lines: [
         fillTemplate(pickVariant(variants.opening, playerIndex, player.score, themes, 0), values),
-        fillTemplate(pickVariant(variants.hit, playerIndex, player.score, themes, 1), values),
-        fillTemplate(pickVariant(variants.miss, playerIndex, player.score, themes, 2), values),
+        hitLine,
+        missLine,
         fillTemplate(pickVariant(variants.closing, playerIndex, player.score, themes, 3), values),
       ],
     };
@@ -2679,13 +2716,12 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout }) {
     const url = encodeURIComponent(shareUrl);
     let target = '';
     if (platform === 'x') target = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
-    if (platform === 'line') target = `https://line.me/R/msg/text/?${encodeURIComponent(`${lineShareText}\n${shareUrl}`)}`;
     if (platform === 'copy') {
       copyToClipboard(copyShareText, 'copy');
       return;
     }
     if (platform === 'line') {
-      window.location.href = target;
+      openLineShare(`${lineShareText}\n${shareUrl}`);
       return;
     }
     window.open(target, '_blank', 'noopener,noreferrer,width=600,height=500');
@@ -4575,7 +4611,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const openLine = () => {
-    window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
+    openLineShare(`${shareText}\n${shareUrl}`);
   };
 
   const handleSaveImage = async () => {
@@ -5051,7 +5087,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const openLine = () => {
-    window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
+    openLineShare(`${shareText}\n${shareUrl}`);
   };
 
   const handleSaveImage = async () => {
