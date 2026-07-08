@@ -193,6 +193,49 @@ function splitCanvasText(text, maxLength = 15) {
   return lines.slice(0, 3);
 }
 
+const RESULT_GIRL_IMAGE_SRC = 'assets/character/girl-default.png';
+
+function preloadCanvasCharacterImage() {
+  if (typeof window === 'undefined') return null;
+  if (!window.__watachanResultGirlImage) {
+    const img = new Image();
+    img.src = RESULT_GIRL_IMAGE_SRC;
+    window.__watachanResultGirlImage = img;
+  }
+  return window.__watachanResultGirlImage;
+}
+
+function drawCanvasGirl(ctx, x, y, width, height) {
+  const img = preloadCanvasCharacterImage();
+  if (!img || !img.complete || !img.naturalWidth) return false;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.18)';
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 10;
+  ctx.drawImage(img, x, y, width, height);
+  ctx.restore();
+  return true;
+}
+
+function useCanvasCharacterReady() {
+  const [ready, setReady] = useState(() => {
+    const img = preloadCanvasCharacterImage();
+    return Boolean(img && img.complete && img.naturalWidth);
+  });
+  useEffect(() => {
+    const img = preloadCanvasCharacterImage();
+    if (!img) return undefined;
+    if (img.complete && img.naturalWidth) {
+      setReady(true);
+      return undefined;
+    }
+    const done = () => setReady(true);
+    img.addEventListener('load', done, { once: true });
+    return () => img.removeEventListener('load', done);
+  }, []);
+  return ready;
+}
+
 function createLoveResultImageSrc(score, total, tier, players) {
   if (typeof document === 'undefined') return getLoveResultImageSrc(score);
   const lovePlayers = normalizePlayerNames({ love: players }).love;
@@ -279,13 +322,15 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.fillStyle = proto.cyan;
   ctx.globalAlpha = 0.18;
   ctx.beginPath();
-  ctx.arc(756, 408, 118, 0, Math.PI * 2);
+  ctx.arc(760, 416, 124, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
-  ctx.fillStyle = resultTier.emoji ? proto.pink : proto.yellow;
-  ctx.font = '900 82px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(resultTier.emoji || '♡', 760, 450);
+  if (!drawCanvasGirl(ctx, 662, 306, 190, 232)) {
+    ctx.fillStyle = resultTier.emoji ? proto.pink : proto.yellow;
+    ctx.font = '900 82px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(resultTier.emoji || '♡', 760, 450);
+  }
 
   ctx.fillStyle = proto.pink;
   ctx.font = '900 54px "RocknRoll One", sans-serif';
@@ -695,6 +740,7 @@ function App() {
   }, []); // 初回マウントのみ
 
   useEffect(() => {
+    preloadCanvasCharacterImage();
     savePlayerNames(playerNames);
   }, [playerNames]);
 
@@ -2210,9 +2256,10 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
     () => createLoveResultImageSrc(score, total, tier, [girlName, boyName]),
-    [score, total, tier, girlName, boyName]
+    [score, total, tier, girlName, boyName, canvasCharacterReady]
   );
 
   const titleBreaks = {
@@ -3833,7 +3880,15 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillStyle = proto.pink;
   ctx.font = '900 64px "RocknRoll One", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(title, 540, 310);
+  ctx.fillText(title, 470, 310);
+
+  ctx.fillStyle = proto.cyan;
+  ctx.globalAlpha = 0.16;
+  ctx.beginPath();
+  ctx.arc(826, 294, 92, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  drawCanvasGirl(ctx, 748, 196, 150, 183);
 
   ctx.fillStyle = proto.black;
   roundRect(ctx, 140, 350, 800, 106, 22);
@@ -4048,9 +4103,10 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('friend', answers, friendPlayers),
-    [answers, friendPlayers]
+    [answers, friendPlayers, canvasCharacterReady]
   );
   const groupScores = useMemo(() => getPlayerScores(answers, friendPlayers), [answers, friendPlayers]);
   const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'friend');
@@ -4526,9 +4582,10 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageStatus, setImageStatus] = useState('');
+  const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('family', answers, familyPlayers),
-    [answers, familyPlayers]
+    [answers, familyPlayers, canvasCharacterReady]
   );
   const groupScores = useMemo(() => getPlayerScores(answers, familyPlayers), [answers, familyPlayers]);
   const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'family');
