@@ -167,19 +167,6 @@ async function savePreparedImage({ src, filename, title }) {
   return 'downloaded';
 }
 
-function getImageActionMessage(result) {
-  if (result === 'downloaded') return '画像を保存しました';
-  if (result === 'shared') return 'シェアが完了しました';
-  if (result === 'shared-download') return 'シェア画面を開き、画像も保存しました';
-  if (result === 'shared-save-sheet') return '保存・共有の画面を開きました';
-  return '保存・シェアが完了しました';
-}
-
-function showTemporaryStatus(setStatus, message, ms = 2800) {
-  setStatus(message);
-  setTimeout(() => setStatus(''), ms);
-}
-
 function getLoveResultImageSrc(score) {
   const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
   return `/assets/results/love-${safeScore}.png`;
@@ -2338,7 +2325,6 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   const personalizedShareHook = personalizeLoveText(tier.shareHook, girlName, boyName);
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const [imageStatus, setImageStatus] = useState('');
   const [showShareSheet, setShowShareSheet] = useState(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
@@ -2413,12 +2399,11 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
-      const result = await savePreparedImage({
+      await savePreparedImage({
         src: preparedResultImageSrc,
         filename: `watachan-love-result-${score}-${total}.png`,
         title: 'わたちゃん 彼氏の愛情判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は友達版も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像の準備に失敗しました。もう一度試してみてください。');
@@ -2430,14 +2415,13 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   const handleShareImage = async () => {
     setImageBusy(true);
     try {
-      const result = await sharePreparedImage({
+      await sharePreparedImage({
         src: preparedResultImageSrc,
         filename: `watachan-love-result-${score}-${total}.png`,
         title: 'わたちゃん 彼氏の愛情判定ゲーム',
         text: xShareText,
         url: shareUrl,
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は友達版も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
@@ -2743,7 +2727,6 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           onShare={handleShareImage}
           onX={() => handleShare('x')}
           onLine={() => handleShare('line')}
-          status={imageStatus}
           nextLabel="次は友達版で遊ぶ"
           onNext={onFriend}
         />
@@ -4311,7 +4294,6 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const scoreSummary = getPlayerScoreSummary(answers, friendPlayers, 'friend');
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const [imageStatus, setImageStatus] = useState('');
   const [showShareSheet, setShowShareSheet] = useState(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
@@ -4365,12 +4347,11 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
-      const result = await savePreparedImage({
+      await savePreparedImage({
         src: preparedResultImageSrc,
         filename: `watachan-friend-result-${totalQuestions}.png`,
         title: 'わたちゃん 友達の友情判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は家族版も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像の準備に失敗しました。もう一度試してみてください。');
@@ -4382,14 +4363,13 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const handleShareImage = async () => {
     setImageBusy(true);
     try {
-      const result = await sharePreparedImage({
+      await sharePreparedImage({
         src: preparedResultImageSrc,
         filename: `watachan-friend-result-${totalQuestions}.png`,
         title: 'わたちゃん 友達の友情判定ゲーム',
         text: shareText,
         url: shareUrl,
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は家族版も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
@@ -4488,7 +4468,6 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onShare={handleShareImage}
           onX={openX}
           onLine={openLine}
-          status={imageStatus}
           nextLabel="次は家族版で遊ぶ"
           onNext={onFamily}
         />
@@ -4793,7 +4772,6 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const scoreSummary = getPlayerScoreSummary(answers, familyPlayers, 'family');
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const [imageStatus, setImageStatus] = useState('');
   const [showShareSheet, setShowShareSheet] = useState(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
@@ -4847,12 +4825,11 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const handleSaveImage = async () => {
     setImageBusy(true);
     try {
-      const result = await savePreparedImage({
+      await savePreparedImage({
         src: preparedResultImageSrc,
         filename: `watachan-family-result-${totalQuestions}.png`,
         title: 'わたちゃん 家族の絆判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は彼氏の愛情判定も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像の準備に失敗しました。もう一度試してみてください。');
@@ -4864,14 +4841,13 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const handleShareImage = async () => {
     setImageBusy(true);
     try {
-      const result = await sharePreparedImage({
+      await sharePreparedImage({
         src: preparedResultImageSrc,
         filename: `watachan-family-result-${totalQuestions}.png`,
         title: 'わたちゃん 家族の絆判定ゲーム',
         text: shareText,
         url: shareUrl,
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は彼氏の愛情判定も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
@@ -4970,7 +4946,6 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onShare={handleShareImage}
           onX={openX}
           onLine={openLine}
-          status={imageStatus}
           nextLabel="次は彼氏の愛情判定で遊ぶ"
           onNext={onLove}
         />
