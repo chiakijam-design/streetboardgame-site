@@ -29,7 +29,7 @@ const proto = {
   shadowHard: '4px 4px 0 #1A1A1A',
 };
 
-const { useState, useEffect, useMemo } = React;
+const { useState, useEffect, useMemo, useRef } = React;
 
 const ROUND_SIZE = 5;
 const FRIEND_ROUND_SIZE = 5;
@@ -518,10 +518,39 @@ function getGroupReviewSections(answers, cards, players, kind = 'friend') {
   });
 }
 
-function ResultReviewBox({ lines, title = 'AI総評' }) {
+function ResultReviewBox({ lines, title = 'AI総評', onScrolledPast }) {
+  const boxRef = useRef(null);
+  useEffect(() => {
+    if (!onScrolledPast || !lines || !lines.length) return undefined;
+    let done = false;
+    let rafId = null;
+    const check = () => {
+      if (done || !boxRef.current) return;
+      const rect = boxRef.current.getBoundingClientRect();
+      if (rect.bottom <= 0) {
+        done = true;
+        onScrolledPast();
+      }
+    };
+    const scheduleCheck = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        check();
+      });
+    };
+    window.addEventListener('scroll', scheduleCheck, { passive: true });
+    window.addEventListener('resize', scheduleCheck);
+    scheduleCheck();
+    return () => {
+      window.removeEventListener('scroll', scheduleCheck);
+      window.removeEventListener('resize', scheduleCheck);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [onScrolledPast, lines]);
   if (!lines || !lines.length) return null;
   return (
-    <div style={{
+    <div ref={boxRef} style={{
       marginTop: 14,
       padding: '12px 12px',
       background: proto.cream,
@@ -561,10 +590,39 @@ function ResultReviewBox({ lines, title = 'AI総評' }) {
   );
 }
 
-function GroupResultReviewBox({ sections, title = 'AI総評' }) {
+function GroupResultReviewBox({ sections, title = 'AI総評', onScrolledPast }) {
+  const boxRef = useRef(null);
+  useEffect(() => {
+    if (!onScrolledPast || !sections || !sections.length) return undefined;
+    let done = false;
+    let rafId = null;
+    const check = () => {
+      if (done || !boxRef.current) return;
+      const rect = boxRef.current.getBoundingClientRect();
+      if (rect.bottom <= 0) {
+        done = true;
+        onScrolledPast();
+      }
+    };
+    const scheduleCheck = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        check();
+      });
+    };
+    window.addEventListener('scroll', scheduleCheck, { passive: true });
+    window.addEventListener('resize', scheduleCheck);
+    scheduleCheck();
+    return () => {
+      window.removeEventListener('scroll', scheduleCheck);
+      window.removeEventListener('resize', scheduleCheck);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [onScrolledPast, sections]);
   if (!sections || !sections.length) return null;
   return (
-    <div style={{
+    <div ref={boxRef} style={{
       marginTop: 14,
       padding: '12px 12px',
       background: proto.cream,
@@ -2326,6 +2384,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const shareSheetShownRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
     () => createLoveResultImageSrc(score, total, tier, [girlName, boyName]),
@@ -2349,10 +2408,11 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
     [answers, cards, girlName, boyName]
   );
 
-  useEffect(() => {
-    const timer = setTimeout(() => setShowShareSheet(true), 850);
-    return () => clearTimeout(timer);
-  }, []);
+  const showShareSheetAfterReview = () => {
+    if (shareSheetShownRef.current) return;
+    shareSheetShownRef.current = true;
+    setShowShareSheet(true);
+  };
 
   const shareUrl = `${location.origin}/`;
   const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n今日の称号は「${personalizedTitle}」。\n${personalizedShareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
@@ -2717,7 +2777,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
             );
           })}
         </div>
-        <ResultReviewBox lines={reviewLines} title="AI総評" />
+        <ResultReviewBox lines={reviewLines} title="AI総評" onScrolledPast={showShareSheetAfterReview} />
       </div>
 
       {/* シェア */}
@@ -4295,6 +4355,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const shareSheetShownRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('friend', answers, friendPlayers),
@@ -4307,10 +4368,11 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
     [answers, cards, friendPlayers]
   );
 
-  useEffect(() => {
-    const timer = setTimeout(() => setShowShareSheet(true), 850);
-    return () => clearTimeout(timer);
-  }, []);
+  const showShareSheetAfterReview = () => {
+    if (shareSheetShownRef.current) return;
+    shareSheetShownRef.current = true;
+    setShowShareSheet(true);
+  };
 
   const shareUrl = `${location.origin}/friends`;
   const shareText = `友達の友情判定ゲームをやってみた！${scoreSummary}。\n${groupHighlight}\n\n友達なら何問当てられる？次はあなたの番。\n#わたちゃん #友情判定ゲーム #streetboardgame`;
@@ -4459,7 +4521,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           players={friendPlayers}
           label="ANSWER DETAILS"
         />
-        <GroupResultReviewBox sections={reviewSections} title="AI総評" />
+        <GroupResultReviewBox sections={reviewSections} title="AI総評" onScrolledPast={showShareSheetAfterReview} />
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
@@ -4774,6 +4836,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const shareSheetShownRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('family', answers, familyPlayers),
@@ -4786,10 +4849,11 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
     [answers, cards, familyPlayers]
   );
 
-  useEffect(() => {
-    const timer = setTimeout(() => setShowShareSheet(true), 850);
-    return () => clearTimeout(timer);
-  }, []);
+  const showShareSheetAfterReview = () => {
+    if (shareSheetShownRef.current) return;
+    shareSheetShownRef.current = true;
+    setShowShareSheet(true);
+  };
 
   const shareUrl = `${location.origin}/family`;
   const shareText = `家族の絆判定ゲームをやってみた！${scoreSummary}。\n${groupHighlight}\n\n家族なら何問当てられる？次はあなたの番。\n#わたちゃん #家族の絆判定 #streetboardgame`;
@@ -4938,7 +5002,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           players={familyPlayers}
           label="ANSWER DETAILS"
         />
-        <GroupResultReviewBox sections={reviewSections} title="AI総評" />
+        <GroupResultReviewBox sections={reviewSections} title="AI総評" onScrolledPast={showShareSheetAfterReview} />
       </div>
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
