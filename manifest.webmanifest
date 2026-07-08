@@ -1,0 +1,53 @@
+{
+  "name": "わたちゃん｜彼氏の愛情判定ゲーム",
+  "short_name": "わたちゃん",
+  "description": "スマホ1台で遊べる、彼氏の愛情判定・友達の友情判定・家族の絆判定ゲーム。",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#EC4F88",
+  "theme_color": "#EC4F88",
+  "orientation": "portrait",
+  "lang": "ja",
+  "categories": ["games", "entertainment", "social"],
+  "icons": [
+    {
+      "src": "/assets/favicon-48.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "彼氏の愛情を判定する",
+      "short_name": "彼氏判定",
+      "url": "/",
+      "icons": [{ "src": "/assets/favicon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "友達の友情を判定する",
+      "short_name": "友情判定",
+      "url": "/friends",
+      "icons": [{ "src": "/assets/favicon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "家族の絆を判定する",
+      "short_name": "家族判定",
+      "url": "/family",
+      "icons": [{ "src": "/assets/favicon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
