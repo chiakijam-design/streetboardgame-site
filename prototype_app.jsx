@@ -2600,9 +2600,24 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', next
         letterSpacing: '0.12em',
         marginBottom: 8,
       }}>SHARE YOUR RESULT</div>
-      <div style={{ fontSize: 16 }}>答え合わせを見たら結果をシェア</div>
+      <div style={{ fontSize: 17 }}>この結果、友達に聞いてみる？</div>
       <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
-        XとInstagramで、結果画像とシェア文をかんたん投稿
+        結果画像に「みんななら何問？」を付けて投稿できます
+      </div>
+      <div style={{
+        marginTop: 10,
+        padding: '9px 10px',
+        background: proto.white,
+        border: `2px dashed ${proto.black}`,
+        borderRadius: 12,
+        fontSize: 11,
+        lineHeight: 1.5,
+        textAlign: 'left',
+      }}>
+        <div style={{ fontWeight: 900, color: proto.pink }}>投稿するとこんな感じ</div>
+        <div style={{ marginTop: 2, color: proto.text }}>
+          結果画像 + 「みんななら何問当てられる？」の文章で、ストーリーやXにそのまま出せます。
+        </div>
       </div>
       <div style={{
         display: 'grid',
@@ -2617,13 +2632,13 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', next
           background: proto.black,
           color: proto.white,
           fontFamily: proto.body,
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: 900,
           boxShadow: '3px 3px 0 #5BD4E8',
           opacity: busy ? 0.65 : 1,
           cursor: busy ? 'default' : 'pointer',
         }}>
-          Xでシェア
+          Xでみんなに聞く
         </button>
         <button onClick={onInstagram || onShare} disabled={busy} style={{
           minHeight: 58,
@@ -2632,13 +2647,13 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', next
           background: proto.pink,
           color: proto.white,
           fontFamily: proto.body,
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: 900,
           boxShadow: '3px 3px 0 #000',
           opacity: busy ? 0.65 : 1,
           cursor: busy ? 'default' : 'pointer',
         }}>
-          Instagramでシェア
+          ストーリーで反応をもらう
         </button>
       </div>
       <button onClick={onShare} disabled={busy} style={{
@@ -2656,7 +2671,7 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', next
         opacity: busy ? 0.65 : 1,
         cursor: busy ? 'default' : 'pointer',
       }}>
-        {busy ? '画像を準備中...' : 'その他に保存・共有する'}
+        {busy ? '画像を準備中...' : '画像だけ保存・ほかのアプリへ'}
       </button>
       {status && (
         <div role="status" aria-live="polite" style={{
