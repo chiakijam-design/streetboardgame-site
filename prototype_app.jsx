@@ -411,10 +411,44 @@ function getQuestionHitScore(answers) {
   return answers.reduce((sum, answer) => sum + (answer.matches && answer.matches.some(Boolean) ? 1 : 0), 0);
 }
 
-function listJoin(items, fallback = 'なし') {
-  const clean = items.filter(Boolean);
-  if (!clean.length) return fallback;
-  return clean.slice(0, 3).join('、');
+const REVIEW_CATEGORY_LABELS = {
+  food: '食べ物・日常の好み',
+  outing: 'おでかけ・遊びの感覚',
+  lifestyle: '暮らし方・生活リズム',
+  personality: '性格・価値観',
+  memory: '思い出・過去のツボ',
+  fantasy: 'もしも話・妄想力',
+  entertainment: '推し・エンタメ感性',
+  challenge: '苦手なこと・挑戦のクセ',
+};
+
+function inferReviewCategory(card = {}) {
+  const source = `${card.category || ''} ${card.title || ''}`;
+  if (/食|飲|ご飯|朝食|夜食|お菓子|コンビニ|味|料理|差し入れ|給食|祭り/.test(source)) return 'food';
+  if (/旅行|行きたい|場所|デート|都道府県|地域|遊び|休日|パーティー|イベント/.test(source)) return 'outing';
+  if (/家|部屋|暮らし|寝る前|お風呂|朝|支度|持ち物|常備/.test(source)) return 'lifestyle';
+  if (/性格|価値観|自分|基準|信じ|人生|言葉|親友|属性/.test(source)) return 'personality';
+  if (/昔|思い出|過去|子ども|学校|仕事|教科|アルバイト/.test(source)) return 'memory';
+  if (/もし|能力|願い|無人島|宇宙|未来|生まれ変わる|一生/.test(source)) return 'fantasy';
+  if (/SNS|映画|推し|本|漫画|音楽|アニメ|ゲーム/.test(source)) return 'entertainment';
+  if (/苦手|怖い|挑戦|NG|イライラ|決断/.test(source)) return 'challenge';
+  return 'personality';
+}
+
+function getCategorySummary(answers, cards, matcher) {
+  const hits = {};
+  const misses = {};
+  answers.forEach((answer, index) => {
+    const key = inferReviewCategory(cards[index]);
+    if (matcher(answer)) hits[key] = (hits[key] || 0) + 1;
+    else misses[key] = (misses[key] || 0) + 1;
+  });
+  const topKey = (values, fallback) => Object.entries(values)
+    .sort((a, b) => b[1] - a[1])[0]?.[0] || fallback;
+  return {
+    hit: REVIEW_CATEGORY_LABELS[topKey(hits, 'personality')],
+    miss: REVIEW_CATEGORY_LABELS[topKey(misses, 'fantasy')],
+  };
 }
 
 function getLoveReviewLines(answers, cards, players) {
@@ -423,27 +457,20 @@ function getLoveReviewLines(answers, cards, players) {
   const boyName = lovePlayers[1];
   const total = Math.max(1, answers.length);
   const score = answers.filter((answer) => answer.match).length;
-  const hitTitles = answers
-    .map((answer, index) => answer.match ? (cards[index] && cards[index].title) : '')
-    .filter(Boolean);
-  const missTitles = answers
-    .map((answer, index) => !answer.match ? (cards[index] && cards[index].title) : '')
-    .filter(Boolean);
-  const mood = score >= 4
-    ? `${boyName}は${girlName}の直感や好みをかなり拾えています。`
-    : score >= 2
-      ? `${boyName}は${girlName}のことを分かっている部分と、まだ伸びしろの部分が半々です。`
-      : `${boyName}は${girlName}の意外な一面を、今日かなり発見した回です。`;
+  const themes = getCategorySummary(answers, cards, (answer) => answer.match);
+  const level = score >= 4 ? 'かなり近い波長' : score >= 2 ? '半分シンクロ型' : '未知数多めの開拓型';
   return [
-    `${total}問中${score}問正解。今回の理解度は「${score >= 4 ? 'かなり近い' : score >= 2 ? 'いい感じに更新中' : 'ここから本番'}」です。`,
-    mood,
-    `当たったのは「${listJoin(hitTitles)}」あたり。ここは普段の会話や雰囲気をちゃんと見ている証拠。`,
-    `外したのは「${listJoin(missTitles)}」あたり。ここは次のデートや雑談で聞くと一気に深まります。`,
-    score === total
-      ? `全問正解はかなり強いので、${girlName}側から見ても「分かってる感」が出やすい結果です。`
-      : `外した答えは失敗というより、${girlName}の取扱説明書に新しいページが増えた感じです。`,
-    `特に外した問題は、理由まで聞くと「そういう考え方なんだ」が見えて盛り上がります。`,
-    `次にやるなら、${boyName}が迷った問題をもう一度話すと、ただの正解発表より仲良くなれます。`,
+    `${boyName}と${girlName}は、${level}の相性です。`,
+    `${themes.hit}では、ふたりの感覚が自然に重なりやすいタイプ。`,
+    `何気ない選択や普段の好みほど、${boyName}の観察力が出やすい流れです。`,
+    `一方で${themes.miss}では、${girlName}の中にまだ読めない余白が残っています。`,
+    score >= 4
+      ? `全体的には「分かってくれてる感」が強く、安心感がちゃんと伝わる組み合わせ。`
+      : score >= 2
+        ? `ズレもあるけど、そのズレが会話のネタになって距離を縮める組み合わせ。`
+        : `今はまだ予想が外れやすいぶん、知るほど急に伸びるポテンシャル型です。`,
+    `恋愛相性で見ると、正解数よりも「理由を聞いた時の盛り上がり」が強み。`,
+    `総合すると、ふたりは答え合わせでじわじわ仲が深まるタイプです。`,
   ];
 }
 
@@ -451,30 +478,20 @@ function getGroupReviewLines(answers, cards, players, kind = 'friend') {
   const total = Math.max(1, answers.length);
   const scores = getPlayerScores(answers, players);
   const subject = players[0] || '本人';
-  const relation = kind === 'family' ? '家族' : '友達';
-  const titleFor = (index) => (cards[index] && cards[index].title) || `Q${index + 1}`;
+  const relation = kind === 'family' ? '家族相性' : '友情相性';
   return scores.flatMap((player, playerIndex) => {
-    const hits = answers
-      .map((answer, index) => answer.matches[playerIndex] ? titleFor(index) : '')
-      .filter(Boolean);
-    const misses = answers
-      .map((answer, index) => !answer.matches[playerIndex] ? titleFor(index) : '')
-      .filter(Boolean);
     const rank = getGroupResultRank(kind, player.score);
-    const tone = player.score >= 4
-      ? `${subject}のことをかなり読めているタイプ。`
-      : player.score >= 2
-        ? `分かっているところと、まだ謎なところがちょうど混ざっています。`
-        : `今日から${subject}データを更新していく伸びしろ枠です。`;
+    const themes = getCategorySummary(answers, cards, (answer) => answer.matches[playerIndex]);
+    const level = player.score >= 4 ? 'かなり高め' : player.score >= 2 ? 'じわじわ深まる途中' : 'まだ謎多め';
     return [
-      `${player.name}: ${total}問中${player.score}問正解。「${rank.name}」。`,
-      `${tone}当たったのは「${listJoin(hits)}」。`,
-      `外したのは「${listJoin(misses)}」。ここを聞くと${relation}トークがもう一段深まります。`,
+      `${player.name}: ${subject}との${relation}は${level}。「${rank.name}」タイプです。`,
+      `${themes.hit}では感覚が合いやすく、ふだんの空気感がちゃんと近い印象。`,
+      `${themes.miss}ではズレが出やすく、そこにその人らしい個性が出ています。`,
       player.score >= 4
-        ? `次は${subject}側からも「なんで分かったの？」を聞くと、ちょっと自慢できる流れです。`
+        ? `総合すると、言葉にしなくても伝わる部分が多い安心シンクロ型。`
         : player.score >= 2
-          ? `次回は外したお題の理由まで聞くと、ただの答え合わせより仲が深まります。`
-          : `まずは外したお題を1つだけ深掘りすると、次回の正解率が一気に上がりそうです。`,
+          ? `総合すると、分かる部分と意外な部分のバランスが楽しい発見型。`
+          : `総合すると、まだ知らない一面が多くて逆に盛り上がる未開拓型。`,
     ];
   });
 }
