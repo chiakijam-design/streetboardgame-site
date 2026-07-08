@@ -289,6 +289,16 @@ function createLoveResultImageSrc(score, total, tier, players) {
 
   ctx.fillStyle = proto.pink;
   ctx.font = '900 54px "RocknRoll One", sans-serif';
+  ctx.fillStyle = proto.black;
+  roundRect(ctx, 408, 620, 264, 44, 22);
+  ctx.fill();
+  ctx.fillStyle = proto.yellow;
+  ctx.font = '900 26px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('今日の称号', 540, 650);
+
+  ctx.fillStyle = proto.pink;
+  ctx.font = '900 54px "RocknRoll One", sans-serif';
   drawCanvasLines(ctx, splitCanvasText(resultTier.title, 12), 540, 705, 64);
 
   ctx.fillStyle = proto.white;
@@ -308,15 +318,17 @@ function createLoveResultImageSrc(score, total, tier, players) {
   drawCanvasLines(ctx, messageLines, 540, 875, 46);
 
   ctx.fillStyle = proto.yellow;
-  roundRect(ctx, 170, 1100, 740, 72, 24);
+  roundRect(ctx, 170, 1095, 740, 92, 24);
   ctx.fill();
   ctx.strokeStyle = proto.black;
   ctx.lineWidth = 5;
-  roundRect(ctx, 170, 1100, 740, 72, 24);
+  roundRect(ctx, 170, 1095, 740, 92, 24);
   ctx.stroke();
   ctx.fillStyle = proto.black;
-  ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
-  ctx.fillText(`${boyName}は${girlName}のこと、どこまで分かってた？`, 540, 1145);
+  ctx.font = '900 27px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('みんななら何問当てられる？', 540, 1132);
+  ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('次はあなたの番 #わたちゃん', 540, 1168);
 
   ctx.fillStyle = proto.textSoft;
   ctx.font = '700 25px "DotGothic16", monospace';
@@ -679,6 +691,7 @@ function App() {
             onReplay={() => startFriendRound(playerCount)}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
+            onFamily={() => setScreen('familyIntro')}
           />
         )}
         {screen === 'familyResultReady' && (
@@ -700,6 +713,7 @@ function App() {
             onReplay={() => startFamilyRound(playerCount)}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
+            onLove={() => setScreen('intro')}
           />
         )}
         {screen === 'about' && (
@@ -1964,7 +1978,7 @@ const RESULT_TIERS = [
     shareHook: '全問正解、彼氏が彼女公認の理解王でした' },
 ];
 
-function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onProduct }) {
+function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onProduct, onFriend, onFamily }) {
   const score = answers.filter(a => a.match).length;
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
@@ -1991,7 +2005,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
     : tier.title;
 
   const shareUrl = `${location.origin}/`;
-  const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n結果は「${tier.title}」でした。\n${tier.shareHook} ♡\n\nみんなは何問当たる？\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
+  const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n今日の称号は「${tier.title}」でした。\n${tier.shareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね #彼氏の愛情判定`;
   const instagramShareText = `彼氏の愛情判定ゲーム\n${boyName} → ${girlName}\n${score}/${total}問正解\n「${tier.title}」\n${tier.shareHook} ♡\n\nストーリーに載せて\n「うちら何問当たると思う？」って聞いてみて👇\n\n#わたちゃん\n${shareUrl}`;
   const lineShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！結果は「${tier.title}」でした。${tier.shareHook} ♡`;
   const copyShareText = `${xShareText}\n${shareUrl}`;
@@ -2045,7 +2059,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
         filename: `watachan-love-result-${score}-${total}.png`,
         title: 'わたちゃん 彼氏の愛情判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, getImageActionMessage(result));
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は友達版も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像の準備に失敗しました。もう一度試してみてください。');
@@ -2063,7 +2077,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
         filename: `watachan-love-result-${score}-${total}.png`,
         title: 'わたちゃん 彼氏の愛情判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます`);
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます。次は友達版もどうぞ`, 6000);
       setTimeout(openInstagramApp, 450);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
@@ -2083,7 +2097,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
         text: xShareText,
         url: shareUrl,
       });
-      showTemporaryStatus(setImageStatus, getImageActionMessage(result));
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は友達版も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
@@ -2218,6 +2232,17 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           margin: '14px 18px 0',
           padding: '4px 0 0',
         }}>
+          <div style={{
+            display: 'inline-block',
+            marginBottom: 5,
+            padding: '3px 10px',
+            borderRadius: 999,
+            background: proto.black,
+            color: proto.yellow,
+            fontSize: 10,
+            fontWeight: 900,
+            border: `1.5px solid ${proto.black}`,
+          }}>今日の称号</div>
           <LogoText size={titleSize} color={proto.pink} outline={proto.black} lineHeight={1.25}>
             {titleNode}
           </LogoText>
@@ -2248,7 +2273,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           letterSpacing: '0.12em',
         }}>
           <span>streetboardgame.com</span>
-          <span style={{ color: proto.pink, fontWeight: 900 }}>何問当たる？</span>
+          <span style={{ color: proto.pink, fontWeight: 900 }}>みんななら何問当てられる？</span>
         </div>
       </div>
       </div>
@@ -2376,6 +2401,8 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
           onX={() => handleShare('x')}
           onInstagram={handleInstagramShare}
           status={imageStatus}
+          nextLabel="次は友達版で遊ぶ"
+          onNext={onFriend}
         />
         <button onClick={() => handleShare('copy')} style={textOnlyBtn()}>
           {copied === 'copy' ? 'シェア文をコピーしました' : '文章だけコピーする'}
@@ -2484,7 +2511,7 @@ function ResultScreen({ answers, cards, players, onReplay, onHome, onAbout, onPr
   );
 }
 
-function ResultImageActions({ busy, onShare, onX, onInstagram, status = '' }) {
+function ResultImageActions({ busy, onShare, onX, onInstagram, status = '', nextLabel = '', onNext }) {
   return (
     <div style={{
       background: proto.yellow,
@@ -2580,6 +2607,23 @@ function ResultImageActions({ busy, onShare, onX, onInstagram, status = '' }) {
           lineHeight: 1.35,
         }}>
           {status} ♡
+          {nextLabel && onNext && (
+            <button type="button" onClick={onNext} style={{
+              width: '100%',
+              marginTop: 8,
+              minHeight: 38,
+              borderRadius: 999,
+              border: `2px solid ${proto.black}`,
+              background: proto.yellow,
+              color: proto.black,
+              fontFamily: proto.body,
+              fontSize: 12,
+              fontWeight: 900,
+              boxShadow: '2px 2px 0 #000',
+            }}>
+              {nextLabel}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -3601,13 +3645,15 @@ function createGroupResultImageSrc(kind, answers, players) {
   });
 
   ctx.fillStyle = proto.black;
-  ctx.font = '900 26px "Zen Maru Gothic", sans-serif';
+  ctx.font = '900 27px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('答え合わせで、どの問題を当てたか確認してね', 540, 1240);
+  ctx.fillText(isFamily ? '家族なら何問当てられる？' : '友達なら何問当てられる？', 540, 1230);
+  ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('次はあなたの番 #わたちゃん', 540, 1264);
 
   ctx.fillStyle = proto.textSoft;
   ctx.font = '700 24px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com / #わたちゃん', 540, 1286);
+  ctx.fillText('streetboardgame.com', 540, 1308);
 
   return canvas.toDataURL('image/png');
 }
@@ -3709,7 +3755,7 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
   );
 }
 
-function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout }) {
+function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout, onFamily }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const friendPlayers = useMemo(() => getFriendPlayers(playerCount, playerNames), [playerCount, playerNames]);
   const scoreSummary = getPlayerScoreSummary(answers, friendPlayers, 'friend');
@@ -3722,7 +3768,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   );
 
   const shareUrl = `${location.origin}/friends`;
-  const shareText = `友達の友情判定ゲームをやってみた！\n${scoreSummary}\n\n友達とやったら何問当たる？\n#わたちゃん #友情判定ゲーム #streetboardgame`;
+  const shareText = `友達の友情判定ゲームをやってみた！\n${scoreSummary}\n\n友達なら何問当てられる？次はあなたの番。\n#わたちゃん #友情判定ゲーム #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -3753,7 +3799,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
         filename: `watachan-friend-result-${totalQuestions}.png`,
         title: 'わたちゃん 友達の友情判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, getImageActionMessage(result));
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は家族版も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像の準備に失敗しました。もう一度試してみてください。');
@@ -3771,7 +3817,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
         filename: `watachan-friend-result-${totalQuestions}.png`,
         title: 'わたちゃん 友達の友情判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます`);
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます。次は家族版もどうぞ`, 6000);
       setTimeout(openInstagramApp, 450);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
@@ -3791,7 +3837,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
         text: shareText,
         url: shareUrl,
       });
-      showTemporaryStatus(setImageStatus, getImageActionMessage(result));
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は家族版も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
@@ -3890,6 +3936,8 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onX={openX}
           onInstagram={handleInstagramShare}
           status={imageStatus}
+          nextLabel="次は家族版で遊ぶ"
+          onNext={onFamily}
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
@@ -4178,7 +4226,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswe
   );
 }
 
-function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout }) {
+function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout, onLove }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const familyPlayers = useMemo(() => getFamilyPlayers(playerCount, playerNames), [playerCount, playerNames]);
   const scoreSummary = getPlayerScoreSummary(answers, familyPlayers, 'family');
@@ -4191,7 +4239,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   );
 
   const shareUrl = `${location.origin}/family`;
-  const shareText = `家族の絆判定ゲームをやってみた！\n${scoreSummary}\n\n家族でやったら何問当たる？\n#わたちゃん #家族の絆判定 #streetboardgame`;
+  const shareText = `家族の絆判定ゲームをやってみた！\n${scoreSummary}\n\n家族なら何問当てられる？次はあなたの番。\n#わたちゃん #家族の絆判定 #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -4222,7 +4270,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
         filename: `watachan-family-result-${totalQuestions}.png`,
         title: 'わたちゃん 家族の絆判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, getImageActionMessage(result));
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は彼氏の愛情判定も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像の準備に失敗しました。もう一度試してみてください。');
@@ -4240,7 +4288,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
         filename: `watachan-family-result-${totalQuestions}.png`,
         title: 'わたちゃん 家族の絆判定ゲーム',
       });
-      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます`);
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。Instagramを開きます。次は彼氏の愛情判定もどうぞ`, 6000);
       setTimeout(openInstagramApp, 450);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
@@ -4260,7 +4308,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
         text: shareText,
         url: shareUrl,
       });
-      showTemporaryStatus(setImageStatus, getImageActionMessage(result));
+      showTemporaryStatus(setImageStatus, `${getImageActionMessage(result)}。次は彼氏の愛情判定も遊べます`, 6000);
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
@@ -4359,6 +4407,8 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onX={openX}
           onInstagram={handleInstagramShare}
           status={imageStatus}
+          nextLabel="次は彼氏の愛情判定で遊ぶ"
+          onNext={onLove}
         />
         <button onClick={copyShareText} style={textOnlyBtn()}>
           {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
