@@ -34,6 +34,7 @@ export default {
         description: '本人が選んだ答えを友達が予想する、スマホ1台で遊べる無料友情判定ゲーム。2〜4人で友達の理解度をチェックできます。',
         url: CANONICAL_ORIGIN + '/friends',
         ogTitle: '友達の友情判定｜わたちゃん',
+        imageAlt: 'わたちゃん 友達の友情判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/friends#webpage',
         gameId: CANONICAL_ORIGIN + '/friends#friend-game',
         gameName: 'わたちゃん 友達の友情判定',
@@ -48,6 +49,7 @@ export default {
         description: '本人が選んだ答えを家族が予想する、スマホ1台で遊べる無料家族ゲーム。2〜4人で家族の絆をチェックできます。',
         url: CANONICAL_ORIGIN + '/family',
         ogTitle: '家族の絆判定｜わたちゃん',
+        imageAlt: 'わたちゃん 家族の絆判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/family#webpage',
         gameId: CANONICAL_ORIGIN + '/family#family-game',
         gameName: 'わたちゃん 家族の絆判定',
@@ -62,6 +64,7 @@ export default {
         description: 'わたちゃんは、彼氏の愛情判定ゲームをメインに、友達の友情判定や家族の絆判定を展開するスマホ向け無料ゲームサイトです。',
         url: CANONICAL_ORIGIN + '/about',
         ogTitle: 'About｜わたちゃん',
+        imageAlt: 'わたちゃん 彼氏の愛情判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/about#webpage',
         noscriptTitle: 'About｜わたちゃん',
         noscriptBody: 'わたちゃんは、彼氏が彼女の答えを当てる「彼氏の愛情判定ゲーム」をメインにしたスマホ向け無料ゲームサイトです。シリーズとして友達の友情判定や家族の絆判定も公開しています。',
@@ -71,6 +74,7 @@ export default {
         description: 'Amazonで販売中のボードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、飲み会や旅行、おうちデートでも遊べます。',
         url: CANONICAL_ORIGIN + '/product',
         ogTitle: '製品版｜私のこと、ちゃんと分かってるよね？',
+        imageAlt: 'ボードゲーム版 私のこと、ちゃんと分かってるよね？',
         pageId: CANONICAL_ORIGIN + '/product#webpage',
         noscriptTitle: '製品版｜私のこと、ちゃんと分かってるよね？',
         noscriptBody: 'Amazonで販売中のボードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、飲み会や旅行、おうちデートでも遊べます。',
@@ -130,8 +134,10 @@ function applySeoMeta(html, page) {
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${page.ogTitle}" />`)
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${page.description}" />`)
     .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${page.url}" />`)
+    .replace(/<meta property="og:image:alt" content="[^"]*" \/>/, `<meta property="og:image:alt" content="${page.imageAlt || page.ogTitle}" />`)
     .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${page.ogTitle}" />`)
     .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${page.description}" />`)
+    .replace(/<meta name="twitter:image:alt" content="[^"]*" \/>/, `<meta name="twitter:image:alt" content="${page.imageAlt || page.ogTitle}" />`)
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${JSON.stringify(buildStructuredData(page))}</script>`)
     .replace(/<noscript>[\s\S]*?<\/noscript>/, buildNoscript(page));
 }
