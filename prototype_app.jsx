@@ -1364,7 +1364,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         わたちゃん 彼氏の愛情判定ゲーム
       </h1>
       <p style={srOnlyStyle()}>
-        彼氏が彼女の答えをどれだけ当てられるかを判定する無料カップル診断ゲームです。スマホ1台でデート、飲み会、旅行、おうち時間に遊べます。彼女の愛情判定、友達の友情判定、家族の絆判定も公開中です。
+        彼氏が彼女の答えをどれだけ当てられるかを判定する無料カップル診断ゲームです。スマホ1台でデート、飲み会、旅行、おうち時間に遊べます。彼氏の愛情判定をメインに、彼女の愛情判定、友達の友情判定、家族の絆判定も公開中です。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -1427,9 +1427,20 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
             textShadow: '1px 1px 0 #000',
           }}>▶</span>
         </button>
+        <div style={{
+          marginTop: 8,
+          textAlign: 'center',
+          fontSize: 10,
+          lineHeight: 1.5,
+          color: proto.white,
+          opacity: 0.82,
+          fontWeight: 800,
+        }}>
+          まずはメインの彼氏版から遊べます
+        </div>
         <button onClick={onFriend} style={{
           ...secondaryBtn(),
-          marginTop: 14,
+          marginTop: 12,
           background: proto.yellow,
         }}>
           友達の友情を判定する
@@ -1451,7 +1462,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           fontWeight: 700,
         }}>
           メインは彼氏の愛情判定ゲーム。<br />
-          彼女の愛情判定、友情判定版、家族の絆判定版も公開中。
+          彼女版・友情判定版・家族の絆判定版はシリーズとして公開中。
         </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
           marginTop: 12,
@@ -1506,9 +1517,9 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           marginBottom: 10, paddingLeft: 4,
         }}>MAIN GAME / SERIES ✦</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <SeriesCard emoji="💕" title="彼氏の愛情判定" status="公開中" href="/love" onClick={onLovePage} />
-          <SeriesCard emoji="👯" title="友達の友情判定" status="公開中" href="/friends" onClick={onFriendPage} />
-          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="公開中" href="/family" onClick={onFamilyPage} />
+          <SeriesCard emoji="💕" title="彼氏の愛情判定" status="メイン" href="/love" onClick={onLovePage} />
+          <SeriesCard emoji="👯" title="友達の友情判定" status="シリーズ" href="/friends" onClick={onFriendPage} />
+          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="シリーズ" href="/family" onClick={onFamilyPage} />
         </div>
       </div>
 

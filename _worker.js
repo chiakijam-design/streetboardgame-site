@@ -4,7 +4,7 @@
 // 動作:
 //   /watachan         → / にリダイレクト
 //   /watachan/        → / にリダイレクト
-//   /love             → 彼氏・彼女の愛情判定紹介ページとして専用SEOメタ付きHTMLを返す
+//   /love             → 彼氏の愛情判定紹介ページ（彼女版も対応）として専用SEOメタ付きHTMLを返す
 //   /friends          → 友達の友情判定紹介ページとして専用SEOメタ付きHTMLを返す
 //   /friends/         → /friends にリダイレクト
 //   /family           → 家族の絆判定紹介ページとして専用SEOメタ付きHTMLを返す
