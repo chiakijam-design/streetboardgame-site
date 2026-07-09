@@ -1555,7 +1555,6 @@ const GAME_INTRO_CONTENT = {
       '飲み会や旅行で、カップル診断っぽく結果をシェアしたい',
     ],
     scenes: ['大学生カップル', 'デート中', 'おうち時間', '飲み会', '旅行'],
-    steps: ['誰の愛情を判定するか選ぶ', '本人が答えを選ぶ', '相手が予想する', '5問後に答え合わせ'],
     faq: [
       {
         q: '彼氏の愛情判定と彼女の愛情判定は何が違う？',
@@ -1590,7 +1589,6 @@ const GAME_INTRO_CONTENT = {
       '結果をLINEやXで共有して、あとから話題にしたい',
     ],
     scenes: ['大学生の集まり', '休み時間', '旅行', '飲み会'],
-    steps: ['2〜4人から人数を選ぶ', '本人が答えを選ぶ', '友達が順番に予想する', '全員の正解数を見る'],
     faq: [
       {
         q: '友達の友情判定は何人で遊べますか？',
@@ -1625,7 +1623,6 @@ const GAME_INTRO_CONTENT = {
       'スマホ1台で、2〜4人の家族ゲームをすぐ始めたい',
     ],
     scenes: ['親子で遊ぶ', '兄弟姉妹', '親戚の集まり', 'おうち時間'],
-    steps: ['2〜4人から人数を選ぶ', '本人が答えを選ぶ', '家族が順番に予想する', '家族ごとの正解数を見る'],
     faq: [
       {
         q: '家族の絆判定は何人で遊べますか？',
@@ -1777,43 +1774,6 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
                   lineHeight: 1,
                 }}>✓</span>
                 <span>{item}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section style={{
-          marginTop: 16,
-          background: proto.white,
-          border: `3px solid ${proto.black}`,
-          borderRadius: 14,
-          boxShadow: proto.shadowHard,
-          padding: '14px',
-        }}>
-          <h2 style={{ margin: '0 0 10px', fontSize: 16 }}>遊び方の流れ</h2>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {content.steps.map((step, index) => (
-              <div key={step} style={{
-                display: 'grid',
-                gridTemplateColumns: '34px minmax(0, 1fr)',
-                gap: 10,
-                alignItems: 'center',
-                minHeight: 46,
-              }}>
-                <span style={{
-                  width: 30,
-                  height: 30,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 10,
-                  background: proto.pink,
-                  border: `2px solid ${proto.black}`,
-                  color: proto.white,
-                  textShadow: '1px 1px 0 #000',
-                  fontWeight: 900,
-                }}>{index + 1}</span>
-                <span style={{ fontSize: 13, lineHeight: 1.5, fontWeight: 900 }}>{step}</span>
               </div>
             ))}
           </div>
