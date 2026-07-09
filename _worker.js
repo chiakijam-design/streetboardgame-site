@@ -4,9 +4,10 @@
 // 動作:
 //   /watachan         → / にリダイレクト
 //   /watachan/        → / にリダイレクト
-//   /friends          → 友達の友情判定ページとして専用SEOメタ付きHTMLを返す
+//   /love             → 彼氏・彼女の愛情判定紹介ページとして専用SEOメタ付きHTMLを返す
+//   /friends          → 友達の友情判定紹介ページとして専用SEOメタ付きHTMLを返す
 //   /friends/         → /friends にリダイレクト
-//   /family           → 家族の絆判定ページとして専用SEOメタ付きHTMLを返す
+//   /family           → 家族の絆判定紹介ページとして専用SEOメタ付きHTMLを返す
 //   /family/          → /family にリダイレクト
 //   /contact          → /?screen=about&to=contact にリダイレクト
 //   /contact/         → /?screen=about&to=contact にリダイレクト
@@ -29,16 +30,31 @@ export default {
     const path = rawPath.replace(/\/+$/, '');
 
     const pageMap = {
+      '/love': {
+        title: '彼氏・彼女の愛情判定｜わたちゃん無料カップル診断ゲーム',
+        description: '彼氏の愛情判定だけでなく、彼女の愛情判定もできる無料カップル診断ゲーム。スマホ1台で相手の答えを予想し、ふたりの理解度をチェックできます。',
+        url: CANONICAL_ORIGIN + '/love',
+        ogTitle: '彼氏・彼女の愛情判定｜わたちゃん',
+        imageAlt: 'わたちゃん 彼氏・彼女の愛情判定ゲーム',
+        pageId: CANONICAL_ORIGIN + '/love#webpage',
+        gameId: CANONICAL_ORIGIN + '/love#love-game',
+        gameName: 'わたちゃん 彼氏・彼女の愛情判定',
+        headline: '彼氏・彼女どちらの愛情も判定できる無料カップル診断ゲーム',
+        genre: ['カップルゲーム', '恋愛診断', '愛情判定', '診断ゲーム', 'ボードゲーム'],
+        keywords: '彼氏の愛情判定, 彼女の愛情判定, カップル診断, 恋愛診断, カップルゲーム, 無料ゲーム, わたちゃん',
+        noscriptTitle: '彼氏・彼女の愛情判定｜わたちゃん無料カップル診断ゲーム',
+        noscriptBody: '彼氏の愛情判定だけでなく、彼女の愛情判定もできる無料カップル診断ゲームです。スマホ1台で相手の答えを予想し、5問後にふたりの理解度を確認できます。',
+      },
       '/friends': {
         title: '友達の友情判定｜わたちゃん無料友情診断ゲーム',
-        description: '本人が選んだ答えを友達が予想する、スマホ1台で遊べる無料友情判定ゲーム。2〜4人で友達の理解度をチェックできます。',
+        description: '友達同士で本人の答えを予想する無料友情診断ゲーム。スマホ1台で2〜4人プレイに対応し、友達の理解度を楽しくチェックできます。',
         url: CANONICAL_ORIGIN + '/friends',
         ogTitle: '友達の友情判定｜わたちゃん',
         imageAlt: 'わたちゃん 友達の友情判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/friends#webpage',
         gameId: CANONICAL_ORIGIN + '/friends#friend-game',
         gameName: 'わたちゃん 友達の友情判定',
-        headline: '本人が選んだ答えを友達が予想する無料友情判定ゲーム',
+        headline: '友達同士で本人の答えを予想する無料友情診断ゲーム',
         genre: ['友情ゲーム', '友達ゲーム', '診断ゲーム', 'ボードゲーム'],
         keywords: '友情判定ゲーム, 友達ゲーム, 友情診断, 友達診断, スマホゲーム, わたちゃん',
         noscriptTitle: '友達の友情判定｜わたちゃん無料友情診断ゲーム',
@@ -46,14 +62,14 @@ export default {
       },
       '/family': {
         title: '家族の絆判定｜わたちゃん無料家族診断ゲーム',
-        description: '本人が選んだ答えを家族が予想する、スマホ1台で遊べる無料家族ゲーム。2〜4人で家族の絆をチェックできます。',
+        description: '家族で本人の答えを予想する無料の絆チェックゲーム。スマホ1台で2〜4人プレイに対応し、家族の理解度を楽しく確認できます。',
         url: CANONICAL_ORIGIN + '/family',
         ogTitle: '家族の絆判定｜わたちゃん',
         imageAlt: 'わたちゃん 家族の絆判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/family#webpage',
         gameId: CANONICAL_ORIGIN + '/family#family-game',
         gameName: 'わたちゃん 家族の絆判定',
-        headline: '本人が選んだ答えを家族が予想する無料家族診断ゲーム',
+        headline: '家族で本人の答えを予想する無料の絆チェックゲーム',
         genre: ['家族ゲーム', '絆ゲーム', '診断ゲーム', 'ボードゲーム'],
         keywords: '家族ゲーム, 家族診断, 絆判定, 家族の絆, スマホゲーム, わたちゃん',
         noscriptTitle: '家族の絆判定｜わたちゃん無料家族診断ゲーム',
@@ -148,7 +164,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/friends">友達の友情を判定する</a> / <a href="/family">家族の絆を判定する</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/love">彼氏・彼女の愛情判定を見る</a> / <a href="/">トップで遊ぶ</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -180,6 +196,9 @@ function buildStructuredData(page) {
           '@id': 'https://www.streetboardgame.com/#couple-game',
         },
         {
+          '@id': 'https://www.streetboardgame.com/love#love-game',
+        },
+        {
           '@id': 'https://www.streetboardgame.com/friends#friend-game',
         },
         {
@@ -191,6 +210,7 @@ function buildStructuredData(page) {
       '@type': 'SiteNavigationElement',
       '@id': 'https://www.streetboardgame.com/#site-navigation',
       name: [
+        '彼氏・彼女の愛情判定',
         '彼氏の愛情判定',
         '友達の友情判定',
         '家族の絆判定',
@@ -198,6 +218,7 @@ function buildStructuredData(page) {
         'About',
       ],
       url: [
+        'https://www.streetboardgame.com/love',
         'https://www.streetboardgame.com/',
         'https://www.streetboardgame.com/friends',
         'https://www.streetboardgame.com/family',

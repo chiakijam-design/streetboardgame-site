@@ -1152,8 +1152,38 @@ function App() {
             onStart={() => setScreen('intro')}
             onFriend={() => setScreen('friendIntro')}
             onFamily={() => setScreen('familyIntro')}
+            onLovePage={() => setScreen('lovePage')}
+            onFriendPage={() => setScreen('friendPage')}
+            onFamilyPage={() => setScreen('familyPage')}
             onAbout={() => setScreen('about')}
             onProduct={() => setScreen('product')}
+          />
+        )}
+        {screen === 'lovePage' && (
+          <GameIntroPage
+            kind="love"
+            onBack={() => setScreen('top')}
+            onStart={() => setScreen('intro')}
+            onFriend={() => setScreen('friendPage')}
+            onFamily={() => setScreen('familyPage')}
+          />
+        )}
+        {screen === 'friendPage' && (
+          <GameIntroPage
+            kind="friend"
+            onBack={() => setScreen('top')}
+            onStart={() => setScreen('friendIntro')}
+            onLove={() => setScreen('lovePage')}
+            onFamily={() => setScreen('familyPage')}
+          />
+        )}
+        {screen === 'familyPage' && (
+          <GameIntroPage
+            kind="family"
+            onBack={() => setScreen('top')}
+            onStart={() => setScreen('familyIntro')}
+            onLove={() => setScreen('lovePage')}
+            onFriend={() => setScreen('friendPage')}
           />
         )}
         {screen === 'intro' && (
@@ -1318,7 +1348,7 @@ function App() {
 // ・中央に巨大な白+シアン縁取りロゴ
 // ・右下に黄色注意書きシール
 // ─────────────────────────────────────────────────────
-function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
+function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFamilyPage, onAbout, onProduct }) {
   return (
     <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
@@ -1476,9 +1506,9 @@ function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
           marginBottom: 10, paddingLeft: 4,
         }}>MAIN GAME / SERIES ✦</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <SeriesCard emoji="💕" title="彼氏の愛情判定" status="公開中" href="/" onClick={onStart} />
-          <SeriesCard emoji="👯" title="友達の友情判定" status="公開中" href="/friends" onClick={onFriend} />
-          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="公開中" href="/family" onClick={onFamily} />
+          <SeriesCard emoji="💕" title="彼氏の愛情判定" status="公開中" href="/love" onClick={onLovePage} />
+          <SeriesCard emoji="👯" title="友達の友情判定" status="公開中" href="/friends" onClick={onFriendPage} />
+          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="公開中" href="/family" onClick={onFamilyPage} />
         </div>
       </div>
 
@@ -1490,6 +1520,219 @@ function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
         <FooterLink href="/about" onClick={onAbout}>About</FooterLink>
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
         <FooterLink href="/product" onClick={onProduct}>製品版</FooterLink>
+      </div>
+    </main>
+  );
+}
+
+const GAME_INTRO_CONTENT = {
+  love: {
+    pill: 'LOVE CHECK',
+    title: '彼氏・彼女の愛情判定ゲーム',
+    heading: 'カップルで遊べる無料の愛情診断',
+    lead: '彼氏の愛情判定だけでなく、彼女の愛情判定もできるカップル向けゲームです。片方が自分の答えを選び、もう片方がその答えを予想します。',
+    body: 'スマホ1台で始められるので、デート中、飲み会、旅行、おうち時間でも気軽に遊べます。5問だけなのでテンポよく終わり、最後に何問当たったか、どの問題が当たったかをまとめて確認できます。',
+    scenes: ['デート中', 'おうち時間', '飲み会', '旅行'],
+    steps: ['誰の愛情を判定するか選ぶ', '本人が答えを選ぶ', '相手が予想する', '5問後に答え合わせ'],
+    cta: '愛情判定をはじめる',
+    related: [
+      { label: '友達の友情判定を見る', href: '/friends', action: 'friend' },
+      { label: '家族の絆判定を見る', href: '/family', action: 'family' },
+    ],
+  },
+  friend: {
+    pill: 'FRIEND CHECK',
+    title: '友達の友情判定ゲーム',
+    heading: '友達同士で盛り上がる無料の友情診断',
+    lead: '友達の友情判定は、本人が選んだ答えを友達が予想して、どれだけ分かっているかをチェックするゲームです。',
+    body: '2〜4人で遊べるので、大学生の友達同士、休み時間、旅行、飲み会にも向いています。本人、友達A、友達B、友達Cのように人数を選び、最後にそれぞれが5問中何問正解したかを見られます。',
+    scenes: ['大学生の集まり', '休み時間', '旅行', '飲み会'],
+    steps: ['2〜4人から人数を選ぶ', '本人が答えを選ぶ', '友達が順番に予想する', '全員の正解数を見る'],
+    cta: '友情判定をはじめる',
+    related: [
+      { label: '彼氏・彼女の愛情判定を見る', href: '/love', action: 'love' },
+      { label: '家族の絆判定を見る', href: '/family', action: 'family' },
+    ],
+  },
+  family: {
+    pill: 'FAMILY CHECK',
+    title: '家族の絆判定ゲーム',
+    heading: '家族で遊べる無料の絆チェック',
+    lead: '家族の絆判定は、本人が選んだ答えを家族が予想して、家族の理解度を楽しくチェックするゲームです。',
+    body: '親子、兄弟姉妹、親戚の集まりなどで、普段はあまり聞かない好みや考え方を知るきっかけになります。スマホ1台で2〜4人プレイに対応し、最後に家族それぞれの正解数を一覧で確認できます。',
+    scenes: ['親子で遊ぶ', '兄弟姉妹', '親戚の集まり', 'おうち時間'],
+    steps: ['2〜4人から人数を選ぶ', '本人が答えを選ぶ', '家族が順番に予想する', '家族ごとの正解数を見る'],
+    cta: '家族の絆判定をはじめる',
+    related: [
+      { label: '彼氏・彼女の愛情判定を見る', href: '/love', action: 'love' },
+      { label: '友達の友情判定を見る', href: '/friends', action: 'friend' },
+    ],
+  },
+};
+
+function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
+  const content = GAME_INTRO_CONTENT[kind] || GAME_INTRO_CONTENT.love;
+  const actionMap = { love: onLove, friend: onFriend, family: onFamily };
+  return (
+    <main style={{
+      minHeight: '100vh',
+      background: proto.pink,
+      color: proto.text,
+      paddingBottom: 36,
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      <Decor />
+      <div style={{
+        background: proto.black,
+        color: proto.white,
+        padding: '50px 22px 30px',
+        position: 'relative',
+        overflow: 'hidden',
+        textAlign: 'center',
+      }}>
+        <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
+        <div style={{
+          position: 'absolute',
+          right: -18,
+          bottom: -18,
+          opacity: 0.82,
+          pointerEvents: 'none',
+        }}>
+          <Girl variant="default" height={150} />
+        </div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <PillLabel>{content.pill}</PillLabel>
+          <h1 style={{
+            margin: '16px 0 0',
+            fontSize: 'clamp(24px, 7vw, 34px)',
+            lineHeight: 1.25,
+            color: proto.white,
+            textShadow: '3px 3px 0 #5BD4E8',
+          }}>
+            {content.title}
+          </h1>
+        </div>
+      </div>
+
+      <div style={{ padding: '22px 22px 0', position: 'relative', zIndex: 1 }}>
+        <section style={{
+          background: proto.white,
+          border: `3px solid ${proto.black}`,
+          borderRadius: 14,
+          boxShadow: proto.shadowHard,
+          padding: '18px 16px',
+        }}>
+          <h2 style={{ margin: 0, fontSize: 20, lineHeight: 1.45 }}>
+            {content.heading}
+          </h2>
+          <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.8, fontWeight: 800 }}>
+            {content.lead}
+          </p>
+          <p style={{ margin: '10px 0 0', fontSize: 12, lineHeight: 1.85, fontWeight: 700 }}>
+            {content.body}
+          </p>
+        </section>
+
+        <section style={{
+          marginTop: 16,
+          background: proto.black,
+          color: proto.white,
+          border: `3px solid ${proto.black}`,
+          borderRadius: 14,
+          boxShadow: proto.shadowHard,
+          padding: '14px 14px 16px',
+        }}>
+          <div style={{ fontFamily: proto.caption, fontSize: 10, color: proto.yellow, letterSpacing: '0.16em', marginBottom: 10 }}>
+            PLAY SCENE
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {content.scenes.map((scene) => (
+              <span key={scene} style={{
+                display: 'inline-flex',
+                minHeight: 28,
+                alignItems: 'center',
+                padding: '5px 10px',
+                borderRadius: 999,
+                background: proto.yellow,
+                color: proto.black,
+                border: `2px solid ${proto.black}`,
+                boxShadow: '2px 2px 0 #000',
+                fontSize: 11,
+                fontWeight: 900,
+              }}>{scene}</span>
+            ))}
+          </div>
+        </section>
+
+        <section style={{
+          marginTop: 16,
+          background: proto.white,
+          border: `3px solid ${proto.black}`,
+          borderRadius: 14,
+          boxShadow: proto.shadowHard,
+          padding: '14px',
+        }}>
+          <h2 style={{ margin: '0 0 10px', fontSize: 16 }}>遊び方の流れ</h2>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {content.steps.map((step, index) => (
+              <div key={step} style={{
+                display: 'grid',
+                gridTemplateColumns: '34px minmax(0, 1fr)',
+                gap: 10,
+                alignItems: 'center',
+                minHeight: 46,
+              }}>
+                <span style={{
+                  width: 30,
+                  height: 30,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 10,
+                  background: proto.pink,
+                  border: `2px solid ${proto.black}`,
+                  color: proto.white,
+                  textShadow: '1px 1px 0 #000',
+                  fontWeight: 900,
+                }}>{index + 1}</span>
+                <span style={{ fontSize: 13, lineHeight: 1.5, fontWeight: 900 }}>{step}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <button onClick={onStart} style={{ ...primaryBtn(), marginTop: 18 }}>
+          {content.cta}
+          <span style={{ display: 'inline-block', marginLeft: 6, color: proto.yellow, fontSize: 18, textShadow: '1px 1px 0 #000' }}>▶</span>
+        </button>
+
+        <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+          {content.related.map((item) => {
+            const action = actionMap[item.action];
+            return (
+              <a key={item.href} href={item.href} onClick={(event) => {
+                if (!action) return;
+                event.preventDefault();
+                action();
+              }} style={{
+                display: 'block',
+                textAlign: 'center',
+                background: proto.white,
+                color: proto.black,
+                border: `2.5px solid ${proto.black}`,
+                borderRadius: 12,
+                boxShadow: '3px 3px 0 #000',
+                padding: '13px 12px',
+                fontSize: 13,
+                fontWeight: 900,
+                textDecoration: 'none',
+              }}>
+                {item.label}
+              </a>
+            );
+          })}
+        </div>
       </div>
     </main>
   );

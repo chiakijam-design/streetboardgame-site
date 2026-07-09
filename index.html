@@ -257,8 +257,9 @@
   マッピング:
     /          → トップ画面
     /watachan  → 遊び方(How to play)画面
-    /friends   → 友達の友情判定バージョン
-    /family    → 家族の絆判定バージョン
+    /love      → 彼氏・彼女の愛情判定紹介ページ
+    /friends   → 友達の友情判定紹介ページ
+    /family    → 家族の絆判定紹介ページ
     /about     → About ページ
     /product   → 製品版ページ
     /contact   → お問い合わせ(About のフォーム位置までスクロール)
@@ -266,10 +267,10 @@
 ========================= -->
 <script>
   (function() {
-    // テスト用: ?screen=intro|friendIntro|familyIntro|about|product|top で強制的に初期画面を指定可能
+    // テスト用: ?screen=lovePage|friendPage|familyPage|intro|friendIntro|familyIntro|about|product|top で強制的に初期画面を指定可能
     var query = new URLSearchParams(location.search);
     var forceScreen = query.get('screen');
-    if (forceScreen && ['top','intro','friendIntro','familyIntro','about','product'].indexOf(forceScreen) >= 0) {
+    if (forceScreen && ['top','lovePage','friendPage','familyPage','intro','friendIntro','familyIntro','about','product'].indexOf(forceScreen) >= 0) {
       window.__INITIAL_SCREEN = forceScreen;
       if (forceScreen === 'about' && query.get('to') === 'contact') {
         window.__SCROLL_TO_CONTACT = true;
@@ -289,8 +290,9 @@
       '': 'top',
       'index.html': 'top',
       'watachan': 'intro',
-      'friends': 'friendIntro',
-      'family': 'familyIntro',
+      'love': 'lovePage',
+      'friends': 'friendPage',
+      'family': 'familyPage',
       'about': 'about',
       'product': 'product',
       'contact': 'about',
