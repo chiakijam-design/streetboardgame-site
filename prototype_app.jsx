@@ -1685,6 +1685,11 @@ function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange, loveMod
         <StepCard n="2" text={`${guesserName}は、${targetName}が選んだ答えを予想して同じ色を選ぶ`} />
         <StepCard n="3" text="5問終わったら、何問当たったか結果発表" />
         <StepCard n="4" text="最後に当たった問題・外した問題をまとめて確認" />
+        <IntroSeoCard
+          title="カップルで気軽に遊べる無料診断"
+          text={`わたちゃんは、スマホ1台で遊べるカップル向けの愛情判定ゲームです。${targetName}が選んだ答えを${guesserName}が予想して、デート中・飲み会・おうち時間に、ふたりの理解度を楽しくチェックできます。`}
+          tags={['彼氏の愛情判定', '彼女の愛情判定', 'カップル診断', '無料ゲーム']}
+        />
         <NameEditorPanel
           title="名前を変える（任意）"
           names={playerNames}
@@ -1813,6 +1818,56 @@ function StepCard({ n, text }) {
       }}>{n}</div>
       <div style={{ fontSize: 13, fontWeight: 600, color: proto.text, lineHeight: 1.45 }}>{text}</div>
     </div>
+  );
+}
+
+function IntroSeoCard({ title, text, tags }) {
+  return (
+    <section style={{
+      margin: '14px 0 12px',
+      padding: '14px 14px 12px',
+      background: 'rgba(255, 255, 255, 0.94)',
+      border: `2.5px solid ${proto.black}`,
+      borderRadius: 12,
+      boxShadow: proto.shadowHard,
+      color: proto.black,
+    }}>
+      <h2 style={{
+        margin: '0 0 8px',
+        fontSize: 15,
+        lineHeight: 1.45,
+        letterSpacing: 0,
+      }}>{title}</h2>
+      <p style={{
+        margin: 0,
+        fontSize: 12,
+        lineHeight: 1.75,
+        fontWeight: 700,
+      }}>{text}</p>
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 6,
+        marginTop: 10,
+      }}>
+        {tags.map((tag) => (
+          <span key={tag} style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            minHeight: 24,
+            padding: '3px 9px',
+            borderRadius: 999,
+            border: `2px solid ${proto.black}`,
+            background: proto.yellow,
+            color: proto.black,
+            fontSize: 10,
+            fontWeight: 900,
+            lineHeight: 1.2,
+            boxShadow: '1.5px 1.5px 0 #000',
+          }}>{tag}</span>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -3737,6 +3792,11 @@ function FriendIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
         <StepCard n="2" text={`${mainPlayer}は、友達に見せずに自分が思った答えを選ぶ`} />
         <StepCard n="3" text={`友達は、${mainPlayer}が選んだ答えを予想して同じ色を選ぶ`} />
         <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
+        <IntroSeoCard
+          title="友達同士で盛り上がる友情診断"
+          text="友達の友情判定は、本人の好みや本音を友達がどれだけ当てられるかを試す無料の友情診断ゲームです。スマホを順番に渡すだけなので、大学生の集まり、旅行、飲み会、休み時間にも遊びやすい形式です。"
+          tags={['友情判定', '友達ゲーム', '友情診断', '2〜4人プレイ']}
+        />
         <NameEditorPanel
           title="名前を変える（任意）"
           names={playerNames}
@@ -4873,6 +4933,11 @@ function FamilyIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
         <StepCard n="2" text={`${mainPlayer}は、家族に見せずに自分が思った答えを選ぶ`} />
         <StepCard n="3" text={`家族は、${mainPlayer}が選んだ答えを予想して同じ色を選ぶ`} />
         <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
+        <IntroSeoCard
+          title="家族で遊べる絆チェックゲーム"
+          text="家族の絆判定は、本人が選んだ答えを家族が予想する無料の家族ゲームです。親子、兄弟姉妹、親戚の集まりでも、普段は聞かない好みや考え方を楽しく知れる診断ゲームとして遊べます。"
+          tags={['家族の絆判定', '家族ゲーム', '親子ゲーム', '2〜4人プレイ']}
+        />
         <NameEditorPanel
           title="名前を変える（任意）"
           names={playerNames}
