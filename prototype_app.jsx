@@ -409,21 +409,25 @@ function createLoveResultImageSrc(score, total, tier, players) {
   drawCanvasLines(ctx, messageLines, 540, 875, 46);
 
   ctx.fillStyle = proto.yellow;
-  roundRect(ctx, 170, 1095, 740, 92, 24);
+  roundRect(ctx, 156, 1090, 768, 104, 26);
   ctx.fill();
   ctx.strokeStyle = proto.black;
   ctx.lineWidth = 5;
-  roundRect(ctx, 170, 1095, 740, 92, 24);
+  roundRect(ctx, 156, 1090, 768, 104, 26);
   ctx.stroke();
   ctx.fillStyle = proto.black;
-  ctx.font = '900 27px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('みんななら何問当てられる？', 540, 1132);
-  ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('次はあなたの番 #わたちゃん', 540, 1168);
+  ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('この結果、LINEで友達に送ってね', 540, 1130);
+  ctx.fillStyle = proto.pinkDeep;
+  ctx.font = '900 25px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('あなたなら何問当てられる？', 540, 1165);
 
   ctx.fillStyle = proto.black;
-  ctx.font = '900 28px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com / #わたちゃん', 540, 1215);
+  ctx.font = '900 32px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com', 540, 1225);
+  ctx.fillStyle = proto.pinkDeep;
+  ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('#わたちゃん', 540, 1255);
 
   return canvas.toDataURL('image/png');
 }
@@ -4992,16 +4996,27 @@ function createGroupResultImageSrc(kind, answers, players) {
     ctx.fillText('問正解', x + cardWidth / 2, y + 104);
   });
 
+  ctx.fillStyle = proto.yellow;
+  roundRect(ctx, 152, 1148, 776, 74, 22);
+  ctx.fill();
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = proto.black;
+  roundRect(ctx, 152, 1148, 776, 74, 22);
+  ctx.stroke();
   ctx.fillStyle = proto.black;
   ctx.font = '900 25px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(isFamily ? '家族なら何問当てられる？' : '友達なら何問当てられる？', 540, 1170);
+  ctx.fillText('この結果、LINEで友達に送ってね', 540, 1180);
+  ctx.fillStyle = proto.pinkDeep;
   ctx.font = '900 22px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('次はあなたの番 #わたちゃん', 540, 1198);
+  ctx.fillText(isFamily ? '家族なら何問当てられる？' : '友達なら何問当てられる？', 540, 1208);
 
   ctx.fillStyle = proto.black;
-  ctx.font = '900 26px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com / #わたちゃん', 540, 1228);
+  ctx.font = '900 30px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com', 540, 1252);
+  ctx.fillStyle = proto.pinkDeep;
+  ctx.font = '900 23px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('#わたちゃん', 540, 1280);
 
   return canvas.toDataURL('image/png');
 }
