@@ -206,7 +206,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼女版も見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -274,7 +274,6 @@ function buildStructuredData(page) {
       '@id': 'https://www.streetboardgame.com/#site-navigation',
       name: [
         '彼氏の愛情判定',
-        '彼女の愛情判定',
         '友達の友情判定',
         '家族の絆判定',
         '製品版',
@@ -282,7 +281,6 @@ function buildStructuredData(page) {
       ],
       url: [
         'https://www.streetboardgame.com/',
-        'https://www.streetboardgame.com/love',
         'https://www.streetboardgame.com/friends',
         'https://www.streetboardgame.com/family',
         'https://www.streetboardgame.com/product',

@@ -1462,7 +1462,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           fontWeight: 700,
         }}>
           メインは彼氏の愛情判定ゲーム。<br />
-          彼女版・友情判定版・家族の絆判定版はシリーズとして公開中。
+          彼女版は彼氏版の中で切り替え、友情判定版・家族の絆判定版はシリーズとして公開中。
         </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
           marginTop: 12,
@@ -1589,7 +1589,7 @@ const GAME_INTRO_CONTENT = {
     ],
     cta: '友情判定をはじめる',
     related: [
-      { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },
+      { label: 'メインの彼氏の愛情判定を見る', href: '/love', action: 'love' },
       { label: '家族の絆判定を見る', href: '/family', action: 'family' },
     ],
   },
@@ -1617,7 +1617,7 @@ const GAME_INTRO_CONTENT = {
     ],
     cta: '家族の絆判定をはじめる',
     related: [
-      { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },
+      { label: 'メインの彼氏の愛情判定を見る', href: '/love', action: 'love' },
       { label: '友達の友情判定を見る', href: '/friends', action: 'friend' },
     ],
   },
@@ -5735,8 +5735,8 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
           <div style={{ fontSize: 12, lineHeight: 1.8, color: proto.text, fontWeight: 600 }}>
             ストリートボードゲームは、カップルでどちらの答えを当てるか選べる
             「彼氏の愛情判定ゲーム」をメインにしたオリジナルゲームサイトです。
-            彼女の愛情判定、友達の友情判定、家族の絆判定など、
-            2人〜数人で気軽に遊べるゲームを展開しています。
+            彼女版は彼氏版の中で切り替えられ、シリーズとして友達の友情判定、
+            家族の絆判定も展開しています。
             スマホ1台で、デート中・飲み会・旅行・おうち時間にも遊びやすい理解度チェックです。
           </div>
         </Card>
@@ -5744,8 +5744,8 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
         <SectionTitle style={{ marginTop: 22 }}>♡ シリーズ展開</SectionTitle>
         <Card>
           <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="メインゲーム" active onClick={onLove} />
-          <SeriesRow emoji="👯" title="友達の友情判定" sub="公開中" active onClick={onFriend} />
-          <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="公開中" active onClick={onFamily} last />
+          <SeriesRow emoji="👯" title="友達の友情判定" sub="シリーズ" active onClick={onFriend} />
+          <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="シリーズ" active onClick={onFamily} last />
         </Card>
 
         <div id="contact-section" style={{ scrollMarginTop: 20 }}>
