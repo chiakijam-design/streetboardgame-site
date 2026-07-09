@@ -2010,9 +2010,12 @@ function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange, loveMod
         <StepCard n="3" text="5問終わったら、何問当たったか結果発表" />
         <StepCard n="4" text="最後に当たった問題・外した問題をまとめて確認" />
         <IntroSeoCard
-          title="カップルで気軽に遊べる無料診断"
-          text={`わたちゃんは、スマホ1台で遊べるカップル向けの愛情判定ゲームです。${targetName}が選んだ答えを${guesserName}が予想して、デート中・飲み会・おうち時間に、ふたりの理解度を楽しくチェックできます。`}
-          tags={['彼氏の愛情判定', '彼女の愛情判定', 'カップル診断', '無料ゲーム']}
+          title="彼氏の愛情判定ゲームの遊び方"
+          text={`わたちゃんは、スマホ1台で遊べる無料のカップル診断ゲームです。メインの彼氏の愛情判定では、${targetName}が選んだ答えを${guesserName}が予想して、ふたりの理解度を5問だけで楽しくチェックできます。`}
+          details={[
+            '大学生カップルのデート中、飲み会、旅行、おうち時間、付き合いたての会話のきっかけにも使いやすい遊び方です。最後に答え合わせがまとまって出るので、当たった問題も外した問題も一緒に盛り上がれます。',
+          ]}
+          tags={['彼氏の愛情判定', '彼女の愛情判定', '大学生カップル', 'カップル診断', '無料ゲーム']}
         />
         <NameEditorPanel
           title="名前を変える（任意）"
@@ -2145,7 +2148,7 @@ function StepCard({ n, text }) {
   );
 }
 
-function IntroSeoCard({ title, text, tags }) {
+function IntroSeoCard({ title, text, details = [], tags }) {
   return (
     <section style={{
       margin: '14px 0 12px',
@@ -2168,6 +2171,14 @@ function IntroSeoCard({ title, text, tags }) {
         lineHeight: 1.75,
         fontWeight: 700,
       }}>{text}</p>
+      {details.map((detail) => (
+        <p key={detail} style={{
+          margin: '7px 0 0',
+          fontSize: 12,
+          lineHeight: 1.75,
+          fontWeight: 700,
+        }}>{detail}</p>
+      ))}
       <div style={{
         display: 'flex',
         flexWrap: 'wrap',
