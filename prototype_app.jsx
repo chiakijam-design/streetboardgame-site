@@ -417,7 +417,7 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.stroke();
   ctx.fillStyle = proto.black;
   ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('この結果、LINEで友達に送ってね', 540, 1130);
+  ctx.fillText('この結果、みんなに見せよう', 540, 1130);
   ctx.fillStyle = proto.pinkDeep;
   ctx.font = '900 25px "Zen Maru Gothic", sans-serif';
   ctx.fillText('あなたなら何問当てられる？', 540, 1165);
@@ -5006,7 +5006,7 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillStyle = proto.black;
   ctx.font = '900 25px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('この結果、LINEで友達に送ってね', 540, 1180);
+  ctx.fillText('この結果、みんなに見せよう', 540, 1180);
   ctx.fillStyle = proto.pinkDeep;
   ctx.font = '900 22px "Zen Maru Gothic", sans-serif';
   ctx.fillText(isFamily ? '家族なら何問当てられる？' : '友達なら何問当てられる？', 540, 1208);
