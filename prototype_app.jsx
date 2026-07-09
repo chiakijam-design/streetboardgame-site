@@ -1420,7 +1420,7 @@ function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
           opacity: 0.88,
           fontWeight: 700,
         }}>
-          彼氏・彼女どちらの答えも当てられます。友達版と家族版も公開中。
+          彼氏の愛情判定だけでなく、彼女の愛情判定もできます。友情判定版と家族の絆判定版も公開中。
         </div>
       </div>
 
