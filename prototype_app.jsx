@@ -236,6 +236,7 @@ function drawFittedCanvasText(ctx, text, x, y, maxWidth, {
 }
 
 const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
+const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png';
 
 function preloadCanvasCharacterImage() {
   if (typeof window === 'undefined') return null;
@@ -259,13 +260,35 @@ function drawCanvasGirl(ctx, x, y, width, height) {
   return true;
 }
 
-function useCanvasCharacterReady() {
+function preloadCanvasQrImage() {
+  if (typeof window === 'undefined') return null;
+  if (!window.__watachanResultQrImage) {
+    const img = new Image();
+    img.src = RESULT_QR_IMAGE_SRC;
+    window.__watachanResultQrImage = img;
+  }
+  return window.__watachanResultQrImage;
+}
+
+function drawCanvasQr(ctx, x, y, size) {
+  const img = preloadCanvasQrImage();
+  if (!img || !img.complete || !img.naturalWidth) return false;
+  ctx.save();
+  ctx.fillStyle = proto.white;
+  roundRect(ctx, x - 8, y - 8, size + 16, size + 16, 18);
+  ctx.fill();
+  ctx.drawImage(img, x, y, size, size);
+  ctx.restore();
+  return true;
+}
+
+function useCanvasAssetReady(preload) {
   const [ready, setReady] = useState(() => {
-    const img = preloadCanvasCharacterImage();
+    const img = preload();
     return Boolean(img && img.complete && img.naturalWidth);
   });
   useEffect(() => {
-    const img = preloadCanvasCharacterImage();
+    const img = preload();
     if (!img) return undefined;
     if (img.complete && img.naturalWidth) {
       setReady(true);
@@ -274,8 +297,16 @@ function useCanvasCharacterReady() {
     const done = () => setReady(true);
     img.addEventListener('load', done, { once: true });
     return () => img.removeEventListener('load', done);
-  }, []);
+  }, [preload]);
   return ready;
+}
+
+function useCanvasCharacterReady() {
+  return useCanvasAssetReady(preloadCanvasCharacterImage);
+}
+
+function useCanvasQrReady() {
+  return useCanvasAssetReady(preloadCanvasQrImage);
 }
 
 function createLoveResultImageSrc(score, total, tier, players) {
@@ -298,11 +329,11 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = proto.black;
-  roundRect(ctx, 70, 80, 940, 1190, 38);
+  roundRect(ctx, 70, 80, 940, 1210, 38);
   ctx.fill();
 
   ctx.fillStyle = proto.white;
-  roundRect(ctx, 88, 98, 904, 1154, 30);
+  roundRect(ctx, 88, 98, 904, 1172, 30);
   ctx.fill();
 
   ctx.fillStyle = proto.black;
@@ -409,25 +440,28 @@ function createLoveResultImageSrc(score, total, tier, players) {
   drawCanvasLines(ctx, messageLines, 540, 875, 46);
 
   ctx.fillStyle = proto.yellow;
-  roundRect(ctx, 156, 1090, 768, 104, 26);
+  roundRect(ctx, 156, 1090, 768, 132, 26);
   ctx.fill();
   ctx.strokeStyle = proto.black;
   ctx.lineWidth = 5;
-  roundRect(ctx, 156, 1090, 768, 104, 26);
+  roundRect(ctx, 156, 1090, 768, 132, 26);
   ctx.stroke();
   ctx.fillStyle = proto.black;
-  ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('この結果、友達に伝えよう', 540, 1130);
+  ctx.textAlign = 'left';
+  ctx.font = '900 27px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('この結果、友達に伝えよう', 196, 1130);
   ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 23px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('URLは投稿文・Instagramはプロフィールから', 540, 1165);
+  ctx.font = '900 20px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('URLは投稿文・Instagramはプロフィールから', 196, 1165);
+  drawCanvasQr(ctx, 792, 1104, 92);
 
   ctx.fillStyle = proto.black;
-  ctx.font = '900 30px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com', 540, 1210);
+  ctx.textAlign = 'center';
+  ctx.font = '900 28px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com', 540, 1242);
   ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 22px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('#わたちゃん', 540, 1238);
+  ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('#わたちゃん', 540, 1268);
 
   return canvas.toDataURL('image/png');
 }
@@ -3116,9 +3150,10 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
   const [shareNudge, setShareNudge] = useState(false);
   const shareSheetShownRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
+  const canvasQrReady = useCanvasQrReady();
   const preparedResultImageSrc = useMemo(
     () => createLoveResultImageSrc(score, total, tier, [girlName, boyName]),
-    [score, total, tier, girlName, boyName, canvasCharacterReady]
+    [score, total, tier, girlName, boyName, canvasCharacterReady, canvasQrReady]
   );
 
   const titleBreaks = {
@@ -3525,7 +3560,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
       {/* シェア */}
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
         <ResultImageActions
-          busy={imageBusy}
+          busy={imageBusy || !canvasQrReady}
           onShare={handleShareImage}
           onX={() => handleShare('x')}
           onLine={() => handleShare('line')}
@@ -3573,7 +3608,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
       </div>
       <ShareBottomSheet
         open={showShareSheet}
-        busy={imageBusy}
+        busy={imageBusy || !canvasQrReady}
         onClose={() => setShowShareSheet(false)}
         onX={() => handleShare('x')}
         onLine={() => handleShare('line')}
@@ -4851,11 +4886,11 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = proto.black;
-  roundRect(ctx, 70, 80, 940, 1180, 38);
+  roundRect(ctx, 70, 80, 940, 1210, 38);
   ctx.fill();
 
   ctx.fillStyle = proto.white;
-  roundRect(ctx, 88, 98, 904, 1144, 30);
+  roundRect(ctx, 88, 98, 904, 1172, 30);
   ctx.fill();
 
   ctx.fillStyle = proto.black;
@@ -4997,22 +5032,24 @@ function createGroupResultImageSrc(kind, answers, players) {
   });
 
   ctx.fillStyle = proto.yellow;
-  roundRect(ctx, 152, 1148, 776, 74, 22);
+  roundRect(ctx, 152, 1138, 776, 96, 22);
   ctx.fill();
   ctx.lineWidth = 5;
   ctx.strokeStyle = proto.black;
-  roundRect(ctx, 152, 1148, 776, 74, 22);
+  roundRect(ctx, 152, 1138, 776, 96, 22);
   ctx.stroke();
   ctx.fillStyle = proto.black;
   ctx.font = '900 25px "Zen Maru Gothic", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('この結果、友達に伝えよう', 540, 1180);
+  ctx.textAlign = 'left';
+  ctx.fillText('この結果、友達に伝えよう', 196, 1174);
   ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 20px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('URLは投稿文・Instagramはプロフィールから', 540, 1208);
+  ctx.font = '900 18px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('URLは投稿文・Instagramはプロフィールから', 196, 1204);
+  drawCanvasQr(ctx, 820, 1150, 70);
 
   ctx.fillStyle = proto.black;
   ctx.font = '900 28px "DotGothic16", monospace';
+  ctx.textAlign = 'center';
   ctx.fillText('streetboardgame.com', 540, 1240);
   ctx.fillStyle = proto.pinkDeep;
   ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
@@ -5129,9 +5166,10 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [shareNudge, setShareNudge] = useState(false);
   const shareSheetShownRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
+  const canvasQrReady = useCanvasQrReady();
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('friend', answers, friendPlayers),
-    [answers, friendPlayers, canvasCharacterReady]
+    [answers, friendPlayers, canvasCharacterReady, canvasQrReady]
   );
   const groupScores = useMemo(() => getPlayerScores(answers, friendPlayers), [answers, friendPlayers]);
   const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'friend');
@@ -5299,7 +5337,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
         <ResultImageActions
-          busy={imageBusy}
+          busy={imageBusy || !canvasQrReady}
           onShare={handleShareImage}
           onX={openX}
           onLine={openLine}
@@ -5339,7 +5377,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
       </div>
       <ShareBottomSheet
         open={showShareSheet}
-        busy={imageBusy}
+        busy={imageBusy || !canvasQrReady}
         onClose={() => setShowShareSheet(false)}
         onX={openX}
         onLine={openLine}
@@ -5623,9 +5661,10 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [shareNudge, setShareNudge] = useState(false);
   const shareSheetShownRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
+  const canvasQrReady = useCanvasQrReady();
   const preparedResultImageSrc = useMemo(
     () => createGroupResultImageSrc('family', answers, familyPlayers),
-    [answers, familyPlayers, canvasCharacterReady]
+    [answers, familyPlayers, canvasCharacterReady, canvasQrReady]
   );
   const groupScores = useMemo(() => getPlayerScores(answers, familyPlayers), [answers, familyPlayers]);
   const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'family');
@@ -5793,7 +5832,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
 
       <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
         <ResultImageActions
-          busy={imageBusy}
+          busy={imageBusy || !canvasQrReady}
           onShare={handleShareImage}
           onX={openX}
           onLine={openLine}
@@ -5833,7 +5872,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
       </div>
       <ShareBottomSheet
         open={showShareSheet}
-        busy={imageBusy}
+        busy={imageBusy || !canvasQrReady}
         onClose={() => setShowShareSheet(false)}
         onX={openX}
         onLine={openLine}
