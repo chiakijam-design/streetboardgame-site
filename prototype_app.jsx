@@ -1364,7 +1364,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         わたちゃん 彼氏の愛情判定ゲーム
       </h1>
       <p style={srOnlyStyle()}>
-        彼氏・彼女でどちらの答えを当てるか選び、愛情理解度を判定する無料カップル診断ゲームです。スマホ1台でデート、飲み会、旅行、おうち時間に遊べます。シリーズとして友達の友情判定と家族の絆判定も公開中です。
+        彼氏が彼女の答えをどれだけ当てられるかを判定する無料カップル診断ゲームです。スマホ1台でデート、飲み会、旅行、おうち時間に遊べます。彼女の愛情判定、友達の友情判定、家族の絆判定も公開中です。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -1450,8 +1450,8 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           opacity: 0.88,
           fontWeight: 700,
         }}>
-          彼氏の愛情判定だけでなく、彼女の愛情判定もできます。<br />
-          友情判定版と家族の絆判定版も公開中。
+          メインは彼氏の愛情判定ゲーム。<br />
+          彼女の愛情判定、友情判定版、家族の絆判定版も公開中。
         </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
           marginTop: 12,
@@ -1528,9 +1528,9 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
 const GAME_INTRO_CONTENT = {
   love: {
     pill: 'LOVE CHECK',
-    title: '彼氏・彼女の愛情判定ゲーム',
-    heading: 'カップルで遊べる無料の愛情診断',
-    lead: '彼氏の愛情判定だけでなく、彼女の愛情判定もできるカップル向けゲームです。片方が自分の答えを選び、もう片方がその答えを予想します。',
+    title: '彼氏の愛情判定ゲーム',
+    heading: '彼氏が彼女の答えを当てる無料カップル診断',
+    lead: 'わたちゃんのメインは、彼氏が彼女の答えをどれだけ当てられるかを判定するゲームです。逆向きに、彼女が彼氏の答えを当てる愛情判定も遊べます。',
     body: 'スマホ1台で始められるので、デート中、飲み会、旅行、おうち時間でも気軽に遊べます。5問だけなのでテンポよく終わり、最後に何問当たったか、どの問題が当たったかをまとめて確認できます。',
     scenes: ['デート中', 'おうち時間', '飲み会', '旅行'],
     steps: ['誰の愛情を判定するか選ぶ', '本人が答えを選ぶ', '相手が予想する', '5問後に答え合わせ'],
@@ -1578,7 +1578,7 @@ const GAME_INTRO_CONTENT = {
     ],
     cta: '友情判定をはじめる',
     related: [
-      { label: '彼氏・彼女の愛情判定を見る', href: '/love', action: 'love' },
+      { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },
       { label: '家族の絆判定を見る', href: '/family', action: 'family' },
     ],
   },
@@ -1606,7 +1606,7 @@ const GAME_INTRO_CONTENT = {
     ],
     cta: '家族の絆判定をはじめる',
     related: [
-      { label: '彼氏・彼女の愛情判定を見る', href: '/love', action: 'love' },
+      { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },
       { label: '友達の友情判定を見る', href: '/friends', action: 'friend' },
     ],
   },
@@ -5723,8 +5723,8 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
         <Card>
           <div style={{ fontSize: 12, lineHeight: 1.8, color: proto.text, fontWeight: 600 }}>
             ストリートボードゲームは、カップルでどちらの答えを当てるか選べる
-            「彼氏・彼女の愛情判定ゲーム」をメインにしたオリジナルゲームサイトです。
-            そのシリーズとして、友達の友情判定や家族の絆判定など、
+            「彼氏の愛情判定ゲーム」をメインにしたオリジナルゲームサイトです。
+            彼女の愛情判定、友達の友情判定、家族の絆判定など、
             2人〜数人で気軽に遊べるゲームを展開しています。
             スマホ1台で、デート中・飲み会・旅行・おうち時間にも遊びやすい理解度チェックです。
           </div>
@@ -5732,7 +5732,7 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
 
         <SectionTitle style={{ marginTop: 22 }}>♡ シリーズ展開</SectionTitle>
         <Card>
-          <SeriesRow emoji="💕" title="彼氏・彼女の愛情判定" sub="公開中" active onClick={onLove} />
+          <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="メインゲーム" active onClick={onLove} />
           <SeriesRow emoji="👯" title="友達の友情判定" sub="公開中" active onClick={onFriend} />
           <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="公開中" active onClick={onFamily} last />
         </Card>

@@ -31,19 +31,19 @@ export default {
 
     const pageMap = {
       '/love': {
-        title: '彼氏・彼女の愛情判定｜わたちゃん無料カップル診断ゲーム',
-        description: '彼氏の愛情判定だけでなく、彼女の愛情判定もできる無料カップル診断ゲーム。スマホ1台で相手の答えを予想し、ふたりの理解度をチェックできます。',
+        title: '彼氏の愛情判定｜彼女版も遊べる無料カップル診断ゲーム',
+        description: 'メインは彼氏が彼女の答えを当てる彼氏の愛情判定ゲーム。逆向きの彼女の愛情判定もでき、スマホ1台でふたりの理解度をチェックできます。',
         url: CANONICAL_ORIGIN + '/love',
-        ogTitle: '彼氏・彼女の愛情判定｜わたちゃん',
-        imageAlt: 'わたちゃん 彼氏・彼女の愛情判定ゲーム',
+        ogTitle: '彼氏の愛情判定｜わたちゃん',
+        imageAlt: 'わたちゃん 彼氏の愛情判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/love#webpage',
         gameId: CANONICAL_ORIGIN + '/love#love-game',
-        gameName: 'わたちゃん 彼氏・彼女の愛情判定',
-        headline: '彼氏・彼女どちらの愛情も判定できる無料カップル診断ゲーム',
+        gameName: 'わたちゃん 彼氏の愛情判定ゲーム',
+        headline: '彼氏が彼女の答えを当てる無料カップル診断ゲーム',
         genre: ['カップルゲーム', '恋愛診断', '愛情判定', '診断ゲーム', 'ボードゲーム'],
         keywords: '彼氏の愛情判定, 彼女の愛情判定, カップル診断, 恋愛診断, カップルゲーム, 無料ゲーム, わたちゃん',
-        noscriptTitle: '彼氏・彼女の愛情判定｜わたちゃん無料カップル診断ゲーム',
-        noscriptBody: '彼氏の愛情判定だけでなく、彼女の愛情判定もできる無料カップル診断ゲームです。スマホ1台で相手の答えを予想し、5問後にふたりの理解度を確認できます。',
+        noscriptTitle: '彼氏の愛情判定｜わたちゃん無料カップル診断ゲーム',
+        noscriptBody: 'メインは彼氏が彼女の答えを当てる彼氏の愛情判定ゲームです。逆向きの彼女の愛情判定もでき、スマホ1台で5問後にふたりの理解度を確認できます。',
         faq: [
           {
             question: '彼氏の愛情判定と彼女の愛情判定は何が違う？',
@@ -118,14 +118,14 @@ export default {
         ],
       },
       '/about': {
-        title: 'About｜わたちゃん・彼氏・彼女の愛情判定ゲーム',
-        description: 'わたちゃんは、彼氏・彼女の愛情判定ゲームをメインに、友達の友情判定や家族の絆判定を展開するスマホ向け無料ゲームサイトです。',
+        title: 'About｜わたちゃん・彼氏の愛情判定ゲーム',
+        description: 'わたちゃんは、彼氏の愛情判定ゲームをメインに、彼女の愛情判定、友達の友情判定、家族の絆判定へ広がるスマホ向け無料ゲームサイトです。',
         url: CANONICAL_ORIGIN + '/about',
         ogTitle: 'About｜わたちゃん',
-        imageAlt: 'わたちゃん 彼氏・彼女の愛情判定ゲーム',
+        imageAlt: 'わたちゃん 彼氏の愛情判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/about#webpage',
         noscriptTitle: 'About｜わたちゃん',
-        noscriptBody: 'わたちゃんは、彼氏・彼女でどちらの答えを当てるか選べる「愛情判定ゲーム」をメインにしたスマホ向け無料ゲームサイトです。シリーズとして友達の友情判定や家族の絆判定も公開しています。',
+        noscriptBody: 'わたちゃんは、彼氏が彼女の答えを当てる「彼氏の愛情判定ゲーム」をメインにしたスマホ向け無料ゲームサイトです。彼女の愛情判定、友達の友情判定、家族の絆判定も公開しています。',
       },
       '/product': {
         title: '製品版｜私のこと、ちゃんと分かってるよね？',
@@ -206,7 +206,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/love">彼氏・彼女の愛情判定を見る</a> / <a href="/">トップで遊ぶ</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼女版も見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -273,16 +273,16 @@ function buildStructuredData(page) {
       '@type': 'SiteNavigationElement',
       '@id': 'https://www.streetboardgame.com/#site-navigation',
       name: [
-        '彼氏・彼女の愛情判定',
         '彼氏の愛情判定',
+        '彼女の愛情判定',
         '友達の友情判定',
         '家族の絆判定',
         '製品版',
         'About',
       ],
       url: [
-        'https://www.streetboardgame.com/love',
         'https://www.streetboardgame.com/',
+        'https://www.streetboardgame.com/love',
         'https://www.streetboardgame.com/friends',
         'https://www.streetboardgame.com/family',
         'https://www.streetboardgame.com/product',
