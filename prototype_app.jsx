@@ -1698,14 +1698,14 @@ function LoveModePanel({ girlName, boyName, loveMode, onChange }) {
   const options = [
     {
       key: 'girlTarget',
-      title: `${boyName}の${girlName}への愛情を判定する`,
-      sub: `${girlName}が選ぶ答えを、${boyName}が予想`,
+      title: `${boyName}が${girlName}の答えを予想する`,
+      sub: `${girlName}が選ぶ答えを、${boyName}が当てるゲーム`,
       bg: proto.yellow,
     },
     {
       key: 'boyTarget',
-      title: `${girlName}の${boyName}への愛情を判定する`,
-      sub: `${boyName}が選ぶ答えを、${girlName}が予想`,
+      title: `${girlName}が${boyName}の答えを予想する`,
+      sub: `${boyName}が選ぶ答えを、${girlName}が当てるゲーム`,
       bg: proto.cyan,
     },
   ];
@@ -1725,7 +1725,7 @@ function LoveModePanel({ girlName, boyName, loveMode, onChange }) {
         color: proto.yellow,
         letterSpacing: '0.14em',
         marginBottom: 8,
-      }}>どっちを当てる？</div>
+      }}>誰が答えを予想する？</div>
       <div style={{
         display: 'grid',
         gap: 10,
