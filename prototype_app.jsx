@@ -421,8 +421,8 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
   ctx.fillText('次はあなたの番 #わたちゃん', 540, 1168);
 
-  ctx.fillStyle = proto.textSoft;
-  ctx.font = '700 25px "DotGothic16", monospace';
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 28px "DotGothic16", monospace';
   ctx.fillText('streetboardgame.com / #わたちゃん', 540, 1215);
 
   return canvas.toDataURL('image/png');
@@ -2973,8 +2973,9 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
           justifyContent: 'space-between',
           gap: 10,
           fontFamily: proto.caption,
-          color: proto.textSoft,
-          fontSize: 9,
+          color: proto.black,
+          fontSize: 10,
+          fontWeight: 900,
           letterSpacing: '0.12em',
         }}>
           <span>streetboardgame.com</span>
@@ -4508,9 +4509,9 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.font = '900 22px "Zen Maru Gothic", sans-serif';
   ctx.fillText('次はあなたの番 #わたちゃん', 540, 1198);
 
-  ctx.fillStyle = proto.textSoft;
-  ctx.font = '700 22px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com', 540, 1226);
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 26px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com / #わたちゃん', 540, 1228);
 
   return canvas.toDataURL('image/png');
 }
