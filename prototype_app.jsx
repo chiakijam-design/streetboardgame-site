@@ -1511,13 +1511,15 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         </StickyNote>
       </div>
 
-      {/* シリーズ */}
+      {/* 遊び方・紹介ページへの入口 */}
       <div style={{ padding: '28px 24px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
-          fontFamily: proto.caption, fontSize: 10,
-          color: proto.white, letterSpacing: '0.25em',
+          fontFamily: proto.body, fontSize: 13,
+          color: proto.white, letterSpacing: 0,
           marginBottom: 10, paddingLeft: 4,
-        }}>MAIN GAME / SERIES ✦</div>
+          fontWeight: 900,
+          textShadow: '1px 1px 0 rgba(0,0,0,0.25)',
+        }}>まずは遊び方を知りたい</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <SeriesCard emoji="💕" title="彼氏の愛情判定" status="メイン" href="/love" onClick={onLovePage} />
           <SeriesCard emoji="👯" title="友達の友情判定" status="シリーズ" href="/friends" onClick={onFriendPage} />
