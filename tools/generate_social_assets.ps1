@@ -129,8 +129,9 @@ function Draw-Footer($g, [int]$w, [int]$h, [string]$sub = '無料・登録なし
   $fontSmall = New-Font $gothicFamily 30
   $fontUrl = New-Font $gothicFamily 42
   Draw-RoundedRect $g $blackBrush 80 ($h - 205) ($w - 160) 128 30
-  Draw-Centered $g $sub $fontSmall $whiteBrush 90 ($h - 190) ($w - 180) 40
-  Draw-Centered $g 'streetboardgame.com' $fontUrl $yellowBrush 90 ($h - 142) ($w - 180) 58
+  Draw-Centered $g $sub $fontSmall $whiteBrush 90 ($h - 190) ($w - 340) 40
+  Draw-Centered $g 'streetboardgame.com' $fontUrl $yellowBrush 90 ($h - 142) ($w - 340) 58
+  Draw-QR $g ($w - 210) ($h - 190) 104
   $blackBrush.Dispose(); $yellowBrush.Dispose(); $whiteBrush.Dispose(); $fontSmall.Dispose(); $fontUrl.Dispose()
 }
 
@@ -140,6 +141,20 @@ function Draw-Girl($g, [float]$x, [float]$y, [float]$h) {
   $ratio = $img.Width / $img.Height
   $w = $h * $ratio
   $g.DrawImage($img, $x, $y, $w, $h)
+  $img.Dispose()
+}
+
+function Draw-QR($g, [float]$x, [float]$y, [float]$size) {
+  $path = Join-Path $root 'assets\qr-site.png'
+  if (!(Test-Path -LiteralPath $path)) { return }
+  $img = [System.Drawing.Image]::FromFile($path)
+  $whiteBrushLocal = [System.Drawing.SolidBrush]::new($white)
+  $blackPenLocal = [System.Drawing.Pen]::new($black, [Math]::Max(3, [int]($size * 0.045)))
+  Draw-RoundedRect $g $whiteBrushLocal ($x - 8) ($y - 8) ($size + 16) ($size + 16) 18
+  Stroke-RoundedRect $g $blackPenLocal ($x - 8) ($y - 8) ($size + 16) ($size + 16) 18
+  $g.DrawImage($img, $x, $y, $size, $size)
+  $blackPenLocal.Dispose()
+  $whiteBrushLocal.Dispose()
   $img.Dispose()
 }
 
@@ -224,6 +239,7 @@ $created += Save-Image 1200 675 'watachan-sns-wide.png' {
   Draw-RoundedRect $g $yellowBrush 650 472 500 82 24
   Stroke-RoundedRect $g $blackPen 650 472 500 82 24
   Draw-Centered $g 'streetboardgame.com' $urlFont $blackBrush 666 488 468 44
+  Draw-QR $g 1036 552 84
   $urlFont.Dispose()
   $titleFont.Dispose(); $subFont.Dispose()
 }
