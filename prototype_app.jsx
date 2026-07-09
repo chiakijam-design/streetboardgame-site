@@ -1699,13 +1699,13 @@ function LoveModePanel({ girlName, boyName, loveMode, onChange }) {
     {
       key: 'girlTarget',
       title: `${boyName}が${girlName}の答えを予想する`,
-      sub: `${girlName}が選ぶ答えを、${boyName}が当てるゲーム`,
+      sub: `${girlName}が選んだ答えを、${boyName}が当てるゲーム`,
       bg: proto.yellow,
     },
     {
       key: 'boyTarget',
       title: `${girlName}が${boyName}の答えを予想する`,
-      sub: `${boyName}が選ぶ答えを、${girlName}が当てるゲーム`,
+      sub: `${boyName}が選んだ答えを、${girlName}が当てるゲーム`,
       bg: proto.cyan,
     },
   ];
