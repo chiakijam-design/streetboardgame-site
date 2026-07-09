@@ -236,7 +236,7 @@ function drawFittedCanvasText(ctx, text, x, y, maxWidth, {
 }
 
 const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
-const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png';
+const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
 
 function preloadCanvasCharacterImage() {
   if (typeof window === 'undefined') return null;
@@ -440,28 +440,23 @@ function createLoveResultImageSrc(score, total, tier, players) {
   drawCanvasLines(ctx, messageLines, 540, 875, 46);
 
   ctx.fillStyle = proto.yellow;
-  roundRect(ctx, 156, 1090, 768, 132, 26);
+  roundRect(ctx, 156, 1094, 768, 132, 26);
   ctx.fill();
   ctx.strokeStyle = proto.black;
   ctx.lineWidth = 5;
-  roundRect(ctx, 156, 1090, 768, 132, 26);
+  roundRect(ctx, 156, 1094, 768, 132, 26);
   ctx.stroke();
   ctx.fillStyle = proto.black;
-  ctx.textAlign = 'left';
-  ctx.font = '900 27px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('この結果、友達に伝えよう', 196, 1130);
-  ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 20px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('URLは投稿文・Instagramはプロフィールから', 196, 1165);
-  drawCanvasQr(ctx, 792, 1104, 92);
-
-  ctx.fillStyle = proto.black;
   ctx.textAlign = 'center';
-  ctx.font = '900 28px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com', 540, 1242);
+  ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('この結果、友達に伝えよう', 448, 1136);
   ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('#わたちゃん', 540, 1268);
+  ctx.font = '900 22px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('あなたなら何問当てられる？', 448, 1170);
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 22px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com  /  #わたちゃん', 448, 1203);
+  drawCanvasQr(ctx, 784, 1104, 92);
 
   return canvas.toDataURL('image/png');
 }
@@ -4876,6 +4871,7 @@ function createGroupResultImageSrc(kind, answers, players) {
   const targetLabel = `${players[0] || '本人'}の理解度`;
   const ranks = GROUP_RESULT_RANKS[kind] || GROUP_RESULT_RANKS.friend;
   const highlight = getGroupScoreHighlight(scores, total, kind);
+  const shareCta = isFamily ? 'この結果、家族に伝えよう' : 'この結果、友達に伝えよう';
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
@@ -5032,28 +5028,23 @@ function createGroupResultImageSrc(kind, answers, players) {
   });
 
   ctx.fillStyle = proto.yellow;
-  roundRect(ctx, 152, 1138, 776, 96, 22);
+  roundRect(ctx, 152, 1132, 776, 116, 22);
   ctx.fill();
   ctx.lineWidth = 5;
   ctx.strokeStyle = proto.black;
-  roundRect(ctx, 152, 1138, 776, 96, 22);
+  roundRect(ctx, 152, 1132, 776, 116, 22);
   ctx.stroke();
   ctx.fillStyle = proto.black;
-  ctx.font = '900 25px "Zen Maru Gothic", sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('この結果、友達に伝えよう', 196, 1174);
-  ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 18px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('URLは投稿文・Instagramはプロフィールから', 196, 1204);
-  drawCanvasQr(ctx, 820, 1150, 70);
-
-  ctx.fillStyle = proto.black;
-  ctx.font = '900 28px "DotGothic16", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('streetboardgame.com', 540, 1240);
+  ctx.font = '900 27px "Zen Maru Gothic", sans-serif';
+  ctx.fillText(shareCta, 452, 1167);
   ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('#わたちゃん', 540, 1266);
+  ctx.font = '900 20px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('あなたなら何問当てられる？', 452, 1197);
+  ctx.fillStyle = proto.black;
+  ctx.font = '900 20px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com  /  #わたちゃん', 452, 1226);
+  drawCanvasQr(ctx, 812, 1144, 74);
 
   return canvas.toDataURL('image/png');
 }
@@ -5185,7 +5176,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const shareUrl = `${location.origin}/friends`;
-  const shareText = `わたちゃんの友情判定をやってみた！\n${scoreSummary}。\n${groupHighlight}\n\n友達とやると答え合わせが盛り上がる。\nみんなは何問当たる？👇\n#わたちゃん #友情判定`;
+  const shareText = `わたちゃんの友情判定をやってみた！\n今回は「${targetLabel}」を判定。\n${scoreSummary}。\n${groupHighlight}\n\n友達とやると答え合わせが盛り上がる。\nみんなは何問当たる？👇\n#わたちゃん #友情判定`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -5680,7 +5671,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const shareUrl = `${location.origin}/family`;
-  const shareText = `わたちゃんの家族の絆判定をやってみた！\n${scoreSummary}。\n${groupHighlight}\n\n家族でやると意外とズレる。\nみんなは何問当たる？👇\n#わたちゃん #家族の絆判定`;
+  const shareText = `わたちゃんの家族の絆判定をやってみた！\n今回は「${targetLabel}」を判定。\n${scoreSummary}。\n${groupHighlight}\n\n家族でやると意外とズレる。\nみんなは何問当たる？👇\n#わたちゃん #家族の絆判定`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
