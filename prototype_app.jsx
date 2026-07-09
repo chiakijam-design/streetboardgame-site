@@ -5354,20 +5354,16 @@ function FamilyIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
           <div style={{ marginTop: 14 }}>
             <LogoText size={26}>家族の絆判定</LogoText>
           </div>
-          <div style={{
-            marginTop: 8, color: proto.white, fontSize: 12,
-            lineHeight: 1.7, fontWeight: 700,
-          }}>
-            本人が自分の答えを選び、家族がその答えを予想するゲーム。
-            2〜4人で「家族のことをどれだけ分かっているか」を判定します。
-          </div>
         </div>
       </div>
 
       <div style={{ padding: '24px 22px' }}>
         <IntroSeoCard
-          title="家族で遊べる絆チェックゲーム"
-          text="家族の絆判定は、本人が選んだ答えを家族が予想する無料の家族ゲームです。親子、兄弟姉妹、親戚の集まりでも、普段は聞かない好みや考え方を楽しく知れる診断ゲームとして遊べます。"
+          title="家族で遊べる絆判定ゲーム"
+          text="家族の絆判定は、本人の好みや本音を家族がどれだけ当てられるかを試す無料の絆判定ゲーム。お題に対して本人は自分の答えを選び、家族はその答えを予想します。2〜4人で「本人のことをどれだけ分かっているか」、理解度を判定します。"
+          details={[
+            '親子、兄弟姉妹、親戚の集まりでも、普段は聞かない好みや考え方を楽しく知れる診断ゲームとして遊べます。',
+          ]}
           tags={['家族の絆判定', '家族ゲーム', '親子ゲーム', '2〜4人プレイ']}
         />
         <NameEditorPanel
