@@ -419,8 +419,8 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
   ctx.fillText('この結果、友達に伝えよう', 540, 1130);
   ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 25px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('あなたなら何問当てられる？', 540, 1165);
+  ctx.font = '900 23px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('URLは投稿文・Instagramはプロフィールから', 540, 1165);
 
   ctx.fillStyle = proto.black;
   ctx.font = '900 30px "DotGothic16", monospace';
@@ -3578,7 +3578,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
         onX={() => handleShare('x')}
         onLine={() => handleShare('line')}
         onShare={handleShareImage}
-        shareContext="XやLINEに結果文とURLをそのまま送れます"
+        shareContext="XやLINEはURLつきで送れます。Instagramはプロフィールリンクへ"
         title="この結果、友達に送る？"
       />
     </div>
@@ -3647,7 +3647,7 @@ function ResultImageActions({
       }}>SHARE YOUR RESULT</div>
       <div style={{ fontSize: 17 }}>{shareTitle}</div>
       <div style={{ marginTop: 3, fontSize: 11, color: proto.text, lineHeight: 1.5 }}>
-        XやLINEに結果文とURLをそのまま送れます
+        XやLINEはURLつきで送れます。Instagramはプロフィールリンクへ
       </div>
       <div style={{
         display: 'grid',
@@ -3717,7 +3717,7 @@ function ShareBottomSheet({
   onX,
   onLine,
   onShare,
-  shareContext = 'XやLINEに結果文とURLをそのまま送れます',
+  shareContext = 'XやLINEはURLつきで送れます。Instagramはプロフィールリンクへ',
   title = 'この結果、友達に送る？',
 }) {
   if (!open) return null;
@@ -5008,8 +5008,8 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.textAlign = 'center';
   ctx.fillText('この結果、友達に伝えよう', 540, 1180);
   ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 22px "Zen Maru Gothic", sans-serif';
-  ctx.fillText(isFamily ? '家族なら何問当てられる？' : '友達なら何問当てられる？', 540, 1208);
+  ctx.font = '900 20px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('URLは投稿文・Instagramはプロフィールから', 540, 1208);
 
   ctx.fillStyle = proto.black;
   ctx.font = '900 28px "DotGothic16", monospace';
@@ -5344,7 +5344,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
         onX={openX}
         onLine={openLine}
         onShare={handleShareImage}
-        shareContext="XやLINEに結果文とURLをそのまま送れます"
+        shareContext="XやLINEはURLつきで送れます。Instagramはプロフィールリンクへ"
         title="この結果、友達に送る？"
       />
     </div>
@@ -5838,7 +5838,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
         onX={openX}
         onLine={openLine}
         onShare={handleShareImage}
-        shareContext="XやLINEに結果文とURLをそのまま送れます"
+        shareContext="XやLINEはURLつきで送れます。Instagramはプロフィールリンクへ"
         title="この結果、家族に送る？"
       />
     </div>
