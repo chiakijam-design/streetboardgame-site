@@ -2704,8 +2704,8 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
   const loveHashTag = loveMode === 'boyTarget' ? '#彼女の愛情判定' : '#彼氏の愛情判定';
   const targetName = girlName;
   const guesserName = boyName;
-  const xShareText = `${guesserName}が${targetName}の答えを${score}/${total}問正解！\n今日の称号は「${personalizedTitle}」。\n${personalizedShareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね ${loveHashTag}`;
-  const lineShareText = `${guesserName}が${targetName}の答えを${score}/${total}問正解！結果は「${personalizedTitle}」でした。${personalizedShareHook} ♡`;
+  const xShareText = `わたちゃんで${loveResultHeaderLabel}をやってみた！\n${guesserName}は${targetName}の答えを${score}/${total}問正解。\n称号は「${personalizedTitle}」でした。\n${personalizedShareHook} ♡\n\nあなたなら何問当てられる？結果見せて。\n#わたちゃん #私のことちゃんと分かってるよね ${loveHashTag}`;
+  const lineShareText = `わたちゃんで${loveResultHeaderLabel}をやってみた！${guesserName}は${targetName}の答えを${score}/${total}問正解。称号は「${personalizedTitle}」でした。あなたなら何問当てられる？`;
   const copyShareText = `${xShareText}\n${shareUrl}`;
 
   const copyToClipboard = (value, type) => {
@@ -4612,7 +4612,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const shareUrl = `${location.origin}/friends`;
-  const shareText = `友達の友情判定ゲームをやってみた！${scoreSummary}。\n${groupHighlight}\n\n友達なら何問当てられる？次はあなたの番。\n#わたちゃん #友情判定ゲーム #streetboardgame`;
+  const shareText = `わたちゃんの友情判定ゲームをやってみた！\n${scoreSummary}。\n${groupHighlight}\n\nこれ友達とやると答え合わせが盛り上がる。\nあなたなら何問当てられる？結果見せて。\n#わたちゃん #友情判定ゲーム #友達診断 #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
@@ -5090,7 +5090,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const shareUrl = `${location.origin}/family`;
-  const shareText = `家族の絆判定ゲームをやってみた！${scoreSummary}。\n${groupHighlight}\n\n家族なら何問当てられる？次はあなたの番。\n#わたちゃん #家族の絆判定 #streetboardgame`;
+  const shareText = `わたちゃんの家族の絆判定をやってみた！\n${scoreSummary}。\n${groupHighlight}\n\n家族でやると、分かってるようで意外とズレる。\nあなたの家族なら何問当てられる？\n#わたちゃん #家族の絆判定 #家族診断 #streetboardgame`;
 
   const copyShareText = () => {
     const value = `${shareText}\n${shareUrl}`;
