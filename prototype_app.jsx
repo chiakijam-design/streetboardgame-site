@@ -5723,7 +5723,7 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
         <Card>
           <div style={{ fontSize: 12, lineHeight: 1.8, color: proto.text, fontWeight: 600 }}>
             ストリートボードゲームは、カップルでどちらの答えを当てるか選べる
-            「彼氏の愛情判定ゲーム」をメインにしたオリジナルゲームサイトです。
+            「彼氏・彼女の愛情判定ゲーム」をメインにしたオリジナルゲームサイトです。
             そのシリーズとして、友達の友情判定や家族の絆判定など、
             2人〜数人で気軽に遊べるゲームを展開しています。
             スマホ1台で、デート中・飲み会・旅行・おうち時間にも遊びやすい理解度チェックです。
@@ -5732,7 +5732,7 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
 
         <SectionTitle style={{ marginTop: 22 }}>♡ シリーズ展開</SectionTitle>
         <Card>
-          <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="公開中" active onClick={onLove} />
+          <SeriesRow emoji="💕" title="彼氏・彼女の愛情判定" sub="公開中" active onClick={onLove} />
           <SeriesRow emoji="👯" title="友達の友情判定" sub="公開中" active onClick={onFriend} />
           <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="公開中" active onClick={onFamily} last />
         </Card>
