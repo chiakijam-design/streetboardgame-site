@@ -44,6 +44,20 @@ export default {
         keywords: '彼氏の愛情判定, 彼女の愛情判定, カップル診断, 恋愛診断, カップルゲーム, 無料ゲーム, わたちゃん',
         noscriptTitle: '彼氏・彼女の愛情判定｜わたちゃん無料カップル診断ゲーム',
         noscriptBody: '彼氏の愛情判定だけでなく、彼女の愛情判定もできる無料カップル診断ゲームです。スマホ1台で相手の答えを予想し、5問後にふたりの理解度を確認できます。',
+        faq: [
+          {
+            question: '彼氏の愛情判定と彼女の愛情判定は何が違う？',
+            answer: 'どちらの答えを相手が当てるかを選べます。彼女の答えを彼氏が当てる遊び方も、彼氏の答えを彼女が当てる遊び方もできます。',
+          },
+          {
+            question: '無料で遊べますか？',
+            answer: '無料で遊べます。スマホ1台で5問だけ出題され、結果画像やシェア文も作れます。',
+          },
+          {
+            question: 'どんな場面で遊びやすいですか？',
+            answer: 'デート中、飲み会、旅行、おうち時間など、短時間で相手の好みや考え方を知りたい場面に向いています。',
+          },
+        ],
       },
       '/friends': {
         title: '友達の友情判定｜わたちゃん無料友情診断ゲーム',
@@ -59,6 +73,20 @@ export default {
         keywords: '友情判定ゲーム, 友達ゲーム, 友情診断, 友達診断, スマホゲーム, わたちゃん',
         noscriptTitle: '友達の友情判定｜わたちゃん無料友情診断ゲーム',
         noscriptBody: '本人が自分の答えを選び、友達がその答えを予想する無料友情判定ゲームです。スマホ1台で2〜4人プレイに対応し、5問後に友達それぞれの理解度を確認できます。',
+        faq: [
+          {
+            question: '友達の友情判定は何人で遊べますか？',
+            answer: '2〜4人で遊べます。本人が答えを選び、友達A、友達B、友達Cが順番に予想します。',
+          },
+          {
+            question: '友情診断の結果はどう表示されますか？',
+            answer: '5問後に、友達ごとの正解数とランク表、答え合わせ、AI総評をまとめて確認できます。',
+          },
+          {
+            question: '友達同士のどんな場面に向いていますか？',
+            answer: '大学生の集まり、休み時間、飲み会、旅行など、会話のきっかけが欲しい場面で遊びやすいゲームです。',
+          },
+        ],
       },
       '/family': {
         title: '家族の絆判定｜わたちゃん無料家族診断ゲーム',
@@ -74,6 +102,20 @@ export default {
         keywords: '家族ゲーム, 家族診断, 絆判定, 家族の絆, スマホゲーム, わたちゃん',
         noscriptTitle: '家族の絆判定｜わたちゃん無料家族診断ゲーム',
         noscriptBody: '本人が自分の答えを選び、家族がその答えを予想する無料家族診断ゲームです。スマホ1台で2〜4人プレイに対応し、5問後に家族それぞれの理解度を確認できます。',
+        faq: [
+          {
+            question: '家族の絆判定は何人で遊べますか？',
+            answer: '2〜4人で遊べます。本人が選んだ答えを、家族が順番に予想する形式です。',
+          },
+          {
+            question: '家族診断の結果では何が分かりますか？',
+            answer: '家族ごとの正解数、ランク表、答え合わせ、AI総評を表示します。普段聞かない好みや考え方を知るきっかけになります。',
+          },
+          {
+            question: 'どんな家族イベントに向いていますか？',
+            answer: 'おうち時間、親戚の集まり、家族旅行、親子の会話など、少し笑いながらお互いを知りたい場面に向いています。',
+          },
+        ],
       },
       '/about': {
         title: 'About｜わたちゃん・彼氏の愛情判定ゲーム',
@@ -173,6 +215,27 @@ function buildStructuredData(page) {
   const organizationId = 'https://www.streetboardgame.com/#organization';
   const websiteId = 'https://www.streetboardgame.com/#website';
 
+  const webPage = {
+    '@type': 'WebPage',
+    '@id': page.pageId,
+    url: page.url,
+    name: page.title,
+    description: page.description,
+    inLanguage: 'ja',
+    isPartOf: {
+      '@id': websiteId,
+    },
+    breadcrumb: {
+      '@id': page.url + '#breadcrumb',
+    },
+    primaryImageOfPage: {
+      '@type': 'ImageObject',
+      url: 'https://www.streetboardgame.com/assets/ogp.jpg',
+      width: 1200,
+      height: 630,
+    },
+  };
+
   const graph = [
     {
       '@type': 'Organization',
@@ -244,30 +307,11 @@ function buildStructuredData(page) {
         },
       ],
     },
-    {
-      '@type': 'WebPage',
-      '@id': page.pageId,
-      url: page.url,
-      name: page.title,
-      description: page.description,
-      inLanguage: 'ja',
-      isPartOf: {
-        '@id': websiteId,
-      },
-      breadcrumb: {
-        '@id': page.url + '#breadcrumb',
-      },
-      primaryImageOfPage: {
-        '@type': 'ImageObject',
-        url: 'https://www.streetboardgame.com/assets/ogp.jpg',
-        width: 1200,
-        height: 630,
-      },
-    },
+    webPage,
   ];
 
   if (page.gameId) {
-    graph[4].mainEntity = {
+    webPage.mainEntity = {
       '@id': page.gameId,
     };
     graph.push({
@@ -296,6 +340,24 @@ function buildStructuredData(page) {
       },
       publisher: {
         '@id': organizationId,
+      },
+    });
+  }
+
+  if (page.faq && page.faq.length) {
+    graph.push({
+      '@type': 'FAQPage',
+      '@id': page.url + '#faq',
+      mainEntity: page.faq.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.answer,
+        },
+      })),
+      mainEntityOfPage: {
+        '@id': page.pageId,
       },
     });
   }
