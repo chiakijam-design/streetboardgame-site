@@ -1699,13 +1699,13 @@ function LoveModePanel({ girlName, boyName, loveMode, onChange }) {
     {
       key: 'girlTarget',
       title: `${boyName}の${girlName}への愛情を判定する`,
-      sub: `${girlName}が選ぶ → ${boyName}が予想`,
+      sub: `${girlName}が選ぶ答えを、${boyName}が予想`,
       bg: proto.yellow,
     },
     {
       key: 'boyTarget',
       title: `${girlName}の${boyName}への愛情を判定する`,
-      sub: `${boyName}が選ぶ → ${girlName}が予想`,
+      sub: `${boyName}が選ぶ答えを、${girlName}が予想`,
       bg: proto.cyan,
     },
   ];
