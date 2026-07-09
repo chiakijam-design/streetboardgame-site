@@ -1605,7 +1605,7 @@ const GAME_INTRO_CONTENT = {
     ],
     cta: '友情判定をはじめる',
     related: [
-      { label: 'メインの彼氏の愛情判定を見る', href: '/love', action: 'love' },
+      { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },
       { label: '家族の絆判定を見る', href: '/family', action: 'family' },
     ],
   },
@@ -1639,7 +1639,7 @@ const GAME_INTRO_CONTENT = {
     ],
     cta: '家族の絆判定をはじめる',
     related: [
-      { label: 'メインの彼氏の愛情判定を見る', href: '/love', action: 'love' },
+      { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },
       { label: '友達の友情判定を見る', href: '/friends', action: 'friend' },
     ],
   },
