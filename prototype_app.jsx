@@ -4205,20 +4205,16 @@ function FriendIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
           <div style={{ marginTop: 14 }}>
             <LogoText size={26}>友達の友情判定</LogoText>
           </div>
-          <div style={{
-            marginTop: 8, color: proto.white, fontSize: 12,
-            lineHeight: 1.7, fontWeight: 700,
-          }}>
-            本人が自分の答えを選び、友達がその答えを予想するゲーム。
-            2〜4人で「本人のことをどれだけ分かっているか」を判定します。
-          </div>
         </div>
       </div>
 
       <div style={{ padding: '24px 22px' }}>
         <IntroSeoCard
           title="友達同士で盛り上がる友情診断"
-          text="友達の友情判定は、本人の好みや本音を友達がどれだけ当てられるかを試す無料の友情診断ゲームです。スマホを順番に渡すだけなので、大学生の集まり、旅行、飲み会、休み時間にも遊びやすい形式です。"
+          text="友達の友情判定は、本人の好みや本音を友達がどれだけ当てられるかを試す無料の友情診断ゲーム。お題に対して本人は自分の答えを選び、友達はその答えを予想します。2〜4人で「本人のことをどれだけ分かっているか」、理解度を判定します。"
+          details={[
+            'スマホを順番に渡すだけなので、大学生の集まり、旅行、飲み会、休み時間にも遊びやすい形式です。',
+          ]}
           tags={['友情判定', '友達ゲーム', '友情診断', '2〜4人プレイ']}
         />
         <NameEditorPanel
