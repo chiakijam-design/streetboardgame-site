@@ -1364,7 +1364,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         わたちゃん 彼氏の愛情判定ゲーム
       </h1>
       <p style={srOnlyStyle()}>
-        彼氏が彼女の答えをどれだけ当てられるかを判定する無料カップル診断ゲームです。大学生カップルのデート、飲み会、旅行、おうち時間にもスマホ1台で遊べます。彼氏の愛情判定をメインに、同じゲーム内で遊べる彼女版、友達の友情判定、家族の絆判定も公開中です。
+        彼氏の彼女理解度を測定できる無料カップル診断ゲームです。大学生カップルのデート、飲み会、旅行、おうち時間にもスマホ1台で遊べます。彼氏の愛情判定をメインに、同じゲーム内で遊べる彼女版、友達の友情判定、家族の絆判定も公開中です。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
