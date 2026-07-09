@@ -1460,9 +1460,11 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           color: proto.white,
           opacity: 0.88,
           fontWeight: 700,
+          maxWidth: 420,
+          marginLeft: 'auto',
+          marginRight: 'auto',
         }}>
-          メインは彼氏の愛情判定ゲーム。<br />
-          彼女版は彼氏版の中で切り替え、友情判定版・家族の絆判定版はシリーズとして公開中。
+          シリーズ作品の友情判定版・家族の絆判定版もお楽しみください
         </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
           marginTop: 12,
