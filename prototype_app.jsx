@@ -417,17 +417,17 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.stroke();
   ctx.fillStyle = proto.black;
   ctx.font = '900 28px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('この結果、みんなに見せよう', 540, 1130);
+  ctx.fillText('この結果、友達に伝えよう', 540, 1130);
   ctx.fillStyle = proto.pinkDeep;
   ctx.font = '900 25px "Zen Maru Gothic", sans-serif';
   ctx.fillText('あなたなら何問当てられる？', 540, 1165);
 
   ctx.fillStyle = proto.black;
-  ctx.font = '900 32px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com', 540, 1225);
+  ctx.font = '900 30px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com', 540, 1210);
   ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 24px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('#わたちゃん', 540, 1255);
+  ctx.font = '900 22px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('#わたちゃん', 540, 1238);
 
   return canvas.toDataURL('image/png');
 }
@@ -5006,17 +5006,17 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillStyle = proto.black;
   ctx.font = '900 25px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('この結果、みんなに見せよう', 540, 1180);
+  ctx.fillText('この結果、友達に伝えよう', 540, 1180);
   ctx.fillStyle = proto.pinkDeep;
   ctx.font = '900 22px "Zen Maru Gothic", sans-serif';
   ctx.fillText(isFamily ? '家族なら何問当てられる？' : '友達なら何問当てられる？', 540, 1208);
 
   ctx.fillStyle = proto.black;
-  ctx.font = '900 30px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com', 540, 1252);
+  ctx.font = '900 28px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com', 540, 1240);
   ctx.fillStyle = proto.pinkDeep;
-  ctx.font = '900 23px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('#わたちゃん', 540, 1280);
+  ctx.font = '900 21px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('#わたちゃん', 540, 1266);
 
   return canvas.toDataURL('image/png');
 }
