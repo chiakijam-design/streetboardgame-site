@@ -4220,16 +4220,16 @@ function FriendIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
         <StepCard n="2" text={`${mainPlayer}は、友達に見せずに自分が思った答えを選ぶ`} />
         <StepCard n="3" text={`友達は、${mainPlayer}が選んだ答えを予想して同じ色を選ぶ`} />
         <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
-        <IntroSeoCard
-          title="友達同士で盛り上がる友情診断"
-          text="友達の友情判定は、本人の好みや本音を友達がどれだけ当てられるかを試す無料の友情診断ゲームです。スマホを順番に渡すだけなので、大学生の集まり、旅行、飲み会、休み時間にも遊びやすい形式です。"
-          tags={['友情判定', '友達ゲーム', '友情診断', '2〜4人プレイ']}
-        />
         <NameEditorPanel
           title="名前を変える（任意）"
           names={playerNames}
           defaults={DEFAULT_PLAYER_NAMES.friend}
           onChange={onPlayerNameChange}
+        />
+        <IntroSeoCard
+          title="友達同士で盛り上がる友情診断"
+          text="友達の友情判定は、本人の好みや本音を友達がどれだけ当てられるかを試す無料の友情診断ゲームです。スマホを順番に渡すだけなので、大学生の集まり、旅行、飲み会、休み時間にも遊びやすい形式です。"
+          tags={['友情判定', '友達ゲーム', '友情診断', '2〜4人プレイ']}
         />
 
         <div style={{
@@ -5373,16 +5373,16 @@ function FamilyIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
         <StepCard n="2" text={`${mainPlayer}は、家族に見せずに自分が思った答えを選ぶ`} />
         <StepCard n="3" text={`家族は、${mainPlayer}が選んだ答えを予想して同じ色を選ぶ`} />
         <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
-        <IntroSeoCard
-          title="家族で遊べる絆チェックゲーム"
-          text="家族の絆判定は、本人が選んだ答えを家族が予想する無料の家族ゲームです。親子、兄弟姉妹、親戚の集まりでも、普段は聞かない好みや考え方を楽しく知れる診断ゲームとして遊べます。"
-          tags={['家族の絆判定', '家族ゲーム', '親子ゲーム', '2〜4人プレイ']}
-        />
         <NameEditorPanel
           title="名前を変える（任意）"
           names={playerNames}
           defaults={DEFAULT_PLAYER_NAMES.family}
           onChange={onPlayerNameChange}
+        />
+        <IntroSeoCard
+          title="家族で遊べる絆チェックゲーム"
+          text="家族の絆判定は、本人が選んだ答えを家族が予想する無料の家族ゲームです。親子、兄弟姉妹、親戚の集まりでも、普段は聞かない好みや考え方を楽しく知れる診断ゲームとして遊べます。"
+          tags={['家族の絆判定', '家族ゲーム', '親子ゲーム', '2〜4人プレイ']}
         />
 
         <div style={{
