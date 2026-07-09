@@ -1420,7 +1420,7 @@ function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
           opacity: 0.88,
           fontWeight: 700,
         }}>
-          まずは彼氏の愛情判定から。友達版と家族版も公開中。
+          彼氏・彼女どちらの答えも当てられます。友達版と家族版も公開中。
         </div>
       </div>
 
@@ -2701,8 +2701,10 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
   const loveResultHeaderLabel = getLoveResultHeaderLabel(girlName, boyName);
   const loveGameTitle = `わたちゃん ${loveResultHeaderLabel}ゲーム`;
   const loveHashTag = loveMode === 'boyTarget' ? '#彼女の愛情判定' : '#彼氏の愛情判定';
-  const xShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！\n今日の称号は「${personalizedTitle}」。\n${personalizedShareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね ${loveHashTag}`;
-  const lineShareText = `${boyName}が${girlName}の答えを${score}/${total}問正解！結果は「${personalizedTitle}」でした。${personalizedShareHook} ♡`;
+  const targetName = girlName;
+  const guesserName = boyName;
+  const xShareText = `${guesserName}が${targetName}の答えを${score}/${total}問正解！\n今日の称号は「${personalizedTitle}」。\n${personalizedShareHook} ♡\n\nみんななら何問当てられる？次はあなたの番。\n#わたちゃん #私のことちゃんと分かってるよね ${loveHashTag}`;
+  const lineShareText = `${guesserName}が${targetName}の答えを${score}/${total}問正解！結果は「${personalizedTitle}」でした。${personalizedShareHook} ♡`;
   const copyShareText = `${xShareText}\n${shareUrl}`;
 
   const copyToClipboard = (value, type) => {
@@ -5313,7 +5315,7 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
         <SectionTitle>♡ コンセプト</SectionTitle>
         <Card>
           <div style={{ fontSize: 12, lineHeight: 1.8, color: proto.text, fontWeight: 600 }}>
-            ストリートボードゲームは、カップルでお互いの答えを当てる
+            ストリートボードゲームは、カップルでどちらの答えを当てるか選べる
             「彼氏の愛情判定ゲーム」をメインにしたオリジナルゲームサイトです。
             そのシリーズとして、友達の友情判定や家族の絆判定など、
             2人〜数人で気軽に遊べるゲームを展開しています。
