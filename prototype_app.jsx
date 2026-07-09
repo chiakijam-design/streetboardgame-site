@@ -1817,34 +1817,6 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
           </div>
         </section>
 
-        <section style={{
-          marginTop: 16,
-          background: '#FFF7F1',
-          border: `3px solid ${proto.black}`,
-          borderRadius: 14,
-          boxShadow: proto.shadowHard,
-          padding: '14px',
-        }}>
-          <h2 style={{ margin: '0 0 10px', fontSize: 16 }}>よくある質問</h2>
-          <div style={{ display: 'grid', gap: 10 }}>
-            {content.faq.map((item) => (
-              <div key={item.q} style={{
-                padding: '12px 12px',
-                background: proto.white,
-                border: `2px solid ${proto.black}`,
-                borderRadius: 12,
-              }}>
-                <h3 style={{ margin: 0, fontSize: 13, lineHeight: 1.55 }}>
-                  {item.q}
-                </h3>
-                <p style={{ margin: '6px 0 0', fontSize: 12, lineHeight: 1.75, fontWeight: 700 }}>
-                  {item.a}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
         <button onClick={onStart} style={{ ...primaryBtn(), marginTop: 18 }}>
           {content.cta}
           <span style={{ display: 'inline-block', marginLeft: 6, color: proto.yellow, fontSize: 18, textShadow: '1px 1px 0 #000' }}>▶</span>
@@ -1876,6 +1848,34 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
             );
           })}
         </div>
+
+        <section style={{
+          marginTop: 16,
+          background: '#FFF7F1',
+          border: `3px solid ${proto.black}`,
+          borderRadius: 14,
+          boxShadow: proto.shadowHard,
+          padding: '14px',
+        }}>
+          <h2 style={{ margin: '0 0 10px', fontSize: 16 }}>よくある質問</h2>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {content.faq.map((item) => (
+              <div key={item.q} style={{
+                padding: '12px 12px',
+                background: proto.white,
+                border: `2px solid ${proto.black}`,
+                borderRadius: 12,
+              }}>
+                <h3 style={{ margin: 0, fontSize: 13, lineHeight: 1.55 }}>
+                  {item.q}
+                </h3>
+                <p style={{ margin: '6px 0 0', fontSize: 12, lineHeight: 1.75, fontWeight: 700 }}>
+                  {item.a}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </main>
   );
