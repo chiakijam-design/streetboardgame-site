@@ -3142,7 +3142,6 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
-  const [shareNudge, setShareNudge] = useState(false);
   const shareSheetShownRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const canvasQrReady = useCanvasQrReady();
@@ -3187,7 +3186,6 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
   const copyToClipboard = (value, type) => {
     const done = () => {
       setCopied(type);
-      setShareNudge(true);
       setTimeout(() => setCopied(false), 2000);
     };
     const fallback = () => {
@@ -3220,11 +3218,9 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
     }
     if (platform === 'line') {
       openLineShare(`${lineShareText}\n${shareUrl}`);
-      setShareNudge(true);
       return;
     }
     window.open(target, '_blank', 'noopener,noreferrer,width=600,height=500');
-    setShareNudge(true);
   };
 
   const handleSaveImage = async () => {
@@ -3575,14 +3571,6 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
             シェア文をコピーしました ♡
           </div>
         )}
-        {shareNudge && (
-          <ShareAgainNudge
-            title="送ったら、もう1人にも見せてみて"
-            text="友達やカップル仲間に送ると、何問当てられるかでまた盛り上がれます。"
-            onLine={() => handleShare('line')}
-            onX={() => handleShare('x')}
-          />
-        )}
         <ResultReplayActions
           primaryLabel="新しいお題でもう一度"
           onPrimary={onReplay}
@@ -3882,63 +3870,6 @@ function ShareBottomSheet({
           }}
         >
           あとで
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ShareAgainNudge({ title, text, onLine, onX }) {
-  return (
-    <div style={{
-      marginTop: 10,
-      padding: '12px 12px',
-      background: '#FFF7F1',
-      color: proto.black,
-      border: `2.5px solid ${proto.black}`,
-      borderRadius: 13,
-      boxShadow: '3px 3px 0 #000',
-      textAlign: 'center',
-      fontWeight: 900,
-    }}>
-      <div style={{ fontSize: 14, lineHeight: 1.45 }}>{title}</div>
-      <div style={{
-        marginTop: 4,
-        fontSize: 11,
-        lineHeight: 1.55,
-        color: proto.textSoft,
-      }}>{text}</div>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginTop: 10,
-      }}>
-        <button type="button" onClick={onLine} style={{
-          minHeight: 42,
-          borderRadius: 11,
-          border: `2px solid ${proto.black}`,
-          background: '#06C755',
-          color: proto.white,
-          fontFamily: proto.body,
-          fontSize: 12,
-          fontWeight: 900,
-          boxShadow: '2px 2px 0 #000',
-        }}>
-          LINEでもう1人へ
-        </button>
-        <button type="button" onClick={onX} style={{
-          minHeight: 42,
-          borderRadius: 11,
-          border: `2px solid ${proto.black}`,
-          background: proto.black,
-          color: proto.white,
-          fontFamily: proto.body,
-          fontSize: 12,
-          fontWeight: 900,
-          boxShadow: '2px 2px 0 #5BD4E8',
-        }}>
-          Xにも投稿
         </button>
       </div>
     </div>
@@ -5154,7 +5085,6 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
-  const [shareNudge, setShareNudge] = useState(false);
   const shareSheetShownRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const canvasQrReady = useCanvasQrReady();
@@ -5182,7 +5112,6 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
     const value = `${shareText}\n${shareUrl}`;
     const done = () => {
       setCopied(true);
-      setShareNudge(true);
       setTimeout(() => setCopied(false), 2000);
     };
     if (navigator.clipboard && window.isSecureContext) {
@@ -5198,12 +5127,10 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
       '_blank',
       'noopener,noreferrer,width=600,height=500'
     );
-    setShareNudge(true);
   };
 
   const openLine = () => {
     openLineShare(`${shareText}\n${shareUrl}`);
-    setShareNudge(true);
   };
 
   const handleSaveImage = async () => {
@@ -5347,14 +5274,6 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           }}>
             シェア文をコピーしました
           </div>
-        )}
-        {shareNudge && (
-          <ShareAgainNudge
-            title="送ったら、別の友達にも送ってみて"
-            text="同じ結果でも、送る相手によって反応が変わるのがこのゲームの楽しいところ。"
-            onLine={openLine}
-            onX={openX}
-          />
         )}
         <ResultReplayActions
           primaryLabel="同じ人数でもう一度"
@@ -5649,7 +5568,6 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
-  const [shareNudge, setShareNudge] = useState(false);
   const shareSheetShownRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const canvasQrReady = useCanvasQrReady();
@@ -5677,7 +5595,6 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
     const value = `${shareText}\n${shareUrl}`;
     const done = () => {
       setCopied(true);
-      setShareNudge(true);
       setTimeout(() => setCopied(false), 2000);
     };
     if (navigator.clipboard && window.isSecureContext) {
@@ -5693,12 +5610,10 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
       '_blank',
       'noopener,noreferrer,width=600,height=500'
     );
-    setShareNudge(true);
   };
 
   const openLine = () => {
     openLineShare(`${shareText}\n${shareUrl}`);
-    setShareNudge(true);
   };
 
   const handleSaveImage = async () => {
@@ -5842,14 +5757,6 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           }}>
             シェア文をコピーしました
           </div>
-        )}
-        {shareNudge && (
-          <ShareAgainNudge
-            title="送ったら、家族グループにも送ってみて"
-            text="その場にいない家族にも送ると、あとから答え合わせの話題になります。"
-            onLine={openLine}
-            onX={openX}
-          />
         )}
         <ResultReplayActions
           primaryLabel="同じ人数でもう一度"
