@@ -456,7 +456,7 @@ function createLoveResultImageSrc(score, total, tier, players) {
   ctx.fillStyle = proto.black;
   ctx.font = '900 22px "DotGothic16", monospace';
   ctx.fillText('streetboardgame.com  /  #わたちゃん', 448, 1203);
-  drawCanvasQr(ctx, 784, 1104, 92);
+  drawCanvasQr(ctx, 784, 1114, 92);
 
   return canvas.toDataURL('image/png');
 }
@@ -5044,7 +5044,7 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillStyle = proto.black;
   ctx.font = '900 20px "DotGothic16", monospace';
   ctx.fillText('streetboardgame.com  /  #わたちゃん', 452, 1226);
-  drawCanvasQr(ctx, 812, 1144, 74);
+  drawCanvasQr(ctx, 812, 1153, 74);
 
   return canvas.toDataURL('image/png');
 }
