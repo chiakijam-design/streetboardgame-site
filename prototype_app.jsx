@@ -1543,6 +1543,13 @@ const GAME_INTRO_CONTENT = {
     heading: '彼氏が彼女の答えを当てる無料カップル診断',
     lead: 'わたちゃんのメインは、彼氏が彼女の答えをどれだけ当てられるかを判定するゲームです。彼女版に切り替えると、彼女が彼氏の答えを当てる遊び方もできます。',
     body: 'スマホ1台で始められるので、大学生カップルのデート中、飲み会、旅行、おうち時間でも気軽に遊べます。5問だけなのでテンポよく終わり、最後に何問当たったか、どの問題が当たったかをまとめて確認できます。',
+    recommendTitle: 'こんなカップルにおすすめ',
+    recommend: [
+      '彼氏が彼女の好みをどれだけ分かっているか試したい',
+      '付き合いたてで、自然に相手のことを知る話題がほしい',
+      'デート中やおうち時間に、スマホだけで短く盛り上がりたい',
+      '飲み会や旅行で、カップル診断っぽく結果をシェアしたい',
+    ],
     scenes: ['大学生カップル', 'デート中', 'おうち時間', '飲み会', '旅行'],
     steps: ['誰の愛情を判定するか選ぶ', '本人が答えを選ぶ', '相手が予想する', '5問後に答え合わせ'],
     faq: [
@@ -1571,6 +1578,13 @@ const GAME_INTRO_CONTENT = {
     heading: '友達同士で盛り上がる無料の友情診断',
     lead: '友達の友情判定は、本人が選んだ答えを友達が予想して、どれだけ分かっているかをチェックするゲームです。',
     body: '2〜4人で遊べるので、大学生の友達同士、休み時間、旅行、飲み会にも向いています。本人、友達A、友達B、友達Cのように人数を選び、最後にそれぞれが5問中何問正解したかを見られます。',
+    recommendTitle: 'こんな友達同士におすすめ',
+    recommend: [
+      '仲のいい友達の好みや考え方を、改めて確かめたい',
+      '大学生の集まりや飲み会で、会話のきっかけがほしい',
+      '旅行や休み時間に、2〜4人でさくっと遊べる友情ゲームを探している',
+      '結果をLINEやXで共有して、あとから話題にしたい',
+    ],
     scenes: ['大学生の集まり', '休み時間', '旅行', '飲み会'],
     steps: ['2〜4人から人数を選ぶ', '本人が答えを選ぶ', '友達が順番に予想する', '全員の正解数を見る'],
     faq: [
@@ -1599,6 +1613,13 @@ const GAME_INTRO_CONTENT = {
     heading: '家族で遊べる無料の絆チェック',
     lead: '家族の絆判定は、本人が選んだ答えを家族が予想して、家族の理解度を楽しくチェックするゲームです。',
     body: '親子、兄弟姉妹、親戚の集まりなどで、普段はあまり聞かない好みや考え方を知るきっかけになります。スマホ1台で2〜4人プレイに対応し、最後に家族それぞれの正解数を一覧で確認できます。',
+    recommendTitle: 'こんな家族におすすめ',
+    recommend: [
+      '親子や兄弟姉妹で、お互いの好みを楽しく知りたい',
+      '親戚の集まりや家族旅行で、みんなで遊べる話題がほしい',
+      '普段あまり聞かない質問で、家族の意外な一面を知りたい',
+      'スマホ1台で、2〜4人の家族ゲームをすぐ始めたい',
+    ],
     scenes: ['親子で遊ぶ', '兄弟姉妹', '親戚の集まり', 'おうち時間'],
     steps: ['2〜4人から人数を選ぶ', '本人が答えを選ぶ', '家族が順番に予想する', '家族ごとの正解数を見る'],
     faq: [
@@ -1714,6 +1735,45 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
                 fontSize: 11,
                 fontWeight: 900,
               }}>{scene}</span>
+            ))}
+          </div>
+        </section>
+
+        <section style={{
+          marginTop: 16,
+          background: proto.white,
+          border: `3px solid ${proto.black}`,
+          borderRadius: 14,
+          boxShadow: proto.shadowHard,
+          padding: '14px',
+        }}>
+          <h2 style={{ margin: '0 0 10px', fontSize: 16 }}>{content.recommendTitle}</h2>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {content.recommend.map((item) => (
+              <div key={item} style={{
+                display: 'grid',
+                gridTemplateColumns: '22px minmax(0, 1fr)',
+                gap: 8,
+                alignItems: 'start',
+                fontSize: 12,
+                lineHeight: 1.7,
+                fontWeight: 800,
+              }}>
+                <span style={{
+                  display: 'inline-flex',
+                  width: 20,
+                  height: 20,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  background: proto.cyan,
+                  border: `2px solid ${proto.black}`,
+                  boxShadow: '1px 1px 0 #000',
+                  fontSize: 10,
+                  lineHeight: 1,
+                }}>✓</span>
+                <span>{item}</span>
+              </div>
             ))}
           </div>
         </section>
