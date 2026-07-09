@@ -1436,7 +1436,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           opacity: 0.82,
           fontWeight: 800,
         }}>
-          まずはメインの彼氏版から遊べます
+          メイン作品、彼氏の愛情判定ゲーム
         </div>
         <button onClick={onFriend} style={{
           ...secondaryBtn(),
