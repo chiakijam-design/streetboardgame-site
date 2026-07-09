@@ -1423,6 +1423,33 @@ function TopScreen({ onStart, onFriend, onFamily, onAbout, onProduct }) {
           彼氏の愛情判定だけでなく、彼女の愛情判定もできます。<br />
           友情判定版と家族の絆判定版も公開中。
         </div>
+        <div aria-label="おすすめの遊ぶ場面" style={{
+          marginTop: 12,
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 7,
+          flexWrap: 'wrap',
+        }}>
+          {['デート中', '飲み会', '旅行', 'おうち時間'].map((scene) => (
+            <span key={scene} style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: 26,
+              padding: '4px 9px',
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.18)',
+              border: '1.5px solid rgba(255,255,255,0.45)',
+              color: proto.white,
+              fontSize: 10,
+              fontWeight: 900,
+              lineHeight: 1,
+              whiteSpace: 'nowrap',
+              textShadow: '0 1px 0 rgba(0,0,0,0.15)',
+            }}>
+              {scene}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* 注意書きシール */}
