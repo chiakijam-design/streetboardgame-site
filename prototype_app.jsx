@@ -1519,7 +1519,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           marginBottom: 10, paddingLeft: 4,
           fontWeight: 900,
           textShadow: '1px 1px 0 rgba(0,0,0,0.25)',
-        }}>まずは遊び方を知りたい</div>
+        }}>まずはどんなゲームか知りたい</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <SeriesCard emoji="💕" title="彼氏の愛情判定" status="メイン" href="/love" onClick={onLovePage} />
           <SeriesCard emoji="👯" title="友達の友情判定" status="シリーズ" href="/friends" onClick={onFriendPage} />
