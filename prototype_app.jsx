@@ -2234,7 +2234,7 @@ function NameEditorPanel({ title, names, defaults, onChange, visibleCount }) {
   const count = visibleCount || defaults.length;
   return (
     <div style={{
-      marginTop: 16,
+      margin: '16px 0 22px',
       padding: '12px 12px',
       background: proto.white,
       color: proto.text,
