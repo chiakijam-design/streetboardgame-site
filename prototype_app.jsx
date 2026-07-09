@@ -4834,6 +4834,7 @@ function createGroupResultImageSrc(kind, answers, players) {
   const isFamily = kind === 'family';
   const title = isFamily ? '家族の絆判定' : '友達の友情判定';
   const headline = isFamily ? '家族それぞれの結果一覧' : '友達それぞれの結果一覧';
+  const targetLabel = `${players[0] || '本人'}の理解度`;
   const ranks = GROUP_RESULT_RANKS[kind] || GROUP_RESULT_RANKS.friend;
   const highlight = getGroupScoreHighlight(scores, total, kind);
   const canvas = document.createElement('canvas');
@@ -4863,12 +4864,17 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillText(isFamily ? 'FAMILY BOND RESULT' : 'FRIEND CHECK RESULT', 132, 168);
 
   ctx.fillStyle = proto.cyan;
-  roundRect(ctx, 782, 126, 150, 52, 26);
+  roundRect(ctx, 730, 126, 222, 52, 26);
   ctx.fill();
   ctx.fillStyle = proto.black;
-  ctx.font = '900 26px "Zen Maru Gothic", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('個別判定', 857, 161);
+  drawFittedCanvasText(ctx, targetLabel, 841, 160, 186, {
+    fontFamily: '"Zen Maru Gothic", sans-serif',
+    fontWeight: 900,
+    fontSize: 24,
+    minFontSize: 17,
+    align: 'center',
+  });
 
   ctx.fillStyle = proto.pink;
   ctx.font = '900 64px "RocknRoll One", sans-serif';
@@ -5100,6 +5106,7 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
 function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const friendPlayers = useMemo(() => getFriendPlayers(playerCount, playerNames), [playerCount, playerNames]);
+  const targetLabel = `${friendPlayers[0]}の理解度`;
   const scoreSummary = getPlayerScoreSummary(answers, friendPlayers, 'friend');
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
@@ -5233,7 +5240,9 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
             fontFamily: proto.body,
             fontSize: 9,
             fontWeight: 900,
-          }}>個別判定</span>
+            letterSpacing: 0,
+            whiteSpace: 'nowrap',
+          }}>{targetLabel}</span>
         </div>
         <PlayerScoreBoard
           answers={answers}
@@ -5591,6 +5600,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswe
 function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const familyPlayers = useMemo(() => getFamilyPlayers(playerCount, playerNames), [playerCount, playerNames]);
+  const targetLabel = `${familyPlayers[0]}の理解度`;
   const scoreSummary = getPlayerScoreSummary(answers, familyPlayers, 'family');
   const [copied, setCopied] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
@@ -5724,7 +5734,9 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
             fontFamily: proto.body,
             fontSize: 9,
             fontWeight: 900,
-          }}>個別判定</span>
+            letterSpacing: 0,
+            whiteSpace: 'nowrap',
+          }}>{targetLabel}</span>
         </div>
         <PlayerScoreBoard
           answers={answers}
