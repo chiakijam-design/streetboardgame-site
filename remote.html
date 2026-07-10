@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>遠隔で遊ぶ | 彼氏の愛情判定ゲーム</title>
+  <meta name="description" content="彼氏の愛情判定ゲームをルームコードで遠隔プレイ。まずは彼氏の愛情判定だけ対応しています。" />
+  <link rel="canonical" href="https://www.streetboardgame.com/remote" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=RocknRoll+One&family=DotGothic16&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink: #ec4f88;
+      --cyan: #5bd4e8;
+      --yellow: #ffe26b;
+      --black: #1a1a1a;
+      --white: #fff;
+      --cream: #fff8f1;
+      --soft: #7a6a6f;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--pink); color: var(--black); }
+    body {
+      font-family: "Zen Maru Gothic", "Noto Sans JP", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      touch-action: pan-y;
+    }
+    button, input, select { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    a { color: inherit; }
+    .app {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100dvh;
+      margin: 0 auto;
+      background: var(--pink);
+      box-shadow: 0 0 60px rgba(0,0,0,.15);
+      padding: 18px 18px 42px;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 3px solid var(--black);
+      background: var(--white);
+      color: var(--black);
+      box-shadow: 3px 3px 0 #000;
+      font-weight: 900;
+      text-decoration: none;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 2px solid var(--white);
+      color: var(--white);
+      font: 700 13px "DotGothic16", monospace;
+      letter-spacing: .14em;
+    }
+    h1, h2, p { margin: 0; }
+    .hero {
+      background: var(--black);
+      color: var(--white);
+      border-radius: 18px;
+      padding: 22px 18px;
+      border: 3px solid var(--black);
+      box-shadow: 5px 5px 0 #000;
+      text-align: center;
+    }
+    .logo {
+      margin-top: 12px;
+      color: var(--white);
+      font-family: "RocknRoll One", "Zen Maru Gothic", sans-serif;
+      font-size: clamp(28px, 8vw, 40px);
+      line-height: 1.18;
+      text-shadow: 3px 3px 0 var(--cyan), -1px -1px 0 var(--cyan);
+    }
+    .hero p {
+      margin-top: 12px;
+      color: rgba(255,255,255,.9);
+      font-size: 13px;
+      line-height: 1.8;
+      font-weight: 800;
+    }
+    .card {
+      margin-top: 18px;
+      padding: 16px;
+      border: 3px solid var(--black);
+      border-radius: 16px;
+      background: var(--white);
+      box-shadow: 5px 5px 0 #000;
+    }
+    .card.dark { background: var(--black); color: var(--white); }
+    .card.yellow { background: var(--yellow); }
+    .section-title {
+      margin-bottom: 12px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+    .grid { display: grid; gap: 12px; }
+    .two { grid-template-columns: 1fr 1fr; }
+    label { display: grid; gap: 6px; font-size: 12px; font-weight: 900; }
+    input, select {
+      width: 100%;
+      min-height: 46px;
+      border: 2.5px solid var(--black);
+      border-radius: 12px;
+      padding: 0 12px;
+      background: var(--cream);
+      color: var(--black);
+      font-weight: 900;
+    }
+    .btn {
+      width: 100%;
+      min-height: 58px;
+      border: 3px solid var(--black);
+      border-radius: 14px;
+      background: var(--black);
+      color: var(--white);
+      box-shadow: 4px 4px 0 var(--cyan);
+      font-family: "RocknRoll One", "Zen Maru Gothic", sans-serif;
+      font-weight: 900;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .btn.yellow {
+      background: var(--yellow);
+      color: var(--black);
+      box-shadow: 4px 4px 0 #000;
+    }
+    .btn.white {
+      background: var(--white);
+      color: var(--black);
+      box-shadow: 4px 4px 0 #000;
+    }
+    .btn.small { min-height: 46px; font-size: 13px; }
+    .btn:disabled { opacity: .55; cursor: wait; }
+    .code {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 64px;
+      padding: 0 22px;
+      border: 3px dashed var(--black);
+      border-radius: 14px;
+      background: var(--cream);
+      font: 900 34px "DotGothic16", monospace;
+      letter-spacing: .18em;
+    }
+    .muted {
+      color: var(--soft);
+      font-size: 12px;
+      line-height: 1.7;
+      font-weight: 800;
+    }
+    .status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 2px solid var(--black);
+      background: var(--cream);
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.6;
+    }
+    .question-img {
+      width: min(100%, 320px);
+      display: block;
+      margin: 0 auto;
+      border: 3px solid var(--white);
+      border-radius: 16px;
+      box-shadow: 0 12px 28px rgba(0,0,0,.25);
+      background: var(--white);
+    }
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .choice {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      align-items: center;
+      gap: 10px;
+      min-height: 52px;
+      padding: 8px 12px;
+      border: 2.5px solid var(--black);
+      border-radius: 12px;
+      background: var(--white);
+      color: var(--black);
+      box-shadow: 2px 2px 0 #000;
+      font-weight: 900;
+      text-align: left;
+    }
+    .dot {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,.2);
+      box-shadow: 0 4px 10px rgba(0,0,0,.25);
+    }
+    .score {
+      font-family: "RocknRoll One", "Zen Maru Gothic", sans-serif;
+      font-size: 52px;
+      color: var(--pink);
+      line-height: 1;
+      text-shadow: 4px 4px 0 #000;
+    }
+    .answer-row {
+      border: 2px solid var(--black);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--white);
+      box-shadow: 2px 2px 0 #000;
+    }
+    .answer-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--black);
+      color: var(--white);
+      font-weight: 900;
+      font-size: 12px;
+    }
+    .answer-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <a class="back" href="/">← トップに戻る</a>
+      <span class="pill">REMOTE LOVE</span>
+    </div>
+
+    <section class="hero">
+      <div class="pill">ROOM CODE</div>
+      <h1 class="logo">遠隔で<br>愛情判定</h1>
+      <p>離れていても、2人それぞれのスマホで遊べます。まずは彼氏の愛情判定だけ対応中です。</p>
+    </section>
+
+    <section id="setup" class="card">
+      <h2 class="section-title">ルームを作る</h2>
+      <div class="grid">
+        <label>誰の愛情を判定する？
+          <select id="direction">
+            <option value="girlTarget">彼氏の愛情判定：彼女の答えを彼氏が当てる</option>
+            <option value="boyTarget">彼女の愛情判定：彼氏の答えを彼女が当てる</option>
+          </select>
+        </label>
+        <div class="grid two">
+          <label>彼女の名前
+            <input id="girlName" maxlength="6" placeholder="彼女" />
+          </label>
+          <label>彼氏の名前
+            <input id="boyName" maxlength="6" placeholder="彼氏" />
+          </label>
+        </div>
+        <button id="createRoom" class="btn">ルームを作る ▶</button>
+      </div>
+      <div class="status">
+        作った人はルームコードを相手に送ってください。相手は下の「ルームに入る」から参加できます。
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">ルームに入る</h2>
+      <div class="grid">
+        <label>ルームコード
+          <input id="joinCode" inputmode="text" maxlength="6" placeholder="例：A7K2Q9" />
+        </label>
+        <button id="joinRoom" class="btn yellow">参加する</button>
+      </div>
+    </section>
+
+    <section id="room" class="card hidden">
+      <h2 class="section-title">ルームコード</h2>
+      <div style="text-align:center"><span id="roomCode" class="code"></span></div>
+      <p id="roomNames" class="muted" style="margin-top:12px;text-align:center"></p>
+      <div class="grid two" style="margin-top:14px">
+        <button id="beTarget" class="btn white small"></button>
+        <button id="beGuesser" class="btn white small"></button>
+      </div>
+      <div id="roleStatus" class="status">自分の役割を選んでください。</div>
+    </section>
+
+    <section id="play" class="card hidden">
+      <h2 id="turnTitle" class="section-title"></h2>
+      <p id="turnNote" class="muted"></p>
+      <div id="questionWrap" style="margin-top:12px"></div>
+      <div id="choices" class="choices"></div>
+    </section>
+
+    <section id="result" class="card hidden">
+      <h2 class="section-title">結果発表</h2>
+      <div style="text-align:center">
+        <div id="score" class="score"></div>
+        <p id="scoreText" class="muted"></p>
+      </div>
+      <div id="answerDetails" class="grid" style="margin-top:16px"></div>
+      <button id="newRoom" class="btn" style="margin-top:18px">新しいルームを作る</button>
+    </section>
+  </main>
+
+  <script src="prototype_quiz_data.js?v=seo-1"></script>
+  <script src="remote_love.js?v=remote-love-1"></script>
+</body>
+</html>

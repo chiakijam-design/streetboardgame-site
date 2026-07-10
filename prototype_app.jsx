@@ -1471,6 +1471,17 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         }}>
           メイン作品、彼氏の愛情判定ゲーム
         </div>
+        <a href="/remote" style={{
+          ...secondaryBtn(),
+          marginTop: 12,
+          background: proto.cyan,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textDecoration: 'none',
+        }}>
+          遠隔で遊ぶ
+        </a>
         <button onClick={onFriend} style={{
           ...secondaryBtn(),
           marginTop: 12,

@@ -29,6 +29,21 @@ export default {
     const rawPath = decodeURIComponent(url.pathname);
     const path = rawPath.replace(/\/+$/, '');
 
+    if (path.startsWith('/api/remote')) {
+      return handleRemoteApi(request, env, path);
+    }
+
+    if (path === '/remote') {
+      const remoteUrl = new URL('/remote.html', url.origin);
+      const response = await env.ASSETS.fetch(new Request(remoteUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      return new Response(await response.text(), { status: response.status, headers });
+    }
+
     const pageMap = {
       '/love': {
         title: '彼氏の愛情判定｜彼女版も遊べる無料カップル診断ゲーム',
@@ -364,4 +379,198 @@ function buildStructuredData(page) {
     '@context': 'https://schema.org',
     '@graph': graph,
   };
+}
+
+const REMOTE_ROOM_TTL_SECONDS = 60 * 60 * 6;
+const REMOTE_ROOM_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+async function handleRemoteApi(request, env, path) {
+  if (request.method === 'OPTIONS') {
+    return jsonResponse({});
+  }
+
+  try {
+    if (path === '/api/remote/rooms' && request.method === 'POST') {
+      return createRemoteRoom(request, env);
+    }
+
+    const match = path.match(/^\/api\/remote\/rooms\/([A-Z0-9]{6})$/i);
+    if (match && request.method === 'GET') {
+      const code = match[1].toUpperCase();
+      const room = await getRemoteRoom(env, code);
+      if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
+      return jsonResponse({ code, room });
+    }
+
+    if (match && request.method === 'POST') {
+      const code = match[1].toUpperCase();
+      const room = await getRemoteRoom(env, code);
+      if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
+      const body = await readJson(request);
+      const patch = sanitizeRemotePatch(body && body.patch);
+      const nextRoom = {
+        ...room,
+        ...patch,
+        updatedAt: Date.now(),
+      };
+      await putRemoteRoom(env, code, nextRoom);
+      return jsonResponse({ code, room: nextRoom });
+    }
+
+    return jsonResponse({ error: 'not-found' }, 404);
+  } catch (error) {
+    return jsonResponse({ error: error && error.message ? error.message : 'remote-api-error' }, 500);
+  }
+}
+
+async function createRemoteRoom(request, env) {
+  const body = await readJson(request);
+  const room = sanitizeNewRemoteRoom(body);
+  let code = createRemoteCode();
+  for (let i = 0; i < 6; i += 1) {
+    const exists = await getRemoteRoom(env, code);
+    if (!exists) break;
+    code = createRemoteCode();
+  }
+  await putRemoteRoom(env, code, room);
+  return jsonResponse({ code, room });
+}
+
+function sanitizeNewRemoteRoom(body) {
+  const cards = Array.isArray(body && body.cards) ? body.cards.slice(0, 5).map(sanitizeRemoteCard) : [];
+  if (cards.length !== 5) throw new Error('cards-required');
+  const loveMode = body && body.loveMode === 'boyTarget' ? 'boyTarget' : 'girlTarget';
+  const players = body && body.players ? body.players : {};
+  const now = Date.now();
+  return {
+    type: 'love',
+    version: 1,
+    loveMode,
+    players: {
+      girl: sanitizeRemoteName(players.girl, '彼女'),
+      boy: sanitizeRemoteName(players.boy, '彼氏'),
+    },
+    cards,
+    qIdx: 0,
+    phase: 'target',
+    targetPick: null,
+    answers: [],
+    createdAt: now,
+    updatedAt: now,
+    expiresAt: now + REMOTE_ROOM_TTL_SECONDS * 1000,
+  };
+}
+
+function sanitizeRemotePatch(patch) {
+  const source = patch && typeof patch === 'object' ? patch : {};
+  const next = {};
+  if (['target', 'guess', 'result'].includes(source.phase)) next.phase = source.phase;
+  if (Number.isInteger(source.qIdx) && source.qIdx >= 0 && source.qIdx <= 4) next.qIdx = source.qIdx;
+  if (source.targetPick === null || isChoiceIndex(source.targetPick)) next.targetPick = source.targetPick === null ? null : Number(source.targetPick);
+  if (Array.isArray(source.answers)) {
+    next.answers = source.answers.slice(0, 5).map((answer) => ({
+      target: isChoiceIndex(answer && answer.target) ? Number(answer.target) : 0,
+      guess: isChoiceIndex(answer && answer.guess) ? Number(answer.guess) : 0,
+      match: Boolean(answer && answer.match),
+    }));
+  }
+  return next;
+}
+
+function sanitizeRemoteCard(card) {
+  const choices = Array.isArray(card && card.choices) ? card.choices.slice(0, 5) : [];
+  if (choices.length !== 5) throw new Error('invalid-card');
+  return {
+    id: String(card && card.id ? card.id : ''),
+    image: String(card && card.image ? card.image : '').slice(0, 160),
+    title: String(card && card.title ? card.title : '').slice(0, 80),
+    choices: choices.map((choice) => String(choice || '').slice(0, 40)),
+  };
+}
+
+function sanitizeRemoteName(value, fallback) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim().slice(0, 6);
+  return text || fallback;
+}
+
+function isChoiceIndex(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 0 && number <= 4;
+}
+
+function createRemoteCode() {
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => REMOTE_ROOM_CODE_CHARS[byte % REMOTE_ROOM_CODE_CHARS.length]).join('');
+}
+
+async function readJson(request) {
+  try {
+    return await request.json();
+  } catch (e) {
+    return {};
+  }
+}
+
+async function ensureRemoteD1(env) {
+  if (!env.REMOTE_DB) return false;
+  await env.REMOTE_DB.prepare(`
+    CREATE TABLE IF NOT EXISTS remote_rooms (
+      code TEXT PRIMARY KEY,
+      payload TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    )
+  `).run();
+  return true;
+}
+
+async function getRemoteRoom(env, code) {
+  if (await ensureRemoteD1(env)) {
+    const row = await env.REMOTE_DB
+      .prepare('SELECT payload, expires_at FROM remote_rooms WHERE code = ?')
+      .bind(code)
+      .first();
+    if (!row || Number(row.expires_at) < Date.now()) return null;
+    return JSON.parse(row.payload);
+  }
+  if (env.REMOTE_KV) {
+    return await env.REMOTE_KV.get(`room:${code}`, { type: 'json' });
+  }
+  throw new Error('remote-storage-not-configured');
+}
+
+async function putRemoteRoom(env, code, room) {
+  if (await ensureRemoteD1(env)) {
+    await env.REMOTE_DB
+      .prepare(`
+        INSERT INTO remote_rooms (code, payload, created_at, updated_at, expires_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(code) DO UPDATE SET
+          payload = excluded.payload,
+          updated_at = excluded.updated_at,
+          expires_at = excluded.expires_at
+      `)
+      .bind(code, JSON.stringify(room), room.createdAt || Date.now(), Date.now(), room.expiresAt)
+      .run();
+    return;
+  }
+  if (env.REMOTE_KV) {
+    await env.REMOTE_KV.put(`room:${code}`, JSON.stringify(room), {
+      expirationTtl: REMOTE_ROOM_TTL_SECONDS,
+    });
+    return;
+  }
+  throw new Error('remote-storage-not-configured');
+}
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'content-type': 'application/json; charset=UTF-8',
+      'cache-control': 'no-store',
+    },
+  });
 }
