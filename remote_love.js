@@ -304,6 +304,26 @@
     URL.revokeObjectURL(url);
   }
 
+  function shouldUseNativeShare() {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent || '';
+    const isMobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+    const hasCoarsePointer = typeof window !== 'undefined'
+      && window.matchMedia
+      && window.matchMedia('(pointer: coarse)').matches;
+    return Boolean(navigator.share && (isMobileUa || hasCoarsePointer));
+  }
+
+  async function saveImageBlob(blob, filename, title) {
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (shouldUseNativeShare() && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ title, files: [file] });
+      return 'shared-save-sheet';
+    }
+    downloadBlob(blob, filename);
+    return 'downloaded';
+  }
+
   async function createResultCanvas(data) {
     const canvas = document.createElement('canvas');
     canvas.width = 1080;
@@ -818,7 +838,11 @@
       const canvas = await createResultCanvas(latestResult);
       const blob = await canvasToBlob(canvas);
       if (!blob) throw new Error('画像の作成に失敗しました');
-      downloadBlob(blob, `watachan-remote-love-result-${latestResult.score}-${latestResult.total}.png`);
+      await saveImageBlob(
+        blob,
+        `watachan-love-result-${latestResult.score}-${latestResult.total}.png`,
+        'わたちゃん 判定画像'
+      );
     } catch (e) {
       alert(e.message || '画像の保存に失敗しました。もう一度試してください。');
     } finally {
