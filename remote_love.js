@@ -100,6 +100,34 @@
     return roleFromSide(room, side);
   }
 
+  function roomInviteUrl() {
+    const url = new URL('/remote', window.location.origin);
+    url.searchParams.set('room', roomCode);
+    return url.toString();
+  }
+
+  async function copyInviteText(text) {
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return false;
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function shareRoomByLine() {
+    if (!roomCode || !state) return;
+    const names = targetAndGuesser(state);
+    const text = [
+      'わたちゃんの遠隔プレイに招待されました。',
+      `${names.target}の答えを、${names.guesser}が当てるルームです。`,
+      roomInviteUrl(),
+    ].join('\n');
+    await copyInviteText(text);
+    window.location.href = `line://msg/text/${encodeURIComponent(text)}`;
+  }
+
   function sideLabel(room, side) {
     const players = room && room.players ? room.players : {};
     if (side === 'girl') return players.girl || '彼女';
@@ -321,6 +349,7 @@
   function init() {
     $('createRoom').addEventListener('click', createRoom);
     $('joinRoom').addEventListener('click', () => joinRoom(null, 'joiner'));
+    $('shareRoomLine').addEventListener('click', shareRoomByLine);
     $('newRoom').addEventListener('click', () => {
       window.location.href = '/remote';
     });

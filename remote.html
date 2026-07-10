@@ -250,6 +250,24 @@
       gap: 8px;
       margin-top: 14px;
     }
+    .room-code-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .line-invite {
+      width: auto;
+      min-height: 54px;
+      padding: 0 18px;
+      border-color: var(--black);
+      background: #06c755;
+      color: #fff;
+      box-shadow: 5px 5px 0 var(--black);
+      font-size: 14px;
+    }
     .role-line {
       display: flex;
       align-items: center;
@@ -323,7 +341,10 @@
 
     <section id="room" class="card hidden">
       <h2 class="section-title">ルームコード</h2>
-      <div style="text-align:center"><span id="roomCode" class="code"></span></div>
+      <div class="room-code-actions">
+        <span id="roomCode" class="code"></span>
+        <button id="shareRoomLine" class="btn line-invite" type="button">LINEでURLを送る</button>
+      </div>
       <p id="roomNames" class="muted" style="margin-top:12px;text-align:center"></p>
       <div class="role-summary">
         <div class="role-line">
@@ -357,6 +378,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-6"></script>
+  <script src="remote_love.js?v=remote-love-7"></script>
 </body>
 </html>
