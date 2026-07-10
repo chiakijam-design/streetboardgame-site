@@ -398,7 +398,7 @@ async function handleRemoteApi(request, env, path) {
       return createRemoteRoom(request, env);
     }
 
-    const match = path.match(/^\/api\/remote\/rooms\/([0-9]{5})$/);
+    const match = path.match(/^\/api\/remote\/rooms\/([0-9]{6})$/);
     if (match && request.method === 'GET') {
       const code = match[1];
       const room = await getRemoteRoom(env, code);
@@ -503,7 +503,7 @@ function isChoiceIndex(value) {
 }
 
 function createRemoteCode() {
-  const bytes = new Uint8Array(5);
+  const bytes = new Uint8Array(6);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (byte) => REMOTE_ROOM_CODE_CHARS[byte % REMOTE_ROOM_CODE_CHARS.length]).join('');
 }
