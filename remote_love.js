@@ -1,5 +1,5 @@
 (function () {
-  const ROOM_STORAGE_KEY = 'watachan-remote-love-role-v1';
+  const ROOM_STORAGE_KEY = 'watachan-remote-love-role-v2';
   const POLL_MS = 1400;
   const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
 
@@ -94,6 +94,12 @@
     return side === names.targetSide ? 'target' : 'guesser';
   }
 
+  function roleForParticipant(room, participant) {
+    const creatorSide = room && room.creatorSide === 'girl' ? 'girl' : 'boy';
+    const side = participant === 'creator' ? creatorSide : oppositeSide(creatorSide);
+    return roleFromSide(room, side);
+  }
+
   function sideLabel(room, side) {
     const players = room && room.players ? room.players : {};
     if (side === 'girl') return players.girl || '彼女';
@@ -117,7 +123,7 @@
       });
       roomCode = created.code;
       state = created.room;
-      saveRole(roomCode, roleFromSide(state, creatorSide));
+      saveRole(roomCode, roleForParticipant(state, 'creator'));
       render();
       startPolling();
       window.history.replaceState(null, '', `/remote?room=${roomCode}`);
@@ -128,7 +134,7 @@
     }
   }
 
-  async function joinRoom(codeValue) {
+  async function joinRoom(codeValue, participant = '') {
     if (busy) return;
     const code = normalizeCode(codeValue || $('joinCode').value);
     if (code.length !== 6) {
@@ -140,9 +146,11 @@
       const loaded = await api(`/api/remote/rooms/${code}`);
       roomCode = code;
       state = loaded.room;
-      loadRole(roomCode);
-      if (!role) {
-        saveRole(roomCode, roleFromSide(state, oppositeSide(state.creatorSide || 'boy')));
+      if (participant === 'creator' || participant === 'joiner') {
+        saveRole(roomCode, roleForParticipant(state, participant));
+      } else {
+        loadRole(roomCode);
+        if (!role) saveRole(roomCode, roleForParticipant(state, 'joiner'));
       }
       render();
       startPolling();
@@ -312,7 +320,7 @@
 
   function init() {
     $('createRoom').addEventListener('click', createRoom);
-    $('joinRoom').addEventListener('click', () => joinRoom());
+    $('joinRoom').addEventListener('click', () => joinRoom(null, 'joiner'));
     $('newRoom').addEventListener('click', () => {
       window.location.href = '/remote';
     });
@@ -323,7 +331,8 @@
     const code = normalizeCode(params.get('room'));
     if (code) {
       $('joinCode').value = code;
-      joinRoom(code);
+      const participant = params.get('p') === 'creator' ? 'creator' : params.get('p') === 'joiner' ? 'joiner' : '';
+      joinRoom(code, participant);
     } else {
       render();
     }
