@@ -118,16 +118,33 @@
     }
   }
 
-  async function shareRoomByLine() {
+  function buildInviteText() {
     if (!roomCode || !state) return;
     const names = targetAndGuesser(state);
-    const text = [
+    return [
       'わたちゃんの遠隔プレイに招待されました。',
       `${names.target}の答えを、${names.guesser}が当てるルームです。`,
       roomInviteUrl(),
     ].join('\n');
+  }
+
+  async function shareRoomByLine() {
+    const text = buildInviteText();
+    if (!text) return;
     await copyInviteText(text);
     window.location.href = `line://msg/text/${encodeURIComponent(text)}`;
+  }
+
+  async function shareRoomByInstagram() {
+    const text = buildInviteText();
+    if (!text) return;
+    await copyInviteText(text);
+    window.location.href = 'instagram://direct-inbox';
+    window.setTimeout(() => {
+      if (document.visibilityState === 'visible') {
+        window.location.href = 'https://www.instagram.com/direct/inbox/';
+      }
+    }, 900);
   }
 
   function sideLabel(room, side) {
@@ -375,6 +392,7 @@
     $('createRoom').addEventListener('click', createRoom);
     $('joinRoom').addEventListener('click', () => joinRoom(null, 'joiner'));
     $('shareRoomLine').addEventListener('click', shareRoomByLine);
+    $('shareRoomInstagram').addEventListener('click', shareRoomByInstagram);
     $('newRoom').addEventListener('click', () => {
       window.location.href = '/remote';
     });

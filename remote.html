@@ -292,8 +292,14 @@
       margin-top: 8px;
       min-width: 0;
     }
+    .invite-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: min(100%, 360px);
+    }
     .line-invite {
-      width: min(100%, 260px);
+      width: 100%;
       min-height: 54px;
       padding: 0 18px;
       border-color: var(--black);
@@ -301,6 +307,16 @@
       color: #fff;
       box-shadow: 5px 5px 0 var(--black);
       font-size: 14px;
+    }
+    .instagram-invite {
+      width: 100%;
+      min-height: 54px;
+      padding: 0 14px;
+      border-color: var(--black);
+      background: #ec4f88;
+      color: #fff;
+      box-shadow: 5px 5px 0 var(--black);
+      font-size: 13px;
     }
     .role-line {
       display: flex;
@@ -331,8 +347,12 @@
         font-size: 32px;
         letter-spacing: .12em;
       }
-      .line-invite {
+      .invite-buttons {
         width: min(100%, 230px);
+        grid-template-columns: 1fr;
+      }
+      .line-invite,
+      .instagram-invite {
         box-shadow: 4px 4px 0 var(--black);
       }
     }
@@ -395,7 +415,10 @@
       <h2 class="section-title">ルームコード</h2>
       <div class="room-code-actions">
         <span id="roomCode" class="code"></span>
-        <button id="shareRoomLine" class="btn line-invite" type="button">LINEでURLを送る</button>
+        <div class="invite-buttons">
+          <button id="shareRoomLine" class="btn line-invite" type="button">LINEでURLを送る</button>
+          <button id="shareRoomInstagram" class="btn instagram-invite" type="button">InstagramでURLを送る</button>
+        </div>
       </div>
       <p id="roomNames" class="muted" style="margin-top:12px;text-align:center"></p>
       <div class="role-summary">
@@ -430,6 +453,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-9"></script>
+  <script src="remote_love.js?v=remote-love-10"></script>
 </body>
 </html>
