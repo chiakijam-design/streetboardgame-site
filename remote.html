@@ -245,6 +245,26 @@
       font-size: 12px;
       font-weight: 900;
     }
+    .role-summary {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .role-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 2px solid var(--black);
+      border-radius: 12px;
+      background: var(--cream);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .role-line strong {
+      font-size: 14px;
+    }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -278,10 +298,16 @@
             <input id="boyName" maxlength="6" placeholder="彼氏" />
           </label>
         </div>
+        <label>あなたはどちら？
+          <select id="creatorSide">
+            <option value="boy">私は彼氏</option>
+            <option value="girl">私は彼女</option>
+          </select>
+        </label>
         <button id="createRoom" class="btn">ルームコードを発行する ▶</button>
       </div>
       <div class="status">
-        ルームコードを発行してから、相手に6桁コードかURLを送ってください。
+        ここで決めた設定のまま始まります。相手は6桁コードかURLで入るだけでOKです。
       </div>
     </section>
 
@@ -299,11 +325,17 @@
       <h2 class="section-title">ルームコード</h2>
       <div style="text-align:center"><span id="roomCode" class="code"></span></div>
       <p id="roomNames" class="muted" style="margin-top:12px;text-align:center"></p>
-      <div class="grid two" style="margin-top:14px">
-        <button id="beTarget" class="btn white small"></button>
-        <button id="beGuesser" class="btn white small"></button>
+      <div class="role-summary">
+        <div class="role-line">
+          <span>答える人</span>
+          <strong id="targetRoleName"></strong>
+        </div>
+        <div class="role-line">
+          <span>予想する人</span>
+          <strong id="guesserRoleName"></strong>
+        </div>
       </div>
-      <div id="roleStatus" class="status">自分の役割を選んでください。</div>
+      <div id="roleStatus" class="status">ルーム設定を確認中です。</div>
     </section>
 
     <section id="play" class="card hidden">
@@ -325,6 +357,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-4"></script>
+  <script src="remote_love.js?v=remote-love-5"></script>
 </body>
 </html>

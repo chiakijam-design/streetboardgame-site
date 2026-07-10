@@ -444,12 +444,14 @@ function sanitizeNewRemoteRoom(body) {
   const cards = Array.isArray(body && body.cards) ? body.cards.slice(0, 5).map(sanitizeRemoteCard) : [];
   if (cards.length !== 5) throw new Error('cards-required');
   const loveMode = body && body.loveMode === 'boyTarget' ? 'boyTarget' : 'girlTarget';
+  const creatorSide = body && body.creatorSide === 'girl' ? 'girl' : 'boy';
   const players = body && body.players ? body.players : {};
   const now = Date.now();
   return {
     type: 'love',
-    version: 1,
+    version: 2,
     loveMode,
+    creatorSide,
     players: {
       girl: sanitizeRemoteName(players.girl, '彼女'),
       boy: sanitizeRemoteName(players.boy, '彼氏'),

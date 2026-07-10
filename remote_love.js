@@ -80,9 +80,24 @@
     const girl = room.players && room.players.girl ? room.players.girl : '彼女';
     const boy = room.players && room.players.boy ? room.players.boy : '彼氏';
     if (room.loveMode === 'boyTarget') {
-      return { target: boy, guesser: girl };
+      return { target: boy, guesser: girl, targetSide: 'boy', guesserSide: 'girl' };
     }
-    return { target: girl, guesser: boy };
+    return { target: girl, guesser: boy, targetSide: 'girl', guesserSide: 'boy' };
+  }
+
+  function oppositeSide(side) {
+    return side === 'girl' ? 'boy' : 'girl';
+  }
+
+  function roleFromSide(room, side) {
+    const names = targetAndGuesser(room);
+    return side === names.targetSide ? 'target' : 'guesser';
+  }
+
+  function sideLabel(room, side) {
+    const players = room && room.players ? room.players : {};
+    if (side === 'girl') return players.girl || '彼女';
+    return players.boy || '彼氏';
   }
 
   async function createRoom() {
@@ -90,6 +105,7 @@
     setBusy(true);
     try {
       const loveMode = $('direction').value;
+      const creatorSide = $('creatorSide').value === 'girl' ? 'girl' : 'boy';
       const players = {
         girl: cleanName($('girlName').value, '彼女'),
         boy: cleanName($('boyName').value, '彼氏'),
@@ -97,11 +113,11 @@
       const cards = pickCards();
       const created = await api('/api/remote/rooms', {
         method: 'POST',
-        body: JSON.stringify({ loveMode, players, cards }),
+        body: JSON.stringify({ loveMode, players, creatorSide, cards }),
       });
       roomCode = created.code;
       state = created.room;
-      role = '';
+      saveRole(roomCode, roleFromSide(state, creatorSide));
       render();
       startPolling();
       window.history.replaceState(null, '', `/remote?room=${roomCode}`);
@@ -125,6 +141,9 @@
       roomCode = code;
       state = loaded.room;
       loadRole(roomCode);
+      if (!role) {
+        saveRole(roomCode, roleFromSide(state, oppositeSide(state.creatorSide || 'boy')));
+      }
       render();
       startPolling();
       window.history.replaceState(null, '', `/remote?room=${roomCode}`);
@@ -157,12 +176,6 @@
         $('roleStatus').textContent = '通信が切れています。少し待ってから再読み込みしてください。';
       }
     }, POLL_MS);
-  }
-
-  function chooseRole(nextRole) {
-    if (!roomCode) return;
-    saveRole(roomCode, nextRole);
-    render();
   }
 
   async function chooseAnswer(index) {
@@ -201,13 +214,14 @@
     const names = targetAndGuesser(state);
     $('roomCode').textContent = roomCode;
     $('roomNames').textContent = `${names.target}の答えを、${names.guesser}が当てるルーム`;
-    $('beTarget').textContent = `私は${names.target}`;
-    $('beGuesser').textContent = `私は${names.guesser}`;
+    $('targetRoleName').textContent = names.target;
+    $('guesserRoleName').textContent = names.guesser;
+    const creatorSide = state.creatorSide || 'boy';
+    const joinerSide = oppositeSide(creatorSide);
+    const yourSide = role === roleFromSide(state, creatorSide) ? creatorSide : joinerSide;
     $('roleStatus').textContent = role
-      ? `あなたは「${role === 'target' ? names.target : names.guesser}」として参加中です。`
-      : 'ルームコードを相手に送ってから、自分の役割を選んでください。';
-    $('beTarget').className = role === 'target' ? 'btn yellow small' : 'btn white small';
-    $('beGuesser').className = role === 'guesser' ? 'btn yellow small' : 'btn white small';
+      ? `あなたは「${sideLabel(state, yourSide)}」として参加中です。相手は「${sideLabel(state, oppositeSide(yourSide))}」です。`
+      : 'ルーム設定を読み込み中です。';
   }
 
   function renderPlay() {
@@ -299,8 +313,6 @@
   function init() {
     $('createRoom').addEventListener('click', createRoom);
     $('joinRoom').addEventListener('click', () => joinRoom());
-    $('beTarget').addEventListener('click', () => chooseRole('target'));
-    $('beGuesser').addEventListener('click', () => chooseRole('guesser'));
     $('newRoom').addEventListener('click', () => {
       window.location.href = '/remote';
     });
