@@ -729,15 +729,30 @@
       const card = state.cards[index] || {};
       const targetChoice = card.choices && card.choices[answer.target] ? card.choices[answer.target] : COLOR_NAMES[answer.target];
       const guessChoice = card.choices && card.choices[answer.guess] ? card.choices[answer.guess] : COLOR_NAMES[answer.guess];
+      const targetColor = window.COLOR_OPTIONS && window.COLOR_OPTIONS[answer.target] ? window.COLOR_OPTIONS[answer.target].color : '#ccc';
+      const guessColor = window.COLOR_OPTIONS && window.COLOR_OPTIONS[answer.guess] ? window.COLOR_OPTIONS[answer.guess].color : '#ccc';
       return `
-        <div class="answer-row">
+        <div class="answer-row ${answer.match ? 'is-hit' : ''}">
           <div class="answer-head">
-            <span>Q${index + 1} ${escapeHtml(card.title || '')}</span>
-            <span>${answer.match ? '当たり' : 'ハズレ'}</span>
+            <span class="answer-q">Q${index + 1}</span>
+            <span class="answer-title">${escapeHtml(card.title || 'お題')}</span>
+            <span class="answer-badge">${answer.match ? '当たり' : 'ハズレ'}</span>
           </div>
           <div class="answer-body">
-            <div>${escapeHtml(names.target)}<br>${escapeHtml(targetChoice || '')}</div>
-            <div>${escapeHtml(names.guesser)}<br>${escapeHtml(guessChoice || '')}</div>
+            <div class="answer-pick target">
+              <div class="answer-name">${escapeHtml(names.target)}</div>
+              <div class="answer-choice">
+                <span class="answer-mini-dot" style="background:${targetColor}"></span>
+                <span>${escapeHtml(targetChoice || '')}</span>
+              </div>
+            </div>
+            <div class="answer-pick guesser">
+              <div class="answer-name">${escapeHtml(names.guesser)}</div>
+              <div class="answer-choice">
+                <span class="answer-mini-dot" style="background:${guessColor}"></span>
+                <span>${escapeHtml(guessChoice || '')}</span>
+              </div>
+            </div>
           </div>
         </div>
       `;

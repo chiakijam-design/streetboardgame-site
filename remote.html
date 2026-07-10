@@ -450,8 +450,12 @@
       background: var(--white);
       box-shadow: 2px 2px 0 #000;
     }
+    .answer-row.is-hit {
+      background: var(--yellow);
+    }
     .answer-head {
       display: flex;
+      align-items: center;
       justify-content: space-between;
       gap: 8px;
       padding: 8px 10px;
@@ -460,6 +464,35 @@
       font-weight: 900;
       font-size: 12px;
     }
+    .answer-row:not(.is-hit) .answer-head {
+      background: #ffe6f0;
+      color: var(--black);
+      border-bottom: 2px solid var(--black);
+    }
+    .answer-q {
+      flex: 0 0 auto;
+      font: 800 10px "DotGothic16", monospace;
+      letter-spacing: .12em;
+    }
+    .answer-title {
+      flex: 1;
+      min-width: 0;
+      line-height: 1.35;
+      text-align: left;
+    }
+    .answer-badge {
+      flex: 0 0 auto;
+      padding: 2px 8px;
+      border: 1.5px solid var(--black);
+      border-radius: 999px;
+      background: var(--white);
+      color: var(--black);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .answer-row.is-hit .answer-badge {
+      background: var(--yellow);
+    }
     .answer-body {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -467,6 +500,50 @@
       padding: 10px;
       font-size: 12px;
       font-weight: 900;
+    }
+    .answer-pick {
+      min-width: 0;
+      padding: 10px 8px;
+      border: 2px solid var(--black);
+      border-radius: 10px;
+      background: var(--white);
+      text-align: center;
+    }
+    .answer-pick.target {
+      background: var(--yellow);
+    }
+    .answer-pick.guesser {
+      background: var(--cyan);
+    }
+    .answer-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 5px;
+      padding: 2px 7px;
+      border: 1.5px solid var(--black);
+      border-radius: 999px;
+      background: rgba(255,255,255,.75);
+      color: var(--pink);
+      font-size: 10px;
+      line-height: 1.1;
+    }
+    .answer-choice {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      max-width: 100%;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .answer-mini-dot {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,.25);
+      box-shadow: 0 2px 5px rgba(0,0,0,.22);
     }
     .role-summary {
       display: grid;
@@ -674,6 +751,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-12"></script>
+  <script src="remote_love.js?v=remote-love-13"></script>
 </body>
 </html>
