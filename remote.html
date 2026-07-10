@@ -592,13 +592,13 @@
       box-shadow: 5px 5px 0 var(--black);
       font-size: 14px;
     }
-    .instagram-invite {
+    .copy-invite {
       width: 100%;
       min-height: 54px;
       padding: 0 14px;
       border-color: var(--black);
-      background: #ec4f88;
-      color: #fff;
+      background: #fff;
+      color: var(--black);
       box-shadow: 5px 5px 0 var(--black);
       font-size: 13px;
     }
@@ -636,7 +636,7 @@
         grid-template-columns: 1fr;
       }
       .line-invite,
-      .instagram-invite {
+      .copy-invite {
         box-shadow: 4px 4px 0 var(--black);
       }
       .result-score-box {
@@ -706,7 +706,7 @@
         <span id="roomCode" class="code"></span>
         <div class="invite-buttons">
           <button id="shareRoomLine" class="btn line-invite" type="button">LINEでURLを送る</button>
-          <button id="shareRoomInstagram" class="btn instagram-invite" type="button">InstagramでURLを送る</button>
+          <button id="copyRoomUrl" class="btn copy-invite" type="button">URLをコピー</button>
         </div>
       </div>
       <p id="roomNames" class="muted" style="margin-top:12px;text-align:center"></p>
@@ -772,6 +772,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-14"></script>
+  <script src="remote_love.js?v=remote-love-15"></script>
 </body>
 </html>

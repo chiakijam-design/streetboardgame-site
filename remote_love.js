@@ -468,13 +468,7 @@
   }
 
   async function copyInviteText(text) {
-    if (!navigator.clipboard || !navigator.clipboard.writeText) return false;
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (e) {
-      return false;
-    }
+    return copyText(text);
   }
 
   function buildInviteText() {
@@ -494,16 +488,20 @@
     window.location.href = `line://msg/text/${encodeURIComponent(text)}`;
   }
 
-  async function shareRoomByInstagram() {
+  async function copyRoomInviteUrl() {
     const text = buildInviteText();
     if (!text) return;
-    await copyInviteText(text);
-    window.location.href = 'instagram://direct-inbox';
+    const button = $('copyRoomUrl');
+    const original = button.textContent;
+    const copied = await copyInviteText(text);
+    if (!copied) {
+      window.prompt('このURLをコピーして相手に送ってください', roomInviteUrl());
+      return;
+    }
+    button.textContent = 'コピーしました';
     window.setTimeout(() => {
-      if (document.visibilityState === 'visible') {
-        window.location.href = 'https://www.instagram.com/direct/inbox/';
-      }
-    }, 900);
+      button.textContent = original;
+    }, 1800);
   }
 
   function sideLabel(room, side) {
@@ -891,7 +889,7 @@
     $('createRoom').addEventListener('click', createRoom);
     $('joinRoom').addEventListener('click', () => joinRoom(null, 'joiner'));
     $('shareRoomLine').addEventListener('click', shareRoomByLine);
-    $('shareRoomInstagram').addEventListener('click', shareRoomByInstagram);
+    $('copyRoomUrl').addEventListener('click', copyRoomInviteUrl);
     $('shareResultLine').addEventListener('click', shareResultLine);
     $('shareResultX').addEventListener('click', shareResultX);
     $('saveResultImage').addEventListener('click', saveResultImage);
