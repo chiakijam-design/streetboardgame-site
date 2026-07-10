@@ -276,6 +276,7 @@
   function render() {
     const hasRoom = Boolean(state && roomCode);
     setHidden('setup', hasRoom);
+    setHidden('joinPanel', hasRoom);
     setHidden('room', !hasRoom);
     setHidden('play', !hasRoom || state.phase === 'result');
     setHidden('result', !hasRoom || state.phase !== 'result');
