@@ -389,6 +389,10 @@ async function handleRemoteApi(request, env, path) {
     return jsonResponse({});
   }
 
+  if (!env.REMOTE_DB && !env.REMOTE_KV) {
+    return jsonResponse({ error: 'remote-storage-not-configured' }, 500);
+  }
+
   try {
     if (path === '/api/remote/rooms' && request.method === 'POST') {
       return createRemoteRoom(request, env);
