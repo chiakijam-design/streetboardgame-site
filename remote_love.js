@@ -736,21 +736,30 @@
     }
     $('questionWrap').innerHTML = `<img class="question-img" src="${card.image}" alt="${escapeHtml(card.title || 'お題カード')}">`;
     const choices = Array.isArray(card.choices) ? card.choices : [];
-    $('choices').innerHTML = choices.map((choice, index) => {
+    const choicesEl = $('choices');
+    const canChoose = yourTurn && !selectedChoice;
+    choicesEl.classList.toggle('is-guess', isGuesserTurn);
+    choicesEl.classList.toggle('is-waiting', !yourTurn);
+    choicesEl.classList.toggle('has-selection', Boolean(selectedChoice));
+    choicesEl.classList.toggle('can-choose', canChoose);
+    choicesEl.innerHTML = choices.map((choice, index) => {
       const color = window.COLOR_OPTIONS && window.COLOR_OPTIONS[index] ? window.COLOR_OPTIONS[index].color : '#ccc';
       const selected = selectedChoice && Number(selectedChoice.choice) === Number(index);
       const selectedClass = selected ? (selectedChoice.mode === 'waiting' ? ' is-selected is-waiting' : ' is-locked') : '';
-      const disabled = yourTurn && !selectedChoice ? '' : 'disabled';
+      const disabled = canChoose ? '' : 'disabled';
+      const colorName = COLOR_NAMES[index] || choice || '';
       return `
-        <button class="choice${selectedClass}" data-choice="${index}" ${disabled} aria-pressed="${selected ? 'true' : 'false'}">
+        <button class="choice${selectedClass}" data-choice="${index}" ${disabled} aria-pressed="${selected ? 'true' : 'false'}" aria-label="${escapeHtml(`${colorName}：${choice || ''}`)}">
           <span class="dot" style="background:${color}"></span>
-          <span>${escapeHtml(choice || COLOR_NAMES[index] || '')}</span>
+          <span>${escapeHtml(colorName)}</span>
         </button>
       `;
     }).join('');
-    document.querySelectorAll('[data-choice]').forEach((button) => {
-      button.addEventListener('click', () => chooseAnswer(Number(button.dataset.choice)));
-    });
+    if (canChoose) {
+      document.querySelectorAll('[data-choice]').forEach((button) => {
+        button.addEventListener('click', () => chooseAnswer(Number(button.dataset.choice)));
+      });
+    }
   }
 
   function shouldShowRoomCard() {

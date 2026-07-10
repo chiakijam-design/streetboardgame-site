@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>遠隔で遊ぶ | 彼氏の愛情判定ゲーム</title>
   <meta name="description" content="彼氏の愛情判定ゲームをルームコードで遠隔プレイ。まずは彼氏の愛情判定だけ対応しています。" />
+  <meta name="robots" content="noindex, nofollow" />
   <link rel="canonical" href="https://www.streetboardgame.com/remote" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -182,8 +183,48 @@
       font-weight: 900;
       line-height: 1.6;
     }
+    #play.card {
+      margin-top: 14px;
+      padding: 0 0 calc(124px + env(safe-area-inset-bottom));
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    #turnTitle {
+      width: fit-content;
+      max-width: calc(100% - 28px);
+      min-height: 40px;
+      margin: 0 auto 8px;
+      padding: 8px 20px;
+      border: 3px solid var(--black);
+      border-radius: 999px;
+      background: var(--white);
+      box-shadow: 4px 4px 0 #000;
+      font-size: 15px;
+      line-height: 1.25;
+      text-align: center;
+    }
+    #turnNote {
+      width: min(100%, 340px);
+      margin: 0 auto 8px;
+      padding: 10px 14px;
+      border: 3px solid var(--black);
+      border-radius: 16px;
+      background: var(--yellow);
+      box-shadow: 4px 4px 0 #000;
+      color: var(--black);
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    #questionWrap {
+      padding: 0 22px 2px;
+    }
     .question-img {
-      width: min(100%, 320px);
+      width: min(100%, clamp(218px, 34dvh, 300px));
+      height: auto;
+      aspect-ratio: 756 / 1122;
+      object-fit: contain;
       display: block;
       margin: 0 auto;
       border: 3px solid var(--white);
@@ -194,7 +235,9 @@
     .choices {
       display: grid;
       gap: 10px;
-      margin-top: 14px;
+      width: min(100%, 420px);
+      margin: 14px auto 0;
+      padding: 0 12px;
     }
     .choice {
       display: grid;
@@ -263,6 +306,137 @@
       border-radius: 50%;
       border: 1px solid rgba(0,0,0,.2);
       box-shadow: 0 4px 10px rgba(0,0,0,.25);
+    }
+    .choices {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      position: fixed;
+      left: 50%;
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      z-index: 40;
+      width: min(calc(100% - 16px), 470px);
+      margin: 0;
+      padding: 14px 12px 10px;
+      transform: translateX(-50%);
+      border: 3px solid var(--yellow);
+      border-radius: 18px;
+      background: rgba(255, 178, 139, .88);
+      box-shadow: 0 -8px 24px rgba(0,0,0,.18), 4px 4px 0 rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+    }
+    .choices::before {
+      content: "本人の番";
+      position: absolute;
+      left: 10px;
+      top: -18px;
+      min-height: 24px;
+      padding: 3px 10px;
+      border: 2.5px solid var(--black);
+      border-radius: 999px;
+      background: var(--yellow);
+      color: var(--black);
+      box-shadow: 2px 2px 0 #000;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .choices.is-guess::before {
+      content: "予想の番";
+      background: var(--cyan);
+    }
+    .choices.is-waiting::before {
+      content: "相手の番";
+      background: var(--white);
+    }
+    .choices::after {
+      content: "タップで決定";
+      position: absolute;
+      right: 12px;
+      top: 14px;
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 900;
+      text-shadow: 0 1px 0 rgba(0,0,0,.28);
+      white-space: nowrap;
+    }
+    .choices.is-waiting::after {
+      content: "待機中";
+    }
+    .choices.has-selection::after {
+      content: "選択済み";
+    }
+    .choices:not(.can-choose) .choice {
+      pointer-events: none;
+    }
+    .choices.can-choose .choice {
+      cursor: pointer;
+    }
+    .choices.is-waiting {
+      filter: saturate(.82);
+    }
+    .choice {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 5px;
+      min-height: 78px;
+      padding: 12px 2px 0;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      box-shadow: none;
+      text-align: center;
+      transition: transform .08s ease, opacity .12s ease, filter .12s ease;
+    }
+    .choice:not(:disabled):active {
+      box-shadow: none;
+    }
+    .choice.is-selected {
+      background: transparent;
+      transform: translateY(-4px);
+      filter: none;
+    }
+    .choice.is-locked {
+      background: transparent;
+      box-shadow: none;
+      opacity: .74;
+    }
+    .choice.is-locked::after,
+    .choice.is-waiting::after {
+      content: "";
+      display: none;
+    }
+    .choice:disabled:not(.is-selected):not(.is-locked) {
+      opacity: .38;
+    }
+    .dot {
+      width: clamp(42px, 13vw, 58px);
+      height: clamp(42px, 13vw, 58px);
+      box-shadow: 0 6px 14px rgba(0,0,0,.26);
+    }
+    .choice.is-selected .dot,
+    .choice.is-locked .dot {
+      outline: 4px solid rgba(255, 226, 107, .78);
+      outline-offset: 3px;
+      filter: saturate(.75) brightness(1.08);
+    }
+    .choice span:last-child {
+      color: var(--white);
+      font-size: 11px;
+      line-height: 1.1;
+      text-shadow: 0 1px 0 rgba(0,0,0,.35);
+      white-space: nowrap;
+    }
+    @media (min-width: 700px) {
+      .choices {
+        width: min(100%, 420px);
+      }
+      .dot {
+        width: 50px;
+        height: 50px;
+      }
     }
     .score {
       font-family: "RocknRoll One", "Zen Maru Gothic", sans-serif;
@@ -775,6 +949,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-17"></script>
+  <script src="remote_love.js?v=remote-love-20"></script>
 </body>
 </html>
