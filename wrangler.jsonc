@@ -7,5 +7,12 @@
   "assets": {
     "directory": "./",
     "binding": "ASSETS"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "REMOTE_DB",
+      "database_name": "streetboardgame-remote",
+      "database_id": "3feb5dad-3465-4d1f-a12b-8859a28308f4"
+    }
+  ]
 }
