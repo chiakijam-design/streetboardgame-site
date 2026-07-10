@@ -1,5 +1,6 @@
 (function () {
   const ROOM_STORAGE_KEY = 'watachan-remote-love-role-v3';
+  const ROOM_SWAP_STORAGE_KEY = 'watachan-remote-love-role-swap-v1';
   const POLL_MS = 1400;
   const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
   const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
@@ -94,13 +95,41 @@
     role = getRoleMap()[code] || '';
   }
 
+  function getSwapMap() {
+    try {
+      return JSON.parse(sessionStorage.getItem(ROOM_SWAP_STORAGE_KEY) || '{}') || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function markSwapSeen(code, nonce) {
+    if (!code || !nonce) return;
+    const map = getSwapMap();
+    map[code] = nonce;
+    sessionStorage.setItem(ROOM_SWAP_STORAGE_KEY, JSON.stringify(map));
+  }
+
+  function oppositeRole(nextRole) {
+    return nextRole === 'target' ? 'guesser' : 'target';
+  }
+
+  function syncRoleSwap() {
+    if (!roomCode || !state || !state.roleSwapNonce || !role) return;
+    const map = getSwapMap();
+    if (map[roomCode] === state.roleSwapNonce) return;
+    saveRole(roomCode, oppositeRole(role));
+    map[roomCode] = state.roleSwapNonce;
+    sessionStorage.setItem(ROOM_SWAP_STORAGE_KEY, JSON.stringify(map));
+  }
+
   function setHidden(id, hidden) {
     $(id).classList.toggle('hidden', Boolean(hidden));
   }
 
   function setBusy(nextBusy) {
     busy = nextBusy;
-    ['createRoom', 'joinRoom'].forEach((id) => {
+    ['createRoom', 'joinRoom', 'replaySameRoom', 'replaySwapRoles'].forEach((id) => {
       const el = $(id);
       if (el) el.disabled = busy;
     });
@@ -138,6 +167,10 @@
       return { target: boy, guesser: girl, targetSide: 'boy', guesserSide: 'girl' };
     }
     return { target: girl, guesser: boy, targetSide: 'girl', guesserSide: 'boy' };
+  }
+
+  function oppositeLoveMode(loveMode) {
+    return loveMode === 'boyTarget' ? 'girlTarget' : 'boyTarget';
   }
 
   function isDefaultNames(names) {
@@ -497,6 +530,7 @@
       roomCode = created.code;
       state = created.room;
       saveRole(roomCode, roleForParticipant(state, 'creator'));
+      markSwapSeen(roomCode, state.roleSwapNonce);
       render();
       startPolling();
       window.history.replaceState(null, '', `/remote?room=${roomCode}`);
@@ -525,6 +559,7 @@
         loadRole(roomCode);
         if (!role) saveRole(roomCode, roleForParticipant(state, 'joiner'));
       }
+      markSwapSeen(roomCode, state.roleSwapNonce);
       render();
       startPolling();
       window.history.replaceState(null, '', `/remote?room=${roomCode}`);
@@ -542,6 +577,7 @@
       body: JSON.stringify({ patch }),
     });
     state = updated.room;
+    syncRoleSwap();
     render();
   }
 
@@ -552,6 +588,7 @@
       try {
         const loaded = await api(`/api/remote/rooms/${roomCode}`);
         state = loaded.room;
+        syncRoleSwap();
         if (sendingChoice) return;
         render();
       } catch (e) {
@@ -795,6 +832,38 @@
     }
   }
 
+  function replayPatch(swapRoles) {
+    const patch = {
+      cards: pickCards(),
+      qIdx: 0,
+      phase: 'target',
+      targetPick: null,
+      answers: [],
+      updatedBy: role,
+    };
+    if (swapRoles) {
+      patch.loveMode = oppositeLoveMode(state && state.loveMode);
+      patch.roleSwapNonce = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+    return patch;
+  }
+
+  async function replayRoom(swapRoles) {
+    if (!state || !roomCode || busy) return;
+    setBusy(true);
+    sendingChoice = false;
+    pendingChoice = null;
+    latestResult = null;
+    try {
+      await updateRoom(replayPatch(Boolean(swapRoles)));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      alert(e.message || 'もう一度プレイする準備に失敗しました');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function render() {
     const hasRoom = Boolean(state && roomCode);
     const canPlay = hasRoom && Boolean(role);
@@ -826,8 +895,10 @@
     $('shareResultLine').addEventListener('click', shareResultLine);
     $('shareResultX').addEventListener('click', shareResultX);
     $('saveResultImage').addEventListener('click', saveResultImage);
-    $('newRoom').addEventListener('click', () => {
-      window.location.href = '/remote';
+    $('replaySameRoom').addEventListener('click', () => replayRoom(false));
+    $('replaySwapRoles').addEventListener('click', () => replayRoom(true));
+    $('remoteTop').addEventListener('click', () => {
+      window.location.href = '/';
     });
     $('joinCode').addEventListener('input', (e) => {
       e.target.value = normalizeCode(e.target.value);

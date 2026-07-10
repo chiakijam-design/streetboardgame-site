@@ -470,9 +470,18 @@ function sanitizeNewRemoteRoom(body) {
 function sanitizeRemotePatch(patch) {
   const source = patch && typeof patch === 'object' ? patch : {};
   const next = {};
+  if (source.loveMode === 'girlTarget' || source.loveMode === 'boyTarget') next.loveMode = source.loveMode;
   if (['target', 'guess', 'result'].includes(source.phase)) next.phase = source.phase;
   if (Number.isInteger(source.qIdx) && source.qIdx >= 0 && source.qIdx <= 4) next.qIdx = source.qIdx;
   if (source.targetPick === null || isChoiceIndex(source.targetPick)) next.targetPick = source.targetPick === null ? null : Number(source.targetPick);
+  if (Array.isArray(source.cards)) {
+    const cards = source.cards.slice(0, 5).map(sanitizeRemoteCard);
+    if (cards.length !== 5) throw new Error('cards-required');
+    next.cards = cards;
+  }
+  if (typeof source.roleSwapNonce === 'string' && /^[A-Za-z0-9_-]{1,48}$/.test(source.roleSwapNonce)) {
+    next.roleSwapNonce = source.roleSwapNonce;
+  }
   if (Array.isArray(source.answers)) {
     next.answers = source.answers.slice(0, 5).map((answer) => ({
       target: isChoiceIndex(answer && answer.target) ? Number(answer.target) : 0,

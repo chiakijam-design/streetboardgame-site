@@ -443,6 +443,23 @@
       color: var(--black);
       box-shadow: 4px 4px 0 #000;
     }
+    .remote-replay-actions {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .remote-replay-actions .btn {
+      margin-top: 0;
+    }
+    .remote-replay-actions .btn.secondary {
+      background: var(--yellow);
+      color: var(--black);
+    }
+    .remote-replay-actions .btn.light {
+      background: var(--white);
+      color: var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+    }
     .answer-row {
       border: 2px solid var(--black);
       border-radius: 12px;
@@ -746,11 +763,15 @@
         </div>
         <button id="saveResultImage" class="btn save-share" type="button">判定画像も送りたい。まずは画像を保存</button>
       </div>
-      <button id="newRoom" class="btn" style="margin-top:18px">新しいルームを作る</button>
+      <div class="remote-replay-actions">
+        <button id="replaySameRoom" class="btn" type="button">このままもう一度プレイする</button>
+        <button id="replaySwapRoles" class="btn secondary" type="button">当てる人、当てられる人を入れ替えてプレイする</button>
+        <button id="remoteTop" class="btn light" type="button">トップへ戻る</button>
+      </div>
     </section>
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-13"></script>
+  <script src="remote_love.js?v=remote-love-14"></script>
 </body>
 </html>
