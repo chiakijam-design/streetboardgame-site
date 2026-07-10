@@ -1171,14 +1171,14 @@ function App() {
       width: '100%', minHeight: '100dvh',
       background: proto.pink,
       display: 'flex', justifyContent: 'center',
-      overflowX: 'hidden',
+      overflowX: 'clip',
       fontFamily: proto.body,
     }}>
       <div style={{
         width: '100%', maxWidth: 480, minHeight: '100dvh',
         background: proto.pink,
         boxShadow: '0 0 60px rgba(0,0,0,0.15)',
-        position: 'relative', overflowX: 'hidden',
+        position: 'relative', overflowX: 'clip',
       }}>
         {screen === 'top' && (
           <TopScreen
@@ -2390,7 +2390,7 @@ function PlayScreen({ card, qIdx, total, players, onAnswer, onBack }) {
   return (
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
-      position: 'relative', overflowX: 'hidden',
+      position: 'relative', overflowX: 'clip',
       paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
     }}>
       {/* キャラ装飾: 右下のコーナーから小さく覗く */}
@@ -3285,7 +3285,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
       background: proto.pink,
       position: 'relative',
       paddingBottom: 40,
-      overflowX: 'hidden',
+      overflowX: 'clip',
     }}>
       <Decor />
 
@@ -4315,7 +4315,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswe
   return (
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
-      position: 'relative', overflowX: 'hidden',
+      position: 'relative', overflowX: 'clip',
       paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
     }}>
       <Decor />
@@ -5195,7 +5195,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
       background: proto.pink,
       position: 'relative',
       paddingBottom: 40,
-      overflowX: 'hidden',
+      overflowX: 'clip',
     }}>
       <Decor />
       <div style={resultHeroStyle()}>
@@ -5471,7 +5471,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswe
   return (
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
-      position: 'relative', overflowX: 'hidden',
+      position: 'relative', overflowX: 'clip',
       paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
     }}>
       <Decor />
@@ -5678,7 +5678,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
       background: proto.pink,
       position: 'relative',
       paddingBottom: 40,
-      overflowX: 'hidden',
+      overflowX: 'clip',
     }}>
       <Decor />
       <div style={resultHeroStyle()}>
