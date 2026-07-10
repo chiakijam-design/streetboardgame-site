@@ -2389,7 +2389,6 @@ function PlayScreen({ card, qIdx, total, players, onAnswer, onBack }) {
 
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column',
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', overflowX: 'hidden',
       paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
@@ -2458,7 +2457,7 @@ function PlayScreen({ card, qIdx, total, players, onAnswer, onBack }) {
       </div>
 
       {/* メインエリア */}
-      <div style={{ flex: 1, padding: '0 18px 14px' }}>
+      <div style={{ padding: '0 18px 14px' }}>
         {phase === 'girl' && (
           <ColorPicker
             selected={girlPick}
