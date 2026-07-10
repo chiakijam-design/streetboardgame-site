@@ -66,6 +66,7 @@
   let sendingChoice = false;
   let pendingChoice = null;
   let latestResult = null;
+  let lastPlayViewKey = '';
 
   function cleanName(value, fallback) {
     const text = String(value || '').replace(/\s+/g, ' ').trim().slice(0, 6);
@@ -752,6 +753,29 @@
     });
   }
 
+  function shouldShowRoomCard() {
+    if (!state || !roomCode) return false;
+    if (state.phase === 'result') return false;
+    const qIdx = Number(state.qIdx || 0);
+    return qIdx === 0 && state.phase === 'target';
+  }
+
+  function scrollPlayIntoViewIfNeeded() {
+    if (!state || state.phase === 'result' || !role) return;
+    if (shouldShowRoomCard()) return;
+    const qIdx = Number(state.qIdx || 0);
+    const key = `${roomCode}:${qIdx}:${state.phase}:${role}`;
+    if (key === lastPlayViewKey) return;
+    lastPlayViewKey = key;
+    window.requestAnimationFrame(() => {
+      const play = $('play');
+      if (!play || play.classList.contains('hidden')) return;
+      const rect = play.getBoundingClientRect();
+      const top = Math.max(0, window.scrollY + rect.top - 12);
+      window.scrollTo({ top, left: 0, behavior: 'smooth' });
+    });
+  }
+
   function renderResult() {
     if (!state) return;
     sendingChoice = false;
@@ -891,13 +915,16 @@
     const canPlay = hasRoom && Boolean(role);
     setHidden('setup', hasRoom);
     setHidden('joinPanel', hasRoom);
-    setHidden('room', !hasRoom);
+    setHidden('room', !hasRoom || !shouldShowRoomCard());
     setHidden('play', !canPlay || state.phase === 'result');
     setHidden('result', !hasRoom || state.phase !== 'result');
     if (!hasRoom) return;
     renderRoomCard();
     if (state.phase === 'result') renderResult();
-    else renderPlay();
+    else {
+      renderPlay();
+      scrollPlayIntoViewIfNeeded();
+    }
   }
 
   function escapeHtml(value) {
