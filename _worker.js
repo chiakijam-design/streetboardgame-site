@@ -395,7 +395,7 @@ async function handleRemoteApi(request, env, path) {
 
   try {
     if (path === '/api/remote/rooms' && request.method === 'POST') {
-      return createRemoteRoom(request, env);
+      return await createRemoteRoom(request, env);
     }
 
     const match = path.match(/^\/api\/remote\/rooms\/([0-9]{6})$/);
