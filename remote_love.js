@@ -495,7 +495,7 @@
     const original = button.textContent;
     const copied = await copyInviteText(text);
     if (!copied) {
-      window.prompt('このURLをコピーして相手に送ってください', roomInviteUrl());
+      window.prompt('このルームをコピーして相手に送ってください', roomInviteUrl());
       return;
     }
     button.textContent = 'コピーしました';
