@@ -198,7 +198,7 @@
     }
     .choice {
       display: grid;
-      grid-template-columns: 42px 1fr;
+      grid-template-columns: 42px minmax(0, 1fr) auto;
       align-items: center;
       gap: 10px;
       min-height: 52px;
@@ -210,6 +210,34 @@
       box-shadow: 2px 2px 0 #000;
       font-weight: 900;
       text-align: left;
+      transition: transform .08s ease, background .12s ease, box-shadow .12s ease;
+    }
+    .choice:not(:disabled):active {
+      transform: translate(2px, 2px);
+      box-shadow: 0 0 0 #000;
+    }
+    .choice.is-selected {
+      background: var(--yellow);
+      border-width: 4px;
+      box-shadow: 4px 4px 0 var(--cyan);
+      transform: translateY(-1px);
+    }
+    .choice.is-waiting {
+      cursor: wait;
+    }
+    .choice.is-waiting::after {
+      content: "送信中…";
+      justify-self: end;
+      padding: 4px 8px;
+      border: 2px solid var(--black);
+      border-radius: 999px;
+      background: var(--white);
+      color: var(--pink);
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .choice:disabled:not(.is-selected) {
+      opacity: .58;
     }
     .dot {
       width: 30px;
@@ -402,6 +430,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-8"></script>
+  <script src="remote_love.js?v=remote-love-9"></script>
 </body>
 </html>

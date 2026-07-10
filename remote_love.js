@@ -10,6 +10,7 @@
   let role = '';
   let pollTimer = null;
   let busy = false;
+  let sendingChoice = false;
 
   function cleanName(value, fallback) {
     const text = String(value || '').replace(/\s+/g, ' ').trim().slice(0, 6);
@@ -208,6 +209,7 @@
       try {
         const loaded = await api(`/api/remote/rooms/${roomCode}`);
         state = loaded.room;
+        if (sendingChoice) return;
         render();
       } catch (e) {
         $('roleStatus').textContent = '通信が切れています。少し待ってから再読み込みしてください。';
@@ -216,13 +218,18 @@
   }
 
   async function chooseAnswer(index) {
-    if (!state || !roomCode) return;
+    if (!state || !roomCode || sendingChoice) return;
     const room = state;
-    if (room.phase === 'target' && role === 'target') {
-      await updateRoom({ targetPick: index, phase: 'guess', updatedBy: role });
-      return;
-    }
-    if (room.phase === 'guess' && role === 'guesser') {
+    const canPickTarget = room.phase === 'target' && role === 'target';
+    const canPickGuess = room.phase === 'guess' && role === 'guesser';
+    if (!canPickTarget && !canPickGuess) return;
+
+    markChoiceSending(index);
+    try {
+      if (canPickTarget) {
+        await updateRoom({ targetPick: index, phase: 'guess', updatedBy: role });
+        return;
+      }
       const answers = Array.isArray(room.answers) ? room.answers.slice() : [];
       answers.push({
         target: room.targetPick,
@@ -238,7 +245,22 @@
         phase: done ? 'result' : 'target',
         updatedBy: role,
       });
+    } catch (e) {
+      sendingChoice = false;
+      render();
+      alert(e.message || '送信に失敗しました。もう一度選んでください。');
     }
+  }
+
+  function markChoiceSending(index) {
+    sendingChoice = true;
+    document.querySelectorAll('[data-choice]').forEach((button) => {
+      const selected = Number(button.dataset.choice) === Number(index);
+      button.disabled = true;
+      button.classList.toggle('is-selected', selected);
+      button.classList.toggle('is-waiting', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
   }
 
   function currentCard() {
@@ -263,6 +285,7 @@
 
   function renderPlay() {
     if (!state) return;
+    sendingChoice = false;
     const names = targetAndGuesser(state);
     const card = currentCard();
     if (!card) return;
@@ -299,6 +322,7 @@
 
   function renderResult() {
     if (!state) return;
+    sendingChoice = false;
     const names = targetAndGuesser(state);
     const answers = Array.isArray(state.answers) ? state.answers : [];
     const total = answers.length || 5;
