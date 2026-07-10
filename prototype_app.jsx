@@ -1471,17 +1471,6 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         }}>
           メイン作品、彼氏の愛情判定ゲーム
         </div>
-        <a href="/remote" style={{
-          ...secondaryBtn(),
-          marginTop: 12,
-          background: proto.cyan,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textDecoration: 'none',
-        }}>
-          遠隔で遊ぶ
-        </a>
         <button onClick={onFriend} style={{
           ...secondaryBtn(),
           marginTop: 12,
@@ -2117,6 +2106,23 @@ function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange, loveMod
             color: proto.yellow, fontSize: 18, textShadow: '1px 1px 0 #000',
           }}>▶</span>
         </button>
+        <a href="/remote" style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 48,
+          marginTop: 12,
+          borderRadius: 10,
+          border: `3px solid ${proto.black}`,
+          background: proto.white,
+          color: proto.black,
+          boxShadow: `4px 4px 0 ${proto.black}`,
+          textDecoration: 'none',
+          fontWeight: 900,
+          fontSize: 14,
+        }}>
+          離れている人と遠隔で遊ぶ
+        </a>
       </div>
     </div>
   );
