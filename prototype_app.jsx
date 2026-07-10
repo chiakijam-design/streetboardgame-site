@@ -2860,8 +2860,10 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
       left: '50%',
       bottom: 'calc(2px + env(safe-area-inset-bottom))',
       zIndex: 120,
-      width: 'min(560px, calc(100% - 36px))',
+      width: 'min(480px, calc(100vw - 24px))',
+      maxWidth: 'calc(100vw - 24px)',
       transform: 'translateX(-50%)',
+      boxSizing: 'border-box',
     }}>
       <style>{`
         @keyframes chipPop {
@@ -3925,7 +3927,8 @@ function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary, 
       left: '50%',
       bottom: lifted ? 'calc(92px + env(safe-area-inset-bottom))' : 0,
       transform: 'translateX(-50%)',
-      width: 'min(480px, 100vw)',
+      width: 'min(480px, calc(100vw - 24px))',
+      maxWidth: 'calc(100vw - 24px)',
       padding: lifted ? '10px 18px 12px' : '12px 18px calc(14px + env(safe-area-inset-bottom))',
       boxSizing: 'border-box',
       background: lifted
