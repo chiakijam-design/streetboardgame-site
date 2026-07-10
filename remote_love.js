@@ -101,7 +101,7 @@
       });
       roomCode = created.code;
       state = created.room;
-      saveRole(roomCode, 'target');
+      role = '';
       render();
       startPolling();
       window.history.replaceState(null, '', `/remote?room=${roomCode}`);
@@ -205,7 +205,7 @@
     $('beGuesser').textContent = `私は${names.guesser}`;
     $('roleStatus').textContent = role
       ? `あなたは「${role === 'target' ? names.target : names.guesser}」として参加中です。`
-      : '自分の役割を選んでください。';
+      : 'ルームコードを相手に送ってから、自分の役割を選んでください。';
     $('beTarget').className = role === 'target' ? 'btn yellow small' : 'btn white small';
     $('beGuesser').className = role === 'guesser' ? 'btn yellow small' : 'btn white small';
   }
@@ -275,10 +275,11 @@
 
   function render() {
     const hasRoom = Boolean(state && roomCode);
+    const canPlay = hasRoom && Boolean(role);
     setHidden('setup', hasRoom);
     setHidden('joinPanel', hasRoom);
     setHidden('room', !hasRoom);
-    setHidden('play', !hasRoom || state.phase === 'result');
+    setHidden('play', !canPlay || state.phase === 'result');
     setHidden('result', !hasRoom || state.phase !== 'result');
     if (!hasRoom) return;
     renderRoomCard();
@@ -312,7 +313,7 @@
       $('joinCode').value = code;
       joinRoom(code);
     } else {
-      createRoom();
+      render();
     }
   }
 
