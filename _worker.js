@@ -382,7 +382,7 @@ function buildStructuredData(page) {
 }
 
 const REMOTE_ROOM_TTL_SECONDS = 60 * 60 * 6;
-const REMOTE_ROOM_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const REMOTE_ROOM_CODE_CHARS = '0123456789';
 
 async function handleRemoteApi(request, env, path) {
   if (request.method === 'OPTIONS') {
@@ -398,16 +398,16 @@ async function handleRemoteApi(request, env, path) {
       return createRemoteRoom(request, env);
     }
 
-    const match = path.match(/^\/api\/remote\/rooms\/([A-Z0-9]{6})$/i);
+    const match = path.match(/^\/api\/remote\/rooms\/([0-9]{5})$/);
     if (match && request.method === 'GET') {
-      const code = match[1].toUpperCase();
+      const code = match[1];
       const room = await getRemoteRoom(env, code);
       if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
       return jsonResponse({ code, room });
     }
 
     if (match && request.method === 'POST') {
-      const code = match[1].toUpperCase();
+      const code = match[1];
       const room = await getRemoteRoom(env, code);
       if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
       const body = await readJson(request);
@@ -503,7 +503,7 @@ function isChoiceIndex(value) {
 }
 
 function createRemoteCode() {
-  const bytes = new Uint8Array(6);
+  const bytes = new Uint8Array(5);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (byte) => REMOTE_ROOM_CODE_CHARS[byte % REMOTE_ROOM_CODE_CHARS.length]).join('');
 }

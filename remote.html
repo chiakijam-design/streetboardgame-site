@@ -278,10 +278,10 @@
             <input id="boyName" maxlength="6" placeholder="彼氏" />
           </label>
         </div>
-        <button id="createRoom" class="btn">ルームを作る ▶</button>
+        <button id="createRoom" class="btn">ルームコードを発行する ▶</button>
       </div>
       <div class="status">
-        作った人はルームコードを相手に送ってください。相手は下の「ルームに入る」から参加できます。
+        このページを開くと5桁のルームコードが自動で発行されます。相手にはルームコードかURLを送ってください。
       </div>
     </section>
 
@@ -289,7 +289,7 @@
       <h2 class="section-title">ルームに入る</h2>
       <div class="grid">
         <label>ルームコード
-          <input id="joinCode" inputmode="text" maxlength="6" placeholder="例：A7K2Q9" />
+          <input id="joinCode" inputmode="numeric" maxlength="5" placeholder="例：12345" />
         </label>
         <button id="joinRoom" class="btn yellow">参加する</button>
       </div>
@@ -325,6 +325,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-2"></script>
+  <script src="remote_love.js?v=remote-love-3"></script>
 </body>
 </html>

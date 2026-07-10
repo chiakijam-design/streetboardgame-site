@@ -17,7 +17,7 @@
   }
 
   function normalizeCode(value) {
-    return String(value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6);
+    return String(value || '').replace(/\D/g, '').slice(0, 5);
   }
 
   function getRoleMap() {
@@ -115,8 +115,8 @@
   async function joinRoom(codeValue) {
     if (busy) return;
     const code = normalizeCode(codeValue || $('joinCode').value);
-    if (code.length !== 6) {
-      alert('6文字のルームコードを入力してください');
+    if (code.length !== 5) {
+      alert('5桁のルームコードを入力してください');
       return;
     }
     setBusy(true);
@@ -311,6 +311,8 @@
     if (code) {
       $('joinCode').value = code;
       joinRoom(code);
+    } else {
+      createRoom();
     }
   }
 
