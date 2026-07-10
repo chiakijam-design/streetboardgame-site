@@ -63,6 +63,7 @@
   let pollTimer = null;
   let busy = false;
   let sendingChoice = false;
+  let pendingChoice = null;
   let latestResult = null;
 
   function cleanName(value, fallback) {
@@ -589,6 +590,7 @@
       });
     } catch (e) {
       sendingChoice = false;
+      pendingChoice = null;
       render();
       alert(e.message || '送信に失敗しました。もう一度選んでください。');
     }
@@ -596,6 +598,12 @@
 
   function markChoiceSending(index) {
     sendingChoice = true;
+    pendingChoice = {
+      roomCode,
+      qIdx: Number(state && state.qIdx || 0),
+      phase: state && state.phase,
+      choice: Number(index),
+    };
     document.querySelectorAll('[data-choice]').forEach((button) => {
       const selected = Number(button.dataset.choice) === Number(index);
       button.disabled = true;
@@ -603,6 +611,23 @@
       button.classList.toggle('is-waiting', selected);
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
+  }
+
+  function selectedChoiceForCurrentView(qIdx, phase) {
+    if (!state) return null;
+    if (sendingChoice && pendingChoice && pendingChoice.roomCode === roomCode && pendingChoice.qIdx === qIdx) {
+      return {
+        choice: pendingChoice.choice,
+        mode: pendingChoice.phase === phase ? 'waiting' : 'locked',
+      };
+    }
+    if (phase === 'guess' && role === 'target' && state.targetPick !== null && state.targetPick !== undefined) {
+      return {
+        choice: Number(state.targetPick),
+        mode: 'locked',
+      };
+    }
+    return null;
   }
 
   function currentCard() {
@@ -627,15 +652,22 @@
 
   function renderPlay() {
     if (!state) return;
-    sendingChoice = false;
     const names = targetAndGuesser(state);
     const card = currentCard();
     if (!card) return;
-    const q = Number(state.qIdx || 0) + 1;
+    const qIdx = Number(state.qIdx || 0);
+    const q = qIdx + 1;
     const total = (state.cards || []).length;
     const isTargetTurn = state.phase === 'target';
     const isGuesserTurn = state.phase === 'guess';
     const yourTurn = (isTargetTurn && role === 'target') || (isGuesserTurn && role === 'guesser');
+    const selectedChoice = selectedChoiceForCurrentView(qIdx, state.phase);
+    if (!selectedChoice) {
+      sendingChoice = false;
+      pendingChoice = null;
+    } else if (selectedChoice.mode === 'locked') {
+      sendingChoice = false;
+    }
     $('turnTitle').textContent = `Q${q}/${total} ${yourTurn ? 'あなたの番' : '相手の番'}`;
     if (isTargetTurn) {
       $('turnNote').textContent = yourTurn
@@ -650,8 +682,11 @@
     const choices = Array.isArray(card.choices) ? card.choices : [];
     $('choices').innerHTML = choices.map((choice, index) => {
       const color = window.COLOR_OPTIONS && window.COLOR_OPTIONS[index] ? window.COLOR_OPTIONS[index].color : '#ccc';
+      const selected = selectedChoice && Number(selectedChoice.choice) === Number(index);
+      const selectedClass = selected ? (selectedChoice.mode === 'waiting' ? ' is-selected is-waiting' : ' is-locked') : '';
+      const disabled = yourTurn && !selectedChoice ? '' : 'disabled';
       return `
-        <button class="choice" data-choice="${index}" ${yourTurn ? '' : 'disabled'}>
+        <button class="choice${selectedClass}" data-choice="${index}" ${disabled} aria-pressed="${selected ? 'true' : 'false'}">
           <span class="dot" style="background:${color}"></span>
           <span>${escapeHtml(choice || COLOR_NAMES[index] || '')}</span>
         </button>

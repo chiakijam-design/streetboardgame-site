@@ -222,6 +222,24 @@
       box-shadow: 4px 4px 0 var(--cyan);
       transform: translateY(-1px);
     }
+    .choice.is-locked {
+      background: #fff1a8;
+      border-color: var(--black);
+      color: rgba(26,26,26,.72);
+      box-shadow: 2px 2px 0 rgba(0,0,0,.55);
+      cursor: not-allowed;
+    }
+    .choice.is-locked::after {
+      content: "選択済み";
+      justify-self: end;
+      padding: 4px 8px;
+      border: 2px solid rgba(26,26,26,.65);
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+      color: var(--pink);
+      font-size: 11px;
+      font-weight: 900;
+    }
     .choice.is-waiting {
       cursor: wait;
     }
@@ -236,7 +254,7 @@
       font-size: 11px;
       font-weight: 900;
     }
-    .choice:disabled:not(.is-selected) {
+    .choice:disabled:not(.is-selected):not(.is-locked) {
       opacity: .58;
     }
     .dot {
@@ -656,6 +674,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-11"></script>
+  <script src="remote_love.js?v=remote-love-12"></script>
 </body>
 </html>
