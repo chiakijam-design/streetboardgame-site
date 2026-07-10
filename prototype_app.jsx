@@ -2625,7 +2625,7 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
       minHeight: '100vh',
       background: proto.pink,
       color: proto.white,
-      padding: '54px 22px calc(152px + env(safe-area-inset-bottom))',
+      padding: '54px 22px calc(230px + env(safe-area-inset-bottom))',
       boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column',
@@ -2708,6 +2708,7 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
         primaryLabel={buttonLabel}
         onPrimary={onResult}
         largePrimary
+        lifted
       />
     </div>
   );
@@ -3899,18 +3900,20 @@ function ResultReplayActions({ primaryLabel, onPrimary, secondaryLabel, onSecond
   );
 }
 
-function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary, largePrimary = false }) {
+function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary, largePrimary = false, lifted = false }) {
   const primaryStyle = primaryBtn();
   return (
     <div style={{
       position: 'fixed',
       left: '50%',
-      bottom: 0,
+      bottom: lifted ? 'calc(92px + env(safe-area-inset-bottom))' : 0,
       transform: 'translateX(-50%)',
       width: 'min(480px, 100vw)',
-      padding: '12px 18px calc(14px + env(safe-area-inset-bottom))',
+      padding: lifted ? '10px 18px 12px' : '12px 18px calc(14px + env(safe-area-inset-bottom))',
       boxSizing: 'border-box',
-      background: 'linear-gradient(180deg, rgba(236,79,136,0), rgba(236,79,136,0.98) 18%, rgba(236,79,136,1))',
+      background: lifted
+        ? 'linear-gradient(180deg, rgba(236,79,136,0), rgba(236,79,136,0.88) 24%, rgba(236,79,136,0.96))'
+        : 'linear-gradient(180deg, rgba(236,79,136,0), rgba(236,79,136,0.98) 18%, rgba(236,79,136,1))',
       zIndex: 30,
       pointerEvents: 'none',
     }}>
