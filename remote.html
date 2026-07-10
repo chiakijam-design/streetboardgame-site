@@ -253,6 +253,178 @@
       line-height: 1;
       text-shadow: 4px 4px 0 #000;
     }
+    .result-frame {
+      overflow: hidden;
+      padding: 0 0 16px;
+      background: var(--white);
+    }
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: -16px -16px 14px;
+      padding: 12px 14px;
+      background: var(--black);
+      color: var(--white);
+      font: 700 12px "DotGothic16", monospace;
+      letter-spacing: .12em;
+    }
+    .result-tag {
+      flex: 0 0 auto;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 2px solid var(--white);
+      background: var(--pink);
+      color: var(--white);
+      font: 900 12px "Zen Maru Gothic", sans-serif;
+      letter-spacing: .04em;
+    }
+    .result-score-box {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 118px;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 14px;
+      padding: 14px;
+      border: 3px dashed var(--pink);
+      border-radius: 16px;
+      background: var(--cream);
+    }
+    .result-score-label {
+      color: var(--pink);
+      font-weight: 900;
+      line-height: 1.25;
+      font-size: 13px;
+    }
+    .result-score-mark {
+      display: inline-flex;
+      margin-top: 4px;
+      padding: 3px 10px;
+      border: 2px solid var(--black);
+      border-radius: 999px;
+      background: var(--yellow);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .result-girl {
+      position: relative;
+      min-height: 146px;
+      display: flex;
+      align-items: end;
+      justify-content: center;
+    }
+    .result-girl::before {
+      content: "";
+      position: absolute;
+      width: 116px;
+      height: 116px;
+      border-radius: 50%;
+      background: rgba(91,212,232,.18);
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .result-girl img {
+      position: relative;
+      z-index: 1;
+      width: 118px;
+      height: auto;
+      filter: drop-shadow(0 8px 14px rgba(0,0,0,.15));
+    }
+    .result-title-pill {
+      display: inline-flex;
+      justify-content: center;
+      padding: 4px 16px;
+      border-radius: 999px;
+      background: var(--black);
+      color: var(--yellow);
+      font-weight: 900;
+      font-size: 12px;
+    }
+    .result-rank-title {
+      margin-top: 8px;
+      color: var(--pink);
+      font-family: "RocknRoll One", "Zen Maru Gothic", sans-serif;
+      font-size: clamp(24px, 7vw, 34px);
+      line-height: 1.25;
+      text-align: center;
+    }
+    .result-comment {
+      margin-top: 14px;
+      padding: 14px 12px;
+      border: 3px solid var(--black);
+      border-radius: 14px;
+      background: var(--white);
+      box-shadow: 3px 3px 0 #000;
+      text-align: center;
+      white-space: pre-line;
+      font-weight: 900;
+      line-height: 1.8;
+      font-size: 13px;
+    }
+    .answer-summary {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-top: 16px;
+    }
+    .answer-chip {
+      min-height: 54px;
+      border: 2px solid var(--black);
+      border-radius: 10px;
+      background: var(--white);
+      box-shadow: 2px 2px 0 #000;
+      display: grid;
+      place-items: center;
+      gap: 2px;
+      font-weight: 900;
+      font-size: 10px;
+    }
+    .answer-chip.hit { background: var(--yellow); }
+    .answer-chip span:last-child { font-size: 18px; line-height: 1; }
+    .share-card {
+      margin-top: 18px;
+      padding: 14px;
+      border: 3px solid var(--black);
+      border-radius: 16px;
+      background: var(--yellow);
+      box-shadow: 5px 5px 0 #000;
+      text-align: center;
+      font-weight: 900;
+    }
+    .share-card .share-label {
+      display: inline-flex;
+      padding: 3px 12px;
+      border-radius: 999px;
+      background: var(--black);
+      color: var(--white);
+      font: 700 11px "DotGothic16", monospace;
+      letter-spacing: .12em;
+      margin-bottom: 8px;
+    }
+    .share-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .share-actions .line-share {
+      background: #06c755;
+      color: #fff;
+      box-shadow: 4px 4px 0 #000;
+    }
+    .share-actions .x-share {
+      background: var(--black);
+      color: #fff;
+      box-shadow: 4px 4px 0 var(--cyan);
+    }
+    .save-share {
+      margin-top: 10px;
+      background: var(--white);
+      color: var(--black);
+      box-shadow: 4px 4px 0 #000;
+    }
     .answer-row {
       border: 2px solid var(--black);
       border-radius: 12px;
@@ -355,6 +527,11 @@
       .instagram-invite {
         box-shadow: 4px 4px 0 var(--black);
       }
+      .result-score-box {
+        grid-template-columns: minmax(0, 1fr) 104px;
+        padding: 12px;
+      }
+      .result-girl img { width: 104px; }
     }
   </style>
 </head>
@@ -441,18 +618,44 @@
       <div id="choices" class="choices"></div>
     </section>
 
-    <section id="result" class="card hidden">
-      <h2 class="section-title">結果発表</h2>
-      <div style="text-align:center">
-        <div id="score" class="score"></div>
-        <p id="scoreText" class="muted"></p>
+    <section id="result" class="card result-frame hidden">
+      <div class="result-header">
+        <span id="resultGameTitle">彼氏の愛情判定</span>
+        <span id="resultTag" class="result-tag">UPDATE中</span>
       </div>
-      <div id="answerDetails" class="grid" style="margin-top:16px"></div>
+      <div class="result-score-box">
+        <div>
+          <div id="scoreLabel" class="result-score-label">彼氏の彼女理解度</div>
+          <div id="score" class="score"></div>
+          <span class="result-score-mark">問正解</span>
+        </div>
+        <div class="result-girl">
+          <img src="/assets/character/girl-default.webp" alt="わたちゃん">
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div class="result-title-pill">今日の称号</div>
+        <h2 id="resultTitle" class="result-rank-title"></h2>
+        <p id="scoreText" class="result-comment"></p>
+      </div>
+      <div id="answerSummary" class="answer-summary"></div>
+      <h2 class="section-title" style="margin-top:18px">答え合わせ</h2>
+      <div id="answerDetails" class="grid"></div>
+      <div class="share-card">
+        <div class="share-label">SHARE YOUR RESULT</div>
+        <h2 class="section-title" style="margin-bottom:4px">この結果、友達に伝えよう</h2>
+        <p class="muted" style="color:var(--black)">XやLINEはURLつきで送れます。Instagramはプロフィールリンクへ</p>
+        <div class="share-actions">
+          <button id="shareResultLine" class="btn line-share" type="button">LINEで結果を送る</button>
+          <button id="shareResultX" class="btn x-share" type="button">Xで結果をツイート</button>
+        </div>
+        <button id="saveResultImage" class="btn save-share" type="button">判定画像も送りたい。まずは画像を保存</button>
+      </div>
       <button id="newRoom" class="btn" style="margin-top:18px">新しいルームを作る</button>
     </section>
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-10"></script>
+  <script src="remote_love.js?v=remote-love-11"></script>
 </body>
 </html>
