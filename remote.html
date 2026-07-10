@@ -20,7 +20,7 @@
       --soft: #7a6a6f;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; background: var(--pink); color: var(--black); }
+    html, body { margin: 0; min-height: 100%; background: var(--pink); color: var(--black); overflow-x: hidden; }
     body {
       font-family: "Zen Maru Gothic", "Noto Sans JP", sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -30,13 +30,14 @@
     button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
     a { color: inherit; }
     .app {
-      width: 100%;
+      width: min(100%, 480px);
       max-width: 480px;
       min-height: 100dvh;
       margin: 0 auto;
       background: var(--pink);
       box-shadow: 0 0 60px rgba(0,0,0,.15);
       padding: 18px 18px 42px;
+      overflow-x: hidden;
     }
     .topbar {
       display: flex;
@@ -103,6 +104,8 @@
       border-radius: 16px;
       background: var(--white);
       box-shadow: 5px 5px 0 #000;
+      max-width: 100%;
+      overflow-wrap: anywhere;
     }
     .card.dark { background: var(--black); color: var(--white); }
     .card.yellow { background: var(--yellow); }
@@ -160,6 +163,8 @@
       background: var(--cream);
       font: 900 34px "DotGothic16", monospace;
       letter-spacing: .18em;
+      max-width: 100%;
+      line-height: 1;
     }
     .muted {
       color: var(--soft);
@@ -252,14 +257,15 @@
     }
     .room-code-actions {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
+      gap: 12px;
       margin-top: 8px;
+      min-width: 0;
     }
     .line-invite {
-      width: auto;
+      width: min(100%, 260px);
       min-height: 54px;
       padding: 0 18px;
       border-color: var(--black);
@@ -279,11 +285,29 @@
       background: var(--cream);
       font-size: 12px;
       font-weight: 900;
+      min-width: 0;
     }
     .role-line strong {
       font-size: 14px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      text-align: right;
     }
     .hidden { display: none !important; }
+    @media (max-width: 420px) {
+      .app { padding-left: 14px; padding-right: 14px; }
+      .card { padding: 14px; }
+      .code {
+        width: min(100%, 230px);
+        padding: 0 16px;
+        font-size: 32px;
+        letter-spacing: .12em;
+      }
+      .line-invite {
+        width: min(100%, 230px);
+        box-shadow: 4px 4px 0 var(--black);
+      }
+    }
   </style>
 </head>
 <body>
