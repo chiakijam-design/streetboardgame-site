@@ -1,5 +1,5 @@
 (function () {
-  const ROOM_STORAGE_KEY = 'watachan-remote-love-role-v2';
+  const ROOM_STORAGE_KEY = 'watachan-remote-love-role-v3';
   const POLL_MS = 1400;
   const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
 
@@ -22,7 +22,7 @@
 
   function getRoleMap() {
     try {
-      return JSON.parse(localStorage.getItem(ROOM_STORAGE_KEY) || '{}') || {};
+      return JSON.parse(sessionStorage.getItem(ROOM_STORAGE_KEY) || '{}') || {};
     } catch (e) {
       return {};
     }
@@ -31,7 +31,7 @@
   function saveRole(code, nextRole) {
     const map = getRoleMap();
     map[code] = nextRole;
-    localStorage.setItem(ROOM_STORAGE_KEY, JSON.stringify(map));
+    sessionStorage.setItem(ROOM_STORAGE_KEY, JSON.stringify(map));
     role = nextRole;
   }
 
@@ -103,6 +103,7 @@
   function roomInviteUrl() {
     const url = new URL('/remote', window.location.origin);
     url.searchParams.set('room', roomCode);
+    url.searchParams.set('p', 'joiner');
     return url.toString();
   }
 
