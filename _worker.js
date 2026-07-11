@@ -390,6 +390,8 @@ function buildStructuredData(page) {
 
 const REMOTE_ROOM_TTL_SECONDS = 60 * 60 * 24;
 const REMOTE_ROOM_CODE_CHARS = '0123456789';
+const REMOTE_RATE_WINDOW_SECONDS = 10 * 60;
+let remoteRateLimitReadyPromise = null;
 
 async function handleRemoteApi(request, env, path) {
   if (request.method === 'OPTIONS') {
@@ -402,16 +404,19 @@ async function handleRemoteApi(request, env, path) {
 
   try {
     if (path === '/api/remote/rooms' && request.method === 'POST') {
+      await enforceRemoteRateLimit(request, env, 'create', 10);
       return await createRemoteRoom(request, env);
     }
 
     const chooseMatch = path.match(/^\/api\/remote\/rooms\/([0-9]{6})\/choose$/);
     if (chooseMatch && request.method === 'POST') {
+      await enforceRemoteRateLimit(request, env, 'choose', 120);
       return await chooseRemoteAnswer(request, env, chooseMatch[1]);
     }
 
     const match = path.match(/^\/api\/remote\/rooms\/([0-9]{6})$/);
     if (match && request.method === 'GET') {
+      await enforceRemoteRateLimit(request, env, 'read', 180);
       const code = match[1];
       const room = await getRemoteRoom(env, code);
       if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
@@ -423,10 +428,15 @@ async function handleRemoteApi(request, env, path) {
     }
 
     if (match && request.method === 'POST') {
+      await enforceRemoteRateLimit(request, env, 'update', 30);
       const code = match[1];
       const room = await getRemoteRoom(env, code);
       if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
       const body = await readJson(request);
+      const manageToken = normalizeRemoteManageToken(body && body.manageToken);
+      if (room.manageToken && manageToken !== room.manageToken) {
+        throw remoteApiError('room-update-forbidden', 403);
+      }
       const patch = sanitizeRemotePatch(body && body.patch);
       const nextRoom = {
         ...room,
@@ -449,7 +459,12 @@ async function handleRemoteApi(request, env, path) {
 
     return jsonResponse({ error: 'not-found' }, 404);
   } catch (error) {
-    return jsonResponse({ error: error && error.message ? error.message : 'remote-api-error' }, 500);
+    const status = Number(error && error.status) || 500;
+    return jsonResponse(
+      { error: error && error.message ? error.message : 'remote-api-error' },
+      status,
+      error && error.headers ? error.headers : undefined,
+    );
   }
 }
 
@@ -464,7 +479,12 @@ async function createRemoteRoom(request, env) {
     code = createRemoteCode();
   }
   await putRemoteRoom(env, code, room);
-  return jsonResponse({ code, room: publicRemoteRoom(room), nextTurnToken: room.turnToken });
+  return jsonResponse({
+    code,
+    room: publicRemoteRoom(room),
+    nextTurnToken: room.turnToken,
+    manageToken: room.manageToken,
+  });
 }
 
 async function chooseRemoteAnswer(request, env, code) {
@@ -542,6 +562,7 @@ function sanitizeNewRemoteRoom(body) {
     targetAnswers: [],
     guessAnswers: [],
     turnToken: createRemoteTurnToken(),
+    manageToken: createRemoteManageToken(),
     answers: [],
     createdAt: now,
     updatedAt: now,
@@ -612,8 +633,19 @@ function createRemoteTurnToken() {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+function createRemoteManageToken() {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function normalizeRemoteManageToken(value) {
+  const token = String(value || '').trim();
+  return /^[a-f0-9]{48}$/i.test(token) ? token : '';
+}
+
 function publicRemoteRoom(room) {
-  const { turnToken, targetAnswers, guessAnswers, ...publicRoom } = room || {};
+  const { turnToken, manageToken, targetAnswers, guessAnswers, ...publicRoom } = room || {};
   const total = Array.isArray(room && room.cards) ? room.cards.length : 0;
   return {
     ...publicRoom,
@@ -678,10 +710,86 @@ async function getRemoteRoom(env, code) {
 
 async function cleanupExpiredRemoteRooms(env) {
   if (!env.REMOTE_DB || !(await ensureRemoteD1(env))) return;
-  await env.REMOTE_DB
-    .prepare('DELETE FROM remote_rooms WHERE expires_at < ?')
-    .bind(Date.now())
-    .run();
+  const now = Date.now();
+  await Promise.all([
+    env.REMOTE_DB
+      .prepare('DELETE FROM remote_rooms WHERE expires_at < ?')
+      .bind(now)
+      .run(),
+    ensureRemoteRateLimitD1(env).then((ready) => ready
+      ? env.REMOTE_DB.prepare('DELETE FROM remote_rate_limits WHERE expires_at < ?').bind(now).run()
+      : null),
+  ]);
+}
+
+async function ensureRemoteRateLimitD1(env) {
+  if (!env.REMOTE_DB) return false;
+  if (!remoteRateLimitReadyPromise) {
+    remoteRateLimitReadyPromise = (async () => {
+      await env.REMOTE_DB.prepare(`
+        CREATE TABLE IF NOT EXISTS remote_rate_limits (
+          rate_key TEXT PRIMARY KEY,
+          window_start INTEGER NOT NULL,
+          request_count INTEGER NOT NULL,
+          expires_at INTEGER NOT NULL
+        )
+      `).run();
+      await env.REMOTE_DB.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_remote_rate_limits_expires_at
+        ON remote_rate_limits (expires_at)
+      `).run();
+    })().catch((error) => {
+      remoteRateLimitReadyPromise = null;
+      throw error;
+    });
+  }
+  await remoteRateLimitReadyPromise;
+  return true;
+}
+
+async function remoteRateKey(request, scope) {
+  const ip = String(request.headers.get('CF-Connecting-IP') || 'unknown');
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
+  const hash = Array.from(new Uint8Array(digest).slice(0, 16), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `${scope}:${hash}`;
+}
+
+async function enforceRemoteRateLimit(request, env, scope, limit) {
+  if (!env.REMOTE_DB || !(await ensureRemoteRateLimitD1(env))) return;
+  const now = Date.now();
+  const windowMs = REMOTE_RATE_WINDOW_SECONDS * 1000;
+  const windowStart = Math.floor(now / windowMs) * windowMs;
+  const expiresAt = windowStart + windowMs * 2;
+  const key = await remoteRateKey(request, scope);
+  await env.REMOTE_DB.prepare(`
+    INSERT INTO remote_rate_limits (rate_key, window_start, request_count, expires_at)
+    VALUES (?, ?, 1, ?)
+    ON CONFLICT(rate_key) DO UPDATE SET
+      window_start = CASE
+        WHEN remote_rate_limits.window_start = excluded.window_start THEN remote_rate_limits.window_start
+        ELSE excluded.window_start
+      END,
+      request_count = CASE
+        WHEN remote_rate_limits.window_start = excluded.window_start THEN remote_rate_limits.request_count + 1
+        ELSE 1
+      END,
+      expires_at = excluded.expires_at
+  `).bind(key, windowStart, expiresAt).run();
+  const row = await env.REMOTE_DB
+    .prepare('SELECT request_count FROM remote_rate_limits WHERE rate_key = ?')
+    .bind(key)
+    .first();
+  if (Number(row && row.request_count || 0) > limit) {
+    const retryAfter = Math.max(1, Math.ceil((windowStart + windowMs - now) / 1000));
+    throw remoteApiError('rate-limit-exceeded', 429, { 'Retry-After': String(retryAfter) });
+  }
+}
+
+function remoteApiError(message, status, headers) {
+  const error = new Error(message);
+  error.status = status;
+  error.headers = headers || {};
+  return error;
 }
 
 async function putRemoteRoom(env, code, room) {
@@ -708,12 +816,12 @@ async function putRemoteRoom(env, code, room) {
   throw new Error('remote-storage-not-configured');
 }
 
-function jsonResponse(data, status = 200) {
+function jsonResponse(data, status = 200, extraHeaders) {
+  const headers = new Headers(extraHeaders || {});
+  headers.set('content-type', 'application/json; charset=UTF-8');
+  headers.set('cache-control', 'no-store');
   return new Response(JSON.stringify(data), {
     status,
-    headers: {
-      'content-type': 'application/json; charset=UTF-8',
-      'cache-control': 'no-store',
-    },
+    headers,
   });
 }

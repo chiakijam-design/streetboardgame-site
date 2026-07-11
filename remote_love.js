@@ -130,6 +130,7 @@
   let roomCode = '';
   let role = '';
   let turnToken = '';
+  let manageToken = '';
   let handoffMode = false;
   let handoffRole = '';
   let busy = false;
@@ -170,6 +171,11 @@
   function normalizeTurnToken(value) {
     const token = String(value || '').trim();
     return /^[a-f0-9]{36}$/i.test(token) ? token : '';
+  }
+
+  function normalizeManageToken(value) {
+    const token = String(value || '').trim();
+    return /^[a-f0-9]{48}$/i.test(token) ? token : '';
   }
 
   function getRoleMap() {
@@ -221,6 +227,7 @@
     return {
       role: savedRole,
       turnToken: savedToken,
+      manageToken: normalizeManageToken(entry.manageToken),
       handoffMode: Boolean(entry.handoffMode && savedToken && savedHandoffRole),
       handoffRole: savedHandoffRole,
     };
@@ -233,6 +240,7 @@
       map[roomCode] = {
         role,
         turnToken,
+        manageToken,
         handoffMode,
         handoffRole,
         expiresAt: Math.min(
@@ -297,6 +305,12 @@
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
+      if (json.error === 'rate-limit-exceeded') {
+        throw new Error('操作が続いたため少し待っています。1分ほどしてからもう一度お試しください。');
+      }
+      if (json.error === 'room-update-forbidden') {
+        throw new Error('この端末ではルームを更新できません。参加時に届いた最新URLを開き直してください。');
+      }
       throw new Error(json.error || '通信に失敗しました');
     }
     return json;
@@ -417,7 +431,7 @@
 
   function resultPublicUrl() {
     if (roomCode && state && state.phase === 'result') {
-      return resultRoomUrl(oppositeRole(role));
+      return resultRoomUrl(oppositeRole(role), false);
     }
     return `${window.location.origin}/remote`;
   }
@@ -742,6 +756,7 @@
     url.searchParams.set('room', roomCode);
     url.searchParams.set('role', nextRole);
     url.searchParams.set('turn', nextToken);
+    if (manageToken) url.searchParams.set('manage', manageToken);
     return url.toString();
   }
 
@@ -752,6 +767,7 @@
     url.searchParams.set('next', nextRole);
     url.searchParams.set('turn', nextToken);
     url.searchParams.set('handoff', '1');
+    if (manageToken) url.searchParams.set('manage', manageToken);
     return url.toString();
   }
 
@@ -770,7 +786,8 @@
     if (!roomCode) return;
     if (state && state.phase === 'result') {
       const resultSuffix = resultReturnMode ? '&result=1' : '';
-      window.history.replaceState(null, '', `/remote?room=${roomCode}&role=${role}${resultSuffix}`);
+      const manageSuffix = manageToken ? `&manage=${manageToken}` : '';
+      window.history.replaceState(null, '', `/remote?room=${roomCode}&role=${role}${resultSuffix}${manageSuffix}`);
       saveRecovery();
       return;
     }
@@ -839,11 +856,12 @@
     ].join('\n');
   }
 
-  function resultRoomUrl(recipientRole = oppositeRole(role)) {
+  function resultRoomUrl(recipientRole = oppositeRole(role), includeManage = true) {
     const url = new URL('/remote', window.location.origin);
     url.searchParams.set('room', roomCode);
     url.searchParams.set('role', recipientRole);
     url.searchParams.set('result', '1');
+    if (includeManage && manageToken) url.searchParams.set('manage', manageToken);
     return url.toString();
   }
 
@@ -934,6 +952,7 @@
       roomCode = created.code;
       state = created.room;
       turnToken = normalizeTurnToken(created.nextTurnToken);
+      manageToken = normalizeManageToken(created.manageToken);
       saveRole(roomCode, roleForParticipant(state, 'creator'));
       setFreshTurnAccess();
       markSwapSeen(roomCode, state.roleSwapNonce);
@@ -946,7 +965,7 @@
     }
   }
 
-  async function joinRoom(codeValue, participant = '', linkRole = '', handoffToken = '', isSender = false, nextRole = '') {
+  async function joinRoom(codeValue, participant = '', linkRole = '', handoffToken = '', isSender = false, nextRole = '', linkManageToken = '') {
     if (busy) return;
     const code = normalizeCode(codeValue || $('joinCode').value);
     if (code.length !== 6) {
@@ -956,6 +975,8 @@
     setBusy(true);
     try {
       const recovery = loadRecovery(code);
+      manageToken = normalizeManageToken(linkManageToken)
+        || normalizeManageToken(recovery && recovery.manageToken);
       const recoveredRole = recovery && recovery.role ? recovery.role : '';
       let effectiveRole = linkRole || recoveredRole;
       let effectiveToken = handoffToken || (recovery && recovery.turnToken ? recovery.turnToken : '');
@@ -1017,7 +1038,7 @@
     if (!roomCode || !state) return;
     const updated = await api(`/api/remote/rooms/${roomCode}`, {
       method: 'POST',
-      body: JSON.stringify({ patch }),
+      body: JSON.stringify({ patch, manageToken }),
     });
     state = updated.room;
     if (Object.prototype.hasOwnProperty.call(updated, 'nextTurnToken')) {
@@ -1276,6 +1297,8 @@
     const recipientRole = oppositeRole(role);
     const recipientName = recipientRole === 'target' ? names.target : names.guesser;
     setHidden('resultReturn', resultReturnMode || !role);
+    setHidden('replaySameRoom', !manageToken);
+    setHidden('replaySwapRoles', !manageToken);
     $('resultReturnTitle').textContent = `${recipientName}に判定結果を返す`;
     $('resultReturnLine').textContent = `LINEで${recipientName}に結果を返す`;
   }
@@ -1416,8 +1439,9 @@
       const linkRole = params.get('role') === 'target' || params.get('role') === 'guesser' ? params.get('role') : '';
       const nextRole = params.get('next') === 'target' || params.get('next') === 'guesser' ? params.get('next') : '';
       const handoffToken = normalizeTurnToken(params.get('turn'));
+      const linkManageToken = normalizeManageToken(params.get('manage'));
       const isSender = params.get('handoff') === '1';
-      joinRoom(code, participant, linkRole, handoffToken, isSender, nextRole);
+      joinRoom(code, participant, linkRole, handoffToken, isSender, nextRole, linkManageToken);
     } else {
       render();
     }
