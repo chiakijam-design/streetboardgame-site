@@ -456,6 +456,7 @@ async function handleRemoteApi(request, env, path) {
 async function createRemoteRoom(request, env) {
   const body = await readJson(request);
   const room = sanitizeNewRemoteRoom(body);
+  await cleanupExpiredRemoteRooms(env);
   let code = createRemoteCode();
   for (let i = 0; i < 6; i += 1) {
     const exists = await getRemoteRoom(env, code);
@@ -654,17 +655,33 @@ async function ensureRemoteD1(env) {
 
 async function getRemoteRoom(env, code) {
   if (await ensureRemoteD1(env)) {
+    const now = Date.now();
     const row = await env.REMOTE_DB
       .prepare('SELECT payload, expires_at FROM remote_rooms WHERE code = ?')
       .bind(code)
       .first();
-    if (!row || Number(row.expires_at) < Date.now()) return null;
+    if (!row) return null;
+    if (Number(row.expires_at) < now) {
+      await env.REMOTE_DB
+        .prepare('DELETE FROM remote_rooms WHERE code = ? AND expires_at < ?')
+        .bind(code, now)
+        .run();
+      return null;
+    }
     return JSON.parse(row.payload);
   }
   if (env.REMOTE_KV) {
     return await env.REMOTE_KV.get(`room:${code}`, { type: 'json' });
   }
   throw new Error('remote-storage-not-configured');
+}
+
+async function cleanupExpiredRemoteRooms(env) {
+  if (!env.REMOTE_DB || !(await ensureRemoteD1(env))) return;
+  await env.REMOTE_DB
+    .prepare('DELETE FROM remote_rooms WHERE expires_at < ?')
+    .bind(Date.now())
+    .run();
 }
 
 async function putRemoteRoom(env, code, room) {

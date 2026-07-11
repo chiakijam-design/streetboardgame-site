@@ -1,6 +1,8 @@
 (function () {
   const ROOM_STORAGE_KEY = 'watachan-remote-love-role-v3';
   const ROOM_SWAP_STORAGE_KEY = 'watachan-remote-love-role-swap-v1';
+  const ROOM_RECOVERY_STORAGE_KEY = 'watachan-remote-love-recovery-v1';
+  const ROOM_RECOVERY_TTL_MS = 24 * 60 * 60 * 1000;
   const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
   const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
   const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
@@ -187,6 +189,61 @@
 
   function loadRole(code) {
     role = getRoleMap()[code] || '';
+  }
+
+  function getRecoveryMap() {
+    try {
+      const map = JSON.parse(localStorage.getItem(ROOM_RECOVERY_STORAGE_KEY) || '{}') || {};
+      const now = Date.now();
+      let changed = false;
+      Object.keys(map).forEach((code) => {
+        const entry = map[code];
+        if (!entry || Number(entry.expiresAt || 0) <= now) {
+          delete map[code];
+          changed = true;
+        }
+      });
+      if (changed) localStorage.setItem(ROOM_RECOVERY_STORAGE_KEY, JSON.stringify(map));
+      return map;
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function loadRecovery(code) {
+    const entry = getRecoveryMap()[code];
+    if (!entry) return null;
+    const savedRole = entry.role === 'target' || entry.role === 'guesser' ? entry.role : '';
+    const savedToken = normalizeTurnToken(entry.turnToken);
+    const savedHandoffRole = entry.handoffRole === 'target' || entry.handoffRole === 'guesser'
+      ? entry.handoffRole
+      : '';
+    return {
+      role: savedRole,
+      turnToken: savedToken,
+      handoffMode: Boolean(entry.handoffMode && savedToken && savedHandoffRole),
+      handoffRole: savedHandoffRole,
+    };
+  }
+
+  function saveRecovery() {
+    if (!roomCode || !role || !state) return;
+    try {
+      const map = getRecoveryMap();
+      map[roomCode] = {
+        role,
+        turnToken,
+        handoffMode,
+        handoffRole,
+        expiresAt: Math.min(
+          Number(state.expiresAt || Date.now() + ROOM_RECOVERY_TTL_MS),
+          Date.now() + ROOM_RECOVERY_TTL_MS,
+        ),
+      };
+      localStorage.setItem(ROOM_RECOVERY_STORAGE_KEY, JSON.stringify(map));
+    } catch (e) {
+      // Storage may be unavailable in private/in-app browsers. The URL remains the fallback.
+    }
   }
 
   function getSwapMap() {
@@ -698,22 +755,37 @@
     return url.toString();
   }
 
+  function remoteAccessQuery(accessRole, accessToken, isSender, nextRole) {
+    const params = new URLSearchParams();
+    if (accessRole === 'target' || accessRole === 'guesser') params.set('role', accessRole);
+    if (accessToken) params.set('turn', accessToken);
+    if (isSender) {
+      params.set('handoff', '1');
+      if (nextRole === 'target' || nextRole === 'guesser') params.set('next', nextRole);
+    }
+    return params.toString();
+  }
+
   function replaceRemoteUrl() {
     if (!roomCode) return;
     if (state && state.phase === 'result') {
       const resultSuffix = resultReturnMode ? '&result=1' : '';
       window.history.replaceState(null, '', `/remote?room=${roomCode}&role=${role}${resultSuffix}`);
+      saveRecovery();
       return;
     }
     if (handoffMode && handoffRole && turnToken) {
       window.history.replaceState(null, '', senderStateUrl());
+      saveRecovery();
       return;
     }
     if (role && turnToken) {
       window.history.replaceState(null, '', roomInviteUrl(role, turnToken));
+      saveRecovery();
       return;
     }
     window.history.replaceState(null, '', `/remote?room=${roomCode}&role=${role}`);
+    saveRecovery();
   }
 
   function setFreshTurnAccess() {
@@ -883,21 +955,35 @@
     }
     setBusy(true);
     try {
-      const accessParams = new URLSearchParams();
-      if (linkRole === 'target' || linkRole === 'guesser') accessParams.set('role', linkRole);
-      if (handoffToken) accessParams.set('turn', handoffToken);
-      if (isSender) {
-        accessParams.set('handoff', '1');
-        if (nextRole === 'target' || nextRole === 'guesser') accessParams.set('next', nextRole);
+      const recovery = loadRecovery(code);
+      const recoveredRole = recovery && recovery.role ? recovery.role : '';
+      let effectiveRole = linkRole || recoveredRole;
+      let effectiveToken = handoffToken || (recovery && recovery.turnToken ? recovery.turnToken : '');
+      let effectiveIsSender = handoffToken ? isSender : Boolean(recovery && recovery.handoffMode);
+      let effectiveNextRole = handoffToken
+        ? nextRole
+        : recovery && recovery.handoffRole ? recovery.handoffRole : '';
+      let accessQuery = remoteAccessQuery(effectiveRole, effectiveToken, effectiveIsSender, effectiveNextRole);
+      let loaded = await api(`/api/remote/rooms/${code}${accessQuery ? `?${accessQuery}` : ''}`);
+      const canRetryRecovery = handoffToken
+        && loaded.turnAccess !== true
+        && recovery
+        && recovery.turnToken
+        && recovery.turnToken !== handoffToken;
+      if (canRetryRecovery) {
+        effectiveRole = recoveredRole;
+        effectiveToken = recovery.turnToken;
+        effectiveIsSender = recovery.handoffMode;
+        effectiveNextRole = recovery.handoffRole;
+        accessQuery = remoteAccessQuery(effectiveRole, effectiveToken, effectiveIsSender, effectiveNextRole);
+        loaded = await api(`/api/remote/rooms/${code}${accessQuery ? `?${accessQuery}` : ''}`);
       }
-      const accessQuery = accessParams.toString();
-      const loaded = await api(`/api/remote/rooms/${code}${accessQuery ? `?${accessQuery}` : ''}`);
       roomCode = code;
       state = loaded.room;
       if (Number(state && state.version || 0) < 4) {
         throw new Error('このルームは旧方式です。新しいルームを作り直してください。');
       }
-      const linkedRole = linkRole === 'target' || linkRole === 'guesser' ? linkRole : '';
+      const linkedRole = effectiveRole === 'target' || effectiveRole === 'guesser' ? effectiveRole : '';
       if (linkedRole) {
         saveRole(roomCode, linkedRole);
       } else if (participant === 'creator' || participant === 'joiner') {
@@ -906,9 +992,11 @@
         loadRole(roomCode);
         if (!role) saveRole(roomCode, roleForParticipant(state, 'joiner'));
       }
-      turnToken = normalizeTurnToken(handoffToken);
-      handoffMode = Boolean(isSender && turnToken);
-      handoffRole = handoffMode && (nextRole === 'target' || nextRole === 'guesser') ? nextRole : '';
+      turnToken = normalizeTurnToken(effectiveToken);
+      handoffMode = Boolean(effectiveIsSender && turnToken);
+      handoffRole = handoffMode && (effectiveNextRole === 'target' || effectiveNextRole === 'guesser')
+        ? effectiveNextRole
+        : '';
       if (turnToken && loaded.turnAccess !== true) {
         turnToken = '';
         handoffMode = false;
@@ -1033,6 +1121,7 @@
     const yourRoleTurn = (isTargetTurn && role === 'target') || (isGuesserTurn && role === 'guesser');
     const canChoose = yourRoleTurn && !handoffMode && Boolean(turnToken);
     const canHandOff = handoffMode && handoffRole === activeRole(state) && Boolean(turnToken);
+    const missingTurnAccess = yourRoleTurn && !handoffMode && !turnToken;
     const selectedChoice = selectedChoiceForCurrentView(qIdx, state.phase);
     if (!selectedChoice) {
       sendingChoice = false;
@@ -1041,12 +1130,14 @@
       sendingChoice = false;
     }
     const currentPlayer = turnPlayerName(state);
-    $('turnTitle').textContent = `Q${q}/${total} ${canChoose ? 'あなたの番' : canHandOff ? `次は${currentPlayer}の番` : '相手の番'}`;
+    $('turnTitle').textContent = `Q${q}/${total} ${canChoose ? 'あなたの番' : canHandOff ? `次は${currentPlayer}の番` : missingTurnAccess ? '回答用URLを確認' : '相手の番'}`;
     if (isTargetTurn) {
       $('turnNote').textContent = canChoose
         ? `${names.guesser}に見せずに、${names.target}が自分の答えを選んでください。5問続けて回答します。`
         : canHandOff
           ? `${currentPlayer}に、5問まとめて回答できるURLを送ってください。`
+          : missingTurnAccess
+            ? '回答権を確認できませんでした。LINEで届いた最新のURLを開き直してください。'
           : `${names.target}が答えを選んでいます。LINEで届くURLを待ってね。`;
     } else {
       $('turnNote').textContent = canChoose
@@ -1055,6 +1146,8 @@
           : `${names.target}が何を選びそうか予想してください。相手はこのあと5問回答します。`
         : canHandOff
           ? `${currentPlayer}に、5問まとめて回答できるURLを送ってください。`
+          : missingTurnAccess
+            ? '回答権を確認できませんでした。LINEで届いた最新のURLを開き直してください。'
           : `${names.guesser}が予想しています。LINEで届くURLを待ってね。`;
     }
     $('questionWrap').innerHTML = `<img class="question-img" src="${card.image}" alt="${escapeHtml(card.title || 'お題カード')}">`;
