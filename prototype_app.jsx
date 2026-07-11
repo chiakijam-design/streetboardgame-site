@@ -118,6 +118,20 @@ function normalizeFriendPlayerCount(value) {
   return [2, 3, 4].includes(n) ? n : 2;
 }
 
+function getTargetPlayerOrder(playerCount, targetIndex = 0) {
+  const count = normalizeFriendPlayerCount(playerCount);
+  const parsedTarget = Number(targetIndex);
+  const safeTarget = Number.isInteger(parsedTarget) && parsedTarget >= 0 && parsedTarget < count
+    ? parsedTarget
+    : 0;
+  return [safeTarget, ...Array.from({ length: count }, (_, index) => index).filter((index) => index !== safeTarget)];
+}
+
+function getPlayersWithTarget(kind, playerCount, names, targetIndex = 0) {
+  const source = normalizePlayerNames({ [kind]: names })[kind];
+  return getTargetPlayerOrder(playerCount, targetIndex).map((index) => source[index]);
+}
+
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1025,15 +1039,32 @@ function resetViewportPosition(behavior = 'auto') {
   }
 }
 
+const VIEWPORT_RECOVERY_STORAGE_KEY = 'watachanViewportRecoveryStateV1';
+
+function loadViewportRecoveryState() {
+  if (typeof window === 'undefined' || !window.sessionStorage) return null;
+  try {
+    const raw = window.sessionStorage.getItem(VIEWPORT_RECOVERY_STORAGE_KEY);
+    window.sessionStorage.removeItem(VIEWPORT_RECOVERY_STORAGE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (!saved || Date.now() - Number(saved.savedAt || 0) > 30000) return null;
+    return saved.state && typeof saved.state === 'object' ? saved.state : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // ─────────────────────────────────────────────────────
 // App
 // ─────────────────────────────────────────────────────
 function App() {
   // URL からのリクエスト (旧Wix URLリダイレクト): window.__INITIAL_SCREEN
   const urlScreen = (typeof window !== 'undefined' && window.__INITIAL_SCREEN) || null;
-  const initial = urlScreen
+  const recoveredViewportState = loadViewportRecoveryState();
+  const initial = recoveredViewportState || (urlScreen
     ? { screen: urlScreen, qIdx: 0, answers: [], cards: [] }
-    : { screen: 'top', qIdx: 0, answers: [], cards: [] };
+    : { screen: 'top', qIdx: 0, answers: [], cards: [] });
   // 使ったら消す (リロード時に二重発動しないように)
   if (typeof window !== 'undefined') window.__INITIAL_SCREEN = null;
 
@@ -1042,8 +1073,35 @@ function App() {
   const [answers, setAnswers] = useState(initial.answers);
   const [cards, setCards] = useState(initial.cards || []);
   const [playerCount, setPlayerCount] = useState(normalizeFriendPlayerCount(initial.playerCount));
-  const [playerNames, setPlayerNames] = useState(loadPlayerNames);
-  const [loveMode, setLoveMode] = useState('girlTarget');
+  const [playerNames, setPlayerNames] = useState(() => initial.playerNames || loadPlayerNames());
+  const [loveMode, setLoveMode] = useState(initial.loveMode || 'girlTarget');
+  const [friendTargetIndex, setFriendTargetIndex] = useState(initial.friendTargetIndex || 0);
+  const [familyTargetIndex, setFamilyTargetIndex] = useState(initial.familyTargetIndex || 0);
+
+  useEffect(() => {
+    const saveBeforeViewportReload = () => {
+      try {
+        window.sessionStorage.setItem(VIEWPORT_RECOVERY_STORAGE_KEY, JSON.stringify({
+          savedAt: Date.now(),
+          state: {
+            screen,
+            qIdx,
+            answers,
+            cards,
+            playerCount,
+            playerNames,
+            loveMode,
+            friendTargetIndex,
+            familyTargetIndex,
+          },
+        }));
+      } catch (e) {
+        // Storage may be unavailable in private browsing; viewport recovery still proceeds.
+      }
+    };
+    document.addEventListener('watachan:save-before-viewport-reload', saveBeforeViewportReload);
+    return () => document.removeEventListener('watachan:save-before-viewport-reload', saveBeforeViewportReload);
+  }, [screen, qIdx, answers, cards, playerCount, playerNames, loveMode, friendTargetIndex, familyTargetIndex]);
 
   // contact 指定だった場合、About にしてからフォームへスクロール
   useEffect(() => {
@@ -1097,6 +1155,23 @@ function App() {
     return loveMode === 'boyTarget' ? [names[1], names[0]] : names;
   }, [playerNames, loveMode]);
 
+  const friendPlayerOrder = useMemo(
+    () => getTargetPlayerOrder(playerCount, friendTargetIndex),
+    [playerCount, friendTargetIndex]
+  );
+  const friendPlayPlayers = useMemo(
+    () => getPlayersWithTarget('friend', playerCount, playerNames.friend, friendTargetIndex),
+    [playerCount, playerNames.friend, friendTargetIndex]
+  );
+  const familyPlayerOrder = useMemo(
+    () => getTargetPlayerOrder(playerCount, familyTargetIndex),
+    [playerCount, familyTargetIndex]
+  );
+  const familyPlayPlayers = useMemo(
+    () => getPlayersWithTarget('family', playerCount, playerNames.family, familyTargetIndex),
+    [playerCount, playerNames.family, familyTargetIndex]
+  );
+
   const startNewRound = () => {
     blurActiveControl();
     resetViewportPosition('auto');
@@ -1107,22 +1182,31 @@ function App() {
     setScreen('play');
   };
 
-  const startFriendRound = (count) => {
+  const startNewRoundWithSwappedRoles = () => {
+    setLoveMode((current) => (current === 'girlTarget' ? 'boyTarget' : 'girlTarget'));
+    startNewRound();
+  };
+
+  const startFriendRound = (count, targetIndex = friendTargetIndex) => {
     blurActiveControl();
     resetViewportPosition('auto');
+    const normalizedCount = normalizeFriendPlayerCount(count);
     const picked = window.pickRandomFriendCards(FRIEND_ROUND_SIZE);
-    setPlayerCount(normalizeFriendPlayerCount(count));
+    setPlayerCount(normalizedCount);
+    setFriendTargetIndex(getTargetPlayerOrder(normalizedCount, targetIndex)[0]);
     setCards(picked);
     setQIdx(0);
     setAnswers([]);
     setScreen('friendOrder');
   };
 
-  const startFamilyRound = (count) => {
+  const startFamilyRound = (count, targetIndex = familyTargetIndex) => {
     blurActiveControl();
     resetViewportPosition('auto');
+    const normalizedCount = normalizeFriendPlayerCount(count);
     const picked = window.pickRandomFamilyCards(FAMILY_ROUND_SIZE);
-    setPlayerCount(normalizeFriendPlayerCount(count));
+    setPlayerCount(normalizedCount);
+    setFamilyTargetIndex(getTargetPlayerOrder(normalizedCount, targetIndex)[0]);
     setCards(picked);
     setQIdx(0);
     setAnswers([]);
@@ -1131,6 +1215,7 @@ function App() {
 
   const backToTop = () => {
     setScreen('top'); setQIdx(0); setAnswers([]); setCards([]); setPlayerCount(2);
+    setFriendTargetIndex(0); setFamilyTargetIndex(0);
   };
 
   const confirmLeaveGame = (nextScreen) => {
@@ -1233,7 +1318,7 @@ function App() {
         )}
         {screen === 'friendIntro' && (
           <FriendIntroScreen
-            onStart={startFriendRound}
+            onStart={(count) => startFriendRound(count, 0)}
             onBack={() => setScreen('top')}
             playerNames={playerNames.friend}
             onPlayerNameChange={(index, value) => updatePlayerName('friend', index, value)}
@@ -1241,7 +1326,7 @@ function App() {
         )}
         {screen === 'familyIntro' && (
           <FamilyIntroScreen
-            onStart={startFamilyRound}
+            onStart={(count) => startFamilyRound(count, 0)}
             onBack={() => setScreen('top')}
             playerNames={playerNames.family}
             onPlayerNameChange={(index, value) => updatePlayerName('family', index, value)}
@@ -1251,7 +1336,7 @@ function App() {
           <PassOrderScreen
             label="FRIEND ORDER"
             title="スマホを回す順番"
-            players={getFriendPlayers(playerCount, playerNames.friend)}
+            players={friendPlayPlayers}
             guessName="友達"
             onStart={() => setScreen('friendPlay')}
             onBack={() => setScreen('friendIntro')}
@@ -1261,7 +1346,7 @@ function App() {
           <PassOrderScreen
             label="FAMILY ORDER"
             title="スマホを回す順番"
-            players={getFamilyPlayers(playerCount, playerNames.family)}
+            players={familyPlayPlayers}
             guessName="家族"
             onStart={() => setScreen('familyPlay')}
             onBack={() => setScreen('familyIntro')}
@@ -1283,7 +1368,7 @@ function App() {
             qIdx={qIdx}
             total={cards.length}
             playerCount={playerCount}
-            playerNames={playerNames.friend}
+            playerNames={friendPlayPlayers}
             onAnswer={handleFriendAnswer}
             onBack={() => confirmLeaveGame('friendIntro')}
           />
@@ -1294,7 +1379,7 @@ function App() {
             qIdx={qIdx}
             total={cards.length}
             playerCount={playerCount}
-            playerNames={playerNames.family}
+            playerNames={familyPlayPlayers}
             onAnswer={handleFamilyAnswer}
             onBack={() => confirmLeaveGame('familyIntro')}
           />
@@ -1316,6 +1401,7 @@ function App() {
             players={lovePlayPlayers}
             loveMode={loveMode}
             onReplay={startNewRound}
+            onReplaySwap={startNewRoundWithSwappedRoles}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
           />
@@ -1324,7 +1410,7 @@ function App() {
           <ResultReadyScreen
             title="5問終了！"
             subtitle="答え合わせいくよ"
-            detail={`${playerNames.friend[0]}の答えを、みんなが何問当てられたか発表します。一緒に見てね。`}
+            detail={`${friendPlayPlayers[0]}の答えを、みんなが何問当てられたか発表します。一緒に見てね。`}
             buttonLabel="答え合わせへ"
             onResult={() => setScreen('friendResult')}
             onHome={backToTop}
@@ -1335,8 +1421,9 @@ function App() {
             answers={answers}
             cards={cards}
             playerCount={playerCount}
-            playerNames={playerNames.friend}
-            onReplay={() => startFriendRound(playerCount)}
+            playerNames={friendPlayPlayers}
+            onReplay={() => startFriendRound(playerCount, friendTargetIndex)}
+            onReplayTarget={(playerPosition) => startFriendRound(playerCount, friendPlayerOrder[playerPosition])}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
           />
@@ -1345,7 +1432,7 @@ function App() {
           <ResultReadyScreen
             title="5問終了！"
             subtitle="答え合わせいくよ"
-            detail={`${playerNames.family[0]}の答えを、みんなが何問当てられたか発表します。一緒に見てね。`}
+            detail={`${familyPlayPlayers[0]}の答えを、みんなが何問当てられたか発表します。一緒に見てね。`}
             buttonLabel="答え合わせへ"
             onResult={() => setScreen('familyResult')}
             onHome={backToTop}
@@ -1356,8 +1443,9 @@ function App() {
             answers={answers}
             cards={cards}
             playerCount={playerCount}
-            playerNames={playerNames.family}
-            onReplay={() => startFamilyRound(playerCount)}
+            playerNames={familyPlayPlayers}
+            onReplay={() => startFamilyRound(playerCount, familyTargetIndex)}
+            onReplayTarget={(playerPosition) => startFamilyRound(playerCount, familyPlayerOrder[playerPosition])}
             onHome={backToTop}
             onAbout={() => setScreen('about')}
           />
@@ -3160,7 +3248,7 @@ const RESULT_TIERS = [
     shareHook: '全問正解、彼氏が彼女公認の理解王でした' },
 ];
 
-function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onReplay, onHome, onAbout }) {
+function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onReplay, onReplaySwap, onHome, onAbout }) {
   const score = answers.filter(a => a.match).length;
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
@@ -3605,6 +3693,8 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
         <ResultReplayActions
           primaryLabel="新しいお題でもう一度"
           onPrimary={onReplay}
+          alternateLabel="役割を入れ替えてもう一度"
+          onAlternate={onReplaySwap}
           secondaryLabel="トップに戻る"
           onSecondary={onHome}
         />
@@ -3907,7 +3997,19 @@ function ShareBottomSheet({
   );
 }
 
-function ResultReplayActions({ primaryLabel, onPrimary, secondaryLabel, onSecondary }) {
+function ResultReplayActions({
+  primaryLabel,
+  onPrimary,
+  alternateLabel,
+  onAlternate,
+  alternateActions = [],
+  secondaryLabel,
+  onSecondary,
+}) {
+  const replayAlternates = [
+    ...(alternateLabel && onAlternate ? [{ label: alternateLabel, onClick: onAlternate }] : []),
+    ...alternateActions.filter((action) => action && action.label && action.onClick),
+  ];
   return (
     <div style={{
       display: 'grid',
@@ -3917,6 +4019,11 @@ function ResultReplayActions({ primaryLabel, onPrimary, secondaryLabel, onSecond
       <button onClick={onPrimary} style={primaryBtn()}>
         {primaryLabel}
       </button>
+      {replayAlternates.map((action, index) => (
+        <button key={`${action.label}-${index}`} onClick={action.onClick} style={primaryBtn()}>
+          {action.label}
+        </button>
+      ))}
       {secondaryLabel && onSecondary && (
         <button onClick={onSecondary} style={{
           ...secondaryBtn(),
@@ -5112,7 +5219,7 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
   );
 }
 
-function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout }) {
+function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onReplayTarget, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const friendPlayers = useMemo(() => getFriendPlayers(playerCount, playerNames), [playerCount, playerNames]);
   const targetLabel = `${friendPlayers[0]}の理解度`;
@@ -5311,8 +5418,12 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           </div>
         )}
         <ResultReplayActions
-          primaryLabel="同じ人数でもう一度"
+          primaryLabel="同じ役割でもう一度"
           onPrimary={onReplay}
+          alternateActions={friendPlayers.slice(1).map((name, index) => ({
+            label: `${name}を当てられる側でもう一度`,
+            onClick: () => onReplayTarget(index + 1),
+          }))}
           secondaryLabel="トップに戻る"
           onSecondary={onHome}
         />
@@ -5596,7 +5707,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswe
   );
 }
 
-function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay, onHome, onAbout }) {
+function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay, onReplayTarget, onHome, onAbout }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const familyPlayers = useMemo(() => getFamilyPlayers(playerCount, playerNames), [playerCount, playerNames]);
   const targetLabel = `${familyPlayers[0]}の理解度`;
@@ -5795,8 +5906,12 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           </div>
         )}
         <ResultReplayActions
-          primaryLabel="同じ人数でもう一度"
+          primaryLabel="同じ役割でもう一度"
           onPrimary={onReplay}
+          alternateActions={familyPlayers.slice(1).map((name, index) => ({
+            label: `${name}を当てられる側でもう一度`,
+            onClick: () => onReplayTarget(index + 1),
+          }))}
           secondaryLabel="トップに戻る"
           onSecondary={onHome}
         />

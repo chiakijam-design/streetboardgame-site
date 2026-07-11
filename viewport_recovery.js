@@ -7,7 +7,9 @@
   const visualViewport = window.visualViewport;
   let resetButton = null;
   let resetTimer = 0;
+  let verifyTimer = 0;
   let positionFrame = 0;
+  let resetting = false;
 
   function isViewportShifted() {
     const scale = visualViewport ? visualViewport.scale : 1;
@@ -50,18 +52,39 @@
   }
 
   function resetViewport() {
+    if (resetting) return;
+    resetting = true;
+    resetButton.disabled = true;
+    resetButton.textContent = '表示を復元中…';
+    resetButton.setAttribute('aria-busy', 'true');
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
     const top = visualViewport && Number.isFinite(visualViewport.pageTop)
       ? visualViewport.pageTop
       : window.scrollY;
     window.clearTimeout(resetTimer);
+    window.clearTimeout(verifyTimer);
     viewport.setAttribute('content', resetContent);
     window.requestAnimationFrame(() => {
       window.scrollTo({ left: 0, top, behavior: 'auto' });
       resetTimer = window.setTimeout(() => {
         viewport.setAttribute('content', normalContent);
         window.scrollTo({ left: 0, top, behavior: 'auto' });
-        updateResetButton();
-      }, 120);
+        verifyTimer = window.setTimeout(() => {
+          if (isViewportShifted()) {
+            document.dispatchEvent(new CustomEvent('watachan:save-before-viewport-reload'));
+            resetButton.textContent = '再読み込みして復元中…';
+            window.setTimeout(() => window.location.reload(), 80);
+            return;
+          }
+          resetting = false;
+          resetButton.disabled = false;
+          resetButton.textContent = '表示を元に戻す';
+          resetButton.removeAttribute('aria-busy');
+          updateResetButton();
+        }, 650);
+      }, 220);
     });
   }
 
