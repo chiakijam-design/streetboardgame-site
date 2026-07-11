@@ -153,6 +153,14 @@
     return value;
   }
 
+  function updateCreateButtonState() {
+    const button = $('createRoom');
+    if (!button) return;
+    const hasSelfName = Boolean(cleanName($('selfName').value, ''));
+    const hasOtherName = Boolean(cleanName($('otherName').value, ''));
+    button.disabled = busy || !hasSelfName || !hasOtherName;
+  }
+
   function normalizeCode(value) {
     return String(value || '').replace(/\D/g, '').slice(0, 6);
   }
@@ -215,10 +223,11 @@
 
   function setBusy(nextBusy) {
     busy = nextBusy;
-    ['createRoom', 'joinRoom', 'replaySameRoom', 'replaySwapRoles'].forEach((id) => {
+    ['joinRoom', 'replaySameRoom', 'replaySwapRoles'].forEach((id) => {
       const el = $(id);
       if (el) el.disabled = busy;
     });
+    updateCreateButtonState();
   }
 
   async function api(path, options) {
@@ -1280,8 +1289,12 @@
 
   function init() {
     ['selfName', 'otherName'].forEach((id) => {
-      $(id).addEventListener('input', (event) => event.currentTarget.setCustomValidity(''));
+      $(id).addEventListener('input', (event) => {
+        event.currentTarget.setCustomValidity('');
+        updateCreateButtonState();
+      });
     });
+    updateCreateButtonState();
     $('createRoom').addEventListener('click', createRoom);
     $('joinRoom').addEventListener('click', () => joinRoom(null, 'joiner'));
     $('shareRoomLine').addEventListener('click', shareRoomByLine);
