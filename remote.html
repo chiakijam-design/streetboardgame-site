@@ -118,6 +118,11 @@
     .grid { display: grid; gap: 12px; }
     .two { grid-template-columns: 1fr 1fr; }
     label { display: grid; gap: 6px; font-size: 12px; font-weight: 900; }
+    .name-field-label {
+      display: grid;
+      gap: 1px;
+      line-height: 1.35;
+    }
     input, select {
       width: 100%;
       min-height: 46px;
@@ -988,10 +993,18 @@
       <h2 class="section-title">ルームを作る</h2>
       <div class="grid">
         <div class="grid two">
-          <label>私の名前（必須・6文字以内）
+          <label>
+            <span class="name-field-label">
+              <span>私の名前</span>
+              <span>（必須・6文字以内）</span>
+            </span>
             <input id="selfName" maxlength="6" placeholder="名前を入力" required aria-required="true" autocomplete="nickname" />
           </label>
-          <label>相手の名前（必須・6文字以内）
+          <label>
+            <span class="name-field-label">
+              <span>相手の名前</span>
+              <span>（必須・6文字以内）</span>
+            </span>
             <input id="otherName" maxlength="6" placeholder="名前を入力" required aria-required="true" autocomplete="off" />
           </label>
         </div>
