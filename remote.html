@@ -190,6 +190,9 @@
       background: transparent;
       box-shadow: none;
     }
+    #play.card:not(.has-choices) {
+      padding-bottom: 18px;
+    }
     #turnTitle {
       width: fit-content;
       max-width: calc(100% - 28px);
@@ -219,6 +222,37 @@
     }
     #questionWrap {
       padding: 0 22px 2px;
+    }
+    .handoff-card {
+      width: min(100% - 28px, 420px);
+      margin: 16px auto 0;
+      padding: 16px;
+      border: 3px solid var(--black);
+      border-radius: 18px;
+      background: var(--white);
+      box-shadow: 5px 5px 0 var(--black);
+      text-align: center;
+    }
+    .handoff-card strong {
+      display: block;
+      color: var(--pink);
+      font-size: 21px;
+    }
+    .handoff-card p {
+      margin: 8px 0 12px;
+      color: var(--soft);
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.55;
+    }
+    .handoff-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .handoff-actions .btn {
+      min-height: 52px;
+      font-size: 14px;
     }
     .question-img {
       width: min(100%, clamp(218px, 34dvh, 300px));
@@ -816,6 +850,9 @@
       .copy-invite {
         box-shadow: 4px 4px 0 var(--black);
       }
+      .handoff-actions {
+        grid-template-columns: 1fr;
+      }
       .result-score-box {
         grid-template-columns: minmax(0, 1fr) 104px;
         padding: 12px;
@@ -904,6 +941,14 @@
       <h2 id="turnTitle" class="section-title"></h2>
       <p id="turnNote" class="muted"></p>
       <div id="questionWrap" style="margin-top:12px"></div>
+      <div id="handoff" class="handoff-card hidden">
+        <strong><span id="handoffName"></span>へ渡す</strong>
+        <p>この問題のURLをLINEで送るだけで、次の手番が始まります。</p>
+        <div class="handoff-actions">
+          <button id="handoffLine" class="btn line-invite" type="button">LINEで送る</button>
+          <button id="copyTurnUrl" class="btn copy-invite" type="button">URLをコピー</button>
+        </div>
+      </div>
       <div id="choices" class="choices"></div>
     </section>
 
@@ -949,6 +994,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-20"></script>
+  <script src="remote_love.js?v=remote-love-21"></script>
 </body>
 </html>

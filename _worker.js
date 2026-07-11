@@ -398,12 +398,17 @@ async function handleRemoteApi(request, env, path) {
       return await createRemoteRoom(request, env);
     }
 
+    const chooseMatch = path.match(/^\/api\/remote\/rooms\/([0-9]{6})\/choose$/);
+    if (chooseMatch && request.method === 'POST') {
+      return await chooseRemoteAnswer(request, env, chooseMatch[1]);
+    }
+
     const match = path.match(/^\/api\/remote\/rooms\/([0-9]{6})$/);
     if (match && request.method === 'GET') {
       const code = match[1];
       const room = await getRemoteRoom(env, code);
       if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
-      return jsonResponse({ code, room });
+      return jsonResponse({ code, room: publicRemoteRoom(room) });
     }
 
     if (match && request.method === 'POST') {
@@ -417,8 +422,17 @@ async function handleRemoteApi(request, env, path) {
         ...patch,
         updatedAt: Date.now(),
       };
+      if (nextRoom.phase === 'result') {
+        nextRoom.turnToken = null;
+      } else if (patch.phase === 'target' && (Array.isArray(patch.cards) || room.phase === 'result')) {
+        nextRoom.turnToken = createRemoteTurnToken();
+      }
       await putRemoteRoom(env, code, nextRoom);
-      return jsonResponse({ code, room: nextRoom });
+      return jsonResponse({
+        code,
+        room: publicRemoteRoom(nextRoom),
+        nextTurnToken: nextRoom.turnToken || '',
+      });
     }
 
     return jsonResponse({ error: 'not-found' }, 404);
@@ -437,7 +451,58 @@ async function createRemoteRoom(request, env) {
     code = createRemoteCode();
   }
   await putRemoteRoom(env, code, room);
-  return jsonResponse({ code, room });
+  return jsonResponse({ code, room: publicRemoteRoom(room), nextTurnToken: room.turnToken });
+}
+
+async function chooseRemoteAnswer(request, env, code) {
+  const room = await getRemoteRoom(env, code);
+  if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
+
+  const body = await readJson(request);
+  const turnToken = String(body && body.turnToken ? body.turnToken : '');
+  const expectedRole = room.phase === 'target' ? 'target' : room.phase === 'guess' ? 'guesser' : '';
+  if (!expectedRole || room.turnToken !== turnToken || body.role !== expectedRole) {
+    return jsonResponse({ error: 'turn-link-expired' }, 409);
+  }
+  if (!isChoiceIndex(body.choice)) return jsonResponse({ error: 'invalid-choice' }, 400);
+
+  const choice = Number(body.choice);
+  let nextRoom;
+  if (expectedRole === 'target') {
+    nextRoom = {
+      ...room,
+      targetPick: choice,
+      phase: 'guess',
+      turnToken: createRemoteTurnToken(),
+      updatedAt: Date.now(),
+    };
+  } else {
+    if (!isChoiceIndex(room.targetPick)) return jsonResponse({ error: 'target-answer-required' }, 409);
+    const answers = Array.isArray(room.answers) ? room.answers.slice(0, 5) : [];
+    answers.push({
+      target: Number(room.targetPick),
+      guess: choice,
+      match: Number(room.targetPick) === choice,
+    });
+    const nextIndex = Number(room.qIdx || 0) + 1;
+    const done = nextIndex >= (room.cards || []).length;
+    nextRoom = {
+      ...room,
+      answers,
+      qIdx: done ? Number(room.qIdx || 0) : nextIndex,
+      targetPick: null,
+      phase: done ? 'result' : 'target',
+      turnToken: done ? null : createRemoteTurnToken(),
+      updatedAt: Date.now(),
+    };
+  }
+
+  await putRemoteRoom(env, code, nextRoom);
+  return jsonResponse({
+    code,
+    room: publicRemoteRoom(nextRoom),
+    nextTurnToken: nextRoom.turnToken || '',
+  });
 }
 
 function sanitizeNewRemoteRoom(body) {
@@ -460,6 +525,7 @@ function sanitizeNewRemoteRoom(body) {
     qIdx: 0,
     phase: 'target',
     targetPick: null,
+    turnToken: createRemoteTurnToken(),
     answers: [],
     createdAt: now,
     updatedAt: now,
@@ -517,6 +583,17 @@ function createRemoteCode() {
   const bytes = new Uint8Array(6);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (byte) => REMOTE_ROOM_CODE_CHARS[byte % REMOTE_ROOM_CODE_CHARS.length]).join('');
+}
+
+function createRemoteTurnToken() {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function publicRemoteRoom(room) {
+  const { turnToken, ...publicRoom } = room || {};
+  return publicRoom;
 }
 
 async function readJson(request) {

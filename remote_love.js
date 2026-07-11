@@ -61,6 +61,7 @@
   let state = null;
   let roomCode = '';
   let role = '';
+  let turnToken = '';
   let pollTimer = null;
   let busy = false;
   let sendingChoice = false;
@@ -75,6 +76,11 @@
 
   function normalizeCode(value) {
     return String(value || '').replace(/\D/g, '').slice(0, 6);
+  }
+
+  function normalizeTurnToken(value) {
+    const token = String(value || '').trim();
+    return /^[a-f0-9]{36}$/i.test(token) ? token : '';
   }
 
   function getRoleMap() {
@@ -481,10 +487,23 @@
     return roleFromSide(room, side);
   }
 
-  function roomInviteUrl() {
+  function activeRole(room = state) {
+    if (!room) return '';
+    if (room.phase === 'target') return 'target';
+    if (room.phase === 'guess') return 'guesser';
+    return '';
+  }
+
+  function turnPlayerName(room = state) {
+    const names = targetAndGuesser(room);
+    return activeRole(room) === 'target' ? names.target : names.guesser;
+  }
+
+  function roomInviteUrl(nextRole = activeRole(), nextToken = turnToken) {
     const url = new URL('/remote', window.location.origin);
     url.searchParams.set('room', roomCode);
-    url.searchParams.set('p', 'joiner');
+    url.searchParams.set('role', nextRole);
+    url.searchParams.set('turn', nextToken);
     return url.toString();
   }
 
@@ -495,9 +514,12 @@
   function buildInviteText() {
     if (!roomCode || !state) return;
     const names = targetAndGuesser(state);
+    const player = turnPlayerName(state);
+    const q = Number(state.qIdx || 0) + 1;
     return [
-      'わたちゃんの遠隔プレイに招待されました。',
+      'わたちゃんの遠隔プレイです。',
       `${names.target}の答えを、${names.guesser}が当てるルームです。`,
+      `Q${q}/5：次は${player}の番です。`,
       roomInviteUrl(),
     ].join('\n');
   }
@@ -548,11 +570,12 @@
       });
       roomCode = created.code;
       state = created.room;
+      turnToken = normalizeTurnToken(created.nextTurnToken);
       saveRole(roomCode, roleForParticipant(state, 'creator'));
       markSwapSeen(roomCode, state.roleSwapNonce);
       render();
       startPolling();
-      window.history.replaceState(null, '', `/remote?room=${roomCode}`);
+      window.history.replaceState(null, '', roomInviteUrl(role, turnToken));
     } catch (e) {
       alert(e.message || 'ルーム作成に失敗しました');
     } finally {
@@ -560,7 +583,7 @@
     }
   }
 
-  async function joinRoom(codeValue, participant = '') {
+  async function joinRoom(codeValue, participant = '', handoffRole = '', handoffToken = '') {
     if (busy) return;
     const code = normalizeCode(codeValue || $('joinCode').value);
     if (code.length !== 6) {
@@ -572,16 +595,20 @@
       const loaded = await api(`/api/remote/rooms/${code}`);
       roomCode = code;
       state = loaded.room;
-      if (participant === 'creator' || participant === 'joiner') {
+      const nextRole = handoffRole === 'target' || handoffRole === 'guesser' ? handoffRole : '';
+      if (nextRole) {
+        saveRole(roomCode, nextRole);
+      } else if (participant === 'creator' || participant === 'joiner') {
         saveRole(roomCode, roleForParticipant(state, participant));
       } else {
         loadRole(roomCode);
         if (!role) saveRole(roomCode, roleForParticipant(state, 'joiner'));
       }
+      turnToken = normalizeTurnToken(handoffToken);
       markSwapSeen(roomCode, state.roleSwapNonce);
       render();
       startPolling();
-      window.history.replaceState(null, '', `/remote?room=${roomCode}`);
+      if (nextRole && turnToken) window.history.replaceState(null, '', roomInviteUrl(nextRole, turnToken));
     } catch (e) {
       alert(e.message || 'ルームが見つかりません');
     } finally {
@@ -596,8 +623,12 @@
       body: JSON.stringify({ patch }),
     });
     state = updated.room;
+    if (Object.prototype.hasOwnProperty.call(updated, 'nextTurnToken')) {
+      turnToken = normalizeTurnToken(updated.nextTurnToken);
+    }
     syncRoleSwap();
     render();
+    return updated;
   }
 
   function startPolling() {
@@ -619,31 +650,23 @@
   async function chooseAnswer(index) {
     if (!state || !roomCode || sendingChoice) return;
     const room = state;
-    const canPickTarget = room.phase === 'target' && role === 'target';
-    const canPickGuess = room.phase === 'guess' && role === 'guesser';
-    if (!canPickTarget && !canPickGuess) return;
+    const expectedRole = activeRole(room);
+    if (role !== expectedRole || !turnToken) return;
 
     markChoiceSending(index);
     try {
-      if (canPickTarget) {
-        await updateRoom({ targetPick: index, phase: 'guess', updatedBy: role });
-        return;
-      }
-      const answers = Array.isArray(room.answers) ? room.answers.slice() : [];
-      answers.push({
-        target: room.targetPick,
-        guess: index,
-        match: Number(room.targetPick) === Number(index),
+      const updated = await api(`/api/remote/rooms/${roomCode}/choose`, {
+        method: 'POST',
+        body: JSON.stringify({
+          choice: Number(index),
+          role,
+          turnToken,
+        }),
       });
-      const nextIndex = Number(room.qIdx || 0) + 1;
-      const done = nextIndex >= (room.cards || []).length;
-      await updateRoom({
-        answers,
-        qIdx: done ? room.qIdx : nextIndex,
-        targetPick: null,
-        phase: done ? 'result' : 'target',
-        updatedBy: role,
-      });
+      state = updated.room;
+      turnToken = normalizeTurnToken(updated.nextTurnToken);
+      sendingChoice = false;
+      render();
     } catch (e) {
       sendingChoice = false;
       pendingChoice = null;
@@ -716,7 +739,9 @@
     const total = (state.cards || []).length;
     const isTargetTurn = state.phase === 'target';
     const isGuesserTurn = state.phase === 'guess';
-    const yourTurn = (isTargetTurn && role === 'target') || (isGuesserTurn && role === 'guesser');
+    const yourRoleTurn = (isTargetTurn && role === 'target') || (isGuesserTurn && role === 'guesser');
+    const canChoose = yourRoleTurn && Boolean(turnToken);
+    const canHandOff = !yourRoleTurn && Boolean(turnToken) && Boolean(activeRole(state));
     const selectedChoice = selectedChoiceForCurrentView(qIdx, state.phase);
     if (!selectedChoice) {
       sendingChoice = false;
@@ -724,29 +749,41 @@
     } else if (selectedChoice.mode === 'locked') {
       sendingChoice = false;
     }
-    $('turnTitle').textContent = `Q${q}/${total} ${yourTurn ? 'あなたの番' : '相手の番'}`;
+    const currentPlayer = turnPlayerName(state);
+    $('turnTitle').textContent = `Q${q}/${total} ${canChoose ? 'あなたの番' : canHandOff ? `次は${currentPlayer}の番` : '相手の番'}`;
     if (isTargetTurn) {
-      $('turnNote').textContent = yourTurn
+      $('turnNote').textContent = canChoose
         ? `${names.guesser}に見せずに、${names.target}が自分の答えを選んでください。`
-        : `${names.target}が答えを選んでいます。少し待ってね。`;
+        : canHandOff
+          ? `${currentPlayer}にLINEでこの問題のURLを送ってください。`
+          : `${names.target}が答えを選んでいます。LINEで届くURLを待ってね。`;
     } else {
-      $('turnNote').textContent = yourTurn
+      $('turnNote').textContent = canChoose
         ? `${names.target}が何を選んだか予想してください。`
-        : `${names.guesser}が予想しています。少し待ってね。`;
+        : canHandOff
+          ? `${currentPlayer}にLINEでこの問題のURLを送ってください。`
+          : `${names.guesser}が予想しています。LINEで届くURLを待ってね。`;
     }
     $('questionWrap').innerHTML = `<img class="question-img" src="${card.image}" alt="${escapeHtml(card.title || 'お題カード')}">`;
     const choices = Array.isArray(card.choices) ? card.choices : [];
     const choicesEl = $('choices');
-    const canChoose = yourTurn && !selectedChoice;
+    const choicesEnabled = canChoose && !selectedChoice;
     choicesEl.classList.toggle('is-guess', isGuesserTurn);
-    choicesEl.classList.toggle('is-waiting', !yourTurn);
+    choicesEl.classList.toggle('is-waiting', !canChoose);
     choicesEl.classList.toggle('has-selection', Boolean(selectedChoice));
-    choicesEl.classList.toggle('can-choose', canChoose);
+    choicesEl.classList.toggle('can-choose', choicesEnabled);
+    setHidden('choices', !choicesEnabled);
+    setHidden('handoff', !canHandOff);
+    $('play').classList.toggle('has-choices', choicesEnabled);
+    if (canHandOff) {
+      $('handoffName').textContent = currentPlayer;
+      $('handoffLine').textContent = `LINEで${currentPlayer}に送る`;
+    }
     choicesEl.innerHTML = choices.map((choice, index) => {
       const color = window.COLOR_OPTIONS && window.COLOR_OPTIONS[index] ? window.COLOR_OPTIONS[index].color : '#ccc';
       const selected = selectedChoice && Number(selectedChoice.choice) === Number(index);
       const selectedClass = selected ? (selectedChoice.mode === 'waiting' ? ' is-selected is-waiting' : ' is-locked') : '';
-      const disabled = canChoose ? '' : 'disabled';
+      const disabled = choicesEnabled ? '' : 'disabled';
       const colorName = COLOR_NAMES[index] || choice || '';
       return `
         <button class="choice${selectedClass}" data-choice="${index}" ${disabled} aria-pressed="${selected ? 'true' : 'false'}" aria-label="${escapeHtml(`${colorName}：${choice || ''}`)}">
@@ -755,7 +792,7 @@
         </button>
       `;
     }).join('');
-    if (canChoose) {
+    if (choicesEnabled) {
       document.querySelectorAll('[data-choice]').forEach((button) => {
         button.addEventListener('click', () => chooseAnswer(Number(button.dataset.choice)));
       });
@@ -763,15 +800,11 @@
   }
 
   function shouldShowRoomCard() {
-    if (!state || !roomCode) return false;
-    if (state.phase === 'result') return false;
-    const qIdx = Number(state.qIdx || 0);
-    return qIdx === 0 && state.phase === 'target';
+    return false;
   }
 
   function scrollPlayIntoViewIfNeeded() {
     if (!state || state.phase === 'result' || !role) return;
-    if (shouldShowRoomCard()) return;
     const qIdx = Number(state.qIdx || 0);
     const key = `${roomCode}:${qIdx}:${state.phase}:${role}`;
     if (key === lastPlayViewKey) return;
@@ -788,6 +821,7 @@
   function renderResult() {
     if (!state) return;
     sendingChoice = false;
+    turnToken = '';
     const names = targetAndGuesser(state);
     const answers = Array.isArray(state.answers) ? state.answers : [];
     const total = answers.length || 5;
@@ -950,6 +984,8 @@
     $('joinRoom').addEventListener('click', () => joinRoom(null, 'joiner'));
     $('shareRoomLine').addEventListener('click', shareRoomByLine);
     $('copyRoomUrl').addEventListener('click', copyRoomInviteUrl);
+    $('handoffLine').addEventListener('click', shareRoomByLine);
+    $('copyTurnUrl').addEventListener('click', copyRoomInviteUrl);
     $('shareResultLine').addEventListener('click', shareResultLine);
     $('shareResultX').addEventListener('click', shareResultX);
     $('saveResultImage').addEventListener('click', saveResultImage);
@@ -966,7 +1002,9 @@
     if (code) {
       $('joinCode').value = code;
       const participant = params.get('p') === 'creator' ? 'creator' : params.get('p') === 'joiner' ? 'joiner' : '';
-      joinRoom(code, participant);
+      const handoffRole = params.get('role') === 'target' || params.get('role') === 'guesser' ? params.get('role') : '';
+      const handoffToken = normalizeTurnToken(params.get('turn'));
+      joinRoom(code, participant, handoffRole, handoffToken);
     } else {
       render();
     }
