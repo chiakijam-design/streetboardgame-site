@@ -973,7 +973,7 @@
         2人目の回答が終わると、その場で判定結果と答え合わせが表示されます。
       </p>
       <div class="remote-flow" aria-label="遠隔プレイの流れ">
-        <div class="remote-flow-item">①私と相手の名前、②自分が当てる側か当てられる側か、設定</div>
+        <div class="remote-flow-item">①私と相手の名前（各6文字以内・必須）、②自分が当てる側か当てられる側か、設定</div>
         <div class="remote-flow-item">ルームを作った人が、自分の役割で5問まとめて回答</div>
         <div class="remote-flow-item">表示されたメッセージとURLをLINEで相手へ送信</div>
         <div class="remote-flow-item">相手が残りの5問に回答すると、判定結果と答え合わせを表示</div>
@@ -988,11 +988,11 @@
       <h2 class="section-title">ルームを作る</h2>
       <div class="grid">
         <div class="grid two">
-          <label>私の名前
-            <input id="selfName" maxlength="6" placeholder="私" />
+          <label>私の名前（必須・6文字以内）
+            <input id="selfName" maxlength="6" placeholder="名前を入力" required aria-required="true" autocomplete="nickname" />
           </label>
-          <label>相手の名前
-            <input id="otherName" maxlength="6" placeholder="相手" />
+          <label>相手の名前（必須・6文字以内）
+            <input id="otherName" maxlength="6" placeholder="名前を入力" required aria-required="true" autocomplete="off" />
           </label>
         </div>
         <label>私はどっちの役割？
@@ -1110,6 +1110,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-33"></script>
+  <script src="remote_love.js?v=remote-love-34"></script>
 </body>
 </html>

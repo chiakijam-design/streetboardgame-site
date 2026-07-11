@@ -142,6 +142,17 @@
     return text || fallback;
   }
 
+  function requiredName(input, label) {
+    const value = cleanName(input.value, '');
+    input.value = value;
+    input.setCustomValidity(value ? '' : `${label}を6文字以内で入力してください`);
+    if (!value) {
+      input.reportValidity();
+      input.focus();
+    }
+    return value;
+  }
+
   function normalizeCode(value) {
     return String(value || '').replace(/\D/g, '').slice(0, 6);
   }
@@ -821,14 +832,18 @@
 
   async function createRoom() {
     if (busy) return;
+    const selfName = requiredName($('selfName'), '私の名前');
+    if (!selfName) return;
+    const otherName = requiredName($('otherName'), '相手の名前');
+    if (!otherName) return;
     setBusy(true);
     try {
       const creatorRole = $('creatorRole').value === 'guesser' ? 'guesser' : 'target';
       const creatorSide = 'boy';
       const loveMode = creatorRole === 'target' ? 'boyTarget' : 'girlTarget';
       const players = {
-        girl: cleanName($('otherName').value, '相手'),
-        boy: cleanName($('selfName').value, '私'),
+        girl: otherName,
+        boy: selfName,
       };
       const cards = pickCards();
       const created = await api('/api/remote/rooms', {
@@ -1264,6 +1279,9 @@
   }
 
   function init() {
+    ['selfName', 'otherName'].forEach((id) => {
+      $(id).addEventListener('input', (event) => event.currentTarget.setCustomValidity(''));
+    });
     $('createRoom').addEventListener('click', createRoom);
     $('joinRoom').addEventListener('click', () => joinRoom(null, 'joiner'));
     $('shareRoomLine').addEventListener('click', shareRoomByLine);
