@@ -891,20 +891,14 @@
             <input id="boyName" maxlength="6" placeholder="彼氏" />
           </label>
         </div>
-        <label>あなたはどちら？
-          <select id="creatorSide">
-            <option value="boy">私は彼氏</option>
-            <option value="girl">私は彼女</option>
-          </select>
-        </label>
         <button id="createRoom" class="btn">ルームコードを発行する ▶</button>
       </div>
       <div class="status">
-        ここで決めた設定のまま始まります。相手は6桁コードかURLで入るだけでOKです。
+        まずあなたが5問すべて回答します。その後、まとめて相手へ送るURLが表示されます。
       </div>
     </section>
 
-    <section id="joinPanel" class="card">
+    <section id="joinPanel" class="card hidden">
       <h2 class="section-title">ルームに入る</h2>
       <div class="grid">
         <label>ルームコード
@@ -942,11 +936,11 @@
       <p id="turnNote" class="muted"></p>
       <div id="questionWrap" style="margin-top:12px"></div>
       <div id="handoff" class="handoff-card hidden">
-        <strong><span id="handoffName"></span>へ渡す</strong>
-        <p>この問題のURLをLINEで送るだけで、次の手番が始まります。</p>
+        <strong id="handoffTitle"></strong>
+        <p>メッセージとURLを送ると、相手が5問まとめて回答できます。</p>
         <div class="handoff-actions">
           <button id="handoffLine" class="btn line-invite" type="button">LINEで送る</button>
-          <button id="copyTurnUrl" class="btn copy-invite" type="button">URLをコピー</button>
+          <button id="copyTurnUrl" class="btn copy-invite" type="button">メッセージとURLをコピー</button>
         </div>
       </div>
       <div id="choices" class="choices"></div>
@@ -975,6 +969,14 @@
       <div id="answerSummary" class="answer-summary"></div>
       <h2 class="section-title" style="margin-top:18px">答え合わせ</h2>
       <div id="answerDetails" class="grid"></div>
+      <div id="resultReturn" class="handoff-card hidden">
+        <strong id="resultReturnTitle"></strong>
+        <p>判定結果を見られるメッセージとURLを、そのまま返せます。</p>
+        <div class="handoff-actions">
+          <button id="resultReturnLine" class="btn line-invite" type="button">LINEで結果を返す</button>
+          <button id="copyResultReturn" class="btn copy-invite" type="button">結果文とURLをコピー</button>
+        </div>
+      </div>
       <div class="share-card">
         <div class="share-label">SHARE YOUR RESULT</div>
         <h2 class="section-title" style="margin-bottom:4px">この結果、友達に伝えよう</h2>
@@ -986,14 +988,14 @@
         <button id="saveResultImage" class="btn save-share" type="button">判定画像も送りたい。まずは画像を保存</button>
       </div>
       <div class="remote-replay-actions">
-        <button id="replaySameRoom" class="btn" type="button">このままもう一度プレイする</button>
-        <button id="replaySwapRoles" class="btn secondary" type="button">当てる人、当てられる人を入れ替えてプレイする</button>
-        <button id="remoteTop" class="btn light" type="button">トップへ戻る</button>
+        <button id="replaySameRoom" class="btn" type="button">今と同じ役割でもう一度やる</button>
+        <button id="replaySwapRoles" class="btn secondary" type="button">今と役割を入れ替えて、もう一度やる</button>
+        <button id="remoteTop" class="btn light" type="button">トップページに戻る</button>
       </div>
     </section>
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-21"></script>
+  <script src="remote_love.js?v=remote-love-25"></script>
 </body>
 </html>

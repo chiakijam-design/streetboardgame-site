@@ -381,7 +381,7 @@ function buildStructuredData(page) {
   };
 }
 
-const REMOTE_ROOM_TTL_SECONDS = 60 * 60 * 6;
+const REMOTE_ROOM_TTL_SECONDS = 60 * 60 * 24;
 const REMOTE_ROOM_CODE_CHARS = '0123456789';
 
 async function handleRemoteApi(request, env, path) {
@@ -408,7 +408,11 @@ async function handleRemoteApi(request, env, path) {
       const code = match[1];
       const room = await getRemoteRoom(env, code);
       if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
-      return jsonResponse({ code, room: publicRemoteRoom(room) });
+      return jsonResponse({
+        code,
+        room: publicRemoteRoom(room),
+        turnAccess: hasRemoteTurnAccess(request, room),
+      });
     }
 
     if (match && request.method === 'POST') {
@@ -421,6 +425,7 @@ async function handleRemoteApi(request, env, path) {
         ...room,
         ...patch,
         updatedAt: Date.now(),
+        expiresAt: Date.now() + REMOTE_ROOM_TTL_SECONDS * 1000,
       };
       if (nextRoom.phase === 'result') {
         nextRoom.turnToken = null;
@@ -469,20 +474,28 @@ async function chooseRemoteAnswer(request, env, code) {
   const choice = Number(body.choice);
   let nextRoom;
   if (expectedRole === 'target') {
+    const targetAnswers = Array.isArray(room.targetAnswers) ? room.targetAnswers.slice(0, 5) : [];
+    targetAnswers[Number(room.qIdx || 0)] = choice;
+    const nextIndex = Number(room.qIdx || 0) + 1;
+    const targetDone = nextIndex >= (room.cards || []).length;
     nextRoom = {
       ...room,
-      targetPick: choice,
-      phase: 'guess',
+      targetAnswers,
+      qIdx: targetDone ? 0 : nextIndex,
+      phase: targetDone ? 'guess' : 'target',
       turnToken: createRemoteTurnToken(),
       updatedAt: Date.now(),
+      expiresAt: Date.now() + REMOTE_ROOM_TTL_SECONDS * 1000,
     };
   } else {
-    if (!isChoiceIndex(room.targetPick)) return jsonResponse({ error: 'target-answer-required' }, 409);
+    const targetAnswers = Array.isArray(room.targetAnswers) ? room.targetAnswers : [];
+    const targetChoice = targetAnswers[Number(room.qIdx || 0)];
+    if (!isChoiceIndex(targetChoice)) return jsonResponse({ error: 'target-answer-required' }, 409);
     const answers = Array.isArray(room.answers) ? room.answers.slice(0, 5) : [];
     answers.push({
-      target: Number(room.targetPick),
+      target: Number(targetChoice),
       guess: choice,
-      match: Number(room.targetPick) === choice,
+      match: Number(targetChoice) === choice,
     });
     const nextIndex = Number(room.qIdx || 0) + 1;
     const done = nextIndex >= (room.cards || []).length;
@@ -490,10 +503,10 @@ async function chooseRemoteAnswer(request, env, code) {
       ...room,
       answers,
       qIdx: done ? Number(room.qIdx || 0) : nextIndex,
-      targetPick: null,
-      phase: done ? 'result' : 'target',
+      phase: done ? 'result' : 'guess',
       turnToken: done ? null : createRemoteTurnToken(),
       updatedAt: Date.now(),
+      expiresAt: Date.now() + REMOTE_ROOM_TTL_SECONDS * 1000,
     };
   }
 
@@ -514,7 +527,7 @@ function sanitizeNewRemoteRoom(body) {
   const now = Date.now();
   return {
     type: 'love',
-    version: 2,
+    version: 3,
     loveMode,
     creatorSide,
     players: {
@@ -524,7 +537,7 @@ function sanitizeNewRemoteRoom(body) {
     cards,
     qIdx: 0,
     phase: 'target',
-    targetPick: null,
+    targetAnswers: [],
     turnToken: createRemoteTurnToken(),
     answers: [],
     createdAt: now,
@@ -539,7 +552,7 @@ function sanitizeRemotePatch(patch) {
   if (source.loveMode === 'girlTarget' || source.loveMode === 'boyTarget') next.loveMode = source.loveMode;
   if (['target', 'guess', 'result'].includes(source.phase)) next.phase = source.phase;
   if (Number.isInteger(source.qIdx) && source.qIdx >= 0 && source.qIdx <= 4) next.qIdx = source.qIdx;
-  if (source.targetPick === null || isChoiceIndex(source.targetPick)) next.targetPick = source.targetPick === null ? null : Number(source.targetPick);
+  if (Array.isArray(source.targetAnswers) && source.targetAnswers.length === 0) next.targetAnswers = [];
   if (Array.isArray(source.cards)) {
     const cards = source.cards.slice(0, 5).map(sanitizeRemoteCard);
     if (cards.length !== 5) throw new Error('cards-required');
@@ -592,8 +605,17 @@ function createRemoteTurnToken() {
 }
 
 function publicRemoteRoom(room) {
-  const { turnToken, ...publicRoom } = room || {};
+  const { turnToken, targetAnswers, ...publicRoom } = room || {};
   return publicRoom;
+}
+
+function hasRemoteTurnAccess(request, room) {
+  const url = new URL(request.url);
+  const token = String(url.searchParams.get('turn') || '');
+  const isHandoff = url.searchParams.get('handoff') === '1';
+  const claimedRole = isHandoff ? url.searchParams.get('next') : url.searchParams.get('role');
+  const expectedRole = room && room.phase === 'target' ? 'target' : room && room.phase === 'guess' ? 'guesser' : '';
+  return Boolean(expectedRole && room && room.turnToken && token === room.turnToken && claimedRole === expectedRole);
 }
 
 async function readJson(request) {
