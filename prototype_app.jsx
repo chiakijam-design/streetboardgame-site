@@ -1489,7 +1489,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           fontSize: 14,
           lineHeight: 1.45,
         }}>
-          遠隔の恋人や友達とLINEで2人の理解度判定
+          遠隔で、恋人や友達と二人の理解度チェック
         </a>
         <button onClick={onFriend} style={{
           ...secondaryBtn(),
