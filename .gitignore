@@ -9,7 +9,6 @@ Thumbs.db
 
 # Build artifacts
 node_modules/
-dist/
 build/
 .wrangler/
 *.log

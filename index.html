@@ -397,14 +397,9 @@
   input:focus, textarea:focus { border-color: #FF4D6D !important; }
 </style>
 
-<!-- =========================
-  React + Babel
-  注: 本番では precompile したJSを使うのが理想だが、
-  暫定的に CDN の Babel をそのまま利用。
-========================= -->
+<!-- React runtime. JSX is precompiled into dist/*.js during development. -->
 <script defer src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
 <script defer src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-<script defer src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 </head>
 <body>
 <noscript>
@@ -420,7 +415,7 @@
 <script src="prototype_quiz_data.js?v=seo-1"></script>
 <script src="prototype_friend_data.js?v=seo-1"></script>
 <script src="prototype_family_data.js?v=family-1"></script>
-<script type="text/babel" src="prototype_character.jsx?v=image-webp-1"></script>
-<script type="text/babel" src="prototype_app.jsx?v=main-love-49"></script>
+<script defer src="dist/prototype_character.js?v=precompiled-1"></script>
+<script defer src="dist/prototype_app.js?v=precompiled-1"></script>
 </body>
 </html>

@@ -9,8 +9,9 @@
 | ファイル | 役割 |
 |---|---|
 | `index.html` | エントリポイント。OGP / GA / ルーティングロジック含む |
-| `prototype_app.jsx` | メインアプリ (Babel runtime transform) |
+| `prototype_app.jsx` | メインアプリの編集元 |
 | `prototype_character.jsx` | キャラクター画像コンポーネント |
+| `dist/` | 事前変換済みの本番配信用JavaScript |
 | `prototype_quiz_data.js` | 全42問のお題カードデータ |
 | `favicon.svg` | favicon |
 | `assets/cards/` | お題カード画像 42 枚 |
@@ -21,7 +22,19 @@
 
 ## ローカル動作確認
 
-`index.html` を直接ブラウザで開いても動きません(フォントCDNやReact CDNから読み込むためのCORS制約)。代わりに簡易HTTPサーバーで配信してください:
+初回のみNode.jsとpnpmを用意し、依存関係をインストールします。
+
+```bash
+pnpm install
+```
+
+`prototype_app.jsx`または`prototype_character.jsx`を変更したら、本番配信用JavaScriptを再生成します。
+
+```bash
+pnpm run build
+```
+
+`index.html`を直接ブラウザで開いても動きません。代わりに簡易HTTPサーバーで配信してください。
 
 ```bash
 cd streetboardgame-site
@@ -35,8 +48,9 @@ python -m http.server 8000
 
 ## 更新の流れ
 
-1. このリポジトリのファイルを編集 → git push
-2. Cloudflare Pages が自動でビルド (静的なので「ビルド」と言ってもファイルコピーのみ) → 1〜2分で本番反映
+1. JSXを編集した場合は`pnpm run build`を実行
+2. 編集元と`dist/`を一緒にコミットしてgit push
+3. Cloudflare Pagesが静的ファイルを配信し、1〜2分で本番反映
 
 Codexで作業するときは `CODEX_PROJECT.md` も参照してください。
 

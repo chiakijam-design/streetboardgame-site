@@ -1,0 +1,10 @@
+{
+  "name": "streetboardgame-site",
+  "private": true,
+  "scripts": {
+    "build": "node tools/build-js.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.6"
+  }
+}
