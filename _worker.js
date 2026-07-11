@@ -525,8 +525,8 @@ function sanitizeNewRemoteRoom(body) {
     loveMode,
     creatorSide,
     players: {
-      girl: sanitizeRemoteName(players.girl, '彼女'),
-      boy: sanitizeRemoteName(players.boy, '彼氏'),
+      girl: sanitizeRemoteName(players.girl, '相手'),
+      boy: sanitizeRemoteName(players.boy, '私'),
     },
     cards,
     qIdx: 0,
@@ -606,7 +606,12 @@ function createRemoteTurnToken() {
 
 function publicRemoteRoom(room) {
   const { turnToken, targetAnswers, guessAnswers, ...publicRoom } = room || {};
-  return publicRoom;
+  const total = Array.isArray(room && room.cards) ? room.cards.length : 0;
+  return {
+    ...publicRoom,
+    targetComplete: total > 0 && Array.isArray(targetAnswers) && targetAnswers.length === total && targetAnswers.every(isChoiceIndex),
+    guessComplete: total > 0 && Array.isArray(guessAnswers) && guessAnswers.length === total && guessAnswers.every(isChoiceIndex),
+  };
 }
 
 function hasRemoteTurnAccess(request, room) {

@@ -169,8 +169,8 @@
   }
 
   function targetAndGuesser(room) {
-    const girl = room.players && room.players.girl ? room.players.girl : '彼女';
-    const boy = room.players && room.players.boy ? room.players.boy : '彼氏';
+    const girl = room.players && room.players.girl ? room.players.girl : '相手';
+    const boy = room.players && room.players.boy ? room.players.boy : '私';
     if (room.loveMode === 'boyTarget') {
       return { target: boy, guesser: girl, targetSide: 'boy', guesserSide: 'girl' };
     }
@@ -186,7 +186,7 @@
   }
 
   function loveResultHeaderLabel(names) {
-    return `${names.guesser}の愛情判定`;
+    return '2人の理解度判定';
   }
 
   function loveScoreLabel(names) {
@@ -212,11 +212,11 @@
   }
 
   function resultPublicUrl() {
-    return `${window.location.origin}/love`;
+    return `${window.location.origin}/remote`;
   }
 
   function resultShareText(data, platform = 'x') {
-    const hashTag = data.names.targetSide === 'boy' ? '#彼女の愛情判定' : '#彼氏の愛情判定';
+    const hashTag = '#2人の理解度判定';
     if (platform === 'line') {
       return `わたちゃんで${data.headerLabel}をやってみた！${data.names.guesser}は${data.names.target}の答えを${data.score}/${data.total}問正解。称号は「${data.title}」でした。あなたなら何問当てられる？\n${resultPublicUrl()}`;
     }
@@ -568,11 +568,11 @@
     const names = targetAndGuesser(state);
     if (state.phase === 'guess') {
       return [
-        `${names.guesser}へ。${names.target}への愛情判定に挑戦してね！`,
+        `${names.guesser}へ。${names.target}との2人の理解度判定に挑戦してね！`,
         '',
         `${names.target}は、URLで表示される5問に自分の答えを選び終えました。`,
         `あなたは、${names.target}が何と答えたかを予想して5問に回答してください。`,
-        `何問当てられるかで、あなたの${names.target}への愛情・理解度を判定します。`,
+        `何問当てられるかで、あなたが${names.target}をどれだけ理解しているか判定します。`,
         '',
         roomInviteUrl(),
       ].join('\n');
@@ -581,7 +581,7 @@
       `${names.target}へ。${names.guesser}は、あなたが何と答えるか5問の予想を終えました。`,
       '',
       'URLで表示される5問に、あなた自身の答えを選んでください。',
-      `5問終わると、その場で${names.guesser}のあなたへの愛情・理解度を判定します。`,
+      `5問終わると、その場で${names.guesser}があなたをどれだけ理解しているか判定します。`,
       '',
       roomInviteUrl(),
     ].join('\n');
@@ -655,19 +655,20 @@
 
   function sideLabel(room, side) {
     const players = room && room.players ? room.players : {};
-    if (side === 'girl') return players.girl || '彼女';
-    return players.boy || '彼氏';
+    if (side === 'girl') return players.girl || '相手';
+    return players.boy || '私';
   }
 
   async function createRoom() {
     if (busy) return;
     setBusy(true);
     try {
-      const loveMode = $('direction').value;
-      const creatorSide = $('creatorSide').value === 'girl' ? 'girl' : 'boy';
+      const creatorRole = $('creatorRole').value === 'guesser' ? 'guesser' : 'target';
+      const creatorSide = 'boy';
+      const loveMode = creatorRole === 'target' ? 'boyTarget' : 'girlTarget';
       const players = {
-        girl: cleanName($('girlName').value, '彼女'),
-        boy: cleanName($('boyName').value, '彼氏'),
+        girl: cleanName($('otherName').value, '相手'),
+        boy: cleanName($('selfName').value, '私'),
       };
       const cards = pickCards();
       const created = await api('/api/remote/rooms', {
@@ -865,7 +866,9 @@
           : `${names.target}が答えを選んでいます。LINEで届くURLを待ってね。`;
     } else {
       $('turnNote').textContent = canChoose
-        ? `${names.target}が何を選んだか予想してください。5問続けて回答します。`
+        ? state.targetComplete
+          ? `${names.target}が何を選んだか予想してください。5問続けて回答します。`
+          : `${names.target}が何を選びそうか予想してください。相手はこのあと5問回答します。`
         : canHandOff
           ? `${currentPlayer}に、5問まとめて回答できるURLを送ってください。`
           : `${names.guesser}が予想しています。LINEで届くURLを待ってね。`;

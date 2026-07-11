@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>遠隔で遊ぶ | 彼氏の愛情判定ゲーム</title>
-  <meta name="description" content="離れている恋人とLINEで遊べる彼氏・彼女の愛情判定ゲーム。作成者が5問答えてURLを送り、相手も5問答えると理解度と答え合わせを確認できます。" />
+  <title>遠隔で2人の理解度判定 | わたちゃん</title>
+  <meta name="description" content="離れている恋人や友達とLINEで遊べる2人用の理解度判定ゲーム。最初の人が5問答えてURLを送り、相手も5問答えると理解度と答え合わせを確認できます。" />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="canonical" href="https://www.streetboardgame.com/remote" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -922,22 +922,22 @@
   <main class="app">
     <div class="topbar">
       <a class="back" href="/">← トップに戻る</a>
-      <span class="pill">REMOTE LOVE</span>
+      <span class="pill">REMOTE CHECK</span>
     </div>
 
     <section class="hero">
       <div class="pill">ROOM CODE</div>
-      <h1 class="logo">遠隔で<br>愛情判定</h1>
-      <p>離れている恋人と、LINEでURLを送り合って遊べます。現在は彼氏・彼女の愛情判定に対応しています。</p>
+      <h1 class="logo">遠隔で<br>理解度判定</h1>
+      <p>離れている恋人や友達など、好きな相手と2人でLINEを使って遊べます。</p>
     </section>
 
     <section class="card remote-guide" aria-labelledby="remoteGuideTitle">
       <div>
         <div class="pill" style="margin-bottom:10px">HOW TO PLAY</div>
-        <h2 id="remoteGuideTitle" class="section-title">遠隔の愛情判定とは？</h2>
+        <h2 id="remoteGuideTitle" class="section-title">2人の理解度判定とは？</h2>
       </div>
       <p>
-        彼女または彼氏が選ぶ答えを、相手がどれだけ当てられるかを5問で判定するゲームです。
+        どちらか1人が選ぶ答えを、もう1人がどれだけ当てられるかを5問で判定するゲームです。
         2人が同じ場所にいなくても、それぞれのスマホから回答できます。
       </p>
       <p>
@@ -945,7 +945,7 @@
         2人目の回答が終わると、その場で判定結果と答え合わせが表示されます。
       </p>
       <div class="remote-flow" aria-label="遠隔プレイの流れ">
-        <div class="remote-flow-item">判定する相手・2人の名前・自分が彼氏か彼女かを設定</div>
+        <div class="remote-flow-item">私と相手の名前・自分が当てる側か当てられる側かを設定</div>
         <div class="remote-flow-item">ルームを作った人が、自分の役割で5問まとめて回答</div>
         <div class="remote-flow-item">表示されたメッセージとURLをLINEで相手へ送信</div>
         <div class="remote-flow-item">相手が残りの5問に回答すると、判定結果と答え合わせを表示</div>
@@ -959,30 +959,24 @@
     <section id="setup" class="card">
       <h2 class="section-title">ルームを作る</h2>
       <div class="grid">
-        <label>誰の愛情を判定する？
-          <select id="direction">
-            <option value="girlTarget">彼氏の愛情判定：彼女の答えを彼氏が当てる</option>
-            <option value="boyTarget">彼女の愛情判定：彼氏の答えを彼女が当てる</option>
-          </select>
-        </label>
         <div class="grid two">
-          <label>彼女の名前
-            <input id="girlName" maxlength="6" placeholder="彼女" />
+          <label>私の名前
+            <input id="selfName" maxlength="6" placeholder="私" />
           </label>
-          <label>彼氏の名前
-            <input id="boyName" maxlength="6" placeholder="彼氏" />
+          <label>相手の名前
+            <input id="otherName" maxlength="6" placeholder="相手" />
           </label>
         </div>
-        <label>自分はどっち？
-          <select id="creatorSide">
-            <option value="boy">私は彼氏</option>
-            <option value="girl">私は彼女</option>
+        <label>私はどっちの役割？
+          <select id="creatorRole">
+            <option value="target">私は当てられる側（自分の答えを選ぶ）</option>
+            <option value="guesser">私は当てる側（相手の答えを予想する）</option>
           </select>
         </label>
         <button id="createRoom" class="btn">ルームコードを発行する ▶</button>
       </div>
       <div class="status">
-        あなたの役割で5問すべて回答した後、相手へ送るメッセージとURLが表示されます。
+        選んだ役割で5問すべて回答した後、相手へ送るメッセージとURLが表示されます。
       </div>
     </section>
 
@@ -1036,12 +1030,12 @@
 
     <section id="result" class="card result-frame hidden">
       <div class="result-header">
-        <span id="resultGameTitle">彼氏の愛情判定</span>
+        <span id="resultGameTitle">2人の理解度判定</span>
         <span id="resultTag" class="result-tag">UPDATE中</span>
       </div>
       <div class="result-score-box">
         <div>
-          <div id="scoreLabel" class="result-score-label">彼氏の彼女理解度</div>
+          <div id="scoreLabel" class="result-score-label">相手への理解度</div>
           <div id="score" class="score"></div>
           <span class="result-score-mark">問正解</span>
         </div>
@@ -1084,6 +1078,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-28"></script>
+  <script src="remote_love.js?v=remote-love-30"></script>
 </body>
 </html>
