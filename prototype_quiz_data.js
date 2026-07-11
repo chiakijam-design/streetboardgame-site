@@ -55,7 +55,10 @@ window.ALL_CARDS = [
   { id: 40, image: 'assets/cards/40.png', title: '定番の朝食',               choices: ['パン','ごはん','フルーツ','シリアル','食べない'] },
   { id: 41, image: 'assets/cards/41.png', title: '得意なこと',               choices: ['料理','人の話を聞く','記憶力','芸術的センス','空気を読む'] },
   { id: 42, image: 'assets/cards/42.png', title: '癒される瞬間',             choices: ['動物と触れ合う','音楽を聴く','寝る','甘える','美味しいものを食べる'] },
-];
+].map((card) => ({
+  ...card,
+  image: card.image.replace(/\.png$/, '.webp'),
+}));
 
 // Fisher-Yates シャッフルで N 枚抽出
 window.pickRandomCards = function(n) {

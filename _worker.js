@@ -50,7 +50,7 @@ export default {
         description: 'メインは彼氏の彼女理解度を測定する彼氏の愛情判定ゲーム。彼女版は同じゲーム内で切り替えでき、大学生カップルのデート、飲み会、旅行、おうち時間にスマホ1台で遊べます。',
         url: CANONICAL_ORIGIN + '/love',
         ogTitle: '彼氏の愛情判定｜わたちゃん',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-love.png?v=20260711-ogp-1',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-love.png?v=20260711-ogp-2',
         imageAlt: 'わたちゃん 彼氏の愛情判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/love#webpage',
         gameId: CANONICAL_ORIGIN + '/love#love-game',
@@ -201,7 +201,7 @@ export default {
 };
 
 function applySeoMeta(html, page) {
-  const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-1';
+  const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2';
   return html
     .replace(/<title>.*?<\/title>/, `<title>${page.title}</title>`)
     .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${page.description}" />`)
@@ -235,7 +235,7 @@ function buildNoscript(page) {
 function buildStructuredData(page) {
   const organizationId = 'https://www.streetboardgame.com/#organization';
   const websiteId = 'https://www.streetboardgame.com/#website';
-  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-1';
+  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2';
 
   const webPage = {
     '@type': 'WebPage',
