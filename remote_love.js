@@ -55,6 +55,73 @@
     },
   ];
 
+  const REVIEW_CATEGORY_LABELS = {
+    food: '食べ物・日常の好み',
+    outing: 'おでかけ・遊びの感覚',
+    lifestyle: '暮らし方・生活リズム',
+    personality: '性格・価値観',
+    memory: '思い出・過去のツボ',
+    fantasy: 'もしも話・妄想力',
+    entertainment: '推し・エンタメ感性',
+    challenge: '苦手なこと・挑戦のクセ',
+  };
+
+  const REMOTE_REVIEW_VARIANTS = {
+    opening: [
+      '{guesser}から見た{target}理解度は、{level}。',
+      '{guesser}の読みは、{target}に対して{level}です。',
+      'ふたりの答え合わせには、{level}の空気が出ています。',
+      '{target}と{guesser}は、{level}でじわっと個性が出る組み合わせ。',
+    ],
+    title: [
+      '今日の称号「{title}」は、正解数よりもズレ方に味があるタイプ。',
+      '「{title}」という結果どおり、近い部分と読めない部分が混ざっています。',
+      '称号は「{title}」。分かっているところの強さがちゃんと出ています。',
+      '今日のふたりは「{title}」寄り。答え合わせで距離が縮まる組み合わせ。',
+    ],
+    hit: [
+      '{hit}では、ふたりの感覚が自然に重なりやすい流れ。',
+      '{hit}まわりは強め。{guesser}の観察力がちゃんと働いています。',
+      '{hit}の答えは近め。普段の会話から、好みを拾えている印象。',
+      '{hit}では、{target}の本音にかなり近いところまで届いています。',
+    ],
+    insight: [
+      '何気ない選択や普段の好みほど、{guesser}の観察力が出やすいタイプ。',
+      '言葉にしていない小さなクセほど、ふたりの関係性がにじみます。',
+      '当たった答えには、いつもの会話で拾ったヒントが残っています。',
+      '正解した部分は、偶然というより「ちゃんと見てる」が出たところ。',
+    ],
+    miss: [
+      '一方で{miss}では、{target}の中にまだ読めない余白が残っています。',
+      '{miss}のズレは、知らないというより「まだ聞いたことがない」系の余白。',
+      '{miss}では、{target}の意外な一面が少しだけ顔を出しています。',
+      '{miss}まわりは、次に話すと盛り上がりそうな未回収ゾーン。',
+    ],
+    score: {
+      high: [
+        '全体的には、言葉にしなくても伝わる部分が多い安心シンクロ型。',
+        'かなり分かっているけれど、完璧すぎない余白が楽しいタイプ。',
+        '正解数は強め。あとは細かい好みのアップデートでさらに近づきます。',
+      ],
+      mid: [
+        'ズレもあるけど、そのズレが会話のネタになって距離を縮める組み合わせ。',
+        '分かるところと意外なところのバランスが、いちばん盛り上がるタイプ。',
+        '半分以上読めている空気感。まだ知らない部分があるから面白い状態。',
+      ],
+      low: [
+        '今はまだ予想外れも多め。でも知るほど急に伸びるポテンシャル型。',
+        '未知数が多いぶん、答え合わせで新しい発見が出やすいタイプ。',
+        'まだ読み切れていないけれど、ここから会話が増える余地はかなりあります。',
+      ],
+    },
+    close: [
+      '総合すると、ふたりは答え合わせでじわじわ仲が深まるタイプです。',
+      '正解数よりも「理由を聞いた時の盛り上がり」が強みです。',
+      'ふたりの距離は、当たり外れより答え合わせの会話で近づくタイプ。',
+      'まとめると、ズレまで含めてネタになる、会話強めの相性です。',
+    ],
+  };
+
   const $ = (id) => document.getElementById(id);
 
   let state = null;
@@ -209,6 +276,66 @@
   function getTier(score) {
     const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
     return RESULT_TIERS[safeScore] || RESULT_TIERS[0];
+  }
+
+  function inferReviewCategory(card = {}) {
+    const source = `${card.category || ''} ${card.title || ''}`;
+    if (/食|飲|ご飯|朝食|夜食|お菓子|コンビニ|味|料理|差し入れ|給食|祭り/.test(source)) return 'food';
+    if (/旅行|行きたい|場所|デート|都道府県|地域|遊び|休日|パーティー|イベント/.test(source)) return 'outing';
+    if (/家|部屋|暮らし|寝る前|お風呂|朝|支度|持ち物|常備/.test(source)) return 'lifestyle';
+    if (/性格|価値観|自分|基準|信じ|人生|言葉|親友|属性/.test(source)) return 'personality';
+    if (/昔|思い出|過去|子ども|学校|仕事|教科|アルバイト/.test(source)) return 'memory';
+    if (/もし|能力|願い|無人島|宇宙|未来|生まれ変わる|一生/.test(source)) return 'fantasy';
+    if (/SNS|映画|推し|本|漫画|音楽|アニメ|ゲーム/.test(source)) return 'entertainment';
+    if (/苦手|怖い|挑戦|NG|イライラ|決断/.test(source)) return 'challenge';
+    return 'personality';
+  }
+
+  function getRemoteReviewLines(answers, cards, names, title = '') {
+    const total = Math.max(1, answers.length);
+    const score = answers.filter((answer) => answer.match).length;
+    const hits = {};
+    const misses = {};
+    answers.forEach((answer, index) => {
+      const category = inferReviewCategory(cards[index]);
+      const bucket = answer.match ? hits : misses;
+      bucket[category] = (bucket[category] || 0) + 1;
+    });
+    const topCategory = (bucket, fallback) => Object.entries(bucket)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || fallback;
+    const hit = REVIEW_CATEGORY_LABELS[topCategory(hits, 'personality')];
+    const miss = REVIEW_CATEGORY_LABELS[topCategory(misses, 'fantasy')];
+    const level = score >= 4 ? 'かなり近い波長' : score >= 2 ? '半分シンクロ型' : '未知数多めの開拓型';
+    const scoreBand = score >= 4 ? 'high' : score >= 2 ? 'mid' : 'low';
+    const questionSeed = cards.reduce((sum, card, index) => {
+      const text = `${card && card.category || ''}${card && card.title || ''}`;
+      return sum + Array.from(text).reduce((value, char) => value + char.charCodeAt(0), 0) + (answers[index] && answers[index].match ? 17 : 3);
+    }, 0);
+    const values = {
+      target: names.target,
+      guesser: names.guesser,
+      title,
+      level,
+      hit,
+      miss,
+    };
+    const fillTemplate = (template) => template.replace(/\{(\w+)\}/g, (_, key) => values[key] || '');
+    const pickVariant = (list, offset = 0) => {
+      const seed = questionSeed + (score * 13) + (hit.length * 5) + (miss.length * 7) + offset;
+      return list[Math.abs(seed) % list.length];
+    };
+    const hitLine = score > 0
+      ? `${fillTemplate(pickVariant(REMOTE_REVIEW_VARIANTS.hit, 3))} ${fillTemplate(pickVariant(REMOTE_REVIEW_VARIANTS.insight, 4))}`
+      : `${names.guesser}にとって、${names.target}の答えはまだ意外性多め。普段のイメージだけでは読みきれない、発見が多い回です。`;
+    const missLine = score < total
+      ? fillTemplate(pickVariant(REMOTE_REVIEW_VARIANTS.miss, 5))
+      : `今回は外した問題なし。${names.target}の好みや迷いどころまで、${names.guesser}の読みがかなり届いています。`;
+    return [
+      `${fillTemplate(pickVariant(REMOTE_REVIEW_VARIANTS.opening, 1))} ${fillTemplate(pickVariant(REMOTE_REVIEW_VARIANTS.title, 2))}`,
+      hitLine,
+      missLine,
+      `${fillTemplate(pickVariant(REMOTE_REVIEW_VARIANTS.score[scoreBand], 6))} ${fillTemplate(pickVariant(REMOTE_REVIEW_VARIANTS.close, 7))}`,
+    ];
   }
 
   function resultPublicUrl() {
@@ -1025,6 +1152,10 @@
         </div>
       `;
     }).join('');
+    const reviewLines = getRemoteReviewLines(answers, state.cards || [], names, title);
+    $('resultReviewLines').innerHTML = reviewLines
+      .map((line) => `<div>${escapeHtml(line)}</div>`)
+      .join('');
     const recipientRole = oppositeRole(role);
     const recipientName = recipientRole === 'target' ? names.target : names.guesser;
     setHidden('resultReturn', resultReturnMode || !role);
