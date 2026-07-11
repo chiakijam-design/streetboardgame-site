@@ -246,6 +246,36 @@
     window.location.href = `https://line.me/R/msg/text/?${encoded}`;
   }
 
+  function openXShare(message) {
+    const encoded = encodeURIComponent(message);
+    const webUrl = `https://x.com/intent/post?text=${encoded}`;
+    const ua = navigator.userAgent || '';
+    const isIos = /iPhone|iPad|iPod/i.test(ua)
+      || (navigator.platform === 'MacIntel' && Number(navigator.maxTouchPoints || 0) > 1);
+
+    if (isIos) {
+      let appOpened = false;
+      const detectAppOpen = () => {
+        if (document.hidden) appOpened = true;
+      };
+      document.addEventListener('visibilitychange', detectAppOpen);
+      window.location.href = `twitter://post?message=${encoded}`;
+      window.setTimeout(() => {
+        document.removeEventListener('visibilitychange', detectAppOpen);
+        if (!appOpened && !document.hidden) window.location.href = webUrl;
+      }, 1400);
+      return;
+    }
+
+    if (/Android/i.test(ua)) {
+      const fallback = encodeURIComponent(webUrl);
+      window.location.href = `intent://post?message=${encoded}#Intent;scheme=twitter;package=com.twitter.android;S.browser_fallback_url=${fallback};end`;
+      return;
+    }
+
+    window.open(webUrl, '_blank', 'noopener,noreferrer,width=600,height=500');
+  }
+
   async function copyText(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try {
@@ -1006,8 +1036,7 @@
 
   function shareResultX() {
     if (!latestResult) return;
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(resultShareText(latestResult, 'x'))}`;
-    window.open(url, '_blank', 'noopener,noreferrer,width=600,height=500');
+    openXShare(resultShareText(latestResult, 'x'));
   }
 
   async function saveResultImage() {
