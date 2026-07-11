@@ -1,10 +1,6 @@
 (function () {
   const ROOM_STORAGE_KEY = 'watachan-remote-love-role-v3';
   const ROOM_SWAP_STORAGE_KEY = 'watachan-remote-love-role-swap-v1';
-  const viewportMeta = document.querySelector('meta[name="viewport"]');
-  const defaultViewportContent = viewportMeta ? viewportMeta.getAttribute('content') || '' : '';
-  const gameplayViewportContent = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
-  let gameplayViewportLocked = false;
   const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
   const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
   const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
@@ -58,28 +54,6 @@
       msg: '全問正解はさすがに強すぎ。\n好みも迷いどころも、ちゃんと見てる彼氏。\nこれは堂々と自慢していいやつ ♡',
     },
   ];
-
-  function setGameplayViewportLock(locked) {
-    const nextLocked = Boolean(locked);
-    if (!viewportMeta || nextLocked === gameplayViewportLocked) return;
-    gameplayViewportLocked = nextLocked;
-    viewportMeta.setAttribute('content', nextLocked ? gameplayViewportContent : defaultViewportContent);
-    if (nextLocked) {
-      window.requestAnimationFrame(() => {
-        window.scrollTo({ left: 0, top: window.scrollY, behavior: 'auto' });
-      });
-    }
-  }
-
-  function preventGameplayGesture(event) {
-    if (gameplayViewportLocked) event.preventDefault();
-  }
-
-  function preventGameplayMultiTouch(event) {
-    if (gameplayViewportLocked && event.touches && event.touches.length > 1) {
-      event.preventDefault();
-    }
-  }
 
   const REVIEW_CATEGORY_LABELS = {
     food: '食べ物・日常の好み',
@@ -1290,7 +1264,6 @@
   function render() {
     const hasRoom = Boolean(state && roomCode);
     const canPlay = hasRoom && Boolean(role);
-    setGameplayViewportLock(canPlay && state.phase !== 'result');
     setHidden('setup', hasRoom);
     setHidden('joinPanel', true);
     setHidden('room', !hasRoom || !shouldShowRoomCard());
@@ -1315,10 +1288,6 @@
   }
 
   function init() {
-    document.addEventListener('gesturestart', preventGameplayGesture, { passive: false });
-    document.addEventListener('gesturechange', preventGameplayGesture, { passive: false });
-    document.addEventListener('gestureend', preventGameplayGesture, { passive: false });
-    document.addEventListener('touchmove', preventGameplayMultiTouch, { passive: false });
     ['selfName', 'otherName'].forEach((id) => {
       $(id).addEventListener('input', (event) => {
         event.currentTarget.setCustomValidity('');

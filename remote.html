@@ -49,7 +49,7 @@
     body {
       font-family: "Zen Maru Gothic", "Noto Sans JP", sans-serif;
       -webkit-font-smoothing: antialiased;
-      touch-action: pan-y;
+      touch-action: pan-y pinch-zoom;
     }
     button, input, select { font: inherit; }
     button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
@@ -950,6 +950,7 @@
     @media (max-width: 420px) {
       .app { padding-left: 14px; padding-right: 14px; }
       .card { padding: 14px; }
+      input, select, textarea { font-size: 16px !important; }
       .code {
         width: min(100%, 230px);
         padding: 0 16px;
@@ -1146,6 +1147,7 @@
     </section>
   </main>
 
+  <script src="viewport_recovery.js?v=viewport-recovery-1"></script>
   <script src="prototype_quiz_data.js?v=cards-webp-1"></script>
   <script src="remote_love.js?v=remote-love-35"></script>
 </body>

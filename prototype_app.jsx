@@ -48,44 +48,6 @@ const DEFAULT_PLAYER_NAMES = {
   family: ['本人', '家族A', '家族B', '家族C'],
 };
 
-function useGameplayViewportLock() {
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return undefined;
-
-    const viewport = document.querySelector('meta[name="viewport"]');
-    if (!viewport) return undefined;
-
-    const previousContent = viewport.getAttribute('content') || '';
-    viewport.setAttribute(
-      'content',
-      'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
-    );
-
-    const preventGesture = (event) => event.preventDefault();
-    const preventMultiTouch = (event) => {
-      if (event.touches && event.touches.length > 1) event.preventDefault();
-    };
-
-    document.addEventListener('gesturestart', preventGesture, { passive: false });
-    document.addEventListener('gesturechange', preventGesture, { passive: false });
-    document.addEventListener('gestureend', preventGesture, { passive: false });
-    document.addEventListener('touchmove', preventMultiTouch, { passive: false });
-
-    // Reset a visual viewport that was left pinch-zoomed and panned sideways.
-    window.requestAnimationFrame(() => {
-      window.scrollTo({ left: 0, top: window.scrollY, behavior: 'auto' });
-    });
-
-    return () => {
-      viewport.setAttribute('content', previousContent);
-      document.removeEventListener('gesturestart', preventGesture);
-      document.removeEventListener('gesturechange', preventGesture);
-      document.removeEventListener('gestureend', preventGesture);
-      document.removeEventListener('touchmove', preventMultiTouch);
-    };
-  }, []);
-}
-
 function sanitizePlayerName(value, fallback, allowEmpty = false) {
   const text = String(value ?? '').replace(/\s+/g, ' ').slice(0, PLAYER_NAME_MAX_LENGTH);
   const trimmed = text.trim();
@@ -2406,7 +2368,6 @@ function NameEditorPanel({ title, names, defaults, onChange, visibleCount }) {
 // PLAY — 同時発表式
 // ─────────────────────────────────────────────────────
 function PlayScreen({ card, qIdx, total, players, onAnswer, onBack }) {
-  useGameplayViewportLock();
   const [phase, setPhase] = useState('girl');
   const [girlPick, setGirlPick] = useState(null);
   const [boyPick, setBoyPick] = useState(null);
@@ -2441,7 +2402,7 @@ function PlayScreen({ card, qIdx, total, players, onAnswer, onBack }) {
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', width: '100%', maxWidth: '100vw', overflowX: 'clip',
-      overscrollBehaviorX: 'none', touchAction: 'pan-y',
+      overscrollBehaviorX: 'none', touchAction: 'pan-y pinch-zoom',
       paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
     }}>
       {/* キャラ装飾: 右下のコーナーから小さく覗く */}
@@ -4312,7 +4273,6 @@ function FriendIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
 }
 
 function FriendPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswer, onBack }) {
-  useGameplayViewportLock();
   const [phase, setPhase] = useState('answer');
   const [targetPick, setTargetPick] = useState(null);
   const [guesses, setGuesses] = useState([]);
@@ -4368,7 +4328,7 @@ function FriendPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswe
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', width: '100%', maxWidth: '100vw', overflowX: 'clip',
-      overscrollBehaviorX: 'none', touchAction: 'pan-y',
+      overscrollBehaviorX: 'none', touchAction: 'pan-y pinch-zoom',
       paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
     }}>
       <Decor />
@@ -5470,7 +5430,6 @@ function FamilyIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
 }
 
 function FamilyPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswer, onBack }) {
-  useGameplayViewportLock();
   const [phase, setPhase] = useState('answer');
   const [targetPick, setTargetPick] = useState(null);
   const [guesses, setGuesses] = useState([]);
@@ -5526,7 +5485,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswe
     <div style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
       position: 'relative', width: '100%', maxWidth: '100vw', overflowX: 'clip',
-      overscrollBehaviorX: 'none', touchAction: 'pan-y',
+      overscrollBehaviorX: 'none', touchAction: 'pan-y pinch-zoom',
       paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
     }}>
       <Decor />
