@@ -45,6 +45,14 @@
   Cache-Control: public, max-age=86400, must-revalidate
 /assets/ogp.jpg
   Cache-Control: public, max-age=300, must-revalidate
+/assets/ogp-love.png
+  Cache-Control: public, max-age=300, must-revalidate
+/assets/ogp-friends.png
+  Cache-Control: public, max-age=300, must-revalidate
+/assets/ogp-family.png
+  Cache-Control: public, max-age=300, must-revalidate
+/assets/ogp-remote.png
+  Cache-Control: public, max-age=300, must-revalidate
 /assets/qr-site.png
   Cache-Control: public, max-age=300, must-revalidate
 

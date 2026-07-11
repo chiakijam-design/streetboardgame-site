@@ -50,6 +50,7 @@ export default {
         description: 'メインは彼氏の彼女理解度を測定する彼氏の愛情判定ゲーム。彼女版は同じゲーム内で切り替えでき、大学生カップルのデート、飲み会、旅行、おうち時間にスマホ1台で遊べます。',
         url: CANONICAL_ORIGIN + '/love',
         ogTitle: '彼氏の愛情判定｜わたちゃん',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-love.png?v=20260711-ogp-1',
         imageAlt: 'わたちゃん 彼氏の愛情判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/love#webpage',
         gameId: CANONICAL_ORIGIN + '/love#love-game',
@@ -79,6 +80,7 @@ export default {
         description: '友達の友情判定は、本人が選んだ答えを友達が予想し、友達のことをどれだけ理解しているか診断できる無料の友情診断ゲームです。',
         url: CANONICAL_ORIGIN + '/friends',
         ogTitle: '友達の友情判定｜わたちゃん',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-friends.png?v=20260711-ogp-1',
         imageAlt: 'わたちゃん 友達の友情判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/friends#webpage',
         gameId: CANONICAL_ORIGIN + '/friends#friend-game',
@@ -108,6 +110,7 @@ export default {
         description: '家族の絆判定は、本人が選んだ答えを家族が予想し、家族のことをどれだけ理解しているか診断できる無料の絆チェックゲームです。',
         url: CANONICAL_ORIGIN + '/family',
         ogTitle: '家族の絆判定｜わたちゃん',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-family.png?v=20260711-ogp-1',
         imageAlt: 'わたちゃん 家族の絆判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/family#webpage',
         gameId: CANONICAL_ORIGIN + '/family#family-game',
@@ -198,6 +201,7 @@ export default {
 };
 
 function applySeoMeta(html, page) {
+  const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-1';
   return html
     .replace(/<title>.*?<\/title>/, `<title>${page.title}</title>`)
     .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${page.description}" />`)
@@ -207,9 +211,11 @@ function applySeoMeta(html, page) {
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${page.ogTitle}" />`)
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${page.description}" />`)
     .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${page.url}" />`)
+    .replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${ogImage}" />`)
     .replace(/<meta property="og:image:alt" content="[^"]*" \/>/, `<meta property="og:image:alt" content="${page.imageAlt || page.ogTitle}" />`)
     .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${page.ogTitle}" />`)
     .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${page.description}" />`)
+    .replace(/<meta name="twitter:image" content="[^"]*" \/>/, `<meta name="twitter:image" content="${ogImage}" />`)
     .replace(/<meta name="twitter:image:alt" content="[^"]*" \/>/, `<meta name="twitter:image:alt" content="${page.imageAlt || page.ogTitle}" />`)
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${JSON.stringify(buildStructuredData(page))}</script>`)
     .replace(/<noscript>[\s\S]*?<\/noscript>/, buildNoscript(page));
@@ -229,6 +235,7 @@ function buildNoscript(page) {
 function buildStructuredData(page) {
   const organizationId = 'https://www.streetboardgame.com/#organization';
   const websiteId = 'https://www.streetboardgame.com/#website';
+  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-1';
 
   const webPage = {
     '@type': 'WebPage',
@@ -245,7 +252,7 @@ function buildStructuredData(page) {
     },
     primaryImageOfPage: {
       '@type': 'ImageObject',
-      url: 'https://www.streetboardgame.com/assets/ogp.jpg',
+      url: pageImage,
       width: 1200,
       height: 630,
     },
@@ -341,7 +348,7 @@ function buildStructuredData(page) {
       isAccessibleForFree: true,
       genre: page.genre,
       keywords: page.keywords,
-      image: 'https://www.streetboardgame.com/assets/ogp.jpg',
+      image: pageImage,
       inLanguage: 'ja',
       offers: {
         '@type': 'Offer',

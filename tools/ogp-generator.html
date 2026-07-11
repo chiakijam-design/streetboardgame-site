@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1200, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>OGP Generator</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 1200px; height: 630px; margin: 0; overflow: hidden; }
+    body { font-family: "Yu Gothic", "Meiryo", sans-serif; background: #ec4f88; color: #171717; }
+    .canvas { position: relative; width: 1200px; height: 630px; padding: 44px 54px; overflow: hidden; }
+    .heart { position: absolute; color: rgba(255,255,255,.28); font-size: 38px; }
+    .heart.one { left: 26px; top: 22px; transform: rotate(-12deg); }
+    .heart.two { right: 38px; top: 32px; transform: rotate(10deg); }
+    .heart.three { right: 468px; bottom: 25px; font-size: 24px; }
+    .content { position: relative; z-index: 3; width: 720px; }
+    .eyebrow { display: inline-flex; align-items: center; min-height: 46px; padding: 7px 22px; border: 3px solid #171717; border-radius: 999px; background: #fff; font-weight: 900; font-size: 22px; }
+    h1 { max-width: 720px; margin: 26px 0 12px; color: #fff; font-size: 62px; line-height: 1.2; letter-spacing: 0; text-shadow: 5px 5px 0 #55d1e5, 8px 8px 0 rgba(23,23,23,.2); }
+    .lead { max-width: 660px; margin: 0; color: #fff; font-size: 30px; line-height: 1.5; font-weight: 900; }
+    .facts { display: flex; gap: 12px; margin-top: 28px; }
+    .fact { padding: 10px 18px; border: 3px solid #171717; border-radius: 999px; background: #ffe26b; font-size: 19px; font-weight: 900; box-shadow: 3px 3px 0 #171717; }
+    .url { position: absolute; left: 54px; bottom: 40px; z-index: 5; color: #fff; font-size: 24px; font-weight: 900; letter-spacing: 0; }
+    .url span { color: #ffe26b; }
+    .visual { position: absolute; inset: 0; z-index: 2; }
+    .girl { position: absolute; right: 38px; bottom: -28px; width: 310px; height: auto; filter: drop-shadow(8px 10px 0 rgba(23,23,23,.18)); }
+    .card { position: absolute; width: 250px; height: auto; border-radius: 18px; filter: drop-shadow(6px 9px 0 rgba(23,23,23,.17)); }
+    .card.a { right: 300px; bottom: -62px; transform: rotate(-7deg); }
+    .card.b { right: 150px; bottom: -78px; transform: rotate(4deg); }
+    .badge { position: absolute; right: 46px; top: 42px; z-index: 4; min-width: 220px; padding: 13px 22px; border: 3px solid #171717; border-radius: 999px; background: #ffe26b; font-size: 21px; font-weight: 900; text-align: center; box-shadow: 4px 4px 0 #171717; }
+    .remote .badge { background: #5bd4e8; }
+    .remote .fact:first-child { background: #5bd4e8; }
+    .friends .badge { background: #5bd4e8; }
+    .family .badge { background: #fff; }
+  </style>
+</head>
+<body>
+  <main id="canvas" class="canvas">
+    <span class="heart one">♥</span><span class="heart two">♥</span><span class="heart three">♥</span>
+    <section class="content">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 id="title"></h1>
+      <p class="lead" id="lead"></p>
+      <div class="facts"><span class="fact" id="fact1"></span><span class="fact" id="fact2"></span></div>
+    </section>
+    <div class="visual">
+      <img class="card a" src="/assets/cards/1.webp" alt="">
+      <img class="card b" src="/assets/cards/15.webp" alt="">
+      <img class="girl" src="/assets/character/girl-full.webp" alt="">
+    </div>
+    <div class="badge" id="badge"></div>
+    <div class="url">streetboardgame.com <span>/ #わたちゃん</span></div>
+  </main>
+  <script>
+    const variants = {
+      love: {
+        eyebrow: 'メイン作品',
+        title: '彼氏の愛情判定ゲーム',
+        lead: '彼女の答え、彼氏は何問当てられる？',
+        fact1: 'スマホ1台', fact2: '5問で判定', badge: '無料・登録なし'
+      },
+      friends: {
+        eyebrow: 'シリーズ作品',
+        title: '友達の友情判定',
+        lead: '本人の答え、友達は何問当てられる？',
+        fact1: '2〜4人プレイ', fact2: '結果をシェア', badge: '無料の友情診断'
+      },
+      family: {
+        eyebrow: 'シリーズ作品',
+        title: '家族の絆判定',
+        lead: '家族のこと、どれだけ分かってる？',
+        fact1: '2〜4人プレイ', fact2: '親子・兄弟姉妹', badge: '無料の絆チェック'
+      },
+      remote: {
+        eyebrow: '離れていても遊べる',
+        title: '遠隔で2人の理解度判定',
+        lead: '恋人や友達と、LINEで5問ずつ回答。',
+        fact1: '2人それぞれのスマホ', fact2: '結果URLを共有', badge: '24時間遊べる'
+      }
+    };
+    const kind = new URLSearchParams(location.search).get('kind') || 'love';
+    const data = variants[kind] || variants.love;
+    document.getElementById('canvas').classList.add(kind);
+    for (const key of ['eyebrow', 'title', 'lead', 'fact1', 'fact2', 'badge']) {
+      document.getElementById(key).textContent = data[key];
+    }
+  </script>
+</body>
+</html>
