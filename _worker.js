@@ -429,7 +429,7 @@ async function handleRemoteApi(request, env, path) {
       };
       if (nextRoom.phase === 'result') {
         nextRoom.turnToken = null;
-      } else if (patch.phase === 'target' && (Array.isArray(patch.cards) || room.phase === 'result')) {
+      } else if (['target', 'guess'].includes(patch.phase) && (Array.isArray(patch.cards) || room.phase === 'result')) {
         nextRoom.turnToken = createRemoteTurnToken();
       }
       await putRemoteRoom(env, code, nextRoom);
@@ -472,43 +472,35 @@ async function chooseRemoteAnswer(request, env, code) {
   if (!isChoiceIndex(body.choice)) return jsonResponse({ error: 'invalid-choice' }, 400);
 
   const choice = Number(body.choice);
-  let nextRoom;
-  if (expectedRole === 'target') {
-    const targetAnswers = Array.isArray(room.targetAnswers) ? room.targetAnswers.slice(0, 5) : [];
-    targetAnswers[Number(room.qIdx || 0)] = choice;
-    const nextIndex = Number(room.qIdx || 0) + 1;
-    const targetDone = nextIndex >= (room.cards || []).length;
-    nextRoom = {
-      ...room,
-      targetAnswers,
-      qIdx: targetDone ? 0 : nextIndex,
-      phase: targetDone ? 'guess' : 'target',
-      turnToken: createRemoteTurnToken(),
-      updatedAt: Date.now(),
-      expiresAt: Date.now() + REMOTE_ROOM_TTL_SECONDS * 1000,
-    };
-  } else {
-    const targetAnswers = Array.isArray(room.targetAnswers) ? room.targetAnswers : [];
-    const targetChoice = targetAnswers[Number(room.qIdx || 0)];
-    if (!isChoiceIndex(targetChoice)) return jsonResponse({ error: 'target-answer-required' }, 409);
-    const answers = Array.isArray(room.answers) ? room.answers.slice(0, 5) : [];
-    answers.push({
-      target: Number(targetChoice),
-      guess: choice,
-      match: Number(targetChoice) === choice,
-    });
-    const nextIndex = Number(room.qIdx || 0) + 1;
-    const done = nextIndex >= (room.cards || []).length;
-    nextRoom = {
-      ...room,
-      answers,
-      qIdx: done ? Number(room.qIdx || 0) : nextIndex,
-      phase: done ? 'result' : 'guess',
-      turnToken: done ? null : createRemoteTurnToken(),
-      updatedAt: Date.now(),
-      expiresAt: Date.now() + REMOTE_ROOM_TTL_SECONDS * 1000,
-    };
-  }
+  const total = (room.cards || []).length;
+  const qIdx = Number(room.qIdx || 0);
+  const targetAnswers = Array.isArray(room.targetAnswers) ? room.targetAnswers.slice(0, total) : [];
+  const guessAnswers = Array.isArray(room.guessAnswers) ? room.guessAnswers.slice(0, total) : [];
+  const currentAnswers = expectedRole === 'target' ? targetAnswers : guessAnswers;
+  currentAnswers[qIdx] = choice;
+  const nextIndex = qIdx + 1;
+  const currentRoleDone = nextIndex >= total;
+  const otherAnswers = expectedRole === 'target' ? guessAnswers : targetAnswers;
+  const otherRoleDone = otherAnswers.length === total && otherAnswers.every(isChoiceIndex);
+  const done = currentRoleDone && otherRoleDone;
+  const answers = done ? targetAnswers.map((target, index) => ({
+    target: Number(target),
+    guess: Number(guessAnswers[index]),
+    match: Number(target) === Number(guessAnswers[index]),
+  })) : [];
+  const currentPhase = expectedRole === 'guesser' ? 'guess' : 'target';
+  const nextPhase = done ? 'result' : currentRoleDone ? oppositeRemoteRole(expectedRole) : currentPhase;
+  const nextRoom = {
+    ...room,
+    targetAnswers,
+    guessAnswers,
+    answers,
+    qIdx: done ? total - 1 : currentRoleDone ? 0 : nextIndex,
+    phase: nextPhase,
+    turnToken: done ? null : createRemoteTurnToken(),
+    updatedAt: Date.now(),
+    expiresAt: Date.now() + REMOTE_ROOM_TTL_SECONDS * 1000,
+  };
 
   await putRemoteRoom(env, code, nextRoom);
   return jsonResponse({
@@ -523,11 +515,13 @@ function sanitizeNewRemoteRoom(body) {
   if (cards.length !== 5) throw new Error('cards-required');
   const loveMode = body && body.loveMode === 'boyTarget' ? 'boyTarget' : 'girlTarget';
   const creatorSide = body && body.creatorSide === 'girl' ? 'girl' : 'boy';
+  const targetSide = loveMode === 'boyTarget' ? 'boy' : 'girl';
+  const creatorPhase = creatorSide === targetSide ? 'target' : 'guess';
   const players = body && body.players ? body.players : {};
   const now = Date.now();
   return {
     type: 'love',
-    version: 3,
+    version: 4,
     loveMode,
     creatorSide,
     players: {
@@ -536,8 +530,9 @@ function sanitizeNewRemoteRoom(body) {
     },
     cards,
     qIdx: 0,
-    phase: 'target',
+    phase: creatorPhase,
     targetAnswers: [],
+    guessAnswers: [],
     turnToken: createRemoteTurnToken(),
     answers: [],
     createdAt: now,
@@ -553,6 +548,7 @@ function sanitizeRemotePatch(patch) {
   if (['target', 'guess', 'result'].includes(source.phase)) next.phase = source.phase;
   if (Number.isInteger(source.qIdx) && source.qIdx >= 0 && source.qIdx <= 4) next.qIdx = source.qIdx;
   if (Array.isArray(source.targetAnswers) && source.targetAnswers.length === 0) next.targetAnswers = [];
+  if (Array.isArray(source.guessAnswers) && source.guessAnswers.length === 0) next.guessAnswers = [];
   if (Array.isArray(source.cards)) {
     const cards = source.cards.slice(0, 5).map(sanitizeRemoteCard);
     if (cards.length !== 5) throw new Error('cards-required');
@@ -592,6 +588,10 @@ function isChoiceIndex(value) {
   return Number.isInteger(number) && number >= 0 && number <= 4;
 }
 
+function oppositeRemoteRole(role) {
+  return role === 'target' ? 'guess' : 'target';
+}
+
 function createRemoteCode() {
   const bytes = new Uint8Array(6);
   crypto.getRandomValues(bytes);
@@ -605,7 +605,7 @@ function createRemoteTurnToken() {
 }
 
 function publicRemoteRoom(room) {
-  const { turnToken, targetAnswers, ...publicRoom } = room || {};
+  const { turnToken, targetAnswers, guessAnswers, ...publicRoom } = room || {};
   return publicRoom;
 }
 

@@ -68,6 +68,7 @@
   let pendingChoice = null;
   let latestResult = null;
   let lastPlayViewKey = '';
+  let resultReturnMode = false;
 
   function cleanName(value, fallback) {
     const text = String(value || '').replace(/\s+/g, ' ').trim().slice(0, 6);
@@ -520,7 +521,8 @@
   function replaceRemoteUrl() {
     if (!roomCode) return;
     if (state && state.phase === 'result') {
-      window.history.replaceState(null, '', `/remote?room=${roomCode}&role=${role}`);
+      const resultSuffix = resultReturnMode ? '&result=1' : '';
+      window.history.replaceState(null, '', `/remote?room=${roomCode}&role=${role}${resultSuffix}`);
       return;
     }
     if (handoffMode && handoffRole && turnToken) {
@@ -576,30 +578,33 @@
       ].join('\n');
     }
     return [
-      `${names.target}へ。遠隔で愛情判定を始めます。`,
+      `${names.target}へ。${names.guesser}は、あなたが何と答えるか5問の予想を終えました。`,
       '',
-      'まずURLで表示される5問に、あなた自身の答えを選んでください。',
-      `5問終わると、${names.guesser}に答えを予想してもらうURLを送れます。`,
+      'URLで表示される5問に、あなた自身の答えを選んでください。',
+      `5問終わると、その場で${names.guesser}のあなたへの愛情・理解度を判定します。`,
       '',
       roomInviteUrl(),
     ].join('\n');
   }
 
-  function resultRoomUrl() {
+  function resultRoomUrl(recipientRole = oppositeRole(role)) {
     const url = new URL('/remote', window.location.origin);
     url.searchParams.set('room', roomCode);
-    url.searchParams.set('role', 'target');
+    url.searchParams.set('role', recipientRole);
     url.searchParams.set('result', '1');
     return url.toString();
   }
 
   function buildResultReturnText() {
     if (!latestResult || !roomCode) return '';
+    const recipientRole = oppositeRole(role);
+    const recipientName = recipientRole === 'target' ? latestResult.names.target : latestResult.names.guesser;
     return [
+      `${recipientName}へ。遠隔プレイの判定結果が出ました。`,
       `${latestResult.names.guesser}が${latestResult.names.target}の答えを${latestResult.score}/${latestResult.total}問当てました。`,
       `称号は「${latestResult.title}」です。`,
       '判定結果と答え合わせはこちら',
-      resultRoomUrl(),
+      resultRoomUrl(recipientRole),
     ].join('\n');
   }
 
@@ -659,7 +664,7 @@
     setBusy(true);
     try {
       const loveMode = $('direction').value;
-      const creatorSide = loveMode === 'boyTarget' ? 'boy' : 'girl';
+      const creatorSide = $('creatorSide').value === 'girl' ? 'girl' : 'boy';
       const players = {
         girl: cleanName($('girlName').value, '彼女'),
         boy: cleanName($('boyName').value, '彼氏'),
@@ -672,7 +677,7 @@
       roomCode = created.code;
       state = created.room;
       turnToken = normalizeTurnToken(created.nextTurnToken);
-      saveRole(roomCode, 'target');
+      saveRole(roomCode, roleForParticipant(state, 'creator'));
       setFreshTurnAccess();
       markSwapSeen(roomCode, state.roleSwapNonce);
       render();
@@ -704,7 +709,7 @@
       const loaded = await api(`/api/remote/rooms/${code}${accessQuery ? `?${accessQuery}` : ''}`);
       roomCode = code;
       state = loaded.room;
-      if (Number(state && state.version || 0) < 3) {
+      if (Number(state && state.version || 0) < 4) {
         throw new Error('このルームは旧方式です。新しいルームを作り直してください。');
       }
       const linkedRole = linkRole === 'target' || linkRole === 'guesser' ? linkRole : '';
@@ -984,9 +989,11 @@
         </div>
       `;
     }).join('');
-    setHidden('resultReturn', role !== 'guesser');
-    $('resultReturnTitle').textContent = `${names.target}に判定結果を返す`;
-    $('resultReturnLine').textContent = `LINEで${names.target}に結果を返す`;
+    const recipientRole = oppositeRole(role);
+    const recipientName = recipientRole === 'target' ? names.target : names.guesser;
+    setHidden('resultReturn', resultReturnMode || !role);
+    $('resultReturnTitle').textContent = `${recipientName}に判定結果を返す`;
+    $('resultReturnLine').textContent = `LINEで${recipientName}に結果を返す`;
   }
 
   function shareResultLine() {
@@ -1030,11 +1037,13 @@
   }
 
   function replayPatch(swapRoles) {
+    const nextRole = swapRoles ? oppositeRole(role) : role;
     const patch = {
       cards: pickCards(),
       qIdx: 0,
-      phase: 'target',
+      phase: nextRole === 'guesser' ? 'guess' : 'target',
       targetAnswers: [],
+      guessAnswers: [],
       answers: [],
       updatedBy: role,
     };
@@ -1051,6 +1060,7 @@
     sendingChoice = false;
     pendingChoice = null;
     latestResult = null;
+    resultReturnMode = false;
     try {
       await updateRoom(replayPatch(Boolean(swapRoles)));
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1108,6 +1118,7 @@
       e.target.value = normalizeCode(e.target.value);
     });
     const params = new URLSearchParams(location.search);
+    resultReturnMode = params.get('result') === '1';
     const code = normalizeCode(params.get('room'));
     if (code) {
       $('joinCode').value = code;

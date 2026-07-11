@@ -1471,17 +1471,43 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         }}>
           メイン作品、彼氏の愛情判定ゲーム
         </div>
+        <a href="/remote" style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 54,
+          marginTop: 12,
+          padding: '10px 14px',
+          borderRadius: 10,
+          border: `3px solid ${proto.black}`,
+          background: proto.white,
+          color: proto.black,
+          boxShadow: `4px 4px 0 ${proto.black}`,
+          textDecoration: 'none',
+          textAlign: 'center',
+          fontWeight: 900,
+          fontSize: 14,
+          lineHeight: 1.45,
+        }}>
+          遠隔の恋人や友達とLINEで愛情判定
+        </a>
         <button onClick={onFriend} style={{
           ...secondaryBtn(),
           marginTop: 12,
-          background: proto.yellow,
+          background: 'rgba(255,255,255,0.12)',
+          color: proto.white,
+          border: '2px solid rgba(255,255,255,0.75)',
+          boxShadow: 'none',
         }}>
           友達の友情を判定する
         </button>
         <button onClick={onFamily} style={{
           ...secondaryBtn(),
-          marginTop: 14,
-          background: proto.white,
+          marginTop: 10,
+          background: 'rgba(255,255,255,0.12)',
+          color: proto.white,
+          border: '2px solid rgba(255,255,255,0.75)',
+          boxShadow: 'none',
         }}>
           家族の絆を判定する
         </button>
@@ -2106,23 +2132,6 @@ function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange, loveMod
             color: proto.yellow, fontSize: 18, textShadow: '1px 1px 0 #000',
           }}>▶</span>
         </button>
-        <a href="/remote" style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: 48,
-          marginTop: 12,
-          borderRadius: 10,
-          border: `3px solid ${proto.black}`,
-          background: proto.white,
-          color: proto.black,
-          boxShadow: `4px 4px 0 ${proto.black}`,
-          textDecoration: 'none',
-          fontWeight: 900,
-          fontSize: 14,
-        }}>
-          離れている人と遠隔で遊ぶ
-        </a>
       </div>
     </div>
   );

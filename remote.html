@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>遠隔で遊ぶ | 彼氏の愛情判定ゲーム</title>
-  <meta name="description" content="彼氏の愛情判定ゲームをルームコードで遠隔プレイ。まずは彼氏の愛情判定だけ対応しています。" />
+  <meta name="description" content="離れている恋人とLINEで遊べる彼氏・彼女の愛情判定ゲーム。作成者が5問答えてURLを送り、相手も5問答えると理解度と答え合わせを確認できます。" />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="canonical" href="https://www.streetboardgame.com/remote" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -830,6 +830,63 @@
       text-align: right;
     }
     .hidden { display: none !important; }
+    .remote-guide {
+      display: grid;
+      gap: 14px;
+    }
+    .remote-guide h2,
+    .remote-guide h3 {
+      margin: 0;
+      line-height: 1.45;
+    }
+    .remote-guide p {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.85;
+    }
+    .remote-flow {
+      display: grid;
+      gap: 10px;
+      counter-reset: remote-step;
+    }
+    .remote-flow-item {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      border: 2px solid var(--black);
+      border-radius: 10px;
+      background: var(--white);
+      box-shadow: 3px 3px 0 var(--black);
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.55;
+    }
+    .remote-flow-item::before {
+      counter-increment: remote-step;
+      content: counter(remote-step);
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 2px solid var(--black);
+      border-radius: 8px;
+      background: var(--pink);
+      color: var(--white);
+      font: 900 18px "DotGothic16", monospace;
+    }
+    .remote-point {
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--black);
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.75;
+    }
+    .remote-point strong { color: var(--yellow); }
     #play {
       scroll-margin-top: 14px;
     }
@@ -871,7 +928,32 @@
     <section class="hero">
       <div class="pill">ROOM CODE</div>
       <h1 class="logo">遠隔で<br>愛情判定</h1>
-      <p>離れていても、2人それぞれのスマホで遊べます。まずは彼氏の愛情判定だけ対応中です。</p>
+      <p>離れている恋人と、LINEでURLを送り合って遊べます。現在は彼氏・彼女の愛情判定に対応しています。</p>
+    </section>
+
+    <section class="card remote-guide" aria-labelledby="remoteGuideTitle">
+      <div>
+        <div class="pill" style="margin-bottom:10px">HOW TO PLAY</div>
+        <h2 id="remoteGuideTitle" class="section-title">遠隔の愛情判定とは？</h2>
+      </div>
+      <p>
+        彼女または彼氏が選ぶ答えを、相手がどれだけ当てられるかを5問で判定するゲームです。
+        2人が同じ場所にいなくても、それぞれのスマホから回答できます。
+      </p>
+      <p>
+        通常版はスマホを渡しながら1問ずつ進めますが、遠隔版は<strong>最初の人が5問まとめて回答し、LINEでURLを送り、相手も5問まとめて回答</strong>します。
+        2人目の回答が終わると、その場で判定結果と答え合わせが表示されます。
+      </p>
+      <div class="remote-flow" aria-label="遠隔プレイの流れ">
+        <div class="remote-flow-item">判定する相手・2人の名前・自分が彼氏か彼女かを設定</div>
+        <div class="remote-flow-item">ルームを作った人が、自分の役割で5問まとめて回答</div>
+        <div class="remote-flow-item">表示されたメッセージとURLをLINEで相手へ送信</div>
+        <div class="remote-flow-item">相手が残りの5問に回答すると、判定結果と答え合わせを表示</div>
+      </div>
+      <div class="remote-point">
+        <strong>回答順は自由です。</strong><br>
+        自分が「当てられる側」なら自分の答えを先に選び、「当てる側」なら相手が選びそうな答えを先に予想できます。先に答えた内容は、判定が終わるまで相手には表示されません。
+      </div>
     </section>
 
     <section id="setup" class="card">
@@ -891,10 +973,16 @@
             <input id="boyName" maxlength="6" placeholder="彼氏" />
           </label>
         </div>
+        <label>自分はどっち？
+          <select id="creatorSide">
+            <option value="boy">私は彼氏</option>
+            <option value="girl">私は彼女</option>
+          </select>
+        </label>
         <button id="createRoom" class="btn">ルームコードを発行する ▶</button>
       </div>
       <div class="status">
-        まずあなたが5問すべて回答します。その後、まとめて相手へ送るURLが表示されます。
+        あなたの役割で5問すべて回答した後、相手へ送るメッセージとURLが表示されます。
       </div>
     </section>
 
@@ -996,6 +1084,6 @@
   </main>
 
   <script src="prototype_quiz_data.js?v=seo-1"></script>
-  <script src="remote_love.js?v=remote-love-26"></script>
+  <script src="remote_love.js?v=remote-love-28"></script>
 </body>
 </html>
