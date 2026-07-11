@@ -212,6 +212,9 @@
   }
 
   function resultPublicUrl() {
+    if (roomCode && state && state.phase === 'result') {
+      return resultRoomUrl(oppositeRole(role));
+    }
     return `${window.location.origin}/remote`;
   }
 
