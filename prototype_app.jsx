@@ -1496,20 +1496,20 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         <button onClick={onFriend} style={{
           ...secondaryBtn(),
           marginTop: 12,
-          background: 'rgba(255,255,255,0.12)',
+          background: 'rgba(255,255,255,0.2)',
           color: proto.white,
-          border: '2px solid rgba(255,255,255,0.75)',
-          boxShadow: 'none',
+          border: '2.5px solid rgba(255,255,255,0.94)',
+          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
         }}>
           友達の友情を判定する
         </button>
         <button onClick={onFamily} style={{
           ...secondaryBtn(),
           marginTop: 10,
-          background: 'rgba(255,255,255,0.12)',
+          background: 'rgba(255,255,255,0.2)',
           color: proto.white,
-          border: '2px solid rgba(255,255,255,0.75)',
-          boxShadow: 'none',
+          border: '2.5px solid rgba(255,255,255,0.94)',
+          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
         }}>
           家族の絆を判定する
         </button>
