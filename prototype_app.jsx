@@ -929,7 +929,7 @@ function GroupResultReviewBox({ sections, title = 'AI総評', onScrolledPast }) 
 // ─────────────────────────────────────────────────────
 // 共通装飾: シアン縁取りロゴテキスト
 // ─────────────────────────────────────────────────────
-function LogoText({ children, size = 32, color = '#FFFFFF', outline = '#5BD4E8', lineHeight = 1.15 }) {
+function LogoText({ children, size = 32, color = '#FFFFFF', outline = '#5BD4E8', lineHeight = 1.15, as: Tag = 'div', style = {} }) {
   // 多重 text-shadow でシアンの太い縁取りを再現
   const s = Math.max(2, Math.round(size / 12));
   const shadows = [];
@@ -943,7 +943,8 @@ function LogoText({ children, size = 32, color = '#FFFFFF', outline = '#5BD4E8',
   // 黒のドロップシャドウで奥行き
   shadows.push(`${s + 1}px ${s + 2}px 0 rgba(0,0,0,0.18)`);
   return (
-    <div style={{
+    <Tag style={{
+      margin: 0,
       fontFamily: proto.display,
       fontWeight: 900,
       fontSize: size,
@@ -952,7 +953,8 @@ function LogoText({ children, size = 32, color = '#FFFFFF', outline = '#5BD4E8',
       letterSpacing: '0.01em',
       textShadow: shadows.join(', '),
       WebkitTextStroke: '0',
-    }}>{children}</div>
+      ...style,
+    }}>{children}</Tag>
   );
 }
 
@@ -5836,7 +5838,7 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
         </div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: 32, marginBottom: 4 }}>💌</div>
-          <LogoText size={26}>About</LogoText>
+          <LogoText as="h1" size={26}>About</LogoText>
           <div style={{
             fontFamily: proto.caption, fontSize: 10, color: proto.white,
             opacity: 0.7, marginTop: 4, letterSpacing: '0.25em',
@@ -5885,7 +5887,8 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
 
 function SectionTitle({ children, style = {} }) {
   return (
-    <div style={{
+    <h2 style={{
+      margin: 0,
       display: 'inline-block', padding: '4px 14px',
       background: proto.yellow, color: proto.black,
       border: `2px solid ${proto.black}`,
@@ -5894,7 +5897,7 @@ function SectionTitle({ children, style = {} }) {
       transform: 'rotate(-1deg)',
       boxShadow: '2px 2px 0 #000',
       ...style,
-    }}>{children}</div>
+    }}>{children}</h2>
   );
 }
 
@@ -6078,7 +6081,7 @@ function ProductScreen({ onBack }) {
         <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
         <PillLabel>MORE FUN ♡</PillLabel>
         <div style={{ marginTop: 14 }}>
-          <LogoText size={22}>製品版もあります</LogoText>
+          <LogoText as="h1" size={22}>製品版もあります</LogoText>
         </div>
       </div>
 

@@ -14,29 +14,39 @@
 /
   Cache-Control: no-cache, must-revalidate
 
-# 画像・カードは長期キャッシュ (ファイル名は不変)
-/assets/*
-  Cache-Control: public, max-age=31536000, immutable
+# お題カードは容量が大きく更新頻度が低いため1日キャッシュ
+/assets/cards/*
+  Cache-Control: public, max-age=86400, must-revalidate
 
-/assets/*.webp
-  Content-Type: image/webp
-  Cache-Control: public, max-age=31536000, immutable
+# キャラクター画像は同じファイル名で改善することがあるため1時間キャッシュ
+/assets/character/*
+  Cache-Control: public, max-age=3600, must-revalidate
 
-/assets/character/*.webp
-  Content-Type: image/webp
-  Cache-Control: public, max-age=31536000, immutable
-
-/assets/cards/*.webp
-  Content-Type: image/webp
-  Cache-Control: public, max-age=31536000, immutable
-
-# 結果画像は同じファイル名で改善することがあるため短めキャッシュ
+# 結果・SNS画像は更新を素早く反映するため5分キャッシュ
 /assets/results/*
   Cache-Control: public, max-age=300, must-revalidate
 
+/assets/social/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+# フォントはファイル名を変更したときだけ更新する
 /assets/fonts/*
   Cache-Control: public, max-age=31536000, immutable
   Access-Control-Allow-Origin: *
+
+# assets直下の更新可能な画像
+/assets/apple-touch-icon.png
+  Cache-Control: public, max-age=86400, must-revalidate
+/assets/favicon-48.png
+  Cache-Control: public, max-age=86400, must-revalidate
+/assets/favicon-192.png
+  Cache-Control: public, max-age=86400, must-revalidate
+/assets/favicon-girl.png
+  Cache-Control: public, max-age=86400, must-revalidate
+/assets/ogp.jpg
+  Cache-Control: public, max-age=300, must-revalidate
+/assets/qr-site.png
+  Cache-Control: public, max-age=300, must-revalidate
 
 # JS/JSXは短めキャッシュ (アプリ更新を素早く反映するため)
 /*.jsx
@@ -47,10 +57,6 @@
 # favicon
 /favicon.ico
   Cache-Control: public, max-age=86400
-/assets/favicon-48.png
-  Cache-Control: public, max-age=31536000, immutable
-/assets/favicon-192.png
-  Cache-Control: public, max-age=31536000, immutable
 /favicon.svg
   Cache-Control: public, max-age=86400
 
