@@ -564,14 +564,23 @@
   function buildInviteText() {
     if (!roomCode || !state) return;
     const names = targetAndGuesser(state);
-    const player = turnPlayerName(state);
-    const action = state.phase === 'guess'
-      ? `${names.target}の5問の答えを予想してください。`
-      : `${names.target}として5問の答えを選んでください。`;
+    if (state.phase === 'guess') {
+      return [
+        `${names.guesser}へ。${names.target}への愛情判定に挑戦してね！`,
+        '',
+        `${names.target}は、URLで表示される5問に自分の答えを選び終えました。`,
+        `あなたは、${names.target}が何と答えたかを予想して5問に回答してください。`,
+        `何問当てられるかで、あなたの${names.target}への愛情・理解度を判定します。`,
+        '',
+        roomInviteUrl(),
+      ].join('\n');
+    }
     return [
-      'わたちゃんの遠隔プレイです。',
-      `${names.target}の答えを、${names.guesser}が当てるルームです。`,
-      `次は${player}の番です。${action}`,
+      `${names.target}へ。遠隔で愛情判定を始めます。`,
+      '',
+      'まずURLで表示される5問に、あなた自身の答えを選んでください。',
+      `5問終わると、${names.guesser}に答えを予想してもらうURLを送れます。`,
+      '',
       roomInviteUrl(),
     ].join('\n');
   }
