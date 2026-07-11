@@ -48,6 +48,25 @@ const DEFAULT_PLAYER_NAMES = {
   family: ['本人', '家族A', '家族B', '家族C'],
 };
 
+function trackAnalyticsEvent(name, params = {}) {
+  if (typeof window === 'undefined' || typeof window.trackEvent !== 'function') return;
+  try {
+    window.trackEvent(name, params);
+  } catch (e) {
+    // Analytics must never interrupt the game flow.
+  }
+}
+
+function trackResultShare(gameType, method, playMode = 'local', contentType = 'result') {
+  trackAnalyticsEvent('share', {
+    method,
+    content_type: contentType,
+    item_id: `${gameType}_${contentType}`,
+    game_type: gameType,
+    play_mode: playMode,
+  });
+}
+
 function sanitizePlayerName(value, fallback, allowEmpty = false) {
   const text = String(value ?? '').replace(/\s+/g, ' ').slice(0, PLAYER_NAME_MAX_LENGTH);
   const trimmed = text.trim();
@@ -1172,19 +1191,28 @@ function App() {
     [playerCount, playerNames.family, familyTargetIndex]
   );
 
-  const startNewRound = () => {
+  const startNewRound = (requestedLoveMode) => {
     blurActiveControl();
     resetViewportPosition('auto');
     const picked = window.pickRandomCards(ROUND_SIZE);
+    const roundLoveMode = typeof requestedLoveMode === 'string' ? requestedLoveMode : loveMode;
     setCards(picked);
     setQIdx(0);
     setAnswers([]);
     setScreen('play');
+    trackAnalyticsEvent('game_start', {
+      game_type: 'love',
+      play_mode: 'local',
+      player_count: 2,
+      question_count: picked.length,
+      role_mode: roundLoveMode,
+    });
   };
 
   const startNewRoundWithSwappedRoles = () => {
-    setLoveMode((current) => (current === 'girlTarget' ? 'boyTarget' : 'girlTarget'));
-    startNewRound();
+    const nextLoveMode = loveMode === 'girlTarget' ? 'boyTarget' : 'girlTarget';
+    setLoveMode(nextLoveMode);
+    startNewRound(nextLoveMode);
   };
 
   const startFriendRound = (count, targetIndex = friendTargetIndex) => {
@@ -1198,6 +1226,13 @@ function App() {
     setQIdx(0);
     setAnswers([]);
     setScreen('friendOrder');
+    trackAnalyticsEvent('game_start', {
+      game_type: 'friend',
+      play_mode: 'local',
+      player_count: normalizedCount,
+      question_count: picked.length,
+      target_position: getTargetPlayerOrder(normalizedCount, targetIndex)[0] + 1,
+    });
   };
 
   const startFamilyRound = (count, targetIndex = familyTargetIndex) => {
@@ -1211,6 +1246,13 @@ function App() {
     setQIdx(0);
     setAnswers([]);
     setScreen('familyOrder');
+    trackAnalyticsEvent('game_start', {
+      game_type: 'family',
+      play_mode: 'local',
+      player_count: normalizedCount,
+      question_count: picked.length,
+      target_position: getTargetPlayerOrder(normalizedCount, targetIndex)[0] + 1,
+    });
   };
 
   const backToTop = () => {
@@ -3262,6 +3304,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
   const [imageBusy, setImageBusy] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const shareSheetShownRef = useRef(false);
+  const resultTrackedRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const canvasQrReady = useCanvasQrReady();
   const preparedResultImageSrc = useMemo(
@@ -3285,6 +3328,19 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
     () => getLoveReviewLines(answers, cards, [girlName, boyName], tier.title),
     [answers, cards, girlName, boyName, tier.title]
   );
+
+  useEffect(() => {
+    if (resultTrackedRef.current) return;
+    resultTrackedRef.current = true;
+    trackAnalyticsEvent('game_result', {
+      game_type: 'love',
+      play_mode: 'local',
+      player_count: 2,
+      question_count: total,
+      score,
+      role_mode: loveMode,
+    });
+  }, [score, total, loveMode]);
 
   const showShareSheetAfterReview = () => {
     if (shareSheetShownRef.current) return;
@@ -3332,13 +3388,16 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
     let target = '';
     if (platform === 'x') target = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
     if (platform === 'copy') {
+      trackResultShare('love', 'copy');
       copyToClipboard(copyShareText, 'copy');
       return;
     }
     if (platform === 'line') {
+      trackResultShare('love', 'line');
       openLineShare(`${lineShareText}\n${shareUrl}`);
       return;
     }
+    trackResultShare('love', 'x');
     window.open(target, '_blank', 'noopener,noreferrer,width=600,height=500');
   };
 
@@ -3368,6 +3427,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
         text: xShareText,
         url: shareUrl,
       });
+      trackResultShare('love', 'image');
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
@@ -5228,6 +5288,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [imageBusy, setImageBusy] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const shareSheetShownRef = useRef(false);
+  const resultTrackedRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const canvasQrReady = useCanvasQrReady();
   const preparedResultImageSrc = useMemo(
@@ -5241,6 +5302,21 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
     [answers, cards, friendPlayers]
   );
 
+  useEffect(() => {
+    if (resultTrackedRef.current) return;
+    resultTrackedRef.current = true;
+    const numericScores = groupScores.map((item) => item.score);
+    trackAnalyticsEvent('game_result', {
+      game_type: 'friend',
+      play_mode: 'local',
+      player_count: friendPlayers.length,
+      question_count: totalQuestions,
+      guesser_count: Math.max(0, friendPlayers.length - 1),
+      score_total: numericScores.reduce((sum, value) => sum + value, 0),
+      score_max: numericScores.length ? Math.max(...numericScores) : 0,
+    });
+  }, [friendPlayers.length, groupScores, totalQuestions]);
+
   const showShareSheetAfterReview = () => {
     if (shareSheetShownRef.current) return;
     shareSheetShownRef.current = true;
@@ -5251,6 +5327,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const shareText = `わたちゃんの友情判定をやってみた！\n今回は「${targetLabel}」を判定。\n${scoreSummary}。\n${groupHighlight}\n\n友達とやると答え合わせが盛り上がる。\nみんなは何問当たる？👇\n#わたちゃん #友情判定`;
 
   const copyShareText = () => {
+    trackResultShare('friend', 'copy');
     const value = `${shareText}\n${shareUrl}`;
     const done = () => {
       setCopied(true);
@@ -5264,6 +5341,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const openX = () => {
+    trackResultShare('friend', 'x');
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
       '_blank',
@@ -5272,6 +5350,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const openLine = () => {
+    trackResultShare('friend', 'line');
     openLineShare(`${shareText}\n${shareUrl}`);
   };
 
@@ -5301,6 +5380,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
         text: shareText,
         url: shareUrl,
       });
+      trackResultShare('friend', 'image');
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
@@ -5716,6 +5796,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const [imageBusy, setImageBusy] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const shareSheetShownRef = useRef(false);
+  const resultTrackedRef = useRef(false);
   const canvasCharacterReady = useCanvasCharacterReady();
   const canvasQrReady = useCanvasQrReady();
   const preparedResultImageSrc = useMemo(
@@ -5729,6 +5810,21 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
     [answers, cards, familyPlayers]
   );
 
+  useEffect(() => {
+    if (resultTrackedRef.current) return;
+    resultTrackedRef.current = true;
+    const numericScores = groupScores.map((item) => item.score);
+    trackAnalyticsEvent('game_result', {
+      game_type: 'family',
+      play_mode: 'local',
+      player_count: familyPlayers.length,
+      question_count: totalQuestions,
+      guesser_count: Math.max(0, familyPlayers.length - 1),
+      score_total: numericScores.reduce((sum, value) => sum + value, 0),
+      score_max: numericScores.length ? Math.max(...numericScores) : 0,
+    });
+  }, [familyPlayers.length, groupScores, totalQuestions]);
+
   const showShareSheetAfterReview = () => {
     if (shareSheetShownRef.current) return;
     shareSheetShownRef.current = true;
@@ -5739,6 +5835,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   const shareText = `わたちゃんの家族の絆判定をやってみた！\n今回は「${targetLabel}」を判定。\n${scoreSummary}。\n${groupHighlight}\n\n家族でやると意外とズレる。\nみんなは何問当たる？👇\n#わたちゃん #家族の絆判定`;
 
   const copyShareText = () => {
+    trackResultShare('family', 'copy');
     const value = `${shareText}\n${shareUrl}`;
     const done = () => {
       setCopied(true);
@@ -5752,6 +5849,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const openX = () => {
+    trackResultShare('family', 'x');
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
       '_blank',
@@ -5760,6 +5858,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   };
 
   const openLine = () => {
+    trackResultShare('family', 'line');
     openLineShare(`${shareText}\n${shareUrl}`);
   };
 
@@ -5789,6 +5888,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
         text: shareText,
         url: shareUrl,
       });
+      trackResultShare('family', 'image');
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('画像シェアに対応していない環境です。画像保存を試してみてください。');

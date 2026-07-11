@@ -6,6 +6,25 @@
   const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
   const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
   const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
+
+  function trackRemoteEvent(name, params = {}) {
+    if (typeof window.trackEvent !== 'function') return;
+    try {
+      window.trackEvent(name, params);
+    } catch (e) {
+      // Analytics must never interrupt the remote game flow.
+    }
+  }
+
+  function trackRemoteShare(method, contentType = 'result') {
+    trackRemoteEvent('share', {
+      method,
+      content_type: contentType,
+      item_id: `remote_${contentType}`,
+      game_type: 'remote',
+      play_mode: 'remote',
+    });
+  }
   const RESULT_TIERS = [
     {
       title: '彼女理解は初期設定中',
@@ -882,6 +901,7 @@
     const text = buildResultReturnText();
     if (!text) return;
     await copyInviteText(text);
+    trackRemoteShare('line', 'result_return');
     openLineShare(text);
   }
 
@@ -894,6 +914,7 @@
       window.prompt('この結果文とURLを相手に送ってください', text);
       return;
     }
+    trackRemoteShare('copy', 'result_return');
     button.textContent = 'コピーしました';
     window.setTimeout(() => {
       button.textContent = original;
@@ -904,6 +925,7 @@
     const text = buildInviteText();
     if (!text) return;
     await copyInviteText(text);
+    trackRemoteShare('line', 'room_invite');
     window.location.href = `line://msg/text/${encodeURIComponent(text)}`;
   }
 
@@ -917,6 +939,7 @@
       window.prompt('このルームをコピーして相手に送ってください', roomInviteUrl());
       return;
     }
+    trackRemoteShare('copy', 'room_invite');
     targetButton.textContent = 'コピーしました';
     window.setTimeout(() => {
       targetButton.textContent = original;
@@ -956,6 +979,13 @@
       saveRole(roomCode, roleForParticipant(state, 'creator'));
       setFreshTurnAccess();
       markSwapSeen(roomCode, state.roleSwapNonce);
+      trackRemoteEvent('game_start', {
+        game_type: 'remote',
+        play_mode: 'remote',
+        player_count: 2,
+        question_count: cards.length,
+        role_mode: creatorRole,
+      });
       render();
       replaceRemoteUrl();
     } catch (e) {
@@ -1069,6 +1099,17 @@
       });
       state = updated.room;
       turnToken = normalizeTurnToken(updated.nextTurnToken);
+      if (state && state.phase === 'result') {
+        const resultAnswers = Array.isArray(state.answers) ? state.answers : [];
+        trackRemoteEvent('game_result', {
+          game_type: 'remote',
+          play_mode: 'remote',
+          player_count: 2,
+          question_count: resultAnswers.length || 5,
+          score: resultAnswers.filter((answer) => answer && answer.match).length,
+          role_mode: state.loveMode || '',
+        });
+      }
       setFreshTurnAccess();
       replaceRemoteUrl();
       sendingChoice = false;
@@ -1305,11 +1346,13 @@
 
   function shareResultLine() {
     if (!latestResult) return;
+    trackRemoteShare('line');
     openLineShare(resultShareText(latestResult, 'line'));
   }
 
   function shareResultX() {
     if (!latestResult) return;
+    trackRemoteShare('x');
     openXShare(resultShareText(latestResult, 'x'));
   }
 
@@ -1331,6 +1374,7 @@
         `watachan-love-result-${latestResult.score}-${latestResult.total}.png`,
         'わたちゃん 判定画像'
       );
+      trackRemoteShare('image');
     } catch (e) {
       alert(e.message || '画像の保存に失敗しました。もう一度試してください。');
     } finally {
@@ -1369,6 +1413,13 @@
     resultReturnMode = false;
     try {
       await updateRoom(replayPatch(Boolean(swapRoles)));
+      trackRemoteEvent('game_start', {
+        game_type: 'remote',
+        play_mode: 'remote',
+        player_count: 2,
+        question_count: Array.isArray(state && state.cards) ? state.cards.length : 5,
+        replay_mode: swapRoles ? 'swap_roles' : 'same_roles',
+      });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
       alert(e.message || 'もう一度プレイする準備に失敗しました');

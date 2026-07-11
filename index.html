@@ -272,14 +272,15 @@
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  var analyticsEnabled = location.hostname !== 'localhost' && !location.hostname.endsWith('.local');
   gtag('js', new Date());
   gtag('config', 'G-X07PVDQWYX', {
     // localhostなどでは送信しない
-    send_page_view: location.hostname !== 'localhost' && !location.hostname.endsWith('.local')
+    send_page_view: analyticsEnabled
   });
   // 結果画面到達などのカスタムイベントを発火するためのヘルパー
   window.trackEvent = function(name, params) {
-    if (typeof gtag === 'function') gtag('event', name, params || {});
+    if (analyticsEnabled && typeof gtag === 'function') gtag('event', name, params || {});
   };
 </script>
 
@@ -420,6 +421,6 @@
 <script src="prototype_friend_data.js?v=seo-1"></script>
 <script src="prototype_family_data.js?v=family-1"></script>
 <script defer src="dist/prototype_character.js?v=precompiled-1"></script>
-<script defer src="dist/prototype_app.js?v=precompiled-1"></script>
+<script defer src="dist/prototype_app.js?v=precompiled-2"></script>
 </body>
 </html>
