@@ -21,6 +21,20 @@ async function openResult(page) {
   await button.click();
 }
 
+async function expectAnswerPickLayout(page, expectedCount) {
+  const answerLayout = await page.locator('.result-answer-pick').evaluateAll((picks) => picks.map((pick) => {
+    const name = pick.querySelector('.result-answer-name').getBoundingClientRect();
+    const choice = pick.querySelector('.result-answer-choice').getBoundingClientRect();
+    const dot = pick.querySelector('.result-answer-dot').getBoundingClientRect();
+    return {
+      nameBeforeChoice: name.bottom <= choice.top + 1,
+      dotCenterOffset: Math.abs((dot.top + dot.height / 2) - (choice.top + choice.height / 2)),
+    };
+  }));
+  expect(answerLayout).toHaveLength(expectedCount);
+  expect(answerLayout.every(({ nameBeforeChoice, dotCenterOffset }) => nameBeforeChoice && dotCenterOffset <= 1)).toBe(true);
+}
+
 async function playLove(page, mode, score) {
   await page.goto('/?screen=intro');
   await page.getByTestId(`love-mode-${mode}`).click();
@@ -31,17 +45,7 @@ async function playLove(page, mode, score) {
   }
   await openResult(page);
   await expect(page.getByText(`${score}/5`, { exact: true }).first()).toBeVisible();
-  const answerLayout = await page.locator('.result-answer-pick').evaluateAll((picks) => picks.map((pick) => {
-    const name = pick.querySelector('.result-answer-name').getBoundingClientRect();
-    const choice = pick.querySelector('.result-answer-choice').getBoundingClientRect();
-    const dot = pick.querySelector('.result-answer-dot').getBoundingClientRect();
-    return {
-      nameBeforeChoice: name.bottom <= choice.top + 1,
-      dotCenterOffset: Math.abs((dot.top + dot.height / 2) - (choice.top + choice.height / 2)),
-    };
-  }));
-  expect(answerLayout).toHaveLength(10);
-  expect(answerLayout.every(({ nameBeforeChoice, dotCenterOffset }) => nameBeforeChoice && dotCenterOffset <= 1)).toBe(true);
+  await expectAnswerPickLayout(page, 10);
 }
 
 async function playGroup(page, kind, playerCount, score) {
@@ -58,6 +62,7 @@ async function playGroup(page, kind, playerCount, score) {
   const scores = page.getByText(`${score}/5`, { exact: true });
   await expect(scores).toHaveCount((playerCount - 1) * 2);
   await expect(scores.first()).toBeVisible();
+  await expectAnswerPickLayout(page, playerCount * 5);
 }
 
 async function playGroupMixed(page, kind, scores) {
@@ -73,6 +78,7 @@ async function playGroupMixed(page, kind, scores) {
   for (const score of scores) {
     await expect(page.getByText(`${score}/5`, { exact: true }).first()).toBeVisible();
   }
+  await expectAnswerPickLayout(page, playerCount * 5);
 }
 
 test.beforeEach(async ({ page }) => preparePage(page));

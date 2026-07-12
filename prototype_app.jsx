@@ -4141,14 +4141,24 @@ function ShareBtn({ label, ariaLabel, bg, fg, onClick }) {
   );
 }
 
-function AnswerPick({ label, choice, opt, accent }) {
+function AnswerPick({
+  label,
+  choice,
+  opt,
+  accent,
+  background = proto.white,
+  status = '',
+  compact = false,
+}) {
   return (
     <div className="result-answer-pick" style={{
-      padding: '7px 7px',
-      background: proto.white,
+      padding: compact ? '6px 4px' : '7px 7px',
+      background,
       border: `1.5px solid ${proto.black}`,
       borderRadius: 8,
       minWidth: 0,
+      textAlign: 'center',
+      fontWeight: 900,
     }}>
       <div className="result-answer-name" style={{
         display: 'inline-block',
@@ -4165,12 +4175,12 @@ function AnswerPick({ label, choice, opt, accent }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 6,
-        minHeight: 26,
+        gap: compact ? 4 : 6,
+        minHeight: compact ? 24 : 26,
       }}>
         <span className="result-answer-dot" style={{
-          width: 16,
-          height: 16,
+          width: compact ? 14 : 16,
+          height: compact ? 14 : 16,
           borderRadius: '50%',
           background: opt ? opt.color : proto.textSoft,
           border: `1.5px solid ${proto.black}`,
@@ -4186,6 +4196,14 @@ function AnswerPick({ label, choice, opt, accent }) {
           overflowWrap: 'anywhere',
         }}>{choice}</span>
       </div>
+      {status && (
+        <div style={{
+          marginTop: 3,
+          fontSize: 9,
+          lineHeight: 1,
+          color: proto.textSoft,
+        }}>{status}</div>
+      )}
     </div>
   );
 }
@@ -5226,36 +5244,21 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
                 gridTemplateColumns: `repeat(${Math.max(2, rows.length)}, minmax(0, 1fr))`,
                 gap: 5,
               }}>
-                {rows.map((row) => (
-                  <div key={row.name} style={{
-                    minWidth: 0,
-                    padding: '6px 4px',
-                    borderRadius: 8,
-                    background: row.isTarget ? proto.cyan : (row.match ? proto.yellow : proto.pinkSoft),
-                    border: `1.5px solid ${proto.black}`,
-                    fontWeight: 900,
-                    textAlign: 'center',
-                  }}>
-                    <div style={{
-                      fontSize: 9,
-                      lineHeight: 1.2,
-                      color: proto.pinkDeep,
-                      overflowWrap: 'anywhere',
-                    }}>{row.name}</div>
-                    <div style={{
-                      marginTop: 3,
-                      fontSize: 11,
-                      lineHeight: 1.25,
-                      overflowWrap: 'anywhere',
-                    }}>{choices[row.pick] || '-'}</div>
-                    <div style={{
-                      marginTop: 3,
-                      fontSize: 9,
-                      lineHeight: 1,
-                      color: row.isTarget ? proto.black : (row.match ? proto.black : proto.textSoft),
-                    }}>{row.isTarget ? '本人' : (row.match ? '当たり' : 'ハズレ')}</div>
-                  </div>
-                ))}
+                {rows.map((row) => {
+                  const background = row.isTarget ? proto.cyan : (row.match ? proto.yellow : proto.pinkSoft);
+                  return (
+                    <AnswerPick
+                      key={row.name}
+                      label={row.name}
+                      choice={choices[row.pick] || '-'}
+                      opt={window.COLOR_OPTIONS && window.COLOR_OPTIONS[row.pick]}
+                      accent={proto.white}
+                      background={background}
+                      status={row.isTarget ? '本人' : (row.match ? '当たり' : 'ハズレ')}
+                      compact
+                    />
+                  );
+                })}
               </div>
             </div>
           );
