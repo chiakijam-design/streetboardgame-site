@@ -1317,8 +1317,6 @@ function App() {
             onLovePage={() => setScreen('lovePage')}
             onFriendPage={() => setScreen('friendPage')}
             onFamilyPage={() => setScreen('familyPage')}
-            onAbout={() => setScreen('about')}
-            onProduct={() => setScreen('product')}
           />
         )}
         {screen === 'lovePage' && (
@@ -1445,7 +1443,6 @@ function App() {
             onReplay={startNewRound}
             onReplaySwap={startNewRoundWithSwappedRoles}
             onHome={backToTop}
-            onAbout={() => setScreen('about')}
           />
         )}
         {screen === 'friendResultReady' && (
@@ -1467,7 +1464,6 @@ function App() {
             onReplay={() => startFriendRound(playerCount, friendTargetIndex)}
             onReplayTarget={(playerPosition) => startFriendRound(playerCount, friendPlayerOrder[playerPosition])}
             onHome={backToTop}
-            onAbout={() => setScreen('about')}
           />
         )}
         {screen === 'familyResultReady' && (
@@ -1489,18 +1485,10 @@ function App() {
             onReplay={() => startFamilyRound(playerCount, familyTargetIndex)}
             onReplayTarget={(playerPosition) => startFamilyRound(playerCount, familyPlayerOrder[playerPosition])}
             onHome={backToTop}
-            onAbout={() => setScreen('about')}
           />
         )}
-        {screen === 'about' && (
-          <AboutScreen
-            onBack={() => setScreen('top')}
-            onLove={() => setScreen('intro')}
-            onFriend={() => setScreen('friendIntro')}
-            onFamily={() => setScreen('familyIntro')}
-          />
-        )}
-        {screen === 'product' && <ProductScreen onBack={() => setScreen('top')} />}
+        {screen === 'about' && <AboutScreen />}
+        {screen === 'product' && <ProductScreen />}
       </div>
     </div>
   );
@@ -1513,7 +1501,7 @@ function App() {
 // ・中央に巨大な白+シアン縁取りロゴ
 // ・右下に黄色注意書きシール
 // ─────────────────────────────────────────────────────
-function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFamilyPage, onAbout, onProduct }) {
+function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFamilyPage }) {
   return (
     <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
@@ -1723,9 +1711,9 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         padding: '22px 24px 0', position: 'relative', zIndex: 1,
         display: 'flex', justifyContent: 'center', gap: 18,
       }}>
-        <FooterLink href="/about" onClick={onAbout}>About</FooterLink>
+        <FooterLink href="/about">About</FooterLink>
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
-        <FooterLink href="/product" onClick={onProduct}>製品版</FooterLink>
+        <FooterLink href="/product">製品版</FooterLink>
       </div>
     </main>
   );
@@ -2034,13 +2022,9 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
   );
 }
 
-function FooterLink({ children, href = '#', onClick }) {
+function FooterLink({ children, href = '#' }) {
   return (
-    <a href={href} onClick={(event) => {
-      if (!onClick) return;
-      event.preventDefault();
-      onClick();
-    }} style={{
+    <a href={href} style={{
       background: 'transparent', border: 'none',
       color: proto.white, fontFamily: proto.caption,
       fontSize: 11, letterSpacing: '0.2em',
@@ -3292,7 +3276,7 @@ const RESULT_TIERS = [
     shareHook: '全問正解、彼氏が彼女公認の理解王でした' },
 ];
 
-function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onReplay, onReplaySwap, onHome, onAbout }) {
+function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onReplay, onReplaySwap, onHome }) {
   const score = answers.filter(a => a.match).length;
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
@@ -3770,7 +3754,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
       </div>
 
       <div style={{ textAlign: 'center', marginTop: 24, paddingBottom: 8, position: 'relative', zIndex: 1 }}>
-        <FooterLink href="/about" onClick={onAbout}>About / お問い合わせ</FooterLink>
+        <FooterLink href="/about">About / お問い合わせ</FooterLink>
       </div>
       <ShareBottomSheet
         open={showShareSheet}
@@ -5281,7 +5265,7 @@ function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
   );
 }
 
-function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onReplayTarget, onHome, onAbout }) {
+function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onReplayTarget, onHome }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const friendPlayers = useMemo(() => getFriendPlayers(playerCount, playerNames), [playerCount, playerNames]);
   const targetLabel = `${friendPlayers[0]}の理解度`;
@@ -5510,7 +5494,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onSecondary={onHome}
         />
         <div style={{ textAlign: 'center', marginTop: 18 }}>
-          <FooterLink href="/about" onClick={onAbout}>About / お問い合わせ</FooterLink>
+          <FooterLink href="/about">About / お問い合わせ</FooterLink>
         </div>
       </div>
       <ShareBottomSheet
@@ -5789,7 +5773,7 @@ function FamilyPlayScreen({ card, qIdx, total, playerCount, playerNames, onAnswe
   );
 }
 
-function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay, onReplayTarget, onHome, onAbout }) {
+function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay, onReplayTarget, onHome }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const familyPlayers = useMemo(() => getFamilyPlayers(playerCount, playerNames), [playerCount, playerNames]);
   const targetLabel = `${familyPlayers[0]}の理解度`;
@@ -6018,7 +6002,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           onSecondary={onHome}
         />
         <div style={{ textAlign: 'center', marginTop: 18 }}>
-          <FooterLink href="/about" onClick={onAbout}>About / お問い合わせ</FooterLink>
+          <FooterLink href="/about">About / お問い合わせ</FooterLink>
         </div>
       </div>
       <ShareBottomSheet
@@ -6038,7 +6022,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
 // ─────────────────────────────────────────────────────
 // ABOUT
 // ─────────────────────────────────────────────────────
-function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
+function AboutScreen() {
   return (
     <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
       <div style={{
@@ -6046,7 +6030,7 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
         textAlign: 'center', position: 'relative',
         overflow: 'hidden',
       }}>
-        <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
+        <BackBtn href="/" top={50} dark label="トップに戻る" />
         {/* 女の子: ヘッダー左下から覗く (左向きに反転) */}
         <div style={{
           position: 'absolute',
@@ -6079,9 +6063,9 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
 
         <SectionTitle style={{ marginTop: 22 }}>♡ シリーズ展開</SectionTitle>
         <Card>
-          <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="メインゲーム" active onClick={onLove} />
-          <SeriesRow emoji="👯" title="友達の友情判定" sub="シリーズ" active onClick={onFriend} />
-          <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="シリーズ" active onClick={onFamily} last />
+          <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="メインゲーム" active href="/love" />
+          <SeriesRow emoji="👯" title="友達の友情判定" sub="シリーズ" active href="/friends" />
+          <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="シリーズ" active href="/family" last />
         </Card>
 
         <div id="contact-section" style={{ scrollMarginTop: 20 }}>
@@ -6091,7 +6075,7 @@ function AboutScreen({ onBack, onLove, onFriend, onFamily }) {
           </Card>
         </div>
 
-        <BottomHomeButton onClick={onBack} />
+        <BottomHomeButton />
 
         <div style={{
           marginTop: 22, padding: '10px 0', textAlign: 'center',
@@ -6131,8 +6115,8 @@ function Card({ children }) {
   );
 }
 
-function SeriesRow({ emoji, title, sub, active, last, onClick }) {
-  const clickable = typeof onClick === 'function';
+function SeriesRow({ emoji, title, sub, active, last, href }) {
+  const clickable = Boolean(href);
   const content = (
     <>
       <div style={{ fontSize: 22 }}>{emoji}</div>
@@ -6167,9 +6151,9 @@ function SeriesRow({ emoji, title, sub, active, last, onClick }) {
 
   if (clickable) {
     return (
-      <button type="button" onClick={onClick} style={style} aria-label={`${title}を開く`}>
+      <a href={href} style={{ ...style, textDecoration: 'none' }} aria-label={`${title}を開く`}>
         {content}
-      </button>
+      </a>
     );
   }
 
@@ -6291,14 +6275,14 @@ const inputStyle = {
 // ─────────────────────────────────────────────────────
 // PRODUCT
 // ─────────────────────────────────────────────────────
-function ProductScreen({ onBack }) {
+function ProductScreen() {
   return (
     <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
       <div style={{
         background: proto.black, padding: '50px 24px 24px',
         textAlign: 'center', position: 'relative',
       }}>
-        <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
+        <BackBtn href="/" top={50} dark label="トップに戻る" />
         <PillLabel>MORE FUN ♡</PillLabel>
         <div style={{ marginTop: 14 }}>
           <LogoText as="h1" size={22}>製品版もあります</LogoText>
@@ -6480,28 +6464,31 @@ function ProductScreen({ onBack }) {
             <div style={{ fontSize: 13, fontWeight: 700, color: proto.text }}>{t}</div>
           </div>
         ))}
-        <BottomHomeButton onClick={onBack} />
+        <BottomHomeButton />
       </div>
     </div>
   );
 }
 
-function BottomHomeButton({ onClick }) {
+function BottomHomeButton() {
   return (
     <div style={{ paddingTop: 22 }}>
-      <button
-        type="button"
-        onClick={onClick}
+      <a
+        href="/"
         aria-label="トップページに戻る"
         style={{
           ...secondaryBtn(),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textDecoration: 'none',
           minHeight: 60,
           fontSize: 15,
           boxShadow: '4px 4px 0 #000',
         }}
       >
         トップページに戻る
-      </button>
+      </a>
     </div>
   );
 }
@@ -6600,9 +6587,8 @@ function srOnlyStyle() {
 }
 
 // 戻るボタン
-function BackBtn({ onClick, top = 20, dark = false, label = '戻る' }) {
-  return (
-    <button onClick={onClick} aria-label={label} style={{
+function BackBtn({ onClick, href, top = 20, dark = false, label = '戻る' }) {
+  const style = {
       position: 'absolute', top, left: 18,
       minWidth: 46, minHeight: 44,
       maxWidth: 'calc(100% - 36px)',
@@ -6621,11 +6607,16 @@ function BackBtn({ onClick, top = 20, dark = false, label = '戻る' }) {
       lineHeight: 1,
       whiteSpace: 'nowrap',
       touchAction: 'manipulation',
-    }}>
+      textDecoration: 'none',
+    };
+  const content = (
+    <>
       <span style={{ fontSize: 18, lineHeight: 1, transform: 'translateY(-1px)' }}>←</span>
       <span>{label}</span>
-    </button>
+    </>
   );
+  if (href) return <a href={href} aria-label={label} style={style}>{content}</a>;
+  return <button type="button" onClick={onClick} aria-label={label} style={style}>{content}</button>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);

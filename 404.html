@@ -1,426 +1,108 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
-<!-- =========================
-  Basic SEO
-========================= -->
-<title>わたちゃん｜彼氏の愛情判定ゲーム・無料カップル診断</title>
-<meta name="description" content="『わたちゃん』は、彼氏の彼女理解度を測定できる無料カップル診断。彼氏の愛情判定ゲームをメインに、彼女版・友達版・家族版も遊べます。" />
-<meta name="robots" content="noindex, follow" />
-<meta name="application-name" content="私のこと、ちゃんと分かってるよね？" />
-<meta name="apple-mobile-web-app-title" content="わたちゃん" />
-<meta name="theme-color" content="#FF3D7F" />
-<meta name="format-detection" content="telephone=no" />
-<link rel="canonical" href="https://www.streetboardgame.com/" />
-<link rel="alternate" hreflang="ja" href="https://www.streetboardgame.com/" />
-<link rel="alternate" hreflang="x-default" href="https://www.streetboardgame.com/" />
-
-<!-- favicon -->
-<link rel="icon" href="/favicon.ico" sizes="any" />
-<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
-<link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192.png" />
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
-<link rel="manifest" href="/manifest.webmanifest" />
-<link rel="preload" as="image" href="/assets/character/girl-full.webp" type="image/webp" fetchpriority="high" />
-<link rel="dns-prefetch" href="https://unpkg.com" />
-<link rel="preconnect" href="https://unpkg.com" crossorigin />
-<link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
-
-<!-- =========================
-  OGP (SNSシェア用)
-========================= -->
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="streetboardgame.com" />
-<meta property="og:title" content="わたちゃん｜彼氏の愛情判定ゲーム" />
-<meta property="og:description" content="メインは彼氏の彼女理解度を測定する愛情判定ゲーム。彼女版は同じゲーム内で切り替え、友達版・家族版はシリーズとして遊べます。" />
-<meta property="og:url" content="https://www.streetboardgame.com/" />
-<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp.jpg" />
-<meta property="og:image:alt" content="わたちゃん 彼氏の愛情判定ゲーム" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:locale" content="ja_JP" />
-
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="わたちゃん｜彼氏の愛情判定ゲーム" />
-<meta name="twitter:description" content="彼氏の彼女理解度を測定できる無料カップル診断ゲーム。彼女版は同じゲーム内で切り替え、友達版・家族版も遊べます。" />
-<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp.jpg" />
-<meta name="twitter:image:alt" content="わたちゃん 彼氏の愛情判定ゲーム" />
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "Organization",
-      "@id": "https://www.streetboardgame.com/#organization",
-      "name": "streetboardgame.com",
-      "url": "https://www.streetboardgame.com/",
-      "logo": "https://www.streetboardgame.com/assets/favicon-girl.png"
-    },
-    {
-      "@type": "WebSite",
-      "@id": "https://www.streetboardgame.com/#website",
-      "url": "https://www.streetboardgame.com/",
-      "name": "streetboardgame.com",
-      "inLanguage": "ja",
-      "description": "彼氏の愛情判定ゲームをメインに、友達の友情判定や家族の絆判定などのシリーズを展開するオリジナルゲームサイトです。",
-      "publisher": {
-        "@id": "https://www.streetboardgame.com/#organization"
-      },
-      "hasPart": [
-        {
-          "@id": "https://www.streetboardgame.com/#couple-game"
-        },
-        {
-          "@id": "https://www.streetboardgame.com/love#love-game"
-        },
-        {
-          "@id": "https://www.streetboardgame.com/friends#friend-game"
-        },
-        {
-          "@id": "https://www.streetboardgame.com/family#family-game"
-        }
-      ]
-    },
-    {
-      "@type": "SiteNavigationElement",
-      "@id": "https://www.streetboardgame.com/#site-navigation",
-      "name": [
-        "彼氏の愛情判定",
-        "友達の友情判定",
-        "家族の絆判定",
-        "製品版",
-        "About"
-      ],
-      "url": [
-        "https://www.streetboardgame.com/",
-        "https://www.streetboardgame.com/friends",
-        "https://www.streetboardgame.com/family",
-        "https://www.streetboardgame.com/product",
-        "https://www.streetboardgame.com/about"
-      ]
-    },
-    {
-      "@type": "BreadcrumbList",
-      "@id": "https://www.streetboardgame.com/#breadcrumb",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "わたちゃん",
-          "item": "https://www.streetboardgame.com/"
-        }
-      ]
-    },
-    {
-      "@type": "WebPage",
-      "@id": "https://www.streetboardgame.com/#webpage",
-      "url": "https://www.streetboardgame.com/",
-      "name": "わたちゃん｜彼氏の愛情判定ゲーム・無料カップル診断",
-      "description": "彼氏の彼女理解度を測定する彼氏の愛情判定ゲームをメインに、同じゲーム内で遊べる彼女版、友達の友情判定、家族の絆判定へ広がるシリーズの公式ページです。",
-      "inLanguage": "ja",
-      "isPartOf": {
-        "@id": "https://www.streetboardgame.com/#website"
-      },
-      "breadcrumb": {
-        "@id": "https://www.streetboardgame.com/#breadcrumb"
-      },
-      "primaryImageOfPage": {
-        "@type": "ImageObject",
-        "url": "https://www.streetboardgame.com/assets/ogp.jpg",
-        "width": 1200,
-        "height": 630
-      },
-      "mainEntity": {
-        "@id": "https://www.streetboardgame.com/#couple-game"
-      },
-      "hasPart": [
-        {
-          "@id": "https://www.streetboardgame.com/love#love-game"
-        },
-        {
-          "@id": "https://www.streetboardgame.com/friends#friend-game"
-        },
-        {
-          "@id": "https://www.streetboardgame.com/family#family-game"
-        }
-      ]
-    },
-    {
-      "@type": ["WebApplication", "Game"],
-      "@id": "https://www.streetboardgame.com/#couple-game",
-      "url": "https://www.streetboardgame.com/",
-      "name": "わたちゃん 彼氏の愛情判定ゲーム",
-      "alternateName": "わたちゃん",
-      "headline": "彼氏の彼女理解度を測定できる無料カップル診断ゲーム",
-      "description": "彼女が選んだ5問のお題の答えを彼氏が予想し、彼氏の彼女理解度を測定できるスマホ向け無料カップル診断ゲームです。彼女版への切り替えや結果シェアにも対応しています。",
-      "applicationCategory": "GameApplication",
-      "operatingSystem": "Any",
-      "browserRequirements": "Requires JavaScript",
-      "isAccessibleForFree": true,
-      "genre": ["カップルゲーム", "診断ゲーム", "ボードゲーム"],
-      "keywords": "カップルゲーム, カップル診断, 大学生カップル, 彼氏診断, 彼女診断, 愛情判定, 理解度チェック, デートゲーム, 飲み会ゲーム, スマホゲーム, ボードゲーム, わたちゃん",
-      "image": "https://www.streetboardgame.com/assets/ogp.jpg",
-      "inLanguage": "ja",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "JPY"
-      },
-      "mainEntityOfPage": {
-        "@id": "https://www.streetboardgame.com/#webpage"
-      },
-      "publisher": {
-        "@id": "https://www.streetboardgame.com/#organization"
-      }
-    },
-    {
-      "@type": ["WebApplication", "Game"],
-      "@id": "https://www.streetboardgame.com/love#love-game",
-      "url": "https://www.streetboardgame.com/love",
-      "name": "わたちゃん 彼氏の愛情判定ゲーム",
-      "alternateName": "わたちゃん",
-      "headline": "彼氏の愛情判定をメインに、彼女版も遊べる無料カップル診断ゲーム",
-      "description": "メインは彼氏の彼女理解度を測定する彼氏の愛情判定ゲームです。彼女版に切り替えると、彼女が彼氏の答えを当てる遊び方もできます。",
-      "applicationCategory": "GameApplication",
-      "operatingSystem": "Any",
-      "browserRequirements": "Requires JavaScript",
-      "isAccessibleForFree": true,
-      "genre": ["カップルゲーム", "恋愛診断", "愛情判定", "診断ゲーム", "ボードゲーム"],
-      "keywords": "彼氏の愛情判定, 彼女の愛情判定, カップル診断, 恋愛診断, カップルゲーム, 無料ゲーム, わたちゃん",
-      "image": "https://www.streetboardgame.com/assets/ogp.jpg",
-      "inLanguage": "ja",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "JPY"
-      },
-      "mainEntityOfPage": {
-        "@id": "https://www.streetboardgame.com/love#webpage"
-      },
-      "publisher": {
-        "@id": "https://www.streetboardgame.com/#organization"
-      }
-    },
-    {
-      "@type": ["WebApplication", "Game"],
-      "@id": "https://www.streetboardgame.com/friends#friend-game",
-      "url": "https://www.streetboardgame.com/friends",
-      "name": "わたちゃん 友達の友情判定",
-      "headline": "彼氏の愛情判定ゲームから広がる友情判定シリーズ",
-      "description": "わたちゃんシリーズの続編として、本人が選んだ答えを友達が予想し、友達のことをどれだけ理解しているか診断できるスマホ向け無料の友情診断ゲームです。",
-      "applicationCategory": "GameApplication",
-      "operatingSystem": "Any",
-      "browserRequirements": "Requires JavaScript",
-      "isAccessibleForFree": true,
-      "genre": ["友情ゲーム", "友達ゲーム", "診断ゲーム", "ボードゲーム"],
-      "keywords": "友情判定ゲーム, 友達ゲーム, 友情診断, 友達診断, 理解度チェック, 飲み会ゲーム, 旅行ゲーム, スマホゲーム, わたちゃん",
-      "image": "https://www.streetboardgame.com/assets/ogp.jpg",
-      "inLanguage": "ja",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "JPY"
-      },
-      "mainEntityOfPage": {
-        "@id": "https://www.streetboardgame.com/friends#webpage"
-      },
-      "publisher": {
-        "@id": "https://www.streetboardgame.com/#organization"
-      }
-    },
-    {
-      "@type": ["WebApplication", "Game"],
-      "@id": "https://www.streetboardgame.com/family#family-game",
-      "url": "https://www.streetboardgame.com/family",
-      "name": "わたちゃん 家族の絆判定",
-      "headline": "彼氏の愛情判定ゲームから広がる家族の絆判定シリーズ",
-      "description": "わたちゃんシリーズの続編として、本人が選んだ答えを家族が予想し、家族のことをどれだけ理解しているか診断できるスマホ向け無料の絆チェックゲームです。",
-      "applicationCategory": "GameApplication",
-      "operatingSystem": "Any",
-      "browserRequirements": "Requires JavaScript",
-      "isAccessibleForFree": true,
-      "genre": ["家族ゲーム", "絆ゲーム", "診断ゲーム", "ボードゲーム"],
-      "keywords": "家族ゲーム, 家族診断, 絆判定, 家族の絆, 理解度チェック, おうち時間ゲーム, 家族旅行ゲーム, スマホゲーム, わたちゃん",
-      "image": "https://www.streetboardgame.com/assets/ogp.jpg",
-      "inLanguage": "ja",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "JPY"
-      },
-      "mainEntityOfPage": {
-        "@id": "https://www.streetboardgame.com/family#webpage"
-      },
-      "publisher": {
-        "@id": "https://www.streetboardgame.com/#organization"
-      }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>ページが見つかりません｜わたちゃん</title>
+  <meta name="description" content="お探しのページは見つかりませんでした。わたちゃんのトップページから、彼氏の愛情判定ゲームやシリーズ作品をお楽しみください。" />
+  <meta name="robots" content="noindex, follow" />
+  <meta name="theme-color" content="#EC4F88" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans JP", sans-serif;
+      color: #1a1a1a;
+      background: #ec4f88;
     }
-  ]
-}
-</script>
-
-<!-- =========================
-  Google Analytics 4
-  計測ID: G-X07PVDQWYX (GA4 - streetboardgame.com)
-========================= -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-X07PVDQWYX"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-X07PVDQWYX', {
-    // localhostなどでは送信しない
-    send_page_view: location.hostname !== 'localhost' && !location.hostname.endsWith('.local')
-  });
-  // 結果画面到達などのカスタムイベントを発火するためのヘルパー
-  window.trackEvent = function(name, params) {
-    if (typeof gtag === 'function') gtag('event', name, params || {});
-  };
-</script>
-
-<!-- =========================
-  旧Wix URL からのルーティング
-  ※ SPA なので物理ページは1つ(index.html)。URL パスに応じて
-    アプリの初期画面を切り替えるために window.__INITIAL_SCREEN を立てる。
-
-  マッピング:
-    /          → トップ画面
-    /watachan  → 遊び方(How to play)画面
-    /love      → 彼氏の愛情判定紹介ページ（彼女版も対応）
-    /friends   → 友達の友情判定紹介ページ
-    /family    → 家族の絆判定紹介ページ
-    /about     → About ページ
-    /product   → 製品版ページ
-    /contact   → お問い合わせ(About のフォーム位置までスクロール)
-    その他     → トップ画面 (旧URLからの誘導は全部トップへ)
-========================= -->
-<script>
-  (function() {
-    // テスト用: ?screen=lovePage|friendPage|familyPage|intro|friendIntro|familyIntro|about|product|top で強制的に初期画面を指定可能
-    var query = new URLSearchParams(location.search);
-    var forceScreen = query.get('screen');
-    if (forceScreen && ['top','lovePage','friendPage','familyPage','intro','friendIntro','familyIntro','about','product'].indexOf(forceScreen) >= 0) {
-      window.__INITIAL_SCREEN = forceScreen;
-      if (forceScreen === 'about' && query.get('to') === 'contact') {
-        window.__SCROLL_TO_CONTACT = true;
-      }
-      return;
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+      background: #ec4f88;
     }
-
-    // ルーティングは全環境で発動 (Genspark Hosted の一時URLでも /watachan 等のパス想定)
-    var path = decodeURIComponent(location.pathname);
-
-    // Genspark Hosted のプレビュー環境などで pathの先頭に余計なプレフィックスが入る場合の
-    // 簡易対応: pathの末尾だけを見る
-    var lastSegment = path.replace(/\/+$/,'').split('/').pop().toLowerCase();
-
-    // ルーティングテーブル: [パス末尾] → 初期screen
-    var routes = {
-      '': 'top',
-      'index.html': 'top',
-      'watachan': 'intro',
-      'love': 'lovePage',
-      'friends': 'friendPage',
-      'family': 'familyPage',
-      'about': 'about',
-      'product': 'product',
-      'contact': 'about',
-    };
-
-    // 既知ルートに hit
-    if (routes.hasOwnProperty(lastSegment)) {
-      window.__INITIAL_SCREEN = routes[lastSegment];
-      // contact の場合は スクロール先指定
-      if (lastSegment === 'contact') {
-        window.__SCROLL_TO_CONTACT = true;
-      }
-      // GA に旧URLアクセスを記録
-      if (lastSegment !== '' && lastSegment !== 'index.html' && typeof gtag === 'function') {
-        gtag('event', 'legacy_url_route', { from: path, to: routes[lastSegment] });
-      }
-      return;
+    main {
+      width: min(100%, 520px);
+      padding: 32px 22px 26px;
+      text-align: center;
+      background: #fff;
+      border: 3px solid #1a1a1a;
+      border-radius: 18px;
+      box-shadow: 6px 6px 0 #1a1a1a;
     }
-
-    // 未知パスはトップに集約
-    window.__INITIAL_SCREEN = 'top';
-    if (typeof gtag === 'function') {
-      gtag('event', 'unknown_url_route', { from: path });
+    .label {
+      display: inline-block;
+      margin-bottom: 18px;
+      padding: 6px 15px;
+      color: #ffe26b;
+      background: #1a1a1a;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .12em;
     }
-  })();
-</script>
-
-<!-- =========================
-  フォント
-========================= -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Yomogi&family=Zen+Maru+Gothic:wght@400;500;700;900&family=RocknRoll+One&family=DotGothic16&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
-
-<style>
-  @font-face {
-    font-family: "HuiFontP29";
-    src: url("assets/fonts/HuiFontP29.ttf") format("truetype");
-    font-display: swap;
-  }
-  html, body { margin: 0; padding: 0; width: 100%; max-width: 100%; min-height: 100%; overflow-x: hidden; }
-  html { background: #EC4F88; }
-  body {
-    font-family: "Zen Maru Gothic", "Klee One", sans-serif;
-    color: #3D2B30;
-    -webkit-font-smoothing: antialiased;
-    background: #EC4F88;
-    min-height: 100dvh;
-    touch-action: pan-y;
-    overscroll-behavior-y: auto;
-  }
-  #root {
-    width: 100%;
-    max-width: 100vw;
-    min-height: 100dvh;
-    overflow-x: hidden;
-    touch-action: pan-y;
-    -webkit-overflow-scrolling: touch;
-  }
-  * { box-sizing: border-box; }
-  img { max-width: 100%; }
-  button, a {
-    font-family: inherit;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-  button:active { transform: scale(0.98); }
-  input:focus, textarea:focus { border-color: #FF4D6D !important; }
-</style>
-
-<!-- =========================
-  React + Babel
-  注: 本番では precompile したJSを使うのが理想だが、
-  暫定的に CDN の Babel をそのまま利用。
-========================= -->
-<script defer src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
-<script defer src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-<script defer src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+    h1 {
+      margin: 0;
+      color: #ec4f88;
+      font-size: clamp(28px, 8vw, 42px);
+      line-height: 1.25;
+    }
+    p {
+      margin: 16px auto 0;
+      max-width: 390px;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.8;
+    }
+    nav {
+      display: grid;
+      gap: 12px;
+      margin-top: 26px;
+    }
+    a {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 16px;
+      color: #1a1a1a;
+      background: #fff;
+      border: 2.5px solid #1a1a1a;
+      border-radius: 13px;
+      box-shadow: 3px 3px 0 #1a1a1a;
+      font-size: 15px;
+      font-weight: 900;
+      text-decoration: none;
+      touch-action: manipulation;
+    }
+    a.primary {
+      color: #fff;
+      background: #1a1a1a;
+      box-shadow: 4px 4px 0 #5bd4e8;
+    }
+    a:focus-visible {
+      outline: 4px solid #5bd4e8;
+      outline-offset: 3px;
+    }
+  </style>
 </head>
 <body>
-<noscript>
-  <main style="max-width: 720px; margin: 32px auto; padding: 24px; font-family: sans-serif; line-height: 1.8; color: #1A1A1A; background: #FFFFFF;">
-    <h1>わたちゃん｜彼氏の愛情判定ゲーム</h1>
-    <p>スマホ1台で無料で遊べるカップル診断ゲームです。メインは彼氏の彼女理解度を測定する「彼氏の愛情判定」。彼女版は同じゲーム内で切り替えて遊べます。</p>
-    <p>大学生カップルのデート中、飲み会、旅行、おうち時間にも遊びやすい理解度チェックです。シリーズとして、友達の友情判定、家族の絆判定も公開中です。JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情を判定する</a> / <a href="/family">家族の絆を判定する</a> / <a href="/product">製品版を見る</a> / <a href="/about">About</a></p>
+  <main>
+    <div class="label">404 NOT FOUND</div>
+    <h1>ページが見つかりません</h1>
+    <p>URLが変わったか、ページが削除された可能性があります。トップページから遊びたいゲームを選んでください。</p>
+    <nav aria-label="404ページからの移動先">
+      <a class="primary" href="/">トップページに戻る</a>
+      <a href="/love">彼氏の愛情判定を見る</a>
+      <a href="/remote">遠隔で2人の理解度判定を見る</a>
+    </nav>
   </main>
-</noscript>
-<div id="root" aria-live="polite"></div>
-
-<script src="prototype_quiz_data.js?v=cards-webp-1"></script>
-<script src="prototype_friend_data.js?v=seo-1"></script>
-<script src="prototype_family_data.js?v=family-1"></script>
-<script type="text/babel" src="prototype_character.jsx?v=image-webp-1"></script>
-<script type="text/babel" src="prototype_app.jsx?v=main-love-49"></script>
 </body>
 </html>

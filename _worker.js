@@ -11,10 +11,11 @@
 //   /family/          → /family にリダイレクト
 //   /contact          → /?screen=about&to=contact にリダイレクト
 //   /contact/         → /?screen=about&to=contact にリダイレクト
-//   その他の存在しないパス → / にリダイレクト
-//   存在するファイル (HTML/画像/JSX) → そのまま配信
+//   その他の存在しないパス → 専用404ページを404ステータスで返す
+//   存在するファイル (HTML/画像/JS) → そのまま配信
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
+const HASHED_JS_PATH = /^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12})\.js$/i;
 
 export default {
   async fetch(request, env) {
@@ -191,9 +192,25 @@ export default {
     // 静的アセットをそのまま返す (env.ASSETS は wrangler.jsonc の assets binding)
     const response = await env.ASSETS.fetch(request);
 
-    // 404 になったら / にフォールバック
+    // 存在しないURLは、検索エンジンにも正しく伝わる404ページを返す
     if (response.status === 404) {
-      return Response.redirect(url.origin + '/', 301);
+      const notFoundUrl = new URL('/404.html', url.origin);
+      const notFoundResponse = await env.ASSETS.fetch(new Request(notFoundUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(notFoundResponse.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      headers.set('cache-control', 'no-cache, must-revalidate');
+      headers.set('x-robots-tag', 'noindex, follow');
+      const body = request.method === 'HEAD' ? null : await notFoundResponse.arrayBuffer();
+      return new Response(body, { status: 404, headers });
+    }
+
+    if (response.ok && HASHED_JS_PATH.test(url.pathname)) {
+      const headers = new Headers(response.headers);
+      headers.set('cache-control', 'public, max-age=31536000, immutable');
+      return new Response(response.body, { status: response.status, headers });
     }
 
     return response;

@@ -1,14 +1,6 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const reactPath = path.join(root, 'node_modules/react/umd/react.production.min.js');
-const reactDomPath = path.join(root, 'node_modules/react-dom/umd/react-dom.production.min.js');
-
 async function preparePage(page) {
-  await page.route('https://unpkg.com/react@18.3.1/umd/react.production.min.js', (route) => route.fulfill({ path: reactPath }));
-  await page.route('https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js', (route) => route.fulfill({ path: reactDomPath }));
   await page.addInitScript(() => {
     const nativeTimeout = window.setTimeout.bind(window);
     window.setTimeout = (callback, delay = 0, ...args) => nativeTimeout(callback, Math.min(Number(delay) || 0, 12), ...args);
@@ -73,6 +65,64 @@ async function playGroupMixed(page, kind, scores) {
 }
 
 test.beforeEach(async ({ page }) => preparePage(page));
+
+test('全JSをハッシュ付きで自前配信しsource mapを公開しない', async ({ page, request }) => {
+  await page.goto('/?screen=top');
+  const scriptSources = await page.locator('script[src]').evaluateAll((scripts) => scripts.map((script) => script.src));
+  expect(scriptSources.some((source) => source.includes('unpkg.com'))).toBe(false);
+  await expect.poll(() => page.evaluate(() => window.React && window.React.version)).toBe('18.3.1');
+  await expect.poll(() => page.evaluate(() => window.ReactDOM && window.ReactDOM.version)).toMatch(/^18\.3\.1(?:-|$)/);
+
+  const indexBuildSources = await page.locator('script[data-build-entry]').evaluateAll((scripts) => scripts.map((script) => script.src));
+  expect(indexBuildSources).toHaveLength(8);
+  await page.goto('/remote');
+  const remoteBuildSources = await page.locator('script[data-build-entry]').evaluateAll((scripts) => scripts.map((script) => script.src));
+  expect(remoteBuildSources).toHaveLength(3);
+
+  for (const source of [...new Set([...indexBuildSources, ...remoteBuildSources])]) {
+    const url = new URL(source);
+    expect(url.origin).toBe('http://127.0.0.1:4173');
+    expect(url.pathname).toMatch(/^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}\.js|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12}\.js)$/i);
+    const response = await request.get(url.pathname);
+    expect(response.status()).toBe(200);
+    expect(response.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
+    expect(await response.text()).not.toContain('sourceMappingURL=');
+    expect((await request.get(`${url.pathname}.map`)).status()).toBe(404);
+  }
+});
+
+test('About・製品版の内部移動を実URLのリンクで行う', async ({ page }) => {
+  await page.goto('/?screen=top');
+  const aboutLink = page.getByRole('link', { name: 'About', exact: true });
+  const productLink = page.getByRole('link', { name: '製品版', exact: true });
+  await expect(aboutLink).toHaveAttribute('href', '/about');
+  await expect(productLink).toHaveAttribute('href', '/product');
+
+  await aboutLink.click();
+  await expect(page).toHaveURL('/about');
+  await expect(page.getByRole('heading', { name: 'About', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: '彼氏の愛情判定を開く' })).toHaveAttribute('href', '/love');
+  await expect(page.getByRole('link', { name: '友達の友情判定を開く' })).toHaveAttribute('href', '/friends');
+  await expect(page.getByRole('link', { name: '家族の絆判定を開く' })).toHaveAttribute('href', '/family');
+  await expect(page.getByRole('link', { name: 'トップに戻る' })).toHaveAttribute('href', '/');
+  await expect(page.getByRole('link', { name: 'トップページに戻る' })).toHaveAttribute('href', '/');
+
+  await page.goBack();
+  await expect(page).toHaveURL('/?screen=top');
+  await page.getByRole('link', { name: '製品版', exact: true }).click();
+  await expect(page).toHaveURL('/product');
+  await expect(page.getByRole('heading', { name: '製品版もあります' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'トップに戻る' })).toHaveAttribute('href', '/');
+  await expect(page.getByRole('link', { name: 'トップページに戻る' })).toHaveAttribute('href', '/');
+});
+
+test('存在しないURL: 404ページとnoindexを返す', async ({ page }) => {
+  const response = await page.goto('/does-not-exist-for-test');
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole('heading', { name: 'ページが見つかりません' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'トップページに戻る' })).toHaveAttribute('href', '/');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow');
+});
 
 test('全カードデータ: 件数・選択肢・画像', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'データ検証はブラウザ幅に依存しないためPCで1回実行');

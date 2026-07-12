@@ -7,6 +7,7 @@ import { build } from 'esbuild';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const host = '127.0.0.1';
 const port = Number(process.env.TEST_PORT || 4173);
+const HASHED_JS_PATH = /^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12})\.js$/i;
 
 class MemoryKV {
   constructor() { this.values = new Map(); }
@@ -94,13 +95,25 @@ const server = http.createServer(async (req, res) => {
     const data = await readFile(absolute);
     res.writeHead(200, {
       'content-type': mime[path.extname(absolute).toLowerCase()] || 'application/octet-stream',
-      'cache-control': 'no-store',
+      'cache-control': HASHED_JS_PATH.test(parsed.pathname)
+        ? 'public, max-age=31536000, immutable'
+        : 'no-store',
     });
     res.end(data);
   } catch (error) {
     const status = error && error.code === 'ENOENT' ? 404 : 500;
-    res.writeHead(status, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end(status === 404 ? 'Not found' : String(error && error.stack || error));
+    if (status === 404) {
+      const data = await readFile(path.join(root, '404.html'));
+      res.writeHead(404, {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        'x-robots-tag': 'noindex, follow',
+      });
+      res.end(data);
+      return;
+    }
+    res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end(String(error && error.stack || error));
   }
 });
 

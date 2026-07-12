@@ -25,8 +25,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="preload" as="image" href="/assets/character/girl-full.webp" type="image/webp" fetchpriority="high" />
-<link rel="dns-prefetch" href="https://unpkg.com" />
-<link rel="preconnect" href="https://unpkg.com" crossorigin />
+<link data-build-preload="react" rel="preload" href="/assets/vendor/react.production.min-d949f1c3687a.js" as="script" />
+<link data-build-preload="react_dom" rel="preload" href="/assets/vendor/react-dom.production.min-35f4f974f4b2.js" as="script" />
 <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
 
@@ -402,8 +402,8 @@
 </style>
 
 <!-- React runtime. JSX is precompiled into dist/*.js during development. -->
-<script defer src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
-<script defer src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script data-build-entry="react" defer src="/assets/vendor/react.production.min-d949f1c3687a.js"></script>
+<script data-build-entry="react_dom" defer src="/assets/vendor/react-dom.production.min-35f4f974f4b2.js"></script>
 </head>
 <body>
 <noscript>
@@ -416,11 +416,11 @@
 </noscript>
 <div id="root" aria-live="polite"></div>
 
-<script src="viewport_recovery.js?v=viewport-recovery-2"></script>
-<script src="prototype_quiz_data.js?v=cards-webp-1"></script>
-<script src="prototype_friend_data.js?v=seo-1"></script>
-<script src="prototype_family_data.js?v=family-1"></script>
-<script defer src="dist/prototype_character.js?v=precompiled-1"></script>
-<script defer src="dist/prototype_app.js?v=precompiled-2"></script>
+<script data-build-entry="viewport_recovery" src="/dist/viewport_recovery-2JOQOPPO.js"></script>
+<script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-755MVJBO.js"></script>
+<script data-build-entry="prototype_friend_data" src="/dist/prototype_friend_data-XAW4JOCW.js"></script>
+<script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-LYMAPPXC.js"></script>
+<script data-build-entry="prototype_character" defer src="/dist/prototype_character-MW7JF4NR.js"></script>
+<script data-build-entry="prototype_app" defer src="/dist/prototype_app-G6AEOI46.js"></script>
 </body>
 </html>
