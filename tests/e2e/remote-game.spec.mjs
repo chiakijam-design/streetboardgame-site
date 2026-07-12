@@ -68,6 +68,17 @@ for (const creatorRole of ['target', 'guesser']) {
       await expect(second.locator('#resultReview')).toBeVisible();
       await expect(second.locator('#shareResultLine')).toBeVisible();
 
+      const answerLayout = await second.locator('#answerDetails .answer-pick').evaluateAll((picks) => picks.map((pick) => {
+        const name = pick.querySelector('.answer-name').getBoundingClientRect();
+        const choice = pick.querySelector('.answer-choice').getBoundingClientRect();
+        const dot = pick.querySelector('.answer-mini-dot').getBoundingClientRect();
+        return {
+          nameBeforeChoice: name.bottom <= choice.top + 1,
+          dotCenterOffset: Math.abs((dot.top + dot.height / 2) - (choice.top + choice.height / 2)),
+        };
+      }));
+      expect(answerLayout.every(({ nameBeforeChoice, dotCenterOffset }) => nameBeforeChoice && dotCenterOffset <= 1)).toBe(true);
+
       if (score === 3) {
         await second.locator('#replaySwapRoles').click();
         await expect(second.locator('#score')).toBeHidden();

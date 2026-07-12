@@ -4143,14 +4143,14 @@ function ShareBtn({ label, ariaLabel, bg, fg, onClick }) {
 
 function AnswerPick({ label, choice, opt, accent }) {
   return (
-    <div style={{
+    <div className="result-answer-pick" style={{
       padding: '7px 7px',
       background: proto.white,
       border: `1.5px solid ${proto.black}`,
       borderRadius: 8,
       minWidth: 0,
     }}>
-      <div style={{
+      <div className="result-answer-name" style={{
         display: 'inline-block',
         padding: '1px 7px',
         background: accent,
@@ -4161,14 +4161,14 @@ function AnswerPick({ label, choice, opt, accent }) {
         fontWeight: 900,
         marginBottom: 5,
       }}>{label}</div>
-      <div style={{
+      <div className="result-answer-choice" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
         minHeight: 26,
       }}>
-        <span style={{
+        <span className="result-answer-dot" style={{
           width: 16,
           height: 16,
           borderRadius: '50%',
