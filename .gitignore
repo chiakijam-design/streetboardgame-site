@@ -12,6 +12,9 @@ node_modules/
 build/
 .wrangler/
 *.log
+playwright-report/
+test-results/
+.test-worker.mjs
 
 # Env
 .env

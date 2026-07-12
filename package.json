@@ -2,9 +2,15 @@
   "name": "streetboardgame-site",
   "private": true,
   "scripts": {
-    "build": "node tools/build-js.mjs"
+    "build": "node tools/build-js.mjs",
+    "test": "pnpm run test:e2e",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
   },
   "devDependencies": {
-    "esbuild": "0.25.6"
+    "@playwright/test": "1.55.0",
+    "esbuild": "0.25.6",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   }
 }

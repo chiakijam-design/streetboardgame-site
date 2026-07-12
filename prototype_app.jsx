@@ -2257,7 +2257,7 @@ function IntroScreen({ onStart, onBack, playerNames, onPlayerNameChange, loveMod
           </div>
         </div>
 
-        <button onClick={onStart} style={{ ...primaryBtn(), marginTop: 22 }}>
+        <button data-testid="love-start" onClick={onStart} style={{ ...primaryBtn(), marginTop: 22 }}>
           スタート
           <span style={{
             display: 'inline-block', marginLeft: 6,
@@ -2311,6 +2311,7 @@ function LoveModePanel({ girlName, boyName, loveMode, onChange }) {
             <button
               key={option.key}
               type="button"
+              data-testid={`love-mode-${option.key}`}
               onClick={() => onChange(option.key)}
               style={{
                 width: '100%',
@@ -3079,6 +3080,7 @@ function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer'
             return (
               <button
                 key={opt.id}
+                data-testid={`color-${i}`}
                 onClick={() => {
                   if (!isLocked) {
                     vibrateOnPick();
@@ -4406,7 +4408,7 @@ function FriendIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
           }}>★ SELECT PLAYERS ★</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
             {[2, 3, 4].map((count) => (
-              <button key={count} onClick={() => onStart(count)} style={{
+              <button key={count} data-testid={`friend-count-${count}`} onClick={() => onStart(count)} style={{
                 minHeight: 72,
                 background: count === 2 ? proto.cyan : count === 3 ? proto.yellow : proto.white,
                 color: proto.black,
@@ -5587,7 +5589,7 @@ function FamilyIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
           }}>★ SELECT PLAYERS ★</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
             {[2, 3, 4].map((count) => (
-              <button key={count} onClick={() => onStart(count)} style={{
+              <button key={count} data-testid={`family-count-${count}`} onClick={() => onStart(count)} style={{
                 minHeight: 72,
                 background: count === 2 ? proto.cyan : count === 3 ? proto.yellow : proto.white,
                 color: proto.black,
