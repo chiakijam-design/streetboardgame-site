@@ -4537,15 +4537,18 @@ function GroupRevealReadyScreen({ kind, targetName, onResult, onHome }) {
   );
 }
 
-const GROUP_REVEAL_TALK_PROMPTS = [
-  'それを選んだ決め手は？',
-  '予想と違った人は、どこで迷った？',
-  'その答えを選ぶと思っていた人は？',
-  '一番意外だった予想はどれ？',
-  '最後に、答えの理由を聞いてみよう',
-];
+const GROUP_CONFETTI_PIECES = Array.from({ length: 32 }, (_, index) => ({
+  left: `${(index * 37 + 7) % 100}%`,
+  delay: `${(index % 8) * 0.055}s`,
+  duration: `${1.65 + (index % 5) * 0.14}s`,
+  drift: `${((index * 29) % 121) - 60}px`,
+  turn: `${420 + (index % 7) * 70}deg`,
+  color: [proto.yellow, proto.cyan, proto.white, '#FF8DB5', '#79BD5D'][index % 5],
+  shape: index % 3 === 0 ? '50%' : '2px',
+}));
 
 function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext }) {
+  const celebratedRef = useRef('');
   const guesses = Array.isArray(answer && answer.guesses) ? answer.guesses : [];
   const correctCount = guesses.filter((guess) => guess === (answer && answer.target)).length;
   const guessCount = guesses.length;
@@ -4558,7 +4561,21 @@ function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext })
     : (correctCount === 0
       ? '予想が全部バラけた！ここからが盛り上がりどころ。'
       : `${guessCount - correctCount}人は意外な答え。理由を聞いてみよう。`);
-  const talkPrompt = GROUP_REVEAL_TALK_PROMPTS[qIdx % GROUP_REVEAL_TALK_PROMPTS.length];
+
+  useEffect(() => {
+    const celebrationKey = `${kind}-${qIdx}`;
+    if (!allCorrect || celebratedRef.current === celebrationKey) return;
+    celebratedRef.current = celebrationKey;
+    const reduceMotion = typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) return;
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate([45, 30, 80]);
+      }
+    } catch (e) {}
+  }, [allCorrect, kind, qIdx]);
 
   return (
     <div data-testid={`${kind}-reveal-page`} style={{
@@ -4580,15 +4597,52 @@ function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext })
           0%, 100% { opacity: 0.35; transform: scale(0.8) rotate(0); }
           50% { opacity: 1; transform: scale(1.2) rotate(45deg); }
         }
+        @keyframes groupConfettiFall {
+          0% { opacity: 0; transform: translate3d(0, -28px, 0) rotate(0deg); }
+          10% { opacity: 1; }
+          88% { opacity: 1; }
+          100% {
+            opacity: 0;
+            transform: translate3d(var(--confetti-drift), 108vh, 0) rotate(var(--confetti-turn));
+          }
+        }
         .group-reveal-stage { animation: groupRevealIn 0.45s ease-out both; }
         .group-reveal-verdict { animation: groupVerdictPop 0.55s 0.18s ease-out both; }
+        .group-reveal-confetti-piece { animation: groupConfettiFall var(--confetti-duration) var(--confetti-delay) ease-in both; }
         @media (prefers-reduced-motion: reduce) {
-          .group-reveal-stage, .group-reveal-verdict, .group-reveal-sparkle {
+          .group-reveal-stage, .group-reveal-verdict, .group-reveal-sparkle,
+          .group-reveal-confetti-piece {
             animation: none !important;
           }
         }
       `}</style>
       <Decor />
+      {allCorrect && (
+        <div
+          data-testid={`${kind}-reveal-confetti`}
+          aria-hidden="true"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 4, overflow: 'hidden', pointerEvents: 'none',
+          }}
+        >
+          {GROUP_CONFETTI_PIECES.map((piece, index) => (
+            <span
+              key={`${qIdx}-${index}`}
+              className="group-reveal-confetti-piece"
+              style={{
+                position: 'absolute', top: -18, left: piece.left,
+                width: index % 4 === 0 ? 10 : 7, height: index % 4 === 0 ? 10 : 14,
+                borderRadius: piece.shape, background: piece.color,
+                border: '1px solid rgba(26,26,26,0.35)',
+                '--confetti-delay': piece.delay,
+                '--confetti-duration': piece.duration,
+                '--confetti-drift': piece.drift,
+                '--confetti-turn': piece.turn,
+              }}
+            />
+          ))}
+        </div>
+      )}
       <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 540, margin: '0 auto' }}>
         <PillLabel>ANSWER CHECK {qIdx + 1} / {total}</PillLabel>
         <div style={{
@@ -4643,22 +4697,6 @@ function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext })
           </div>
         </div>
 
-        <div style={{
-          marginTop: 14, padding: '12px 14px', background: proto.black,
-          border: `2px solid ${proto.white}`, borderRadius: 14,
-          boxShadow: '4px 4px 0 rgba(0,0,0,0.28)', textAlign: 'center',
-        }}>
-          <div style={{
-            display: 'inline-block', padding: '3px 10px', borderRadius: 999,
-            background: proto.yellow, color: proto.black, fontSize: 10, fontWeight: 900,
-          }}>ここでトーク</div>
-          <div style={{ marginTop: 7, fontSize: 16, lineHeight: 1.45, fontWeight: 900 }}>
-            {talkPrompt}
-          </div>
-          <div style={{ marginTop: 3, fontSize: 10, lineHeight: 1.5, opacity: 0.78, fontWeight: 700 }}>
-            答えを変えずに、理由だけ聞いてみよう
-          </div>
-        </div>
       </div>
       <FixedActionBar
         primaryLabel={qIdx + 1 >= total ? '結果を見る ▶' : `次の答え合わせへ（${qIdx + 2}/${total}）▶`}

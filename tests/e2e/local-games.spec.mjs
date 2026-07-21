@@ -66,7 +66,13 @@ async function revealGroupAnswers(page, kind, playerCount) {
   await startButton.click();
   for (let question = 0; question < 5; question += 1) {
     await expect(page.getByTestId(`${kind}-reveal-page`)).toBeVisible();
-    await expect(page.getByTestId(`${kind}-reveal-verdict`)).toBeVisible();
+    const verdict = page.getByTestId(`${kind}-reveal-verdict`);
+    await expect(verdict).toBeVisible();
+    const allCorrect = (await verdict.textContent()).includes('全員正解');
+    const confetti = page.getByTestId(`${kind}-reveal-confetti`);
+    if (allCorrect) await expect(confetti).toBeVisible();
+    else await expect(confetti).toHaveCount(0);
+    await expect(page.getByText('ここでトーク', { exact: true })).toHaveCount(0);
     await expectAnswerPickLayout(page, playerCount);
     const nextButton = page.getByTestId(question === 4 ? `${kind}-reveal-result` : `${kind}-reveal-next`);
     await expect(nextButton).toBeVisible();
