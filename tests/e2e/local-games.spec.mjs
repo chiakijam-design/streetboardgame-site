@@ -66,6 +66,7 @@ async function revealGroupAnswers(page, kind, playerCount) {
   await startButton.click();
   for (let question = 0; question < 5; question += 1) {
     await expect(page.getByTestId(`${kind}-reveal-page`)).toBeVisible();
+    await expect(page.getByTestId(`${kind}-reveal-verdict`)).toBeVisible();
     await expectAnswerPickLayout(page, playerCount);
     const nextButton = page.getByTestId(question === 4 ? `${kind}-reveal-result` : `${kind}-reveal-next`);
     await expect(nextButton).toBeVisible();

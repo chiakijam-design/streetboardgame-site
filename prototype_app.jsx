@@ -4217,10 +4217,11 @@ function AnswerPick({
   background = proto.white,
   status = '',
   compact = false,
+  featured = false,
 }) {
   return (
     <div className="result-answer-pick" style={{
-      padding: compact ? '6px 4px' : '7px 7px',
+      padding: featured ? '10px 8px' : (compact ? '6px 4px' : '7px 7px'),
       background,
       border: `1.5px solid ${proto.black}`,
       borderRadius: 8,
@@ -4235,20 +4236,20 @@ function AnswerPick({
         color: proto.black,
         border: `1.5px solid ${proto.black}`,
         borderRadius: 999,
-        fontSize: 9,
+        fontSize: featured ? 10 : 9,
         fontWeight: 900,
-        marginBottom: 5,
+        marginBottom: featured ? 7 : 5,
       }}>{label}</div>
       <div className="result-answer-choice" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: compact ? 4 : 6,
-        minHeight: compact ? 24 : 26,
+        gap: featured ? 8 : (compact ? 4 : 6),
+        minHeight: featured ? 34 : (compact ? 24 : 26),
       }}>
         <span className="result-answer-dot" style={{
-          width: compact ? 14 : 16,
-          height: compact ? 14 : 16,
+          width: featured ? 20 : (compact ? 14 : 16),
+          height: featured ? 20 : (compact ? 14 : 16),
           borderRadius: '50%',
           background: opt ? opt.color : proto.textSoft,
           border: `1.5px solid ${proto.black}`,
@@ -4257,7 +4258,7 @@ function AnswerPick({
         }} />
         <span style={{
           minWidth: 0,
-          fontSize: 11,
+          fontSize: featured ? 13 : 11,
           lineHeight: 1.3,
           fontWeight: 900,
           color: proto.text,
@@ -4266,8 +4267,8 @@ function AnswerPick({
       </div>
       {status && (
         <div style={{
-          marginTop: 3,
-          fontSize: 9,
+          marginTop: featured ? 5 : 3,
+          fontSize: featured ? 10 : 9,
           lineHeight: 1,
           color: proto.textSoft,
         }}>{status}</div>
@@ -4536,22 +4537,128 @@ function GroupRevealReadyScreen({ kind, targetName, onResult, onHome }) {
   );
 }
 
+const GROUP_REVEAL_TALK_PROMPTS = [
+  'それを選んだ決め手は？',
+  '予想と違った人は、どこで迷った？',
+  'その答えを選ぶと思っていた人は？',
+  '一番意外だった予想はどれ？',
+  '最後に、答えの理由を聞いてみよう',
+];
+
 function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext }) {
+  const guesses = Array.isArray(answer && answer.guesses) ? answer.guesses : [];
+  const correctCount = guesses.filter((guess) => guess === (answer && answer.target)).length;
+  const guessCount = guesses.length;
+  const allCorrect = guessCount > 0 && correctCount === guessCount;
+  const verdict = allCorrect
+    ? '全員正解！'
+    : (correctCount === 0 ? '全員ハズレ！' : `${correctCount}人正解！`);
+  const verdictDetail = allCorrect
+    ? 'みんな、かなり分かってる。息ぴったり！'
+    : (correctCount === 0
+      ? '予想が全部バラけた！ここからが盛り上がりどころ。'
+      : `${guessCount - correctCount}人は意外な答え。理由を聞いてみよう。`);
+  const talkPrompt = GROUP_REVEAL_TALK_PROMPTS[qIdx % GROUP_REVEAL_TALK_PROMPTS.length];
+
   return (
     <div data-testid={`${kind}-reveal-page`} style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
-      padding: '42px 18px 150px', boxSizing: 'border-box', position: 'relative',
+      padding: '32px 18px 148px', boxSizing: 'border-box', position: 'relative',
+      overflow: 'hidden',
     }}>
+      <style>{`
+        @keyframes groupRevealIn {
+          0% { opacity: 0; transform: translateY(18px) scale(0.97); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes groupVerdictPop {
+          0% { opacity: 0; transform: scale(0.72) rotate(-2deg); }
+          70% { transform: scale(1.05) rotate(1deg); }
+          100% { opacity: 1; transform: scale(1) rotate(0); }
+        }
+        @keyframes groupSparkle {
+          0%, 100% { opacity: 0.35; transform: scale(0.8) rotate(0); }
+          50% { opacity: 1; transform: scale(1.2) rotate(45deg); }
+        }
+        .group-reveal-stage { animation: groupRevealIn 0.45s ease-out both; }
+        .group-reveal-verdict { animation: groupVerdictPop 0.55s 0.18s ease-out both; }
+        @media (prefers-reduced-motion: reduce) {
+          .group-reveal-stage, .group-reveal-verdict, .group-reveal-sparkle {
+            animation: none !important;
+          }
+        }
+      `}</style>
       <Decor />
-      <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+      <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 540, margin: '0 auto' }}>
         <PillLabel>ANSWER CHECK {qIdx + 1} / {total}</PillLabel>
-        <div style={{ marginTop: 14 }}><LogoText size={28}>1問ずつ答え合わせ</LogoText></div>
-        <p style={{ margin: '10px auto 18px', fontSize: 13, lineHeight: 1.6, fontWeight: 900 }}>
-          「どうしてこれ選んだの？」も話してから次へ
-        </p>
+        <div style={{
+          display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12,
+        }} aria-label={`${total}問中${qIdx + 1}問目`}>
+          {Array.from({ length: total }).map((_, dotIndex) => (
+            <span key={dotIndex} style={{
+              width: dotIndex === qIdx ? 24 : 9,
+              height: 9,
+              borderRadius: 999,
+              background: dotIndex <= qIdx ? proto.yellow : 'rgba(255,255,255,0.45)',
+              border: `1.5px solid ${proto.black}`,
+              transition: 'width 0.2s ease',
+            }} />
+          ))}
+        </div>
+        <div style={{ marginTop: 10 }}><LogoText size={30}>答えオープン！</LogoText></div>
       </div>
-      <div style={{ position: 'relative', zIndex: 1 }}>
+
+      <div className="group-reveal-stage" style={{
+        position: 'relative', zIndex: 1, maxWidth: 540, margin: '16px auto 0',
+      }}>
+        {['8%:10%', '90%:5%', '97%:46%', '3%:62%'].map((position, sparkleIndex) => {
+          const [left, top] = position.split(':');
+          return (
+            <span key={position} className="group-reveal-sparkle" aria-hidden="true" style={{
+              position: 'absolute', left, top, color: sparkleIndex % 2 ? proto.cyan : proto.yellow,
+              fontSize: sparkleIndex % 2 ? 20 : 16, lineHeight: 1,
+              animation: `groupSparkle 1.4s ${sparkleIndex * 0.16}s ease-in-out infinite`,
+              zIndex: 3, textShadow: '1px 1px 0 #000', pointerEvents: 'none',
+            }}>✦</span>
+          );
+        })}
         <MultiPlayerAnswerCard answer={answer} card={card} players={players} index={qIdx} reveal />
+
+        <div
+          className="group-reveal-verdict"
+          data-testid={`${kind}-reveal-verdict`}
+          aria-live="polite"
+          style={{
+            margin: '14px auto 0', padding: '12px 16px',
+            background: allCorrect ? proto.yellow : (correctCount === 0 ? proto.white : proto.cyan),
+            color: proto.black, border: `2.5px solid ${proto.black}`,
+            borderRadius: 14, boxShadow: proto.shadowHard, textAlign: 'center',
+          }}
+        >
+          <LogoText size={28} color={allCorrect ? proto.pink : proto.black} outline={proto.white}>
+            {verdict}
+          </LogoText>
+          <div style={{ marginTop: 4, fontSize: 12, lineHeight: 1.5, fontWeight: 900 }}>
+            {verdictDetail}
+          </div>
+        </div>
+
+        <div style={{
+          marginTop: 14, padding: '12px 14px', background: proto.black,
+          border: `2px solid ${proto.white}`, borderRadius: 14,
+          boxShadow: '4px 4px 0 rgba(0,0,0,0.28)', textAlign: 'center',
+        }}>
+          <div style={{
+            display: 'inline-block', padding: '3px 10px', borderRadius: 999,
+            background: proto.yellow, color: proto.black, fontSize: 10, fontWeight: 900,
+          }}>ここでトーク</div>
+          <div style={{ marginTop: 7, fontSize: 16, lineHeight: 1.45, fontWeight: 900 }}>
+            {talkPrompt}
+          </div>
+          <div style={{ marginTop: 3, fontSize: 10, lineHeight: 1.5, opacity: 0.78, fontWeight: 700 }}>
+            答えを変えずに、理由だけ聞いてみよう
+          </div>
+        </div>
       </div>
       <FixedActionBar
         primaryLabel={qIdx + 1 >= total ? '結果を見る ▶' : `次の答え合わせへ（${qIdx + 2}/${total}）▶`}
@@ -5412,7 +5519,7 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
-function MultiPlayerAnswerCard({ answer, card, players, index }) {
+function MultiPlayerAnswerCard({ answer, card, players, index, reveal = false }) {
   const safeAnswer = answer || { target: null, guesses: [] };
   const choices = card && card.choices ? card.choices : [];
   const rows = [
@@ -5424,6 +5531,68 @@ function MultiPlayerAnswerCard({ answer, card, players, index }) {
       match: guess === safeAnswer.target,
     })),
   ];
+
+  if (reveal) {
+    const targetRow = rows[0];
+    const guessRows = rows.slice(1);
+    return (
+      <div style={{
+        background: proto.white,
+        border: `3px solid ${proto.black}`,
+        borderRadius: 14,
+        boxShadow: '6px 6px 0 #000',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          padding: '9px 12px',
+          background: proto.black,
+          color: proto.white,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <span style={{
+            padding: '2px 7px', borderRadius: 999, background: proto.yellow,
+            color: proto.black, fontFamily: proto.caption, fontSize: 10,
+          }}>Q{index + 1}</span>
+          <span style={{ flex: 1, fontSize: 14, fontWeight: 900, textAlign: 'left', lineHeight: 1.35 }}>
+            {card ? card.title : ''}
+          </span>
+        </div>
+        <div style={{ padding: 10, color: proto.text }}>
+          <div style={{ marginBottom: 8 }}>
+            <AnswerPick
+              label={targetRow.name}
+              choice={choices[targetRow.pick] || '-'}
+              opt={window.COLOR_OPTIONS && window.COLOR_OPTIONS[targetRow.pick]}
+              accent={proto.white}
+              background={proto.cyan}
+              status="本人の答え"
+              featured
+            />
+          </div>
+          <div className="group-reveal-guesses" style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${Math.max(1, guessRows.length)}, minmax(0, 1fr))`,
+            gap: 7,
+          }}>
+            {guessRows.map((row) => (
+              <AnswerPick
+                key={row.name}
+                label={row.name}
+                choice={choices[row.pick] || '-'}
+                opt={window.COLOR_OPTIONS && window.COLOR_OPTIONS[row.pick]}
+                accent={row.match ? proto.yellow : proto.white}
+                background={row.match ? proto.yellow : proto.pinkSoft}
+                status={row.match ? '当たり！' : 'ハズレ'}
+                featured
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{
