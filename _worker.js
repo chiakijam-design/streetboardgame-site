@@ -34,6 +34,10 @@ export default {
       return handleRemoteApi(request, env, path);
     }
 
+    if (rawPath !== '/' && rawPath.endsWith('/') && path === '/remote') {
+      return Response.redirect(url.origin + path, 301);
+    }
+
     if (path === '/remote') {
       const remoteUrl = new URL('/remote.html', url.origin);
       const response = await env.ASSETS.fetch(new Request(remoteUrl.toString(), {

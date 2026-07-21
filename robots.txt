@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /*?screen=
+Disallow: /api/remote/
 
 Sitemap: https://www.streetboardgame.com/sitemap.xml

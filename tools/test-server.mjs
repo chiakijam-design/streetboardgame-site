@@ -70,6 +70,34 @@ async function sendWebResponse(res, response) {
   res.end(Buffer.from(await response.arrayBuffer()));
 }
 
+async function fetchStaticAsset(request) {
+  const parsed = new URL(request.url);
+  const relative = staticPath(parsed.pathname);
+  const absolute = path.resolve(root, relative);
+  const relativeToRoot = path.relative(root, absolute);
+  if (relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) {
+    return new Response('Forbidden', { status: 403 });
+  }
+
+  try {
+    const data = await readFile(absolute);
+    return new Response(request.method === 'HEAD' ? null : data, {
+      status: 200,
+      headers: {
+        'content-type': mime[path.extname(absolute).toLowerCase()] || 'application/octet-stream',
+        'cache-control': HASHED_JS_PATH.test(parsed.pathname)
+          ? 'public, max-age=31536000, immutable'
+          : 'no-store',
+      },
+    });
+  } catch (error) {
+    if (error && (error.code === 'ENOENT' || error.code === 'EISDIR')) {
+      return new Response('Not found', { status: 404 });
+    }
+    throw error;
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const parsed = new URL(req.url, `http://${host}:${port}`);
@@ -78,28 +106,11 @@ const server = http.createServer(async (req, res) => {
       res.end('ok');
       return;
     }
-    if (parsed.pathname.startsWith('/api/remote/')) {
-      const response = await worker.fetch(await toRequest(req), {
-        REMOTE_KV: kv,
-        ASSETS: { fetch: () => new Response('Not found', { status: 404 }) },
-      });
-      await sendWebResponse(res, response);
-      return;
-    }
-
-    const relative = staticPath(parsed.pathname);
-    const absolute = path.resolve(root, relative);
-    if (!absolute.startsWith(root + path.sep) && absolute !== path.join(root, 'index.html')) {
-      res.writeHead(403); res.end('Forbidden'); return;
-    }
-    const data = await readFile(absolute);
-    res.writeHead(200, {
-      'content-type': mime[path.extname(absolute).toLowerCase()] || 'application/octet-stream',
-      'cache-control': HASHED_JS_PATH.test(parsed.pathname)
-        ? 'public, max-age=31536000, immutable'
-        : 'no-store',
+    const response = await worker.fetch(await toRequest(req), {
+      REMOTE_KV: kv,
+      ASSETS: { fetch: fetchStaticAsset },
     });
-    res.end(data);
+    await sendWebResponse(res, response);
   } catch (error) {
     const status = error && error.code === 'ENOENT' ? 404 : 500;
     if (status === 404) {

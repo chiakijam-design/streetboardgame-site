@@ -1753,7 +1753,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
       </div>
 
       {/* 遊び方・紹介ページへの入口 */}
-      <div style={{ padding: '28px 24px 0', position: 'relative', zIndex: 1 }}>
+      <nav aria-label="ゲームシリーズの紹介ページ" style={{ padding: '28px 24px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
           fontFamily: proto.body, fontSize: 13,
           color: proto.white, letterSpacing: 0,
@@ -1766,17 +1766,17 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           <SeriesCard emoji="👯" title="友達の友情判定" status="シリーズ" href="/friends" onClick={onFriendPage} />
           <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="シリーズ" href="/family" onClick={onFamilyPage} />
         </div>
-      </div>
+      </nav>
 
       {/* フッターリンク */}
-      <div style={{
+      <footer style={{
         padding: '22px 24px 0', position: 'relative', zIndex: 1,
         display: 'flex', justifyContent: 'center', gap: 18,
       }}>
         <FooterLink href="/about">About</FooterLink>
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
         <FooterLink href="/product">製品版</FooterLink>
-      </div>
+      </footer>
     </main>
   );
 }
@@ -1899,7 +1899,7 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
       overflow: 'hidden',
     }}>
       <Decor />
-      <div style={{
+      <header style={{
         background: proto.black,
         color: proto.white,
         padding: '50px 22px 30px',
@@ -1907,7 +1907,7 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
         overflow: 'hidden',
         textAlign: 'center',
       }}>
-        <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
+        <BackBtn href="/" onClick={onBack} top={50} dark label="トップに戻る" />
         <div style={{
           position: 'absolute',
           right: -18,
@@ -1929,7 +1929,7 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
             {content.title}
           </h1>
         </div>
-      </div>
+      </header>
 
       <div style={{ padding: '22px 22px 0', position: 'relative', zIndex: 1 }}>
         <section style={{
@@ -2148,7 +2148,7 @@ function CardStack() {
         }}>
           <picture style={{ display: 'block', width: '100%', height: '100%' }}>
             <source srcSet={s.webp} type="image/webp" />
-            <img src={s.src} alt="" width="110" height="165" loading="eager" decoding="async" style={{
+            <img src={s.src} alt="" width="110" height="165" loading="eager" decoding="async" fetchPriority="low" style={{
               width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top',
               display: 'block',
             }} />
@@ -6969,7 +6969,13 @@ function BackBtn({ onClick, href, top = 20, dark = false, label = '戻る' }) {
       <span>{label}</span>
     </>
   );
-  if (href) return <a href={href} aria-label={label} style={style}>{content}</a>;
+  if (href) return (
+    <a href={href} onClick={(event) => {
+      if (!onClick) return;
+      event.preventDefault();
+      onClick();
+    }} aria-label={label} style={style}>{content}</a>
+  );
   return <button type="button" onClick={onClick} aria-label={label} style={style}>{content}</button>;
 }
 
