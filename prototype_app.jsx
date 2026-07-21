@@ -1476,11 +1476,24 @@ function App() {
         {screen === 'resultReady' && (
           <ResultReadyScreen
             title="5問終了！"
-            subtitle="答え合わせいくよ"
-            detail={`${lovePlayPlayers[0]}の答えを、${lovePlayPlayers[1]}が何問当てられたか発表します。ふたりで一緒に見てね。`}
-            buttonLabel="答え合わせへ"
-            onResult={() => setScreen('result')}
+            subtitle="ここから1問ずつ答え合わせ"
+            detail={`${lovePlayPlayers[0]}が選んだ理由も話しながら、ふたりで1問ずつ見てね。`}
+            buttonLabel="1問目の答え合わせへ"
+            onResult={() => { setQIdx(0); setScreen('loveReveal'); }}
             onHome={backToTop}
+            buttonTestId="love-reveal-start"
+          />
+        )}
+        {screen === 'loveReveal' && (
+          <GroupRevealScreen
+            kind="love"
+            answer={{ target: answers[qIdx] && answers[qIdx].girl, guesses: [answers[qIdx] && answers[qIdx].boy] }}
+            card={cards[qIdx]}
+            players={lovePlayPlayers}
+            qIdx={qIdx}
+            total={cards.length}
+            pairMode
+            onNext={() => qIdx + 1 >= cards.length ? setScreen('result') : setQIdx(qIdx + 1)}
           />
         )}
         {screen === 'result' && (
@@ -4547,20 +4560,26 @@ const GROUP_CONFETTI_PIECES = Array.from({ length: 32 }, (_, index) => ({
   shape: index % 3 === 0 ? '50%' : '2px',
 }));
 
-function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext }) {
+function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext, pairMode = false }) {
   const celebratedRef = useRef('');
   const guesses = Array.isArray(answer && answer.guesses) ? answer.guesses : [];
   const correctCount = guesses.filter((guess) => guess === (answer && answer.target)).length;
   const guessCount = guesses.length;
   const allCorrect = guessCount > 0 && correctCount === guessCount;
-  const verdict = allCorrect
-    ? '全員正解！'
-    : (correctCount === 0 ? '全員ハズレ！' : `${correctCount}人正解！`);
-  const verdictDetail = allCorrect
-    ? 'みんな、かなり分かってる。息ぴったり！'
-    : (correctCount === 0
-      ? '予想が全部バラけた！ここからが盛り上がりどころ。'
-      : `${guessCount - correctCount}人は意外な答え。理由を聞いてみよう。`);
+  const verdict = pairMode
+    ? (allCorrect ? '正解！' : 'ハズレ！')
+    : (allCorrect
+      ? '全員正解！'
+      : (correctCount === 0 ? '全員ハズレ！' : `${correctCount}人正解！`));
+  const verdictDetail = pairMode
+    ? (allCorrect
+      ? `${players[1]}、分かってる。息ぴったり！`
+      : `${players[0]}が選んだ理由を聞いてみよう。`)
+    : (allCorrect
+      ? 'みんな、かなり分かってる。息ぴったり！'
+      : (correctCount === 0
+        ? '予想が全部バラけた！ここからが盛り上がりどころ。'
+        : `${guessCount - correctCount}人は意外な答え。理由を聞いてみよう。`));
 
   useEffect(() => {
     const celebrationKey = `${kind}-${qIdx}`;
@@ -4676,7 +4695,14 @@ function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext })
             }}>✦</span>
           );
         })}
-        <MultiPlayerAnswerCard answer={answer} card={card} players={players} index={qIdx} reveal />
+        <MultiPlayerAnswerCard
+          answer={answer}
+          card={card}
+          players={players}
+          index={qIdx}
+          reveal
+          targetStatus={pairMode ? '選んだ答え' : '本人の答え'}
+        />
 
         <div
           className="group-reveal-verdict"
@@ -5557,7 +5583,7 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
-function MultiPlayerAnswerCard({ answer, card, players, index, reveal = false }) {
+function MultiPlayerAnswerCard({ answer, card, players, index, reveal = false, targetStatus = '本人の答え' }) {
   const safeAnswer = answer || { target: null, guesses: [] };
   const choices = card && card.choices ? card.choices : [];
   const rows = [
@@ -5605,7 +5631,7 @@ function MultiPlayerAnswerCard({ answer, card, players, index, reveal = false })
               opt={window.COLOR_OPTIONS && window.COLOR_OPTIONS[targetRow.pick]}
               accent={proto.white}
               background={proto.cyan}
-              status="本人の答え"
+              status={targetStatus}
               featured
             />
           </div>

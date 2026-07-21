@@ -16,7 +16,7 @@ async function pickColor(page, index) {
 }
 
 async function openResult(page) {
-  const button = page.getByRole('button', { name: '答え合わせへ' });
+  const button = page.getByRole('button', { name: /答え合わせへ/ });
   await expect(button).toBeVisible();
   await button.click();
 }
@@ -44,6 +44,20 @@ async function playLove(page, mode, score) {
     await pickColor(page, question < score ? 0 : 1);
   }
   await openResult(page);
+  for (let question = 0; question < 5; question += 1) {
+    await expect(page.getByTestId('love-reveal-page')).toBeVisible();
+    const verdict = page.getByTestId('love-reveal-verdict');
+    await expect(verdict).toBeVisible();
+    const isCorrect = (await verdict.textContent()).includes('正解');
+    const confetti = page.getByTestId('love-reveal-confetti');
+    if (isCorrect) await expect(confetti).toBeVisible();
+    else await expect(confetti).toHaveCount(0);
+    await expect(page.getByText('ここでトーク', { exact: true })).toHaveCount(0);
+    await expectAnswerPickLayout(page, 2);
+    const nextButton = page.getByTestId(question === 4 ? 'love-reveal-result' : 'love-reveal-next');
+    await expect(nextButton).toBeVisible();
+    await nextButton.click();
+  }
   await expect(page.getByText(`${score}/5`, { exact: true }).first()).toBeVisible();
   await expectAnswerPickLayout(page, 10);
 }
