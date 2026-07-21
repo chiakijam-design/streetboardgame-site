@@ -1,0 +1,8 @@
+{
+  "appId": "com.streetboardgame.watachan",
+  "appName": "わたちゃん",
+  "webDir": "ios-web",
+  "server": {
+    "androidScheme": "https"
+  }
+}

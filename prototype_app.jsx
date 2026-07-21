@@ -1,3 +1,20 @@
+import {
+  sanitizePlayerName as sanitizePlayerNameCore,
+  normalizePlayerNames as normalizePlayerNamesCore,
+  getTargetPlayerOrder as getTargetPlayerOrderCore,
+} from './src/core/players.js';
+import { countMatches } from './src/core/scoring.js';
+import {
+  openLineShare as openLineSharePlatform,
+  openXShare as openXSharePlatform,
+} from './src/platform/share.js';
+import {
+  savePreparedImage as savePreparedImagePlatform,
+  sharePreparedImage as sharePreparedImagePlatform,
+} from './src/platform/imageSave.js';
+import { getBrowserStorage } from './src/platform/storage.js';
+import { triggerHaptic } from './src/platform/haptics.js';
+
 // 私のこと、ちゃんと分かってるよね? — インタラクティブプロトタイプ
 // パッケージDNA版: ホットピンク + 黒 + シアン縁取り + イエローシール
 // フロー: top → intro → play(同時発表式) → result → share/replay
@@ -68,20 +85,11 @@ function trackResultShare(gameType, method, playMode = 'local', contentType = 'r
 }
 
 function sanitizePlayerName(value, fallback, allowEmpty = false) {
-  const text = String(value ?? '').replace(/\s+/g, ' ').slice(0, PLAYER_NAME_MAX_LENGTH);
-  const trimmed = text.trim();
-  if (allowEmpty) return text;
-  return (trimmed || fallback).slice(0, PLAYER_NAME_MAX_LENGTH);
+  return sanitizePlayerNameCore(value, fallback, allowEmpty);
 }
 
 function normalizePlayerNames(value = {}, allowEmpty = false) {
-  const result = {};
-  Object.keys(DEFAULT_PLAYER_NAMES).forEach((kind) => {
-    const defaults = DEFAULT_PLAYER_NAMES[kind];
-    const source = Array.isArray(value[kind]) ? value[kind] : [];
-    result[kind] = defaults.map((fallback, index) => sanitizePlayerName(source[index], fallback, allowEmpty));
-  });
-  return result;
+  return normalizePlayerNamesCore(value, allowEmpty);
 }
 
 function getLoveScoreLabel(girlName, boyName) {
@@ -117,19 +125,12 @@ function personalizeLoveText(text, girlName, boyName) {
 }
 
 function loadPlayerNames() {
-  if (typeof window === 'undefined') return normalizePlayerNames({}, true);
-  try {
-    return normalizePlayerNames(JSON.parse(window.localStorage.getItem(PLAYER_NAME_STORAGE_KEY) || '{}'), true);
-  } catch (e) {
-    return normalizePlayerNames({}, true);
-  }
+  const storedNames = getBrowserStorage('local').getJson(PLAYER_NAME_STORAGE_KEY, {});
+  return normalizePlayerNames(storedNames, true);
 }
 
 function savePlayerNames(names) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(PLAYER_NAME_STORAGE_KEY, JSON.stringify(normalizePlayerNames(names, true)));
-  } catch (e) {}
+  getBrowserStorage('local').setJson(PLAYER_NAME_STORAGE_KEY, normalizePlayerNames(names, true));
 }
 
 function normalizeFriendPlayerCount(value) {
@@ -138,44 +139,12 @@ function normalizeFriendPlayerCount(value) {
 }
 
 function getTargetPlayerOrder(playerCount, targetIndex = 0) {
-  const count = normalizeFriendPlayerCount(playerCount);
-  const parsedTarget = Number(targetIndex);
-  const safeTarget = Number.isInteger(parsedTarget) && parsedTarget >= 0 && parsedTarget < count
-    ? parsedTarget
-    : 0;
-  return [safeTarget, ...Array.from({ length: count }, (_, index) => index).filter((index) => index !== safeTarget)];
+  return getTargetPlayerOrderCore(playerCount, targetIndex);
 }
 
 function getPlayersWithTarget(kind, playerCount, names, targetIndex = 0) {
   const source = normalizePlayerNames({ [kind]: names })[kind];
   return getTargetPlayerOrder(playerCount, targetIndex).map((index) => source[index]);
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-async function fetchImageBlob(src) {
-  const res = await fetch(src, src && src.startsWith('data:') ? undefined : { cache: 'force-cache' });
-  if (!res.ok) throw new Error('image-fetch-failed');
-  return await res.blob();
-}
-
-function shouldUseNativeShare() {
-  if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent || '';
-  const isMobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
-  const hasCoarsePointer = typeof window !== 'undefined'
-    && window.matchMedia
-    && window.matchMedia('(pointer: coarse)').matches;
-  return Boolean(navigator.share && (isMobileUa || hasCoarsePointer));
 }
 
 function isMobileLike() {
@@ -188,43 +157,15 @@ function isMobileLike() {
 }
 
 function openLineShare(message) {
-  const encoded = encodeURIComponent(message);
-  if (isMobileLike()) {
-    window.location.href = `line://msg/text/${encoded}`;
-    return;
-  }
-  window.location.href = `https://line.me/R/msg/text/?${encoded}`;
+  return openLineSharePlatform(message);
 }
 
 async function sharePreparedImage({ src, filename, title, text, url }) {
-  const blob = await fetchImageBlob(src);
-  const file = new File([blob], filename, { type: 'image/png' });
-  if (!shouldUseNativeShare()) {
-    downloadBlob(blob, filename);
-    return 'downloaded';
-  }
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({ title, text, url, files: [file] });
-    return 'shared';
-  }
-  if (navigator.share) {
-    await navigator.share({ title, text, url });
-    downloadBlob(blob, filename);
-    return 'shared-download';
-  }
-  downloadBlob(blob, filename);
-  return 'downloaded';
+  return sharePreparedImagePlatform({ src, filename, title, text, url });
 }
 
 async function savePreparedImage({ src, filename, title }) {
-  const blob = await fetchImageBlob(src);
-  const file = new File([blob], filename, { type: 'image/png' });
-  if (shouldUseNativeShare() && navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({ title, files: [file] });
-    return 'shared-save-sheet';
-  }
-  downloadBlob(blob, filename);
-  return 'downloaded';
+  return savePreparedImagePlatform({ src, filename, title });
 }
 
 function getLoveResultImageSrc(score) {
@@ -618,7 +559,7 @@ function getLoveReviewLines(answers, cards, players, title = '') {
   const girlName = lovePlayers[0];
   const boyName = lovePlayers[1];
   const total = Math.max(1, answers.length);
-  const score = answers.filter((answer) => answer.match).length;
+  const score = countMatches(answers);
   const themes = getCategorySummary(answers, cards, (answer) => answer.match);
   const personalizedTitle = personalizeLoveText(title || '彼女データ更新中', girlName, boyName);
   const level = score >= 4 ? 'かなり近い波長' : score >= 2 ? '半分シンクロ型' : '未知数多めの開拓型';
@@ -3051,11 +2992,7 @@ function getTurnColorTheme(mode, highlight) {
 }
 
 function vibrateOnPick() {
-  try {
-    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-      navigator.vibrate(15);
-    }
-  } catch (e) {}
+  triggerHaptic(15);
 }
 
 function ColorPicker({ selected, onPick, highlight, instruction, mode = 'answer', turnHint = '' }) {
@@ -3358,7 +3295,7 @@ const RESULT_TIERS = [
 ];
 
 function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onReplay, onReplaySwap, onHome }) {
-  const score = answers.filter(a => a.match).length;
+  const score = countMatches(answers);
   const total = answers.length || 5;
   const tier = RESULT_TIERS[score] || RESULT_TIERS[0];
   const lovePlayers = normalizePlayerNames({ love: players }).love;
@@ -3453,7 +3390,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
     const text = encodeURIComponent(platform === 'line' ? lineShareText : xShareText);
     const url = encodeURIComponent(shareUrl);
     let target = '';
-    if (platform === 'x') target = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+    if (platform === 'x') target = `${xShareText}\n${shareUrl}`;
     if (platform === 'copy') {
       trackResultShare('love', 'copy');
       copyToClipboard(copyShareText, 'copy');
@@ -3465,7 +3402,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
       return;
     }
     trackResultShare('love', 'x');
-    window.open(target, '_blank', 'noopener,noreferrer,width=600,height=500');
+    openXSharePlatform(target);
   };
 
   const handleSaveImage = async () => {
@@ -4589,11 +4526,7 @@ function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext, p
       && typeof window.matchMedia === 'function'
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion) return;
-    try {
-      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-        navigator.vibrate([45, 30, 80]);
-      }
-    } catch (e) {}
+    triggerHaptic([45, 30, 80]);
   }, [allCorrect, kind, qIdx]);
 
   return (
@@ -5767,11 +5700,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
 
   const openX = () => {
     trackResultShare('friend', 'x');
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
-      '_blank',
-      'noopener,noreferrer,width=600,height=500'
-    );
+    openXSharePlatform(`${shareText}\n${shareUrl}`);
   };
 
   const openLine = () => {
@@ -6250,11 +6179,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
 
   const openX = () => {
     trackResultShare('family', 'x');
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
-      '_blank',
-      'noopener,noreferrer,width=600,height=500'
-    );
+    openXSharePlatform(`${shareText}\n${shareUrl}`);
   };
 
   const openLine = () => {

@@ -1,3 +1,12 @@
+import { pickRandomItems } from './src/core/random.js';
+import { countMatches } from './src/core/scoring.js';
+import { oppositeLoveMode as oppositeLoveModeCore } from './src/core/roles.js';
+import {
+  openLineShare as openLineSharePlatform,
+  openXShare as openXSharePlatform,
+} from './src/platform/share.js';
+import { saveImageBlob as saveImageBlobPlatform } from './src/platform/imageSave.js';
+
 (function () {
   const ROOM_STORAGE_KEY = 'watachan-remote-love-role-v3';
   const ROOM_SWAP_STORAGE_KEY = 'watachan-remote-love-role-swap-v1';
@@ -337,12 +346,7 @@
 
   function pickCards() {
     if (window.pickRandomCards) return window.pickRandomCards(5);
-    const cards = Array.isArray(window.ALL_CARDS) ? window.ALL_CARDS.slice() : [];
-    for (let i = cards.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [cards[i], cards[j]] = [cards[j], cards[i]];
-    }
-    return cards.slice(0, 5);
+    return pickRandomItems(Array.isArray(window.ALL_CARDS) ? window.ALL_CARDS : [], 5);
   }
 
   function targetAndGuesser(room) {
@@ -355,7 +359,7 @@
   }
 
   function oppositeLoveMode(loveMode) {
-    return loveMode === 'boyTarget' ? 'girlTarget' : 'boyTarget';
+    return oppositeLoveModeCore(loveMode);
   }
 
   function isDefaultNames(names) {
@@ -403,7 +407,7 @@
 
   function getRemoteReviewLines(answers, cards, names, title = '') {
     const total = Math.max(1, answers.length);
-    const score = answers.filter((answer) => answer.match).length;
+    const score = countMatches(answers);
     const hits = {};
     const misses = {};
     answers.forEach((answer, index) => {
@@ -478,42 +482,11 @@
   }
 
   function openLineShare(message) {
-    const encoded = encodeURIComponent(message);
-    if (isMobileLike()) {
-      window.location.href = `line://msg/text/${encoded}`;
-      return;
-    }
-    window.location.href = `https://line.me/R/msg/text/?${encoded}`;
+    return openLineSharePlatform(message);
   }
 
   function openXShare(message) {
-    const encoded = encodeURIComponent(message);
-    const webUrl = `https://x.com/intent/post?text=${encoded}`;
-    const ua = navigator.userAgent || '';
-    const isIos = /iPhone|iPad|iPod/i.test(ua)
-      || (navigator.platform === 'MacIntel' && Number(navigator.maxTouchPoints || 0) > 1);
-
-    if (isIos) {
-      let appOpened = false;
-      const detectAppOpen = () => {
-        if (document.hidden) appOpened = true;
-      };
-      document.addEventListener('visibilitychange', detectAppOpen);
-      window.location.href = `twitter://post?message=${encoded}`;
-      window.setTimeout(() => {
-        document.removeEventListener('visibilitychange', detectAppOpen);
-        if (!appOpened && !document.hidden) window.location.href = webUrl;
-      }, 1400);
-      return;
-    }
-
-    if (/Android/i.test(ua)) {
-      const fallback = encodeURIComponent(webUrl);
-      window.location.href = `intent://post?message=${encoded}#Intent;scheme=twitter;package=com.twitter.android;S.browser_fallback_url=${fallback};end`;
-      return;
-    }
-
-    window.open(webUrl, '_blank', 'noopener,noreferrer,width=600,height=500');
+    return openXSharePlatform(message);
   }
 
   async function copyText(text) {
@@ -571,35 +544,8 @@
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }
 
-  function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  function shouldUseNativeShare() {
-    if (typeof navigator === 'undefined') return false;
-    const ua = navigator.userAgent || '';
-    const isMobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
-    const hasCoarsePointer = typeof window !== 'undefined'
-      && window.matchMedia
-      && window.matchMedia('(pointer: coarse)').matches;
-    return Boolean(navigator.share && (isMobileUa || hasCoarsePointer));
-  }
-
   async function saveImageBlob(blob, filename, title) {
-    const file = new File([blob], filename, { type: 'image/png' });
-    if (shouldUseNativeShare() && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ title, files: [file] });
-      return 'shared-save-sheet';
-    }
-    downloadBlob(blob, filename);
-    return 'downloaded';
+    return saveImageBlobPlatform(blob, filename, title);
   }
 
   async function createResultCanvas(data) {
@@ -1106,7 +1052,7 @@
           play_mode: 'remote',
           player_count: 2,
           question_count: resultAnswers.length || 5,
-          score: resultAnswers.filter((answer) => answer && answer.match).length,
+          score: countMatches(resultAnswers),
           role_mode: state.loveMode || '',
         });
       }
@@ -1277,7 +1223,7 @@
     const names = targetAndGuesser(state);
     const answers = Array.isArray(state.answers) ? state.answers : [];
     const total = answers.length || 5;
-    const score = answers.filter((a) => a.match).length;
+    const score = countMatches(answers);
     const tier = getTier(score);
     const title = personalizeLoveText(tier.title, names);
     const message = personalizeLoveText(tier.msg, names);

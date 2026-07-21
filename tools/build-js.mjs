@@ -60,7 +60,7 @@ const result = await build({
   entryPoints: DIST_ENTRIES,
   outdir: 'dist',
   entryNames: '[name]-[hash]',
-  bundle: false,
+  bundle: true,
   format: 'iife',
   target: ['es2018'],
   minify: true,
