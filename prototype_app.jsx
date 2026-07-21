@@ -4561,6 +4561,23 @@ function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext, p
         .group-reveal-stage { animation: groupRevealIn 0.45s ease-out both; }
         .group-reveal-verdict { animation: groupVerdictPop 0.55s 0.18s ease-out both; }
         .group-reveal-confetti-piece { animation: groupConfettiFall var(--confetti-duration) var(--confetti-delay) ease-in both; }
+        .group-reveal-target .result-answer-pick {
+          min-height: 116px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .group-reveal-guesses .result-answer-pick {
+          min-height: 126px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        @media (max-width: 420px) {
+          .group-reveal-guesses .result-answer-pick {
+            min-height: 116px;
+          }
+        }
         @media (prefers-reduced-motion: reduce) {
           .group-reveal-stage, .group-reveal-verdict, .group-reveal-sparkle,
           .group-reveal-confetti-piece {
@@ -4596,9 +4613,8 @@ function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext, p
         </div>
       )}
       <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 540, margin: '0 auto' }}>
-        <PillLabel>ANSWER CHECK {qIdx + 1} / {total}</PillLabel>
         <div style={{
-          display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12,
+          display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 14,
         }} aria-label={`${total}問中${qIdx + 1}問目`}>
           {Array.from({ length: total }).map((_, dotIndex) => (
             <span key={dotIndex} style={{
@@ -4611,11 +4627,48 @@ function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext, p
             }} />
           ))}
         </div>
-        <div style={{ marginTop: 10 }}><LogoText size={30}>答えオープン！</LogoText></div>
+        <div
+          data-testid={`${kind}-reveal-question`}
+          style={{
+            minHeight: 92,
+            padding: '16px 18px',
+            background: proto.black,
+            color: proto.white,
+            border: `3px solid ${proto.white}`,
+            borderRadius: 18,
+            boxShadow: proto.shadowHard,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            textAlign: 'left',
+            boxSizing: 'border-box',
+          }}
+        >
+          <span style={{
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: proto.yellow,
+            color: proto.black,
+            display: 'grid',
+            placeItems: 'center',
+            flexShrink: 0,
+            fontFamily: proto.caption,
+            fontSize: 19,
+            border: `2px solid ${proto.black}`,
+          }}>Q{qIdx + 1}</span>
+          <span style={{
+            minWidth: 0,
+            fontSize: 21,
+            lineHeight: 1.35,
+            fontWeight: 900,
+            overflowWrap: 'anywhere',
+          }}>{card ? card.title : ''}</span>
+        </div>
       </div>
 
       <div className="group-reveal-stage" style={{
-        position: 'relative', zIndex: 1, maxWidth: 540, margin: '16px auto 0',
+        position: 'relative', zIndex: 1, maxWidth: 540, margin: '18px auto 0',
       }}>
         {['8%:10%', '90%:5%', '97%:46%', '3%:62%'].map((position, sparkleIndex) => {
           const [left, top] = position.split(':');
@@ -5540,24 +5593,8 @@ function MultiPlayerAnswerCard({ answer, card, players, index, reveal = false, t
         boxShadow: '6px 6px 0 #000',
         overflow: 'hidden',
       }}>
-        <div style={{
-          padding: '9px 12px',
-          background: proto.black,
-          color: proto.white,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}>
-          <span style={{
-            padding: '2px 7px', borderRadius: 999, background: proto.yellow,
-            color: proto.black, fontFamily: proto.caption, fontSize: 10,
-          }}>Q{index + 1}</span>
-          <span style={{ flex: 1, fontSize: 14, fontWeight: 900, textAlign: 'left', lineHeight: 1.35 }}>
-            {card ? card.title : ''}
-          </span>
-        </div>
-        <div style={{ padding: 10, color: proto.text }}>
-          <div style={{ marginBottom: 8 }}>
+        <div style={{ padding: 12, color: proto.text }}>
+          <div className="group-reveal-target" data-testid="group-reveal-target" style={{ marginBottom: 10 }}>
             <AnswerPick
               label={targetRow.name}
               choice={choices[targetRow.pick] || '-'}
@@ -5568,7 +5605,7 @@ function MultiPlayerAnswerCard({ answer, card, players, index, reveal = false, t
               featured
             />
           </div>
-          <div className="group-reveal-guesses" style={{
+          <div className="group-reveal-guesses" data-testid="group-reveal-guesses" style={{
             display: 'grid',
             gridTemplateColumns: `repeat(${Math.max(1, guessRows.length)}, minmax(0, 1fr))`,
             gap: 7,

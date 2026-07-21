@@ -35,6 +35,19 @@ async function expectAnswerPickLayout(page, expectedCount) {
   expect(answerLayout.every(({ nameBeforeChoice, dotCenterOffset }) => nameBeforeChoice && dotCenterOffset <= 1)).toBe(true);
 }
 
+async function expectRevealLayout(page, kind) {
+  const [question, target, guesses] = await Promise.all([
+    page.getByTestId(`${kind}-reveal-question`).boundingBox(),
+    page.getByTestId('group-reveal-target').boundingBox(),
+    page.getByTestId('group-reveal-guesses').boundingBox(),
+  ]);
+  expect(question).not.toBeNull();
+  expect(target).not.toBeNull();
+  expect(guesses).not.toBeNull();
+  expect(question.y + question.height).toBeLessThanOrEqual(target.y);
+  expect(target.y + target.height).toBeLessThanOrEqual(guesses.y);
+}
+
 async function playLove(page, mode, score) {
   await page.goto('/?screen=intro');
   await page.getByTestId(`love-mode-${mode}`).click();
@@ -54,6 +67,7 @@ async function playLove(page, mode, score) {
     else await expect(confetti).toHaveCount(0);
     await expect(page.getByText('ここでトーク', { exact: true })).toHaveCount(0);
     await expectAnswerPickLayout(page, 2);
+    await expectRevealLayout(page, 'love');
     const nextButton = page.getByTestId(question === 4 ? 'love-reveal-result' : 'love-reveal-next');
     await expect(nextButton).toBeVisible();
     await nextButton.click();
@@ -88,6 +102,7 @@ async function revealGroupAnswers(page, kind, playerCount) {
     else await expect(confetti).toHaveCount(0);
     await expect(page.getByText('ここでトーク', { exact: true })).toHaveCount(0);
     await expectAnswerPickLayout(page, playerCount);
+    await expectRevealLayout(page, kind);
     const nextButton = page.getByTestId(question === 4 ? `${kind}-reveal-result` : `${kind}-reveal-next`);
     await expect(nextButton).toBeVisible();
     await nextButton.click();
