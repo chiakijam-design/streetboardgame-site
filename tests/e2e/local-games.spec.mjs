@@ -134,6 +134,25 @@ async function playGroupMixed(page, kind, scores) {
 
 test.beforeEach(async ({ page }) => preparePage(page));
 
+test('通常3シリーズは外部通信を遮断しても完走できる', async ({ page }) => {
+  const remoteApiRequests = [];
+  await page.route('**/*', async (route) => {
+    const url = route.request().url();
+    if (url.includes('/api/remote')) remoteApiRequests.push(url);
+    if (!url.startsWith('http://127.0.0.1:4173')) {
+      await route.abort();
+      return;
+    }
+    await route.continue();
+  });
+
+  await playLove(page, 'girlTarget', 3);
+  await playGroup(page, 'friend', 2, 3);
+  await playGroup(page, 'family', 2, 3);
+
+  expect(remoteApiRequests).toHaveLength(0);
+});
+
 test('全JSをハッシュ付きで自前配信しsource mapを公開しない', async ({ page, request }) => {
   await page.goto('/?screen=top');
   const scriptSources = await page.locator('script[src]').evaluateAll((scripts) => scripts.map((script) => script.src));
