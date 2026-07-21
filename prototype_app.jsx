@@ -1038,6 +1038,7 @@ function App() {
   const [friendTargetIndex, setFriendTargetIndex] = useState(initial.friendTargetIndex || 0);
   const [familyTargetIndex, setFamilyTargetIndex] = useState(initial.familyTargetIndex || 0);
   const [groupResponderIndex, setGroupResponderIndex] = useState(initial.groupResponderIndex || 0);
+  const [loveResponderIndex, setLoveResponderIndex] = useState(initial.loveResponderIndex || 0);
 
   useEffect(() => {
     const saveBeforeViewportReload = () => {
@@ -1055,6 +1056,7 @@ function App() {
             friendTargetIndex,
             familyTargetIndex,
             groupResponderIndex,
+            loveResponderIndex,
           },
         }));
       } catch (e) {
@@ -1063,7 +1065,7 @@ function App() {
     };
     document.addEventListener('watachan:save-before-viewport-reload', saveBeforeViewportReload);
     return () => document.removeEventListener('watachan:save-before-viewport-reload', saveBeforeViewportReload);
-  }, [screen, qIdx, answers, cards, playerCount, playerNames, loveMode, friendTargetIndex, familyTargetIndex, groupResponderIndex]);
+  }, [screen, qIdx, answers, cards, playerCount, playerNames, loveMode, friendTargetIndex, familyTargetIndex, groupResponderIndex, loveResponderIndex]);
 
   // contact 指定だった場合、About にしてからフォームへスクロール
   useEffect(() => {
@@ -1142,6 +1144,7 @@ function App() {
     setCards(picked);
     setQIdx(0);
     setAnswers([]);
+    setLoveResponderIndex(0);
     setScreen('play');
     trackAnalyticsEvent('game_start', {
       game_type: 'love',
@@ -1204,6 +1207,7 @@ function App() {
     setScreen('top'); setQIdx(0); setAnswers([]); setCards([]); setPlayerCount(2);
     setFriendTargetIndex(0); setFamilyTargetIndex(0);
     setGroupResponderIndex(0);
+    setLoveResponderIndex(0);
   };
 
   const confirmLeaveGame = (nextScreen) => {
@@ -1211,14 +1215,41 @@ function App() {
     if (ok) setScreen(nextScreen);
   };
 
-  const handleQAnswer = (girlIdx, boyIdx) => {
-    const next = [...answers, { girl: girlIdx, boy: boyIdx, match: girlIdx === boyIdx }];
-    setAnswers(next);
-    if (qIdx + 1 >= cards.length) {
-      setScreen('resultReady');
+  const handleLoveBatchAnswer = (pick) => {
+    const next = Array.from({ length: cards.length }, (_, index) => {
+      const current = answers[index] || {};
+      return {
+        girl: Number.isInteger(current.girl) ? current.girl : null,
+        boy: Number.isInteger(current.boy) ? current.boy : null,
+        match: Boolean(current.match),
+      };
+    });
+    if (loveResponderIndex === 0) {
+      next[qIdx].girl = pick;
     } else {
-      setQIdx(qIdx + 1);
+      next[qIdx].boy = pick;
     }
+
+    const isLastQuestion = qIdx + 1 >= cards.length;
+    if (!isLastQuestion) {
+      setAnswers(next);
+      setQIdx(qIdx + 1);
+      return;
+    }
+
+    setQIdx(0);
+    if (loveResponderIndex === 0) {
+      setAnswers(next);
+      setLoveResponderIndex(1);
+      setScreen('loveHandoff');
+      return;
+    }
+
+    setAnswers(next.map((row) => ({
+      ...row,
+      match: row.girl === row.boy,
+    })));
+    setScreen('resultReady');
   };
 
   const handleGroupBatchAnswer = (kind, pick) => {
@@ -1368,7 +1399,17 @@ function App() {
             qIdx={qIdx}
             total={cards.length}
             players={lovePlayPlayers}
-            onAnswer={handleQAnswer}
+            responderIndex={loveResponderIndex}
+            onPick={handleLoveBatchAnswer}
+            onBack={() => confirmLeaveGame('intro')}
+          />
+        )}
+        {screen === 'loveHandoff' && (
+          <GroupBatchHandoffScreen
+            kind="love"
+            players={lovePlayPlayers}
+            responderIndex={loveResponderIndex}
+            onNext={() => setScreen('play')}
             onBack={() => confirmLeaveGame('intro')}
           />
         )}
@@ -2501,36 +2542,14 @@ function NameEditorPanel({ title, names, defaults, onChange, visibleCount }) {
 }
 
 // ─────────────────────────────────────────────────────
-// PLAY — 同時発表式
+// PLAY — 1人5問ずつまとめて回答
 // ─────────────────────────────────────────────────────
-function PlayScreen({ card, qIdx, total, players, onAnswer, onBack }) {
-  const [phase, setPhase] = useState('girl');
-  const [girlPick, setGirlPick] = useState(null);
-  const [boyPick, setBoyPick] = useState(null);
-  const [handoffMessage, setHandoffMessage] = useState('');
+function PlayScreen({ card, qIdx, total, players, responderIndex, onPick, onBack }) {
   const lovePlayers = normalizePlayerNames({ love: players }).love;
   const girlName = lovePlayers[0];
   const boyName = lovePlayers[1];
-
-  useEffect(() => {
-    setPhase('girl'); setGirlPick(null); setBoyPick(null); setHandoffMessage('');
-  }, [qIdx, card && card.id]);
-
-  const onGirlPick = (i) => {
-    if (girlPick !== null) return;
-    setGirlPick(i);
-    setHandoffMessage(`${boyName}に渡してね`);
-    setTimeout(() => {
-      setHandoffMessage('');
-      setPhase('boy');
-    }, HANDOFF_DELAY_MS);
-  };
-  const onBoyPick = (i) => {
-    if (boyPick !== null) return;
-    setBoyPick(i);
-    setHandoffMessage(qIdx + 1 >= total ? `${girlName}に渡して結果を見てね` : `${girlName}に渡して次の問題へ`);
-    setTimeout(() => onAnswer(girlPick, i), LOVE_RETURN_DELAY_MS);
-  };
+  const phase = responderIndex === 0 ? 'girl' : 'boy';
+  const activeName = lovePlayers[responderIndex] || girlName;
 
   if (!card) return null;
 
@@ -2571,7 +2590,7 @@ function PlayScreen({ card, qIdx, total, players, onAnswer, onBack }) {
           background: 'rgba(0,0,0,0.2)',
         }}>
           <div style={{
-            width: `${((qIdx + (phase==='reveal'?1:0)) / total) * 100}%`,
+            width: `${((qIdx + 1) / total) * 100}%`,
             height: '100%', borderRadius: 99,
             background: proto.yellow,
             transition: 'width 0.4s ease',
@@ -2608,41 +2627,25 @@ function PlayScreen({ card, qIdx, total, players, onAnswer, onBack }) {
       <div style={{ padding: '0 18px 14px' }}>
         {phase === 'girl' && (
           <ColorPicker
-            selected={girlPick}
-            onPick={onGirlPick}
+            selected={null}
+            onPick={onPick}
             highlight={proto.yellow}
             mode="answer"
-            turnHint={handoffMessage || `今は${girlName}の番`}
-            instruction={`${girlName}のターン  ── ${boyName}には見せずに、自分が思った答えの色を選んでね`}
+            turnHint={`今は${activeName}の番`}
+            instruction={`${girlName}は5問まとめて回答中  ── ${boyName}には見せずに、自分が思った答えの色を選んでね`}
           />
         )}
         {phase === 'boy' && (
-          <>
-            <div style={{
-              padding: '7px 12px', marginBottom: 7,
-              background: 'rgba(0,0,0,0.25)',
-              border: `1.5px dashed ${proto.yellow}`,
-              borderRadius: 12, fontSize: 11,
-              color: proto.yellow,
-              textAlign: 'center', fontWeight: 600,
-            }}>
-              ✦ {girlName}の選択 受付完了 ✦<br/>
-              <span style={{ fontSize: 9, color: proto.white, fontWeight: 500, opacity: 0.85 }}>
-                次は{boyName}が「{girlName}が選んだ色」を予想してね
-              </span>
-            </div>
-            <ColorPicker
-              selected={boyPick}
-              onPick={onBoyPick}
-              highlight={proto.cyan}
-              mode="guess"
-              turnHint={handoffMessage || `今は${boyName}の番`}
-              instruction={`${boyName}のターン  ── ${girlName}が選んだ色を予想してタップ`}
-            />
-          </>
+          <ColorPicker
+            selected={null}
+            onPick={onPick}
+            highlight={proto.cyan}
+            mode="guess"
+            turnHint={`今は${activeName}の番`}
+            instruction={`${boyName}は5問まとめて予想中  ── ${girlName}が選んだ色を予想してタップ`}
+          />
         )}
       </div>
-      {handoffMessage && <HandoffOverlay message={handoffMessage} />}
     </div>
   );
 }

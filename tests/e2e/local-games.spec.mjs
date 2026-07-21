@@ -54,6 +54,11 @@ async function playLove(page, mode, score) {
   await page.getByTestId('love-start').click();
   for (let question = 0; question < 5; question += 1) {
     await pickColor(page, 0);
+  }
+  const nextButton = page.getByTestId('love-batch-next-button');
+  await expect(nextButton).toBeVisible();
+  await nextButton.click();
+  for (let question = 0; question < 5; question += 1) {
     await pickColor(page, question < score ? 0 : 1);
   }
   await openResult(page);
