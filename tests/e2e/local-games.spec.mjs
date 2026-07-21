@@ -48,21 +48,40 @@ async function playLove(page, mode, score) {
   await expectAnswerPickLayout(page, 10);
 }
 
+async function answerGroupInBatches(page, kind, scores) {
+  for (let question = 0; question < 5; question += 1) await pickColor(page, 0);
+  for (const score of scores) {
+    const nextButton = page.getByTestId(`${kind}-batch-next-button`);
+    await expect(nextButton).toBeVisible();
+    await nextButton.click();
+    for (let question = 0; question < 5; question += 1) {
+      await pickColor(page, question < score ? 0 : 1);
+    }
+  }
+}
+
+async function revealGroupAnswers(page, kind, playerCount) {
+  const startButton = page.getByTestId(`${kind}-reveal-start`);
+  await expect(startButton).toBeVisible();
+  await startButton.click();
+  for (let question = 0; question < 5; question += 1) {
+    await expect(page.getByTestId(`${kind}-reveal-page`)).toBeVisible();
+    await expectAnswerPickLayout(page, playerCount);
+    const nextButton = page.getByTestId(question === 4 ? `${kind}-reveal-result` : `${kind}-reveal-next`);
+    await expect(nextButton).toBeVisible();
+    await nextButton.click();
+  }
+}
+
 async function playGroup(page, kind, playerCount, score) {
   await page.goto(`/?screen=${kind}Intro`);
   await page.getByTestId(`${kind}-count-${playerCount}`).click();
   await page.getByRole('button', { name: /この順番で始める/ }).click();
-  for (let question = 0; question < 5; question += 1) {
-    await pickColor(page, 0);
-    for (let guesser = 1; guesser < playerCount; guesser += 1) {
-      await pickColor(page, question < score ? 0 : 1);
-    }
-  }
-  await openResult(page);
+  await answerGroupInBatches(page, kind, Array(playerCount - 1).fill(score));
+  await revealGroupAnswers(page, kind, playerCount);
   const scores = page.getByText(`${score}/5`, { exact: true });
   await expect(scores).toHaveCount((playerCount - 1) * 2);
   await expect(scores.first()).toBeVisible();
-  await expectAnswerPickLayout(page, playerCount * 5);
 }
 
 async function playGroupMixed(page, kind, scores) {
@@ -70,15 +89,11 @@ async function playGroupMixed(page, kind, scores) {
   await page.goto(`/?screen=${kind}Intro`);
   await page.getByTestId(`${kind}-count-${playerCount}`).click();
   await page.getByRole('button', { name: /この順番で始める/ }).click();
-  for (let question = 0; question < 5; question += 1) {
-    await pickColor(page, 0);
-    for (const score of scores) await pickColor(page, question < score ? 0 : 1);
-  }
-  await openResult(page);
+  await answerGroupInBatches(page, kind, scores);
+  await revealGroupAnswers(page, kind, playerCount);
   for (const score of scores) {
     await expect(page.getByText(`${score}/5`, { exact: true }).first()).toBeVisible();
   }
-  await expectAnswerPickLayout(page, playerCount * 5);
 }
 
 test.beforeEach(async ({ page }) => preparePage(page));

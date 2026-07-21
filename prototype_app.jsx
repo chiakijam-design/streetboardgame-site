@@ -1096,6 +1096,7 @@ function App() {
   const [loveMode, setLoveMode] = useState(initial.loveMode || 'girlTarget');
   const [friendTargetIndex, setFriendTargetIndex] = useState(initial.friendTargetIndex || 0);
   const [familyTargetIndex, setFamilyTargetIndex] = useState(initial.familyTargetIndex || 0);
+  const [groupResponderIndex, setGroupResponderIndex] = useState(initial.groupResponderIndex || 0);
 
   useEffect(() => {
     const saveBeforeViewportReload = () => {
@@ -1112,6 +1113,7 @@ function App() {
             loveMode,
             friendTargetIndex,
             familyTargetIndex,
+            groupResponderIndex,
           },
         }));
       } catch (e) {
@@ -1120,7 +1122,7 @@ function App() {
     };
     document.addEventListener('watachan:save-before-viewport-reload', saveBeforeViewportReload);
     return () => document.removeEventListener('watachan:save-before-viewport-reload', saveBeforeViewportReload);
-  }, [screen, qIdx, answers, cards, playerCount, playerNames, loveMode, friendTargetIndex, familyTargetIndex]);
+  }, [screen, qIdx, answers, cards, playerCount, playerNames, loveMode, friendTargetIndex, familyTargetIndex, groupResponderIndex]);
 
   // contact 指定だった場合、About にしてからフォームへスクロール
   useEffect(() => {
@@ -1225,6 +1227,7 @@ function App() {
     setCards(picked);
     setQIdx(0);
     setAnswers([]);
+    setGroupResponderIndex(0);
     setScreen('friendOrder');
     trackAnalyticsEvent('game_start', {
       game_type: 'friend',
@@ -1245,6 +1248,7 @@ function App() {
     setCards(picked);
     setQIdx(0);
     setAnswers([]);
+    setGroupResponderIndex(0);
     setScreen('familyOrder');
     trackAnalyticsEvent('game_start', {
       game_type: 'family',
@@ -1258,6 +1262,7 @@ function App() {
   const backToTop = () => {
     setScreen('top'); setQIdx(0); setAnswers([]); setCards([]); setPlayerCount(2);
     setFriendTargetIndex(0); setFamilyTargetIndex(0);
+    setGroupResponderIndex(0);
   };
 
   const confirmLeaveGame = (nextScreen) => {
@@ -1275,24 +1280,48 @@ function App() {
     }
   };
 
-  const handleFriendAnswer = (round) => {
-    const next = [...answers, round];
-    setAnswers(next);
-    if (qIdx + 1 >= cards.length) {
-      setScreen('friendResultReady');
+  const handleGroupBatchAnswer = (kind, pick) => {
+    const guesserCount = Math.max(0, playerCount - 1);
+    const next = Array.from({ length: cards.length }, (_, index) => {
+      const current = answers[index] || {};
+      return {
+        target: Number.isInteger(current.target) ? current.target : null,
+        guesses: Array.from({ length: guesserCount }, (__, guessIndex) => (
+          Number.isInteger(current.guesses && current.guesses[guessIndex])
+            ? current.guesses[guessIndex]
+            : null
+        )),
+        matches: Array.isArray(current.matches) ? current.matches : [],
+      };
+    });
+    if (groupResponderIndex === 0) {
+      next[qIdx].target = pick;
     } else {
-      setQIdx(qIdx + 1);
+      next[qIdx].guesses[groupResponderIndex - 1] = pick;
     }
-  };
 
-  const handleFamilyAnswer = (round) => {
-    const next = [...answers, round];
-    setAnswers(next);
-    if (qIdx + 1 >= cards.length) {
-      setScreen('familyResultReady');
-    } else {
+    const isLastQuestion = qIdx + 1 >= cards.length;
+    const isLastResponder = groupResponderIndex + 1 >= playerCount;
+    if (!isLastQuestion) {
+      setAnswers(next);
       setQIdx(qIdx + 1);
+      return;
     }
+
+    setQIdx(0);
+    if (!isLastResponder) {
+      setAnswers(next);
+      setGroupResponderIndex(groupResponderIndex + 1);
+      setScreen(`${kind}Handoff`);
+      return;
+    }
+
+    const finalized = next.map((row) => ({
+      ...row,
+      matches: row.guesses.map((guess) => guess === row.target),
+    }));
+    setAnswers(finalized);
+    setScreen(`${kind}ResultReady`);
   };
 
   return (
@@ -1403,24 +1432,44 @@ function App() {
           />
         )}
         {screen === 'friendPlay' && cards.length > 0 && (
-          <FriendPlayScreen
+          <GroupBatchPlayScreen
+            kind="friend"
             card={cards[qIdx]}
             qIdx={qIdx}
             total={cards.length}
-            playerCount={playerCount}
-            playerNames={friendPlayPlayers}
-            onAnswer={handleFriendAnswer}
+            players={friendPlayPlayers}
+            responderIndex={groupResponderIndex}
+            onPick={(pick) => handleGroupBatchAnswer('friend', pick)}
+            onBack={() => confirmLeaveGame('friendIntro')}
+          />
+        )}
+        {screen === 'friendHandoff' && (
+          <GroupBatchHandoffScreen
+            kind="friend"
+            players={friendPlayPlayers}
+            responderIndex={groupResponderIndex}
+            onNext={() => setScreen('friendPlay')}
             onBack={() => confirmLeaveGame('friendIntro')}
           />
         )}
         {screen === 'familyPlay' && cards.length > 0 && (
-          <FamilyPlayScreen
+          <GroupBatchPlayScreen
+            kind="family"
             card={cards[qIdx]}
             qIdx={qIdx}
             total={cards.length}
-            playerCount={playerCount}
-            playerNames={familyPlayPlayers}
-            onAnswer={handleFamilyAnswer}
+            players={familyPlayPlayers}
+            responderIndex={groupResponderIndex}
+            onPick={(pick) => handleGroupBatchAnswer('family', pick)}
+            onBack={() => confirmLeaveGame('familyIntro')}
+          />
+        )}
+        {screen === 'familyHandoff' && (
+          <GroupBatchHandoffScreen
+            kind="family"
+            players={familyPlayPlayers}
+            responderIndex={groupResponderIndex}
+            onNext={() => setScreen('familyPlay')}
             onBack={() => confirmLeaveGame('familyIntro')}
           />
         )}
@@ -1446,13 +1495,22 @@ function App() {
           />
         )}
         {screen === 'friendResultReady' && (
-          <ResultReadyScreen
-            title="5問終了！"
-            subtitle="答え合わせいくよ"
-            detail={`${friendPlayPlayers[0]}の答えを、みんなが何問当てられたか発表します。一緒に見てね。`}
-            buttonLabel="答え合わせへ"
-            onResult={() => setScreen('friendResult')}
+          <GroupRevealReadyScreen
+            kind="friend"
+            targetName={friendPlayPlayers[0]}
+            onResult={() => setScreen('friendReveal')}
             onHome={backToTop}
+          />
+        )}
+        {screen === 'friendReveal' && (
+          <GroupRevealScreen
+            kind="friend"
+            answer={answers[qIdx]}
+            card={cards[qIdx]}
+            players={friendPlayPlayers}
+            qIdx={qIdx}
+            total={cards.length}
+            onNext={() => qIdx + 1 >= cards.length ? setScreen('friendResult') : setQIdx(qIdx + 1)}
           />
         )}
         {screen === 'friendResult' && (
@@ -1467,13 +1525,22 @@ function App() {
           />
         )}
         {screen === 'familyResultReady' && (
-          <ResultReadyScreen
-            title="5問終了！"
-            subtitle="答え合わせいくよ"
-            detail={`${familyPlayPlayers[0]}の答えを、みんなが何問当てられたか発表します。一緒に見てね。`}
-            buttonLabel="答え合わせへ"
-            onResult={() => setScreen('familyResult')}
+          <GroupRevealReadyScreen
+            kind="family"
+            targetName={familyPlayPlayers[0]}
+            onResult={() => setScreen('familyReveal')}
             onHome={backToTop}
+          />
+        )}
+        {screen === 'familyReveal' && (
+          <GroupRevealScreen
+            kind="family"
+            answer={answers[qIdx]}
+            card={cards[qIdx]}
+            players={familyPlayPlayers}
+            qIdx={qIdx}
+            total={cards.length}
+            onNext={() => qIdx + 1 >= cards.length ? setScreen('familyResult') : setQIdx(qIdx + 1)}
           />
         )}
         {screen === 'familyResult' && (
@@ -2762,7 +2829,7 @@ function SilentSparkles({ compact = false }) {
   );
 }
 
-function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onHome }) {
+function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onHome, buttonTestId }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -2850,6 +2917,7 @@ function ResultReadyScreen({ title, subtitle, detail, buttonLabel, onResult, onH
       <FixedActionBar
         primaryLabel={buttonLabel}
         onPrimary={onResult}
+        primaryTestId={buttonTestId}
         largePrimary
         lifted
       />
@@ -4083,7 +4151,7 @@ function ResultReplayActions({
   );
 }
 
-function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary, largePrimary = false, lifted = false }) {
+function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary, largePrimary = false, lifted = false, primaryTestId }) {
   const primaryStyle = primaryBtn();
   return (
     <div style={{
@@ -4102,7 +4170,7 @@ function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary, 
       pointerEvents: 'none',
     }}>
       <div style={{ display: 'grid', gap: largePrimary ? 14 : 12, pointerEvents: 'auto' }}>
-        <button onClick={onPrimary} style={{
+        <button data-testid={primaryTestId} onClick={onPrimary} style={{
           ...primaryStyle,
           minHeight: largePrimary ? 84 : primaryStyle.minHeight,
           padding: largePrimary ? '22px 16px' : primaryStyle.padding,
@@ -4234,7 +4302,7 @@ function PassOrderScreen({ label, title, players, guessName, onStart, onBack }) 
           fontWeight: 900,
           textShadow: '0 2px 0 rgba(0,0,0,0.18)',
         }}>
-          1問ごとに、この順番でスマホを渡してね。
+          1人ずつ5問まとめて答えて、次の人に渡してね。
         </p>
       </div>
 
@@ -4333,7 +4401,7 @@ function PassOrderScreen({ label, title, players, guessName, onStart, onBack }) 
           fontWeight: 900,
           textAlign: 'center',
         }}>
-          5問ぜんぶ終わったら、全員分の答え合わせをまとめて見ます。
+          全員が5問答えたら、1問ずつみんなで答え合わせします。
         </div>
       </div>
 
@@ -4342,6 +4410,153 @@ function PassOrderScreen({ label, title, players, guessName, onStart, onBack }) 
         onPrimary={onStart}
         secondaryLabel="人数を選び直す"
         onSecondary={onBack}
+        largePrimary
+      />
+    </div>
+  );
+}
+
+function GroupBatchPlayScreen({ kind, card, qIdx, total, players, responderIndex, onPick, onBack }) {
+  const activePlayer = players[responderIndex] || '参加者';
+  const targetPlayer = players[0] || '本人';
+  const isTarget = responderIndex === 0;
+  const kindLabel = kind === 'family' ? 'FAMILY' : 'FRIEND';
+  const backLabel = kind === 'family' ? '家族版の遊び方に戻る' : '友情版の遊び方に戻る';
+  return (
+    <div data-testid={`${kind}-batch-play`} style={{
+      minHeight: '100dvh', background: proto.pink, color: proto.white,
+      position: 'relative', width: '100%', maxWidth: '100vw', overflowX: 'clip',
+      overscrollBehaviorX: 'none', touchAction: 'pan-y pinch-zoom',
+      paddingBottom: 'calc(118px + env(safe-area-inset-bottom))',
+    }}>
+      <Decor />
+      <div style={{ padding: '24px 18px 0', position: 'relative', zIndex: 1 }}>
+        <BackBtn onClick={onBack} top={14} dark label={backLabel} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+          <div style={{ fontFamily: proto.caption, fontSize: 10, letterSpacing: '0.15em', whiteSpace: 'nowrap' }}>
+            {kindLabel} Q {qIdx + 1} / {total}
+          </div>
+          <div style={{ fontSize: 10, color: proto.yellow, fontWeight: 900 }}>
+            {activePlayer}が5問まとめて回答中
+          </div>
+        </div>
+        <div style={{ width: '100%', height: 6, borderRadius: 99, background: 'rgba(0,0,0,0.2)' }}>
+          <div style={{
+            width: `${((qIdx + 1) / total) * 100}%`, height: '100%', borderRadius: 99,
+            background: isTarget ? proto.yellow : proto.cyan, transition: 'width 0.25s ease',
+          }} />
+        </div>
+      </div>
+
+      <div style={{ padding: '5px 18px 4px', textAlign: 'center' }}>
+        <QuestionProgress qIdx={qIdx} total={total} label={`${kindLabel} Q`} />
+      </div>
+      <div style={{ padding: '2px 18px 5px', textAlign: 'center' }}>
+        <div style={{
+          display: 'inline-block', minWidth: 230, maxWidth: '100%', padding: '7px 14px 8px',
+          background: isTarget ? proto.yellow : proto.cyan, color: proto.black,
+          borderRadius: 16, border: `2.5px solid ${proto.black}`, boxShadow: '3px 3px 0 #000',
+          fontWeight: 900, lineHeight: 1.35,
+        }}>
+          <div style={{ fontFamily: proto.caption, fontSize: 9, letterSpacing: '0.14em', opacity: 0.78 }}>
+            {activePlayer}の回答 {qIdx + 1} / {total}
+          </div>
+          <div style={{ marginTop: 2, fontSize: 15 }}>
+            {isTarget ? `${activePlayer}が自分の答えを選ぶ` : `${activePlayer}が${targetPlayer}の答えを予想`}
+          </div>
+          <div style={{ marginTop: 2, fontSize: 9 }}>
+            {isTarget ? 'ほかの人には見せず、本音で選んでね' : `${targetPlayer}が選びそうなものを当ててね`}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 22px 2px' }}>
+        <FriendQuestionCard card={card} />
+      </div>
+      <ColorPicker
+        selected={null}
+        onPick={onPick}
+        highlight={isTarget ? proto.yellow : proto.cyan}
+        mode={isTarget ? 'answer' : 'guess'}
+        turnHint={`今は${activePlayer}の番`}
+        instruction={isTarget
+          ? `${activePlayer}だけが見て、自分が思ったものを選んでね`
+          : `${activePlayer}は${targetPlayer}が選びそうな色を予想してね`}
+      />
+    </div>
+  );
+}
+
+function GroupBatchHandoffScreen({ kind, players, responderIndex, onNext, onBack }) {
+  const finishedPlayer = players[responderIndex - 1] || '前の人';
+  const nextPlayer = players[responderIndex] || '次の人';
+  return (
+    <div data-testid={`${kind}-batch-next-player`} style={{
+      minHeight: '100dvh', background: proto.pink, color: proto.white,
+      padding: '54px 22px 170px', boxSizing: 'border-box', position: 'relative',
+      display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden',
+    }}>
+      <Decor />
+      <BackBtn onClick={onBack} top={18} dark label="遊び方に戻る" />
+      <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+        <PillLabel>PASS THE PHONE</PillLabel>
+        <div style={{ marginTop: 18 }}><LogoText size={31}>{finishedPlayer}の回答完了！</LogoText></div>
+        <div style={{
+          margin: '22px auto 0', maxWidth: 350, padding: '22px 16px', background: proto.white,
+          color: proto.black, border: `3px solid ${proto.black}`, borderRadius: 18,
+          boxShadow: '6px 6px 0 #000', fontWeight: 900, lineHeight: 1.7,
+        }}>
+          <div style={{ fontSize: 23 }}>次は{nextPlayer}に渡してね</div>
+          <div style={{ marginTop: 9, fontSize: 13 }}>
+            {nextPlayer}は5問まとめて予想します。<br />前の人の答えはまだ秘密です。
+          </div>
+        </div>
+      </div>
+      <FixedActionBar
+        primaryLabel={`${nextPlayer}の5問をはじめる ▶`}
+        onPrimary={onNext}
+        primaryTestId={`${kind}-batch-next-button`}
+        largePrimary
+      />
+    </div>
+  );
+}
+
+function GroupRevealReadyScreen({ kind, targetName, onResult, onHome }) {
+  return (
+    <ResultReadyScreen
+      title="全員の回答完了！"
+      subtitle="ここから1問ずつ答え合わせ"
+      detail={`スマホをみんなで見て、${targetName}が選んだ理由も話しながら答え合わせしてね。`}
+      buttonLabel="1問目の答え合わせへ"
+      onResult={onResult}
+      onHome={onHome}
+      buttonTestId={`${kind}-reveal-start`}
+    />
+  );
+}
+
+function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext }) {
+  return (
+    <div data-testid={`${kind}-reveal-page`} style={{
+      minHeight: '100dvh', background: proto.pink, color: proto.white,
+      padding: '42px 18px 150px', boxSizing: 'border-box', position: 'relative',
+    }}>
+      <Decor />
+      <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+        <PillLabel>ANSWER CHECK {qIdx + 1} / {total}</PillLabel>
+        <div style={{ marginTop: 14 }}><LogoText size={28}>1問ずつ答え合わせ</LogoText></div>
+        <p style={{ margin: '10px auto 18px', fontSize: 13, lineHeight: 1.6, fontWeight: 900 }}>
+          「どうしてこれ選んだの？」も話してから次へ
+        </p>
+      </div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <MultiPlayerAnswerCard answer={answer} card={card} players={players} index={qIdx} reveal />
+      </div>
+      <FixedActionBar
+        primaryLabel={qIdx + 1 >= total ? '結果を見る ▶' : `次の答え合わせへ（${qIdx + 2}/${total}）▶`}
+        onPrimary={onNext}
+        primaryTestId={qIdx + 1 >= total ? `${kind}-reveal-result` : `${kind}-reveal-next`}
         largePrimary
       />
     </div>
@@ -5197,74 +5412,62 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
-function MultiPlayerAnswerDetails({ answers, cards, players, label }) {
+function MultiPlayerAnswerCard({ answer, card, players, index }) {
+  const safeAnswer = answer || { target: null, guesses: [] };
+  const choices = card && card.choices ? card.choices : [];
+  const rows = [
+    { name: players[0] || '本人', pick: safeAnswer.target, isTarget: true, match: true },
+    ...(safeAnswer.guesses || []).map((guess, guesserIndex) => ({
+      name: players[guesserIndex + 1] || `参加者${guesserIndex + 1}`,
+      pick: guess,
+      isTarget: false,
+      match: guess === safeAnswer.target,
+    })),
+  ];
+
   return (
-    <>
+    <div style={{
+      background: proto.white,
+      border: `2px solid ${proto.black}`,
+      borderRadius: 10,
+      boxShadow: '2px 2px 0 #000',
+      overflow: 'hidden',
+    }}>
       <div style={{
-        fontFamily: proto.caption, fontSize: 10,
-        color: proto.white, letterSpacing: '0.25em',
-        margin: '10px 0 6px', paddingLeft: 4,
-      }}>{label}</div>
-      <div style={{ display: 'grid', gap: 7 }}>
-        {answers.map((a, i) => {
-          const card = cards[i];
-          const choices = card && card.choices ? card.choices : [];
-          const rows = [
-            { name: players[0] || '本人', pick: a.target, isTarget: true, match: true },
-            ...a.guesses.map((g, gi) => ({
-              name: players[gi + 1] || `参加者${gi + 1}`,
-              pick: g,
-              isTarget: false,
-              match: g === a.target,
-            })),
-          ];
+        padding: '6px 8px',
+        background: proto.black,
+        color: proto.white,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+      }}>
+        <span style={{ fontFamily: proto.caption, fontSize: 9 }}>Q{index + 1}</span>
+        <span style={{ flex: 1, fontSize: 11, fontWeight: 900, textAlign: 'left', lineHeight: 1.3 }}>{card ? card.title : ''}</span>
+      </div>
+      <div style={{
+        padding: 7,
+        color: proto.text,
+        display: 'grid',
+        gridTemplateColumns: `repeat(${Math.max(2, rows.length)}, minmax(0, 1fr))`,
+        gap: 5,
+      }}>
+        {rows.map((row) => {
+          const background = row.isTarget ? proto.cyan : (row.match ? proto.yellow : proto.pinkSoft);
           return (
-            <div key={i} style={{
-              background: proto.white,
-              border: `2px solid ${proto.black}`,
-              borderRadius: 10,
-              boxShadow: '2px 2px 0 #000',
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                padding: '6px 8px',
-                background: proto.black,
-                color: proto.white,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}>
-                <span style={{ fontFamily: proto.caption, fontSize: 9 }}>Q{i + 1}</span>
-                <span style={{ flex: 1, fontSize: 11, fontWeight: 900, textAlign: 'left', lineHeight: 1.3 }}>{card ? card.title : ''}</span>
-              </div>
-              <div style={{
-                padding: 7,
-                color: proto.text,
-                display: 'grid',
-                gridTemplateColumns: `repeat(${Math.max(2, rows.length)}, minmax(0, 1fr))`,
-                gap: 5,
-              }}>
-                {rows.map((row) => {
-                  const background = row.isTarget ? proto.cyan : (row.match ? proto.yellow : proto.pinkSoft);
-                  return (
-                    <AnswerPick
-                      key={row.name}
-                      label={row.name}
-                      choice={choices[row.pick] || '-'}
-                      opt={window.COLOR_OPTIONS && window.COLOR_OPTIONS[row.pick]}
-                      accent={proto.white}
-                      background={background}
-                      status={row.isTarget ? '本人' : (row.match ? '当たり' : 'ハズレ')}
-                      compact
-                    />
-                  );
-                })}
-              </div>
-            </div>
+            <AnswerPick
+              key={row.name}
+              label={row.name}
+              choice={choices[row.pick] || '-'}
+              opt={window.COLOR_OPTIONS && window.COLOR_OPTIONS[row.pick]}
+              accent={proto.white}
+              background={background}
+              status={row.isTarget ? '本人' : (row.match ? '当たり' : 'ハズレ')}
+              compact
+            />
           );
         })}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -5436,31 +5639,6 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
       </div>
 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
-        <div style={{
-          width: '100%',
-          minHeight: 54,
-          background: proto.black,
-          color: proto.white,
-          border: `2.5px solid ${proto.black}`,
-          borderRadius: 14,
-          boxShadow: '5px 5px 0 #5BD4E8',
-          fontFamily: proto.display,
-          fontSize: 16,
-          fontWeight: 900,
-          letterSpacing: '0.04em',
-          textShadow: '2px 2px 0 #5BD4E8',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          答え合わせ
-        </div>
-        <MultiPlayerAnswerDetails
-          answers={answers}
-          cards={cards}
-          players={friendPlayers}
-          label="ANSWER DETAILS"
-        />
         <GroupResultReviewBox sections={reviewSections} title="AI総評" />
       </div>
 
@@ -5944,31 +6122,6 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
       </div>
 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
-        <div style={{
-          width: '100%',
-          minHeight: 54,
-          background: proto.black,
-          color: proto.white,
-          border: `2.5px solid ${proto.black}`,
-          borderRadius: 14,
-          boxShadow: '5px 5px 0 #5BD4E8',
-          fontFamily: proto.display,
-          fontSize: 16,
-          fontWeight: 900,
-          letterSpacing: '0.04em',
-          textShadow: '2px 2px 0 #5BD4E8',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          答え合わせ
-        </div>
-        <MultiPlayerAnswerDetails
-          answers={answers}
-          cards={cards}
-          players={familyPlayers}
-          label="ANSWER DETAILS"
-        />
         <GroupResultReviewBox sections={reviewSections} title="AI総評" />
       </div>
 
