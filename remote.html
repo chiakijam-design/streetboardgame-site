@@ -164,6 +164,8 @@
     var analyticsEnabled = location.hostname !== 'localhost' && !location.hostname.endsWith('.local');
     gtag('js', new Date());
     gtag('config', 'G-X07PVDQWYX', {
+      page_location: location.origin + location.pathname,
+      page_path: location.pathname,
       send_page_view: analyticsEnabled
     });
     window.trackEvent = function(name, params) {

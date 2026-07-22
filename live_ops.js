@@ -4,7 +4,8 @@ const dashboard = document.getElementById('dashboard');
 const authStatus = document.getElementById('authStatus');
 let overview = null;
 
-tokenInput.value = sessionStorage.getItem('live:admin-token') || '';
+sessionStorage.removeItem('live:admin-token');
+tokenInput.value = '';
 document.getElementById('loadOps').addEventListener('click', loadOverview);
 document.getElementById('forgetToken').addEventListener('click', () => {
   sessionStorage.removeItem('live:admin-token'); sessionStorage.removeItem('live:admin-session');
@@ -17,7 +18,6 @@ document.getElementById('purchaseSearch').addEventListener('input', () => { rend
 
 async function loadOverview() {
   try {
-    sessionStorage.setItem('live:admin-token', tokenInput.value.trim());
     if (!sessionStorage.getItem('live:admin-session') || otpInput.value.trim()) await createAdminSession();
     overview = await adminApi('/api/live/admin/overview');
     dashboard.hidden = false; renderAll();
@@ -41,6 +41,7 @@ async function createAdminSession() {
     throw error;
   }
   sessionStorage.setItem('live:admin-session', data.sessionToken);
+  tokenInput.value = '';
   otpInput.value = '';
   showStatus(`二要素認証に成功しました。管理セッション有効期限：${formatDate(data.expiresAt)}`);
 }

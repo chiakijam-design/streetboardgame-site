@@ -120,22 +120,36 @@ test('WorkerがHTML・APIへContent Security Policyと共通セキュリティ�
   for (const path of ['/', '/live', '/privacy', '/live-ops', '/api/live/status']) {
     const response = await request.get(path);
     const headers = response.headers();
-    expect(headers['content-security-policy'], path).toContain("default-src 'self'");
+    expect(headers['content-security-policy'], path).toContain("default-src 'none'");
     expect(headers['content-security-policy'], path).toContain("object-src 'none'");
     expect(headers['content-security-policy'], path).toContain("frame-ancestors 'none'");
+    expect(headers['content-security-policy'], path).toContain("script-src-attr 'none'");
+    expect(headers['content-security-policy'], path).toContain("frame-src 'none'");
+    expect(headers['content-security-policy'], path).toContain("media-src 'none'");
     expect(headers['content-security-policy'], path).toContain('https://formspree.io');
     expect(headers['x-frame-options'], path).toBe('DENY');
     expect(headers['x-content-type-options'], path).toBe('nosniff');
     expect(headers['strict-transport-security'], path).toContain('max-age=31536000');
+    expect(headers['x-permitted-cross-domain-policies'], path).toBe('none');
+    expect(headers['origin-agent-cluster'], path).toBe('?1');
+  }
+  for (const path of ['/live', '/live-ops', '/remote', '/api/live/status']) {
+    expect((await request.get(path)).headers()['referrer-policy'], path).toBe('no-referrer');
   }
   const pageResponse = await page.goto('/');
   const csp = pageResponse?.headers()['content-security-policy'] || '';
   const nonce = csp.match(/'nonce-([^']+)'/)?.[1];
   expect(nonce).toBeTruthy();
+  expect(csp).toContain("'strict-dynamic'");
   expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
   const scriptNonces = await page.locator('script').evaluateAll((scripts) => scripts.map((script) => script.nonce));
   expect(scriptNonces.length).toBeGreaterThan(0);
   expect(scriptNonces.every((value) => value === nonce)).toBe(true);
+
+  await page.goto('/remote?room=ABC123&role=target&turn=secret-token&manage=secret-manage');
+  const analyticsScript = (await page.locator('script').allTextContents()).find((text) => text.includes("gtag('config'")) || '';
+  expect(analyticsScript).toContain('page_location: location.origin + location.pathname');
+  expect(analyticsScript).toContain('page_path: location.pathname');
 });
 
 test('sitemap・robots・末尾スラッシュの正規化が一致する', async ({ request }, testInfo) => {

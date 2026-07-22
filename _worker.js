@@ -35,7 +35,7 @@ const LEGAL_PAGE_FILES = Object.freeze({
 
 export default {
   async fetch(request, env) {
-    return withSecurityHeaders(await handleRequest(request, env));
+    return withSecurityHeaders(await handleRequest(request, env), request);
   },
   async scheduled(controller, env, context) {
     context.waitUntil(runPrivacyCleanup(env, Number(controller?.scheduledTime) || Date.now()));
@@ -357,30 +357,41 @@ async function handleRequest(request, env) {
     return response;
 }
 
-async function withSecurityHeaders(response) {
+async function withSecurityHeaders(response, request) {
   if (response.status === 101 || response.webSocket) return response;
   const headers = new Headers(response.headers);
   const isHtml = /text\/html/i.test(headers.get('content-type') || '');
   const nonce = isHtml ? createCspNonce() : '';
+  const requestPath = request ? new URL(request.url).pathname : '';
+  const sensitivePath = /^\/(?:live(?:-ops)?|remote|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
-    "default-src 'self'",
+    "default-src 'none'",
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",
-    `script-src 'self'${nonce ? ` 'nonce-${nonce}'` : ''} https://www.googletagmanager.com`,
+    `script-src 'self'${nonce ? ` 'nonce-${nonce}' 'strict-dynamic'` : ''} https://www.googletagmanager.com`,
+    "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
     "connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://formspree.io",
     "form-action 'self' https://formspree.io",
+    "frame-src 'none'",
+    "media-src 'none'",
     "manifest-src 'self'",
     "worker-src 'self'",
   ].join('; '));
   headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   headers.set('x-frame-options', 'DENY');
   headers.set('x-content-type-options', 'nosniff');
-  headers.set('referrer-policy', 'strict-origin-when-cross-origin');
-  headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  headers.set('x-permitted-cross-domain-policies', 'none');
+  headers.set('origin-agent-cluster', '?1');
+  headers.set('referrer-policy', sensitivePath ? 'no-referrer' : 'strict-origin-when-cross-origin');
+  headers.set('permissions-policy', 'accelerometer=(), autoplay=(), browsing-topics=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), serial=(), usb=(), xr-spatial-tracking=()');
+  if (isHtml) {
+    headers.set('cross-origin-opener-policy', 'same-origin');
+    headers.set('cross-origin-resource-policy', 'same-origin');
+  }
   let body = response.body;
   if (isHtml && response.body) {
     body = (await response.text()).replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);

@@ -31,6 +31,12 @@ if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialHostToken)) {
 if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialSubjectToken)) {
   sessionStorage.setItem(`live:subject:${initialRoomCode}`, initialSubjectToken);
 }
+if (initialVerificationId && /^[a-f0-9]{48}$/i.test(initialVerificationToken)) {
+  sessionStorage.setItem(`live:verification:${initialVerificationId}`, initialVerificationToken);
+}
+if (initialHostToken || initialSubjectToken || hashParams.has('verification')) {
+  history.replaceState({}, '', `${location.pathname}${location.search}`);
+}
 const state = {
   view: initialPurchaseRecovery ? 'purchase-recovery' : initialVerificationId ? 'channel-verification'
     : initialRoomCode && initialHostToken && !initialCreatorInvite ? 'staff-auth' : initialRoomCode ? 'room-loading' : 'entry',
