@@ -20,7 +20,10 @@ export async function runPrivacyCleanup(env, now = Date.now()) {
     deletedCreatorAssets: 0,
     expiredPurchaseAssets: 0,
     anonymizedPurchases: 0,
+    anonymizedCheckoutOrders: 0,
     deletedPurchaseRecords: 0,
+    deletedCheckoutOrders: 0,
+    deletedStripeEvents: 0,
     deletedOperationsLogs: 0,
     deletedPendingVerifications: 0,
     deletedCreatorInvites: 0,
@@ -105,6 +108,20 @@ async function cleanupPurchaseDatabase(env, now, summary) {
     [purchaseCutoff],
   );
   summary.deletedPurchaseRecords = changes(deletedPurchases);
+  const anonymizedOrders = await safeRun(db, `
+    UPDATE live_checkout_orders
+    SET participant_name = '', viewer_name = '', updated_at = ?
+    WHERE paid_at IS NOT NULL AND paid_at < ? AND (participant_name <> '' OR viewer_name <> '')
+  `, [now, now - PRIVACY_RETENTION.paidAssetDays * DAY_MS]);
+  summary.anonymizedCheckoutOrders = changes(anonymizedOrders);
+  const deletedOrders = await safeRun(db, 'DELETE FROM live_checkout_orders WHERE created_at < ?', [purchaseCutoff]);
+  summary.deletedCheckoutOrders = changes(deletedOrders);
+  const deletedStripeEvents = await safeRun(
+    db,
+    'DELETE FROM live_stripe_events WHERE created_at < ?',
+    [now - PRIVACY_RETENTION.operationsLogDays * DAY_MS],
+  );
+  summary.deletedStripeEvents = changes(deletedStripeEvents);
 }
 
 function creatorAssetKeys(payload) {

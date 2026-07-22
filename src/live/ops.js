@@ -139,7 +139,15 @@ export async function getLiveOpsOverview(env) {
         FROM live_result_entitlements ORDER BY updated_at DESC LIMIT 100
       `).all())
     : Promise.resolve({ results: [] });
-  const [reservations, activeSessions, entitlements, events, recentCounts, status, creatorInvites, channelVerifications] = await Promise.all([
+  const checkoutsPromise = purchaseDb
+    ? ensureLivePurchaseD1(env).then(() => purchaseDb.prepare(`
+        SELECT order_id, product_type, code, participant_name, amount, currency,
+          creator_amount, platform_amount, purchase_id, stripe_checkout_session_id,
+          stripe_payment_intent_id, stripe_refund_id, status, paid_at, refunded_at, created_at, updated_at
+        FROM live_checkout_orders ORDER BY updated_at DESC LIMIT 100
+      `).all())
+    : Promise.resolve({ results: [] });
+  const [reservations, activeSessions, entitlements, checkouts, events, recentCounts, status, creatorInvites, channelVerifications] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT r.code, r.scheduled_at, r.blocked_from, r.blocked_until, r.expires_at, g.payload
       FROM live_reservations r LEFT JOIN live_games g ON g.code = r.code
@@ -151,6 +159,7 @@ export async function getLiveOpsOverview(env) {
       WHERE a.expires_at >= ? ORDER BY a.started_at DESC LIMIT 10
     `).bind(now).all(),
     entitlementsPromise,
+    checkoutsPromise,
     env.REMOTE_DB.prepare(`
       SELECT event_id, category, severity, event_type, code, purchase_id, external_id,
         message, metadata, created_at, acknowledged_at, acknowledged_by
@@ -185,6 +194,7 @@ export async function getLiveOpsOverview(env) {
     reservations: (reservations.results || []).map(parseGameRow),
     activeSessions: active,
     entitlements: entitlements.results || [],
+    checkouts: checkouts.results || [],
     events: (events.results || []).map((item) => ({ ...item, metadata: parseJson(item.metadata) })),
     recentEventCounts: recentCounts.results || [],
     realtime,
@@ -196,6 +206,7 @@ export async function getLiveOpsOverview(env) {
       durableObjectsConfigured: hasLiveRealtime(env),
       alertWebhookConfigured: Boolean(env.LIVE_OPS_ALERT_WEBHOOK_URL),
       stripeWebhookConfigured: Boolean(env.STRIPE_WEBHOOK_SECRET),
+      stripeCheckoutConfigured: /^sk_(test|live)_[A-Za-z0-9_]+$/.test(String(env.STRIPE_SECRET_KEY || '')),
     },
   };
 }

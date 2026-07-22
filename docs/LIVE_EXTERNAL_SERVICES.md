@@ -13,7 +13,7 @@
 - D1の購入権限と、有効期限10分以内の署名URLの両方が有効な場合だけダウンロードできる
 - 購入権限の提供期限は購入から30日間
 
-Stripe Checkout / Connectの決済開始・Webhookはまだ未接続である。現時点の管理用権限発行APIは、Stripeの`payment_intent.succeeded`を検証したWebhookから呼ぶための内部境界であり、ブラウザから直接呼ばない。
+Stripe Checkoutはカード・JPY税込の1回払いとして接続する。成功Webhookが注文金額・通貨・Session ID・PaymentIntentを注文台帳と照合し、高画質画像と30日間の購入権限を自動発行する。Checkout時点ではYouTuberへ即時送金せず、70%を分配予定額として14日間保留する。
 
 ## 1. YouTube Data API v3
 
@@ -102,17 +102,22 @@ npx wrangler secret put LIVE_DOWNLOAD_SIGNING_SECRET
 ```powershell
 npx wrangler d1 migrations apply streetboardgame-remote --remote
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0001_live_purchase_records.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0002_live_checkout_orders.sql
+npx wrangler secret put STRIPE_SECRET_KEY
+npx wrangler secret put STRIPE_WEBHOOK_SECRET
+npx wrangler secret put LIVE_PURCHASE_ACCESS_SECRET
 ```
 
-ゲーム用D1には通常マイグレーションを順番に適用し、Web契約同意には`migrations/0008_live_creator_agreements.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0001_live_purchase_records.sql`だけを適用する。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
+ゲーム用D1には通常マイグレーションを順番に適用し、Web契約同意には`migrations/0008_live_creator_agreements.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0002_live_checkout_orders.sql`までを適用する。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
 
 ## 6. Stripe Webhook接続時の手順
 
 1. Checkout Sessionの作成前に、ゲームへ紐づくチャンネルが有料販売可能か再確認する
-2. Webhook署名を検証し、`payment_intent.succeeded`を確認する
-3. 同一Worker内の購入権限発行処理を直接呼び、高解像度画像と購入権限を作成する。人間向けの`POST /api/live/admin/result-entitlements`をWebhookからHTTP経由で呼ばない
-4. 購入者メールには購入アクセスキー付きの権限確認URLを送る
-5. 権限確認APIが10分以内の署名ダウンロードURLを発行する
-6. 返金・チャージバック時は権限`status`を失効させ、YouTuber分配を保留・相殺する
+2. Webhook署名を検証後、イベントIDを購入履歴専用D1で一意管理し、失敗イベントは再試行可能にする
+3. `checkout.session.completed`の金額・通貨・Session ID・PaymentIntentを注文台帳と照合する
+4. 同一Worker内で高解像度画像と購入権限を冪等発行する。管理APIをWebhookからHTTP経由で呼ばない
+5. 購入者はCheckout成功URLから元の参加端末へ戻り、30日間のダウンロード権限を受け取る
+6. 不正リスクが高い決済は注文・権限を`fraud_review`へ変更し、分配を保留する
+7. 返金・チャージバック時は権限を失効させ、YouTuber分配を保留・相殺する
 
 人間向け管理APIは管理トークンとTOTPで発行した15分セッション専用とする。Stripe Webhookは署名検証後に同一Worker内の関数を直接呼び、管理者のTOTPセッションをサービス間認証の代用にしない。

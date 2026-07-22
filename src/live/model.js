@@ -1,4 +1,4 @@
-import { LIVE_QUESTION_TYPES, LIVE_RESERVATION_MAX_DAYS } from './config.js';
+import { LIVE_QUESTION_TYPES, LIVE_RESERVATION_MAX_DAYS, LIVE_RESULT_IMAGE_PRICES } from './config.js';
 
 export const LIVE_TYPE_VALUES = Object.freeze(LIVE_QUESTION_TYPES.map(({ value }) => value));
 
@@ -54,6 +54,9 @@ export function validateLiveDraft(input, options = {}) {
       ? String(source.channelVerificationId)
       : '',
     scheduledAt: normalizeTimestamp(source.scheduledAt),
+    resultImagePrice: LIVE_RESULT_IMAGE_PRICES.includes(Number(source.resultImagePrice))
+      ? Number(source.resultImagePrice)
+      : LIVE_RESULT_IMAGE_PRICES[0],
     showLiveVoteCounts: source.showLiveVoteCounts === true,
     questions,
   };

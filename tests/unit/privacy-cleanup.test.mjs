@@ -35,7 +35,10 @@ test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2
   assert.equal(summary.deletedCreatorAssets, 3);
   assert.equal(summary.expiredPurchaseAssets, 2);
   assert.equal(summary.anonymizedPurchases, 2);
+  assert.equal(summary.anonymizedCheckoutOrders, 1);
   assert.equal(summary.deletedPurchaseRecords, 1);
+  assert.equal(summary.deletedCheckoutOrders, 1);
+  assert.equal(summary.deletedStripeEvents, 2);
   assert.equal(summary.deletedOperationsLogs, 2);
   assert.equal(summary.deletedPendingVerifications, 1);
   assert.equal(summary.deletedCreatorInvites, 1);
@@ -61,6 +64,7 @@ class CleanupDb {
       purchase('purchase-recent', 'live/results/purchase-recent.svg', now - 40 * 24 * 60 * 60 * 1000),
       purchase('purchase-old', 'live/results/purchase-old.svg', now - 8 * 365 * 24 * 60 * 60 * 1000),
     ] : [];
+    this.checkoutOrders = kind === 'purchase' ? [{ order_id: 'order-old', participant_name: '視聴者', viewer_name: '視聴者', paid_at: now - 40 * 24 * 60 * 60 * 1000, created_at: now - 8 * 365 * 24 * 60 * 60 * 1000 }] : [];
   }
 
   prepare(sql) {
@@ -89,6 +93,16 @@ class CleanupDb {
           db.purchases = db.purchases.filter((item) => item.purchased_at >= db.now - 7 * 365 * 24 * 60 * 60 * 1000);
           return { meta: { changes: before - db.purchases.length } };
         }
+        if (/UPDATE live_checkout_orders SET participant_name = ''/i.test(normalized)) {
+          db.checkoutOrders = db.checkoutOrders.map((item) => ({ ...item, participant_name: '', viewer_name: '' }));
+          return { meta: { changes: db.checkoutOrders.length } };
+        }
+        if (/DELETE FROM live_checkout_orders WHERE created_at/i.test(normalized)) {
+          const before = db.checkoutOrders.length;
+          db.checkoutOrders = db.checkoutOrders.filter((item) => item.created_at >= db.now - 7 * 365 * 24 * 60 * 60 * 1000);
+          return { meta: { changes: before - db.checkoutOrders.length } };
+        }
+        if (/DELETE FROM live_stripe_events/i.test(normalized)) return { meta: { changes: 2 } };
         if (/DELETE FROM live_ops_events/i.test(normalized)) return { meta: { changes: 2 } };
         if (/DELETE FROM live_channel_verifications/i.test(normalized)) return { meta: { changes: 1 } };
         if (/DELETE FROM live_creator_invites/i.test(normalized)) return { meta: { changes: 1 } };

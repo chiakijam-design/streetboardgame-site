@@ -2,6 +2,7 @@ import {
   LIVE_POLL_INTERVAL_MS,
   LIVE_QUESTION_TYPES,
   LIVE_RESERVATION_BUFFER_HOURS,
+  LIVE_RESULT_IMAGE_PRICES,
   LIVE_SERIES,
   LIVE_TYPE_LABELS,
   LIVE_VIEWER_LIMIT,
@@ -21,6 +22,8 @@ const initialVerificationToken = hashParams.get('verification')
   || (initialVerificationId ? sessionStorage.getItem(`live:verification:${initialVerificationId}`) : '')
   || '';
 const initialCreatorInvite = sessionStorage.getItem('live:creator-invite') || '';
+const initialCheckoutResult = String(query.get('checkout') || '');
+const initialCheckoutSessionId = String(query.get('session_id') || '');
 if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialHostToken)) {
   sessionStorage.setItem(`live:host:${initialRoomCode}`, initialHostToken);
 }
@@ -61,6 +64,14 @@ const state = {
   managementMessage: '',
   resultViewerName: '',
   resultShareBusy: false,
+  checkoutBusy: false,
+  checkoutStatusBusy: false,
+  checkoutStatusAttempts: 0,
+  checkoutResult: initialCheckoutResult,
+  checkoutSessionId: initialCheckoutSessionId,
+  checkoutStatus: null,
+  checkoutEntitlementUrl: '',
+  supportPanelOpen: false,
   creatorImageFile: null,
   creatorImagePreviewUrl: '',
   resultPreviewUrl: '',
@@ -528,6 +539,7 @@ function renderYouTubeCandidates() {
       channelId: state.channelProfile?.channelId || '',
       channelVerificationId: '',
       scheduledAt: 0,
+      resultImagePrice: LIVE_RESULT_IMAGE_PRICES[0],
       showLiveVoteCounts: false,
       questions: selected.map((question) => createLiveQuestion({ ...question, id: undefined })),
     };
@@ -629,6 +641,9 @@ function renderEditor() {
           <p class="help">似顔絵・宣材写真などを登録できます。結果画像では通常の黒髪の女の子と差し替えます。中央に人物が写った正方形に近い画像がおすすめです。</p>
           ${state.creatorImagePreviewUrl ? `<div class="creator-image-preview"><img src="${escapeAttr(state.creatorImagePreviewUrl)}" alt="登録するYouTuber画像"><button class="mini" id="removeCreatorImage" type="button">画像を外す</button></div>` : '<div class="notice">画像を登録しない場合は、従来の黒髪の女の子を表示します。</div>'}
           <div class="notice">元画像は視聴者へ送らず、企画保存時に非公開ストレージへ直接アップロードします。運営の画像審査で承認されるまでは既定画像を表示します。</div>
+          <label for="resultImagePrice">高画質結果画像の販売価格</label>
+          <select id="resultImagePrice">${LIVE_RESULT_IMAGE_PRICES.map((price) => `<option value="${price}" ${Number(state.draft.resultImagePrice) === price ? 'selected' : ''}>${price.toLocaleString('ja-JP')}円（税込）</option>`).join('')}</select>
+          <p class="help">有料販売の審査完了後に有効になります。売上の70%をYouTuber分配残高として記録します。</p>
         </div>
         ${channelOwnershipEditorHtml()}
         <div class="field editor-vote-setting"><span class="field-label">視聴者画面のライブ票数</span><label class="check"><input id="showLiveVoteCounts" type="checkbox" ${state.draft.showLiveVoteCounts ? 'checked' : ''}>全問題で選択肢別の現在票数を表示する</label><p class="help">この設定は企画全体に適用され、配信中は変更できません。</p></div>
@@ -675,6 +690,7 @@ function renderEditor() {
     state.creatorImagePreviewUrl = '';
     render();
   });
+  bind('#resultImagePrice', 'change', (event) => { state.draft.resultImagePrice = Number(event.target.value); });
   bind('#createChannelVerification', 'click', createChannelVerificationForDraft);
   bind('#copyChannelVerificationUrl', 'click', () => copyText(channelVerificationUrl()));
   bind('#refreshEditorChannelVerification', 'click', loadChannelVerification);
@@ -1162,6 +1178,8 @@ function renderParticipant() {
         <div class="field"><label for="resultViewerName">結果画像に入れるあなたの名前</label><input id="resultViewerName" maxlength="24" value="${escapeAttr(viewerName)}" placeholder="名前を入力"></div>
         <div class="result-image-status" id="resultImageStatus">プレビューを作成しています…</div>
         <img class="live-result-preview" id="liveResultPreview" alt="購入用結果画像のプレビュー" hidden>
+        ${liveCheckoutHtml(game)}
+        ${errorHtml()}
         <div class="live-result-share">
           <strong>この結果を友達に送る</strong>
           <p>XやLINEは結果文とLIVEページのURLを送れます。画像はPCでは保存、スマホでは共有・保存できます。</p>
@@ -1172,7 +1190,7 @@ function renderParticipant() {
           <button class="live-share-button live-share-image" id="shareLiveResultImage" type="button">結果画像を保存／送る</button>
           <div class="result-share-status" id="resultShareStatus" aria-live="polite"></div>
         </div>
-        <div class="notice">現在は画像内容のプレビューです。決済完了後だけ高画質版を取得できる購入処理は、Stripe Connectと画像保存先の接続後に有効化します。</div>
+        <div class="notice">決済はStreetboardgame運営者がStripe Checkoutで受け付けます。返金条件は購入前に<a href="/refund-policy" target="_blank" rel="noopener noreferrer">返金・キャンセルポリシー</a>をご確認ください。</div>
       </section>`;
   }
   setPage(content);
@@ -1184,7 +1202,111 @@ function renderParticipant() {
   bind('#shareLiveResultX', 'click', shareLiveResultX);
   bind('#shareLiveResultLine', 'click', shareLiveResultLine);
   bind('#shareLiveResultImage', 'click', shareLiveResultImage);
-  if (game.phase === 'complete') refreshLiveResultPreview();
+  bind('#buyLiveResultImage', 'click', () => startLiveCheckout('result_image'));
+  bind('#toggleLiveSupport', 'click', () => { state.supportPanelOpen = !state.supportPanelOpen; render(); });
+  document.querySelectorAll('[data-live-support-amount]').forEach((button) => button.addEventListener('click', () => {
+    startLiveCheckout('support', Number(button.dataset.liveSupportAmount));
+  }));
+  bind('#downloadPaidLiveResult', 'click', downloadPaidLiveResult);
+  if (game.phase === 'complete') {
+    refreshLiveResultPreview();
+    if (state.checkoutResult === 'success' && state.checkoutSessionId && !state.checkoutStatusBusy
+      && state.checkoutStatusAttempts === 0) refreshLiveCheckoutStatus();
+  }
+}
+
+function liveCheckoutHtml(game) {
+  const price = Number(game.resultImagePrice) || 0;
+  const status = state.checkoutStatus;
+  let returnMessage = '';
+  if (state.checkoutResult === 'cancelled') returnMessage = '<div class="notice">決済はキャンセルされました。請求は確定していません。</div>';
+  if (state.checkoutResult === 'success' && !status) returnMessage = '<div class="notice">決済結果を確認しています。この画面を閉じずにお待ちください。</div>';
+  if (status?.status === 'paid') {
+    returnMessage = status.productType === 'result_image'
+      ? `<div class="notice schedule-ok"><strong>購入が完了しました。</strong><br>高画質結果画像は購入日から30日間ダウンロードできます。</div><button class="secondary" id="downloadPaidLiveResult" type="button">高画質結果画像をダウンロード</button>`
+      : '<div class="notice schedule-ok"><strong>応援ありがとうございます。</strong><br>決済が完了しました。</div>';
+  } else if (status && ['payment_failed', 'checkout_failed'].includes(status.status)) {
+    returnMessage = '<div class="error">決済を完了できませんでした。カード情報を確認して、もう一度お試しください。</div>';
+  } else if (status && ['refunded', 'refund_pending', 'refund_processing', 'fraud_review'].includes(status.status)) {
+    returnMessage = '<div class="notice">この決済は返金・確認処理中または返金済みのため、ダウンロードできません。</div>';
+  } else if (status) {
+    returnMessage = '<div class="notice">Stripeから決済完了通知を確認しています。反映されない場合は少し待ってから画面を更新してください。</div>';
+  }
+  if (!game.paidSalesEnabled) {
+    return `<div class="live-checkout-panel">${returnMessage}<div class="notice">このLIVEでは有料販売の本人確認・契約・Stripe審査が完了していないため、購入と応援は受け付けていません。</div></div>`;
+  }
+  return `<div class="live-checkout-panel">
+    ${returnMessage}
+    <button class="primary" id="buyLiveResultImage" type="button" ${state.checkoutBusy || !price ? 'disabled' : ''}>${state.checkoutBusy ? 'Stripeへ接続中…' : `${price.toLocaleString('ja-JP')}円で高画質版を購入`}</button>
+    <button class="mini live-support-toggle" id="toggleLiveSupport" type="button" ${state.checkoutBusy ? 'disabled' : ''}>♡ 応援する</button>
+    ${state.supportPanelOpen ? `<div class="live-support-amounts"><strong>応援金額を選ぶ</strong>${(game.supportAmounts || []).map((amount) => `<button class="mini" data-live-support-amount="${amount}" type="button">${Number(amount).toLocaleString('ja-JP')}円</button>`).join('')}<p class="help">応援メッセージは初期版では公開されません。</p></div>` : ''}
+  </div>`;
+}
+
+async function startLiveCheckout(productType, amount = null) {
+  if (state.checkoutBusy || !state.game) return;
+  state.checkoutBusy = true;
+  state.error = '';
+  render();
+  try {
+    const requestId = randomCheckoutRequestId();
+    const response = await api(`/api/live/games/${state.roomCode}/checkout`, {
+      method: 'POST',
+      headers: { ...participantHeaders(), 'x-live-checkout-request': requestId },
+      body: JSON.stringify({
+        productType,
+        amount,
+        viewerName: state.resultViewerName || state.game.participantName || '視聴者',
+      }),
+    });
+    if (!/^https:\/\/checkout\.stripe\.com\//.test(response.checkoutUrl || '')) throw new Error('stripe-checkout-response-invalid');
+    location.assign(response.checkoutUrl);
+  } catch (error) {
+    state.checkoutBusy = false;
+    state.error = humanError(error);
+    render();
+  }
+}
+
+async function refreshLiveCheckoutStatus() {
+  if (state.checkoutStatusBusy || !state.checkoutSessionId) return;
+  state.checkoutStatusBusy = true;
+  try {
+    const response = await api(`/api/live/checkouts/${encodeURIComponent(state.checkoutSessionId)}`, { headers: participantHeaders() });
+    state.checkoutStatus = response;
+    state.checkoutEntitlementUrl = response.entitlementUrl || '';
+    state.checkoutStatusAttempts += 1;
+    state.checkoutStatusBusy = false;
+    render();
+    if (!['paid', 'refunded', 'payment_failed', 'refund_failed'].includes(response.status)
+      && state.checkoutStatusAttempts < 10) setTimeout(refreshLiveCheckoutStatus, 1500);
+  } catch (error) {
+    state.checkoutStatusBusy = false;
+    state.checkoutStatusAttempts += 1;
+    if (error.status === 404 && state.checkoutStatusAttempts < 10) {
+      setTimeout(refreshLiveCheckoutStatus, 1500);
+      return;
+    }
+    state.error = humanError(error);
+    render();
+  }
+}
+
+async function downloadPaidLiveResult() {
+  if (!state.checkoutEntitlementUrl) return;
+  try {
+    const entitlement = await api(state.checkoutEntitlementUrl);
+    location.assign(entitlement.downloadUrl);
+  } catch (error) {
+    state.error = humanError(error);
+    render();
+  }
+}
+
+function randomCheckoutRequestId() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 function liveResultShareContent() {
@@ -1641,6 +1763,17 @@ function humanError(error) {
     'contracting-name-required': '契約者名を入力してください',
     'contract-contact-email-required': '有効な契約連絡先メールアドレスを入力してください',
     'creator-agreement-confirmation-required': '3つの確認事項すべてへの同意が必要です',
+    'paid-channel-verification-required': 'このLIVEは有料販売の本人確認・契約・Stripe審査が完了していません',
+    'result-image-not-for-sale': 'このLIVEでは高画質結果画像を販売していません',
+    'invalid-support-amount': '応援金額を選び直してください',
+    'stripe-secret-key-not-configured': '決済の本番設定が完了していません。運営へお問い合わせください',
+    'live-checkout-not-configured': '決済・購入画像の本番設定が完了していません。運営へお問い合わせください',
+    'stripe-api-request-failed': 'Stripeへ接続できませんでした。時間を置いてもう一度お試しください',
+    'stripe-checkout-response-invalid': 'Stripe決済画面を開けませんでした。もう一度お試しください',
+    'checkout-not-found': '決済情報を確認できませんでした。画面を更新して再度お試しください',
+    'checkout-request-conflict': '決済操作が重複しました。画面を更新してもう一度お試しください',
+    'checkout-forbidden': 'この端末では決済結果を確認できません',
+    'purchase-access-signing-not-configured': '購入画像の受け取り設定が完了していません。運営へお問い合わせください',
     'youtube-confirmation-code-not-found': 'チャンネル概要欄に確認コードが見つかりません。公開反映を確認してから再度お試しください',
     'youtube-oauth-not-configured': 'YouTubeアカウント確認の本番設定が未完了です。概要欄コードまたは手動審査をご利用ください',
     'youtube-oauth-callback-invalid': 'Googleからの確認結果が不完全です。もう一度お試しください',

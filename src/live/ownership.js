@@ -227,6 +227,7 @@ export async function assertPaidChannelApproved(env, verificationId, channelId) 
     || !/^acct_[A-Za-z0-9]+$/.test(String(row.stripe_account_id || '')) || !row.agreement_accepted_at) {
     throw ownershipError('paid-channel-verification-required', 403);
   }
+  return row;
 }
 
 export async function requireChannelVerification(request, env, verificationId) {

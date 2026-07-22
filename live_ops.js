@@ -12,7 +12,7 @@ document.getElementById('forgetToken').addEventListener('click', () => {
 });
 document.getElementById('saveStatus').addEventListener('click', saveStatus);
 document.getElementById('issueInvite').addEventListener('click', issueCreatorInvite);
-document.getElementById('purchaseSearch').addEventListener('input', renderEntitlements);
+document.getElementById('purchaseSearch').addEventListener('input', () => { renderCheckouts(); renderEntitlements(); });
 
 async function loadOverview() {
   try {
@@ -49,7 +49,7 @@ function renderAll() {
   document.getElementById('statusMode').value = status.mode || 'normal';
   document.getElementById('statusTitle').value = status.title || '';
   document.getElementById('statusMessage').value = status.message || '';
-  renderMetrics(); renderCreatorInvites(); renderChannelVerifications(); renderSessions(); renderEntitlements(); renderEvents();
+  renderMetrics(); renderCreatorInvites(); renderChannelVerifications(); renderSessions(); renderCheckouts(); renderEntitlements(); renderEvents();
 }
 
 function renderCreatorInvites() {
@@ -115,7 +115,7 @@ function renderMetrics() {
   document.getElementById('metrics').innerHTML = [
     metric('重大APIエラー', critical, '直近15分'), metric('Stripe関連イベント', stripe, '直近15分'),
     metric('WebSocket予期せぬ切断率', `${wsRate}%`, `${unexpected}/${disconnected}切断`),
-    metric('監視設定', [infra.d1Configured && 'ゲームD1', infra.purchaseD1Configured && '購入D1', infra.durableObjectsConfigured && 'DO', infra.alertWebhookConfigured && '通知Webhook', infra.stripeWebhookConfigured && 'Stripe Webhook'].filter(Boolean).join(' / ') || '未設定', 'コードから確認できる範囲'),
+    metric('監視設定', [infra.d1Configured && 'ゲームD1', infra.purchaseD1Configured && '購入D1', infra.durableObjectsConfigured && 'DO', infra.alertWebhookConfigured && '通知Webhook', infra.stripeCheckoutConfigured && 'Stripe Checkout', infra.stripeWebhookConfigured && 'Stripe Webhook'].filter(Boolean).join(' / ') || '未設定', 'コードから確認できる範囲'),
   ].join('');
 }
 
@@ -156,9 +156,22 @@ function renderEntitlements() {
   if (!overview) return;
   const query = document.getElementById('purchaseSearch').value.trim().toLowerCase();
   const rows = (overview.entitlements || []).filter((x) => !query || [x.purchase_id, x.stripe_payment_intent_id, x.code].some((v) => String(v).toLowerCase().includes(query)));
-  document.getElementById('entitlements').innerHTML = rows.length ? rows.map((item) => `<article class="card"><strong>${escapeHtml(item.participant_name)} <span class="pill ${item.status === 'active' ? 'info' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">購入ID: <code>${escapeHtml(item.purchase_id)}</code><br>Stripe: <code>${escapeHtml(item.stripe_payment_intent_id)}</code> / ルーム: ${escapeHtml(item.code)}<br>期限: ${formatDate(item.available_until)}</div><div class="actions"><button class="button good" data-reissue="${escapeAttr(item.purchase_id)}" ${['refund_pending','refunded'].includes(item.status) ? 'disabled' : ''}>購入権限を再発行</button><button class="button danger" data-refund="${escapeAttr(item.purchase_id)}" data-confirmed="false" ${item.status === 'refunded' ? 'disabled' : ''}>権限停止・返金待ち</button><button class="button secondary" data-refund="${escapeAttr(item.purchase_id)}" data-confirmed="true">Stripe返金完了</button></div></article>`).join('') : empty('該当する購入権限はありません。');
+  document.getElementById('entitlements').innerHTML = rows.length ? rows.map((item) => `<article class="card"><strong>${escapeHtml(item.participant_name)} <span class="pill ${item.status === 'active' ? 'info' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">購入ID: <code>${escapeHtml(item.purchase_id)}</code><br>Stripe: <code>${escapeHtml(item.stripe_payment_intent_id)}</code> / ルーム: ${escapeHtml(item.code)}<br>期限: ${formatDate(item.available_until)}</div><div class="actions"><button class="button good" data-reissue="${escapeAttr(item.purchase_id)}" ${item.status !== 'active' ? 'disabled' : ''}>購入権限を再発行</button></div></article>`).join('') : empty('該当する購入権限はありません。');
   document.querySelectorAll('[data-reissue]').forEach((button) => button.addEventListener('click', () => reissueEntitlement(button.dataset.reissue)));
-  document.querySelectorAll('[data-refund]').forEach((button) => button.addEventListener('click', () => refundEntitlement(button.dataset.refund, button.dataset.confirmed === 'true')));
+}
+
+function renderCheckouts() {
+  if (!overview) return;
+  const query = document.getElementById('purchaseSearch').value.trim().toLowerCase();
+  const rows = (overview.checkouts || []).filter((item) => !query || [item.order_id, item.purchase_id, item.stripe_payment_intent_id, item.code]
+    .some((value) => String(value || '').toLowerCase().includes(query)));
+  document.getElementById('checkouts').innerHTML = rows.length ? rows.map((item) => {
+    const canRequest = ['paid', 'fraud_review', 'refund_failed'].includes(item.status);
+    const canExecute = ['refund_pending', 'refund_processing', 'refund_failed'].includes(item.status);
+    const product = item.product_type === 'result_image' ? '高画質結果画像' : '応援金';
+    return `<article class="card"><strong>${escapeHtml(product)} ${Number(item.amount).toLocaleString('ja-JP')}円 <span class="pill ${item.status === 'paid' ? 'info' : item.status === 'refund_failed' ? 'critical' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">注文ID: <code>${escapeHtml(item.order_id)}</code><br>購入者: ${escapeHtml(item.participant_name)} / ルーム: ${escapeHtml(item.code)}<br>PaymentIntent: <code>${escapeHtml(item.stripe_payment_intent_id || '未確定')}</code><br>YouTuber分配予定: ${Number(item.creator_amount).toLocaleString('ja-JP')}円 / 運営名目分: ${Number(item.platform_amount).toLocaleString('ja-JP')}円${item.stripe_refund_id ? `<br>Refund: <code>${escapeHtml(item.stripe_refund_id)}</code>` : ''}</div><div class="actions"><button class="button danger" data-checkout-refund="${escapeAttr(item.order_id)}" data-execute="false" ${canRequest ? '' : 'disabled'}>権限停止・返金待ち</button><button class="button secondary" data-checkout-refund="${escapeAttr(item.order_id)}" data-execute="true" ${canExecute ? '' : 'disabled'}>Stripeへ全額返金</button></div></article>`;
+  }).join('') : empty('該当するCheckout注文はありません。');
+  document.querySelectorAll('[data-checkout-refund]').forEach((button) => button.addEventListener('click', () => refundCheckout(button.dataset.checkoutRefund, button.dataset.execute === 'true')));
 }
 
 function renderEvents() {
@@ -191,9 +204,9 @@ async function rotateLinks(code, target) {
   } catch (error) { alert(humanError(error)); }
 }
 
-async function refundEntitlement(purchaseId, confirmed) {
-  if (!confirm(confirmed ? 'Stripe Dashboardで返金済みであることを確認しましたか？' : '購入権限を即時停止して返金待ちにしますか？')) return;
-  try { await adminApi(`/api/live/admin/result-entitlements/${purchaseId}/refund`, { method: 'POST', body: JSON.stringify({ confirmed }) }); await loadOverview(); } catch (error) { alert(humanError(error)); }
+async function refundCheckout(orderId, execute) {
+  if (!confirm(execute ? 'Stripe APIでこの注文を全額返金しますか？元の支払方法へ返金されます。' : '購入権限を即時停止し、YouTuber分配を保留して返金待ちにしますか？')) return;
+  try { await adminApi(`/api/live/admin/checkouts/${orderId}/refund`, { method: 'POST', body: JSON.stringify({ execute }) }); await loadOverview(); } catch (error) { alert(humanError(error)); }
 }
 
 async function reissueEntitlement(purchaseId) {
@@ -223,6 +236,12 @@ function humanError(error) {
     'stripe-account-required': 'Stripe本人確認・名義関係を確認済みにする場合は、acct_から始まるConnectアカウントIDが必要です。',
     'invalid-ownership-status': 'チャンネル所有の審査状態が不正です。',
     'invalid-stripe-relationship-status': 'Stripe名義関係の審査状態が不正です。',
+    'checkout-not-found': '対象のCheckout注文が見つかりません。',
+    'checkout-not-refundable': 'この注文は返金待ちへ変更できる状態ではありません。',
+    'refund-request-required': '先に権限停止・返金待ちへ変更してください。',
+    'stripe-payment-intent-missing': 'Stripe PaymentIntentが未確定のため返金できません。',
+    'stripe-secret-key-not-configured': 'STRIPE_SECRET_KEYが未設定です。',
+    'stripe-api-request-failed': 'Stripe APIで返金処理に失敗しました。Stripe DashboardとWorker Logsを確認してください。',
   };
   return messages[error?.message] || error?.message || '処理に失敗しました。';
 }

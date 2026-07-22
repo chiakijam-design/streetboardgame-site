@@ -3,6 +3,8 @@ import {
   LIVE_FALLBACK_VIEWER_LIMIT,
   LIVE_RESERVATION_BUFFER_HOURS,
   LIVE_RESERVATION_MAX_DAYS,
+  LIVE_RESULT_IMAGE_PRICES,
+  LIVE_SUPPORT_AMOUNTS,
   LIVE_VIEWER_LIMIT,
 } from './config.js';
 import {
@@ -49,6 +51,8 @@ import {
 } from './ops.js';
 import { createLiveAdminSession, requireLiveAdminSession } from './admin-auth.js';
 import { getLivePurchaseDb, requireLivePurchaseDb } from './purchases.js';
+import { calculateLiveRevenueAllocation } from './revenue.js';
+import { createLiveCheckoutSession, createLiveStripeRefund } from './stripe.js';
 import {
   LIVE_SUPPORT_MESSAGES_PUBLIC,
   assessStripePaymentRisk,
@@ -127,6 +131,11 @@ export async function handleLiveApi(request, env, path) {
         ? await refundLiveResultEntitlement(request, env, adminEntitlementRoute[1])
         : await reissueLiveResultEntitlement(request, env, adminEntitlementRoute[1]);
     }
+    const adminCheckoutRefundRoute = path.match(/^\/api\/live\/admin\/checkouts\/([A-Za-z0-9_-]{8,80})\/refund$/);
+    if (adminCheckoutRefundRoute && request.method === 'POST') {
+      await requireLivePurchaseDb(env);
+      return await refundLiveCheckout(request, env, adminCheckoutRefundRoute[1]);
+    }
     if (path === '/api/live/youtube-candidates' && request.method === 'POST') {
       await assertLiveServiceAvailable(env, true);
       await enforceLiveRateLimit(request, env, 'youtube', 15);
@@ -171,6 +180,11 @@ export async function handleLiveApi(request, env, path) {
       await requireLivePurchaseDb(env);
       return await getLiveResultEntitlement(request, env, entitlementRoute[1]);
     }
+    const checkoutStatusRoute = path.match(/^\/api\/live\/checkouts\/(cs_(?:test_|live_)?[A-Za-z0-9_]+)$/);
+    if (checkoutStatusRoute && request.method === 'GET') {
+      await requireLivePurchaseDb(env);
+      return await getLiveCheckoutStatus(request, env, checkoutStatusRoute[1]);
+    }
     const downloadRoute = path.match(/^\/api\/live\/downloads\/([A-Za-z0-9_-]{8,80})$/);
     if (downloadRoute && request.method === 'GET') {
       await requireLivePurchaseDb(env);
@@ -189,7 +203,7 @@ export async function handleLiveApi(request, env, path) {
       return await createLiveGame(request, env);
     }
 
-    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|next|socket|creator-image|result-preview|cancel|reschedule|rotate-links))?$/);
+    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|next|socket|creator-image|result-preview|checkout|cancel|reschedule|rotate-links))?$/);
     if (!route) return liveJson({ error: 'not-found' }, 404);
     const [, code, action = ''] = route;
     if (request.method === 'GET' && !action) return await getLiveGameResponse(request, env, code);
@@ -200,6 +214,10 @@ export async function handleLiveApi(request, env, path) {
     if (action === 'reschedule') return await rescheduleLiveGameAsHost(request, env, code);
     if (action === 'rotate-links') return await rotateLiveGameLinksAsHost(request, env, code);
     if (action === 'creator-image') return await uploadLiveCreatorImage(request, env, code);
+    if (action === 'checkout') {
+      await enforceLiveRateLimit(request, env, `checkout:${code}`, 10);
+      return await createLiveCheckout(request, env, code);
+    }
     if (action === 'join') {
       await assertLiveServiceAvailable(env, true);
       await enforceLiveRateLimit(request, env, `join:${code}`, 60);
@@ -260,6 +278,7 @@ async function createLiveGame(request, env) {
     channelName: validation.draft.channelName || validation.draft.subjectName,
     channelId: validation.draft.channelId,
     channelVerificationId: validation.draft.channelVerificationId,
+    resultImagePrice: validation.draft.resultImagePrice,
     creatorInviteId: creatorInvite.invite_id,
     creatorImage: null,
     scheduledAt: reservation.scheduledAt,
@@ -448,13 +467,22 @@ async function getLiveGameResponse(request, env, code) {
     && await isLiveHostAuthorized(request, env, game);
   const subject = Boolean(subjectToken && subjectToken === game.subjectToken);
   if (realtime) await enrichRealtimeGame(env, code, game, { host, participantToken });
+  const publicGame = publicLiveGame(game, {
+    host,
+    subject,
+    participantToken,
+  });
+  if (participantToken && game.phase === 'complete') {
+    try {
+      await assertPaidChannelApproved(env, game.channelVerificationId, game.channelId);
+      publicGame.paidSalesEnabled = liveCheckoutConfigured(env);
+    } catch (error) {
+      publicGame.paidSalesEnabled = false;
+    }
+  }
   return liveJson({
     code,
-    game: publicLiveGame(game, {
-      host,
-      subject,
-      participantToken,
-    }),
+    game: publicGame,
   });
 }
 
@@ -478,6 +506,131 @@ async function getLiveResultPreview(request, env, code) {
   const participantGame = publicLiveGame(game, { participantToken });
   if (!participantGame.participantName) throw liveError('participant-forbidden', 403);
   return createFreeResultPreview(request, env, game, participantGame);
+}
+
+async function createLiveCheckout(request, env, code) {
+  const purchaseDb = await requireLivePurchaseDb(env);
+  if (!liveCheckoutConfigured(env)) throw liveError('live-checkout-not-configured', 503);
+  const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
+  if (!participantToken) throw liveError('participant-forbidden', 403);
+  const checkoutRequestId = String(request.headers.get('x-live-checkout-request') || '');
+  if (!/^[a-f0-9]{32,80}$/i.test(checkoutRequestId)) throw liveError('checkout-request-id-required', 400);
+  const body = await readLiveJson(request);
+  const game = await requireLiveGame(env, code, { polling: true, participantToken });
+  if (game.phase !== 'complete') throw liveError('result-not-ready', 409);
+  const approval = await assertPaidChannelApproved(env, game.channelVerificationId, game.channelId);
+  const participant = game.participants.find((item) => item.token === participantToken);
+  if (!participant) throw liveError('participant-forbidden', 403);
+  const productType = String(body.productType || '');
+  let amount;
+  let productName;
+  if (productType === 'result_image') {
+    amount = Number(game.resultImagePrice);
+    if (!LIVE_RESULT_IMAGE_PRICES.includes(amount)) throw liveError('result-image-not-for-sale', 409);
+    productName = `${game.channelName || game.subjectName} LIVE高画質結果画像`;
+  } else if (productType === 'support') {
+    amount = Number(body.amount);
+    if (!LIVE_SUPPORT_AMOUNTS.includes(amount)) throw liveError('invalid-support-amount', 400);
+    productName = `${game.channelName || game.subjectName} LIVE応援`;
+  } else {
+    throw liveError('invalid-checkout-product', 400);
+  }
+  const viewerName = normalizeParticipantName(body.viewerName || participant.name);
+  const existing = await purchaseDb.prepare(`
+    SELECT order_id, product_type, code, participant_id, amount, stripe_checkout_session_id, stripe_checkout_url,
+      stripe_checkout_expires_at, status
+    FROM live_checkout_orders WHERE checkout_request_id = ?
+  `).bind(checkoutRequestId).first();
+  if (existing && (existing.code !== code || existing.participant_id !== participant.id
+    || existing.product_type !== productType || Number(existing.amount) !== amount)) {
+    throw liveError('checkout-request-conflict', 409);
+  }
+  if (existing?.stripe_checkout_url && Number(existing.stripe_checkout_expires_at) > Date.now()
+    && !['checkout_failed', 'refunded', 'refund_failed'].includes(existing.status)) {
+    return liveJson(checkoutResponse(existing));
+  }
+  const allocation = calculateLiveRevenueAllocation(amount);
+  const orderId = existing?.order_id || `ord_${createLiveToken(16)}`;
+  const now = Date.now();
+  if (!existing) {
+    await purchaseDb.prepare(`
+      INSERT INTO live_checkout_orders (
+        order_id, checkout_request_id, product_type, code, participant_id, participant_name,
+        viewer_name, channel_verification_id, stripe_account_id, amount, currency,
+        creator_amount, platform_amount, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'jpy', ?, ?, 'creating', ?, ?)
+    `).bind(
+      orderId, checkoutRequestId, productType, code, participant.id, participant.name,
+      viewerName, game.channelVerificationId, approval.stripe_account_id, amount,
+      allocation.creatorAmount, allocation.applicationFeeAmount, now, now,
+    ).run();
+  }
+  try {
+    const session = await createLiveCheckoutSession(env, {
+      requestUrl: request.url, orderId, productType, code, amount, productName,
+    }, now);
+    if (!/^cs_(?:test_|live_)?[A-Za-z0-9_]+$/.test(String(session.id || '')) || !/^https:\/\/checkout\.stripe\.com\//.test(String(session.url || ''))) {
+      throw liveError('stripe-checkout-response-invalid', 502);
+    }
+    const expiresAt = Number(session.expires_at) * 1000;
+    await purchaseDb.prepare(`
+      UPDATE live_checkout_orders
+      SET stripe_checkout_session_id = ?, stripe_checkout_url = ?, stripe_checkout_expires_at = ?,
+        status = 'checkout_created', updated_at = ? WHERE order_id = ?
+    `).bind(session.id, session.url, expiresAt, Date.now(), orderId).run();
+    return liveJson({ orderId, checkoutUrl: session.url, checkoutSessionId: session.id, expiresAt }, 201);
+  } catch (error) {
+    await purchaseDb.prepare(`
+      UPDATE live_checkout_orders SET status = 'checkout_failed', updated_at = ? WHERE order_id = ?
+    `).bind(Date.now(), orderId).run().catch(() => {});
+    throw error;
+  }
+}
+
+async function getLiveCheckoutStatus(request, env, checkoutSessionId) {
+  const purchaseDb = await requireLivePurchaseDb(env);
+  const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
+  if (!participantToken) throw liveError('participant-forbidden', 403);
+  const row = await purchaseDb.prepare(`
+    SELECT order_id, product_type, code, participant_id, amount, currency, purchase_id,
+      stripe_checkout_session_id, status, paid_at, refunded_at
+    FROM live_checkout_orders WHERE stripe_checkout_session_id = ?
+  `).bind(checkoutSessionId).first();
+  if (!row) throw liveError('checkout-not-found', 404);
+  const participant = await loadLiveParticipant(env, row.code, participantToken);
+  if (!participant || participant.id !== row.participant_id) throw liveError('checkout-forbidden', 403);
+  const response = {
+    orderId: row.order_id,
+    productType: row.product_type,
+    amount: Number(row.amount),
+    currency: row.currency,
+    status: row.status,
+    paidAt: row.paid_at ? Number(row.paid_at) : undefined,
+    refundedAt: row.refunded_at ? Number(row.refunded_at) : undefined,
+  };
+  if (row.product_type === 'result_image' && row.purchase_id && row.status === 'paid') {
+    const accessToken = await derivePurchaseAccessToken(env, row.order_id);
+    response.entitlementUrl = `${new URL(request.url).origin}/api/live/result-entitlements/${row.purchase_id}?access=${accessToken}`;
+  }
+  return liveJson(response);
+}
+
+function checkoutResponse(row) {
+  return {
+    orderId: row.order_id,
+    checkoutUrl: row.stripe_checkout_url,
+    checkoutSessionId: row.stripe_checkout_session_id,
+    expiresAt: Number(row.stripe_checkout_expires_at),
+  };
+}
+
+function liveCheckoutConfigured(env) {
+  const purchaseSecret = String(env.LIVE_PURCHASE_ACCESS_SECRET || env.LIVE_DOWNLOAD_SIGNING_SECRET || '');
+  return Boolean(
+    env.LIVE_PURCHASE_DB && env.LIVE_MEDIA && env.IMAGES
+    && /^sk_(test|live)_[A-Za-z0-9_]+$/.test(String(env.STRIPE_SECRET_KEY || ''))
+    && purchaseSecret.length >= 32,
+  );
 }
 
 async function grantLiveResultEntitlement(request, env) {
@@ -601,6 +754,10 @@ async function rotateLiveGameLinksAsAdmin(request, env, code) {
 
 async function refundLiveResultEntitlement(request, env, purchaseId) {
   const purchaseDb = await requireLivePurchaseDb(env);
+  const order = await purchaseDb.prepare(`
+    SELECT order_id FROM live_checkout_orders WHERE purchase_id = ?
+  `).bind(purchaseId).first();
+  if (order?.order_id) return refundLiveCheckout(request, env, order.order_id);
   const body = await readLiveJson(request);
   const status = body.confirmed === true ? 'refunded' : 'refund_pending';
   const row = await purchaseDb.prepare(`
@@ -620,6 +777,72 @@ async function refundLiveResultEntitlement(request, env, purchaseId) {
       : '購入権限を停止し、Stripe上の返金待ちにしました。',
   });
   return liveJson({ purchaseId, status, stripePaymentIntentId: row.stripe_payment_intent_id });
+}
+
+async function refundLiveCheckout(request, env, orderId) {
+  const purchaseDb = await requireLivePurchaseDb(env);
+  const body = await readLiveJson(request);
+  const execute = body.execute === true || body.confirmed === true;
+  const row = await purchaseDb.prepare(`
+    SELECT order_id, product_type, code, purchase_id, stripe_payment_intent_id,
+      stripe_refund_id, status FROM live_checkout_orders WHERE order_id = ?
+  `).bind(orderId).first();
+  if (!row) throw liveError('checkout-not-found', 404);
+  if (row.status === 'refunded') return liveJson({ orderId, status: 'refunded', refundId: row.stripe_refund_id });
+  if (!execute) {
+    if (!['paid', 'fraud_review', 'refund_failed'].includes(row.status)) throw liveError('checkout-not-refundable', 409);
+    await updateRefundState(purchaseDb, row, 'refund_pending');
+    await recordLiveOpsEvent(env, {
+      category: 'stripe', severity: 'warning', eventType: 'refund-requested',
+      code: row.code, purchaseId: row.purchase_id || '', externalId: row.stripe_payment_intent_id || '',
+      message: '購入権限を停止し、Stripe返金実行待ちにしました。', metadata: { orderId },
+    });
+    return liveJson({ orderId, status: 'refund_pending' });
+  }
+  if (!['refund_pending', 'refund_processing', 'refund_failed'].includes(row.status)) {
+    throw liveError('refund-request-required', 409);
+  }
+  if (!/^pi_[A-Za-z0-9_]+$/.test(String(row.stripe_payment_intent_id || ''))) {
+    throw liveError('stripe-payment-intent-missing', 409);
+  }
+  const reason = ['duplicate', 'fraudulent', 'requested_by_customer'].includes(body.reason)
+    ? body.reason
+    : 'requested_by_customer';
+  const refund = await createLiveStripeRefund(env, {
+    orderId: row.order_id,
+    paymentIntentId: row.stripe_payment_intent_id,
+    reason,
+  });
+  const status = refund.status === 'succeeded' ? 'refunded'
+    : refund.status === 'failed' || refund.status === 'canceled' ? 'refund_failed' : 'refund_processing';
+  await purchaseDb.prepare(`
+    UPDATE live_checkout_orders
+    SET stripe_refund_id = ?, status = ?, refunded_at = ?, updated_at = ? WHERE order_id = ?
+  `).bind(
+    String(refund.id || ''), status, status === 'refunded' ? Date.now() : null, Date.now(), row.order_id,
+  ).run();
+  if (row.purchase_id) {
+    await purchaseDb.prepare(`UPDATE live_result_entitlements SET status = ?, updated_at = ? WHERE purchase_id = ?`)
+      .bind(status, Date.now(), row.purchase_id).run();
+  }
+  await recordLiveOpsEvent(env, {
+    category: 'stripe', severity: status === 'refunded' ? 'info' : status === 'refund_failed' ? 'critical' : 'warning',
+    eventType: status === 'refunded' ? 'refund-completed' : status,
+    code: row.code, purchaseId: row.purchase_id || '', externalId: String(refund.id || ''),
+    message: status === 'refunded' ? 'Stripe APIで全額返金が完了しました。' : 'Stripeへ返金を送信し、最終状態をWebhookで待機しています。',
+    metadata: { orderId, stripeStatus: refund.status || '' },
+  });
+  return liveJson({ orderId, status, refundId: String(refund.id || '') });
+}
+
+async function updateRefundState(purchaseDb, row, status) {
+  const now = Date.now();
+  await purchaseDb.prepare(`UPDATE live_checkout_orders SET status = ?, updated_at = ? WHERE order_id = ?`)
+    .bind(status, now, row.order_id).run();
+  if (row.purchase_id) {
+    await purchaseDb.prepare(`UPDATE live_result_entitlements SET status = ?, updated_at = ? WHERE purchase_id = ?`)
+      .bind(status, now, row.purchase_id).run();
+  }
 }
 
 async function reissueLiveResultEntitlement(request, env, purchaseId) {
@@ -665,35 +888,235 @@ async function handleLiveStripeWebhook(request, env) {
   try { event = JSON.parse(payload); } catch (error) { throw liveError('stripe-payload-invalid', 400); }
   const type = String(event?.type || 'unknown');
   const object = event?.data?.object || {};
-  const risk = assessStripePaymentRisk(event);
-  if (risk.blocked) {
-    const paymentIntentId = String(
-      object.payment_intent || object.payment_intent_id || object.id?.startsWith?.('pi_') && object.id || '',
+  const eventId = String(event?.id || '');
+  if (!/^evt_[A-Za-z0-9_]+$/.test(eventId)) throw liveError('stripe-event-id-invalid', 400);
+  const requiresPurchaseDb = [
+    'checkout.session.completed', 'checkout.session.async_payment_succeeded',
+    'checkout.session.async_payment_failed', 'refund.updated', 'refund.failed',
+    'charge.refunded', 'charge.dispute.created', 'radar.early_fraud_warning.created', 'charge.succeeded',
+  ].includes(type);
+  const purchaseDb = getLivePurchaseDb(env);
+  if (requiresPurchaseDb && !purchaseDb) throw liveError('live-purchase-storage-not-configured', 503);
+  let claimStatus = 'claimed';
+  if (purchaseDb) {
+    await requireLivePurchaseDb(env);
+    claimStatus = await claimStripeEvent(purchaseDb, eventId, type);
+    if (claimStatus === 'processed') {
+      return liveJson({ received: true, duplicate: true, supportMessagesPublic: LIVE_SUPPORT_MESSAGES_PUBLIC });
+    }
+    if (claimStatus === 'processing') throw liveError('stripe-event-processing', 409);
+  }
+  try {
+    if (['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(type)
+      && (type === 'checkout.session.async_payment_succeeded' || object.payment_status === 'paid')) {
+      await fulfillLiveCheckout(request, env, object);
+    }
+    if (['payment_intent.payment_failed', 'checkout.session.async_payment_failed', 'charge.failed'].includes(type)) {
+      if (purchaseDb) await markFailedCheckout(purchaseDb, object);
+      await recordLiveOpsEvent(env, {
+        category: 'stripe', severity: 'critical', eventType: type,
+        externalId: String(event.id || object.id || '').slice(0, 160),
+        message: String(object.last_payment_error?.message || object.failure_message || 'Stripe決済が失敗しました。').slice(0, 500),
+        metadata: { objectId: String(object.id || ''), livemode: Boolean(event.livemode) },
+      });
+    }
+    if (type === 'charge.succeeded') await syncSucceededCharge(env, object);
+    const risk = assessStripePaymentRisk(event);
+    if (risk.blocked) await holdRiskyPayment(env, event, risk);
+    if (type === 'charge.refunded') await syncRefundByPaymentIntent(env, String(object.payment_intent || ''), 'refunded', object.id);
+    if (type === 'refund.updated' || type === 'refund.failed') {
+      const refundStatus = object.status === 'succeeded' ? 'refunded'
+        : object.status === 'failed' || type === 'refund.failed' ? 'refund_failed' : 'refund_processing';
+      await syncRefundByRefundId(env, String(object.id || ''), refundStatus);
+    }
+    if (purchaseDb) await completeStripeEvent(purchaseDb, eventId);
+    return liveJson({ received: true, supportMessagesPublic: LIVE_SUPPORT_MESSAGES_PUBLIC });
+  } catch (error) {
+    if (purchaseDb) await failStripeEvent(purchaseDb, eventId, error).catch(() => {});
+    throw error;
+  }
+}
+
+async function fulfillLiveCheckout(request, env, session) {
+  const purchaseDb = await requireLivePurchaseDb(env);
+  const orderId = String(session?.metadata?.live_order_id || session?.client_reference_id || '');
+  const row = await purchaseDb.prepare(`
+    SELECT * FROM live_checkout_orders
+    WHERE order_id = ? OR stripe_checkout_session_id = ? LIMIT 1
+  `).bind(orderId, String(session.id || '')).first();
+  if (!row) throw liveError('checkout-order-not-found', 409);
+  if (row.status === 'paid' && (row.product_type !== 'result_image' || row.purchase_id)) return row;
+  if (String(session.id || '') !== String(row.stripe_checkout_session_id || '')
+    || String(session.currency || '').toLowerCase() !== 'jpy'
+    || Number(session.amount_total) !== Number(row.amount)
+    || String(session.payment_status || '') !== 'paid') {
+    throw liveError('checkout-payment-mismatch', 409);
+  }
+  const paymentIntentId = String(session.payment_intent || '');
+  if (!/^pi_[A-Za-z0-9_]+$/.test(paymentIntentId)) throw liveError('stripe-payment-intent-missing', 409);
+  let purchaseId = row.purchase_id || null;
+  const paidAt = Date.now();
+  if (row.product_type === 'result_image') {
+    const participant = await loadParticipantById(env, row.code, row.participant_id);
+    if (!participant) throw liveError('participant-forbidden', 403);
+    const game = await requireLiveGame(env, row.code, { polling: true, participantToken: participant.token });
+    if (game.phase !== 'complete') throw liveError('result-not-ready', 409);
+    const participantGame = publicLiveGame(game, { participantToken: participant.token });
+    purchaseId = purchaseId || `purchase_${String(row.order_id).replace(/^ord_/, '')}`;
+    const accessToken = await derivePurchaseAccessToken(env, row.order_id);
+    const availableUntil = paidAt + 30 * 24 * 60 * 60 * 1000;
+    const assetKey = await createPaidResultAsset(
+      request, env, game, participantGame, purchaseId, row.viewer_name || participant.name,
     );
-    const purchaseDb = getLivePurchaseDb(env);
-    if (purchaseDb && paymentIntentId.startsWith('pi_')) {
-      await requireLivePurchaseDb(env);
-      await purchaseDb.prepare(`
+    await purchaseDb.prepare(`
+      INSERT OR IGNORE INTO live_result_entitlements (
+        purchase_id, code, participant_id, participant_name, access_token_hash,
+        stripe_payment_intent_id, asset_key, status, purchased_at, available_until, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+    `).bind(
+      purchaseId, row.code, participant.id, participant.name, await hashLiveSecret(accessToken),
+      paymentIntentId, assetKey, paidAt, availableUntil, paidAt, paidAt,
+    ).run();
+  }
+  await purchaseDb.prepare(`
+    UPDATE live_checkout_orders
+    SET purchase_id = ?, stripe_payment_intent_id = ?, status = 'paid', paid_at = ?, updated_at = ?
+    WHERE order_id = ?
+  `).bind(purchaseId, paymentIntentId, paidAt, paidAt, row.order_id).run();
+  await recordLiveOpsEvent(env, {
+    category: 'purchase', severity: 'info', eventType: 'checkout-paid', code: row.code,
+    purchaseId: purchaseId || '', externalId: paymentIntentId,
+    message: row.product_type === 'result_image' ? '決済成功を確認し、高画質結果画像の購入権限を発行しました。' : '応援金の決済成功を確認しました。',
+    metadata: { orderId: row.order_id, productType: row.product_type, amount: Number(row.amount), creatorAmount: Number(row.creator_amount) },
+  });
+  return { ...row, purchase_id: purchaseId, stripe_payment_intent_id: paymentIntentId, status: 'paid', paid_at: paidAt };
+}
+
+async function loadParticipantById(env, code, participantId) {
+  if (env.REMOTE_DB) {
+    const row = await env.REMOTE_DB.prepare(`
+      SELECT participant_id, participant_token, name, joined_at
+      FROM live_participants WHERE code = ? AND participant_id = ? LIMIT 1
+    `).bind(code, participantId).first();
+    return row ? { id: row.participant_id, token: row.participant_token, name: row.name, joinedAt: Number(row.joined_at) } : null;
+  }
+  const game = await getStoredLiveGame(env, code);
+  return game?.participants?.find((item) => item.id === participantId) || null;
+}
+
+async function claimStripeEvent(db, eventId, eventType) {
+  const now = Date.now();
+  const result = await db.prepare(`
+    INSERT OR IGNORE INTO live_stripe_events
+      (event_id, event_type, status, attempt_count, last_error, created_at, updated_at)
+    VALUES (?, ?, 'processing', 1, '', ?, ?)
+  `).bind(eventId, eventType, now, now).run();
+  if (Number(result?.meta?.changes) > 0) return 'claimed';
+  const current = await db.prepare(`SELECT status, updated_at FROM live_stripe_events WHERE event_id = ?`).bind(eventId).first();
+  if (!current || current.status === 'processed') return 'processed';
+  if (current.status === 'processing' && Number(current.updated_at) > now - 5 * 60 * 1000) return 'processing';
+  await db.prepare(`
+    UPDATE live_stripe_events SET status = 'processing', attempt_count = attempt_count + 1,
+      last_error = '', updated_at = ? WHERE event_id = ?
+  `).bind(now, eventId).run();
+  return 'claimed';
+}
+
+async function completeStripeEvent(db, eventId) {
+  const now = Date.now();
+  await db.prepare(`UPDATE live_stripe_events SET status = 'processed', processed_at = ?, updated_at = ? WHERE event_id = ?`)
+    .bind(now, now, eventId).run();
+}
+
+async function failStripeEvent(db, eventId, error) {
+  await db.prepare(`UPDATE live_stripe_events SET status = 'failed', last_error = ?, updated_at = ? WHERE event_id = ?`)
+    .bind(String(error?.message || 'stripe-webhook-processing-failed').slice(0, 300), Date.now(), eventId).run();
+}
+
+async function markFailedCheckout(db, object) {
+  const sessionId = String(object.id || '').startsWith('cs_') ? String(object.id) : '';
+  const paymentIntentId = String(object.payment_intent || object.id || '').startsWith('pi_')
+    ? String(object.payment_intent || object.id)
+    : '';
+  const orderId = String(object?.metadata?.live_order_id || '');
+  await db.prepare(`
+    UPDATE live_checkout_orders SET status = 'payment_failed', updated_at = ?
+    WHERE stripe_checkout_session_id = ? OR stripe_payment_intent_id = ? OR order_id = ?
+  `).bind(Date.now(), sessionId, paymentIntentId, orderId).run();
+}
+
+async function syncSucceededCharge(env, object) {
+  const purchaseDb = await requireLivePurchaseDb(env);
+  const chargeId = String(object.id || '');
+  const paymentIntentId = String(object.payment_intent || '');
+  const orderId = String(object?.metadata?.live_order_id || '');
+  if (!chargeId.startsWith('ch_') || !paymentIntentId.startsWith('pi_')) return;
+  await purchaseDb.prepare(`
+    UPDATE live_checkout_orders
+    SET stripe_charge_id = ?, stripe_payment_intent_id = COALESCE(stripe_payment_intent_id, ?), updated_at = ?
+    WHERE order_id = ? OR stripe_payment_intent_id = ?
+  `).bind(chargeId, paymentIntentId, Date.now(), orderId, paymentIntentId).run();
+}
+
+async function holdRiskyPayment(env, event, risk) {
+  const object = event?.data?.object || {};
+  const paymentIntentId = String(object.payment_intent || object.payment_intent_id
+    || object.id?.startsWith?.('pi_') && object.id || '');
+  const chargeId = String(object.charge || object.id?.startsWith?.('ch_') && object.id || '');
+  const purchaseDb = getLivePurchaseDb(env);
+  if (purchaseDb && (paymentIntentId.startsWith('pi_') || chargeId.startsWith('ch_'))) {
+    const order = await purchaseDb.prepare(`
+      SELECT order_id, purchase_id, stripe_payment_intent_id FROM live_checkout_orders
+      WHERE stripe_payment_intent_id = ? OR stripe_charge_id = ? LIMIT 1
+    `).bind(paymentIntentId, chargeId).first();
+    const matchedPaymentIntentId = String(order?.stripe_payment_intent_id || paymentIntentId);
+    await purchaseDb.prepare(`
+      UPDATE live_checkout_orders SET status = 'fraud_review', updated_at = ?
+      WHERE order_id = ? AND status = 'paid'
+    `).bind(Date.now(), order?.order_id || '').run();
+    if (matchedPaymentIntentId.startsWith('pi_')) await purchaseDb.prepare(`
         UPDATE live_result_entitlements SET status = 'fraud_review', updated_at = ?
         WHERE stripe_payment_intent_id = ? AND status = 'active'
-      `).bind(Date.now(), paymentIntentId).run();
-    }
-    await recordLiveOpsEvent(env, {
-      category: 'stripe', severity: 'critical', eventType: type,
-      externalId: String(event.id || object.id || '').slice(0, 160),
-      message: 'カード不正利用の疑いを検知したため、購入権限を停止して手動確認へ回しました。',
-      metadata: { paymentIntentId, riskLevel: risk.riskLevel, riskScore: risk.riskScore, livemode: Boolean(event.livemode) },
-    });
+      `).bind(Date.now(), matchedPaymentIntentId).run();
   }
-  if (['payment_intent.payment_failed', 'checkout.session.async_payment_failed', 'charge.failed'].includes(type)) {
-    await recordLiveOpsEvent(env, {
-      category: 'stripe', severity: 'critical', eventType: type,
-      externalId: String(event.id || object.id || '').slice(0, 160),
-      message: String(object.last_payment_error?.message || object.failure_message || 'Stripe決済が失敗しました。').slice(0, 500),
-      metadata: { objectId: String(object.id || ''), livemode: Boolean(event.livemode) },
-    });
-  }
-  return liveJson({ received: true, supportMessagesPublic: LIVE_SUPPORT_MESSAGES_PUBLIC });
+  await recordLiveOpsEvent(env, {
+    category: 'stripe', severity: 'critical', eventType: String(event.type || ''),
+    externalId: String(event.id || object.id || '').slice(0, 160),
+    message: 'カード不正利用の疑いを検知したため、購入権限とYouTuber分配を保留しました。',
+    metadata: { paymentIntentId, chargeId, riskLevel: risk.riskLevel, riskScore: risk.riskScore, livemode: Boolean(event.livemode) },
+  });
+}
+
+async function syncRefundByPaymentIntent(env, paymentIntentId, status, externalId) {
+  if (!paymentIntentId.startsWith('pi_')) return;
+  const purchaseDb = await requireLivePurchaseDb(env);
+  const row = await purchaseDb.prepare(`
+    SELECT order_id, purchase_id FROM live_checkout_orders WHERE stripe_payment_intent_id = ?
+  `).bind(paymentIntentId).first();
+  if (!row) return;
+  await purchaseDb.prepare(`
+    UPDATE live_checkout_orders SET status = ?, refunded_at = ?, updated_at = ? WHERE order_id = ?
+  `).bind(status, status === 'refunded' ? Date.now() : null, Date.now(), row.order_id).run();
+  if (row.purchase_id) await purchaseDb.prepare(`UPDATE live_result_entitlements SET status = ?, updated_at = ? WHERE purchase_id = ?`)
+    .bind(status, Date.now(), row.purchase_id).run();
+  await recordLiveOpsEvent(env, {
+    category: 'stripe', severity: 'info', eventType: 'refund-synchronized', purchaseId: row.purchase_id || '',
+    externalId: String(externalId || paymentIntentId), message: 'Stripe Webhookから返金完了を同期しました。', metadata: { orderId: row.order_id },
+  });
+}
+
+async function syncRefundByRefundId(env, refundId, status) {
+  if (!refundId.startsWith('re_')) return;
+  const purchaseDb = await requireLivePurchaseDb(env);
+  const row = await purchaseDb.prepare(`
+    SELECT order_id, purchase_id FROM live_checkout_orders WHERE stripe_refund_id = ?
+  `).bind(refundId).first();
+  if (!row) return;
+  await purchaseDb.prepare(`
+    UPDATE live_checkout_orders SET status = ?, refunded_at = ?, updated_at = ? WHERE order_id = ?
+  `).bind(status, status === 'refunded' ? Date.now() : null, Date.now(), row.order_id).run();
+  if (row.purchase_id) await purchaseDb.prepare(`UPDATE live_result_entitlements SET status = ?, updated_at = ? WHERE purchase_id = ?`)
+    .bind(status, Date.now(), row.purchase_id).run();
 }
 
 export async function verifyLiveStripeSignature(payload, signatureHeader, secret, now = Date.now()) {
@@ -1057,6 +1480,8 @@ export function publicLiveGame(game, access = {}) {
     realtime: Boolean(game.realtime),
     scheduledAt: Number(game.scheduledAt) || undefined,
     channelName: game.channelName || game.subjectName,
+    resultImagePrice: LIVE_RESULT_IMAGE_PRICES.includes(Number(game.resultImagePrice)) ? Number(game.resultImagePrice) : 0,
+    supportAmounts: LIVE_SUPPORT_AMOUNTS,
     hasCreatorImage: Boolean(game.creatorImage?.previewKey)
       && (!game.creatorImage.moderationStatus || game.creatorImage.moderationStatus === 'approved'),
     participantName: participant?.name,
@@ -1832,6 +2257,16 @@ function validateLiveScheduledAt(value) {
 async function hashLiveSecret(value) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value || '')));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function derivePurchaseAccessToken(env, orderId) {
+  const secret = String(env.LIVE_PURCHASE_ACCESS_SECRET || env.LIVE_DOWNLOAD_SIGNING_SECRET || '');
+  if (secret.length < 32) throw liveError('purchase-access-signing-not-configured', 503);
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`live-purchase.${orderId}`));
+  return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 function touchLiveGame(game) {

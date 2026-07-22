@@ -14,10 +14,13 @@ npx wrangler secret put LIVE_ADMIN_TOKEN
 npx wrangler secret put LIVE_ADMIN_TOTP_SECRET
 npx wrangler secret put LIVE_ADMIN_SESSION_SECRET
 npx wrangler secret put LIVE_OPS_ALERT_WEBHOOK_URL
+npx wrangler secret put STRIPE_SECRET_KEY
 npx wrangler secret put STRIPE_WEBHOOK_SECRET
+npx wrangler secret put LIVE_PURCHASE_ACCESS_SECRET
 npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0006_live_operations.sql
 npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0007_live_abuse_prevention.sql
 npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0008_live_creator_agreements.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0002_live_checkout_orders.sql
 ```
 
 荒らし・なりすまし・不適切画像・カード不正利用への対応は[`LIVE_ABUSE_PREVENTION.md`](LIVE_ABUSE_PREVENTION.md)を使用する。初期版の応援メッセージは公開せず、YouTuber招待は二要素認証済みの運営コンソールから手動審査後にだけ発行する。
@@ -80,7 +83,7 @@ WebSocketしきい値は`LIVE_WS_ALERT_MIN_DISCONNECTS`（既定20）と`LIVE_WS
 
 1. Stripe Workbench > Webhooksで本番エンドポイントを作る。
 2. URLを`https://www.streetboardgame.com/api/live/stripe/webhook`にする。
-3. `payment_intent.payment_failed`、`checkout.session.async_payment_failed`、`charge.failed`を購読する。
+3. `checkout.session.completed`、`checkout.session.async_payment_succeeded`、`checkout.session.async_payment_failed`、`payment_intent.payment_failed`、`charge.failed`、`charge.succeeded`、`charge.refunded`、`refund.updated`、`refund.failed`、`charge.dispute.created`、`radar.early_fraud_warning.created`を購読する。
 4. 署名secretを`STRIPE_WEBHOOK_SECRET`へ保存する。
 5. テストイベントを送り、運営コンソールと通知Webhookの両方へ出ることを確認する。
 6. StripeのWebhook配信失敗通知を有効化し、毎日Undelivered eventsが0件であることを確認する。
@@ -136,9 +139,9 @@ Stripeは本番Webhookを最大3日間再送する。復旧後は未配信イベ
 
 ### 5.6 返金と購入権限
 
-- 返金対象を確認したら「権限停止・返金待ち」。ダウンロードは即時停止する。
-- Stripe DashboardでPaymentIntentを照合して実返金する。
-- Stripe返金成功後だけ「Stripe返金完了」を押す。
+- 返金対象を確認したら「権限停止・返金待ち」。ダウンロードとYouTuber分配を即時停止する。
+- 注文・PaymentIntent・返金理由を照合後、「Stripeへ全額返金」を押す。WorkerがRefund APIを注文単位の冪等キー付きで呼ぶ。
+- `refund.updated`または`charge.refunded` Webhookで`refunded`へ同期されたことを確認する。
 - URL紛失・期限再発行は「購入権限を再発行」。旧URLを失効し、新しい30日間のURLを発行する。
 - `refund_pending`または`refunded`の購入は再発行できない。
 
@@ -152,7 +155,7 @@ Stripeは本番Webhookを最大3日間再送する。復旧後は未配信イベ
 
 ## 7. 制約
 
-- コンソールの返金操作はStripe APIを直接呼ばない。権限停止と状態管理であり、実返金はStripe Dashboardで行う。
+- コンソールの「Stripeへ全額返金」はStripe APIを直接呼ぶ。実行前に必ず「権限停止・返金待ち」で対象を確定し、TOTP管理セッションを第三者へ共有しない。
 - Cloudflare全体のエラー率とD1/DO請求使用量はCloudflare Dashboardが正。アプリ画面だけで請求判断しない。
 - `LIVE_OPS_ALERT_WEBHOOK_URL`未設定ではアプリ通知は送られない。
 - 管理トークン、Stripe署名secret、通知Webhook URLをGitへコミットしない。

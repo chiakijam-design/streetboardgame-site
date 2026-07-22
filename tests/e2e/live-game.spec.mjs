@@ -4,6 +4,35 @@ import { LIVE_FALLBACK_VIEWER_LIMIT, LIVE_RESERVATION_BUFFER_HOURS, LIVE_VIEWER_
 const TEST_CREATOR_INVITE = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 const creatorHeaders = (extra = {}) => ({ 'x-live-creator-invite': TEST_CREATOR_INVITE, ...extra });
 
+test('結果画面から高画質画像と応援金のStripe Checkoutを開始できる', async ({ page }) => {
+  const checkoutBodies = [];
+  await page.addInitScript(() => sessionStorage.setItem('live:participant:123456', 'a'.repeat(48)));
+  await page.route('**/api/live/status', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: { mode: 'normal' } }) }));
+  await page.route('**/api/live/games/123456', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: '123456', game: {
+    title: '決済LIVE', subjectName: '本人', channelName: '決済チャンネル', phase: 'complete', flowVersion: 5,
+    currentQuestionIndex: 0, questionCount: 1, participantCount: 1, participantLimit: 50, participants: [],
+    results: [{ questionId: 'q1', type: 'guess-person', text: '問題', options: [{ text: 'A', count: 1 }], popularIndices: [0], subjectAnswerIndex: 0, myVoteIndex: 0, myIsCorrect: true }],
+    participantName: '視聴者A', scheduledAt: Date.now(), resultImagePrice: 1000,
+    supportAmounts: [200, 500, 1000, 3000], paidSalesEnabled: true,
+  } }) }));
+  await page.route('**/api/live/games/123456/result-preview**', (route) => route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="540" height="675"></svg>' }));
+  await page.route('**/api/live/games/123456/checkout', async (route) => {
+    checkoutBodies.push({ body: route.request().postDataJSON(), headers: route.request().headers() });
+    await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ orderId: 'ord_test', checkoutSessionId: 'cs_test_checkout', checkoutUrl: 'https://checkout.stripe.com/c/pay/test', expiresAt: Date.now() + 1_800_000 }) });
+  });
+  await page.route('https://checkout.stripe.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<h1>Stripe Checkout</h1>' }));
+  await page.goto('/live?room=123456');
+  await expect(page.getByRole('button', { name: '1,000円で高画質版を購入' })).toBeVisible();
+  await page.getByRole('button', { name: '♡ 応援する' }).click();
+  for (const amount of ['200円', '500円', '1,000円', '3,000円']) await expect(page.getByRole('button', { name: amount, exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '1,000円で高画質版を購入' }).click();
+  await expect(page.getByRole('heading', { name: 'Stripe Checkout' })).toBeVisible();
+  expect(checkoutBodies).toHaveLength(1);
+  expect(checkoutBodies[0].body).toMatchObject({ productType: 'result_image', viewerName: '視聴者A' });
+  expect(checkoutBodies[0].headers['x-live-participant-token']).toBe('a'.repeat(48));
+  expect(checkoutBodies[0].headers['x-live-checkout-request']).toMatch(/^[a-f0-9]{32}$/);
+});
+
 function scheduleForTest(testInfo, slot) {
   const projectOffsetDays = testInfo.project.name === 'mobile-chrome' ? 100 : 0;
   const date = new Date(Date.now() + (projectOffsetDays + slot * 2 + 2) * 24 * 60 * 60 * 1000);

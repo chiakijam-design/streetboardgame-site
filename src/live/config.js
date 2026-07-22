@@ -46,3 +46,6 @@ export const LIVE_REVENUE_POLICY = Object.freeze({
   platformApplicationFeeBps: 3000,
   platformNetReferenceBps: 2640,
 });
+
+export const LIVE_RESULT_IMAGE_PRICES = Object.freeze([500, 1000, 3000]);
+export const LIVE_SUPPORT_AMOUNTS = Object.freeze([200, 500, 1000, 3000]);

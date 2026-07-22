@@ -27,10 +27,10 @@
       <section class="panel"><h2>チャンネル所有・契約・Stripe名義確認</h2><p class="help">有料販売の許可には、チャンネル所有、現行の収益分配規約へのWeb同意、Stripe Connect本人確認、Connect名義とチャンネル運営者の関係確認、acct_から始まるアカウントIDの5点が必要です。OAuth・概要欄で所有確認済みの場合、その確認方式を手動審査で上書きしません。</p><div class="cards" id="channelVerifications"></div><div id="verificationReviewOutput"></div></section>
       <section class="panel"><h2>監視サマリー（直近15分）</h2><div class="grid two" id="metrics"></div><p class="help">Cloudflare全体の5xx・D1行数・Durable Objects使用量はCloudflare Dashboardの通知とMetricsが正です。この画面はアプリ内イベントと稼働中ルームのWebSocket切断率を表示します。</p></section>
       <section class="panel"><h2>稼働中・予約一覧</h2><p class="help">アップロード画像は承認まで視聴者・結果画像に使われません。不適切な画像は却下すると非公開ストレージから削除されます。</p><div class="cards" id="sessions"></div><div id="privateLinkOutput"></div></section>
-      <section class="panel"><h2>購入権限・返金対応</h2><div class="field"><label for="purchaseSearch">購入ID・決済ID・ルームコードで絞り込み</label><input id="purchaseSearch" autocomplete="off"></div><div class="cards" id="entitlements" style="margin-top:12px"></div><div id="entitlementOutput"></div><p class="help">「返金待ち」は購入権限を即停止します。Stripe Dashboardで実返金後に「返金完了」を押してください。</p></section>
+      <section class="panel"><h2>Checkout・購入権限・返金対応</h2><div class="field"><label for="purchaseSearch">注文ID・購入ID・決済ID・ルームコードで絞り込み</label><input id="purchaseSearch" autocomplete="off"></div><h3>Stripe Checkout注文</h3><div class="cards" id="checkouts" style="margin-top:12px"></div><h3 style="margin-top:18px">高画質画像の購入権限</h3><div class="cards" id="entitlements" style="margin-top:12px"></div><div id="entitlementOutput"></div><p class="help">最初に「権限停止・返金待ち」でダウンロードを止め、内容確認後に「Stripeへ全額返金」を実行します。Stripe Webhookで最終状態を同期します。</p></section>
       <section class="panel"><h2>監視イベント</h2><div class="cards" id="events"></div></section>
     </div>
   </main>
-  <script data-build-entry="live_ops" src="/dist/live_ops-NAFPXMNK.js"></script>
+  <script data-build-entry="live_ops" src="/dist/live_ops-4TZ7PXN7.js"></script>
 </body>
 </html>
