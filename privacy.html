@@ -14,7 +14,7 @@
 <body>
   <header class="site-header"><div class="header-inner"><a class="brand" href="/">Streetboardgame</a><a class="home-link" href="/">トップへ</a></div></header>
   <main class="page-shell">
-    <section class="hero"><p class="eyebrow">PRIVACY</p><h1>プライバシーポリシー</h1><p class="lead">取得する情報と、ゲーム・決済・収益分配のためにどのように扱うかを説明します。</p><p class="meta">制定日・最終改定日：2026年7月22日　規約バージョン：1.0</p></section>
+    <section class="hero"><p class="eyebrow">PRIVACY</p><h1>プライバシーポリシー</h1><p class="lead">取得する情報、利用目的、委託先、保存期間および削除方法を説明します。</p><p class="meta">制定日：2026年7月22日　最終改定日：2026年7月22日　規約バージョン：1.1</p></section>
     <nav class="legal-nav" aria-label="法務ページ"><strong>法務・ポリシー</strong><ul>
       <li><a href="/terms">利用規約</a></li><li><a aria-current="page" href="/privacy">プライバシー</a></li><li><a href="/legal">特商法表記</a></li><li><a href="/creator-terms">収益分配規約</a></li><li><a href="/refund-policy">返金ポリシー</a></li><li><a href="/content-guidelines">肖像権ガイド</a></li><li><a href="/minor-policy">未成年者規定</a></li>
     </ul></nav>
@@ -33,14 +33,15 @@
       </ul>
 
       <h2>3. 利用目的</h2>
-      <ul>
-        <li>ゲームの作成、進行、投票集計、結果表示および再開</li>
-        <li>YouTubeチャンネルに関連する問題候補の生成</li>
-        <li>本人確認、契約管理、決済、返金、収益計算、不正利用・チャージバック対策</li>
-        <li>有料結果画像の生成、配信、30日間の再ダウンロード提供</li>
-        <li>問い合わせ対応、障害対応、品質・セキュリティ改善</li>
-        <li>法令、会計・税務上必要な記録の保存</li>
-      </ul>
+      <table class="data-table"><thead><tr><th>情報</th><th>利用目的</th></tr></thead><tbody>
+        <tr><td>ゲーム・参加者・投票情報</td><td>ゲームの作成、進行、集計、結果表示、予約、再開および参加上限制御</td></tr>
+        <tr><td>YouTube公開情報</td><td>チャンネルの確認、チャンネルに関連する問題候補の生成および有料販売時の所有確認</td></tr>
+        <tr><td>契約・本人確認情報</td><td>YouTuberとの契約、画像・チャンネル名の利用許諾、Stripe本人確認、収益分配、不正利用対策</td></tr>
+        <tr><td>購入・決済情報</td><td>決済、結果画像の提供、返金、チャージバック対応、会計・税務記録</td></tr>
+        <tr><td>問い合わせ情報</td><td>問い合わせへの回答、本人確認、紛争・再照会への対応</td></tr>
+        <tr><td>アクセス・障害・セキュリティ情報</td><td>利用状況の把握、障害復旧、不正アクセス検知、品質・セキュリティ改善</td></tr>
+      </tbody></table>
+      <p>取得時に示した目的と合理的な関連性を超えて利用する場合は、法令に基づく場合を除き、改めて同意を取得します。</p>
 
       <h2>4. YouTube API Services</h2>
       <div class="notice youtube-notice">本サービスはYouTube API Servicesを利用する場合があります。本サービスはYouTube、Googleまたはその関係会社が提供、後援、承認するサービスではありません。</div>
@@ -48,11 +49,15 @@
       <p>将来Googleアカウント認証を導入した場合、利用者は<a href="https://security.google.com/settings/security/permissions" target="_blank" rel="noopener noreferrer">Googleセキュリティ設定</a>で連携を解除できます。削除依頼を受けた対象データは、法令上保存が必要なものを除き削除します。</p>
 
       <h2>5. 外部サービス・委託先</h2>
-      <table class="data-table"><tbody>
-        <tr><th>Cloudflare</th><td>サイト配信、データ保存、セキュリティおよびアクセスログ</td></tr>
-        <tr><th>Stripe</th><td>決済、本人確認、Connectアカウント、返金・収益分配</td></tr>
-        <tr><th>Google / YouTube</th><td>公開チャンネル・動画情報の取得、アクセス解析</td></tr>
-        <tr><th>Formspree</th><td>お問い合わせフォームの受信</td></tr>
+      <table class="data-table"><thead><tr><th>委託先・保存先</th><th>取り扱う情報と目的</th><th>運営者が定める保存期間</th></tr></thead><tbody>
+        <tr><td>Cloudflare Workers / CDN</td><td>サイト・API配信、通信保護、不正アクセス対策、障害ログ</td><td>Cloudflare契約上の期間。運営者がD1へ保存する障害・セキュリティイベントは180日</td></tr>
+        <tr><td>Cloudflare D1（ゲーム用）</td><td>ルーム、予約、参加者、投票、本人確認状態、運用イベント</td><td>ゲーム種別ごとの期間および運用ログ180日</td></tr>
+        <tr><td>Cloudflare D1（購入履歴専用）</td><td>購入ID、Stripe決済ID、提供・返金状態。ゲーム用D1とは別データベース</td><td>画像提供用情報30日、取引・会計記録7年</td></tr>
+        <tr><td>Cloudflare R2</td><td>YouTuber元画像、無料プレビュー、有料結果画像の非公開保存</td><td>元画像はゲーム終了後24時間以内、有料結果画像は購入後30日</td></tr>
+        <tr><td>Stripe</td><td>カード決済、本人確認、Connectアカウント、返金・収益分配</td><td>Stripeの規約・法令に基づく期間。運営者の取引記録は7年</td></tr>
+        <tr><td>Google / YouTube API Services</td><td>公開チャンネル・動画情報、チャンネル所有確認</td><td>保存した問題・チャンネル情報は対象LIVEゲームの保存期間まで。OAuth確認用stateは最長10分</td></tr>
+        <tr><td>Google Analytics 4（GA4）</td><td>Cookie、端末・閲覧・参照元情報による利用状況分析</td><td>ユーザー単位・イベント単位データ14か月</td></tr>
+        <tr><td>Formspree</td><td>氏名、メールアドレス、問い合わせ内容の受信</td><td>対応完了後12か月</td></tr>
       </tbody></table>
       <p>これらの事業者が国外でデータを取り扱う場合があります。運営者は、契約・各社の保護措置・適用法令を確認し、必要な安全管理措置を講じます。</p>
 
@@ -60,20 +65,28 @@
       <p>本人の同意がある場合、業務委託に必要な場合、事業承継の場合、または法令に基づく場合を除き、個人データを第三者に提供しません。YouTuberには、個々の購入者を特定できる情報ではなく、原則として売上・返金・分配に必要な集計情報を提供します。</p>
 
       <h2>7. 保存期間</h2>
-      <ul>
-        <li>LIVEの企画・投票データ：予約枠終了または利用終了後、運用上必要な期間を経て順次削除</li>
-        <li>有料画像：購入日から30日間ダウンロード可能。その後は順次削除</li>
-        <li>契約、決済、返金、分配、会計・税務記録：契約期間中および法令上必要な期間</li>
-        <li>セキュリティログ：不正対策および障害調査に必要な期間</li>
-        <li>問い合わせ：対応完了後、紛争対応・再照会に必要な期間</li>
-      </ul>
-      <p>具体的な保存期間は、法令、紛争・不正調査、バックアップの都合により延長される場合があります。</p>
+      <table class="data-table"><thead><tr><th>対象</th><th>保存期間・削除時期</th></tr></thead><tbody>
+        <tr><td>通常ゲームのブラウザ内データ</td><td>利用者がブラウザデータを削除するまで。通常ゲームの回答は運営者サーバーへ保存しません</td></tr>
+        <tr><td>遠隔ゲーム</td><td>最後の操作から24時間</td></tr>
+        <tr><td>予約中のLIVE企画</td><td>予約枠終了まで。キャンセル・強制終了・完了後は24時間</td></tr>
+        <tr><td>LIVE参加者名・投票・回答</td><td>対象LIVE終了後24時間</td></tr>
+        <tr><td>未完了のチャンネル所有確認</td><td>申請から90日。OAuth確認用stateは期限経過後に消去</td></tr>
+        <tr><td>確認済み契約・本人確認記録</td><td>契約期間中および終了後7年</td></tr>
+        <tr><td>YouTuber元画像・プレビュー</td><td>対象LIVE終了後24時間</td></tr>
+        <tr><td>有料結果画像・購入者名・ダウンロード用情報</td><td>購入後30日。その後R2画像を削除し、購入履歴からゲームコード・参加者ID・名前を消去</td></tr>
+        <tr><td>購入・決済・返金・分配記録</td><td>購入日から7年。ゲームデータとは別の購入履歴専用D1に保存</td></tr>
+        <tr><td>運用・セキュリティイベント</td><td>180日</td></tr>
+        <tr><td>GA4ユーザー・イベントデータ</td><td>14か月</td></tr>
+        <tr><td>問い合わせ</td><td>対応完了後12か月</td></tr>
+      </tbody></table>
+      <p>D1・R2の期限切れデータは、Cloudflare Cron Triggerにより毎時自動削除または匿名化します。法令上の保存義務、係争、返金、不正調査、漏えい調査の対象となった情報は、必要な範囲で削除を保留する場合があります。</p>
 
       <h2>8. Cookie・アクセス解析</h2>
       <p>本サービスは、機能維持、利用状況の把握および改善のためCookie、localStorageその他の類似技術を利用します。ブラウザ設定でCookieを無効化できますが、一部機能が利用できなくなる場合があります。</p>
 
       <h2>9. 安全管理</h2>
-      <p>アクセス制御、通信の暗号化、権限分離、ログ監視、委託先の選定など、取り扱う情報の性質に応じた安全管理措置を講じます。秘密URLや参加コードは、利用者側でも第三者に漏れないよう管理してください。</p>
+      <p>管理画面の二要素認証と短期セッション、ゲーム用D1と購入履歴用D1の分離、R2の非公開化、Content Security Policy、通信の暗号化、権限分離、期限切れデータの自動削除、ログ監視を実施します。秘密URLや参加コードは、利用者側でも第三者に漏れないよう管理してください。</p>
+      <p>個人データの漏えいまたはそのおそれを把握した場合は、アクセス停止、証拠保全、影響範囲確認、委託先への連絡を行い、法令上必要な場合は個人情報保護委員会への報告と対象者への通知を行います。</p>
 
       <h2>10. 開示・訂正・削除等</h2>
       <p>保有個人データの開示、訂正、利用停止、削除その他法令上の請求は、<a href="/contact">お問い合わせフォーム</a>からご連絡ください。本人確認後、法令に従って対応します。ゲーム進行中の投票データなど、削除すると他の参加者の利用に影響する情報は、終了後の削除となる場合があります。</p>

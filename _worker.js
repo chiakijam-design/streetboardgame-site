@@ -1,4 +1,5 @@
 import { handleLiveApi } from './src/live/api.js';
+import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
@@ -34,6 +35,14 @@ const LEGAL_PAGE_FILES = Object.freeze({
 
 export default {
   async fetch(request, env) {
+    return withSecurityHeaders(await handleRequest(request, env));
+  },
+  async scheduled(controller, env, context) {
+    context.waitUntil(runPrivacyCleanup(env, Number(controller?.scheduledTime) || Date.now()));
+  },
+};
+
+async function handleRequest(request, env) {
     const url = new URL(request.url);
 
     if (url.hostname === 'streetboardgame.com') {
@@ -346,8 +355,48 @@ export default {
     }
 
     return response;
-  },
-};
+}
+
+async function withSecurityHeaders(response) {
+  if (response.status === 101 || response.webSocket) return response;
+  const headers = new Headers(response.headers);
+  const isHtml = /text\/html/i.test(headers.get('content-type') || '');
+  const nonce = isHtml ? createCspNonce() : '';
+  headers.set('content-security-policy', [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    `script-src 'self'${nonce ? ` 'nonce-${nonce}'` : ''} https://www.googletagmanager.com`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob:",
+    "connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://formspree.io",
+    "form-action 'self' https://formspree.io",
+    "manifest-src 'self'",
+    "worker-src 'self'",
+  ].join('; '));
+  headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+  headers.set('x-frame-options', 'DENY');
+  headers.set('x-content-type-options', 'nosniff');
+  headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+  headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  let body = response.body;
+  if (isHtml && response.body) {
+    body = (await response.text()).replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
+    headers.delete('content-length');
+    headers.delete('content-encoding');
+  }
+  return new Response(body, { status: response.status, statusText: response.statusText, headers });
+}
+
+function createCspNonce() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
 
 function applySeoMeta(html, page) {
   const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2';

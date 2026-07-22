@@ -1,4 +1,5 @@
 import { hasLiveRealtime, loadLiveRealtimeStats } from './realtime.js';
+import { ensureLivePurchaseD1, getLivePurchaseDb } from './purchases.js';
 
 let opsReadyPromise = null;
 
@@ -128,6 +129,14 @@ export async function acknowledgeLiveOpsEvent(env, eventId, operator = 'admin') 
 export async function getLiveOpsOverview(env) {
   if (!await ensureLiveOpsD1(env)) throw opsError('live-storage-not-configured', 500);
   const now = Date.now();
+  const purchaseDb = getLivePurchaseDb(env);
+  const entitlementsPromise = purchaseDb
+    ? ensureLivePurchaseD1(env).then(() => purchaseDb.prepare(`
+        SELECT purchase_id, code, participant_id, participant_name, stripe_payment_intent_id,
+          status, purchased_at, available_until, updated_at
+        FROM live_result_entitlements ORDER BY updated_at DESC LIMIT 100
+      `).all())
+    : Promise.resolve({ results: [] });
   const [reservations, activeSessions, entitlements, events, recentCounts, status] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT r.code, r.scheduled_at, r.blocked_from, r.blocked_until, r.expires_at, g.payload
@@ -139,11 +148,7 @@ export async function getLiveOpsOverview(env) {
       FROM live_active_sessions a LEFT JOIN live_games g ON g.code = a.code
       WHERE a.expires_at >= ? ORDER BY a.started_at DESC LIMIT 10
     `).bind(now).all(),
-    env.REMOTE_DB.prepare(`
-      SELECT purchase_id, code, participant_id, participant_name, stripe_payment_intent_id,
-        status, purchased_at, available_until, updated_at
-      FROM live_result_entitlements ORDER BY updated_at DESC LIMIT 100
-    `).all(),
+    entitlementsPromise,
     env.REMOTE_DB.prepare(`
       SELECT event_id, category, severity, event_type, code, purchase_id, external_id,
         message, metadata, created_at, acknowledged_at, acknowledged_by
@@ -181,6 +186,7 @@ export async function getLiveOpsOverview(env) {
     realtime,
     infrastructure: {
       d1Configured: Boolean(env.REMOTE_DB),
+      purchaseD1Configured: Boolean(purchaseDb),
       durableObjectsConfigured: hasLiveRealtime(env),
       alertWebhookConfigured: Boolean(env.LIVE_OPS_ALERT_WEBHOOK_URL),
       stripeWebhookConfigured: Boolean(env.STRIPE_WEBHOOK_SECRET),

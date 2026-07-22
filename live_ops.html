@@ -16,9 +16,9 @@
     <div class="top"><strong>Streetboardgame Operations</strong><a href="/">サイトへ</a></div>
     <section class="hero"><h1>LIVE運営コンソール</h1><p>予約、強制終了、漏えいURL失効、購入権限、障害告知、監視イベントを一か所で扱います。</p></section>
     <section class="panel" id="authPanel">
-      <h2>管理者認証</h2><p class="help">LIVE_ADMIN_TOKENを入力してください。値はこのタブのsessionStorageだけに保存され、URLには入りません。</p>
-      <div class="field"><label for="adminToken">管理トークン</label><input id="adminToken" type="password" autocomplete="off" spellcheck="false"></div>
-      <div class="actions"><button class="button" id="loadOps">読み込む</button><button class="button secondary" id="forgetToken">このタブから消す</button></div>
+      <h2>管理者二要素認証</h2><p class="help">管理トークンと認証アプリの6桁コードが必要です。認証後はこのタブだけで使える15分間の管理セッションを発行します。認証コードは保存しません。</p>
+      <div class="grid two"><div class="field"><label for="adminToken">管理トークン</label><input id="adminToken" type="password" autocomplete="current-password" spellcheck="false"></div><div class="field"><label for="adminOtp">認証アプリの6桁コード</label><input id="adminOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" spellcheck="false"></div></div>
+      <div class="actions"><button class="button" id="loadOps">二要素認証して読み込む</button><button class="button secondary" id="forgetToken">認証情報をこのタブから消す</button></div>
       <div id="authStatus" class="status" hidden></div>
     </section>
     <div id="dashboard" hidden>
@@ -29,6 +29,6 @@
       <section class="panel"><h2>監視イベント</h2><div class="cards" id="events"></div></section>
     </div>
   </main>
-  <script data-build-entry="live_ops" src="/dist/live_ops-FQV5AMYN.js"></script>
+  <script data-build-entry="live_ops" src="/dist/live_ops-POHMJEXE.js"></script>
 </body>
 </html>

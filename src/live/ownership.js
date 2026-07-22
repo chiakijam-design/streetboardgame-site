@@ -134,7 +134,6 @@ export async function completeYouTubeOAuth(request, env) {
 }
 
 export async function reviewChannelVerification(request, env, verificationId) {
-  requireAdmin(request, env);
   requireD1(env);
   const body = await request.json().catch(() => ({}));
   const ownershipStatus = ['verified', 'rejected', 'manual_pending'].includes(body.ownershipStatus)
@@ -209,12 +208,6 @@ function publicVerification(row) {
     verifiedAt: row.verified_at || undefined,
     updatedAt: row.updated_at,
   };
-}
-
-function requireAdmin(request, env) {
-  const expected = String(env.LIVE_ADMIN_TOKEN || '');
-  const actual = String(request.headers.get('x-live-admin-token') || '');
-  if (expected.length < 32 || !timingSafeEqual(expected, actual)) throw ownershipError('admin-forbidden', 403);
 }
 
 function requireD1(env) {

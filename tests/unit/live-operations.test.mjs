@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleLiveApi, verifyLiveStripeSignature } from '../../src/live/api.js';
+import { createLiveAdminSession, generateLiveAdminTotp, requireLiveAdminSession } from '../../src/live/admin-auth.js';
 
 test('Stripe Webhook署名は正しいv1署名だけを受理する', async () => {
   const secret = 'whsec_test_secret';
@@ -46,6 +47,37 @@ test('緊急メンテナンス中は公開状態を返し、新規LIVE処理を5
   assert.equal((await createResponse.json()).error, 'live-maintenance');
 });
 
+test('管理画面は管理トークンとTOTPの二要素で15分セッションを発行する', async () => {
+  assert.equal(await generateLiveAdminTotp('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', 59_000), '287082');
+  const now = 1_800_000_000_000;
+  const env = adminAuthEnv(memoryKv());
+  const otp = await generateLiveAdminTotp(env.LIVE_ADMIN_TOTP_SECRET, now);
+  const session = await createLiveAdminSession(new Request('https://example.com/api/live/admin/session', {
+    method: 'POST', headers: { 'x-live-admin-token': env.LIVE_ADMIN_TOKEN, 'x-live-admin-otp': otp },
+  }), env, now);
+  assert.match(session.sessionToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+  assert.equal(session.expiresAt, now + 15 * 60 * 1000);
+  assert.deepEqual(await requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
+    headers: { 'x-live-admin-session': session.sessionToken },
+  }), env, now + 14 * 60 * 1000), { expiresAt: session.expiresAt });
+  await assert.rejects(
+    requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
+      headers: { 'x-live-admin-session': session.sessionToken },
+    }), env, now + 16 * 60 * 1000),
+    (error) => error.message === 'admin-session-expired' && error.status === 401,
+  );
+});
+
+test('購入履歴専用D1がない場合はゲーム用保存先へフォールバックしない', async () => {
+  const response = await handleLiveApi(
+    new Request('https://example.com/api/live/result-entitlements/purchase01?access=secret'),
+    { LIVE_KV: memoryKv() },
+    '/api/live/result-entitlements/purchase01',
+  );
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, 'live-purchase-storage-not-configured');
+});
+
 test('漏えいURLを再発行すると旧トークンを失効し、強制終了で予約を解放する', async () => {
   const kv = memoryKv();
   const now = Date.now();
@@ -58,9 +90,19 @@ test('漏えいURLを再発行すると旧トークンを失効し、強制終�
   };
   await kv.put('live:123456', JSON.stringify(game));
   await kv.put('live:reservations', JSON.stringify([{ code: '123456', scheduledAt: game.scheduledAt, expiresAt: game.expiresAt }]));
-  const env = { LIVE_KV: kv, LIVE_ADMIN_TOKEN: 'admin'.repeat(8) };
+  const env = adminAuthEnv(kv);
+  const otp = await generateLiveAdminTotp(env.LIVE_ADMIN_TOTP_SECRET);
+  const sessionResponse = await handleLiveApi(new Request('https://example.com/api/live/admin/session', {
+    method: 'POST', headers: {
+      'content-type': 'application/json',
+      'x-live-admin-token': env.LIVE_ADMIN_TOKEN,
+      'x-live-admin-otp': otp,
+    }, body: '{}',
+  }), env, '/api/live/admin/session');
+  assert.equal(sessionResponse.status, 200);
+  const sessionToken = (await sessionResponse.json()).sessionToken;
   const rotateResponse = await handleLiveApi(new Request('https://example.com/api/live/admin/games/123456/rotate-links', {
-    method: 'POST', headers: { 'content-type': 'application/json', 'x-live-admin-token': env.LIVE_ADMIN_TOKEN },
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-live-admin-session': sessionToken },
     body: JSON.stringify({ host: true, subject: false }),
   }), env, '/api/live/admin/games/123456/rotate-links');
   assert.equal(rotateResponse.status, 200);
@@ -72,7 +114,7 @@ test('漏えいURLを再発行すると旧トークンを失効し、強制終�
   assert.equal(storedAfterRotate.subjectToken, game.subjectToken);
 
   const terminateResponse = await handleLiveApi(new Request('https://example.com/api/live/admin/games/123456/terminate', {
-    method: 'POST', headers: { 'content-type': 'application/json', 'x-live-admin-token': env.LIVE_ADMIN_TOKEN },
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-live-admin-session': sessionToken },
     body: JSON.stringify({ message: '安全のため終了します。' }),
   }), env, '/api/live/admin/games/123456/terminate');
   assert.equal(terminateResponse.status, 200);
@@ -173,5 +215,14 @@ function memoryKv() {
     },
     async put(key, value) { values.set(key, String(value)); },
     async delete(key) { values.delete(key); },
+  };
+}
+
+function adminAuthEnv(kv) {
+  return {
+    LIVE_KV: kv,
+    LIVE_ADMIN_TOKEN: 'admin-token-'.repeat(4),
+    LIVE_ADMIN_TOTP_SECRET: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',
+    LIVE_ADMIN_SESSION_SECRET: 'session-secret-'.repeat(3),
   };
 }

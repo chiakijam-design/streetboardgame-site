@@ -5,16 +5,20 @@
 ## 1. 運営コンソールと本番設定
 
 - URL: `https://www.streetboardgame.com/live-ops`
-- 認証: Worker secret `LIVE_ADMIN_TOKEN`（32文字以上）
-- トークンはURLへ付けない。画面ではタブを閉じると消える`sessionStorage`だけに保存する。
-- コンソールは`noindex`だが、URLを知ること自体は権限にならない。防御の本体は管理トークンである。
+- 認証: 管理トークンと認証アプリのTOTPによる二要素認証。認証後の管理セッションは15分
+- 管理トークンと短期セッションはURLへ付けない。画面ではタブを閉じると消える`sessionStorage`だけに保存し、TOTPは保存しない。
+- コンソールは`noindex`だが、URLを知ること自体は権限にならない。防御の本体は二要素認証と短期署名セッションである。
 
 ```powershell
 npx wrangler secret put LIVE_ADMIN_TOKEN
+npx wrangler secret put LIVE_ADMIN_TOTP_SECRET
+npx wrangler secret put LIVE_ADMIN_SESSION_SECRET
 npx wrangler secret put LIVE_OPS_ALERT_WEBHOOK_URL
 npx wrangler secret put STRIPE_WEBHOOK_SECRET
 npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0006_live_operations.sql
 ```
+
+TOTP設定、購入履歴専用D1、Cron削除は`docs/PRIVACY_OPERATIONS.md`を参照する。個人データの漏えいまたはその疑いがある場合は、通常の障害対応より先に`docs/PRIVACY_INCIDENT_RESPONSE.md`を実行する。
 
 `LIVE_OPS_ALERT_WEBHOOK_URL`にはHTTPS通知受信URLを設定する。重大APIエラー、Stripe失敗、Stripe Webhook処理失敗、WebSocket切断率超過をJSON POSTする。通知先が固定形式を要求する場合は中継Workerで変換する。
 
@@ -136,3 +140,4 @@ Stripeは本番Webhookを最大3日間再送する。復旧後は未配信イベ
 - Cloudflare全体のエラー率とD1/DO請求使用量はCloudflare Dashboardが正。アプリ画面だけで請求判断しない。
 - `LIVE_OPS_ALERT_WEBHOOK_URL`未設定ではアプリ通知は送られない。
 - 管理トークン、Stripe署名secret、通知Webhook URLをGitへコミットしない。
+- TOTP秘密鍵、管理セッション署名secret、購入履歴データもGitへコミットしない。

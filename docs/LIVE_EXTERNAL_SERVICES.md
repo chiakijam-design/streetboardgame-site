@@ -51,10 +51,12 @@ npx wrangler secret put YOUTUBE_OAUTH_REDIRECT_URI
 - `stripe_identity_verified = 1`
 - `stripe_relationship_status = verified`
 
-Stripe本人確認済み名義とチャンネル運営者が異なる場合、所属法人・事務所・委任関係を示す資料を手動審査する。管理APIの認証に使う32文字以上の秘密値を登録する。
+Stripe本人確認済み名義とチャンネル運営者が異なる場合、所属法人・事務所・委任関係を示す資料を手動審査する。管理APIは管理トークンとTOTPの二要素認証を必須とする。設定値は`docs/PRIVACY_OPERATIONS.md`を参照する。
 
 ```powershell
 npx wrangler secret put LIVE_ADMIN_TOKEN
+npx wrangler secret put LIVE_ADMIN_TOTP_SECRET
+npx wrangler secret put LIVE_ADMIN_SESSION_SECRET
 ```
 
 ## 4. 非公開R2とCloudflare Images
@@ -75,21 +77,22 @@ npx wrangler secret put LIVE_DOWNLOAD_SIGNING_SECRET
 
 ## 5. D1マイグレーション
 
-本番デプロイ前に購入権限・所有確認テーブルを適用する。
+本番デプロイ前に所有確認テーブルをゲーム用D1へ適用し、購入権限テーブルは購入履歴専用D1へ適用する。
 
 ```powershell
 npx wrangler d1 migrations apply streetboardgame-remote --remote
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0001_live_purchase_records.sql
 ```
 
-対象は`migrations/0005_live_paid_media.sql`。所有確認アクセストークンと購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。
+ゲーム用D1の対象は`migrations/0005_live_paid_media.sql`、購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0001_live_purchase_records.sql`だけを適用する。所有確認アクセストークンと購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。
 
 ## 6. Stripe Webhook接続時の手順
 
 1. Checkout Sessionの作成前に、ゲームへ紐づくチャンネルが有料販売可能か再確認する
 2. Webhook署名を検証し、`payment_intent.succeeded`を確認する
-3. `POST /api/live/admin/result-entitlements`を内部から呼び、高解像度画像と購入権限を作成する
+3. 同一Worker内の購入権限発行処理を直接呼び、高解像度画像と購入権限を作成する。人間向けの`POST /api/live/admin/result-entitlements`をWebhookからHTTP経由で呼ばない
 4. 購入者メールには購入アクセスキー付きの権限確認URLを送る
 5. 権限確認APIが10分以内の署名ダウンロードURLを発行する
 6. 返金・チャージバック時は権限`status`を失効させ、YouTuber分配を保留・相殺する
 
-管理APIを公開ブラウザから呼ばず、Cloudflare Service Bindingまたは同一Worker内のStripe Webhook処理から呼ぶことを推奨する。
+人間向け管理APIは管理トークンとTOTPで発行した15分セッション専用とする。Stripe Webhookは署名検証後に同一Worker内の関数を直接呼び、管理者のTOTPセッションをサービス間認証の代用にしない。

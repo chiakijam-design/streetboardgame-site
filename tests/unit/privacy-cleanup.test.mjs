@@ -1,0 +1,111 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { PRIVACY_RETENTION, runPrivacyCleanup } from '../../src/privacy/cleanup.js';
+
+test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2削除を同時に行う', async () => {
+  assert.deepEqual(PRIVACY_RETENTION, {
+    remoteGameHours: 24,
+    liveGameHoursAfterEnd: 24,
+    paidAssetDays: 30,
+    pendingChannelVerificationDays: 90,
+    operationsLogDays: 180,
+    purchaseRecordYears: 7,
+    ga4Months: 14,
+    contactMonths: 12,
+  });
+  const now = 1_800_000_000_000;
+  const gameDb = new CleanupDb('game', now);
+  const purchaseDb = new CleanupDb('purchase', now);
+  const deletedKeys = [];
+  const summary = await runPrivacyCleanup({
+    REMOTE_DB: gameDb,
+    LIVE_PURCHASE_DB: purchaseDb,
+    LIVE_MEDIA: { async delete(keys) { deletedKeys.push(...(Array.isArray(keys) ? keys : [keys])); } },
+  }, now);
+
+  assert.deepEqual(deletedKeys.sort(), [
+    'live/123456/creator/original.webp',
+    'live/123456/creator/paid.webp',
+    'live/123456/creator/preview.webp',
+    'live/results/purchase-old.svg',
+    'live/results/purchase-recent.svg',
+  ].sort());
+  assert.equal(summary.expiredGames, 1);
+  assert.equal(summary.deletedCreatorAssets, 3);
+  assert.equal(summary.expiredPurchaseAssets, 2);
+  assert.equal(summary.anonymizedPurchases, 2);
+  assert.equal(summary.deletedPurchaseRecords, 1);
+  assert.equal(summary.deletedOperationsLogs, 2);
+  assert.equal(summary.deletedPendingVerifications, 1);
+  assert.equal(gameDb.games.length, 0);
+  assert.equal(purchaseDb.purchases.length, 1);
+  assert.equal(purchaseDb.purchases[0].participant_name, '');
+  assert.equal(purchaseDb.purchases[0].asset_key, '');
+});
+
+class CleanupDb {
+  constructor(kind, now) {
+    this.kind = kind;
+    this.now = now;
+    this.games = kind === 'game' ? [{
+      code: '123456',
+      payload: JSON.stringify({ creatorImage: {
+        originalKey: 'live/123456/creator/original.webp',
+        previewKey: 'live/123456/creator/preview.webp',
+        paidKey: 'live/123456/creator/paid.webp',
+      } }),
+    }] : [];
+    this.purchases = kind === 'purchase' ? [
+      purchase('purchase-recent', 'live/results/purchase-recent.svg', now - 40 * 24 * 60 * 60 * 1000),
+      purchase('purchase-old', 'live/results/purchase-old.svg', now - 8 * 365 * 24 * 60 * 60 * 1000),
+    ] : [];
+  }
+
+  prepare(sql) {
+    const db = this;
+    const normalized = String(sql).replace(/\s+/g, ' ').trim();
+    return {
+      bindings: [],
+      bind(...bindings) { this.bindings = bindings; return this; },
+      async all() {
+        if (/SELECT code, payload FROM live_games/i.test(normalized)) return { results: db.games.slice() };
+        if (/SELECT purchase_id, asset_key FROM live_result_entitlements/i.test(normalized)) {
+          return { results: db.purchases.filter((item) => item.asset_key || item.participant_name).map((item) => ({ ...item })) };
+        }
+        return { results: [] };
+      },
+      async run() {
+        if (/DELETE FROM live_games/i.test(normalized)) db.games = [];
+        if (/UPDATE live_result_entitlements SET code = ''/i.test(normalized)) {
+          db.purchases = db.purchases.map((item) => ({
+            ...item, code: '', participant_id: '', participant_name: '', access_token_hash: '', asset_key: '',
+            status: item.status === 'active' ? 'expired' : item.status,
+          }));
+        }
+        if (/DELETE FROM live_result_entitlements WHERE purchased_at/i.test(normalized)) {
+          const before = db.purchases.length;
+          db.purchases = db.purchases.filter((item) => item.purchased_at >= db.now - 7 * 365 * 24 * 60 * 60 * 1000);
+          return { meta: { changes: before - db.purchases.length } };
+        }
+        if (/DELETE FROM live_ops_events/i.test(normalized)) return { meta: { changes: 2 } };
+        if (/DELETE FROM live_channel_verifications/i.test(normalized)) return { meta: { changes: 1 } };
+        return { meta: { changes: 0 } };
+      },
+    };
+  }
+}
+
+function purchase(purchaseId, assetKey, purchasedAt) {
+  return {
+    purchase_id: purchaseId,
+    code: '123456',
+    participant_id: 'participant',
+    participant_name: '視聴者',
+    access_token_hash: 'hash',
+    stripe_payment_intent_id: `pi_${purchaseId}`,
+    asset_key: assetKey,
+    status: 'active',
+    purchased_at: purchasedAt,
+    available_until: purchasedAt + 30 * 24 * 60 * 60 * 1000,
+  };
+}

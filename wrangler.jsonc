@@ -10,6 +10,10 @@
     "directory": "./",
     "binding": "ASSETS"
   },
+  "triggers": {
+    // 期限切れD1データとR2画像を毎時削除・匿名化する。
+    "crons": ["17 * * * *"]
+  },
   // 有料画像を有効化する前に非公開R2バケットを作成し、以下を有効化する。
   // 未作成のバケットを先に記載すると本番デプロイが失敗するため、現時点ではコメントのままにする。
   // "r2_buckets": [
@@ -44,5 +48,11 @@
       "database_name": "streetboardgame-remote",
       "database_id": "3feb5dad-3465-4d1f-a12b-8859a28308f4"
     }
+    // 有料販売前に購入履歴専用D1を作り、REMOTE_DBとは別のdatabase_idで有効化する。
+    // ,{
+    //   "binding": "LIVE_PURCHASE_DB",
+    //   "database_name": "streetboardgame-live-purchases",
+    //   "database_id": "購入履歴専用D1のID"
+    // }
   ]
 }

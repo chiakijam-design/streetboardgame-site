@@ -45,6 +45,8 @@ import {
   recordLiveOpsEvent,
   setLiveSystemStatus,
 } from './ops.js';
+import { createLiveAdminSession, requireLiveAdminSession } from './admin-auth.js';
+import { requireLivePurchaseDb } from './purchases.js';
 
 const LIVE_ACTIVE_TTL_SECONDS = 60 * 60 * 24;
 const LIVE_SAVED_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -62,26 +64,29 @@ export async function handleLiveApi(request, env, path) {
     if (path === '/api/live/status' && request.method === 'GET') {
       return liveJson({ status: await getLiveSystemStatus(env) });
     }
+    if (path === '/api/live/admin/session' && request.method === 'POST') {
+      await enforceLiveRateLimit(request, env, 'admin-auth', 10);
+      return liveJson(await createLiveAdminSession(request, env));
+    }
+    if (path.startsWith('/api/live/admin/')) {
+      await enforceLiveRateLimit(request, env, 'admin-api', 120);
+      await requireLiveAdminSession(request, env);
+    }
     if (path === '/api/live/admin/overview' && request.method === 'GET') {
-      requireLiveAdmin(request, env);
       return liveJson(await getLiveOpsOverview(env));
     }
     if (path === '/api/live/admin/status' && request.method === 'POST') {
-      requireLiveAdmin(request, env);
       return liveJson({ status: await setLiveSystemStatus(env, await readLiveJson(request)) });
     }
     if (path === '/api/live/admin/ops-events' && request.method === 'POST') {
-      requireLiveAdmin(request, env);
       return liveJson({ event: await recordLiveOpsEvent(env, await readLiveJson(request)) }, 201);
     }
     const acknowledgeRoute = path.match(/^\/api\/live\/admin\/ops-events\/([a-f0-9-]{36})\/acknowledge$/i);
     if (acknowledgeRoute && request.method === 'POST') {
-      requireLiveAdmin(request, env);
       return liveJson(await acknowledgeLiveOpsEvent(env, acknowledgeRoute[1]));
     }
     const adminGameRoute = path.match(/^\/api\/live\/admin\/games\/([0-9]{6})\/(terminate|rotate-links)$/);
     if (adminGameRoute && request.method === 'POST') {
-      requireLiveAdmin(request, env);
       await ensureLiveD1(env);
       return adminGameRoute[2] === 'terminate'
         ? await terminateLiveGameAsAdmin(request, env, adminGameRoute[1])
@@ -89,8 +94,7 @@ export async function handleLiveApi(request, env, path) {
     }
     const adminEntitlementRoute = path.match(/^\/api\/live\/admin\/result-entitlements\/([A-Za-z0-9_-]{8,80})\/(refund|reissue)$/);
     if (adminEntitlementRoute && request.method === 'POST') {
-      requireLiveAdmin(request, env);
-      await ensureLiveD1(env);
+      await requireLivePurchaseDb(env);
       return adminEntitlementRoute[2] === 'refund'
         ? await refundLiveResultEntitlement(request, env, adminEntitlementRoute[1])
         : await reissueLiveResultEntitlement(request, env, adminEntitlementRoute[1]);
@@ -124,17 +128,17 @@ export async function handleLiveApi(request, env, path) {
       return await reviewChannelVerification(request, env, verificationAdminRoute[1]);
     }
     if (path === '/api/live/admin/result-entitlements' && request.method === 'POST') {
-      await ensureLiveD1(env);
+      await requireLivePurchaseDb(env);
       return await grantLiveResultEntitlement(request, env);
     }
     const entitlementRoute = path.match(/^\/api\/live\/result-entitlements\/([A-Za-z0-9_-]{8,80})$/);
     if (entitlementRoute && request.method === 'GET') {
-      await ensureLiveD1(env);
+      await requireLivePurchaseDb(env);
       return await getLiveResultEntitlement(request, env, entitlementRoute[1]);
     }
     const downloadRoute = path.match(/^\/api\/live\/downloads\/([A-Za-z0-9_-]{8,80})$/);
     if (downloadRoute && request.method === 'GET') {
-      await ensureLiveD1(env);
+      await requireLivePurchaseDb(env);
       return await downloadLiveResult(request, env, downloadRoute[1]);
     }
     if (!env.REMOTE_DB && !env.LIVE_KV && !env.REMOTE_KV) {
@@ -401,7 +405,7 @@ async function getLiveResultPreview(request, env, code) {
 }
 
 async function grantLiveResultEntitlement(request, env) {
-  requireLiveAdmin(request, env);
+  const purchaseDb = await requireLivePurchaseDb(env);
   const body = await readLiveJson(request);
   const code = String(body.code || '');
   const purchaseId = String(body.purchaseId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
@@ -427,7 +431,7 @@ async function grantLiveResultEntitlement(request, env) {
     purchaseId,
     String(body.viewerName || participant.name).replace(/\s+/g, ' ').trim().slice(0, 24),
   );
-  await env.REMOTE_DB.prepare(`
+  await purchaseDb.prepare(`
     INSERT INTO live_result_entitlements (
       purchase_id, code, participant_id, participant_name, access_token_hash,
       stripe_payment_intent_id, asset_key, status, purchased_at, available_until, created_at, updated_at
@@ -449,8 +453,9 @@ async function grantLiveResultEntitlement(request, env) {
 }
 
 async function getLiveResultEntitlement(request, env, purchaseId) {
+  const purchaseDb = await requireLivePurchaseDb(env);
   const accessToken = new URL(request.url).searchParams.get('access') || '';
-  const row = await env.REMOTE_DB.prepare(`
+  const row = await purchaseDb.prepare(`
     SELECT purchase_id, access_token_hash, status, available_until
     FROM live_result_entitlements WHERE purchase_id = ?
   `).bind(purchaseId).first();
@@ -464,8 +469,9 @@ async function getLiveResultEntitlement(request, env, purchaseId) {
 }
 
 async function downloadLiveResult(request, env, purchaseId) {
+  const purchaseDb = await requireLivePurchaseDb(env);
   const url = new URL(request.url);
-  const row = await env.REMOTE_DB.prepare(`
+  const row = await purchaseDb.prepare(`
     SELECT asset_key, status, available_until FROM live_result_entitlements WHERE purchase_id = ?
   `).bind(purchaseId).first();
   const valid = row && row.status === 'active' && Number(row.available_until) > Date.now()
@@ -518,14 +524,15 @@ async function rotateLiveGameLinksAsAdmin(request, env, code) {
 }
 
 async function refundLiveResultEntitlement(request, env, purchaseId) {
+  const purchaseDb = await requireLivePurchaseDb(env);
   const body = await readLiveJson(request);
   const status = body.confirmed === true ? 'refunded' : 'refund_pending';
-  const row = await env.REMOTE_DB.prepare(`
+  const row = await purchaseDb.prepare(`
     SELECT purchase_id, code, stripe_payment_intent_id, status FROM live_result_entitlements WHERE purchase_id = ?
   `).bind(purchaseId).first();
   if (!row) throw liveError('entitlement-not-found', 404);
   if (row.status === 'refunded' && status !== 'refunded') throw liveError('already-refunded', 409);
-  await env.REMOTE_DB.prepare(`
+  await purchaseDb.prepare(`
     UPDATE live_result_entitlements SET status = ?, updated_at = ? WHERE purchase_id = ?
   `).bind(status, Date.now(), purchaseId).run();
   await recordLiveOpsEvent(env, {
@@ -540,14 +547,15 @@ async function refundLiveResultEntitlement(request, env, purchaseId) {
 }
 
 async function reissueLiveResultEntitlement(request, env, purchaseId) {
-  const row = await env.REMOTE_DB.prepare(`
+  const purchaseDb = await requireLivePurchaseDb(env);
+  const row = await purchaseDb.prepare(`
     SELECT purchase_id, code, status FROM live_result_entitlements WHERE purchase_id = ?
   `).bind(purchaseId).first();
   if (!row) throw liveError('entitlement-not-found', 404);
   if (['refund_pending', 'refunded'].includes(row.status)) throw liveError('refunded-entitlement', 409);
   const accessToken = createLiveToken(32);
   const availableUntil = Date.now() + 30 * 24 * 60 * 60 * 1000;
-  await env.REMOTE_DB.prepare(`
+  await purchaseDb.prepare(`
     UPDATE live_result_entitlements
     SET access_token_hash = ?, status = 'active', available_until = ?, updated_at = ?
     WHERE purchase_id = ?
@@ -1269,15 +1277,6 @@ async function ensureLiveD1(env) {
           created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
         )
       `).run(),
-      env.REMOTE_DB.prepare(`
-        CREATE TABLE IF NOT EXISTS live_result_entitlements (
-          purchase_id TEXT PRIMARY KEY, code TEXT NOT NULL, participant_id TEXT NOT NULL,
-          participant_name TEXT NOT NULL, access_token_hash TEXT NOT NULL,
-          stripe_payment_intent_id TEXT NOT NULL UNIQUE, asset_key TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'active', purchased_at INTEGER NOT NULL,
-          available_until INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
-        )
-      `).run(),
     ]).then(() => env.REMOTE_DB.prepare(`
       CREATE INDEX IF NOT EXISTS idx_live_participants_token
       ON live_participants (code, participant_token)
@@ -1294,10 +1293,7 @@ async function getStoredLiveGame(env, code, options = {}) {
   if (await ensureLiveD1(env)) {
     const row = await env.REMOTE_DB.prepare('SELECT payload, expires_at FROM live_games WHERE code = ?').bind(code).first();
     if (!row) return null;
-    if (Number(row.expires_at) < Date.now()) {
-      await env.REMOTE_DB.prepare('DELETE FROM live_games WHERE code = ?').bind(code).run();
-      return null;
-    }
+    if (Number(row.expires_at) < Date.now()) return null;
     const game = JSON.parse(row.payload);
     if (options.baseOnly) return { ...game, participants: [], votes: {} };
     if (options.polling) return loadD1PollingSnapshot(env, code, game, options.participantToken);
@@ -1529,9 +1525,6 @@ async function cleanupExpiredLiveData(env) {
     await kv.put('live:reservations', JSON.stringify(reservations.filter((item) => Number(item.expiresAt) >= now)));
     return;
   }
-  await env.REMOTE_DB.prepare('DELETE FROM live_votes WHERE code IN (SELECT code FROM live_games WHERE expires_at < ?)').bind(now).run();
-  await env.REMOTE_DB.prepare('DELETE FROM live_participants WHERE code IN (SELECT code FROM live_games WHERE expires_at < ?)').bind(now).run();
-  await env.REMOTE_DB.prepare('DELETE FROM live_games WHERE expires_at < ?').bind(now).run();
   await env.REMOTE_DB.prepare('DELETE FROM live_rate_limits WHERE expires_at < ?').bind(now).run();
   await env.REMOTE_DB.prepare('DELETE FROM live_reservations WHERE expires_at < ?').bind(now).run();
   await env.REMOTE_DB.prepare('DELETE FROM live_active_sessions WHERE expires_at < ?').bind(now).run();
@@ -1698,12 +1691,6 @@ async function enforceLiveRateLimit(request, env, scope, limit) {
   `).bind(key, windowStart, windowStart + windowMs * 2).run();
   const row = await env.REMOTE_DB.prepare('SELECT request_count FROM live_rate_limits WHERE rate_key = ?').bind(key).first();
   if (Number(row && row.request_count || 0) > limit) throw liveError('rate-limit-exceeded', 429);
-}
-
-function requireLiveAdmin(request, env) {
-  const expected = String(env.LIVE_ADMIN_TOKEN || '');
-  const actual = String(request.headers.get('x-live-admin-token') || '');
-  if (expected.length < 32 || expected !== actual) throw liveError('admin-forbidden', 403);
 }
 
 function requireLiveHost(request, game) {

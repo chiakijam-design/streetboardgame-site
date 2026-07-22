@@ -1,4 +1,5 @@
 const tokenInput = document.getElementById('adminToken');
+const otpInput = document.getElementById('adminOtp');
 const dashboard = document.getElementById('dashboard');
 const authStatus = document.getElementById('authStatus');
 let overview = null;
@@ -6,7 +7,8 @@ let overview = null;
 tokenInput.value = sessionStorage.getItem('live:admin-token') || '';
 document.getElementById('loadOps').addEventListener('click', loadOverview);
 document.getElementById('forgetToken').addEventListener('click', () => {
-  sessionStorage.removeItem('live:admin-token'); tokenInput.value = ''; dashboard.hidden = true; showStatus('管理トークンを消しました。');
+  sessionStorage.removeItem('live:admin-token'); sessionStorage.removeItem('live:admin-session');
+  tokenInput.value = ''; otpInput.value = ''; dashboard.hidden = true; showStatus('管理トークンと管理セッションを消しました。');
 });
 document.getElementById('saveStatus').addEventListener('click', saveStatus);
 document.getElementById('purchaseSearch').addEventListener('input', renderEntitlements);
@@ -14,9 +16,31 @@ document.getElementById('purchaseSearch').addEventListener('input', renderEntitl
 async function loadOverview() {
   try {
     sessionStorage.setItem('live:admin-token', tokenInput.value.trim());
+    if (!sessionStorage.getItem('live:admin-session') || otpInput.value.trim()) await createAdminSession();
     overview = await adminApi('/api/live/admin/overview');
-    dashboard.hidden = false; authStatus.hidden = true; renderAll();
+    dashboard.hidden = false; renderAll();
   } catch (error) { dashboard.hidden = true; showStatus(humanError(error), true); }
+}
+
+async function createAdminSession() {
+  const response = await fetch('/api/live/admin/session', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-live-admin-token': tokenInput.value.trim(),
+      'x-live-admin-otp': otpInput.value.trim(),
+    },
+    body: '{}',
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error || 'request-failed');
+    error.status = response.status;
+    throw error;
+  }
+  sessionStorage.setItem('live:admin-session', data.sessionToken);
+  otpInput.value = '';
+  showStatus(`二要素認証に成功しました。管理セッション有効期限：${formatDate(data.expiresAt)}`);
 }
 
 function renderAll() {
@@ -39,7 +63,7 @@ function renderMetrics() {
   document.getElementById('metrics').innerHTML = [
     metric('重大APIエラー', critical, '直近15分'), metric('Stripe関連イベント', stripe, '直近15分'),
     metric('WebSocket予期せぬ切断率', `${wsRate}%`, `${unexpected}/${disconnected}切断`),
-    metric('監視設定', [infra.d1Configured && 'D1', infra.durableObjectsConfigured && 'DO', infra.alertWebhookConfigured && '通知Webhook', infra.stripeWebhookConfigured && 'Stripe Webhook'].filter(Boolean).join(' / ') || '未設定', 'コードから確認できる範囲'),
+    metric('監視設定', [infra.d1Configured && 'ゲームD1', infra.purchaseD1Configured && '購入D1', infra.durableObjectsConfigured && 'DO', infra.alertWebhookConfigured && '通知Webhook', infra.stripeWebhookConfigured && 'Stripe Webhook'].filter(Boolean).join(' / ') || '未設定', 'コードから確認できる範囲'),
   ].join('');
 }
 
@@ -106,11 +130,21 @@ async function reissueEntitlement(purchaseId) {
 }
 
 async function acknowledgeEvent(eventId) { try { await adminApi(`/api/live/admin/ops-events/${eventId}/acknowledge`, { method: 'POST', body: '{}' }); await loadOverview(); } catch (error) { alert(humanError(error)); } }
-async function adminApi(path, options = {}) { const response = await fetch(path, { ...options, headers: { 'content-type': 'application/json', 'x-live-admin-token': sessionStorage.getItem('live:admin-token') || '', ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (!response.ok) { const error = new Error(data.error || 'request-failed'); error.status = response.status; throw error; } return data; }
+async function adminApi(path, options = {}) { const response = await fetch(path, { ...options, headers: { 'content-type': 'application/json', 'x-live-admin-session': sessionStorage.getItem('live:admin-session') || '', ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (!response.ok) { const error = new Error(data.error || 'request-failed'); error.status = response.status; throw error; } return data; }
 function metric(label, value, note) { return `<div class="metric"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b><small>${escapeHtml(note)}</small></div>`; }
 function empty(text) { return `<div class="empty">${escapeHtml(text)}</div>`; }
 function formatDate(value) { const date = new Date(Number(value)); return Number.isNaN(date.getTime()) ? '未設定' : date.toLocaleString('ja-JP'); }
 function showStatus(text, error = false) { authStatus.hidden = false; authStatus.className = `status${error ? ' error' : ''}`; authStatus.textContent = text; }
-function humanError(error) { return error?.message === 'admin-forbidden' ? '管理トークンが正しくないか、本番にLIVE_ADMIN_TOKENが設定されていません。' : error?.message || '処理に失敗しました。'; }
+function humanError(error) {
+  const messages = {
+    'admin-forbidden': '管理トークンが正しくありません。',
+    'admin-otp-invalid': '6桁の認証コードが正しくないか、有効時間を過ぎています。認証アプリの最新コードを入力してください。',
+    'admin-2fa-not-configured': '本番の管理者二要素認証secretが未設定です。運用手順書に従って3つのsecretを設定してください。',
+    'admin-session-required': '管理セッションがありません。管理トークンと認証コードでログインしてください。',
+    'admin-session-invalid': '管理セッションを確認できません。もう一度二要素認証してください。',
+    'admin-session-expired': '15分間の管理セッションが終了しました。最新の認証コードでもう一度ログインしてください。',
+  };
+  return messages[error?.message] || error?.message || '処理に失敗しました。';
+}
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function escapeAttr(value) { return escapeHtml(value); }
