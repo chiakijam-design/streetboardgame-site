@@ -16,6 +16,7 @@ const initialRoomCode = String(query.get('room') || '').replace(/\D/g, '').slice
 const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
 const initialHostToken = hashParams.get('host') || '';
 const initialSubjectToken = hashParams.get('subject') || '';
+const initialCreatorInvite = sessionStorage.getItem('live:creator-invite') || '';
 if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialHostToken)) {
   sessionStorage.setItem(`live:host:${initialRoomCode}`, initialHostToken);
 }
@@ -23,7 +24,7 @@ if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialSubjectToken)) {
   sessionStorage.setItem(`live:subject:${initialRoomCode}`, initialSubjectToken);
 }
 const state = {
-  view: initialRoomCode ? 'room-loading' : 'entry',
+  view: initialRoomCode && initialHostToken && !initialCreatorInvite ? 'staff-auth' : initialRoomCode ? 'room-loading' : 'entry',
   roomCode: initialRoomCode,
   game: null,
   error: '',
@@ -32,6 +33,7 @@ const state = {
   youtubeQuestionType: '',
   channelUrl: '',
   channelProfile: null,
+  creatorInvite: initialCreatorInvite,
   hostToken: initialRoomCode && !initialSubjectToken ? sessionStorage.getItem(`live:host:${initialRoomCode}`) || initialHostToken : '',
   subjectToken: initialRoomCode && !initialHostToken ? sessionStorage.getItem(`live:subject:${initialRoomCode}`) || initialSubjectToken : '',
   participantToken: initialRoomCode ? sessionStorage.getItem(`live:participant:${initialRoomCode}`) || '' : '',
@@ -66,12 +68,14 @@ async function initializeLivePage() {
     const response = await api('/api/live/status');
     state.systemStatus = response.status || state.systemStatus;
   } catch (error) { /* 状態APIが落ちていても静的ページ自体は表示する */ }
-  if (initialRoomCode) initializeRoom();
+  if (state.view === 'staff-auth') render();
+  else if (initialRoomCode) initializeRoom();
   else render();
 }
 
 function render() {
   if (state.view === 'room-loading') return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
+  if (state.view === 'staff-auth') return renderStaffAuth();
   if (state.view === 'entry') return renderEntry();
   if (state.view === 'youtube-editor') return renderEditor();
   if (state.view === 'youtube-candidates') return renderYouTubeCandidates();
@@ -80,6 +84,27 @@ function render() {
   if (state.view === 'subject') return renderSubject();
   if (state.view === 'participant') return renderParticipant();
   return setPage('<div class="panel"><h2>画面を表示できませんでした</h2></div>');
+}
+
+function renderStaffAuth() {
+  setPage(`
+    <section class="panel">
+      <span class="eyebrow">STAFF SECURITY</span>
+      <h2 style="margin-top:12px">スタッフ端末を確認</h2>
+      <p class="help">スタッフ用URLだけでは企画を操作できません。運営から発行された招待コードを入力してください。</p>
+      <div class="field"><label for="staffCreatorInvite">招待コード</label><input id="staffCreatorInvite" type="password" autocomplete="off" maxlength="64" placeholder="64文字の招待コード"></div>
+      ${errorHtml()}
+      <button class="primary" id="confirmStaffInvite" style="width:100%;margin-top:16px">確認して企画を開く</button>
+    </section>
+  `);
+  bind('#confirmStaffInvite', 'click', async () => {
+    state.creatorInvite = document.getElementById('staffCreatorInvite').value.trim();
+    if (!isCreatorInviteReady()) { state.error = '64文字の招待コードを入力してください'; return render(); }
+    sessionStorage.setItem('live:creator-invite', state.creatorInvite);
+    state.view = 'room-loading';
+    render();
+    await initializeRoom();
+  });
 }
 
 function renderEntry() {
@@ -93,6 +118,12 @@ function renderEntry() {
       <span class="eyebrow">YOUTUBE MODE</span>
       <h2 style="margin-top:12px">${escapeHtml(LIVE_SERIES.youtubeEntry)}</h2>
       <p class="help">2つの遊び方から1つを選び、公開チャンネル情報をもとに作った30問から採用する問題を選べます。</p>
+      <div class="notice">初期版は招待制です。運営の手動審査後に発行された招待コードが必要です。</div>
+      <div class="field">
+        <label for="creatorInvite">運営発行の招待コード</label>
+        <input id="creatorInvite" type="password" autocomplete="off" maxlength="64" value="${escapeAttr(state.creatorInvite)}" placeholder="64文字の招待コード">
+        <p class="help">招待コードはURLに含めず、この端末のセッション内だけに保存します。</p>
+      </div>
       <div class="field">
         <label for="channelUrl">YouTubeチャンネル・動画URL</label>
         <input id="channelUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://www.youtube.com/@handle または watch?v=..." value="${escapeAttr(state.channelUrl)}">
@@ -100,8 +131,8 @@ function renderEntry() {
       </div>
       ${errorHtml()}
       <div id="youtubeGenerationChoices" class="grid" style="margin-top:16px" ${state.channelUrl.trim() ? '' : 'hidden'}>
-        <button class="primary" data-youtube-type="guess-person" ${state.systemStatus.mode === 'maintenance' ? 'disabled' : ''}>${escapeHtml(LIVE_SERIES.youtubePersonGenerateLabel)} <span class="accent">▶</span></button>
-        <button class="secondary" data-youtube-type="guess-majority" ${state.systemStatus.mode === 'maintenance' ? 'disabled' : ''}>${escapeHtml(LIVE_SERIES.youtubeMajorityGenerateLabel)} <span class="accent">▶</span></button>
+        <button class="primary" data-youtube-type="guess-person" ${state.systemStatus.mode === 'maintenance' || !isCreatorInviteReady() ? 'disabled' : ''}>${escapeHtml(LIVE_SERIES.youtubePersonGenerateLabel)} <span class="accent">▶</span></button>
+        <button class="secondary" data-youtube-type="guess-majority" ${state.systemStatus.mode === 'maintenance' || !isCreatorInviteReady() ? 'disabled' : ''}>${escapeHtml(LIVE_SERIES.youtubeMajorityGenerateLabel)} <span class="accent">▶</span></button>
       </div>
     </section>
     <section class="panel" style="margin-top:18px">
@@ -112,6 +143,14 @@ function renderEntry() {
       <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">コードで参加</button>
     </section>
   `);
+  bind('#creatorInvite', 'input', (event) => {
+    state.creatorInvite = event.target.value.trim();
+    if (isCreatorInviteReady()) sessionStorage.setItem('live:creator-invite', state.creatorInvite);
+    else sessionStorage.removeItem('live:creator-invite');
+    document.querySelectorAll('[data-youtube-type]').forEach((button) => {
+      button.disabled = state.systemStatus.mode === 'maintenance' || !isCreatorInviteReady();
+    });
+  });
   bind('#channelUrl', 'input', (event) => {
     state.channelUrl = event.target.value;
     document.getElementById('youtubeGenerationChoices').hidden = !state.channelUrl.trim();
@@ -141,6 +180,7 @@ async function generateYouTubeCandidates(questionType) {
   try {
     const response = await api('/api/live/youtube-candidates', {
       method: 'POST',
+      headers: creatorInviteHeaders(),
       body: JSON.stringify({ channelUrl: state.channelUrl, questionType }),
     });
     state.channelUrl = response.channelUrl;
@@ -253,6 +293,7 @@ async function regenerateCandidate(index) {
   try {
     const response = await api('/api/live/youtube-candidates', {
       method: 'POST',
+      headers: creatorInviteHeaders(),
       body: JSON.stringify({ channelUrl: state.channelUrl, questionType: state.youtubeQuestionType, seed: Date.now() }),
     });
     const replacement = response.questions.find((question) => question.type === state.youtubeQuestionType && question.text !== current.text);
@@ -296,7 +337,7 @@ function renderEditor() {
           <input id="creatorImage" type="file" accept="image/jpeg,image/png,image/webp">
           <p class="help">似顔絵・宣材写真などを登録できます。結果画像では通常の黒髪の女の子と差し替えます。中央に人物が写った正方形に近い画像がおすすめです。</p>
           ${state.creatorImagePreviewUrl ? `<div class="creator-image-preview"><img src="${escapeAttr(state.creatorImagePreviewUrl)}" alt="登録するYouTuber画像"><button class="mini" id="removeCreatorImage" type="button">画像を外す</button></div>` : '<div class="notice">画像を登録しない場合は、従来の黒髪の女の子を表示します。</div>'}
-          <div class="notice">元画像は視聴者へ送らず、企画保存時に非公開ストレージへ直接アップロードします。</div>
+          <div class="notice">元画像は視聴者へ送らず、企画保存時に非公開ストレージへ直接アップロードします。運営の画像審査で承認されるまでは既定画像を表示します。</div>
         </div>
         <div class="field editor-vote-setting"><span class="field-label">視聴者画面のライブ票数</span><label class="check"><input id="showLiveVoteCounts" type="checkbox" ${state.draft.showLiveVoteCounts ? 'checked' : ''}>全問題で選択肢別の現在票数を表示する</label><p class="help">この設定は企画全体に適用され、配信中は変更できません。</p></div>
       </div>
@@ -552,7 +593,7 @@ async function createGame() {
     } else {
       body = JSON.stringify({ draft: validation.draft });
     }
-    const response = await api('/api/live/games', { method: 'POST', body });
+    const response = await api('/api/live/games', { method: 'POST', headers: creatorInviteHeaders(), body });
     state.roomCode = response.code;
     state.hostToken = response.hostToken;
     state.game = response.game;
@@ -580,7 +621,7 @@ async function initializeRoom() {
     startPolling();
   } catch (error) {
     state.error = humanError(error);
-    state.view = 'join';
+    state.view = state.hostToken ? 'staff-auth' : 'join';
   }
   render();
 }
@@ -1241,7 +1282,9 @@ function typeSelect(value, field, disabled = false) {
   return `<select data-field="${field}" ${disabled ? 'disabled' : ''}>${LIVE_QUESTION_TYPES.map((type) => `<option value="${type.value}" ${value === type.value ? 'selected' : ''}>${escapeHtml(type.label)}</option>`).join('')}</select>`;
 }
 
-function hostHeaders() { return { 'x-live-host-token': state.hostToken }; }
+function isCreatorInviteReady() { return /^[a-f0-9]{64}$/i.test(state.creatorInvite || ''); }
+function creatorInviteHeaders() { return isCreatorInviteReady() ? { 'x-live-creator-invite': state.creatorInvite } : {}; }
+function hostHeaders() { return { 'x-live-host-token': state.hostToken, ...creatorInviteHeaders() }; }
 function subjectHeaders() { return { 'x-live-subject-token': state.subjectToken }; }
 function participantHeaders() { return { 'x-live-participant-token': state.participantToken }; }
 
@@ -1271,6 +1314,9 @@ function humanError(error) {
     'youtube-api-quota-exceeded': 'YouTube公式APIの本日の利用上限に達しました。時間を置いてお試しください',
     'youtube-api-request-failed': 'YouTube公式APIから情報を取得できませんでした。URLを確認して再度お試しください',
     'youtube-creation-required': 'LIVEゲームはYouTubeチャンネルから作成してください',
+    'creator-invite-required': '初期版は招待制です。運営から発行された招待コードを入力してください',
+    'creator-invite-invalid': '招待コードが無効・期限切れ・別チャンネル用です。運営へ確認してください',
+    'creator-invite-storage-required': '招待確認用データベースが未設定です。運営へ連絡してください',
     'invalid-scheduled-at': '現在より後のライブ配信日時を選んでください',
     'scheduled-at-too-far': '予約できるのは現在から365日以内です',
     'live-slot-unavailable': `選んだ日時の前後${LIVE_RESERVATION_BUFFER_HOURS}時間以内に別の予約があります。別の日時を選んでください`,
@@ -1284,6 +1330,7 @@ function humanError(error) {
     'live-media-not-configured': '非公開画像ストレージの設定が未完了です。画像を外すか、運営者がR2・Imagesを設定してから保存してください',
     'room-not-found': 'ルームが見つかりません。コードを確認してください',
     'name-required': '名前を入力してください',
+    'participant-name-not-allowed': 'この参加者名は利用できません。人を傷つけない別の名前を入力してください',
     'game-finished': 'このゲームは終了しています',
     'game-cancelled': 'このLIVE予約はキャンセルされています',
     'game-terminated': 'このLIVEは運営により終了しました',

@@ -23,6 +23,7 @@ import {
   createFreeResultPreview,
   createPaidResultAsset,
   createSignedDownloadUrl,
+  deleteCreatorImage,
   storePrivateCreatorImage,
   streamPrivateResult,
   verifySignedDownload,
@@ -46,7 +47,15 @@ import {
   setLiveSystemStatus,
 } from './ops.js';
 import { createLiveAdminSession, requireLiveAdminSession } from './admin-auth.js';
-import { requireLivePurchaseDb } from './purchases.js';
+import { getLivePurchaseDb, requireLivePurchaseDb } from './purchases.js';
+import {
+  LIVE_SUPPORT_MESSAGES_PUBLIC,
+  assessStripePaymentRisk,
+  createLiveCreatorInvite,
+  normalizeParticipantName,
+  requireLiveCreatorInvite,
+  revokeLiveCreatorInvite,
+} from './security.js';
 
 const LIVE_ACTIVE_TTL_SECONDS = 60 * 60 * 24;
 const LIVE_SAVED_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -81,6 +90,18 @@ export async function handleLiveApi(request, env, path) {
     if (path === '/api/live/admin/ops-events' && request.method === 'POST') {
       return liveJson({ event: await recordLiveOpsEvent(env, await readLiveJson(request)) }, 201);
     }
+    if (path === '/api/live/admin/creator-invites' && request.method === 'POST') {
+      return await createLiveCreatorInviteAsAdmin(request, env);
+    }
+    const creatorInviteRoute = path.match(/^\/api\/live\/admin\/creator-invites\/([a-f0-9-]{36})\/revoke$/i);
+    if (creatorInviteRoute && request.method === 'POST') {
+      const invite = await revokeLiveCreatorInvite(env, creatorInviteRoute[1]);
+      await recordLiveOpsEvent(env, {
+        category: 'security', severity: 'warning', eventType: 'creator-invite-revoked',
+        message: 'YouTuber招待を失効しました。', metadata: { inviteId: invite.inviteId },
+      });
+      return liveJson({ invite });
+    }
     const acknowledgeRoute = path.match(/^\/api\/live\/admin\/ops-events\/([a-f0-9-]{36})\/acknowledge$/i);
     if (acknowledgeRoute && request.method === 'POST') {
       return liveJson(await acknowledgeLiveOpsEvent(env, acknowledgeRoute[1]));
@@ -91,6 +112,11 @@ export async function handleLiveApi(request, env, path) {
       return adminGameRoute[2] === 'terminate'
         ? await terminateLiveGameAsAdmin(request, env, adminGameRoute[1])
         : await rotateLiveGameLinksAsAdmin(request, env, adminGameRoute[1]);
+    }
+    const creatorImageReviewRoute = path.match(/^\/api\/live\/admin\/games\/([0-9]{6})\/creator-image-review$/);
+    if (creatorImageReviewRoute && request.method === 'POST') {
+      await ensureLiveD1(env);
+      return await reviewLiveCreatorImageAsAdmin(request, env, creatorImageReviewRoute[1]);
     }
     const adminEntitlementRoute = path.match(/^\/api\/live\/admin\/result-entitlements\/([A-Za-z0-9_-]{8,80})\/(refund|reissue)$/);
     if (adminEntitlementRoute && request.method === 'POST') {
@@ -167,7 +193,7 @@ export async function handleLiveApi(request, env, path) {
     if (action === 'creator-image') return await uploadLiveCreatorImage(request, env, code);
     if (action === 'join') {
       await assertLiveServiceAvailable(env, true);
-      if (!hasLiveRealtime(env)) await enforceLiveRateLimit(request, env, 'join', 100);
+      await enforceLiveRateLimit(request, env, `join:${code}`, 60);
       return await joinLiveGame(request, env, code);
     }
     if (action === 'vote') {
@@ -213,6 +239,7 @@ async function createLiveGame(request, env) {
   const now = Date.now();
   const validation = validateLiveDraft(body && body.draft, { now });
   if (!validation.valid) throw liveError(validation.errors[0] || 'invalid-game', 400);
+  const creatorInvite = await requireLiveCreatorInvite(request, env, validation.draft.channelId);
   await cleanupExpiredLiveData(env);
   let code = createLiveCode();
   for (let attempt = 0; attempt < 8 && await getStoredLiveGame(env, code); attempt += 1) code = createLiveCode();
@@ -224,6 +251,7 @@ async function createLiveGame(request, env) {
     channelName: validation.draft.channelName || validation.draft.subjectName,
     channelId: validation.draft.channelId,
     channelVerificationId: validation.draft.channelVerificationId,
+    creatorInviteId: creatorInvite.invite_id,
     creatorImage: null,
     scheduledAt: reservation.scheduledAt,
     reservationEndsAt: reservation.blockedUntil,
@@ -257,6 +285,45 @@ async function createLiveGame(request, env) {
   return liveJson({ code, hostToken: game.hostToken, game: publicLiveGame(game, { host: true }) }, 201);
 }
 
+async function createLiveCreatorInviteAsAdmin(request, env) {
+  const body = await readLiveJson(request);
+  if (body.reviewed !== true) throw liveError('manual-review-required', 400);
+  const input = normalizeYouTubeInput(body.channelUrl);
+  if (!input) throw liveError('invalid-youtube-url', 400);
+  const profile = await fetchYouTubeChannelProfile(input, env);
+  const invite = await createLiveCreatorInvite(env, profile, { reviewed: true });
+  await recordLiveOpsEvent(env, {
+    category: 'security', severity: 'info', eventType: 'creator-invite-issued',
+    message: '手動審査済みYouTuberへ招待を発行しました。',
+    metadata: { inviteId: invite.inviteId, channelId: profile.channelId, channelName: profile.channelName },
+  });
+  return liveJson({ invite, profile }, 201);
+}
+
+async function reviewLiveCreatorImageAsAdmin(request, env, code) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  if (!game.creatorImage?.previewKey) throw liveError('creator-image-not-found', 404);
+  const body = await readLiveJson(request);
+  const decision = String(body.decision || '');
+  if (!['approved', 'rejected'].includes(decision)) throw liveError('invalid-review-decision', 400);
+  const reviewedAt = Date.now();
+  if (decision === 'approved') {
+    game.creatorImage = { ...game.creatorImage, moderationStatus: 'approved', reviewedAt };
+  } else {
+    await deleteCreatorImage(env, game.creatorImage);
+    game.creatorImage = null;
+  }
+  touchLiveGame(game);
+  await putStoredLiveGame(env, code, game);
+  if (hasLiveRealtime(env)) await broadcastCurrentRealtimeState(env, code, game);
+  await recordLiveOpsEvent(env, {
+    category: 'moderation', severity: decision === 'approved' ? 'info' : 'warning',
+    eventType: `creator-image-${decision}`, code,
+    message: decision === 'approved' ? 'YouTuber画像を承認しました。' : '不適切な可能性のあるYouTuber画像を却下・削除しました。',
+  });
+  return liveJson({ code, decision, game: publicLiveGame(game, { host: true }) });
+}
+
 async function getLiveReservationAvailability(request, env) {
   const url = new URL(request.url);
   const scheduledAt = validateLiveScheduledAt(url.searchParams.get('scheduledAt'));
@@ -264,7 +331,7 @@ async function getLiveReservationAvailability(request, env) {
   const requestedCode = String(url.searchParams.get('code') || '');
   if (LIVE_CODE_PATTERN.test(requestedCode)) {
     const game = await requireLiveGame(env, requestedCode, { baseOnly: true });
-    requireLiveHost(request, game);
+    await requireLiveHost(request, env, game);
     if (game.phase !== 'lobby') throw liveError('reservation-change-closed', 409);
     excludeCode = requestedCode;
   }
@@ -280,7 +347,7 @@ async function getLiveReservationAvailability(request, env) {
 
 async function cancelLiveReservationAsHost(request, env, code) {
   const game = await requireLiveGame(env, code, { baseOnly: true });
-  requireLiveHost(request, game);
+  await requireLiveHost(request, env, game);
   if (game.phase !== 'lobby') throw liveError('reservation-change-closed', 409);
   const body = await readLiveJson(request);
   const message = String(body.message || 'スタッフにより、このLIVE予約はキャンセルされました。').trim().slice(0, 300);
@@ -301,7 +368,7 @@ async function cancelLiveReservationAsHost(request, env, code) {
 
 async function rescheduleLiveGameAsHost(request, env, code) {
   const game = await requireLiveGame(env, code, { baseOnly: true });
-  requireLiveHost(request, game);
+  await requireLiveHost(request, env, game);
   if (game.phase !== 'lobby') throw liveError('reservation-change-closed', 409);
   const body = await readLiveJson(request);
   const scheduledAt = validateLiveScheduledAt(body.scheduledAt);
@@ -334,7 +401,7 @@ async function rescheduleLiveGameAsHost(request, env, code) {
 
 async function rotateLiveGameLinksAsHost(request, env, code) {
   const game = await requireLiveGame(env, code, { baseOnly: true });
-  requireLiveHost(request, game);
+  await requireLiveHost(request, env, game);
   if (game.phase !== 'lobby') throw liveError('reservation-change-closed', 409);
   const body = await readLiveJson(request);
   const rotateHost = body.host === true;
@@ -368,7 +435,8 @@ async function getLiveGameResponse(request, env, code) {
   const game = await requireLiveGame(env, code, realtime
     ? { baseOnly: true }
     : { polling: true, participantToken });
-  const host = Boolean(hostToken && hostToken === game.hostToken);
+  const host = Boolean(hostToken && hostToken === game.hostToken)
+    && await isLiveHostAuthorized(request, env, game);
   const subject = Boolean(subjectToken && subjectToken === game.subjectToken);
   if (realtime) await enrichRealtimeGame(env, code, game, { host, participantToken });
   return liveJson({
@@ -383,8 +451,7 @@ async function getLiveGameResponse(request, env, code) {
 
 async function uploadLiveCreatorImage(request, env, code) {
   const game = await requireLiveGame(env, code);
-  const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
-  if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
+  await requireLiveHost(request, env, game);
   const creatorImage = await storePrivateCreatorImage(request, env, code, game.creatorImage);
   game.creatorImage = creatorImage;
   game.version = Math.max(5, Number(game.version) || 0);
@@ -588,8 +655,28 @@ async function handleLiveStripeWebhook(request, env) {
   let event;
   try { event = JSON.parse(payload); } catch (error) { throw liveError('stripe-payload-invalid', 400); }
   const type = String(event?.type || 'unknown');
+  const object = event?.data?.object || {};
+  const risk = assessStripePaymentRisk(event);
+  if (risk.blocked) {
+    const paymentIntentId = String(
+      object.payment_intent || object.payment_intent_id || object.id?.startsWith?.('pi_') && object.id || '',
+    );
+    const purchaseDb = getLivePurchaseDb(env);
+    if (purchaseDb && paymentIntentId.startsWith('pi_')) {
+      await requireLivePurchaseDb(env);
+      await purchaseDb.prepare(`
+        UPDATE live_result_entitlements SET status = 'fraud_review', updated_at = ?
+        WHERE stripe_payment_intent_id = ? AND status = 'active'
+      `).bind(Date.now(), paymentIntentId).run();
+    }
+    await recordLiveOpsEvent(env, {
+      category: 'stripe', severity: 'critical', eventType: type,
+      externalId: String(event.id || object.id || '').slice(0, 160),
+      message: 'カード不正利用の疑いを検知したため、購入権限を停止して手動確認へ回しました。',
+      metadata: { paymentIntentId, riskLevel: risk.riskLevel, riskScore: risk.riskScore, livemode: Boolean(event.livemode) },
+    });
+  }
   if (['payment_intent.payment_failed', 'checkout.session.async_payment_failed', 'charge.failed'].includes(type)) {
-    const object = event?.data?.object || {};
     await recordLiveOpsEvent(env, {
       category: 'stripe', severity: 'critical', eventType: type,
       externalId: String(event.id || object.id || '').slice(0, 160),
@@ -597,7 +684,7 @@ async function handleLiveStripeWebhook(request, env) {
       metadata: { objectId: String(object.id || ''), livemode: Boolean(event.livemode) },
     });
   }
-  return liveJson({ received: true });
+  return liveJson({ received: true, supportMessagesPublic: LIVE_SUPPORT_MESSAGES_PUBLIC });
 }
 
 export async function verifyLiveStripeSignature(payload, signatureHeader, secret, now = Date.now()) {
@@ -637,8 +724,7 @@ async function joinLiveGame(request, env, code) {
   if (game.phase === 'terminated') throw liveError('game-terminated', 410);
   if (game.phase === 'cancelled') throw liveError('game-cancelled', 410);
   const body = await readLiveJson(request);
-  const name = String(body && body.name || '').replace(/\s+/g, ' ').trim().slice(0, 24);
-  if (!name) throw liveError('name-required', 400);
+  const name = normalizeParticipantName(body && body.name);
   const viewerLimit = liveViewerLimit(env);
   if (!realtime && game.participants.length >= viewerLimit) throw liveError('participant-limit-reached', 409);
   let participant;
@@ -764,8 +850,7 @@ async function answerLiveGameAsSubject(request, env, code) {
 async function updateLiveGameAsHost(request, env, code, action) {
   const realtime = hasLiveRealtime(env);
   const game = await requireLiveGame(env, code, { baseOnly: realtime });
-  const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
-  if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
+  await requireLiveHost(request, env, game);
   const shouldAcquireActiveSlot = action === 'start' && Number(game.version) >= 4;
   if (shouldAcquireActiveSlot && game.phase !== 'lobby') throw liveError('game-already-started', 409);
   if (shouldAcquireActiveSlot) await acquireLiveActiveSlot(env, code, game);
@@ -963,12 +1048,14 @@ export function publicLiveGame(game, access = {}) {
     realtime: Boolean(game.realtime),
     scheduledAt: Number(game.scheduledAt) || undefined,
     channelName: game.channelName || game.subjectName,
-    hasCreatorImage: Boolean(game.creatorImage?.previewKey),
+    hasCreatorImage: Boolean(game.creatorImage?.previewKey)
+      && (!game.creatorImage.moderationStatus || game.creatorImage.moderationStatus === 'approved'),
     participantName: participant?.name,
     host: Boolean(access.host),
     subject: Boolean(access.subject),
     questions: access.host ? game.questions.map(({ id, type, text, options }) => ({ id, type, text, options })) : undefined,
     ...(access.host && flowVersion >= 4 ? { subjectToken: game.subjectToken } : {}),
+    ...(access.host ? { creatorImageModerationStatus: game.creatorImage?.moderationStatus || (game.creatorImage?.previewKey ? 'approved' : 'none') } : {}),
     expiresAt: access.host ? game.expiresAt : undefined,
   };
 }
@@ -995,6 +1082,7 @@ async function createYouTubeCandidatesResponse(request, env) {
   if (!['guess-person', 'guess-majority'].includes(questionType)) throw liveError('invalid-youtube-question-type', 400);
   const seed = Number(body && body.seed) || 0;
   const profile = await fetchYouTubeChannelProfile(input, env);
+  await requireLiveCreatorInvite(request, env, profile.channelId);
   return liveJson({
     channelUrl: profile.channelUrl || input.url,
     profile,
@@ -1693,10 +1781,22 @@ async function enforceLiveRateLimit(request, env, scope, limit) {
   if (Number(row && row.request_count || 0) > limit) throw liveError('rate-limit-exceeded', 429);
 }
 
-function requireLiveHost(request, game) {
+async function requireLiveHost(request, env, game) {
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
   if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
+  if (game.creatorInviteId) {
+    await requireLiveCreatorInvite(request, env, game.channelId, game.creatorInviteId);
+  }
   return hostToken;
+}
+
+async function isLiveHostAuthorized(request, env, game) {
+  try {
+    await requireLiveHost(request, env, game);
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 function validateLiveScheduledAt(value) {

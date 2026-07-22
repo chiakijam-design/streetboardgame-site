@@ -147,6 +147,7 @@ const server = http.createServer(async (req, res) => {
       REMOTE_KV: kv,
       LIVE_MEDIA: media,
       IMAGES: images,
+      LIVE_CREATOR_INVITE_BYPASS_TOKEN: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
       ASSETS: { fetch: fetchStaticAsset },
     });
     await sendWebResponse(res, response);

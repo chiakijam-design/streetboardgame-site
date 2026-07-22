@@ -37,6 +37,7 @@ export async function reserveLiveRealtimeParticipant(env, code, participantToken
   const response = await coordinatorStub(env, code).fetch(`${INTERNAL_ORIGIN}/reserve`, internalJson({
     code,
     shardIndex,
+    participantToken,
     viewerLimit: liveViewerLimit(env),
   }));
   const data = await response.json();
@@ -47,7 +48,7 @@ export async function reserveLiveRealtimeParticipant(env, code, participantToken
 export async function releaseLiveRealtimeParticipant(env, code, participantToken) {
   if (!hasLiveRealtime(env)) return;
   const shardIndex = liveShardIndexForToken(participantToken);
-  await coordinatorStub(env, code).fetch(`${INTERNAL_ORIGIN}/release`, internalJson({ code, shardIndex }));
+  await coordinatorStub(env, code).fetch(`${INTERNAL_ORIGIN}/release`, internalJson({ code, shardIndex, participantToken }));
 }
 
 export async function connectLiveRealtime(request, env, code, participant) {
@@ -149,17 +150,21 @@ export class LiveRoomCoordinator {
       return json({ initialized: true });
     }
     if (url.pathname === '/reserve' && request.method === 'POST') {
-      const { code, shardIndex, viewerLimit } = await request.json();
+      const { code, shardIndex, participantToken, viewerLimit } = await request.json();
+      if (!/^[a-f0-9]{20,96}$/i.test(String(participantToken || ''))) return json({ error: 'participant-token-required' }, 400);
       const operationalLimit = Math.min(
         LIVE_VIEWER_LIMIT,
         Math.max(1, Math.floor(Number(viewerLimit) || LIVE_FALLBACK_VIEWER_LIMIT)),
       );
       const result = await this.ctx.storage.transaction(async (storage) => {
+        const reservationKey = `reservation:${participantToken}`;
+        const existingShard = await storage.get(reservationKey);
         const participantCount = Number(await storage.get('participantCount')) || 0;
+        if (existingShard !== undefined) return participantCount;
         const shardKey = `shard:${Number(shardIndex)}:count`;
         const shardCount = Number(await storage.get(shardKey)) || 0;
         if (participantCount >= operationalLimit || shardCount >= LIVE_REALTIME_SHARD_CAPACITY) return null;
-        await storage.put({ code, participantCount: participantCount + 1, [shardKey]: shardCount + 1 });
+        await storage.put({ code, participantCount: participantCount + 1, [shardKey]: shardCount + 1, [reservationKey]: Number(shardIndex) });
         return participantCount + 1;
       });
       return result === null
@@ -167,12 +172,16 @@ export class LiveRoomCoordinator {
         : json({ participantCount: result });
     }
     if (url.pathname === '/release' && request.method === 'POST') {
-      const { shardIndex } = await request.json();
+      const { shardIndex, participantToken } = await request.json();
       await this.ctx.storage.transaction(async (storage) => {
+        const reservationKey = `reservation:${participantToken}`;
+        const existingShard = await storage.get(reservationKey);
+        if (existingShard === undefined) return;
         const participantCount = Number(await storage.get('participantCount')) || 0;
-        const shardKey = `shard:${Number(shardIndex)}:count`;
+        const shardKey = `shard:${Number(existingShard ?? shardIndex)}:count`;
         const shardCount = Number(await storage.get(shardKey)) || 0;
         await storage.put({ participantCount: Math.max(0, participantCount - 1), [shardKey]: Math.max(0, shardCount - 1) });
+        await storage.delete(reservationKey);
       });
       return json({ released: true });
     }
@@ -361,6 +370,7 @@ export class LiveVoteShard {
     const code = request.headers.get('x-live-internal-code') || '';
     const name = decodeURIComponent(request.headers.get('x-live-internal-participant-name') || '');
     if (!participantId) return json({ error: 'participant-forbidden' }, 403);
+    if (this.ctx.getWebSockets(participantId).length >= 3) return json({ error: 'participant-reconnect-limit' }, 429);
     const answers = await this.ctx.storage.get(`participant:${participantId}:votes`) || {};
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);

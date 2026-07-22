@@ -11,6 +11,7 @@ document.getElementById('forgetToken').addEventListener('click', () => {
   tokenInput.value = ''; otpInput.value = ''; dashboard.hidden = true; showStatus('管理トークンと管理セッションを消しました。');
 });
 document.getElementById('saveStatus').addEventListener('click', saveStatus);
+document.getElementById('issueInvite').addEventListener('click', issueCreatorInvite);
 document.getElementById('purchaseSearch').addEventListener('input', renderEntitlements);
 
 async function loadOverview() {
@@ -48,7 +49,13 @@ function renderAll() {
   document.getElementById('statusMode').value = status.mode || 'normal';
   document.getElementById('statusTitle').value = status.title || '';
   document.getElementById('statusMessage').value = status.message || '';
-  renderMetrics(); renderSessions(); renderEntitlements(); renderEvents();
+  renderMetrics(); renderCreatorInvites(); renderSessions(); renderEntitlements(); renderEvents();
+}
+
+function renderCreatorInvites() {
+  const rows = overview.creatorInvites || [];
+  document.getElementById('creatorInvites').innerHTML = rows.length ? rows.map((item) => `<article class="card"><strong>${escapeHtml(item.channel_name || item.channel_id)} <span class="pill ${item.status === 'active' ? 'info' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">Channel ID: <code>${escapeHtml(item.channel_id)}</code><br>期限: ${formatDate(item.expires_at)} / 最終利用: ${item.last_used_at ? formatDate(item.last_used_at) : '未使用'}</div><div class="actions"><button class="button danger" data-revoke-invite="${escapeAttr(item.invite_id)}" ${item.status !== 'active' ? 'disabled' : ''}>招待を失効</button></div></article>`).join('') : empty('発行済み招待はありません。');
+  document.querySelectorAll('[data-revoke-invite]').forEach((button) => button.addEventListener('click', () => revokeCreatorInvite(button.dataset.revokeInvite)));
 }
 
 function renderMetrics() {
@@ -70,9 +77,34 @@ function renderMetrics() {
 function renderSessions() {
   const activeCodes = new Set((overview.activeSessions || []).map((x) => x.code));
   const all = [...(overview.activeSessions || []), ...(overview.reservations || []).filter((x) => !activeCodes.has(x.code))];
-  document.getElementById('sessions').innerHTML = all.length ? all.map((item) => `<article class="card"><strong>${escapeHtml(item.title || item.channelName || 'タイトル未取得')} <span class="pill">${escapeHtml(item.code)}</span></strong><div class="meta">状態: ${escapeHtml(item.phase)} / ${activeCodes.has(item.code) ? '稼働中' : '予約'}<br>配信予定: ${formatDate(item.scheduledAt)} / 参加上限: ${Number(item.participantLimit || 0).toLocaleString('ja-JP')}人</div><div class="actions"><button class="button danger" data-terminate="${item.code}">強制終了</button><button class="button secondary" data-rotate="${item.code}" data-target="host">スタッフURL失効・再発行</button><button class="button secondary" data-rotate="${item.code}" data-target="subject">本人URL失効・再発行</button></div></article>`).join('') : empty('稼働中・予約中のLIVEはありません。');
+  document.getElementById('sessions').innerHTML = all.length ? all.map((item) => `<article class="card"><strong>${escapeHtml(item.title || item.channelName || 'タイトル未取得')} <span class="pill">${escapeHtml(item.code)}</span></strong><div class="meta">状態: ${escapeHtml(item.phase)} / ${activeCodes.has(item.code) ? '稼働中' : '予約'}<br>配信予定: ${formatDate(item.scheduledAt)} / 参加上限: ${Number(item.participantLimit || 0).toLocaleString('ja-JP')}人<br>画像審査: ${escapeHtml(item.creatorImageModerationStatus || 'none')}</div><div class="actions"><button class="button danger" data-terminate="${item.code}">強制終了</button><button class="button secondary" data-rotate="${item.code}" data-target="host">スタッフURL失効・再発行</button><button class="button secondary" data-rotate="${item.code}" data-target="subject">本人URL失効・再発行</button>${item.creatorImageModerationStatus === 'pending' ? `<button class="button good" data-image-review="${item.code}" data-decision="approved">画像を承認</button><button class="button danger" data-image-review="${item.code}" data-decision="rejected">画像を却下・削除</button>` : ''}</div></article>`).join('') : empty('稼働中・予約中のLIVEはありません。');
   document.querySelectorAll('[data-terminate]').forEach((button) => button.addEventListener('click', () => terminateGame(button.dataset.terminate)));
   document.querySelectorAll('[data-rotate]').forEach((button) => button.addEventListener('click', () => rotateLinks(button.dataset.rotate, button.dataset.target)));
+  document.querySelectorAll('[data-image-review]').forEach((button) => button.addEventListener('click', () => reviewCreatorImage(button.dataset.imageReview, button.dataset.decision)));
+}
+
+async function issueCreatorInvite() {
+  const channelUrl = document.getElementById('inviteChannelUrl').value.trim();
+  const reviewed = document.getElementById('inviteReviewed').checked;
+  if (!reviewed || !channelUrl) return alert('チャンネルURLを入力し、手動審査済みにチェックしてください。');
+  if (!confirm('このチャンネルは招待条件を手動確認済みですか？')) return;
+  try {
+    const data = await adminApi('/api/live/admin/creator-invites', { method: 'POST', body: JSON.stringify({ channelUrl, reviewed }) });
+    document.getElementById('inviteOutput').innerHTML = `<div class="secret-output"><strong>招待コード（今回だけ表示）</strong><br><code>${escapeHtml(data.invite.inviteToken)}</code><div class="actions"><button class="button" id="copyInviteToken">コピー</button></div><p class="help">安全な連絡手段で審査対象のスタッフだけに渡してください。</p></div>`;
+    document.getElementById('copyInviteToken').addEventListener('click', () => navigator.clipboard.writeText(data.invite.inviteToken));
+    document.getElementById('inviteReviewed').checked = false;
+    await loadOverview();
+  } catch (error) { alert(humanError(error)); }
+}
+
+async function revokeCreatorInvite(inviteId) {
+  if (!confirm('この招待を直ちに失効しますか？対象企画のスタッフ操作も停止します。')) return;
+  try { await adminApi(`/api/live/admin/creator-invites/${inviteId}/revoke`, { method: 'POST', body: '{}' }); await loadOverview(); } catch (error) { alert(humanError(error)); }
+}
+
+async function reviewCreatorImage(code, decision) {
+  if (!confirm(decision === 'approved' ? '画像の権利・内容を確認し、公開利用を承認しますか？' : '画像を却下し、非公開ストレージから削除しますか？')) return;
+  try { await adminApi(`/api/live/admin/games/${code}/creator-image-review`, { method: 'POST', body: JSON.stringify({ decision }) }); await loadOverview(); } catch (error) { alert(humanError(error)); }
 }
 
 function renderEntitlements() {

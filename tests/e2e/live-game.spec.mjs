@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { LIVE_FALLBACK_VIEWER_LIMIT, LIVE_RESERVATION_BUFFER_HOURS, LIVE_VIEWER_LIMIT } from '../../src/live/config.js';
 
+const TEST_CREATOR_INVITE = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+const creatorHeaders = (extra = {}) => ({ 'x-live-creator-invite': TEST_CREATOR_INVITE, ...extra });
+
 function scheduleForTest(testInfo, slot) {
   const projectOffsetDays = testInfo.project.name === 'mobile-chrome' ? 100 : 0;
   const date = new Date(Date.now() + (projectOffsetDays + slot * 2 + 2) * 24 * 60 * 60 * 1000);
@@ -18,6 +21,9 @@ async function selectLiveSchedule(page, testInfo, slot) {
 
 test.beforeEach(async ({ context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await context.addInitScript(() => {
+    sessionStorage.setItem('live:creator-invite', 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee');
+  });
 });
 
 test('手入力形式の新規作成APIを受け付けない', async ({ request }) => {
@@ -389,10 +395,11 @@ test('予約日時の前後20時間は別のLIVE予約をAPIでも拒否する',
     scheduledAt,
     questions: [{ id: 'reservation-q', type: 'guess-person', text: 'どれ？', options: ['A', 'B', 'C', 'D', 'E'] }],
   };
-  const first = await request.post('/api/live/games', { data: { draft } });
+  const first = await request.post('/api/live/games', { headers: creatorHeaders(), data: { draft } });
   expect(first.status()).toBe(201);
 
   const conflict = await request.post('/api/live/games', {
+    headers: creatorHeaders(),
     data: { draft: { ...draft, title: '競合する予約', scheduledAt: scheduledAt + 60 * 60 * 1000 } },
   });
   expect(conflict.status()).toBe(409);
@@ -408,6 +415,7 @@ test('スタッフ用URLから予約日時変更・URL再発行・キャンセ�
   const changedScheduleValue = scheduleForTest(testInfo, 75);
   const changedScheduledAt = new Date(changedScheduleValue).getTime();
   const createdResponse = await request.post('/api/live/games', {
+    headers: creatorHeaders(),
     data: {
       draft: {
         creationMode: 'youtube', title: '予約セルフサービステスト', subjectName: '本人', channelName: '予約管理チャンネル',
@@ -445,7 +453,7 @@ test('スタッフ用URLから予約日時変更・URL再発行・キャンセ�
   expect(newHostUrl).toMatch(new RegExp(`/live\\?room=${created.code}#host=[a-f0-9]{48}$`));
   expect(newHostUrl).not.toContain(oldHostToken);
   const oldHostAccess = await request.get(`/api/live/games/${created.code}`, {
-    headers: { 'x-live-host-token': oldHostToken },
+    headers: creatorHeaders({ 'x-live-host-token': oldHostToken }),
   });
   expect((await oldHostAccess.json()).game.host).toBe(false);
 
@@ -460,9 +468,32 @@ test('スタッフ用URLから予約日時変更・URL再発行・キャンセ�
   expect(changedScheduledAt).toBeGreaterThan(originalScheduledAt);
 });
 
+test('漏えいしたスタッフURLだけでは操作できず、別経路の招待コードを要求する', async ({ browser, request }, testInfo) => {
+  const createdResponse = await request.post('/api/live/games', {
+    headers: creatorHeaders(),
+    data: { draft: {
+      creationMode: 'youtube', title: 'スタッフ二要素テスト', subjectName: '本人', channelName: '認証チャンネル',
+      scheduledAt: new Date(scheduleForTest(testInfo, 85)).getTime(),
+      questions: [{ id: 'staff-auth-q', type: 'guess-person', text: 'どれ？', options: ['A', 'B', 'C', 'D', 'E'] }],
+    } },
+  });
+  expect(createdResponse.status()).toBe(201);
+  const created = await createdResponse.json();
+  const isolated = await browser.newContext();
+  const staffPage = await isolated.newPage();
+  await staffPage.goto(`/live?room=${created.code}#host=${created.hostToken}`);
+  await expect(staffPage.getByRole('heading', { name: 'スタッフ端末を確認' })).toBeVisible();
+  await expect(staffPage.getByText('スタッフ用URLだけでは企画を操作できません。')).toBeVisible();
+  await staffPage.locator('#staffCreatorInvite').fill(TEST_CREATOR_INVITE);
+  await staffPage.locator('#confirmStaffInvite').click();
+  await expect(staffPage.getByText('HOST LOBBY')).toBeVisible();
+  await isolated.close();
+});
+
 test('別のLIVEが進行中は開始を拒否し、完了後に全体ロックを解放する', async ({ request }, testInfo) => {
   const createGame = async (slot, title, questionId) => {
     const response = await request.post('/api/live/games', {
+      headers: creatorHeaders(),
       data: {
         draft: {
           creationMode: 'youtube', title, subjectName: '本人', channelName: `${title}チャンネル`,
@@ -476,7 +507,7 @@ test('別のLIVEが進行中は開始を拒否し、完了後に全体ロック�
   };
   const first = await createGame(30, '進行ロック1', 'active-q-1');
   const second = await createGame(31, '進行ロック2', 'active-q-2');
-  const hostHeaders = (token) => ({ 'x-live-host-token': token });
+  const hostHeaders = (token) => creatorHeaders({ 'x-live-host-token': token });
 
   expect((await request.post(`/api/live/games/${first.code}/start`, { headers: hostHeaders(first.hostToken), data: {} })).status()).toBe(200);
   const blocked = await request.post(`/api/live/games/${second.code}/start`, { headers: hostHeaders(second.hostToken), data: {} });
@@ -503,6 +534,7 @@ test('別のLIVEが進行中は開始を拒否し、完了後に全体ロック�
 test('安全運用上限を超える視聴者は参加APIで拒否する', async ({ request }, testInfo) => {
   const scheduledAt = new Date(scheduleForTest(testInfo, 20)).getTime();
   const created = await request.post('/api/live/games', {
+    headers: creatorHeaders(),
     data: {
       draft: {
         creationMode: 'youtube', title: '人数上限テスト', subjectName: '本人', channelName: '上限テストチャンネル', scheduledAt,

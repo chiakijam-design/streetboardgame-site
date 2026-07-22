@@ -5,6 +5,7 @@ export const PRIVACY_RETENTION = Object.freeze({
   liveGameHoursAfterEnd: 24,
   paidAssetDays: 30,
   pendingChannelVerificationDays: 90,
+  expiredCreatorInviteDays: 90,
   operationsLogDays: 180,
   purchaseRecordYears: 7,
   ga4Months: 14,
@@ -22,6 +23,7 @@ export async function runPrivacyCleanup(env, now = Date.now()) {
     deletedPurchaseRecords: 0,
     deletedOperationsLogs: 0,
     deletedPendingVerifications: 0,
+    deletedCreatorInvites: 0,
   };
   if (env?.REMOTE_DB) await cleanupGameDatabase(env, now, summary);
   if (getLivePurchaseDb(env)) await cleanupPurchaseDatabase(env, now, summary);
@@ -66,6 +68,11 @@ async function cleanupGameDatabase(env, now, summary) {
     WHERE ownership_status = 'pending' AND created_at < ?
   `, [now - PRIVACY_RETENTION.pendingChannelVerificationDays * DAY_MS]);
   summary.deletedPendingVerifications = changes(deletedVerifications);
+  const deletedInvites = await safeRun(env.REMOTE_DB, `
+    DELETE FROM live_creator_invites
+    WHERE (expires_at < ? OR revoked_at < ?)
+  `, [now - PRIVACY_RETENTION.expiredCreatorInviteDays * DAY_MS, now - PRIVACY_RETENTION.expiredCreatorInviteDays * DAY_MS]);
+  summary.deletedCreatorInvites = changes(deletedInvites);
 }
 
 async function cleanupPurchaseDatabase(env, now, summary) {

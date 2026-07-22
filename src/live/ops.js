@@ -1,5 +1,6 @@
 import { hasLiveRealtime, loadLiveRealtimeStats } from './realtime.js';
 import { ensureLivePurchaseD1, getLivePurchaseDb } from './purchases.js';
+import { listLiveCreatorInvites } from './security.js';
 
 let opsReadyPromise = null;
 
@@ -137,7 +138,7 @@ export async function getLiveOpsOverview(env) {
         FROM live_result_entitlements ORDER BY updated_at DESC LIMIT 100
       `).all())
     : Promise.resolve({ results: [] });
-  const [reservations, activeSessions, entitlements, events, recentCounts, status] = await Promise.all([
+  const [reservations, activeSessions, entitlements, events, recentCounts, status, creatorInvites] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT r.code, r.scheduled_at, r.blocked_from, r.blocked_until, r.expires_at, g.payload
       FROM live_reservations r LEFT JOIN live_games g ON g.code = r.code
@@ -159,6 +160,7 @@ export async function getLiveOpsOverview(env) {
       WHERE created_at >= ? GROUP BY category, severity
     `).bind(now - 15 * 60 * 1000).all(),
     getLiveSystemStatus(env),
+    listLiveCreatorInvites(env),
   ]);
   const active = (activeSessions.results || []).map(parseGameRow);
   const realtime = [];
@@ -184,6 +186,7 @@ export async function getLiveOpsOverview(env) {
     events: (events.results || []).map((item) => ({ ...item, metadata: parseJson(item.metadata) })),
     recentEventCounts: recentCounts.results || [],
     realtime,
+    creatorInvites,
     infrastructure: {
       d1Configured: Boolean(env.REMOTE_DB),
       purchaseD1Configured: Boolean(purchaseDb),
@@ -222,6 +225,8 @@ function parseGameRow(row) {
     startedAt: Number(row.started_at) || 0,
     expiresAt: Number(row.expires_at || game.expiresAt) || 0,
     participantLimit: Number(game.participantLimit) || 0,
+    creatorImageModerationStatus: game.creatorImage?.moderationStatus
+      || (game.creatorImage?.previewKey ? 'approved' : 'none'),
   };
 }
 

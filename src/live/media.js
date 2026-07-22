@@ -33,7 +33,7 @@ export async function storePrivateCreatorImage(source, env, code, previous = nul
     throw error;
   }
   await deleteCreatorImage(env, previous);
-  return { assetId, originalKey, previewKey, paidKey, uploadedAt: Date.now() };
+  return { assetId, originalKey, previewKey, paidKey, uploadedAt: Date.now(), moderationStatus: 'pending' };
 }
 
 export async function deleteCreatorImage(env, image) {
@@ -120,7 +120,9 @@ export async function streamPrivateResult(env, assetKey, filename) {
 }
 
 async function loadPortrait(request, env, game, paid) {
-  const key = paid ? game.creatorImage?.paidKey : game.creatorImage?.previewKey;
+  const imageApproved = game.creatorImage
+    && (!game.creatorImage.moderationStatus || game.creatorImage.moderationStatus === 'approved');
+  const key = imageApproved ? (paid ? game.creatorImage?.paidKey : game.creatorImage?.previewKey) : '';
   if (key) {
     if (!env.LIVE_MEDIA) throw mediaError('live-media-not-configured', 503);
     const object = await env.LIVE_MEDIA.get(key);

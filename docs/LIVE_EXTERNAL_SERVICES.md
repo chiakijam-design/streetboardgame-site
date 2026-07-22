@@ -84,7 +84,7 @@ npx wrangler d1 migrations apply streetboardgame-remote --remote
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0001_live_purchase_records.sql
 ```
 
-ゲーム用D1の対象は`migrations/0005_live_paid_media.sql`、購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0001_live_purchase_records.sql`だけを適用する。所有確認アクセストークンと購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。
+ゲーム用D1には通常マイグレーションを順番に適用し、招待・手動審査には`migrations/0007_live_abuse_prevention.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0001_live_purchase_records.sql`だけを適用する。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
 
 ## 6. Stripe Webhook接続時の手順
 

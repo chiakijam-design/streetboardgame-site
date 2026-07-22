@@ -16,7 +16,10 @@ npx wrangler secret put LIVE_ADMIN_SESSION_SECRET
 npx wrangler secret put LIVE_OPS_ALERT_WEBHOOK_URL
 npx wrangler secret put STRIPE_WEBHOOK_SECRET
 npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0006_live_operations.sql
+npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0007_live_abuse_prevention.sql
 ```
+
+荒らし・なりすまし・不適切画像・カード不正利用への対応は[`LIVE_ABUSE_PREVENTION.md`](LIVE_ABUSE_PREVENTION.md)を使用する。初期版の応援メッセージは公開せず、YouTuber招待は二要素認証済みの運営コンソールから手動審査後にだけ発行する。
 
 TOTP設定、購入履歴専用D1、Cron削除は`docs/PRIVACY_OPERATIONS.md`を参照する。個人データの漏えいまたはその疑いがある場合は、通常の障害対応より先に`docs/PRIVACY_INCIDENT_RESPONSE.md`を実行する。
 

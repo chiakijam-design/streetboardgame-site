@@ -8,6 +8,7 @@ test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2
     liveGameHoursAfterEnd: 24,
     paidAssetDays: 30,
     pendingChannelVerificationDays: 90,
+    expiredCreatorInviteDays: 90,
     operationsLogDays: 180,
     purchaseRecordYears: 7,
     ga4Months: 14,
@@ -37,6 +38,7 @@ test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2
   assert.equal(summary.deletedPurchaseRecords, 1);
   assert.equal(summary.deletedOperationsLogs, 2);
   assert.equal(summary.deletedPendingVerifications, 1);
+  assert.equal(summary.deletedCreatorInvites, 1);
   assert.equal(gameDb.games.length, 0);
   assert.equal(purchaseDb.purchases.length, 1);
   assert.equal(purchaseDb.purchases[0].participant_name, '');
@@ -89,6 +91,7 @@ class CleanupDb {
         }
         if (/DELETE FROM live_ops_events/i.test(normalized)) return { meta: { changes: 2 } };
         if (/DELETE FROM live_channel_verifications/i.test(normalized)) return { meta: { changes: 1 } };
+        if (/DELETE FROM live_creator_invites/i.test(normalized)) return { meta: { changes: 1 } };
         return { meta: { changes: 0 } };
       },
     };
