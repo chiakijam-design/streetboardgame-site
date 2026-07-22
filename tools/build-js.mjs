@@ -9,6 +9,7 @@ const DIST_ENTRIES = {
   prototype_friend_data: 'prototype_friend_data.js',
   prototype_family_data: 'prototype_family_data.js',
   remote_love: 'remote_love.js',
+  live_game: 'live_game.js',
   prototype_character: 'prototype_character.jsx',
   prototype_app: 'prototype_app.jsx',
 };
@@ -29,12 +30,16 @@ const HTML_ENTRY_MAP = {
     'prototype_quiz_data',
     'remote_love',
   ],
+  'live.html': [
+    'viewport_recovery',
+    'live_game',
+  ],
 };
 
 await mkdir('dist', { recursive: true });
 await mkdir('assets/vendor', { recursive: true });
 
-await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_quiz_data|prototype_friend_data|prototype_family_data|remote_love|prototype_character|prototype_app)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
+await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_quiz_data|prototype_friend_data|prototype_family_data|remote_love|live_game|prototype_character|prototype_app)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
 await removeGeneratedFiles('assets/vendor', /^react(?:-dom)?\.production\.min(?:-[a-f0-9]+)?\.js$/i);
 
 const runtimeSources = {

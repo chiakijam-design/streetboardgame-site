@@ -1,3 +1,5 @@
+import { handleLiveApi } from './src/live/api.js';
+
 // Cloudflare Workers 静的サイト + ルーティング
 // https://developers.cloudflare.com/pages/functions/advanced-mode/
 //
@@ -30,6 +32,10 @@ export default {
     const rawPath = decodeURIComponent(url.pathname);
     const path = rawPath.replace(/\/+$/, '');
 
+    if (path.startsWith('/api/live')) {
+      return handleLiveApi(request, env, path);
+    }
+
     if (path.startsWith('/api/remote')) {
       return handleRemoteApi(request, env, path);
     }
@@ -47,6 +53,21 @@ export default {
       const headers = new Headers(response.headers);
       headers.set('content-type', 'text/html; charset=UTF-8');
       return new Response(await response.text(), { status: response.status, headers });
+    }
+
+    if (rawPath !== '/' && rawPath.endsWith('/') && path === '/live') {
+      return Response.redirect(url.origin + path + url.search, 301);
+    }
+
+    if (path === '/live') {
+      const liveUrl = new URL('/live.html', url.origin);
+      const response = await env.ASSETS.fetch(new Request(liveUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
     }
 
     const pageMap = {

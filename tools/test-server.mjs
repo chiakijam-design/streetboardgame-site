@@ -51,6 +51,7 @@ const mime = {
 function staticPath(urlPath) {
   if (['/', '/love', '/friends', '/family', '/about', '/product'].includes(urlPath)) return 'index.html';
   if (urlPath === '/remote') return 'remote.html';
+  if (urlPath === '/live') return 'live.html';
   return urlPath.replace(/^\/+/, '');
 }
 

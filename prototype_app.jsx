@@ -14,6 +14,7 @@ import {
 } from './src/platform/imageSave.js';
 import { getBrowserStorage } from './src/platform/storage.js';
 import { triggerHaptic } from './src/platform/haptics.js';
+import { LIVE_SERIES } from './src/live/config.js';
 
 // 私のこと、ちゃんと分かってるよね? — インタラクティブプロトタイプ
 // パッケージDNA版: ホットピンク + 黒 + シアン縁取り + イエローシール
@@ -1765,6 +1766,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           <SeriesCard emoji="💕" title="彼氏の愛情判定" status="メイン" href="/love" onClick={onLovePage} />
           <SeriesCard emoji="👯" title="友達の友情判定" status="シリーズ" href="/friends" onClick={onFriendPage} />
           <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="シリーズ" href="/family" onClick={onFamilyPage} />
+          <SeriesCard emoji="📣" title={LIVE_SERIES.name} status="NEW" href="/live" onClick={() => window.location.assign('/live')} />
         </div>
       </nav>
 
