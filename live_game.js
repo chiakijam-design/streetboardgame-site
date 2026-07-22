@@ -12,6 +12,7 @@ import { sharePreparedImage } from './src/platform/imageSave.js';
 import { openLineShare, openXShare } from './src/platform/share.js';
 
 const root = document.getElementById('liveRoot');
+const LIVE_INQUIRY_ENDPOINT = 'https://formspree.io/f/xrevejjr';
 const query = new URLSearchParams(location.search);
 const initialRoomCode = String(query.get('room') || '').replace(/\D/g, '').slice(0, 6);
 const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
@@ -156,7 +157,11 @@ function renderEntry() {
       <span class="eyebrow">YOUTUBE MODE</span>
       <h2 style="margin-top:12px">${escapeHtml(LIVE_SERIES.youtubeEntry)}</h2>
       <p class="help">2つの遊び方から1つを選び、公開チャンネル情報をもとに作った30問から採用する問題を選べます。</p>
-      <div class="notice">初期版は招待制です。運営の手動審査後に発行された招待コードが必要です。</div>
+      <div class="notice invite-notice">
+        <strong>招待コードをお持ちでない方へ</strong><br>
+        初期版は招待制です。下の問い合わせフォームから発行を申請し、運営の手動審査で承認されると、返信先メールアドレスへ招待コードが届きます。
+        <a class="secondary link-button invite-request-link" href="#liveInquiry">招待コードを申請・使い方を問い合わせる</a>
+      </div>
       <div class="field">
         <label for="creatorInvite">運営発行の招待コード</label>
         <input id="creatorInvite" type="password" autocomplete="off" maxlength="64" value="${escapeAttr(state.creatorInvite)}" placeholder="64文字の招待コード">
@@ -172,6 +177,31 @@ function renderEntry() {
         <button class="primary" data-youtube-type="guess-person" ${state.systemStatus.mode === 'maintenance' || !isCreatorInviteReady() ? 'disabled' : ''}>${escapeHtml(LIVE_SERIES.youtubePersonGenerateLabel)} <span class="accent">▶</span></button>
         <button class="secondary" data-youtube-type="guess-majority" ${state.systemStatus.mode === 'maintenance' || !isCreatorInviteReady() ? 'disabled' : ''}>${escapeHtml(LIVE_SERIES.youtubeMajorityGenerateLabel)} <span class="accent">▶</span></button>
       </div>
+    </section>
+    <section class="panel inquiry-panel" id="liveInquiry" style="margin-top:18px">
+      <span class="eyebrow">CONTACT &amp; INVITATION</span>
+      <h2 style="margin-top:12px">招待コードの申請・使い方の問い合わせ</h2>
+      <p class="help">YouTuber本人、所属事務所、正式な撮影・配信スタッフから申請できます。「興味はあるけれど使い方が分からない」という段階でもお問い合わせください。</p>
+      <div class="invite-guide" aria-label="招待コードが発行されるまで">
+        <article class="invite-step"><span>1</span><div><strong>フォームから申請</strong><p>連絡先、YouTubeチャンネルURL、利用予定を送ります。</p></div></article>
+        <article class="invite-step"><span>2</span><div><strong>運営が手動審査</strong><p>本人・スタッフとの関係、チャンネル内容、利用目的を確認します。</p></div></article>
+        <article class="invite-step"><span>3</span><div><strong>メールでコードを受け取る</strong><p>承認後、チャンネル専用の64文字の招待コードをメールでお送りします。</p></div></article>
+      </div>
+      <div class="notice invite-code-help"><strong>受け取った後の使い方</strong><br>このページ上部の「運営発行の招待コード」へ貼り付け、同じ審査済みチャンネルのURLを入力します。コードの有効期間は発行から90日です。第三者への転送・公開はしないでください。</div>
+      <form id="liveInquiryForm" class="live-inquiry-form">
+        <input type="hidden" name="_subject" value="streetboardgame.com YouTuber LIVE問い合わせ・招待コード申請">
+        <input type="hidden" name="source" value="Youtuber専用LIVE入口">
+        <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" class="inquiry-honeypot" aria-hidden="true">
+        <div class="field"><label for="inquiryName">お名前・担当者名</label><input id="inquiryName" name="name" autocomplete="name" maxlength="100" required placeholder="山田 太郎"></div>
+        <div class="field"><label for="inquiryEmail">返信先メールアドレス</label><input id="inquiryEmail" name="email" type="email" inputmode="email" autocomplete="email" maxlength="254" required placeholder="name@example.com"></div>
+        <div class="field"><label for="inquiryType">お問い合わせ内容</label><select id="inquiryType" name="inquiry_type" required><option value="招待コード発行を希望">招待コードを発行してほしい</option><option value="使い方を知りたい">まず使い方を知りたい</option><option value="導入・配信相談">導入・配信について相談したい</option><option value="その他">その他</option></select></div>
+        <div class="field"><label for="inquiryChannelUrl">申請対象のチャンネルまたは動画URL</label><input id="inquiryChannelUrl" name="channel_url" type="url" inputmode="url" autocomplete="url" maxlength="500" required value="${escapeAttr(state.channelUrl)}" placeholder="https://www.youtube.com/@handle"><p class="help">動画URLでも構いません。投稿元チャンネルを確認して審査します。</p></div>
+        <div class="field"><label for="inquiryMessage">利用予定・質問内容</label><textarea id="inquiryMessage" name="message" maxlength="2000" rows="5" required placeholder="例：来月のYouTubeライブで使いたいです。スタッフ2名で事前準備する方法も教えてください。"></textarea></div>
+        <label class="agreement-check inquiry-consent"><input id="inquiryPrivacy" name="privacy_agreed" type="checkbox" value="同意済み" required><span><a href="/privacy" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>を確認し、問い合わせへの回答・審査のために入力情報を利用することに同意します。</span></label>
+        <div id="liveInquiryStatus" class="inquiry-status" role="status" aria-live="polite" hidden></div>
+        <button class="primary" id="submitLiveInquiry" type="submit">問い合わせ・招待コード申請を送信する <span class="accent">▶</span></button>
+        <p class="help">フォーム送信だけでは招待コードは即時発行されません。内容確認後、運営から返信します。</p>
+      </form>
     </section>
     <section class="panel" style="margin-top:18px">
       <h2>ルームに参加する</h2>
@@ -195,8 +225,13 @@ function renderEntry() {
     });
   });
   bind('#channelUrl', 'input', (event) => {
+    const previousChannelUrl = state.channelUrl;
     state.channelUrl = event.target.value;
     document.getElementById('youtubeGenerationChoices').hidden = !state.channelUrl.trim();
+    const inquiryChannelUrl = document.getElementById('inquiryChannelUrl');
+    if (inquiryChannelUrl && (!inquiryChannelUrl.value.trim() || inquiryChannelUrl.value === previousChannelUrl)) {
+      inquiryChannelUrl.value = state.channelUrl;
+    }
   });
   document.querySelectorAll('[data-youtube-type]').forEach((button) => button.addEventListener('click', () => {
     generateYouTubeCandidates(button.dataset.youtubeType);
@@ -211,6 +246,44 @@ function renderEntry() {
     }
     location.assign(`/live?room=${code}`);
   });
+  bind('#liveInquiryForm', 'submit', submitLiveInquiry);
+}
+
+async function submitLiveInquiry(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submitButton = document.getElementById('submitLiveInquiry');
+  const status = document.getElementById('liveInquiryStatus');
+  if (!form.reportValidity() || submitButton.disabled) return;
+  submitButton.disabled = true;
+  submitButton.textContent = '送信中…';
+  status.hidden = true;
+  status.className = 'inquiry-status';
+  try {
+    const response = await fetch(LIVE_INQUIRY_ENDPOINT, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data?.errors?.[0]?.message || '送信に失敗しました。時間をおいて再度お試しください。');
+    }
+    form.reset();
+    status.className = 'inquiry-status notice schedule-ok';
+    status.textContent = '送信しました。運営が内容を確認し、入力したメールアドレスへ返信します。';
+    status.hidden = false;
+    submitButton.textContent = '送信しました';
+    if (typeof window.trackEvent === 'function') {
+      window.trackEvent('contact_form_submit', { result: 'success', source: 'live_invitation' });
+    }
+  } catch (error) {
+    status.className = 'inquiry-status error';
+    status.textContent = error?.message || '通信エラーが発生しました。ネット接続を確認してください。';
+    status.hidden = false;
+    submitButton.disabled = false;
+    submitButton.textContent = '問い合わせ・招待コード申請を送信する ▶';
+  }
 }
 
 function renderPurchaseRecovery() {

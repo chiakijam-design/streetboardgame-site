@@ -141,6 +141,36 @@ test('手入力形式の新規作成APIを受け付けない', async ({ request 
   expect(await response.json()).toEqual({ error: 'youtube-creation-required' });
 });
 
+test('招待コード発行手順を確認しLIVE問い合わせを送信できる', async ({ page }) => {
+  let submittedBody = '';
+  await page.route('https://formspree.io/f/xrevejjr', async (route) => {
+    submittedBody = route.request().postData() || '';
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+  });
+  await page.goto('/live');
+  await expect(page.getByText('招待コードをお持ちでない方へ')).toBeVisible();
+  await page.getByRole('link', { name: '招待コードを申請・使い方を問い合わせる' }).click();
+  await expect(page.getByRole('heading', { name: '招待コードの申請・使い方の問い合わせ' })).toBeVisible();
+  await expect(page.locator('.invite-step')).toHaveCount(3);
+  await expect(page.getByText('フォームから申請')).toBeVisible();
+  await expect(page.getByText('運営が手動審査')).toBeVisible();
+  await expect(page.getByText('メールでコードを受け取る')).toBeVisible();
+  await expect(page.getByText(/コードの有効期間は発行から90日/)).toBeVisible();
+  await page.locator('#channelUrl').fill('https://www.youtube.com/@sample');
+  await expect(page.locator('#inquiryChannelUrl')).toHaveValue('https://www.youtube.com/@sample');
+  await page.locator('#inquiryName').fill('配信スタッフ山田');
+  await page.locator('#inquiryEmail').fill('staff@example.com');
+  await page.locator('#inquiryType').selectOption('招待コード発行を希望');
+  await page.locator('#inquiryMessage').fill('来月のライブ配信で利用したいです。');
+  await page.locator('#inquiryPrivacy').check();
+  await page.locator('#submitLiveInquiry').click();
+  await expect(page.locator('#liveInquiryStatus')).toHaveText(/送信しました。運営が内容を確認し/);
+  expect(submittedBody).toContain('staff@example.com');
+  expect(submittedBody).toContain('https://www.youtube.com/@sample');
+  expect(submittedBody).not.toContain('live:creator-invite');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test('YouTubeの本人回答モードだけ30問を生成し、1問以上を選んで共通編集へ進む', async ({ page }, testInfo) => {
   await page.goto('/live');
   await expect(page.getByRole('heading', { name: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE' })).toBeVisible();
