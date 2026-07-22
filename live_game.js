@@ -3,6 +3,7 @@ import {
   LIVE_QUESTION_TYPES,
   LIVE_RESERVATION_BUFFER_HOURS,
   LIVE_RESULT_IMAGE_PRICES,
+  LIVE_RESULT_IMAGE_SERVICE,
   LIVE_SERIES,
   LIVE_TYPE_LABELS,
   LIVE_VIEWER_LIMIT,
@@ -348,7 +349,7 @@ function renderChannelVerification() {
     <section class="hero">
       <span class="eyebrow">CHANNEL VERIFICATION</span>
       <h1>YouTubeチャンネル所有者確認</h1>
-      <p>有料結果画像を販売するYouTuber本人・正式な運営者向けの確認画面です。</p>
+      <p>オリジナル結果画像生成・ダウンロードサービスを提供するYouTuber本人・正式な運営者向けの確認画面です。</p>
     </section>
     <section class="panel" style="margin-top:18px">
       ${verification ? `
@@ -403,8 +404,8 @@ function verificationProgressHtml(verification) {
       <div class="verification-step ${verification.stripeRelationshipStatus === 'verified' ? 'is-done' : ''}"><strong>4. 名義関係</strong><span>${escapeHtml(stripeLabel)}</span></div>
     </div>
     <div class="notice">${verification.canSellPaid
-      ? '有料結果画像を販売できます。'
-      : '無料LIVEはこのまま利用できます。有料販売は4段階すべての確認後に有効になります。'}</div>
+      ? 'オリジナル結果画像生成・ダウンロードサービスを提供できます。'
+      : '無料LIVEはこのまま利用できます。有料機能は4段階すべての確認後に有効になります。'}</div>
   `;
 }
 
@@ -791,9 +792,9 @@ function renderEditor() {
           <p class="help">似顔絵・宣材写真などを登録できます。結果画像では通常の黒髪の女の子と差し替えます。中央に人物が写った正方形に近い画像がおすすめです。</p>
           ${state.creatorImagePreviewUrl ? `<div class="creator-image-preview"><img src="${escapeAttr(state.creatorImagePreviewUrl)}" alt="登録するYouTuber画像"><button class="mini" id="removeCreatorImage" type="button">画像を外す</button></div>` : '<div class="notice">画像を登録しない場合は、従来の黒髪の女の子を表示します。</div>'}
           <div class="notice">元画像は視聴者へ送らず、企画保存時に非公開ストレージへ直接アップロードします。運営の画像審査で承認されるまでは既定画像を表示します。</div>
-          <label for="resultImagePrice">高画質結果画像の販売価格</label>
+          <label for="resultImagePrice">${LIVE_RESULT_IMAGE_SERVICE.name}</label>
           <select id="resultImagePrice">${LIVE_RESULT_IMAGE_PRICES.map((price) => `<option value="${price}" ${Number(state.draft.resultImagePrice) === price ? 'selected' : ''}>${price.toLocaleString('ja-JP')}円（税込）</option>`).join('')}</select>
-          <p class="help">有料販売の審査完了後に有効になります。売上の70%をYouTuber分配残高として記録します。</p>
+          <p class="help">有料機能の審査完了後に利用できます。決済後に${LIVE_RESULT_IMAGE_SERVICE.resolution}の高画質結果画像を生成し、${LIVE_RESULT_IMAGE_SERVICE.downloadDays}日間ダウンロードできます。売上の70%をYouTuber分配残高として記録します。</p>
         </div>
         ${channelOwnershipEditorHtml()}
         <div class="field editor-vote-setting"><span class="field-label">視聴者画面のライブ票数</span><label class="check"><input id="showLiveVoteCounts" type="checkbox" ${state.draft.showLiveVoteCounts ? 'checked' : ''}>全問題で選択肢別の現在票数を表示する</label><p class="help">この設定は企画全体に適用され、配信中は変更できません。</p></div>
@@ -1323,11 +1324,11 @@ function renderParticipant() {
     content = `<section class="panel"><span class="eyebrow">FINISH</span><h2 style="margin-top:12px">あなたの最終結果</h2>${personalSummary(game.results)}<div class="result-list">${game.results.map((result, index) => `<article class="result-card"><span class="badge">Q${index + 1}</span>${personalResultBlock(result)}${resultBlock(result, game.subjectName)}</article>`).join('')}</div></section>
       <section class="panel live-result-image-panel">
         <span class="eyebrow">RESULT IMAGE</span>
-        <h2 style="margin-top:12px">購入用結果画像のプレビュー</h2>
+        <h2 style="margin-top:12px">サービス申込み前の結果画像プレビュー</h2>
         <p class="help">YouTubeチャンネル名・登録したYouTuber画像・ライブ配信日・あなたの名前が入ります。</p>
         <div class="field"><label for="resultViewerName">結果画像に入れるあなたの名前</label><input id="resultViewerName" maxlength="24" value="${escapeAttr(viewerName)}" placeholder="名前を入力"></div>
         <div class="result-image-status" id="resultImageStatus">プレビューを作成しています…</div>
-        <img class="live-result-preview" id="liveResultPreview" alt="購入用結果画像のプレビュー" hidden>
+        <img class="live-result-preview" id="liveResultPreview" alt="サービス申込み前の結果画像プレビュー" hidden>
         ${liveCheckoutHtml(game)}
         ${errorHtml()}
         <div class="live-result-share">
@@ -1375,7 +1376,7 @@ function liveCheckoutHtml(game) {
   if (state.checkoutResult === 'success' && !status) returnMessage = '<div class="notice">決済結果を確認しています。この画面を閉じずにお待ちください。</div>';
   if (status?.status === 'paid') {
     returnMessage = status.productType === 'result_image'
-      ? `<div class="notice schedule-ok"><strong>購入が完了しました。</strong><br>高画質結果画像は購入日から30日間ダウンロードできます。</div><button class="secondary" id="downloadPaidLiveResult" type="button">高画質結果画像をダウンロード</button>`
+      ? `<div class="notice schedule-ok"><strong>画像生成が完了し、ダウンロードサービスの提供を開始しました。</strong><br>生成した高画質結果画像は決済日から${LIVE_RESULT_IMAGE_SERVICE.downloadDays}日間ダウンロードできます。</div><button class="secondary" id="downloadPaidLiveResult" type="button">高画質結果画像をダウンロード</button>`
       : '<div class="notice schedule-ok"><strong>応援ありがとうございます。</strong><br>決済が完了しました。</div>';
   } else if (status && ['payment_failed', 'checkout_failed'].includes(status.status)) {
     returnMessage = '<div class="error">決済を完了できませんでした。カード情報を確認して、もう一度お試しください。</div>';
@@ -1385,11 +1386,11 @@ function liveCheckoutHtml(game) {
     returnMessage = '<div class="notice">Stripeから決済完了通知を確認しています。反映されない場合は少し待ってから画面を更新してください。</div>';
   }
   if (!supportPaymentsEnabled && !resultImageSalesEnabled) {
-    return `<div class="live-checkout-panel">${returnMessage}<div class="notice">このLIVEでは有料販売の本人確認・契約・Stripe審査が完了していないため、購入と応援は受け付けていません。</div></div>`;
+    return `<div class="live-checkout-panel">${returnMessage}<div class="notice">このLIVEでは有料機能の本人確認・契約・Stripe審査が完了していないため、画像生成サービスと応援は受け付けていません。</div></div>`;
   }
   return `<div class="live-checkout-panel">
     ${returnMessage}
-    ${resultImageSalesEnabled ? `<button class="primary" id="buyLiveResultImage" type="button" ${state.checkoutBusy || !price ? 'disabled' : ''}>${state.checkoutBusy ? 'Stripeへ接続中…' : `${price.toLocaleString('ja-JP')}円で高画質版を購入`}</button>` : ''}
+    ${resultImageSalesEnabled ? `<div class="notice"><strong>${LIVE_RESULT_IMAGE_SERVICE.name}</strong><br>決済完了後に、チャンネル名・登録画像・LIVE配信日・入力した名前を含む${LIVE_RESULT_IMAGE_SERVICE.resolution}の高画質結果画像を生成します。ダウンロードリンクが利用可能になった時点で本サービスの提供完了となり、決済日から${LIVE_RESULT_IMAGE_SERVICE.downloadDays}日間ダウンロードできます。</div><button class="primary" id="buyLiveResultImage" type="button" ${state.checkoutBusy || !price ? 'disabled' : ''}>${state.checkoutBusy ? 'Stripeへ接続中…' : `${price.toLocaleString('ja-JP')}円で生成・ダウンロードを申し込む`}</button>` : ''}
     ${supportPaymentsEnabled ? `<button class="mini live-support-toggle" id="toggleLiveSupport" type="button" aria-expanded="${state.supportPanelOpen}" aria-controls="liveSupportAmounts" ${state.checkoutBusy ? 'disabled' : ''}>♡ 応援金を送る</button>
     ${state.supportPanelOpen ? `<div class="live-support-amounts" id="liveSupportAmounts" role="group" aria-label="応援金額を選ぶ"><strong>応援金額を選ぶ</strong>${(game.supportAmounts || []).map((amount) => `<button class="mini" data-live-support-amount="${amount}" type="button">${Number(amount).toLocaleString('ja-JP')}円</button>`).join('')}<p class="help">決済はStreetboardgame運営者が受け付け、売上の70%をYouTuberへ分配します。応援メッセージは初期版では公開されません。</p></div>` : ''}` : ''}
   </div>`;
@@ -1916,7 +1917,7 @@ function humanError(error) {
     'contract-contact-email-required': '有効な契約連絡先メールアドレスを入力してください',
     'creator-agreement-confirmation-required': '3つの確認事項すべてへの同意が必要です',
     'paid-channel-verification-required': 'このLIVEは有料販売の本人確認・契約・Stripe審査が完了していません',
-    'result-image-not-for-sale': 'このLIVEでは高画質結果画像を販売していません',
+    'result-image-not-for-sale': 'このLIVEではオリジナル結果画像生成・ダウンロードサービスを利用できません',
     'invalid-support-amount': '応援金額を選び直してください',
     'live-support-checkout-not-configured': '応援金決済の本番設定が完了していません。運営へお問い合わせください',
     'live-result-checkout-not-configured': '高画質画像決済の本番設定が完了していません。運営へお問い合わせください',

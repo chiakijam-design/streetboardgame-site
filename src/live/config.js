@@ -48,4 +48,10 @@ export const LIVE_REVENUE_POLICY = Object.freeze({
 });
 
 export const LIVE_RESULT_IMAGE_PRICES = Object.freeze([500, 1000, 3000]);
+export const LIVE_RESULT_IMAGE_SERVICE = Object.freeze({
+  name: 'オリジナル結果画像生成・ダウンロードサービス利用料',
+  shortName: 'オリジナル結果画像生成・ダウンロードサービス',
+  resolution: '2,160×2,700px',
+  downloadDays: 30,
+});
 export const LIVE_SUPPORT_AMOUNTS = Object.freeze([200, 500, 1000, 3000]);

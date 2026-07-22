@@ -9,6 +9,7 @@ import {
   retrieveLiveStripeBalanceTransaction,
   retrieveLiveStripeCharge,
 } from '../../src/live/stripe.js';
+import { LIVE_RESULT_IMAGE_SERVICE } from '../../src/live/config.js';
 
 test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キーをStripeへ送る', async () => {
   let captured;
@@ -19,7 +20,7 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
   const session = await createLiveCheckoutSession(env, {
     requestUrl: 'https://www.streetboardgame.com/api/live/games/123456/checkout',
     orderId: 'ord_test01', productType: 'result_image', code: '123456', amount: 1000,
-    productName: 'テストチャンネル LIVE高画質結果画像',
+    productName: `テストチャンネル ${LIVE_RESULT_IMAGE_SERVICE.name}`,
   }, 1_800_000_000_000);
   assert.equal(session.id, 'cs_test_checkout01');
   assert.equal(captured.url, 'https://api.stripe.com/v1/checkout/sessions');
@@ -28,6 +29,7 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
   assert.equal(captured.params.get('line_items[0][price_data][currency]'), 'jpy');
   assert.equal(captured.params.get('line_items[0][price_data][unit_amount]'), '1000');
   assert.equal(captured.params.get('line_items[0][price_data][tax_behavior]'), 'inclusive');
+  assert.equal(captured.params.get('line_items[0][price_data][product_data][name]'), `テストチャンネル ${LIVE_RESULT_IMAGE_SERVICE.name}`);
   assert.equal(captured.params.get('metadata[live_order_id]'), 'ord_test01');
   assert.equal(captured.params.get('payment_intent_data[transfer_group]'), 'ord_test01');
   assert.equal(captured.params.has('payment_intent_data[transfer_data][destination]'), false);

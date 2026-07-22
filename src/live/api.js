@@ -4,6 +4,7 @@ import {
   LIVE_RESERVATION_BUFFER_HOURS,
   LIVE_RESERVATION_MAX_DAYS,
   LIVE_RESULT_IMAGE_PRICES,
+  LIVE_RESULT_IMAGE_SERVICE,
   LIVE_SUPPORT_AMOUNTS,
   LIVE_VIEWER_LIMIT,
 } from './config.js';
@@ -571,7 +572,7 @@ async function createLiveCheckout(request, env, code) {
   if (productType === 'result_image') {
     amount = Number(game.resultImagePrice);
     if (!LIVE_RESULT_IMAGE_PRICES.includes(amount)) throw liveError('result-image-not-for-sale', 409);
-    productName = `${game.channelName || game.subjectName} LIVE高画質結果画像`;
+    productName = `${game.channelName || game.subjectName} ${LIVE_RESULT_IMAGE_SERVICE.name}`;
   } else if (productType === 'support') {
     amount = Number(body.amount);
     if (!LIVE_SUPPORT_AMOUNTS.includes(amount)) throw liveError('invalid-support-amount', 400);
@@ -1180,7 +1181,7 @@ async function fulfillLiveCheckout(request, env, session) {
   await recordLiveOpsEvent(env, {
     category: 'purchase', severity: 'info', eventType: 'checkout-paid', code: row.code,
     purchaseId: purchaseId || '', externalId: paymentIntentId,
-    message: row.product_type === 'result_image' ? '決済成功を確認し、高画質結果画像の購入権限を発行しました。' : '応援金の決済成功を確認しました。',
+    message: row.product_type === 'result_image' ? '決済成功を確認し、高画質結果画像の生成・ダウンロード権限を発行しました。' : '応援金の決済成功を確認しました。',
     metadata: { orderId: row.order_id, productType: row.product_type, amount: Number(row.amount), creatorAmount: Number(row.creator_amount) },
   });
   return { ...row, purchase_id: purchaseId, stripe_payment_intent_id: paymentIntentId, status: 'paid', paid_at: paidAt };
