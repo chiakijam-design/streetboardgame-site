@@ -359,7 +359,7 @@ function creatorAgreementHtml() {
     <section class="agreement-panel">
       <span class="badge">CREATOR AGREEMENT</span><h3>収益分配契約へ同意する</h3>
       <p class="help">全文を確認したうえで、契約者本人または契約権限を持つ担当者が操作してください。</p>
-      <div class="agreement-summary"><strong>規約バージョン ${escapeHtml(data.terms.version)}</strong><span>YouTuber分配70%・売上確定後14日保留・確定残高5,000円以上で月1回入金</span><a href="/creator-terms" target="_blank" rel="noopener noreferrer">収益分配規約の全文を読む</a></div>
+      <div class="agreement-summary"><strong>規約バージョン ${escapeHtml(data.terms.version)}</strong><span>YouTuber分配70%・売上確定後14日保留・確定残高5,000円以上で月1回入金</span><a href="/creator-terms" target="_blank" rel="noopener noreferrer">収益分配規約の全文を読む</a><a href="/privacy" target="_blank" rel="noopener noreferrer">プライバシーポリシーを読む</a><a href="/content-guidelines" target="_blank" rel="noopener noreferrer">コンテンツ・肖像権ガイドラインを読む</a><a href="/minor-policy" target="_blank" rel="noopener noreferrer">未成年者利用規定を読む</a></div>
       <div class="field"><label for="agreementContractingName">契約者名（個人氏名または法人名）</label><input id="agreementContractingName" maxlength="120" autocomplete="name" value="${escapeAttr(state.creatorAgreementContractingName)}"></div>
       <div class="field"><label for="agreementContactEmail">契約連絡先メールアドレス</label><input id="agreementContactEmail" type="email" maxlength="254" autocomplete="email" value="${escapeAttr(state.creatorAgreementContactEmail)}"></div>
       <div class="notice">登録済み振込先：${escapeHtml(data.stripeAccountMasked)}</div>
@@ -1257,7 +1257,7 @@ function renderParticipant() {
           <button class="live-share-button live-share-image" id="shareLiveResultImage" type="button">結果画像を保存／送る</button>
           <div class="result-share-status" id="resultShareStatus" aria-live="polite"></div>
         </div>
-        <div class="notice">決済はStreetboardgame運営者がStripe Checkoutで受け付けます。返金条件は購入前に<a href="/refund-policy" target="_blank" rel="noopener noreferrer">返金・キャンセルポリシー</a>をご確認ください。</div>
+        <div class="notice">決済はStreetboardgame運営者がStripe Checkoutで受け付けます。購入前に<a href="/terms" target="_blank" rel="noopener noreferrer">利用規約</a>、<a href="/legal" target="_blank" rel="noopener noreferrer">特定商取引法に基づく表記</a>、<a href="/refund-policy" target="_blank" rel="noopener noreferrer">返金・キャンセルポリシー</a>、<a href="/privacy" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>、未成年者は<a href="/minor-policy" target="_blank" rel="noopener noreferrer">未成年者利用規定</a>をご確認ください。</div>
       </section>`;
   }
   setPage(content);
