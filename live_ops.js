@@ -123,8 +123,15 @@ function renderMetrics() {
 function renderSessions() {
   const activeCodes = new Set((overview.activeSessions || []).map((x) => x.code));
   const all = [...(overview.activeSessions || []), ...(overview.reservations || []).filter((x) => !activeCodes.has(x.code))];
-  document.getElementById('sessions').innerHTML = all.length ? all.map((item) => `<article class="card"><strong>${escapeHtml(item.title || item.channelName || 'タイトル未取得')} <span class="pill">${escapeHtml(item.code)}</span></strong><div class="meta">状態: ${escapeHtml(item.phase)} / ${activeCodes.has(item.code) ? '稼働中' : '予約'}<br>配信予定: ${formatDate(item.scheduledAt)} / 参加上限: ${Number(item.participantLimit || 0).toLocaleString('ja-JP')}人<br>画像審査: ${escapeHtml(item.creatorImageModerationStatus || 'none')}</div><div class="actions"><button class="button danger" data-terminate="${item.code}">強制終了</button><button class="button secondary" data-rotate="${item.code}" data-target="host">スタッフURL失効・再発行</button><button class="button secondary" data-rotate="${item.code}" data-target="subject">本人URL失効・再発行</button>${item.creatorImageModerationStatus === 'pending' ? `<button class="button good" data-image-review="${item.code}" data-decision="approved">画像を承認</button><button class="button danger" data-image-review="${item.code}" data-decision="rejected">画像を却下・削除</button>` : ''}</div></article>`).join('') : empty('稼働中・予約中のLIVEはありません。');
+  document.getElementById('sessions').innerHTML = all.length ? all.map((item) => {
+    const active = activeCodes.has(item.code);
+    const primaryAction = active
+      ? `<button class="button danger" data-terminate="${item.code}">強制終了</button>`
+      : `<button class="button danger" data-cancel-reservation="${item.code}">予約キャンセル</button>`;
+    return `<article class="card"><strong>${escapeHtml(item.title || item.channelName || 'タイトル未取得')} <span class="pill">${escapeHtml(item.code)}</span></strong><div class="meta">状態: ${escapeHtml(item.phase)} / ${active ? '稼働中' : '予約'}<br>配信予定: ${formatDate(item.scheduledAt)} / 参加上限: ${Number(item.participantLimit || 0).toLocaleString('ja-JP')}人<br>画像審査: ${escapeHtml(item.creatorImageModerationStatus || 'none')}</div><div class="actions">${primaryAction}<button class="button secondary" data-rotate="${item.code}" data-target="host">スタッフURL失効・再発行</button><button class="button secondary" data-rotate="${item.code}" data-target="subject">本人URL失効・再発行</button>${item.creatorImageModerationStatus === 'pending' ? `<button class="button good" data-image-review="${item.code}" data-decision="approved">画像を承認</button><button class="button danger" data-image-review="${item.code}" data-decision="rejected">画像を却下・削除</button>` : ''}</div></article>`;
+  }).join('') : empty('稼働中・予約中のLIVEはありません。');
   document.querySelectorAll('[data-terminate]').forEach((button) => button.addEventListener('click', () => terminateGame(button.dataset.terminate)));
+  document.querySelectorAll('[data-cancel-reservation]').forEach((button) => button.addEventListener('click', () => cancelReservation(button.dataset.cancelReservation)));
   document.querySelectorAll('[data-rotate]').forEach((button) => button.addEventListener('click', () => rotateLinks(button.dataset.rotate, button.dataset.target)));
   document.querySelectorAll('[data-image-review]').forEach((button) => button.addEventListener('click', () => reviewCreatorImage(button.dataset.imageReview, button.dataset.decision)));
 }
@@ -234,8 +241,16 @@ async function terminateGame(code) {
   try { await adminApi(`/api/live/admin/games/${code}/terminate`, { method: 'POST', body: JSON.stringify({ message }) }); await loadOverview(); } catch (error) { alert(humanError(error)); }
 }
 
+async function cancelReservation(code) {
+  if (!confirm(`ルーム ${code} の予約をキャンセルします。予約枠は解放され、元に戻せません。`)) return;
+  try {
+    await adminApi(`/api/live/admin/games/${code}/cancel`, { method: 'POST', body: JSON.stringify({}) });
+    await loadOverview();
+  } catch (error) { alert(humanError(error)); }
+}
+
 async function rotateLinks(code, target) {
-  if (!confirm(`ルーム ${code} の${target === 'host' ? 'スタッフ' : '本人'}URLを直ちに失効します。`)) return;
+  if (!confirm(`ルーム ${code} の${target === 'host' ? 'スタッフ' : '本人'}URLを直ちに失効・再発行します。旧URLは使えなくなります。`)) return;
   try {
     const data = await adminApi(`/api/live/admin/games/${code}/rotate-links`, { method: 'POST', body: JSON.stringify({ host: target === 'host', subject: target === 'subject' }) });
     const url = target === 'host' ? data.hostUrl : data.subjectUrl;

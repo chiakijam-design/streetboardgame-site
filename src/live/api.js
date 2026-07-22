@@ -131,12 +131,12 @@ export async function handleLiveApi(request, env, path) {
     if (acknowledgeRoute && request.method === 'POST') {
       return liveJson(await acknowledgeLiveOpsEvent(env, acknowledgeRoute[1]));
     }
-    const adminGameRoute = path.match(/^\/api\/live\/admin\/games\/([0-9]{6})\/(terminate|rotate-links)$/);
+    const adminGameRoute = path.match(/^\/api\/live\/admin\/games\/([0-9]{6})\/(terminate|cancel|rotate-links)$/);
     if (adminGameRoute && request.method === 'POST') {
       await ensureLiveD1(env);
-      return adminGameRoute[2] === 'terminate'
-        ? await terminateLiveGameAsAdmin(request, env, adminGameRoute[1])
-        : await rotateLiveGameLinksAsAdmin(request, env, adminGameRoute[1]);
+      if (adminGameRoute[2] === 'terminate') return await terminateLiveGameAsAdmin(request, env, adminGameRoute[1]);
+      if (adminGameRoute[2] === 'cancel') return await cancelLiveReservationAsAdmin(request, env, adminGameRoute[1]);
+      return await rotateLiveGameLinksAsAdmin(request, env, adminGameRoute[1]);
     }
     const creatorImageReviewRoute = path.match(/^\/api\/live\/admin\/games\/([0-9]{6})\/creator-image-review$/);
     if (creatorImageReviewRoute && request.method === 'POST') {
@@ -816,6 +816,26 @@ async function terminateLiveGameAsAdmin(request, env, code) {
   await recordLiveOpsEvent(env, {
     category: 'operations', severity: 'warning', eventType: 'game-force-terminated', code,
     message, metadata: { previousPhase },
+  });
+  return liveJson({ code, game: publicLiveGame(game, { host: true }) });
+}
+
+async function cancelLiveReservationAsAdmin(request, env, code) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  if (game.phase !== 'lobby') throw liveError('reservation-change-closed', 409);
+  const body = await readLiveJson(request);
+  const message = String(body.message || '運営により、このLIVE予約はキャンセルされました。').trim().slice(0, 300);
+  game.phase = 'cancelled';
+  game.cancellationMessage = message;
+  game.cancelledAt = Date.now();
+  game.updatedAt = game.cancelledAt;
+  game.expiresAt = game.cancelledAt + 24 * 60 * 60 * 1000;
+  await putStoredLiveGame(env, code, game);
+  await Promise.all([releaseLiveReservation(env, code), releaseLiveActiveSlot(env, code)]);
+  if (hasLiveRealtime(env)) await broadcastCurrentRealtimeState(env, code, game);
+  await recordLiveOpsEvent(env, {
+    category: 'reservation', severity: 'warning', eventType: 'reservation-cancelled-by-admin', code,
+    message, metadata: { scheduledAt: Number(game.scheduledAt) || 0 },
   });
   return liveJson({ code, game: publicLiveGame(game, { host: true }) });
 }
