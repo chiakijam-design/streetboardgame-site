@@ -25,6 +25,7 @@ class MemoryKV {
     this.values.set(key, { value: String(value), expiresAt: ttl ? Date.now() + ttl * 1000 : 0 });
   }
   async delete(key) { this.values.delete(key); }
+  clear() { this.values.clear(); }
 }
 
 class MemoryR2 {
@@ -47,6 +48,7 @@ class MemoryR2 {
     };
   }
   async delete(keys) { (Array.isArray(keys) ? keys : [keys]).forEach((key) => this.values.delete(key)); }
+  clear() { this.values.clear(); }
 }
 
 class PassthroughImages {
@@ -144,6 +146,13 @@ const server = http.createServer(async (req, res) => {
     if (parsed.pathname === '/health') {
       res.writeHead(200, { 'content-type': 'text/plain' });
       res.end('ok');
+      return;
+    }
+    if (parsed.pathname === '/__test/reset' && req.method === 'POST') {
+      kv.clear();
+      media.clear();
+      res.writeHead(204);
+      res.end();
       return;
     }
     const response = await worker.fetch(await toRequest(req), {
