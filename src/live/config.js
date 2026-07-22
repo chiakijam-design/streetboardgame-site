@@ -29,3 +29,10 @@ export const LIVE_QUESTION_TYPES = Object.freeze([
 export const LIVE_TYPE_LABELS = Object.freeze(Object.fromEntries(
   LIVE_QUESTION_TYPES.map(({ value, label }) => [value, label]),
 ));
+
+export const LIVE_REVENUE_POLICY = Object.freeze({
+  creatorShareBps: 7000,
+  cardProcessingFeeReferenceBps: 360,
+  platformApplicationFeeBps: 3000,
+  platformNetReferenceBps: 2640,
+});

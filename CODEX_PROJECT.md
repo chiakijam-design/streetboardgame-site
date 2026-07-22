@@ -20,6 +20,7 @@ This folder is the Codex-managed copy of the Genspark-built `streetboardgame.com
 - `assets/cards/`: card images
 - `assets/character/`: character images
 - `_worker.js`: Cloudflare Worker routing
+- `docs/LIVE_REVENUE_POLICY.md`: LIVE revenue split and Stripe Connect accounting policy
 - `wrangler.jsonc`: Cloudflare Worker and asset binding config
 - `RESTORE_GUIDE.md`: original restore guide from the Genspark backup
 - `CHAT_HISTORY_SUMMARY.md`: original project history summary
