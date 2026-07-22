@@ -11,6 +11,7 @@ export const LIVE_SERIES = Object.freeze({
 // 現在のD1ポーリング構成で安全側に倒した初期上限。
 // 実負荷試験と本番メトリクスを確認するまでは引き上げない。
 export const LIVE_VIEWER_LIMIT = 50;
+export const LIVE_POLL_INTERVAL_MS = 3_000;
 export const LIVE_RESERVATION_BUFFER_HOURS = 20;
 export const LIVE_RESERVATION_MAX_DAYS = 365;
 export const LIVE_CREATOR_IMAGE_MAX_LENGTH = 450_000;

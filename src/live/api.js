@@ -111,10 +111,10 @@ async function getLiveReservationAvailability(request, env) {
 }
 
 async function getLiveGameResponse(request, env, code) {
-  const game = await requireLiveGame(env, code);
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
   const subjectToken = normalizeToken(request.headers.get('x-live-subject-token'));
   const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
+  const game = await requireLiveGame(env, code, { polling: true, participantToken });
   return liveJson({
     code,
     game: publicLiveGame(game, {
@@ -355,9 +355,14 @@ export function publicLiveGame(game, access = {}) {
     : [];
   const subjectAnswered = Number.isInteger(question?.lockedIndex);
   const canSeeVoteCount = flowVersion < 4 || access.host || (access.subject ? subjectAnswered : game.showVoteCount);
+  const summarizedVoteCounts = question && Array.isArray(game.currentVoteCounts)
+    && game.currentVoteCounts.length === question.options.length
+    ? game.currentVoteCounts.map((count) => Math.max(0, Number(count) || 0))
+    : null;
   const voteCounts = question
-    ? question.options.map((_, optionIndex) => Object.values(currentVotes).filter((value) => Number(value) === optionIndex).length)
+    ? summarizedVoteCounts || question.options.map((_, optionIndex) => Object.values(currentVotes).filter((value) => Number(value) === optionIndex).length)
     : [];
+  const voteCount = voteCounts.reduce((total, count) => total + count, 0);
   const publicQuestion = question ? {
     id: question.id,
     type: question.type,
@@ -365,7 +370,7 @@ export function publicLiveGame(game, access = {}) {
     options: question.options,
     subjectAnswered,
     result: revealResult,
-    ...(canSeeVoteCount ? { voteCount: Object.keys(currentVotes).length } : {}),
+    ...(canSeeVoteCount ? { voteCount } : {}),
     ...(flowVersion >= 4 && canSeeVoteCount ? { voteCounts } : {}),
     ...(access.subject ? { myAnswerIndex: Number.isInteger(question.lockedIndex) ? question.lockedIndex : null } : {}),
   } : null;
@@ -898,9 +903,9 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-async function requireLiveGame(env, code) {
+async function requireLiveGame(env, code, options = {}) {
   if (!LIVE_CODE_PATTERN.test(code)) throw liveError('room-not-found', 404);
-  const game = await getStoredLiveGame(env, code);
+  const game = await getStoredLiveGame(env, code, options);
   if (!game) throw liveError('room-not-found', 404);
   return game;
 }
@@ -973,7 +978,7 @@ async function ensureLiveD1(env) {
   return true;
 }
 
-async function getStoredLiveGame(env, code) {
+async function getStoredLiveGame(env, code, options = {}) {
   if (await ensureLiveD1(env)) {
     const row = await env.REMOTE_DB.prepare('SELECT payload, expires_at FROM live_games WHERE code = ?').bind(code).first();
     if (!row) return null;
@@ -982,6 +987,7 @@ async function getStoredLiveGame(env, code) {
       return null;
     }
     const game = JSON.parse(row.payload);
+    if (options.polling) return loadD1PollingSnapshot(env, code, game, options.participantToken);
     const [participantsResult, votesResult] = await Promise.all([
       env.REMOTE_DB.prepare(`
         SELECT participant_id, participant_token, name, joined_at
@@ -1008,7 +1014,100 @@ async function getStoredLiveGame(env, code) {
     return game;
   }
   const kv = env.LIVE_KV || env.REMOTE_KV;
-  return kv ? kv.get(`live:${code}`, { type: 'json' }) : null;
+  const game = kv ? await kv.get(`live:${code}`, { type: 'json' }) : null;
+  return options.polling ? createPollingSnapshot(game, options.participantToken) : game;
+}
+
+async function loadD1PollingSnapshot(env, code, game, participantToken) {
+  const question = game.questions[game.currentQuestionIndex] || null;
+  const participantVoteQuery = game.phase === 'complete' && participantToken
+    ? env.REMOTE_DB.prepare(`
+        SELECT v.question_id, v.option_index, p.participant_id
+        FROM live_votes v
+        INNER JOIN live_participants p
+          ON p.code = v.code AND p.participant_id = v.participant_id
+        WHERE v.code = ? AND p.participant_token = ?
+      `).bind(code, participantToken).all()
+    : Promise.resolve({ results: [] });
+  const currentSummaryQuery = game.phase !== 'complete' && question
+    ? env.REMOTE_DB.prepare(`
+        SELECT v.option_index, COUNT(*) AS vote_count,
+          MAX(CASE WHEN p.participant_token = ? THEN v.option_index ELSE NULL END) AS my_vote_index
+        FROM live_votes v
+        LEFT JOIN live_participants p
+          ON p.code = v.code AND p.participant_id = v.participant_id
+        WHERE v.code = ? AND v.question_id = ?
+        GROUP BY v.option_index
+        ORDER BY v.option_index
+      `).bind(participantToken || '', code, question.id).all()
+    : Promise.resolve({ results: [] });
+  const [participantsResult, currentSummaryResult, participantVotesResult] = await Promise.all([
+    env.REMOTE_DB.prepare(`
+      SELECT participant_id, participant_token, name, joined_at
+      FROM live_participants WHERE code = ? ORDER BY joined_at ASC
+    `).bind(code).all(),
+    currentSummaryQuery,
+    participantVoteQuery,
+  ]);
+  game.participants = (participantsResult.results || []).map((item) => ({
+    id: item.participant_id,
+    token: item.participant_token,
+    name: item.name,
+    joinedAt: Number(item.joined_at),
+  }));
+  game.votes = {};
+  if (game.phase === 'complete') {
+    for (const item of participantVotesResult.results || []) {
+      game.votes[item.question_id] = {
+        ...(game.votes[item.question_id] || {}),
+        [item.participant_id]: Number(item.option_index),
+      };
+    }
+    game.currentVoteCounts = resultVoteCounts(game, question);
+    return game;
+  }
+  game.currentVoteCounts = question ? question.options.map(() => 0) : [];
+  let myVoteIndex = null;
+  for (const item of currentSummaryResult.results || []) {
+    const optionIndex = Number(item.option_index);
+    if (Number.isInteger(optionIndex) && optionIndex >= 0 && optionIndex < game.currentVoteCounts.length) {
+      game.currentVoteCounts[optionIndex] = Math.max(0, Number(item.vote_count) || 0);
+    }
+    if (item.my_vote_index !== null && item.my_vote_index !== undefined) myVoteIndex = Number(item.my_vote_index);
+  }
+  const participant = participantToken ? game.participants.find((item) => item.token === participantToken) : null;
+  if (question && participant && Number.isInteger(myVoteIndex)) {
+    game.votes[question.id] = { [participant.id]: myVoteIndex };
+  }
+  return game;
+}
+
+function createPollingSnapshot(game, participantToken) {
+  if (!game) return game;
+  const question = game.questions[game.currentQuestionIndex] || null;
+  const allVotes = game.votes || {};
+  const participant = participantToken ? game.participants.find((item) => item.token === participantToken) : null;
+  const snapshotVotes = {};
+  if (game.phase === 'complete' && participant) {
+    for (const [questionId, votes] of Object.entries(allVotes)) {
+      if (Object.prototype.hasOwnProperty.call(votes, participant.id)) snapshotVotes[questionId] = { [participant.id]: votes[participant.id] };
+    }
+  } else if (question && participant && Object.prototype.hasOwnProperty.call(allVotes[question.id] || {}, participant.id)) {
+    snapshotVotes[question.id] = { [participant.id]: allVotes[question.id][participant.id] };
+  }
+  return {
+    ...game,
+    votes: snapshotVotes,
+    currentVoteCounts: game.phase === 'complete'
+      ? resultVoteCounts(game, question)
+      : question?.options.map((_, optionIndex) => Object.values(allVotes[question.id] || {}).filter((value) => Number(value) === optionIndex).length) || [],
+  };
+}
+
+function resultVoteCounts(game, question) {
+  if (!question) return [];
+  const result = (game.results || []).find((item) => item.questionId === question.id);
+  return question.options.map((_, optionIndex) => Math.max(0, Number(result?.options?.[optionIndex]?.count) || 0));
 }
 
 async function putStoredLiveGame(env, code, game) {

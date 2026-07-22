@@ -12,11 +12,12 @@ import {
   extractYouTubeTopics,
   extractYouTubeVideoSource,
   generateYouTubeQuestions,
+  handleLiveApi,
   normalizeYouTubeChannelUrl,
   normalizeYouTubeInputUrl,
   publicLiveGame,
 } from '../../src/live/api.js';
-import { LIVE_VIEWER_LIMIT } from '../../src/live/config.js';
+import { LIVE_POLL_INTERVAL_MS, LIVE_VIEWER_LIMIT } from '../../src/live/config.js';
 
 test('LIVE問題は1問以上で、10問を超えても固定上限で切り捨てない', () => {
   const questions = Array.from({ length: 12 }, (_, index) => createLiveQuestion({
@@ -102,6 +103,79 @@ test('YouTube LIVEは未来の予約日時を必須にし、安全運用上限�
   assert.equal(publicState.participantLimit, LIVE_VIEWER_LIMIT);
   assert.equal(publicState.scheduledAt, now + 60_000);
   assert.equal(publicState.channelName, '公式チャンネル');
+  assert.equal(LIVE_POLL_INTERVAL_MS, 3_000);
+});
+
+test('D1ポーリングは現在問の選択肢別集計と本人回答だけを取得する', async () => {
+  const participantToken = 'a'.repeat(20);
+  const question = { id: 'q-1', type: 'guess-person', text: 'どれ？', options: ['A', 'B'], lockedIndex: 1 };
+  const secondQuestion = { id: 'q-2', type: 'guess-person', text: '次は？', options: ['C', 'D'], lockedIndex: 0 };
+  let storedGame = {
+    version: 4, title: '軽量取得テスト', subjectName: '本人', phase: 'voting', currentQuestionIndex: 0,
+    showVoteCount: true, questions: [question, secondQuestion], results: [], expiresAt: Date.now() + 60_000,
+  };
+  const statements = [];
+  const db = {
+    prepare(sql) {
+      const text = String(sql).replace(/\s+/g, ' ').trim();
+      statements.push(text);
+      return {
+        bind() { return this; },
+        async run() { return { meta: { changes: 1 } }; },
+        async first() {
+          if (text.startsWith('SELECT payload, expires_at FROM live_games')) {
+            return { payload: JSON.stringify(storedGame), expires_at: storedGame.expiresAt };
+          }
+          return null;
+        },
+        async all() {
+          if (text.includes('FROM live_participants WHERE code')) {
+            return { results: [{ participant_id: 'p-1', participant_token: participantToken, name: '参加者', joined_at: 1 }] };
+          }
+          if (text.includes('GROUP BY v.option_index')) {
+            return { results: [
+              { option_index: 0, vote_count: 2, my_vote_index: null },
+              { option_index: 1, vote_count: 1, my_vote_index: 1 },
+            ] };
+          }
+          if (text.includes('INNER JOIN live_participants')) {
+            return { results: [
+              { question_id: 'q-1', option_index: 1, participant_id: 'p-1' },
+              { question_id: 'q-2', option_index: 0, participant_id: 'p-1' },
+            ] };
+          }
+          return { results: [] };
+        },
+      };
+    },
+  };
+  const fetchGame = () => handleLiveApi(new Request('https://example.com/api/live/games/123456', {
+    headers: { 'x-live-participant-token': participantToken },
+  }), { REMOTE_DB: db }, '/api/live/games/123456');
+
+  let response = await fetchGame();
+  assert.equal(response.status, 200);
+  let body = await response.json();
+  assert.deepEqual(body.game.question.voteCounts, [2, 1]);
+  assert.equal(body.game.myVoteIndex, 1);
+  assert.equal(statements.some((sql) => sql.includes('GROUP BY v.option_index')), true);
+  assert.equal(statements.some((sql) => sql.includes('FROM live_votes WHERE code = ?')), false);
+
+  statements.length = 0;
+  storedGame = {
+    ...storedGame,
+    phase: 'complete',
+    results: [
+      calculateLiveResult(question, { 'p-1': 1, 'p-2': 0, 'p-3': 0 }),
+      calculateLiveResult(secondQuestion, { 'p-1': 0 }),
+    ],
+  };
+  response = await fetchGame();
+  body = await response.json();
+  assert.equal(body.game.results[0].myVoteIndex, 1);
+  assert.equal(body.game.results[1].myVoteIndex, 0);
+  assert.equal(statements.some((sql) => sql.includes('INNER JOIN live_participants')), true);
+  assert.equal(statements.some((sql) => sql.includes('GROUP BY v.option_index')), false);
 });
 
 test('3タイプの票数・割合・最多回答・当たり判定を生成する', () => {

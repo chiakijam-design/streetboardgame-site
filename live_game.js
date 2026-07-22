@@ -1,5 +1,6 @@
 import {
   LIVE_CREATOR_IMAGE_MAX_LENGTH,
+  LIVE_POLL_INTERVAL_MS,
   LIVE_QUESTION_TYPES,
   LIVE_RESERVATION_BUFFER_HOURS,
   LIVE_SERIES,
@@ -930,7 +931,7 @@ function startPolling() {
   state.pollTimer = setInterval(async () => {
     if (!['host', 'subject', 'participant'].includes(state.view)) return;
     try { await loadRoom(); render(); } catch (error) { /* 次のポーリングで再試行 */ }
-  }, 2000);
+  }, LIVE_POLL_INTERVAL_MS);
 }
 
 function setPage(content, withTopbar = true) {
