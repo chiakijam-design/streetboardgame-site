@@ -38,6 +38,7 @@ import {
   startYouTubeOAuth,
   verifyChannelDescription,
 } from './ownership.js';
+import { acceptCreatorAgreement, getCreatorAgreement } from './agreement.js';
 import {
   acknowledgeLiveOpsEvent,
   ensureLiveOpsD1,
@@ -147,6 +148,13 @@ export async function handleLiveApi(request, env, path) {
       if (request.method === 'POST' && action === 'verify-description') return await verifyChannelDescription(request, env, verificationId);
       if (request.method === 'POST' && action === 'manual-review') return await requestManualReview(request, env, verificationId);
       if (request.method === 'POST' && action === 'oauth-start') return await startYouTubeOAuth(request, env, verificationId);
+      return liveJson({ error: 'method-not-allowed' }, 405);
+    }
+    const creatorAgreementRoute = path.match(/^\/api\/live\/channel-verifications\/([a-f0-9]{32})\/agreement$/i);
+    if (creatorAgreementRoute) {
+      await ensureLiveD1(env);
+      if (request.method === 'GET') return await getCreatorAgreement(request, env, creatorAgreementRoute[1]);
+      if (request.method === 'POST') return await acceptCreatorAgreement(request, env, creatorAgreementRoute[1]);
       return liveJson({ error: 'method-not-allowed' }, 405);
     }
     const verificationAdminRoute = path.match(/^\/api\/live\/admin\/channel-verifications\/([a-f0-9]{32})\/review$/i);
@@ -1364,6 +1372,17 @@ async function ensureLiveD1(env) {
           oauth_state_expires_at INTEGER, verified_at INTEGER, reviewed_at INTEGER,
           reviewed_by TEXT NOT NULL DEFAULT '', request_ip TEXT NOT NULL DEFAULT '',
           created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+        )
+      `).run(),
+      env.REMOTE_DB.prepare(`
+        CREATE TABLE IF NOT EXISTS live_creator_agreements (
+          agreement_id TEXT PRIMARY KEY, verification_id TEXT NOT NULL, channel_id TEXT NOT NULL,
+          stripe_account_id TEXT NOT NULL, terms_version TEXT NOT NULL,
+          terms_document_sha256 TEXT NOT NULL, contracting_name TEXT NOT NULL,
+          contact_email TEXT NOT NULL, authority_confirmed INTEGER NOT NULL DEFAULT 0,
+          privacy_confirmed INTEGER NOT NULL DEFAULT 0, accepted_at INTEGER NOT NULL,
+          accepted_ip TEXT NOT NULL DEFAULT '', user_agent TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL,
+          UNIQUE (verification_id, terms_version, stripe_account_id)
         )
       `).run(),
     ]).then(() => env.REMOTE_DB.prepare(`

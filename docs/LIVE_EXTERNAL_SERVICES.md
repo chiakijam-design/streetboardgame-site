@@ -6,6 +6,7 @@
 - APIキー未設定・割当超過時は問題生成を停止し、推測したチャンネル情報で続行しない
 - 無料LIVEはチャンネル所有確認なしで利用できる
 - 有料結果画像の権限発行は、チャンネル所有確認とStripe名義関係確認の両方が完了していなければ拒否する
+- 有料販売は、現行バージョンのYouTuber向け収益分配規約へのWeb同意も完了していなければ拒否する
 - YouTuber元画像はゲームJSON、公開API、WebSocketへ入れない。非公開R2のオブジェクトキーだけをゲームへ保存する
 - 無料プレビューは参加者トークンを検証したWorkerが540×675・SAMPLE入りで生成する
 - 有料版は購入権限発行時に2,160×2,700・SAMPLEなしで生成し、非公開R2へ保存する
@@ -46,7 +47,8 @@ npx wrangler secret put YOUTUBE_OAUTH_REDIRECT_URI
 2. 発行された秘密URLをYouTuber本人または正式なチャンネル運営者へ、安全な連絡手段で送る
 3. YouTuber側はOAuth、概要欄コード、手動審査申請のいずれか1つで所有確認する
 4. スタッフは問題編集画面の「確認状況を更新」、運営者は`/live-ops`の「チャンネル所有・Stripe名義確認」で状態を確認する
-5. 所有確認だけでは有料販売を許可しない。運営者がConnectアカウントID・Stripe本人確認・チャンネルとの名義関係を確認する
+5. 所有確認後、運営者がConnectアカウントIDを登録し、YouTuber本人が秘密URLから現行の収益分配規約へWeb同意する
+6. 所有確認と規約同意だけでは有料販売を許可しない。運営者がStripe本人確認・チャンネルとの名義関係を確認する
 
 秘密URLの確認トークンは`#verification=...`に置き、HTTPリクエストやアクセスログへ送らない。URLは公開チャット、YouTube概要欄、配信画面へ掲載しない。
 
@@ -57,16 +59,19 @@ npx wrangler secret put YOUTUBE_OAUTH_REDIRECT_URI
 
 ## 3. Stripeとの名義関係確認
 
-有料販売の許可条件は次の3つをすべて満たすこと。
+有料販売の許可条件は次の5つをすべて満たすこと。
 
 - `ownership_status = verified`
+- 現在の`terms_version`・規約本文SHA-256・同じ`stripe_account_id`に紐づくWeb同意記録が存在
 - `stripe_identity_verified = 1`
 - `stripe_relationship_status = verified`
 - `stripe_account_id`が`acct_...`形式で登録済み
 
 Stripe本人確認済み名義とチャンネル運営者が異なる場合、所属法人・事務所・委任関係を示す資料を手動審査する。管理APIは管理トークンとTOTPの二要素認証を必須とする。設定値は`docs/PRIVACY_OPERATIONS.md`を参照する。
 
-運営コンソールで所有確認だけを承認しても、上の4条件が揃うまでは`canSellPaid=false`を維持する。OAuthまたは概要欄コードで確認済みの方式は、Stripe審査を更新しても`manual`へ上書きしない。
+運営コンソールで所有確認だけを承認しても、上の5条件が揃うまでは`canSellPaid=false`を維持する。ConnectアカウントIDを変更した場合は同じ規約バージョンでも再同意を必要とする。規約本文を変更する場合はバージョンとSHA-256を更新し、現行版への再同意を求める。OAuthまたは概要欄コードで確認済みの方式は、Stripe審査を更新しても`manual`へ上書きしない。
+
+Web同意では、契約者名、連絡先メール、規約バージョン、規約本文SHA-256、同意日時、IP、User-Agent、ConnectアカウントID、権限確認・プライバシー確認をD1へ追記保存する。同意済み行は上書きせず、規約またはConnectアカウント変更時は新しい行を追加する。これはクリック同意の監査証跡であり、Stripe本人確認や運営審査を代替しない。
 
 ```powershell
 npx wrangler secret put LIVE_ADMIN_TOKEN
@@ -99,7 +104,7 @@ npx wrangler d1 migrations apply streetboardgame-remote --remote
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0001_live_purchase_records.sql
 ```
 
-ゲーム用D1には通常マイグレーションを順番に適用し、招待・手動審査には`migrations/0007_live_abuse_prevention.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0001_live_purchase_records.sql`だけを適用する。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
+ゲーム用D1には通常マイグレーションを順番に適用し、Web契約同意には`migrations/0008_live_creator_agreements.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0001_live_purchase_records.sql`だけを適用する。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
 
 ## 6. Stripe Webhook接続時の手順
 

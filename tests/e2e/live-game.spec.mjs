@@ -136,6 +136,7 @@ test('スタッフが秘密の所有確認URLを発行し、YouTuber本人が概
   const verificationId = 'a'.repeat(32);
   const accessToken = 'b'.repeat(48);
   let ownershipStatus = 'pending';
+  let agreementAccepted = false;
   await page.route('**/api/live/youtube-candidates', async (route) => {
     await route.fulfill({
       status: 200,
@@ -158,13 +159,31 @@ test('スタッフが秘密の所有確認URLを発行し、YouTuber本人が概
       verificationId, channelId: 'UC1234567890_sample', channelName: '所有確認サンプル',
       channelUrl: 'https://www.youtube.com/channel/UC1234567890_sample', confirmationCode: 'SBLV-ABCD-EF01',
       ownershipStatus, ownershipMethod: ownershipStatus === 'verified' ? 'description' : '',
-      stripeIdentityVerified: false, stripeRelationshipStatus: 'pending', canSellPaid: false, updatedAt: Date.now(),
+      stripeIdentityVerified: false, stripeRelationshipStatus: 'pending', creatorAgreementAccepted: agreementAccepted,
+      creatorAgreementTermsVersion: agreementAccepted ? '1.0' : '', canSellPaid: false, updatedAt: Date.now(),
     };
     if (url.pathname === '/api/live/channel-verifications' && request.method() === 'POST') {
       expect(request.headers()['x-live-creator-invite']).toBe(TEST_CREATOR_INVITE);
       return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ...base, accessToken }) });
     }
     expect(request.headers()['x-live-verification-token']).toBe(accessToken);
+    if (url.pathname.endsWith('/agreement')) {
+      if (request.method() === 'POST') {
+        const body = request.postDataJSON();
+        expect(body).toMatchObject({ termsVersion: '1.0', contractingName: 'テスト株式会社', contactEmail: 'creator@example.com', confirmTerms: true, confirmAuthority: true, confirmPrivacy: true });
+        agreementAccepted = true;
+      }
+      const agreement = agreementAccepted ? {
+        agreementId: '11111111-2222-4333-8444-555555555555', termsVersion: '1.0',
+        termsDocumentSha256: 'c'.repeat(64), contractingName: 'テスト株式会社',
+        contactEmailMasked: 'cr•••••@example.com', acceptedAt: Date.now(), stripeAccountMasked: 'acct_••••r123',
+      } : null;
+      return route.fulfill({ status: request.method() === 'POST' ? 201 : 200, contentType: 'application/json', body: JSON.stringify({
+        terms: { version: '1.0', effectiveDate: '2026-07-22', url: 'https://www.streetboardgame.com/creator-terms', documentSha256: 'c'.repeat(64) },
+        ownershipVerified: ownershipStatus === 'verified', stripeAccountRegistered: true,
+        stripeAccountMasked: 'acct_••••r123', readyToAccept: ownershipStatus === 'verified', accepted: agreementAccepted, agreement,
+      }) });
+    }
     if (url.pathname.endsWith('/verify-description') && request.method() === 'POST') ownershipStatus = 'verified';
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...base, ownershipStatus, ownershipMethod: ownershipStatus === 'verified' ? 'description' : '' }) });
   });
@@ -185,7 +204,17 @@ test('スタッフが秘密の所有確認URLを発行し、YouTuber本人が概
   await expect(page.getByRole('button', { name: 'Googleでチャンネル所有を確認' })).toBeVisible();
   await page.getByRole('button', { name: '概要欄に掲載したコードを確認' }).click();
   await expect(page.getByText('所有確認済み')).toBeVisible();
-  await expect(page.getByText('無料LIVEはこのまま利用できます。有料販売は3項目すべての確認後に有効になります。')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '収益分配契約へ同意する' })).toBeVisible();
+  await page.locator('#agreementContractingName').fill('テスト株式会社');
+  await page.locator('#agreementContactEmail').fill('creator@example.com');
+  await page.locator('#confirmCreatorTerms').check();
+  await page.locator('#confirmCreatorAuthority').check();
+  await page.locator('#confirmCreatorPrivacy').check();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: '同意して契約を申し込む' }).click();
+  await expect(page.getByRole('heading', { name: '収益分配契約の申込みを受け付けました' })).toBeVisible();
+  await expect(page.getByText('11111111-2222-4333-8444-555555555555')).toBeVisible();
+  await expect(page.getByText('無料LIVEはこのまま利用できます。有料販売は4段階すべての確認後に有効になります。')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 

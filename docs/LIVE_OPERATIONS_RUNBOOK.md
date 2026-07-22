@@ -17,6 +17,7 @@ npx wrangler secret put LIVE_OPS_ALERT_WEBHOOK_URL
 npx wrangler secret put STRIPE_WEBHOOK_SECRET
 npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0006_live_operations.sql
 npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0007_live_abuse_prevention.sql
+npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0008_live_creator_agreements.sql
 ```
 
 荒らし・なりすまし・不適切画像・カード不正利用への対応は[`LIVE_ABUSE_PREVENTION.md`](LIVE_ABUSE_PREVENTION.md)を使用する。初期版の応援メッセージは公開せず、YouTuber招待は二要素認証済みの運営コンソールから手動審査後にだけ発行する。
@@ -28,9 +29,10 @@ TOTP設定、購入履歴専用D1、Cron削除は`docs/PRIVACY_OPERATIONS.md`を
 1. YouTuber本人が秘密の確認URLからOAuthまたは概要欄コードで確認する。使えない場合だけ手動審査申請を受ける。
 2. `/live-ops`の「チャンネル所有・Stripe名義確認」で対象Channel IDと実際のチャンネルを照合する。
 3. 手動審査では、登録メールからの返信、チャンネル管理画面の一時的な証跡、所属事務所・法人からの委任資料のうち必要なものを別経路で確認する。資料そのものはLIVEのゲームD1へ保存しない。
-4. Stripe Connectの`acct_...`、Stripe本人確認状態、Connect名義とチャンネル運営者の関係を照合する。
-5. 4条件が揃う場合だけ「確認済み・本人確認済み・関係確認済み」を保存する。画面が「有料販売可」になったことを再確認する。
-6. 不一致やなりすましの疑いがある場合は却下し、招待コードも失効する。有料販売は再審査完了まで開放しない。
+4. Stripe Connectの`acct_...`を登録後、YouTuber本人へ秘密URLから収益分配規約へ同意してもらう。同意記録ID、規約バージョン、契約者名、日時をコンソールで確認する。
+5. Stripe本人確認状態、Connect名義とチャンネル運営者の関係を照合する。
+6. 5条件が揃う場合だけ「確認済み・本人確認済み・関係確認済み」を保存する。画面が「有料販売可」になったことを再確認する。
+7. 不一致やなりすましの疑いがある場合は却下し、招待コードも失効する。有料販売は再審査完了まで開放しない。
 
 無料LIVEは所有確認未完了でも利用できる。確認URLは本人用の秘密URLとして扱い、漏えい時はその確認申請を却下して新しい申請を作る。OAuth設定が未完了でも概要欄コードと手動審査は利用できるが、概要欄確認には`YOUTUBE_API_KEY`が必要である。
 

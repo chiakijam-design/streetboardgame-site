@@ -1,5 +1,6 @@
 import { fetchOwnedYouTubeChannels, fetchYouTubeDataProfile } from './youtube.js';
 import { requireLiveCreatorInvite } from './security.js';
+import { CREATOR_TERMS } from './creator-agreement-config.js';
 
 const VERIFY_TOKEN_HEADER = 'x-live-verification-token';
 
@@ -38,6 +39,7 @@ export async function createChannelVerification(request, env) {
     confirmationCode,
     ownershipStatus: 'pending',
     stripeRelationshipStatus: 'pending',
+    creatorAgreementAccepted: false,
     canSellPaid: false,
   }, 201);
 }
@@ -51,11 +53,16 @@ export async function listChannelVerifications(env, limit = 100) {
   requireD1(env);
   const safeLimit = Math.min(200, Math.max(1, Number(limit) || 100));
   const result = await env.REMOTE_DB.prepare(`
-    SELECT verification_id, channel_id, channel_name, channel_url, ownership_status,
-      ownership_method, stripe_account_id, stripe_identity_verified,
-      stripe_relationship_status, verified_at, reviewed_at, created_at, updated_at
-    FROM live_channel_verifications ORDER BY updated_at DESC LIMIT ?
-  `).bind(safeLimit).all();
+    SELECT v.verification_id, v.channel_id, v.channel_name, v.channel_url, v.ownership_status,
+      v.ownership_method, v.stripe_account_id, v.stripe_identity_verified,
+      v.stripe_relationship_status, v.verified_at, v.reviewed_at, v.created_at, v.updated_at,
+      a.agreement_id, a.contracting_name, a.accepted_at AS agreement_accepted_at
+    FROM live_channel_verifications v
+    LEFT JOIN live_creator_agreements a
+      ON a.verification_id = v.verification_id AND a.stripe_account_id = v.stripe_account_id
+      AND a.terms_version = ? AND a.terms_document_sha256 = ?
+    ORDER BY v.updated_at DESC LIMIT ?
+  `).bind(CREATOR_TERMS.version, CREATOR_TERMS.documentSha256, safeLimit).all();
   return (result.results || []).map(adminVerification);
 }
 
@@ -199,7 +206,7 @@ export async function reviewChannelVerification(request, env, verificationId) {
     now,
     verificationId,
   ).run();
-  const row = await env.REMOTE_DB.prepare('SELECT * FROM live_channel_verifications WHERE verification_id = ?').bind(verificationId).first();
+  const row = await selectVerificationById(env, verificationId);
   return json(adminVerification(row));
 }
 
@@ -207,24 +214,31 @@ export async function assertPaidChannelApproved(env, verificationId, channelId) 
   requireD1(env);
   if (!verificationId) throw ownershipError('paid-channel-verification-required', 403);
   const row = await env.REMOTE_DB.prepare(`
-    SELECT ownership_status, stripe_relationship_status, stripe_identity_verified, stripe_account_id, channel_id
-    FROM live_channel_verifications WHERE verification_id = ?
-  `).bind(verificationId).first();
+    SELECT v.ownership_status, v.stripe_relationship_status, v.stripe_identity_verified,
+      v.stripe_account_id, v.channel_id, a.accepted_at AS agreement_accepted_at
+    FROM live_channel_verifications v
+    LEFT JOIN live_creator_agreements a
+      ON a.verification_id = v.verification_id AND a.stripe_account_id = v.stripe_account_id
+      AND a.terms_version = ? AND a.terms_document_sha256 = ?
+    WHERE v.verification_id = ?
+  `).bind(CREATOR_TERMS.version, CREATOR_TERMS.documentSha256, verificationId).first();
   if (!row || row.channel_id !== channelId || row.ownership_status !== 'verified'
     || row.stripe_relationship_status !== 'verified' || Number(row.stripe_identity_verified) !== 1
-    || !/^acct_[A-Za-z0-9]+$/.test(String(row.stripe_account_id || ''))) {
+    || !/^acct_[A-Za-z0-9]+$/.test(String(row.stripe_account_id || '')) || !row.agreement_accepted_at) {
     throw ownershipError('paid-channel-verification-required', 403);
   }
 }
 
-async function requireVerification(request, env, verificationId) {
+export async function requireChannelVerification(request, env, verificationId) {
   requireD1(env);
   const token = request.headers.get(VERIFY_TOKEN_HEADER) || '';
   if (!token) throw ownershipError('verification-forbidden', 403);
-  const row = await env.REMOTE_DB.prepare('SELECT * FROM live_channel_verifications WHERE verification_id = ?').bind(verificationId).first();
+  const row = await selectVerificationById(env, verificationId);
   if (!row || !timingSafeEqual(row.access_token_hash, await sha256(token))) throw ownershipError('verification-forbidden', 403);
   return row;
 }
+
+const requireVerification = requireChannelVerification;
 
 function assertVerificationOpen(row) {
   if (row.ownership_status === 'verified') throw ownershipError('verification-already-verified', 409);
@@ -235,7 +249,8 @@ function publicVerification(row) {
   const canSellPaid = row.ownership_status === 'verified'
     && row.stripe_relationship_status === 'verified'
     && Number(row.stripe_identity_verified) === 1
-    && /^acct_[A-Za-z0-9]+$/.test(String(row.stripe_account_id || ''));
+    && /^acct_[A-Za-z0-9]+$/.test(String(row.stripe_account_id || ''))
+    && Boolean(row.agreement_accepted_at);
   return {
     verificationId: row.verification_id,
     channelId: row.channel_id,
@@ -246,6 +261,9 @@ function publicVerification(row) {
     ownershipMethod: row.ownership_method || '',
     stripeRelationshipStatus: row.stripe_relationship_status,
     stripeIdentityVerified: Number(row.stripe_identity_verified) === 1,
+    creatorAgreementAccepted: Boolean(row.agreement_accepted_at),
+    creatorAgreementAcceptedAt: row.agreement_accepted_at || undefined,
+    creatorAgreementTermsVersion: row.agreement_accepted_at ? CREATOR_TERMS.version : '',
     canSellPaid,
     verifiedAt: row.verified_at || undefined,
     updatedAt: row.updated_at,
@@ -256,9 +274,22 @@ function adminVerification(row) {
   return {
     ...publicVerification(row),
     stripeAccountId: String(row.stripe_account_id || ''),
+    creatorAgreementId: String(row.agreement_id || ''),
+    creatorAgreementContractingName: String(row.contracting_name || ''),
     reviewedAt: row.reviewed_at || undefined,
     createdAt: row.created_at,
   };
+}
+
+async function selectVerificationById(env, verificationId) {
+  return env.REMOTE_DB.prepare(`
+    SELECT v.*, a.agreement_id, a.contracting_name, a.accepted_at AS agreement_accepted_at
+    FROM live_channel_verifications v
+    LEFT JOIN live_creator_agreements a
+      ON a.verification_id = v.verification_id AND a.stripe_account_id = v.stripe_account_id
+      AND a.terms_version = ? AND a.terms_document_sha256 = ?
+    WHERE v.verification_id = ? LIMIT 1
+  `).bind(CREATOR_TERMS.version, CREATOR_TERMS.documentSha256, verificationId).first();
 }
 
 function normalizeReviewStatus(value, allowed, message) {

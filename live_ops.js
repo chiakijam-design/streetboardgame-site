@@ -61,9 +61,9 @@ function renderCreatorInvites() {
 function renderChannelVerifications() {
   const rows = overview.channelVerifications || [];
   document.getElementById('channelVerifications').innerHTML = rows.length ? rows.map((item) => `
-    <article class="card" data-verification-card="${escapeAttr(item.verificationId)}">
+    <article class="card" data-verification-card="${escapeAttr(item.verificationId)}" data-agreement-accepted="${item.creatorAgreementAccepted ? 'true' : 'false'}">
       <strong>${escapeHtml(item.channelName)} <span class="pill ${item.canSellPaid ? 'info' : item.ownershipStatus === 'rejected' ? 'critical' : 'warning'}">${item.canSellPaid ? '有料販売可' : '審査中・販売不可'}</span></strong>
-      <div class="meta"><a href="${escapeAttr(item.channelUrl)}" target="_blank" rel="noopener noreferrer">チャンネルを確認</a><br>Channel ID: <code>${escapeHtml(item.channelId)}</code><br>所有確認方式: ${escapeHtml(verificationMethodLabel(item.ownershipMethod))} / 更新: ${formatDate(item.updatedAt)}</div>
+      <div class="meta"><a href="${escapeAttr(item.channelUrl)}" target="_blank" rel="noopener noreferrer">チャンネルを確認</a><br>Channel ID: <code>${escapeHtml(item.channelId)}</code><br>所有確認方式: ${escapeHtml(verificationMethodLabel(item.ownershipMethod))} / 更新: ${formatDate(item.updatedAt)}<br>収益分配契約: ${item.creatorAgreementAccepted ? `規約${escapeHtml(item.creatorAgreementTermsVersion)}へ同意済み（${formatDate(item.creatorAgreementAcceptedAt)}） / 契約者：${escapeHtml(item.creatorAgreementContractingName)}` : '未同意'}</div>
       <div class="grid two">
         <div class="field"><label>チャンネル所有</label><select data-review-field="ownershipStatus"><option value="manual_pending" ${selected(item.ownershipStatus, 'manual_pending')}>手動審査待ち</option><option value="verified" ${selected(item.ownershipStatus, 'verified')}>確認済み</option><option value="rejected" ${selected(item.ownershipStatus, 'rejected')}>却下</option></select></div>
         <div class="field"><label>Stripe ConnectアカウントID</label><input data-review-field="stripeAccountId" value="${escapeAttr(item.stripeAccountId || '')}" placeholder="acct_..."></div>
@@ -84,7 +84,7 @@ async function saveChannelVerificationReview(verificationId) {
     stripeIdentityVerified: card.querySelector('[data-review-field="stripeIdentityVerified"]').checked,
     stripeRelationshipStatus: card.querySelector('[data-review-field="stripeRelationshipStatus"]').value,
   };
-  const permitsPaid = body.ownershipStatus === 'verified' && body.stripeIdentityVerified
+  const permitsPaid = card.dataset.agreementAccepted === 'true' && body.ownershipStatus === 'verified' && body.stripeIdentityVerified
     && body.stripeRelationshipStatus === 'verified' && /^acct_[A-Za-z0-9]+$/.test(body.stripeAccountId);
   const prompt = permitsPaid
     ? 'チャンネルとの関係資料とStripe本人確認を確認し、有料販売を許可しますか？'

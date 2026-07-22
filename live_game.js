@@ -42,6 +42,10 @@ const state = {
   channelVerificationId: initialVerificationId,
   channelVerificationToken: initialVerificationToken,
   channelVerificationBusy: false,
+  creatorAgreement: null,
+  creatorAgreementBusy: false,
+  creatorAgreementContractingName: '',
+  creatorAgreementContactEmail: '',
   creatorInvite: initialCreatorInvite,
   hostToken: initialRoomCode && !initialSubjectToken ? sessionStorage.getItem(`live:host:${initialRoomCode}`) || initialHostToken : '',
   subjectToken: initialRoomCode && !initialHostToken ? sessionStorage.getItem(`live:subject:${initialRoomCode}`) || initialSubjectToken : '',
@@ -212,6 +216,7 @@ function renderChannelVerification() {
             <button class="secondary" id="requestChannelManualReview" ${['verified', 'manual_pending'].includes(verification.ownershipStatus) || state.channelVerificationBusy ? 'disabled' : ''}>手動審査を申請</button>
           </article>
         </div>
+        ${creatorAgreementHtml()}
         ${errorHtml()}
         <div class="actions"><button class="mini" id="refreshChannelVerification">確認状況を更新</button><a class="mini link-button" href="/live">LIVEトップへ戻る</a></div>
         <div class="notice">この確認URLは本人確認用の秘密URLです。第三者へ転送・公開しないでください。</div>
@@ -223,6 +228,7 @@ function renderChannelVerification() {
     </section>
   `);
   bindChannelVerificationActions();
+  bindCreatorAgreementActions();
 }
 
 function verificationProgressHtml(verification) {
@@ -235,13 +241,107 @@ function verificationProgressHtml(verification) {
   return `
     <div class="verification-progress">
       <div class="verification-step ${verification.ownershipStatus === 'verified' ? 'is-done' : ''}"><strong>1. チャンネル所有</strong><span>${escapeHtml(ownershipLabel)}</span></div>
-      <div class="verification-step ${verification.stripeIdentityVerified ? 'is-done' : ''}"><strong>2. Stripe本人確認</strong><span>${verification.stripeIdentityVerified ? '確認済み' : '運営の案内後に確認'}</span></div>
-      <div class="verification-step ${verification.stripeRelationshipStatus === 'verified' ? 'is-done' : ''}"><strong>3. 名義関係</strong><span>${escapeHtml(stripeLabel)}</span></div>
+      <div class="verification-step ${verification.creatorAgreementAccepted ? 'is-done' : ''}"><strong>2. 収益分配契約</strong><span>${verification.creatorAgreementAccepted ? `規約${escapeHtml(verification.creatorAgreementTermsVersion)}に同意済み` : 'Web同意待ち'}</span></div>
+      <div class="verification-step ${verification.stripeIdentityVerified ? 'is-done' : ''}"><strong>3. Stripe本人確認</strong><span>${verification.stripeIdentityVerified ? '確認済み' : '運営の案内後に確認'}</span></div>
+      <div class="verification-step ${verification.stripeRelationshipStatus === 'verified' ? 'is-done' : ''}"><strong>4. 名義関係</strong><span>${escapeHtml(stripeLabel)}</span></div>
     </div>
     <div class="notice">${verification.canSellPaid
       ? '有料結果画像を販売できます。'
-      : '無料LIVEはこのまま利用できます。有料販売は3項目すべての確認後に有効になります。'}</div>
+      : '無料LIVEはこのまま利用できます。有料販売は4段階すべての確認後に有効になります。'}</div>
   `;
+}
+
+function creatorAgreementHtml() {
+  const data = state.creatorAgreement;
+  if (!data) return '<section class="agreement-panel"><h3>収益分配契約</h3><div class="notice">契約情報を読み込んでいます。</div></section>';
+  if (data.accepted && data.agreement) {
+    return `
+      <section class="agreement-panel agreement-complete">
+        <span class="badge">同意記録済み</span><h3>収益分配契約の申込みを受け付けました</h3>
+        <dl class="agreement-receipt">
+          <div><dt>規約</dt><dd>バージョン ${escapeHtml(data.agreement.termsVersion)}</dd></div>
+          <div><dt>規約SHA-256</dt><dd><code>${escapeHtml(data.agreement.termsDocumentSha256)}</code></dd></div>
+          <div><dt>同意日時</dt><dd>${escapeHtml(formatLiveDate(data.agreement.acceptedAt))}</dd></div>
+          <div><dt>契約者名</dt><dd>${escapeHtml(data.agreement.contractingName)}</dd></div>
+          <div><dt>連絡先</dt><dd>${escapeHtml(data.agreement.contactEmailMasked)}</dd></div>
+          <div><dt>振込先</dt><dd>${escapeHtml(data.agreement.stripeAccountMasked)}</dd></div>
+          <div><dt>同意記録ID</dt><dd><code>${escapeHtml(data.agreement.agreementId)}</code></dd></div>
+        </dl>
+        <p class="help">契約は、チャンネル・Stripe本人確認・名義関係を運営が承認した時点で成立します。</p>
+      </section>
+    `;
+  }
+  if (!data.ownershipVerified) {
+    return '<section class="agreement-panel"><h3>収益分配契約</h3><div class="notice">先に上の方法でチャンネル所有確認を完了してください。</div></section>';
+  }
+  if (!data.stripeAccountRegistered) {
+    return '<section class="agreement-panel"><h3>収益分配契約</h3><div class="notice">チャンネル所有確認は完了しています。運営によるStripe Connect振込先登録後、この画面で契約へ同意できます。</div></section>';
+  }
+  return `
+    <section class="agreement-panel">
+      <span class="badge">CREATOR AGREEMENT</span><h3>収益分配契約へ同意する</h3>
+      <p class="help">全文を確認したうえで、契約者本人または契約権限を持つ担当者が操作してください。</p>
+      <div class="agreement-summary"><strong>規約バージョン ${escapeHtml(data.terms.version)}</strong><span>YouTuber分配70%・売上確定後14日保留・確定残高5,000円以上で月1回入金</span><a href="/creator-terms" target="_blank" rel="noopener noreferrer">収益分配規約の全文を読む</a></div>
+      <div class="field"><label for="agreementContractingName">契約者名（個人氏名または法人名）</label><input id="agreementContractingName" maxlength="120" autocomplete="name" value="${escapeAttr(state.creatorAgreementContractingName)}"></div>
+      <div class="field"><label for="agreementContactEmail">契約連絡先メールアドレス</label><input id="agreementContactEmail" type="email" maxlength="254" autocomplete="email" value="${escapeAttr(state.creatorAgreementContactEmail)}"></div>
+      <div class="notice">登録済み振込先：${escapeHtml(data.stripeAccountMasked)}</div>
+      <label class="agreement-check"><input id="confirmCreatorTerms" type="checkbox"> <span>収益分配規約の全文、売上70%の分配、14日保留、月次・5,000円基準、返金・チャージバック時の相殺に同意します。</span></label>
+      <label class="agreement-check"><input id="confirmCreatorAuthority" type="checkbox"> <span>チャンネル、名称、画像等を許諾し、この契約を締結する権限があることを確認します。</span></label>
+      <label class="agreement-check"><input id="confirmCreatorPrivacy" type="checkbox"> <span>契約証跡として規約バージョン、同意日時、IPアドレス、端末・ブラウザ情報、ConnectアカウントID等を保存することに同意します。</span></label>
+      <button class="primary" id="acceptCreatorAgreement" disabled>${state.creatorAgreementBusy ? '同意記録を保存しています…' : '同意して契約を申し込む'}</button>
+      <p class="help">これはWeb上の同意記録です。本人確認と運営承認の代わりにはなりません。</p>
+    </section>
+  `;
+}
+
+function bindCreatorAgreementActions() {
+  bind('#agreementContractingName', 'input', (event) => { state.creatorAgreementContractingName = event.target.value; });
+  bind('#agreementContactEmail', 'input', (event) => { state.creatorAgreementContactEmail = event.target.value; });
+  ['#confirmCreatorTerms', '#confirmCreatorAuthority', '#confirmCreatorPrivacy'].forEach((selector) => bind(selector, 'change', updateCreatorAgreementButton));
+  bind('#acceptCreatorAgreement', 'click', acceptCreatorAgreementFromPage);
+}
+
+function updateCreatorAgreementButton() {
+  const button = document.getElementById('acceptCreatorAgreement');
+  if (!button) return;
+  button.disabled = state.creatorAgreementBusy || !['confirmCreatorTerms', 'confirmCreatorAuthority', 'confirmCreatorPrivacy']
+    .every((id) => document.getElementById(id)?.checked);
+}
+
+async function acceptCreatorAgreementFromPage() {
+  const contractingName = document.getElementById('agreementContractingName')?.value.trim() || '';
+  const contactEmail = document.getElementById('agreementContactEmail')?.value.trim() || '';
+  state.creatorAgreementContractingName = contractingName;
+  state.creatorAgreementContactEmail = contactEmail;
+  if (!contractingName || !contactEmail) {
+    state.error = '契約者名と契約連絡先メールアドレスを入力してください';
+    return render();
+  }
+  if (!confirm('表示中の収益分配規約へ同意し、契約を申し込みますか？')) return;
+  state.creatorAgreementBusy = true;
+  state.error = '';
+  render();
+  try {
+    const terms = state.creatorAgreement.terms;
+    await api(`/api/live/channel-verifications/${state.channelVerificationId}/agreement`, {
+      method: 'POST', headers: verificationHeaders(), body: JSON.stringify({
+        termsVersion: terms.version,
+        termsDocumentSha256: terms.documentSha256,
+        contractingName,
+        contactEmail,
+        confirmTerms: true,
+        confirmAuthority: true,
+        confirmPrivacy: true,
+      }),
+    });
+    state.creatorAgreementBusy = false;
+    await loadChannelVerification();
+    return;
+  } catch (error) {
+    state.error = humanError(error);
+  }
+  state.creatorAgreementBusy = false;
+  render();
 }
 
 function bindChannelVerificationActions() {
@@ -283,9 +383,12 @@ async function loadChannelVerification() {
   sessionStorage.setItem(`live:verification:${state.channelVerificationId}`, state.channelVerificationToken);
   state.channelVerificationBusy = true;
   try {
-    state.channelVerification = await api(`/api/live/channel-verifications/${state.channelVerificationId}`, {
-      headers: verificationHeaders(),
-    });
+    const [verification, agreement] = await Promise.all([
+      api(`/api/live/channel-verifications/${state.channelVerificationId}`, { headers: verificationHeaders() }),
+      api(`/api/live/channel-verifications/${state.channelVerificationId}/agreement`, { headers: verificationHeaders() }),
+    ]);
+    state.channelVerification = verification;
+    state.creatorAgreement = agreement;
     state.error = '';
     saveChannelVerificationAccess(state.channelVerification);
   } catch (error) {
@@ -302,6 +405,9 @@ async function updateChannelVerification(action) {
   try {
     state.channelVerification = await api(`/api/live/channel-verifications/${state.channelVerificationId}/${action}`, {
       method: 'POST', headers: verificationHeaders(), body: '{}',
+    });
+    state.creatorAgreement = await api(`/api/live/channel-verifications/${state.channelVerificationId}/agreement`, {
+      headers: verificationHeaders(),
     });
   } catch (error) {
     state.error = humanError(error);
@@ -1529,6 +1635,12 @@ function humanError(error) {
     'verification-not-found': 'チャンネル確認手続きが見つかりません。発行したスタッフへ確認してください',
     'verification-already-verified': 'このチャンネルの所有確認は完了しています',
     'verification-rejected': 'この確認申請は運営により却下されています。スタッフから新しい確認URLを受け取ってください',
+    'channel-ownership-required': '収益分配契約へ同意する前に、チャンネル所有確認を完了してください',
+    'stripe-account-registration-required': 'Stripe Connect振込先の登録後に収益分配契約へ同意できます',
+    'creator-terms-stale': '規約が更新されています。画面を再読み込みして最新の規約を確認してください',
+    'contracting-name-required': '契約者名を入力してください',
+    'contract-contact-email-required': '有効な契約連絡先メールアドレスを入力してください',
+    'creator-agreement-confirmation-required': '3つの確認事項すべてへの同意が必要です',
     'youtube-confirmation-code-not-found': 'チャンネル概要欄に確認コードが見つかりません。公開反映を確認してから再度お試しください',
     'youtube-oauth-not-configured': 'YouTubeアカウント確認の本番設定が未完了です。概要欄コードまたは手動審査をご利用ください',
     'youtube-oauth-callback-invalid': 'Googleからの確認結果が不完全です。もう一度お試しください',
