@@ -71,8 +71,9 @@
     .participant-chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
     .participant-chips span { padding:6px 10px; border:2px solid #000; border-radius:999px; background:var(--yellow); font-size:11px; font-weight:900; }
     .vote-options { display:grid; gap:10px; margin-top:16px; }
-    .vote-option { min-height:58px; border:3px solid #000; border-radius:13px; background:#fff; box-shadow:3px 3px 0 #000; padding:12px; text-align:left; font-weight:900; }
+    .vote-option { display:flex; align-items:center; gap:8px; min-height:58px; border:3px solid #000; border-radius:13px; background:#fff; box-shadow:3px 3px 0 #000; padding:12px; text-align:left; font-weight:900; }
     .vote-option.selected { background:var(--yellow); }
+    .live-vote-count { flex:0 0 auto; margin-left:auto; padding:5px 8px; border:2px solid #000; border-radius:999px; background:var(--cyan); font:900 11px "DotGothic16",monospace; white-space:nowrap; }
     .progress { margin-bottom:10px; font:900 11px "DotGothic16",monospace; letter-spacing:.08em; }
     .bar-row { margin-top:12px; }
     .bar-label { display:flex; justify-content:space-between; gap:10px; font-size:12px; font-weight:900; }
@@ -100,6 +101,8 @@
     .editor-settings-title span { display:grid; place-items:center; width:31px; height:31px; border:2px solid #000; border-radius:50%; background:var(--pink); color:#fff; }
     .editor-settings .field { margin-top:0; }
     .editor-settings input { background:#fff; box-shadow:2px 2px 0 rgba(0,0,0,.15); }
+    .editor-vote-setting { grid-column:1 / -1; padding:13px; border:2px solid #000; border-radius:12px; background:#FFF9D7; }
+    .editor-vote-setting .check { align-items:flex-start; margin-top:7px; }
     .editor-type-summary { display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding:10px 12px; border:2px solid #000; border-radius:11px; background:#E8FAFD; font-size:11px; font-weight:900; }
     .editor-type-summary .badge { flex:0 0 auto; }
     .editor-question-panel { background:#FFF8F1; }
@@ -155,6 +158,6 @@
 </head>
 <body>
   <main id="liveRoot"><div class="loading">LIVEゲームを準備しています…</div></main>
-  <script data-build-entry="live_game" defer src="/dist/live_game-OHUROKL2.js"></script>
+  <script data-build-entry="live_game" defer src="/dist/live_game-E75ITOCC.js"></script>
 </body>
 </html>

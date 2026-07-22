@@ -21,7 +21,7 @@ export async function handleLiveApi(request, env, path) {
       return await createLiveGame(request, env);
     }
 
-    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|advance|vote|close|reveal|next))?$/);
+    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|next))?$/);
     if (!route) return liveJson({ error: 'not-found' }, 404);
     const [, code, action = ''] = route;
     if (request.method === 'GET' && !action) return await getLiveGameResponse(request, env, code);
@@ -33,6 +33,10 @@ export async function handleLiveApi(request, env, path) {
     if (action === 'vote') {
       await enforceLiveRateLimit(request, env, 'vote', 600);
       return await voteLiveGame(request, env, code);
+    }
+    if (action === 'subject-answer') {
+      await enforceLiveRateLimit(request, env, 'subject', 300);
+      return await answerLiveGameAsSubject(request, env, code);
     }
     if (['start', 'answer', 'advance', 'close', 'reveal', 'next'].includes(action)) {
       await enforceLiveRateLimit(request, env, 'host', 300);
@@ -52,16 +56,18 @@ async function createLiveGame(request, env) {
   await cleanupExpiredLiveData(env);
   const now = Date.now();
   const game = {
-    version: 3,
+    version: 4,
     title: validation.draft.title,
     subjectName: validation.draft.subjectName,
     questions: validation.draft.questions,
     hostToken: createLiveToken(24),
+    subjectToken: createLiveToken(24),
     phase: 'lobby',
     currentQuestionIndex: 0,
     participants: [],
     votes: {},
     results: [],
+    showVoteCount: validation.draft.showLiveVoteCounts,
     createdAt: now,
     updatedAt: now,
     expiresAt: now + LIVE_SAVED_TTL_SECONDS * 1000,
@@ -75,11 +81,13 @@ async function createLiveGame(request, env) {
 async function getLiveGameResponse(request, env, code) {
   const game = await requireLiveGame(env, code);
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
+  const subjectToken = normalizeToken(request.headers.get('x-live-subject-token'));
   const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
   return liveJson({
     code,
     game: publicLiveGame(game, {
       host: Boolean(hostToken && hostToken === game.hostToken),
+      subject: Boolean(subjectToken && subjectToken === game.subjectToken),
       participantToken,
     }),
   });
@@ -144,11 +152,33 @@ async function voteLiveGame(request, env, code) {
   return liveJson({ code, accepted: true, game: publicLiveGame(updatedGame, { participantToken }) });
 }
 
+async function answerLiveGameAsSubject(request, env, code) {
+  const game = await requireLiveGame(env, code);
+  if (Number(game.version) < 4 || !game.subjectToken) throw liveError('subject-not-supported', 409);
+  const subjectToken = normalizeToken(request.headers.get('x-live-subject-token'));
+  if (!subjectToken || subjectToken !== game.subjectToken) throw liveError('subject-forbidden', 403);
+  if (game.phase !== 'voting') throw liveError('answer-not-open', 409);
+  const question = game.questions[game.currentQuestionIndex];
+  const body = await readLiveJson(request);
+  const optionIndex = Number(body && body.optionIndex);
+  if (!question || body.questionId !== question.id) throw liveError('question-changed', 409);
+  if (Number.isInteger(question.lockedIndex)) throw liveError('already-answered', 409);
+  if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= question.options.length) {
+    throw liveError('invalid-option', 400);
+  }
+  question.lockedIndex = optionIndex;
+  touchLiveGame(game);
+  await putStoredLiveGame(env, code, game);
+  return liveJson({ code, accepted: true, game: publicLiveGame(game, { subject: true }) });
+}
+
 async function updateLiveGameAsHost(request, env, code, action) {
   const game = await requireLiveGame(env, code);
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
   if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
-  if (Number(game.version) >= 3) {
+  if (Number(game.version) >= 4) {
+    await updateSeparatedLiveGame(request, game, action);
+  } else if (Number(game.version) >= 3) {
     await updateCurrentLiveGame(request, game, action);
   } else {
     await updateLegacyLiveGame(request, game, action);
@@ -156,6 +186,39 @@ async function updateLiveGameAsHost(request, env, code, action) {
   touchLiveGame(game);
   await putStoredLiveGame(env, code, game);
   return liveJson({ code, game: publicLiveGame(game, { host: true }) });
+}
+
+async function updateSeparatedLiveGame(request, game, action) {
+  if (action === 'start') {
+    if (game.phase !== 'lobby') throw liveError('game-already-started', 409);
+    game.currentQuestionIndex = 0;
+    game.phase = 'voting';
+  } else if (action === 'advance') {
+    if (game.phase !== 'voting') throw liveError('voting-not-open', 409);
+    const question = game.questions[game.currentQuestionIndex];
+    if (!question || !Number.isInteger(question.lockedIndex)) throw liveError('answer-required', 409);
+    const result = calculateLiveResult(question, game.votes[question.id] || {});
+    game.results = [...game.results.filter((item) => item.questionId !== question.id), result];
+    if (game.currentQuestionIndex + 1 >= game.questions.length) {
+      game.currentQuestionIndex = 0;
+      game.phase = 'review-question';
+    } else {
+      game.currentQuestionIndex += 1;
+    }
+  } else if (action === 'reveal') {
+    if (game.phase !== 'review-question') throw liveError('review-not-open', 409);
+    game.phase = 'review-answer';
+  } else if (action === 'next') {
+    if (game.phase !== 'review-answer') throw liveError('result-not-open', 409);
+    if (game.currentQuestionIndex + 1 >= game.questions.length) {
+      game.phase = 'complete';
+    } else {
+      game.currentQuestionIndex += 1;
+      game.phase = 'review-question';
+    }
+  } else {
+    throw liveError('invalid-host-action', 409);
+  }
 }
 
 async function updateCurrentLiveGame(request, game, action) {
@@ -233,6 +296,7 @@ async function updateLegacyLiveGame(request, game, action) {
 export function publicLiveGame(game, access = {}) {
   const question = game.questions[game.currentQuestionIndex] || null;
   const currentVotes = question ? game.votes[question.id] || {} : {};
+  const flowVersion = Number(game.version) || 1;
   const participant = access.participantToken
     ? game.participants.find((item) => item.token === access.participantToken)
     : null;
@@ -245,29 +309,41 @@ export function publicLiveGame(game, access = {}) {
   const completedResults = game.phase === 'complete'
     ? game.results.map((result) => participantLiveResult(result, participant, game.votes))
     : [];
+  const subjectAnswered = Number.isInteger(question?.lockedIndex);
+  const canSeeVoteCount = flowVersion < 4 || access.host || (access.subject ? subjectAnswered : game.showVoteCount);
+  const voteCounts = question
+    ? question.options.map((_, optionIndex) => Object.values(currentVotes).filter((value) => Number(value) === optionIndex).length)
+    : [];
+  const publicQuestion = question ? {
+    id: question.id,
+    type: question.type,
+    text: question.text,
+    options: question.options,
+    subjectAnswered,
+    result: revealResult,
+    ...(canSeeVoteCount ? { voteCount: Object.keys(currentVotes).length } : {}),
+    ...(flowVersion >= 4 && canSeeVoteCount ? { voteCounts } : {}),
+    ...(access.subject ? { myAnswerIndex: Number.isInteger(question.lockedIndex) ? question.lockedIndex : null } : {}),
+  } : null;
   return {
     title: game.title,
     subjectName: game.subjectName,
-    flowVersion: Number(game.version) || 1,
+    flowVersion,
     phase: game.phase,
     currentQuestionIndex: game.currentQuestionIndex,
     questionCount: game.questions.length,
     participantCount: game.participants.length,
     participants: game.participants.map(({ id, name }) => ({ id, name })),
-    question: question ? {
-      id: question.id,
-      type: question.type,
-      text: question.text,
-      options: question.options,
-      voteCount: Object.keys(currentVotes).length,
-      result: revealResult,
-    } : null,
+    question: publicQuestion,
     myVoteIndex: participant && Object.prototype.hasOwnProperty.call(currentVotes, participant.id)
       ? Number(currentVotes[participant.id])
       : null,
     results: completedResults,
+    showVoteCount: Boolean(game.showVoteCount),
     host: Boolean(access.host),
+    subject: Boolean(access.subject),
     questions: access.host ? game.questions.map(({ id, type, text, options }) => ({ id, type, text, options })) : undefined,
+    ...(access.host && flowVersion >= 4 ? { subjectToken: game.subjectToken } : {}),
     expiresAt: access.host ? game.expiresAt : undefined,
   };
 }

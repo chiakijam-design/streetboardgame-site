@@ -4,9 +4,14 @@ import { createLiveQuestion, recommendYouTubeCandidates, validateLiveDraft } fro
 const root = document.getElementById('liveRoot');
 const query = new URLSearchParams(location.search);
 const initialRoomCode = String(query.get('room') || '').replace(/\D/g, '').slice(0, 6);
-const initialHostToken = new URLSearchParams(location.hash.replace(/^#/, '')).get('host') || '';
+const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+const initialHostToken = hashParams.get('host') || '';
+const initialSubjectToken = hashParams.get('subject') || '';
 if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialHostToken)) {
   sessionStorage.setItem(`live:host:${initialRoomCode}`, initialHostToken);
+}
+if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialSubjectToken)) {
+  sessionStorage.setItem(`live:subject:${initialRoomCode}`, initialSubjectToken);
 }
 const state = {
   view: initialRoomCode ? 'room-loading' : 'entry',
@@ -18,9 +23,12 @@ const state = {
   youtubeQuestionType: '',
   channelUrl: '',
   channelProfile: null,
-  hostToken: initialRoomCode ? sessionStorage.getItem(`live:host:${initialRoomCode}`) || initialHostToken : '',
+  hostToken: initialRoomCode && !initialSubjectToken ? sessionStorage.getItem(`live:host:${initialRoomCode}`) || initialHostToken : '',
+  subjectToken: initialRoomCode && !initialHostToken ? sessionStorage.getItem(`live:subject:${initialRoomCode}`) || initialSubjectToken : '',
   participantToken: initialRoomCode ? sessionStorage.getItem(`live:participant:${initialRoomCode}`) || '' : '',
   hostAnswerIndex: null,
+  subjectAnswerIndex: null,
+  subjectQuestionId: '',
   pollTimer: null,
 };
 
@@ -35,6 +43,7 @@ function render() {
   if (state.view === 'youtube-candidates') return renderYouTubeCandidates();
   if (state.view === 'join') return renderJoin();
   if (state.view === 'host') return renderHost();
+  if (state.view === 'subject') return renderSubject();
   if (state.view === 'participant') return renderParticipant();
   return setPage('<div class="panel"><h2>画面を表示できませんでした</h2></div>');
 }
@@ -152,6 +161,7 @@ function renderYouTubeCandidates() {
       creationMode: 'youtube',
       title: `${state.channelProfile?.channelName || 'YouTube'} ${LIVE_SERIES.name}`,
       subjectName: state.channelProfile?.channelName || '',
+      showLiveVoteCounts: false,
       questions: selected.map((question) => createLiveQuestion({ ...question, id: undefined })),
     };
     state.view = 'youtube-editor';
@@ -236,6 +246,7 @@ function renderEditor() {
         <div class="editor-type-summary"><span>遊び方</span><span class="badge">${escapeHtml(LIVE_TYPE_LABELS[state.youtubeQuestionType] || '')}</span><span>すべての問題で共通です</span></div>
         <div class="field"><label for="gameTitle">ゲームタイトル</label><input id="gameTitle" maxlength="80" value="${escapeAttr(state.draft.title)}"><p class="help">スタッフ用URLや配信画面に表示されます</p></div>
         <div class="field"><label for="subjectName">YouTuber・回答者の名前</label><input id="subjectName" maxlength="40" value="${escapeAttr(state.draft.subjectName)}"><p class="help">視聴者の画面で「本人」として表示されます</p></div>
+        <div class="field editor-vote-setting"><span class="field-label">視聴者画面のライブ票数</span><label class="check"><input id="showLiveVoteCounts" type="checkbox" ${state.draft.showLiveVoteCounts ? 'checked' : ''}>全問題で選択肢別の現在票数を表示する</label><p class="help">この設定は企画全体に適用され、配信中は変更できません。</p></div>
       </div>
     </section>
     <section class="panel editor-question-panel">
@@ -250,6 +261,7 @@ function renderEditor() {
   `);
   bind('#gameTitle', 'input', (event) => { state.draft.title = event.target.value; });
   bind('#subjectName', 'input', (event) => { state.draft.subjectName = event.target.value; });
+  bind('#showLiveVoteCounts', 'change', (event) => { state.draft.showLiveVoteCounts = event.target.checked; });
   document.querySelectorAll('[data-question-index]').forEach((card) => bindEditorCard(card));
   bind('#createGame', 'click', createGame);
 }
@@ -323,7 +335,11 @@ async function createGame() {
 async function initializeRoom() {
   try {
     await loadRoom();
-    state.view = state.hostToken && state.game?.host ? 'host' : state.participantToken ? 'participant' : 'join';
+    state.view = state.hostToken && state.game?.host
+      ? 'host'
+      : state.subjectToken && state.game?.subject
+        ? 'subject'
+        : state.participantToken ? 'participant' : 'join';
     startPolling();
   } catch (error) {
     state.error = humanError(error);
@@ -368,12 +384,14 @@ function renderHost() {
   if (game.phase === 'lobby') {
     const shareUrl = `${location.origin}/live?room=${state.roomCode}`;
     const managementUrl = `${shareUrl}#host=${state.hostToken}`;
+    const subjectUrl = game.subjectToken ? `${shareUrl}#subject=${game.subjectToken}` : '';
     content = `
       <section class="panel">
         <span class="eyebrow">SAVED</span><h2 style="margin-top:12px">企画を保存しました</h2>
         <p class="help">${escapeHtml(game.title)}は${escapeHtml(formatSavedUntil(game.expiresAt))}まで保存されます。配信当日は、このスタッフ用URLから戻ってきてください。</p>
         <div class="field"><label for="managementUrl">スタッフ用URL（視聴者には共有しない）</label><input id="managementUrl" readonly value="${escapeAttr(managementUrl)}"></div>
         <button class="secondary" id="copyManagementUrl" style="width:100%;margin-top:10px">スタッフ用URLをコピー</button>
+        ${subjectUrl ? `<div class="field"><label for="subjectUrl">YouTuber本人用URL（本人だけに共有）</label><input id="subjectUrl" readonly value="${escapeAttr(subjectUrl)}"></div><button class="secondary" id="copySubjectUrl" style="width:100%;margin-top:10px">YouTuber本人用URLをコピー</button>` : ''}
       </section>
       <section class="panel">
         <span class="eyebrow">HOST LOBBY</span><h2 style="margin-top:12px">配信当日の参加受付</h2>
@@ -394,7 +412,19 @@ function renderHost() {
       ${participantHtml(game)}
     </section>`;
   } else if (game.phase === 'voting') {
-    if (game.flowVersion >= 3) {
+    if (game.flowVersion >= 4) {
+      const isLastQuestion = game.currentQuestionIndex + 1 >= game.questionCount;
+      content = `<section class="panel">${liveQuestionHeader(game, '出題')}
+        <div class="notice">YouTuber本人と視聴者が同時に回答しています。スタッフ画面には本人の選択内容を表示しません。</div>
+        <div class="vote-options">${game.question.options.map((option, index) => `<div class="vote-option"><span class="badge">${index + 1}</span><span>${escapeHtml(option)}</span><span class="live-vote-count">${game.question.voteCounts?.[index] || 0}票</span></div>`).join('')}</div>
+        <div class="personal-result"><span>YouTuber本人</span><strong>${game.question.subjectAnswered ? '回答済み' : '回答待ち'}</strong></div>
+        <div class="notice">視聴者の回答：${game.question.voteCount}票</div>
+        <div class="notice">視聴者画面の選択肢別票数：${game.showVoteCount ? '表示する設定' : '表示しない設定'}</div>
+        <button class="primary" id="advanceQuestion" style="margin-top:18px" ${game.question.subjectAnswered ? '' : 'disabled'}>${isLastQuestion ? '投票を締め切って答え合わせへ' : '投票を締め切って次の問題へ'} <span class="accent">▶</span></button>
+        ${!game.question.subjectAnswered ? '<div class="notice">YouTuber本人が回答すると締め切れるようになります。</div>' : ''}
+        ${participantHtml(game)}
+      </section>`;
+    } else if (game.flowVersion >= 3) {
       const isLastQuestion = game.currentQuestionIndex + 1 >= game.questionCount;
       const personMode = game.question.type === 'guess-person';
       content = `<section class="panel">${liveQuestionHeader(game, '出題')}
@@ -424,6 +454,10 @@ function renderHost() {
     await copyText(document.getElementById('managementUrl').value);
     document.getElementById('copyManagementUrl').textContent = 'コピーしました';
   });
+  bind('#copySubjectUrl', 'click', async () => {
+    await copyText(document.getElementById('subjectUrl').value);
+    document.getElementById('copySubjectUrl').textContent = 'コピーしました';
+  });
   document.querySelectorAll('[data-host-answer-index]').forEach((button) => button.addEventListener('click', () => {
     state.hostAnswerIndex = Number(button.dataset.hostAnswerIndex);
     render();
@@ -436,6 +470,36 @@ function renderHost() {
   bind('#nextQuestion', 'click', () => hostAction('next'));
 }
 
+function renderSubject() {
+  const game = state.game;
+  if (!game) return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
+  let content = '';
+  if (game.phase === 'lobby') {
+    content = `<section class="panel"><span class="eyebrow">YOUTUBER</span><h2 style="margin-top:12px">YouTuber本人専用画面</h2><p class="help">このURLは本人の秘密回答に使います。視聴者には共有しないでください。</p><div class="notice">スタッフがライブを開始するまで、この画面でお待ちください。</div></section>`;
+  } else if (game.phase === 'voting') {
+    const answered = game.question.subjectAnswered;
+    const personMode = game.question.type === 'guess-person';
+    content = `<section class="panel"><span class="eyebrow">SECRET ANSWER</span>${liveQuestionHeader(game, '本人回答')}
+      <div class="notice">視聴者も同じ問題に回答中です。${personMode ? 'あなた自身の答え' : '視聴者投票の1位予想'}を秘密で選んでください。</div>
+      <div class="vote-options">${game.question.options.map((option, index) => `<button class="vote-option ${state.subjectAnswerIndex === index ? 'selected' : ''}" data-subject-answer-index="${index}" ${answered ? 'disabled' : ''}><span class="badge">${index + 1}</span><span>${escapeHtml(option)}</span>${answered ? `<span class="live-vote-count">${game.question.voteCounts?.[index] || 0}票</span>` : ''}</button>`).join('')}</div>
+      <button class="primary" id="confirmSubjectAnswer" style="margin-top:18px" ${answered || state.subjectAnswerIndex === null ? 'disabled' : ''}>この回答で確定する <span class="accent">▶</span></button>
+      ${answered ? '<div class="notice">秘密回答を確定しました。各選択肢の現在票数を確認できます。スタッフが投票を締め切るまでお待ちください。</div>' : '<div class="notice">確定後は変更できません。回答前は視聴者の票数を表示せず、回答内容も正解発表まで視聴者に送信しません。</div>'}
+    </section>`;
+  } else if (game.phase === 'review-question') {
+    content = `<section class="panel"><span class="eyebrow">ANSWER CHECK</span>${liveQuestionHeader(game, '答え合わせ')}<div class="notice">スタッフが答えを発表するまでお待ちください。</div></section>`;
+  } else if (game.phase === 'review-answer') {
+    content = `<section class="panel"><span class="eyebrow">ANSWER</span>${liveQuestionHeader(game, '答え合わせ')}${resultBlock(game.question.result, game.subjectName, false)}<div class="notice">スタッフが次の答え合わせへ進むまでお待ちください。</div></section>`;
+  } else {
+    content = `<section class="panel"><span class="eyebrow">FINISH</span><h2 style="margin-top:12px">最終結果</h2><div class="result-list">${game.results.map((result, index) => `<article class="result-card"><span class="badge">Q${index + 1}</span>${resultBlock(result, game.subjectName)}</article>`).join('')}</div></section>`;
+  }
+  setPage(content);
+  document.querySelectorAll('[data-subject-answer-index]').forEach((button) => button.addEventListener('click', () => {
+    state.subjectAnswerIndex = Number(button.dataset.subjectAnswerIndex);
+    render();
+  }));
+  bind('#confirmSubjectAnswer', 'click', submitSubjectAnswer);
+}
+
 function renderParticipant() {
   const game = state.game;
   if (!game) return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
@@ -445,11 +509,12 @@ function renderParticipant() {
   } else if (game.phase === 'answering') {
     content = `<section class="panel">${liveQuestionHeader(game)}<div class="notice">${escapeHtml(game.subjectName)}本人が回答中です。回答が確定すると投票できるようになります。</div></section>`;
   } else if (game.phase === 'voting') {
-    content = `<section class="panel">${liveQuestionHeader(game, '出題')}<div class="vote-options">${game.question.options.map((option, index) => `<button class="vote-option ${game.myVoteIndex === index ? 'selected' : ''}" data-vote-index="${index}" ${game.myVoteIndex !== null ? 'disabled' : ''}><span class="badge">${index + 1}</span> ${escapeHtml(option)}</button>`).join('')}</div>${game.myVoteIndex !== null ? '<div class="notice">回答しました。YouTuberが次の問題へ進むまでお待ちください。</div>' : '<div class="notice">YouTuberと同時に回答してください。</div>'}</section>`;
+    const waitingMessage = game.flowVersion >= 4 ? '回答しました。スタッフが次の問題へ進むまでお待ちください。' : '回答しました。YouTuberが次の問題へ進むまでお待ちください。';
+    content = `<section class="panel">${liveQuestionHeader(game, '出題')}<div class="vote-options">${game.question.options.map((option, index) => `<button class="vote-option ${game.myVoteIndex === index ? 'selected' : ''}" data-vote-index="${index}" ${game.myVoteIndex !== null ? 'disabled' : ''}><span class="badge">${index + 1}</span><span>${escapeHtml(option)}</span>${game.showVoteCount ? `<span class="live-vote-count">${game.question.voteCounts?.[index] || 0}票</span>` : ''}</button>`).join('')}</div>${game.showVoteCount ? '<div class="notice">選択肢別の現在票数を表示しています。</div>' : ''}${game.myVoteIndex !== null ? `<div class="notice">${waitingMessage}</div>` : '<div class="notice">YouTuberと同時に回答してください。</div>'}</section>`;
   } else if (game.phase === 'review-question') {
-    content = `<section class="panel"><span class="eyebrow">ANSWER CHECK</span>${liveQuestionHeader(game, '答え合わせ')}<div class="notice">YouTuberが答えを発表するまでお待ちください。</div></section>`;
+    content = `<section class="panel"><span class="eyebrow">ANSWER CHECK</span>${liveQuestionHeader(game, '答え合わせ')}<div class="notice">スタッフが答えを発表するまでお待ちください。</div></section>`;
   } else if (game.phase === 'review-answer') {
-    content = `<section class="panel"><span class="eyebrow">ANSWER</span>${liveQuestionHeader(game, '答え合わせ')}${personalResultBlock(game.question.result)}${resultBlock(game.question.result, game.subjectName, false)}<div class="notice">YouTuberが次の答え合わせへ進むまでお待ちください。</div></section>`;
+    content = `<section class="panel"><span class="eyebrow">ANSWER</span>${liveQuestionHeader(game, '答え合わせ')}${personalResultBlock(game.question.result)}${resultBlock(game.question.result, game.subjectName, false)}<div class="notice">スタッフが次の答え合わせへ進むまでお待ちください。</div></section>`;
   } else if (game.phase === 'reveal') {
     content = `<section class="panel">${liveQuestionHeader(game)}${personalResultBlock(game.question.result)}${resultBlock(game.question.result, game.subjectName)}<div class="notice">司会者が次の問題へ進むまでお待ちください。</div></section>`;
   } else {
@@ -544,11 +609,26 @@ async function submitHostAnswer() {
   render();
 }
 
+async function submitSubjectAnswer() {
+  if (state.subjectAnswerIndex === null || !state.game?.question) return;
+  try {
+    const response = await api(`/api/live/games/${state.roomCode}/subject-answer`, {
+      method: 'POST', headers: subjectHeaders(),
+      body: JSON.stringify({ questionId: state.game.question.id, optionIndex: state.subjectAnswerIndex }),
+    });
+    state.game = response.game;
+    syncSubjectAnswer(response.game);
+    state.error = '';
+  } catch (error) { state.error = humanError(error); }
+  render();
+}
+
 async function advanceHostQuestion() {
-  if (state.hostAnswerIndex === null) return;
+  if (state.game?.flowVersion < 4 && state.hostAnswerIndex === null) return;
   try {
     const response = await api(`/api/live/games/${state.roomCode}/advance`, {
-      method: 'POST', headers: hostHeaders(), body: JSON.stringify({ optionIndex: state.hostAnswerIndex }),
+      method: 'POST', headers: hostHeaders(),
+      body: state.game?.flowVersion >= 4 ? '{}' : JSON.stringify({ optionIndex: state.hostAnswerIndex }),
     });
     state.game = response.game;
     state.hostAnswerIndex = null;
@@ -564,15 +644,26 @@ function formatSavedUntil(value) {
 }
 
 async function loadRoom() {
-  const headers = state.hostToken ? hostHeaders() : state.participantToken ? participantHeaders() : {};
+  const headers = state.hostToken ? hostHeaders() : state.subjectToken ? subjectHeaders() : state.participantToken ? participantHeaders() : {};
   const response = await api(`/api/live/games/${state.roomCode}`, { headers });
   state.game = response.game;
+  if (state.subjectToken) syncSubjectAnswer(response.game);
+}
+
+function syncSubjectAnswer(game) {
+  const questionId = game?.question?.id || '';
+  if (state.subjectQuestionId !== questionId) {
+    state.subjectQuestionId = questionId;
+    state.subjectAnswerIndex = Number.isInteger(game?.question?.myAnswerIndex) ? game.question.myAnswerIndex : null;
+  } else if (Number.isInteger(game?.question?.myAnswerIndex)) {
+    state.subjectAnswerIndex = game.question.myAnswerIndex;
+  }
 }
 
 function startPolling() {
   clearInterval(state.pollTimer);
   state.pollTimer = setInterval(async () => {
-    if (!['host', 'participant'].includes(state.view)) return;
+    if (!['host', 'subject', 'participant'].includes(state.view)) return;
     try { await loadRoom(); render(); } catch (error) { /* 次のポーリングで再試行 */ }
   }, 1200);
 }
@@ -586,6 +677,7 @@ function typeSelect(value, field, disabled = false) {
 }
 
 function hostHeaders() { return { 'x-live-host-token': state.hostToken }; }
+function subjectHeaders() { return { 'x-live-subject-token': state.subjectToken }; }
 function participantHeaders() { return { 'x-live-participant-token': state.participantToken }; }
 
 async function api(path, options = {}) {
@@ -614,10 +706,13 @@ function humanError(error) {
     'voting-closed': '投票は締め切られました',
     'question-changed': '次の問題へ進みました。画面を更新します',
     'already-voted': 'この問題には投票済みです',
+    'already-answered': 'この問題には回答済みです',
     'answer-not-open': '本人回答の受付画面ではありません',
     'answer-required': '本人の回答を確定してから投票を締め切ってください',
     'invalid-option': '選択肢を確認してください',
     'host-forbidden': 'この端末には司会者権限がありません',
+    'subject-forbidden': 'この端末にはYouTuber本人の回答権限がありません',
+    'subject-not-supported': 'この企画はYouTuber専用端末に対応していません',
     'live-storage-not-configured': 'ライブゲームの保存先が設定されていません',
   };
   return messages[error?.message] || '処理に失敗しました。もう一度お試しください';

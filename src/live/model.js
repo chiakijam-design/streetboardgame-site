@@ -47,6 +47,7 @@ export function validateLiveDraft(input) {
     creationMode,
     title: normalizeText(source.title, 80),
     subjectName: normalizeText(source.subjectName, 40),
+    showLiveVoteCounts: source.showLiveVoteCounts === true,
     questions,
   };
   const errors = [];
