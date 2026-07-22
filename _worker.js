@@ -102,7 +102,6 @@ async function handleRequest(request, env) {
       }));
       const headers = new Headers(response.headers);
       headers.set('content-type', 'text/html; charset=UTF-8');
-      headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
     }
 
