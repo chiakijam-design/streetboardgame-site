@@ -8,6 +8,8 @@ import {
   LIVE_VIEWER_LIMIT,
 } from './src/live/config.js';
 import { createLiveQuestion, recommendYouTubeCandidates, validateLiveDraft } from './src/live/model.js';
+import { sharePreparedImage } from './src/platform/imageSave.js';
+import { openLineShare, openXShare } from './src/platform/share.js';
 
 const root = document.getElementById('liveRoot');
 const query = new URLSearchParams(location.search);
@@ -40,6 +42,7 @@ const state = {
   scheduleAvailability: null,
   scheduleChecking: false,
   resultViewerName: '',
+  resultShareBusy: false,
   pollTimer: null,
 };
 
@@ -668,6 +671,16 @@ function renderParticipant() {
         <div class="field"><label for="resultViewerName">結果画像に入れるあなたの名前</label><input id="resultViewerName" maxlength="24" value="${escapeAttr(viewerName)}" placeholder="名前を入力"></div>
         <div class="result-image-status" id="resultImageStatus">プレビューを作成しています…</div>
         <img class="live-result-preview" id="liveResultPreview" alt="購入用結果画像のプレビュー" hidden>
+        <div class="live-result-share">
+          <strong>この結果を友達に送る</strong>
+          <p>XやLINEは結果文とLIVEページのURLを送れます。画像はPCでは保存、スマホでは共有・保存できます。</p>
+          <div class="live-result-share-grid">
+            <button class="live-share-button live-share-x" id="shareLiveResultX" type="button">Xで結果をツイート</button>
+            <button class="live-share-button live-share-line" id="shareLiveResultLine" type="button">LINEで結果を送る</button>
+          </div>
+          <button class="live-share-button live-share-image" id="shareLiveResultImage" type="button">結果画像を保存／送る</button>
+          <div class="result-share-status" id="resultShareStatus" aria-live="polite"></div>
+        </div>
         <div class="notice">現在は画像内容のプレビューです。決済完了後だけ高画質版を取得できる購入処理は、Stripe Connectと画像保存先の接続後に有効化します。</div>
       </section>`;
   }
@@ -677,7 +690,65 @@ function renderParticipant() {
     state.resultViewerName = event.target.value.slice(0, 24);
     refreshLiveResultPreview();
   });
+  bind('#shareLiveResultX', 'click', shareLiveResultX);
+  bind('#shareLiveResultLine', 'click', shareLiveResultLine);
+  bind('#shareLiveResultImage', 'click', shareLiveResultImage);
   if (game.phase === 'complete') refreshLiveResultPreview();
+}
+
+function liveResultShareContent() {
+  const game = state.game || {};
+  const viewerName = String(state.resultViewerName || game.participantName || '視聴者').trim().slice(0, 24) || '視聴者';
+  const correctCount = (game.results || []).filter((result) => (
+    result.type === 'guess-person' ? result.myIsCorrect === true : result.myVoteWasPopular === true
+  )).length;
+  const total = Number(game.questionCount) || game.results?.length || 0;
+  const channelName = game.channelName || game.subjectName || 'YouTubeチャンネル';
+  const text = `${channelName}の「私のこと、ちゃんと分かってるよねLIVE」に参加！\n${viewerName}は${correctCount}/${total}問正解でした。\n\nみんなは何問当たる？👇\n#わたちゃん #視聴者参加型LIVE`;
+  return {
+    text,
+    url: `${location.origin}/live`,
+    filename: `watachan-live-result-${correctCount}-${total}.jpg`,
+    title: `${channelName} LIVE結果`,
+  };
+}
+
+function shareLiveResultX() {
+  const { text, url } = liveResultShareContent();
+  openXShare(`${text}\n${url}`);
+}
+
+function shareLiveResultLine() {
+  const { text, url } = liveResultShareContent();
+  openLineShare(`${text}\n${url}`);
+}
+
+async function shareLiveResultImage() {
+  if (state.resultShareBusy || !state.game) return;
+  const button = document.getElementById('shareLiveResultImage');
+  const status = document.getElementById('resultShareStatus');
+  const originalText = button?.textContent || '結果画像を保存／送る';
+  state.resultShareBusy = true;
+  if (button) {
+    button.disabled = true;
+    button.textContent = '画像を準備中…';
+  }
+  if (status) status.textContent = '';
+  try {
+    const viewerName = state.resultViewerName || state.game.participantName || '視聴者';
+    const src = await createLiveResultPreview(state.game, viewerName);
+    const details = liveResultShareContent();
+    const result = await sharePreparedImage({ src, ...details });
+    if (status) status.textContent = result === 'downloaded' ? '結果画像を保存しました。' : '共有・保存画面を開きました。';
+  } catch (error) {
+    if (error?.name !== 'AbortError' && status) status.textContent = '画像を準備できませんでした。もう一度お試しください。';
+  } finally {
+    state.resultShareBusy = false;
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
 }
 
 async function refreshLiveResultPreview() {
