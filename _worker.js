@@ -11,6 +11,8 @@ import { handleLiveApi } from './src/live/api.js';
 //   /friends/         → /friends にリダイレクト
 //   /family           → 家族の絆判定紹介ページとして専用SEOメタ付きHTMLを返す
 //   /family/          → /family にリダイレクト
+//   /live-guide       → LIVEゲーム紹介ページとして専用SEOメタ付きHTMLを返す
+//   /live-guide/      → /live-guide にリダイレクト
 //   /contact          → /?screen=about&to=contact にリダイレクト
 //   /contact/         → /?screen=about&to=contact にリダイレクト
 //   その他の存在しないパス → 専用404ページを404ステータスで返す
@@ -161,6 +163,35 @@ export default {
           },
         ],
       },
+      '/live-guide': {
+        title: '私のこと、ちゃんとわかってるよね？LIVE｜ライブ投票ゲーム',
+        description: '自作問題またはYouTubeチャンネルから問題を用意し、6桁のルームコードで参加者を招待して楽しむ無料ライブ投票ゲームです。',
+        url: CANONICAL_ORIGIN + '/live-guide',
+        ogTitle: '私のこと、ちゃんとわかってるよね？LIVE',
+        imageAlt: '私のこと、ちゃんとわかってるよね？LIVE ライブ投票ゲーム',
+        pageId: CANONICAL_ORIGIN + '/live-guide#webpage',
+        gameId: CANONICAL_ORIGIN + '/live-guide#live-game',
+        gameName: '私のこと、ちゃんとわかってるよね？LIVE',
+        headline: '自分で作った問題をみんなで楽しむ無料ライブ投票ゲーム',
+        genre: ['ライブ投票ゲーム', 'パーティーゲーム', '視聴者参加型ゲーム', 'クイズゲーム'],
+        keywords: 'ライブ投票ゲーム, 視聴者参加型ゲーム, YouTuber ゲーム, パーティーゲーム, 自作問題, 無料ゲーム, わたちゃん',
+        noscriptTitle: '私のこと、ちゃんとわかってるよね？LIVE',
+        noscriptBody: '自分で入力した問題またはYouTubeチャンネルから作った候補を使い、参加者がルームコードで入って投票する無料ライブゲームです。',
+        faq: [
+          {
+            question: '参加者はどうやってLIVEゲームに入りますか？',
+            answer: '司会者がゲームを作ると6桁のルームコードが発行されます。参加者はLIVEページでコードと名前を入力すると参加できます。',
+          },
+          {
+            question: 'YouTubeモードでは何問作れますか？',
+            answer: '選んだ遊び方の候補を30問生成し、その中から1〜30問を採用できます。2種類の遊び方は1つのゲーム内では混ざりません。',
+          },
+          {
+            question: '問題や選択肢は編集できますか？',
+            answer: '問題文と選択肢は編集できます。YouTubeモードの選択肢は各問題5個で固定されます。',
+          },
+        ],
+      },
       '/about': {
         title: 'About｜わたちゃん・彼氏の愛情判定ゲーム',
         description: 'わたちゃんは、彼氏の愛情判定ゲームをメインに、同じゲーム内で遊べる彼女版、友達の友情判定、家族の絆判定へ広がるスマホ向け無料ゲームサイトです。',
@@ -269,7 +300,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/live-guide">LIVEゲームの説明を見る</a> / <a href="/live">LIVEゲームを作って遊ぶ</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -331,6 +362,9 @@ function buildStructuredData(page) {
         {
           '@id': 'https://www.streetboardgame.com/family#family-game',
         },
+        {
+          '@id': 'https://www.streetboardgame.com/live-guide#live-game',
+        },
       ],
     },
     {
@@ -340,6 +374,7 @@ function buildStructuredData(page) {
         '彼氏の愛情判定',
         '友達の友情判定',
         '家族の絆判定',
+        '私のこと、ちゃんとわかってるよね？LIVE',
         '製品版',
         'About',
       ],
@@ -347,6 +382,7 @@ function buildStructuredData(page) {
         'https://www.streetboardgame.com/',
         'https://www.streetboardgame.com/friends',
         'https://www.streetboardgame.com/family',
+        'https://www.streetboardgame.com/live-guide',
         'https://www.streetboardgame.com/product',
         'https://www.streetboardgame.com/about',
       ],

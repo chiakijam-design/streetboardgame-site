@@ -2,8 +2,8 @@
 # https://developers.cloudflare.com/pages/configuration/redirects/
 #
 # 戦略:
-#   紹介ページは /love /friends /family のきれいなURLを正規URLとして扱う。
-#   /love /friends /family は _worker.js 側で専用SEOメタを差し込むため、
+#   紹介ページは /love /friends /family /live-guide のきれいなURLを正規URLとして扱う。
+#   /love /friends /family /live-guide は _worker.js 側で専用SEOメタを差し込むため、
 #   _redirects では内部リライトしない。
 
 /index.html  /  301
