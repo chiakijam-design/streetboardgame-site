@@ -90,8 +90,9 @@ function renderYouTubeSetup() {
       <span class="eyebrow">YOUTUBE MODE</span>
       <h2 style="margin-top:12px">${escapeHtml(LIVE_SERIES.youtubeEntry)}</h2>
       <div class="field">
-        <label for="channelUrl">YouTubeチャンネルURL</label>
-        <input id="channelUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://www.youtube.com/@handle" value="${escapeAttr(state.channelUrl)}">
+        <label for="channelUrl">YouTubeチャンネル・動画URL</label>
+        <input id="channelUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://www.youtube.com/@handle または watch?v=..." value="${escapeAttr(state.channelUrl)}">
+        <p class="help">チャンネルURLのほか、通常動画・短縮URL・Shorts・ライブのURLにも対応しています。動画URLの場合は投稿元チャンネルを自動で特定します。</p>
       </div>
       ${errorHtml()}
       <div id="youtubeGenerationChoices" class="grid" style="margin-top:16px" ${state.channelUrl.trim() ? '' : 'hidden'}>
@@ -114,7 +115,7 @@ async function generateYouTubeCandidates(questionType) {
   state.youtubeQuestionType = questionType;
   document.querySelectorAll('[data-youtube-type]').forEach((button) => {
     button.disabled = true;
-    if (button.dataset.youtubeType === questionType) button.textContent = 'チャンネル情報を確認しています…';
+    if (button.dataset.youtubeType === questionType) button.textContent = '投稿元チャンネルと動画情報を確認しています…';
   });
   try {
     const response = await api('/api/live/youtube-candidates', {
@@ -143,6 +144,8 @@ function renderYouTubeCandidates() {
       <span class="eyebrow">30 QUESTIONS</span>
       <h2 style="margin-top:12px">${escapeHtml(state.channelProfile?.channelName || 'YouTubeチャンネル')}</h2>
       <p class="help">「${escapeHtml(typeLabel)}」の30問から、採用する問題を1問以上、好きな数だけ選べます。このゲームではもう一方の種類とは混ざりません。</p>
+      ${state.channelProfile?.inputKind === 'video' ? `<div class="notice">動画URLから投稿元の「${escapeHtml(state.channelProfile?.channelName || 'YouTubeチャンネル')}」を特定し、チャンネル内の公開動画をもとに候補を作りました。</div>` : ''}
+      ${state.channelProfile?.videoTitles?.length ? `<div class="notice">公開動画 ${state.channelProfile.videoTitles.length}件の${state.channelProfile.videoDescriptionCount ? 'タイトル・公開説明' : 'タイトル'}から、このチャンネル向けのお題を作成しました。</div>` : ''}
       ${state.channelProfile?.source === 'url-fallback' ? '<div class="notice">YouTube側から公開情報を取得できなかったため、チャンネルURLの名前を使った候補を作成しました。</div>' : ''}
       <div class="actions">
         <button class="secondary" id="autoRecommend">おすすめ問題を自動選択</button>
@@ -527,7 +530,9 @@ async function api(path, options = {}) {
 
 function humanError(error) {
   const messages = {
-    'invalid-youtube-channel-url': 'YouTubeチャンネルURLを確認してください',
+    'invalid-youtube-channel-url': 'YouTubeチャンネルURLまたは動画URLを確認してください',
+    'invalid-youtube-url': 'YouTubeチャンネルURLまたは動画URLを確認してください',
+    'youtube-video-channel-not-found': 'この動画から投稿元チャンネルを確認できませんでした。公開中の動画URLかチャンネルURLを入力してください',
     'room-not-found': 'ルームが見つかりません。コードを確認してください',
     'name-required': '名前を入力してください',
     'game-finished': 'このゲームは終了しています',

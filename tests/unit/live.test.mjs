@@ -8,8 +8,12 @@ import {
   validateLiveDraft,
 } from '../../src/live/model.js';
 import {
+  extractYouTubeFeedVideos,
+  extractYouTubeTopics,
+  extractYouTubeVideoSource,
   generateYouTubeQuestions,
   normalizeYouTubeChannelUrl,
+  normalizeYouTubeInputUrl,
   publicLiveGame,
 } from '../../src/live/api.js';
 
@@ -125,4 +129,56 @@ test('YouTubeの一般的なチャンネルURLを正規化し、選んだ1種類
   assert.equal(majorityQuestions.every(({ options }) => options.length === 5), true);
   assert.equal(new Set(majorityQuestions.map(({ text }) => text)).size, 30);
   assert.equal(recommendYouTubeCandidates(personQuestions).filter(({ selected }) => selected).length, 5);
+});
+
+test('通常動画・短縮URL・Shorts・Live・Embedを同じ動画URLへ正規化する', () => {
+  const canonical = 'https://www.youtube.com/watch?v=HTRGCp7sDpl';
+  assert.equal(normalizeYouTubeInputUrl('https://www.youtube.com/watch?v=HTRGCp7sDpl&t=12s'), canonical);
+  assert.equal(normalizeYouTubeInputUrl('https://youtu.be/HTRGCp7sDpl?si=sample'), canonical);
+  assert.equal(normalizeYouTubeInputUrl('https://www.youtube.com/shorts/HTRGCp7sDpl'), canonical);
+  assert.equal(normalizeYouTubeInputUrl('https://www.youtube.com/live/HTRGCp7sDpl'), canonical);
+  assert.equal(normalizeYouTubeInputUrl('https://www.youtube.com/embed/HTRGCp7sDpl'), canonical);
+  assert.equal(normalizeYouTubeInputUrl('youtube.com/legacyChannelName'), 'https://www.youtube.com/legacyChannelName');
+  assert.equal(normalizeYouTubeChannelUrl(canonical), '');
+});
+
+test('動画ページから投稿元チャンネルを特定し、RSSから動画の説明を読み取る', () => {
+  const source = extractYouTubeVideoSource(`
+    <meta property="og:title" content="夏合宿ドッキリの舞台裏">
+    <meta property="og:description" content="幼なじみ4人で夏合宿へ行った時の裏話です">
+    <script>{"videoDetails":{"keywords":["夏合宿","幼なじみ"],"author":"わたちゃんず","channelId":"UC1234567890_sample"}}</script>
+  `);
+  assert.equal(source.channelUrl, 'https://www.youtube.com/channel/UC1234567890_sample');
+  assert.equal(source.channelName, 'わたちゃんず');
+  assert.deepEqual(source.keywords, ['夏合宿', '幼なじみ']);
+
+  const feed = extractYouTubeFeedVideos(`
+    <feed>
+      <entry><yt:videoId>video001abc</yt:videoId><media:title>幼なじみ王決定戦</media:title><media:description><![CDATA[罰ゲームをかけて昔の思い出クイズに挑戦]]></media:description></entry>
+      <entry><yt:videoId>video002abc</yt:videoId><media:title>夏合宿の未公開集</media:title><media:description>4人だけが知る事件を公開</media:description></entry>
+    </feed>
+  `);
+  assert.equal(feed.length, 2);
+  assert.equal(feed[0].description, '罰ゲームをかけて昔の思い出クイズに挑戦');
+});
+
+test('動画タイトル・説明の固有情報をチャンネル別のお題へ反映する', () => {
+  const profile = {
+    channelName: 'わたちゃんず',
+    description: '幼なじみ4人の思い出と罰ゲーム企画',
+    sourceVideo: { title: '夏合宿ドッキリ', description: '秘密の罰ゲームを決行', keywords: ['幼なじみ', '夏合宿'] },
+    videoTitles: ['夏合宿ドッキリ', '幼なじみ王決定戦', '罰ゲーム旅行', '未公開トーク', '4人で料理対決', '昔の写真クイズ'],
+    videoSummaries: [
+      { title: '夏合宿ドッキリ', description: '秘密の罰ゲームを決行', keywords: ['夏合宿'] },
+      { title: '幼なじみ王決定戦', description: '昔の思い出クイズ', keywords: ['幼なじみ'] },
+    ],
+  };
+  const topics = extractYouTubeTopics(profile);
+  assert.equal(topics.includes('幼なじみ'), true);
+  assert.equal(topics.includes('夏合宿'), true);
+  const questions = generateYouTubeQuestions(profile, 0, 'guess-person');
+  assert.equal(questions.length, 30);
+  assert.equal(questions.slice(0, 12).some(({ text }) => text.includes('夏合宿ドッキリ')), true);
+  assert.equal(questions.slice(0, 5).some(({ options }) => options.includes('幼なじみ王決定戦')), true);
+  assert.equal(questions.every(({ options }) => options.length === 5), true);
 });

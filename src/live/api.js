@@ -205,47 +205,157 @@ export function publicLiveGame(game, access = {}) {
 
 async function createYouTubeCandidatesResponse(request) {
   const body = await readLiveJson(request);
-  const channelUrl = normalizeYouTubeChannelUrl(body && body.channelUrl);
-  if (!channelUrl) throw liveError('invalid-youtube-channel-url', 400);
+  const input = normalizeYouTubeInput(body && body.channelUrl);
+  if (!input) throw liveError('invalid-youtube-url', 400);
   const questionType = body && body.questionType;
   if (!['guess-person', 'guess-majority'].includes(questionType)) throw liveError('invalid-youtube-question-type', 400);
   const seed = Number(body && body.seed) || 0;
   let profile;
   try {
-    profile = await fetchYouTubeChannelProfile(channelUrl);
+    profile = await fetchYouTubeChannelProfile(input);
   } catch (error) {
-    const fallbackName = decodeURIComponent(new URL(channelUrl).pathname.split('/').filter(Boolean).pop() || 'YouTubeチャンネル');
-    profile = { channelName: fallbackName.replace(/^@/, '') || 'YouTubeチャンネル', description: '', videoTitles: [], source: 'url-fallback' };
+    if (input.kind === 'video') throw liveError('youtube-video-channel-not-found', 422);
+    const fallbackName = decodeURIComponent(new URL(input.url).pathname.split('/').filter(Boolean).pop() || 'YouTubeチャンネル');
+    profile = {
+      channelName: fallbackName.replace(/^@/, '') || 'YouTubeチャンネル',
+      channelUrl: input.url,
+      description: '',
+      videoTitles: [],
+      videoSummaries: [],
+      source: 'url-fallback',
+      inputKind: input.kind,
+    };
   }
-  return liveJson({ channelUrl, profile, questionType, questions: generateYouTubeQuestions(profile, seed, questionType) });
+  return liveJson({
+    channelUrl: profile.channelUrl || input.url,
+    profile,
+    questionType,
+    questions: generateYouTubeQuestions(profile, seed, questionType),
+  });
 }
 
 export function normalizeYouTubeChannelUrl(value) {
+  const input = normalizeYouTubeInput(value);
+  return input && input.kind === 'channel' ? input.url : '';
+}
+
+export function normalizeYouTubeInputUrl(value) {
+  return normalizeYouTubeInput(value)?.url || '';
+}
+
+function normalizeYouTubeInput(value) {
   let url;
   try {
     const input = String(value || '').trim();
     url = new URL(/^https?:\/\//i.test(input) ? input : `https://${input}`);
   } catch (error) {
-    return '';
+    return null;
   }
   const hostname = url.hostname.toLowerCase().replace(/^www\./, '');
-  if (!['youtube.com', 'm.youtube.com'].includes(hostname)) return '';
+  if (!['youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtu.be'].includes(hostname)) return null;
   const parts = url.pathname.split('/').filter(Boolean);
-  if (!parts.length) return '';
+  let videoId = '';
+  if (hostname === 'youtu.be') videoId = parts[0] || '';
+  if (hostname !== 'youtu.be' && url.pathname === '/watch') videoId = url.searchParams.get('v') || '';
+  if (hostname !== 'youtu.be' && ['shorts', 'live', 'embed'].includes(parts[0])) videoId = parts[1] || '';
+  if (videoId) {
+    if (!/^[A-Za-z0-9_-]{6,15}$/.test(videoId)) return null;
+    return { kind: 'video', videoId, url: `https://www.youtube.com/watch?v=${videoId}` };
+  }
+  if (!parts.length) return null;
   const first = parts[0];
+  const reserved = ['watch', 'shorts', 'live', 'embed', 'playlist', 'results', 'feed', 'redirect'];
   const valid = first.startsWith('@')
-    || (['channel', 'c', 'user'].includes(first) && Boolean(parts[1]));
-  if (!valid) return '';
-  const normalizedPath = first.startsWith('@') ? `/${first}` : `/${first}/${parts[1]}`;
-  return `https://www.youtube.com${normalizedPath}`;
+    || (['channel', 'c', 'user'].includes(first) && Boolean(parts[1]))
+    || (!reserved.includes(first.toLowerCase()) && parts.length === 1);
+  if (!valid) return null;
+  const normalizedPath = first.startsWith('@') || parts.length === 1 ? `/${first}` : `/${first}/${parts[1]}`;
+  return { kind: 'channel', url: `https://www.youtube.com${normalizedPath}` };
 }
 
-async function fetchYouTubeChannelProfile(channelUrl) {
+export async function fetchYouTubeChannelProfile(inputValue) {
+  const input = typeof inputValue === 'string' ? normalizeYouTubeInput(inputValue) : inputValue;
+  if (!input) throw new Error('invalid-youtube-url');
+  let channelUrl = input.url;
+  let sourceVideo = null;
+  if (input.kind === 'video') {
+    sourceVideo = await fetchYouTubeVideoSource(input);
+    channelUrl = sourceVideo.channelUrl;
+    if (!channelUrl) throw new Error('youtube-video-channel-not-found');
+  }
+
+  let channelHtml = '';
+  try {
+    channelHtml = await fetchYouTubeText(`${channelUrl}/videos`);
+  } catch (error) {
+    if (!sourceVideo) throw error;
+  }
+  const channelId = extractYouTubeChannelId(channelHtml)
+    || sourceVideo?.channelId
+    || (/\/channel\/(UC[A-Za-z0-9_-]+)/.exec(channelUrl)?.[1] || '');
+  let feedVideos = [];
+  if (channelId) {
+    try {
+      const feedXml = await fetchYouTubeText(`https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`);
+      feedVideos = extractYouTubeFeedVideos(feedXml);
+    } catch (error) {
+      feedVideos = [];
+    }
+  }
+  const pageVideos = extractYouTubeVideoEntries(channelHtml);
+  const videoSummaries = mergeYouTubeVideos(sourceVideo ? [sourceVideo] : [], feedVideos, pageVideos).slice(0, 20);
+  const pageChannelName = extractMeta(channelHtml, 'og:title') || extractHtmlTitle(channelHtml);
+  const pageDescription = extractMeta(channelHtml, 'og:description') || extractNamedMeta(channelHtml, 'description');
+  const channelName = cleanChannelName(pageChannelName || sourceVideo?.channelName || 'YouTubeチャンネル');
+  const description = decodeHtml(pageDescription || '').slice(0, 1000);
+  return {
+    channelName,
+    channelUrl,
+    channelId,
+    description,
+    videoTitles: videoSummaries.map(({ title }) => title),
+    videoSummaries,
+    videoDescriptionCount: videoSummaries.filter(({ description: videoDescription }) => Boolean(videoDescription)).length,
+    sourceVideo: sourceVideo ? {
+      title: sourceVideo.title,
+      description: sourceVideo.description,
+      keywords: sourceVideo.keywords,
+    } : null,
+    source: input.kind === 'video' ? 'youtube-video-and-channel' : 'youtube-public-page',
+    inputKind: input.kind,
+  };
+}
+
+async function fetchYouTubeVideoSource(input) {
+  let html = '';
+  try {
+    html = await fetchYouTubeText(input.url);
+  } catch (error) {
+    html = '';
+  }
+  const source = extractYouTubeVideoSource(html);
+  if (source.channelUrl) return { ...source, videoId: input.videoId };
+  const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(input.url)}&format=json`;
+  const oembed = JSON.parse(await fetchYouTubeText(oembedUrl));
+  const channelUrl = normalizeYouTubeChannelUrl(oembed.author_url || '');
+  if (!channelUrl) throw new Error('youtube-video-channel-not-found');
+  return {
+    videoId: input.videoId,
+    title: cleanYouTubeText(source.title || oembed.title || ''),
+    description: cleanYouTubeText(source.description || ''),
+    keywords: source.keywords || [],
+    channelName: cleanChannelName(source.channelName || oembed.author_name || ''),
+    channelUrl,
+    channelId: source.channelId || '',
+  };
+}
+
+async function fetchYouTubeText(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
   let response;
   try {
-    response = await fetch(channelUrl, {
+    response = await fetch(url, {
       headers: {
         'user-agent': 'Mozilla/5.0 (compatible; WatachanLive/1.0; +https://www.streetboardgame.com/)',
         'accept-language': 'ja,en;q=0.8',
@@ -256,20 +366,35 @@ async function fetchYouTubeChannelProfile(channelUrl) {
   } finally {
     clearTimeout(timeout);
   }
-  if (!response.ok) throw new Error('youtube-channel-fetch-failed');
-  const html = await response.text();
-  const channelName = extractMeta(html, 'og:title') || extractHtmlTitle(html) || 'YouTubeチャンネル';
-  const description = extractMeta(html, 'og:description') || extractNamedMeta(html, 'description') || '';
-  const videoTitles = extractYouTubeVideoTitles(html).filter((title) => title !== channelName).slice(0, 20);
-  return { channelName: cleanChannelName(channelName), description: decodeHtml(description).slice(0, 500), videoTitles, source: 'youtube-public-page' };
+  if (!response.ok) throw new Error('youtube-fetch-failed');
+  return response.text();
 }
 
 export function generateYouTubeQuestions(profile, seed = 0, questionType = 'guess-person') {
   const name = String(profile && profile.channelName || 'このチャンネル').trim() || 'このチャンネル';
-  const videos = Array.isArray(profile && profile.videoTitles) ? profile.videoTitles.filter(Boolean).slice(0, 20) : [];
+  const videos = Array.isArray(profile && profile.videoTitles)
+    ? [...new Set(profile.videoTitles.map(shortYouTubeLabel).filter(Boolean))].slice(0, 20)
+    : [];
+  const topics = extractYouTubeTopics(profile);
   const videoOptions = (offset) => videos.length >= 2
     ? Array.from({ length: Math.min(5, videos.length) }, (_, index) => videos[(offset + index) % videos.length])
     : ['トーク企画', 'チャレンジ企画', 'コラボ企画', '生配信', '密着・日常企画'];
+  const videoAt = (index) => videos[index % Math.max(videos.length, 1)] || 'このチャンネルの動画';
+  const topicAt = (index) => topics[index % Math.max(topics.length, 1)] || name;
+  const tailoredPersonTemplates = videos.length >= 2 || topics.length >= 2 ? [
+    ['本人が撮影の裏話を一番語りたい動画は？', videoOptions(0)],
+    ['本人が予想以上の反響に驚いた動画は？', videoOptions(3)],
+    ['本人が同じメンバーでもう一度撮りたい動画は？', videoOptions(6)],
+    ['本人が公開前に一番緊張した動画は？', videoOptions(9)],
+    ['本人が今の自分らしさを一番感じる動画は？', videoOptions(12)],
+    [`「${videoAt(0)}」で、本人が実は一番こだわった部分は？`, ['企画の内容', '撮影場所・道具', '話す順番', '編集・見せ方', '出演者とのやり取り']],
+    [`「${videoAt(1)}」を公開した直後、本人の気持ちに一番近かったのは？`, ['手応えがあった', '反応が心配だった', 'すぐ続編を考えた', '撮り直したかった', 'やり切って安心した']],
+    [`「${videoAt(2)}」で、本人が視聴者に一番気づいてほしいことは？`, ['細かい演出', '出演者の反応', '準備の大変さ', '本人の本音', '動画に込めたメッセージ']],
+    [`本人が「${topicAt(0)}」を次に扱うなら、一番やりたい形は？`, ['続編を作る', '生配信で深掘りする', '別の人とコラボする', '視聴者参加型にする', '舞台裏を見せる']],
+    [`本人が「${topicAt(1)}」について、まだ話せていないことは？`, ['始めたきっかけ', '失敗したこと', '一番のこだわり', '周りの反応', 'これからの目標']],
+    ['チャンネル内で本人だけが知っているハプニングが一番多かった動画は？', videoOptions(15)],
+    [`入力された「${videoAt(0)}」を本人が友達に見せるなら、最初に伝えたいことは？`, ['一番笑ってほしい場面', '撮影の裏話', '出演者との関係', '企画の狙い', '最後まで見てほしい理由']],
+  ] : [];
   const personTemplates = [
     ['本人が初めて見る人に一番おすすめしたい動画は？', videoOptions(0)],
     ['本人が今もう一度見てほしい動画は？', videoOptions(3)],
@@ -302,6 +427,20 @@ export function generateYouTubeQuestions(profile, seed = 0, questionType = 'gues
     ['本人が次の節目でやりたいことは？', ['特別動画', '生配信', 'コラボ', '視聴者参加企画']],
     [`本人が「${name}」を続ける一番の原動力は？`, ['作る楽しさ', '視聴者の反応', '仲間との活動', '目標の実現']],
   ];
+  const tailoredMajorityTemplates = videos.length >= 2 || topics.length >= 2 ? [
+    ['視聴者が一番「撮影の裏側を知りたい」と思う動画は？', videoOptions(0)],
+    ['視聴者が身内に一番すすめたい動画は？', videoOptions(3)],
+    ['視聴者が続編を本気で待っている動画は？', videoOptions(6)],
+    ['視聴者が本人らしさを一番感じる動画は？', videoOptions(9)],
+    ['視聴者が今見返すと新しい発見がありそうだと思う動画は？', videoOptions(12)],
+    [`「${videoAt(0)}」の続編で、視聴者が一番見たいものは？`, ['同じ企画の再挑戦', '撮影の舞台裏', '別メンバー版', '視聴者参加版', '本人による振り返り']],
+    [`「${videoAt(1)}」で、視聴者が一番印象に残ったと思う要素は？`, ['本人のリアクション', '出演者との掛け合い', '予想外の展開', '企画そのもの', '最後のまとめ']],
+    [`「${videoAt(2)}」について、視聴者が本人に一番聞きたいことは？`, ['撮影前の予想', '一番大変だった場面', '動画に入らなかった話', '出演者との関係', '公開後の本音']],
+    [`視聴者が「${topicAt(0)}」で次に見たい企画は？`, ['もっと深掘りする', '別の場所で挑戦する', 'ゲストを呼ぶ', '生配信でやる', '視聴者も参加する']],
+    [`視聴者が「${topicAt(1)}」について一番知りたいことは？`, ['始めたきっかけ', '本人のこだわり', '失敗や裏話', '仲間との関係', '今後の予定']],
+    ['古参視聴者と最近の視聴者で答えが一番分かれそうな動画は？', videoOptions(15)],
+    [`入力された「${videoAt(0)}」を初見の人に見せた時、一番反応されそうなのは？`, ['本人のキャラクター', '企画の発想', '出演者との空気感', '編集のテンポ', '予想外の結末']],
+  ] : [];
   const majorityTemplates = [
     ['視聴者が初めての人に一番すすめたい動画は？', videoOptions(1)],
     ['視聴者が続編を一番見たい動画は？', videoOptions(4)],
@@ -338,7 +477,9 @@ export function generateYouTubeQuestions(profile, seed = 0, questionType = 'gues
     const offset = Math.abs(Number(seed) || 0) % items.length;
     return [...items.slice(offset), ...items.slice(0, offset)];
   };
-  const templates = questionType === 'guess-majority' ? majorityTemplates : personTemplates;
+  const templates = questionType === 'guess-majority'
+    ? [...tailoredMajorityTemplates, ...majorityTemplates].slice(0, 30)
+    : [...tailoredPersonTemplates, ...personTemplates].slice(0, 30);
   const idPrefix = questionType === 'guess-majority' ? 'yt-majority' : 'yt-person';
   return rotate(templates).map(([text, options], index) => ({
     id: `${idPrefix}-${seed}-${index}`,
@@ -349,6 +490,43 @@ export function generateYouTubeQuestions(profile, seed = 0, questionType = 'gues
     selected: index < 5,
     recommended: index < 5,
   }));
+}
+
+export function extractYouTubeTopics(profile) {
+  const found = [];
+  const add = (value) => {
+    const topic = cleanYouTubeText(value)
+      .replace(/^#+/, '')
+      .replace(/^[\p{P}\p{S}\s]+|[\p{P}\p{S}\s]+$/gu, '')
+      .trim();
+    const generic = /^(動画|チャンネル|youtube|youtuber|shorts?|ライブ|配信|公式|最新|今回|こちら|お知らせ)$/i;
+    if (topic.length >= 2 && topic.length <= 28 && !generic.test(topic) && !found.includes(topic)) found.push(topic);
+  };
+  const summaries = Array.isArray(profile?.videoSummaries) ? profile.videoSummaries : [];
+  const keywordValues = [
+    ...(Array.isArray(profile?.sourceVideo?.keywords) ? profile.sourceVideo.keywords : []),
+    ...summaries.flatMap((video) => Array.isArray(video.keywords) ? video.keywords : []),
+  ];
+  keywordValues.forEach(add);
+  const texts = [
+    profile?.description,
+    profile?.sourceVideo?.description,
+    ...(Array.isArray(profile?.videoTitles) ? profile.videoTitles : []),
+    ...summaries.flatMap((video) => [video.title, video.description]),
+  ].filter(Boolean);
+  for (const text of texts) {
+    for (const match of String(text).matchAll(/#([\p{L}\p{N}_ー]{2,28})/gu)) add(match[1]);
+    for (const match of String(text).matchAll(/[【「『]([^】」』]{2,28})[】」』]/gu)) add(match[1]);
+    String(text).replace(/https?:\/\/\S+/g, ' ').split(/[\s|｜/／:：!?！？。、,，()（）\[\]【】「」『』]+/u).forEach(add);
+    if (found.length >= 16) break;
+  }
+  return found.slice(0, 16);
+}
+
+function shortYouTubeLabel(value) {
+  const text = cleanYouTubeText(value);
+  const characters = [...text];
+  return characters.length > 48 ? `${characters.slice(0, 47).join('')}…` : text;
 }
 
 function normalizeYouTubeOptions(options) {
@@ -380,29 +558,120 @@ function extractHtmlTitle(html) {
   return match ? decodeHtml(match[1]).replace(/\s*-\s*YouTube\s*$/i, '') : '';
 }
 
-function extractYouTubeVideoTitles(html) {
+export function extractYouTubeVideoSource(html) {
+  const channelId = extractYouTubeChannelId(html);
+  const ownerProfileUrl = decodeYouTubeJsonValue(firstMatch(html, [
+    /"ownerProfileUrl":"((?:\\.|[^"\\])*)"/,
+    /"vanityChannelUrl":"((?:\\.|[^"\\])*)"/,
+  ]));
+  const normalizedOwnerUrl = normalizeYouTubeChannelUrl(ownerProfileUrl.replace(/^http:/i, 'https:'));
+  const channelUrl = channelId ? `https://www.youtube.com/channel/${channelId}` : normalizedOwnerUrl;
+  const channelName = decodeYouTubeJsonValue(firstMatch(html, [
+    /"ownerChannelName":"((?:\\.|[^"\\])*)"/,
+    /"videoDetails":\{[\s\S]{0,12000}?"author":"((?:\\.|[^"\\])*)"/,
+  ]));
+  const keywordsMatch = /"videoDetails":\{[\s\S]{0,16000}?"keywords":(\[(?:"(?:\\.|[^"\\])*",?)*\])/.exec(html);
+  let keywords = [];
+  try { keywords = keywordsMatch ? JSON.parse(keywordsMatch[1]).map(cleanYouTubeText).filter(Boolean).slice(0, 20) : []; } catch (error) { keywords = []; }
+  return {
+    title: cleanYouTubeText(extractMeta(html, 'og:title') || extractHtmlTitle(html)),
+    description: cleanYouTubeText(extractMeta(html, 'og:description') || extractNamedMeta(html, 'description')).slice(0, 1200),
+    keywords,
+    channelName: cleanChannelName(channelName),
+    channelUrl,
+    channelId,
+  };
+}
+
+function extractYouTubeChannelId(html) {
+  return firstMatch(html, [
+    /"videoDetails":\{[\s\S]{0,12000}?"channelId":"(UC[A-Za-z0-9_-]+)"/,
+    /"externalChannelId":"(UC[A-Za-z0-9_-]+)"/,
+    /"externalId":"(UC[A-Za-z0-9_-]+)"/,
+    /"channelId":"(UC[A-Za-z0-9_-]+)"/,
+    /"browseId":"(UC[A-Za-z0-9_-]+)"/,
+    /itemprop=["']channelId["'][^>]*content=["'](UC[A-Za-z0-9_-]+)["']/i,
+  ]);
+}
+
+export function extractYouTubeFeedVideos(xml) {
+  const videos = [];
+  for (const entry of String(xml || '').matchAll(/<entry>([\s\S]*?)<\/entry>/gi)) {
+    const block = entry[1];
+    const videoId = cleanYouTubeText(firstMatch(block, [/<yt:videoId>([^<]+)<\/yt:videoId>/i]));
+    const title = cleanYouTubeText(firstMatch(block, [/<media:title>([\s\S]*?)<\/media:title>/i, /<title>([\s\S]*?)<\/title>/i]));
+    const description = cleanYouTubeText(firstMatch(block, [/<media:description>([\s\S]*?)<\/media:description>/i])).slice(0, 1200);
+    if (title) videos.push({ videoId, title, description, keywords: [] });
+  }
+  return videos;
+}
+
+function extractYouTubeVideoEntries(html) {
   const found = [];
   const rendererPatterns = [
-    /"videoRenderer":\{"videoId":"[^"]+"[\s\S]{0,2600}?"title":\{"runs":\[\{"text":"((?:\\.|[^"\\])*)"/g,
-    /"gridVideoRenderer":\{"videoId":"[^"]+"[\s\S]{0,2600}?"title":\{"runs":\[\{"text":"((?:\\.|[^"\\])*)"/g,
+    /"videoRenderer":\{"videoId":"([^"]+)"[\s\S]{0,2600}?"title":\{"runs":\[\{"text":"((?:\\.|[^"\\])*)"/g,
+    /"gridVideoRenderer":\{"videoId":"([^"]+)"[\s\S]{0,2600}?"title":\{"runs":\[\{"text":"((?:\\.|[^"\\])*)"/g,
   ];
   for (const pattern of rendererPatterns) {
-    for (const match of html.matchAll(pattern)) addYouTubeTitle(found, match[1]);
+    for (const match of html.matchAll(pattern)) addYouTubeVideo(found, match[1], match[2]);
   }
   if (!found.length) {
-    const fallbackPattern = /"title":\{"runs":\[\{"text":"((?:\\.|[^"\\])*)"/g;
-    for (const match of html.matchAll(fallbackPattern)) addYouTubeTitle(found, match[1]);
+    const fallbackPattern = /"videoId":"([A-Za-z0-9_-]{6,15})"[\s\S]{0,2600}?"title":\{"runs":\[\{"text":"((?:\\.|[^"\\])*)"/g;
+    for (const match of html.matchAll(fallbackPattern)) addYouTubeVideo(found, match[1], match[2]);
   }
   return found;
 }
 
-function addYouTubeTitle(found, encodedTitle) {
-  let title = '';
-  try { title = JSON.parse(`"${encodedTitle}"`); } catch (error) { title = encodedTitle; }
-  title = String(title).replace(/\s+/g, ' ').trim();
+function addYouTubeVideo(found, videoId, encodedTitle) {
+  const title = cleanYouTubeText(decodeYouTubeJsonValue(encodedTitle));
   const looksLikeNavigation = /^(ショート|ホーム|動画|ライブ|再生リスト|コミュニティ|キーボード ショートカット)$/i.test(title)
     || /のYouTube$/i.test(title);
-  if (!looksLikeNavigation && title.length >= 4 && title.length <= 80 && !found.includes(title)) found.push(title);
+  if (!looksLikeNavigation && title.length >= 4 && title.length <= 100 && !found.some((video) => video.title === title)) {
+    found.push({ videoId, title, description: '', keywords: [] });
+  }
+}
+
+function mergeYouTubeVideos(...collections) {
+  const merged = [];
+  for (const video of collections.flat()) {
+    const title = cleanYouTubeText(video && video.title);
+    if (!title) continue;
+    const existing = merged.find((item) => (video.videoId && item.videoId === video.videoId) || item.title === title);
+    if (existing) {
+      if (!existing.description && video.description) existing.description = cleanYouTubeText(video.description).slice(0, 1200);
+      existing.keywords = [...new Set([...(existing.keywords || []), ...(video.keywords || [])])].slice(0, 20);
+      continue;
+    }
+    merged.push({
+      videoId: cleanYouTubeText(video.videoId || ''),
+      title,
+      description: cleanYouTubeText(video.description || '').slice(0, 1200),
+      keywords: Array.isArray(video.keywords) ? video.keywords.map(cleanYouTubeText).filter(Boolean).slice(0, 20) : [],
+    });
+  }
+  return merged;
+}
+
+function firstMatch(value, patterns) {
+  const input = String(value || '');
+  for (const pattern of patterns) {
+    const match = pattern.exec(input);
+    if (match) return match[1] || '';
+  }
+  return '';
+}
+
+function decodeYouTubeJsonValue(value) {
+  if (!value) return '';
+  try { return JSON.parse(`"${value}"`); } catch (error) { return String(value).replace(/\\\//g, '/'); }
+}
+
+function cleanYouTubeText(value) {
+  return decodeHtml(String(value || '').replace(/^<!\[CDATA\[|\]\]>$/g, ''))
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function cleanChannelName(value) {
