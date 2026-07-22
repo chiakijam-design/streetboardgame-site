@@ -1805,17 +1805,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
         <FooterLink href="/terms">利用規約</FooterLink>
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
-        <FooterLink href="/privacy">プライバシー</FooterLink>
-        <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
         <FooterLink href="/legal">特商法表記</FooterLink>
-        <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
-        <FooterLink href="/creator-terms">収益分配規約</FooterLink>
-        <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
-        <FooterLink href="/refund-policy">返金ポリシー</FooterLink>
-        <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
-        <FooterLink href="/content-guidelines">肖像権ガイド</FooterLink>
-        <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
-        <FooterLink href="/minor-policy">未成年者規定</FooterLink>
       </footer>
     </main>
   );
