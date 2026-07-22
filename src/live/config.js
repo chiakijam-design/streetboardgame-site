@@ -1,10 +1,10 @@
 export const LIVE_SERIES = Object.freeze({
-  name: 'わかってるよね？LIVE',
+  name: '私のこと、ちゃんとわかってるよね？LIVE',
   shortName: 'LIVE',
   entryLead: '自分で作った問題を、みんなで同時に投票して楽しむライブゲーム',
   manualEntry: '自分で問題を作る',
   youtubeEntry: 'YouTubeチャンネルから作る',
-  defaultGameTitle: 'みんなでわかってるよね？LIVE',
+  defaultGameTitle: '私のこと、ちゃんとわかってるよね？LIVE',
   recommendedQuestionCount: '5〜10問程度がおすすめです。1問から好きな数だけ作れます。',
   youtubeGenerateLabel: 'このチャンネルの問題を30問作る',
 });
