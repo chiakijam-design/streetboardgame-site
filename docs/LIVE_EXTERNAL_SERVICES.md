@@ -40,6 +40,16 @@ npx wrangler secret put YOUTUBE_OAUTH_REDIRECT_URI
 
 `YOUTUBE_OAUTH_REDIRECT_URI`は本番の`https://www.streetboardgame.com/api/live/channel-verifications/oauth/callback`にする。OAuthでは`youtube.readonly`だけを要求し、`channels.list(mine=true)`で対象チャンネルを確認後、アクセストークンを破棄・失効させる。アクセストークンとリフレッシュトークンはD1へ保存しない。
 
+画面上の運用フローは次の通り。
+
+1. 撮影スタッフが問題編集画面の「チャンネル所有確認URLを発行する」を押す
+2. 発行された秘密URLをYouTuber本人または正式なチャンネル運営者へ、安全な連絡手段で送る
+3. YouTuber側はOAuth、概要欄コード、手動審査申請のいずれか1つで所有確認する
+4. スタッフは問題編集画面の「確認状況を更新」、運営者は`/live-ops`の「チャンネル所有・Stripe名義確認」で状態を確認する
+5. 所有確認だけでは有料販売を許可しない。運営者がConnectアカウントID・Stripe本人確認・チャンネルとの名義関係を確認する
+
+秘密URLの確認トークンは`#verification=...`に置き、HTTPリクエストやアクセスログへ送らない。URLは公開チャット、YouTube概要欄、配信画面へ掲載しない。
+
 所有確認の代替手段は次の通り。
 
 - 概要欄確認: 発行した`SBLV-...`コードをチャンネル概要欄へ一時掲載し、公式APIで一致を確認する
@@ -52,8 +62,11 @@ npx wrangler secret put YOUTUBE_OAUTH_REDIRECT_URI
 - `ownership_status = verified`
 - `stripe_identity_verified = 1`
 - `stripe_relationship_status = verified`
+- `stripe_account_id`が`acct_...`形式で登録済み
 
 Stripe本人確認済み名義とチャンネル運営者が異なる場合、所属法人・事務所・委任関係を示す資料を手動審査する。管理APIは管理トークンとTOTPの二要素認証を必須とする。設定値は`docs/PRIVACY_OPERATIONS.md`を参照する。
+
+運営コンソールで所有確認だけを承認しても、上の4条件が揃うまでは`canSellPaid=false`を維持する。OAuthまたは概要欄コードで確認済みの方式は、Stripe審査を更新しても`manual`へ上書きしない。
 
 ```powershell
 npx wrangler secret put LIVE_ADMIN_TOKEN

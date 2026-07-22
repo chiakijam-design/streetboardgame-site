@@ -23,6 +23,17 @@ npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0007_l
 
 TOTP設定、購入履歴専用D1、Cron削除は`docs/PRIVACY_OPERATIONS.md`を参照する。個人データの漏えいまたはその疑いがある場合は、通常の障害対応より先に`docs/PRIVACY_INCIDENT_RESPONSE.md`を実行する。
 
+### 1.1 チャンネル所有・Stripe名義審査
+
+1. YouTuber本人が秘密の確認URLからOAuthまたは概要欄コードで確認する。使えない場合だけ手動審査申請を受ける。
+2. `/live-ops`の「チャンネル所有・Stripe名義確認」で対象Channel IDと実際のチャンネルを照合する。
+3. 手動審査では、登録メールからの返信、チャンネル管理画面の一時的な証跡、所属事務所・法人からの委任資料のうち必要なものを別経路で確認する。資料そのものはLIVEのゲームD1へ保存しない。
+4. Stripe Connectの`acct_...`、Stripe本人確認状態、Connect名義とチャンネル運営者の関係を照合する。
+5. 4条件が揃う場合だけ「確認済み・本人確認済み・関係確認済み」を保存する。画面が「有料販売可」になったことを再確認する。
+6. 不一致やなりすましの疑いがある場合は却下し、招待コードも失効する。有料販売は再審査完了まで開放しない。
+
+無料LIVEは所有確認未完了でも利用できる。確認URLは本人用の秘密URLとして扱い、漏えい時はその確認申請を却下して新しい申請を作る。OAuth設定が未完了でも概要欄コードと手動審査は利用できるが、概要欄確認には`YOUTUBE_API_KEY`が必要である。
+
 `LIVE_OPS_ALERT_WEBHOOK_URL`にはHTTPS通知受信URLを設定する。重大APIエラー、Stripe失敗、Stripe Webhook処理失敗、WebSocket切断率超過をJSON POSTする。通知先が固定形式を要求する場合は中継Workerで変換する。
 
 D1自体が利用不能な緊急時は、次のWorker環境変数を設定してデプロイする。これらはD1上の告知より優先される。

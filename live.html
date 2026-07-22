@@ -51,6 +51,9 @@
     .mini { min-height:40px; border-width:2px; padding:7px 11px; border-radius:9px; background:#fff; box-shadow:2px 2px 0 #000; font-size:11px; }
     .actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:14px; }
     .actions > * { flex:1 1 130px; }
+    .link-button { display:inline-flex; align-items:center; justify-content:center; color:#000; text-decoration:none; }
+    .secret-output { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:12px 0; padding:11px; border:2px solid #000; border-radius:10px; background:#FFF9D7; overflow-wrap:anywhere; }
+    .secret-output code { min-width:0; font:900 12px/1.5 ui-monospace,monospace; }
     .tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:16px 0; }
     .tab { min-height:48px; border:2px solid var(--black); border-radius:12px; background:#fff; font-size:12px; font-weight:900; }
     .tab[aria-selected="true"] { background:var(--yellow); box-shadow:3px 3px 0 #000; }
@@ -149,6 +152,15 @@
     .creator-image-preview { display:flex; align-items:center; gap:14px; margin-top:10px; padding:12px; border:2px solid #000; border-radius:12px; background:#FFF8F1; }
     .creator-image-preview img { width:96px; height:96px; border:3px solid #000; border-radius:50%; object-fit:cover; background:#fff; }
     .creator-image-preview .mini { flex:1; }
+    .editor-channel-verification { grid-column:1 / -1; padding:14px; border:3px solid #000; border-radius:14px; background:#F2EEFF; box-shadow:3px 3px 0 rgba(0,0,0,.14); }
+    .verification-progress { display:grid; gap:8px; margin:14px 0; }
+    .verification-step { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border:2px solid #000; border-radius:10px; background:#FFF1BD; font-size:11px; }
+    .verification-step.is-done { background:#DDF8E4; color:#155D2B; }
+    .verification-step span { text-align:right; font-weight:800; }
+    .verification-methods { display:grid; gap:14px; margin-top:16px; }
+    .verification-methods .question-card { box-shadow:3px 3px 0 #000; }
+    .verification-methods h3 { margin-top:8px; }
+    .verification-methods button { width:100%; margin-top:12px; }
     .live-result-image-panel { overflow:hidden; background:linear-gradient(145deg,#FFF5A8,#FFD9E8 55%,#DDF8FC); }
     .live-result-preview { display:block; width:100%; margin-top:12px; border:3px solid #000; border-radius:14px; background:#fff; box-shadow:4px 4px 0 #000; }
     .result-image-status { min-height:28px; margin-top:9px; color:var(--muted); font-size:11px; font-weight:800; }
@@ -181,6 +193,9 @@
       .editor-settings-title,.editor-type-summary { grid-column:1 / -1; }
       .editor-question-body { padding:18px; }
       .editor-question-top { padding:13px 16px; }
+      .verification-progress { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .verification-step { align-items:flex-start; flex-direction:column; }
+      .verification-step span { text-align:left; }
     }
   </style>
   <script data-build-entry="viewport_recovery" src="/dist/viewport_recovery-MXTVWKCL.js"></script>
@@ -199,6 +214,6 @@
     </nav>
     <p>本サービスはYouTubeまたはGoogleの提携・承認サービスではありません。</p>
   </footer>
-  <script data-build-entry="live_game" defer src="/dist/live_game-YWDGIVEI.js"></script>
+  <script data-build-entry="live_game" defer src="/dist/live_game-ICTUJKEL.js"></script>
 </body>
 </html>

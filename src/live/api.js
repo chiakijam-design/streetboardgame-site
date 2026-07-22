@@ -82,6 +82,7 @@ export async function handleLiveApi(request, env, path) {
       await requireLiveAdminSession(request, env);
     }
     if (path === '/api/live/admin/overview' && request.method === 'GET') {
+      await ensureLiveD1(env);
       return liveJson(await getLiveOpsOverview(env));
     }
     if (path === '/api/live/admin/status' && request.method === 'POST') {

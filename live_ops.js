@@ -49,7 +49,7 @@ function renderAll() {
   document.getElementById('statusMode').value = status.mode || 'normal';
   document.getElementById('statusTitle').value = status.title || '';
   document.getElementById('statusMessage').value = status.message || '';
-  renderMetrics(); renderCreatorInvites(); renderSessions(); renderEntitlements(); renderEvents();
+  renderMetrics(); renderCreatorInvites(); renderChannelVerifications(); renderSessions(); renderEntitlements(); renderEvents();
 }
 
 function renderCreatorInvites() {
@@ -57,6 +57,51 @@ function renderCreatorInvites() {
   document.getElementById('creatorInvites').innerHTML = rows.length ? rows.map((item) => `<article class="card"><strong>${escapeHtml(item.channel_name || item.channel_id)} <span class="pill ${item.status === 'active' ? 'info' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">Channel ID: <code>${escapeHtml(item.channel_id)}</code><br>期限: ${formatDate(item.expires_at)} / 最終利用: ${item.last_used_at ? formatDate(item.last_used_at) : '未使用'}</div><div class="actions"><button class="button danger" data-revoke-invite="${escapeAttr(item.invite_id)}" ${item.status !== 'active' ? 'disabled' : ''}>招待を失効</button></div></article>`).join('') : empty('発行済み招待はありません。');
   document.querySelectorAll('[data-revoke-invite]').forEach((button) => button.addEventListener('click', () => revokeCreatorInvite(button.dataset.revokeInvite)));
 }
+
+function renderChannelVerifications() {
+  const rows = overview.channelVerifications || [];
+  document.getElementById('channelVerifications').innerHTML = rows.length ? rows.map((item) => `
+    <article class="card" data-verification-card="${escapeAttr(item.verificationId)}">
+      <strong>${escapeHtml(item.channelName)} <span class="pill ${item.canSellPaid ? 'info' : item.ownershipStatus === 'rejected' ? 'critical' : 'warning'}">${item.canSellPaid ? '有料販売可' : '審査中・販売不可'}</span></strong>
+      <div class="meta"><a href="${escapeAttr(item.channelUrl)}" target="_blank" rel="noopener noreferrer">チャンネルを確認</a><br>Channel ID: <code>${escapeHtml(item.channelId)}</code><br>所有確認方式: ${escapeHtml(verificationMethodLabel(item.ownershipMethod))} / 更新: ${formatDate(item.updatedAt)}</div>
+      <div class="grid two">
+        <div class="field"><label>チャンネル所有</label><select data-review-field="ownershipStatus"><option value="manual_pending" ${selected(item.ownershipStatus, 'manual_pending')}>手動審査待ち</option><option value="verified" ${selected(item.ownershipStatus, 'verified')}>確認済み</option><option value="rejected" ${selected(item.ownershipStatus, 'rejected')}>却下</option></select></div>
+        <div class="field"><label>Stripe ConnectアカウントID</label><input data-review-field="stripeAccountId" value="${escapeAttr(item.stripeAccountId || '')}" placeholder="acct_..."></div>
+        <label class="field"><span>Stripe本人確認</span><span><input data-review-field="stripeIdentityVerified" type="checkbox" style="width:auto;min-height:auto" ${item.stripeIdentityVerified ? 'checked' : ''}> Stripeで本人確認済み</span></label>
+        <div class="field"><label>名義とチャンネル運営者の関係</label><select data-review-field="stripeRelationshipStatus"><option value="pending" ${selected(item.stripeRelationshipStatus, 'pending')}>審査待ち</option><option value="verified" ${selected(item.stripeRelationshipStatus, 'verified')}>関係確認済み</option><option value="rejected" ${selected(item.stripeRelationshipStatus, 'rejected')}>確認できない</option></select></div>
+      </div>
+      <div class="actions"><button class="button good" data-save-verification="${escapeAttr(item.verificationId)}">審査結果を保存</button></div>
+    </article>
+  `).join('') : empty('所有確認の申請はありません。');
+  document.querySelectorAll('[data-save-verification]').forEach((button) => button.addEventListener('click', () => saveChannelVerificationReview(button.dataset.saveVerification)));
+}
+
+async function saveChannelVerificationReview(verificationId) {
+  const card = document.querySelector(`[data-verification-card="${verificationId}"]`);
+  const body = {
+    ownershipStatus: card.querySelector('[data-review-field="ownershipStatus"]').value,
+    stripeAccountId: card.querySelector('[data-review-field="stripeAccountId"]').value.trim(),
+    stripeIdentityVerified: card.querySelector('[data-review-field="stripeIdentityVerified"]').checked,
+    stripeRelationshipStatus: card.querySelector('[data-review-field="stripeRelationshipStatus"]').value,
+  };
+  const permitsPaid = body.ownershipStatus === 'verified' && body.stripeIdentityVerified
+    && body.stripeRelationshipStatus === 'verified' && /^acct_[A-Za-z0-9]+$/.test(body.stripeAccountId);
+  const prompt = permitsPaid
+    ? 'チャンネルとの関係資料とStripe本人確認を確認し、有料販売を許可しますか？'
+    : '入力した審査途中の状態を保存しますか？';
+  if (!confirm(prompt)) return;
+  try {
+    const result = await adminApi(`/api/live/admin/channel-verifications/${verificationId}/review`, { method: 'POST', body: JSON.stringify(body) });
+    document.getElementById('verificationReviewOutput').innerHTML = `<div class="status">${escapeHtml(result.channelName)}：${result.canSellPaid ? '有料販売を許可しました。' : '審査状態を保存しました。有料販売は引き続き停止中です。'}</div>`;
+    await loadOverview();
+  } catch (error) { alert(humanError(error)); }
+}
+
+function verificationMethodLabel(value) {
+  return { oauth: 'YouTube OAuth', description: '概要欄コード', manual: '手動審査' }[value] || '未確認';
+}
+
+function selected(value, expected) { return value === expected ? 'selected' : ''; }
 
 function renderMetrics() {
   const counts = overview.recentEventCounts || [];
@@ -175,6 +220,9 @@ function humanError(error) {
     'admin-session-required': '管理セッションがありません。管理トークンと認証コードでログインしてください。',
     'admin-session-invalid': '管理セッションを確認できません。もう一度二要素認証してください。',
     'admin-session-expired': '15分間の管理セッションが終了しました。最新の認証コードでもう一度ログインしてください。',
+    'stripe-account-required': 'Stripe本人確認・名義関係を確認済みにする場合は、acct_から始まるConnectアカウントIDが必要です。',
+    'invalid-ownership-status': 'チャンネル所有の審査状態が不正です。',
+    'invalid-stripe-relationship-status': 'Stripe名義関係の審査状態が不正です。',
   };
   return messages[error?.message] || error?.message || '処理に失敗しました。';
 }

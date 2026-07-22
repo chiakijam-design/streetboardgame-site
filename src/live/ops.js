@@ -1,6 +1,7 @@
 import { hasLiveRealtime, loadLiveRealtimeStats } from './realtime.js';
 import { ensureLivePurchaseD1, getLivePurchaseDb } from './purchases.js';
 import { listLiveCreatorInvites } from './security.js';
+import { listChannelVerifications } from './ownership.js';
 
 let opsReadyPromise = null;
 
@@ -138,7 +139,7 @@ export async function getLiveOpsOverview(env) {
         FROM live_result_entitlements ORDER BY updated_at DESC LIMIT 100
       `).all())
     : Promise.resolve({ results: [] });
-  const [reservations, activeSessions, entitlements, events, recentCounts, status, creatorInvites] = await Promise.all([
+  const [reservations, activeSessions, entitlements, events, recentCounts, status, creatorInvites, channelVerifications] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT r.code, r.scheduled_at, r.blocked_from, r.blocked_until, r.expires_at, g.payload
       FROM live_reservations r LEFT JOIN live_games g ON g.code = r.code
@@ -161,6 +162,7 @@ export async function getLiveOpsOverview(env) {
     `).bind(now - 15 * 60 * 1000).all(),
     getLiveSystemStatus(env),
     listLiveCreatorInvites(env),
+    listChannelVerifications(env),
   ]);
   const active = (activeSessions.results || []).map(parseGameRow);
   const realtime = [];
@@ -187,6 +189,7 @@ export async function getLiveOpsOverview(env) {
     recentEventCounts: recentCounts.results || [],
     realtime,
     creatorInvites,
+    channelVerifications,
     infrastructure: {
       d1Configured: Boolean(env.REMOTE_DB),
       purchaseD1Configured: Boolean(purchaseDb),

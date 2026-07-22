@@ -24,12 +24,13 @@
     <div id="dashboard" hidden>
       <section class="panel"><h2>障害時のお知らせ</h2><div class="grid two"><div class="field"><label for="statusMode">状態</label><select id="statusMode"><option value="normal">通常</option><option value="degraded">一部障害</option><option value="maintenance">メンテナンス（新規作成・参加停止）</option></select></div><div class="field"><label for="statusTitle">見出し</label><input id="statusTitle" maxlength="80"></div></div><div class="field"><label for="statusMessage">利用者への案内</label><textarea id="statusMessage" maxlength="500"></textarea></div><div class="actions"><button class="button" id="saveStatus">公開状態を更新</button></div></section>
       <section class="panel"><h2>YouTuber招待・手動審査</h2><p class="help">本人・運営者との関係、チャンネル内容、画像利用許諾を運営が確認した場合だけ発行してください。</p><div class="field"><label for="inviteChannelUrl">審査済みYouTubeチャンネルURL</label><input id="inviteChannelUrl" type="url" placeholder="https://www.youtube.com/@handle"></div><label class="field"><span>審査確認</span><span><input id="inviteReviewed" type="checkbox" style="width:auto;min-height:auto"> 本人性・利用目的・連絡先を手動確認済み</span></label><div class="actions"><button class="button" id="issueInvite">招待コードを発行</button></div><div id="inviteOutput"></div><div class="cards" id="creatorInvites" style="margin-top:12px"></div></section>
+      <section class="panel"><h2>チャンネル所有・Stripe名義確認</h2><p class="help">有料販売の許可には、チャンネル所有、Stripe Connect本人確認、Connect名義とチャンネル運営者の関係確認、acct_から始まるアカウントIDの4点が必要です。OAuth・概要欄で所有確認済みの場合、その確認方式を手動審査で上書きしません。</p><div class="cards" id="channelVerifications"></div><div id="verificationReviewOutput"></div></section>
       <section class="panel"><h2>監視サマリー（直近15分）</h2><div class="grid two" id="metrics"></div><p class="help">Cloudflare全体の5xx・D1行数・Durable Objects使用量はCloudflare Dashboardの通知とMetricsが正です。この画面はアプリ内イベントと稼働中ルームのWebSocket切断率を表示します。</p></section>
       <section class="panel"><h2>稼働中・予約一覧</h2><p class="help">アップロード画像は承認まで視聴者・結果画像に使われません。不適切な画像は却下すると非公開ストレージから削除されます。</p><div class="cards" id="sessions"></div><div id="privateLinkOutput"></div></section>
       <section class="panel"><h2>購入権限・返金対応</h2><div class="field"><label for="purchaseSearch">購入ID・決済ID・ルームコードで絞り込み</label><input id="purchaseSearch" autocomplete="off"></div><div class="cards" id="entitlements" style="margin-top:12px"></div><div id="entitlementOutput"></div><p class="help">「返金待ち」は購入権限を即停止します。Stripe Dashboardで実返金後に「返金完了」を押してください。</p></section>
       <section class="panel"><h2>監視イベント</h2><div class="cards" id="events"></div></section>
     </div>
   </main>
-  <script data-build-entry="live_ops" src="/dist/live_ops-QD2MUO5Q.js"></script>
+  <script data-build-entry="live_ops" src="/dist/live_ops-BBRPLZI3.js"></script>
 </body>
 </html>

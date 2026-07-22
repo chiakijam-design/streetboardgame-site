@@ -16,6 +16,10 @@ const initialRoomCode = String(query.get('room') || '').replace(/\D/g, '').slice
 const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
 const initialHostToken = hashParams.get('host') || '';
 const initialSubjectToken = hashParams.get('subject') || '';
+const initialVerificationId = String(query.get('verify') || '').toLowerCase();
+const initialVerificationToken = hashParams.get('verification')
+  || (initialVerificationId ? sessionStorage.getItem(`live:verification:${initialVerificationId}`) : '')
+  || '';
 const initialCreatorInvite = sessionStorage.getItem('live:creator-invite') || '';
 if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialHostToken)) {
   sessionStorage.setItem(`live:host:${initialRoomCode}`, initialHostToken);
@@ -24,7 +28,8 @@ if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialSubjectToken)) {
   sessionStorage.setItem(`live:subject:${initialRoomCode}`, initialSubjectToken);
 }
 const state = {
-  view: initialRoomCode && initialHostToken && !initialCreatorInvite ? 'staff-auth' : initialRoomCode ? 'room-loading' : 'entry',
+  view: initialVerificationId ? 'channel-verification'
+    : initialRoomCode && initialHostToken && !initialCreatorInvite ? 'staff-auth' : initialRoomCode ? 'room-loading' : 'entry',
   roomCode: initialRoomCode,
   game: null,
   error: '',
@@ -33,6 +38,10 @@ const state = {
   youtubeQuestionType: '',
   channelUrl: '',
   channelProfile: null,
+  channelVerification: null,
+  channelVerificationId: initialVerificationId,
+  channelVerificationToken: initialVerificationToken,
+  channelVerificationBusy: false,
   creatorInvite: initialCreatorInvite,
   hostToken: initialRoomCode && !initialSubjectToken ? sessionStorage.getItem(`live:host:${initialRoomCode}`) || initialHostToken : '',
   subjectToken: initialRoomCode && !initialHostToken ? sessionStorage.getItem(`live:subject:${initialRoomCode}`) || initialSubjectToken : '',
@@ -68,7 +77,8 @@ async function initializeLivePage() {
     const response = await api('/api/live/status');
     state.systemStatus = response.status || state.systemStatus;
   } catch (error) { /* 状態APIが落ちていても静的ページ自体は表示する */ }
-  if (state.view === 'staff-auth') render();
+  if (state.view === 'channel-verification') await loadChannelVerification();
+  else if (state.view === 'staff-auth') render();
   else if (initialRoomCode) initializeRoom();
   else render();
 }
@@ -77,6 +87,7 @@ function render() {
   if (state.view === 'room-loading') return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
   if (state.view === 'staff-auth') return renderStaffAuth();
   if (state.view === 'entry') return renderEntry();
+  if (state.view === 'channel-verification') return renderChannelVerification();
   if (state.view === 'youtube-editor') return renderEditor();
   if (state.view === 'youtube-candidates') return renderYouTubeCandidates();
   if (state.view === 'join') return renderJoin();
@@ -170,6 +181,179 @@ function renderEntry() {
   });
 }
 
+function renderChannelVerification() {
+  const verification = state.channelVerification;
+  setPage(`
+    <section class="hero">
+      <span class="eyebrow">CHANNEL VERIFICATION</span>
+      <h1>YouTubeチャンネル所有者確認</h1>
+      <p>有料結果画像を販売するYouTuber本人・正式な運営者向けの確認画面です。</p>
+    </section>
+    <section class="panel" style="margin-top:18px">
+      ${verification ? `
+        <h2>${escapeHtml(verification.channelName)}</h2>
+        <p class="help">対象：<a href="${escapeAttr(verification.channelUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(verification.channelUrl)}</a></p>
+        ${verificationProgressHtml(verification)}
+        <div class="verification-methods">
+          <article class="question-card">
+            <span class="badge">推奨</span><h3>YouTubeアカウントで確認</h3>
+            <p class="help">Googleへログインし、このチャンネルを管理できるアカウントか確認します。読み取り権限だけを使い、確認後にアクセストークンを破棄します。</p>
+            <button class="primary" id="startChannelOAuth" ${verification.ownershipStatus === 'verified' || state.channelVerificationBusy ? 'disabled' : ''}>Googleでチャンネル所有を確認</button>
+          </article>
+          <article class="question-card">
+            <span class="badge">代替1</span><h3>チャンネル概要欄のコードで確認</h3>
+            <p class="help">次のコードをYouTubeチャンネルの概要欄へ一時掲載し、反映後に確認してください。確認完了後は削除できます。</p>
+            <div class="secret-output"><code id="channelConfirmationCode">${escapeHtml(verification.confirmationCode)}</code><button class="mini" id="copyConfirmationCode">コードをコピー</button></div>
+            <button class="secondary" id="verifyChannelDescription" ${verification.ownershipStatus === 'verified' || state.channelVerificationBusy ? 'disabled' : ''}>概要欄に掲載したコードを確認</button>
+          </article>
+          <article class="question-card">
+            <span class="badge">代替2</span><h3>運営による手動審査</h3>
+            <p class="help">OAuthや概要欄を使えない場合に申請してください。運営から、チャンネルとの関係を示す資料や連絡をお願いすることがあります。</p>
+            <button class="secondary" id="requestChannelManualReview" ${['verified', 'manual_pending'].includes(verification.ownershipStatus) || state.channelVerificationBusy ? 'disabled' : ''}>手動審査を申請</button>
+          </article>
+        </div>
+        ${errorHtml()}
+        <div class="actions"><button class="mini" id="refreshChannelVerification">確認状況を更新</button><a class="mini link-button" href="/live">LIVEトップへ戻る</a></div>
+        <div class="notice">この確認URLは本人確認用の秘密URLです。第三者へ転送・公開しないでください。</div>
+      ` : `
+        <h2>確認情報を読み込めません</h2>
+        ${errorHtml() || '<div class="error">確認URLが正しいか、発行したスタッフへ確認してください。</div>'}
+        <a class="mini link-button" href="/live">LIVEトップへ戻る</a>
+      `}
+    </section>
+  `);
+  bindChannelVerificationActions();
+}
+
+function verificationProgressHtml(verification) {
+  const ownershipLabel = {
+    pending: '未確認', manual_pending: '運営の手動審査待ち', verified: '所有確認済み', rejected: '確認却下',
+  }[verification.ownershipStatus] || '確認中';
+  const stripeLabel = {
+    pending: 'Stripe名義関係の審査待ち', verified: 'Stripe名義関係を確認済み', rejected: 'Stripe名義関係を確認できません',
+  }[verification.stripeRelationshipStatus] || 'Stripe審査中';
+  return `
+    <div class="verification-progress">
+      <div class="verification-step ${verification.ownershipStatus === 'verified' ? 'is-done' : ''}"><strong>1. チャンネル所有</strong><span>${escapeHtml(ownershipLabel)}</span></div>
+      <div class="verification-step ${verification.stripeIdentityVerified ? 'is-done' : ''}"><strong>2. Stripe本人確認</strong><span>${verification.stripeIdentityVerified ? '確認済み' : '運営の案内後に確認'}</span></div>
+      <div class="verification-step ${verification.stripeRelationshipStatus === 'verified' ? 'is-done' : ''}"><strong>3. 名義関係</strong><span>${escapeHtml(stripeLabel)}</span></div>
+    </div>
+    <div class="notice">${verification.canSellPaid
+      ? '有料結果画像を販売できます。'
+      : '無料LIVEはこのまま利用できます。有料販売は3項目すべての確認後に有効になります。'}</div>
+  `;
+}
+
+function bindChannelVerificationActions() {
+  bind('#copyConfirmationCode', 'click', () => copyText(state.channelVerification?.confirmationCode || ''));
+  bind('#refreshChannelVerification', 'click', loadChannelVerification);
+  bind('#verifyChannelDescription', 'click', () => updateChannelVerification('verify-description'));
+  bind('#requestChannelManualReview', 'click', () => {
+    if (confirm('運営へ手動審査を申請しますか？')) updateChannelVerification('manual-review');
+  });
+  bind('#startChannelOAuth', 'click', startChannelOAuth);
+}
+
+async function createChannelVerificationForDraft() {
+  state.channelVerificationBusy = true;
+  state.error = '';
+  render();
+  try {
+    const verification = await api('/api/live/channel-verifications', {
+      method: 'POST', headers: creatorInviteHeaders(), body: JSON.stringify({ channelUrl: state.channelUrl }),
+    });
+    state.channelVerification = verification;
+    state.channelVerificationId = verification.verificationId;
+    state.channelVerificationToken = verification.accessToken;
+    state.draft.channelVerificationId = verification.verificationId;
+    saveChannelVerificationAccess(verification);
+  } catch (error) {
+    state.error = humanError(error);
+  }
+  state.channelVerificationBusy = false;
+  render();
+}
+
+async function loadChannelVerification() {
+  if (!/^[a-f0-9]{32}$/i.test(state.channelVerificationId)
+    || !/^[a-f0-9]{48}$/i.test(state.channelVerificationToken)) {
+    state.error = '確認URLが無効です。スタッフに再発行を依頼してください';
+    return render();
+  }
+  sessionStorage.setItem(`live:verification:${state.channelVerificationId}`, state.channelVerificationToken);
+  state.channelVerificationBusy = true;
+  try {
+    state.channelVerification = await api(`/api/live/channel-verifications/${state.channelVerificationId}`, {
+      headers: verificationHeaders(),
+    });
+    state.error = '';
+    saveChannelVerificationAccess(state.channelVerification);
+  } catch (error) {
+    state.error = humanError(error);
+  }
+  state.channelVerificationBusy = false;
+  render();
+}
+
+async function updateChannelVerification(action) {
+  state.channelVerificationBusy = true;
+  state.error = '';
+  render();
+  try {
+    state.channelVerification = await api(`/api/live/channel-verifications/${state.channelVerificationId}/${action}`, {
+      method: 'POST', headers: verificationHeaders(), body: '{}',
+    });
+  } catch (error) {
+    state.error = humanError(error);
+  }
+  state.channelVerificationBusy = false;
+  render();
+}
+
+async function startChannelOAuth() {
+  const popup = window.open('about:blank', '_blank');
+  if (popup) popup.opener = null;
+  state.channelVerificationBusy = true;
+  state.error = '';
+  render();
+  try {
+    const response = await api(`/api/live/channel-verifications/${state.channelVerificationId}/oauth-start`, {
+      method: 'POST', headers: verificationHeaders(), body: '{}',
+    });
+    if (popup) popup.location.replace(response.authorizationUrl);
+    else location.assign(response.authorizationUrl);
+  } catch (error) {
+    if (popup) popup.close();
+    state.error = humanError(error);
+  }
+  state.channelVerificationBusy = false;
+  render();
+}
+
+function saveChannelVerificationAccess(verification) {
+  if (!verification?.verificationId || !state.channelVerificationToken) return;
+  sessionStorage.setItem(`live:verification:${verification.verificationId}`, state.channelVerificationToken);
+  if (verification.channelId) sessionStorage.setItem(`live:verification-channel:${verification.channelId}`, JSON.stringify({
+    verificationId: verification.verificationId,
+    accessToken: state.channelVerificationToken,
+  }));
+}
+
+function restoreChannelVerificationAccess(channelId) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(`live:verification-channel:${channelId}`) || '{}');
+    if (/^[a-f0-9]{32}$/i.test(saved.verificationId) && /^[a-f0-9]{48}$/i.test(saved.accessToken)) {
+      state.channelVerificationId = saved.verificationId;
+      state.channelVerificationToken = saved.accessToken;
+      state.draft.channelVerificationId = saved.verificationId;
+    }
+  } catch (error) { /* 壊れた端末内データは無視する */ }
+}
+
+function channelVerificationUrl() {
+  return `${location.origin}/live?verify=${state.channelVerificationId}#verification=${state.channelVerificationToken}`;
+}
+
 async function generateYouTubeCandidates(questionType) {
   state.error = '';
   state.youtubeQuestionType = questionType;
@@ -241,6 +425,7 @@ function renderYouTubeCandidates() {
       showLiveVoteCounts: false,
       questions: selected.map((question) => createLiveQuestion({ ...question, id: undefined })),
     };
+    restoreChannelVerificationAccess(state.draft.channelId);
     state.view = 'youtube-editor';
     state.error = '';
     render();
@@ -339,6 +524,7 @@ function renderEditor() {
           ${state.creatorImagePreviewUrl ? `<div class="creator-image-preview"><img src="${escapeAttr(state.creatorImagePreviewUrl)}" alt="登録するYouTuber画像"><button class="mini" id="removeCreatorImage" type="button">画像を外す</button></div>` : '<div class="notice">画像を登録しない場合は、従来の黒髪の女の子を表示します。</div>'}
           <div class="notice">元画像は視聴者へ送らず、企画保存時に非公開ストレージへ直接アップロードします。運営の画像審査で承認されるまでは既定画像を表示します。</div>
         </div>
+        ${channelOwnershipEditorHtml()}
         <div class="field editor-vote-setting"><span class="field-label">視聴者画面のライブ票数</span><label class="check"><input id="showLiveVoteCounts" type="checkbox" ${state.draft.showLiveVoteCounts ? 'checked' : ''}>全問題で選択肢別の現在票数を表示する</label><p class="help">この設定は企画全体に適用され、配信中は変更できません。</p></div>
       </div>
     </section>
@@ -383,9 +569,34 @@ function renderEditor() {
     state.creatorImagePreviewUrl = '';
     render();
   });
+  bind('#createChannelVerification', 'click', createChannelVerificationForDraft);
+  bind('#copyChannelVerificationUrl', 'click', () => copyText(channelVerificationUrl()));
+  bind('#refreshEditorChannelVerification', 'click', loadChannelVerification);
   bind('#showLiveVoteCounts', 'change', (event) => { state.draft.showLiveVoteCounts = event.target.checked; });
   document.querySelectorAll('[data-question-index]').forEach((card) => bindEditorCard(card));
   bind('#createGame', 'click', createGame);
+}
+
+function channelOwnershipEditorHtml() {
+  if (!state.channelVerificationId) {
+    return `
+      <div class="field editor-channel-verification">
+        <span class="field-label">有料結果画像の販売準備（任意）</span>
+        <div class="notice">無料LIVEの企画保存・配信には不要です。有料販売を行う場合だけ、YouTuber本人へチャンネル確認URLを送ってください。</div>
+        <button class="secondary" id="createChannelVerification" type="button" ${state.channelVerificationBusy ? 'disabled' : ''}>チャンネル所有確認URLを発行する</button>
+      </div>
+    `;
+  }
+  return `
+    <div class="field editor-channel-verification">
+      <span class="field-label">有料結果画像の販売準備</span>
+      ${state.channelVerification ? verificationProgressHtml(state.channelVerification) : '<div class="notice">この企画には所有確認手続きが紐づいています。最新状況を取得してください。</div>'}
+      <label for="channelVerificationUrl">YouTuber本人へ送る秘密URL</label>
+      <input id="channelVerificationUrl" readonly value="${escapeAttr(channelVerificationUrl())}">
+      <div class="actions"><button class="mini" id="copyChannelVerificationUrl" type="button">確認URLをコピー</button><button class="mini" id="refreshEditorChannelVerification" type="button">確認状況を更新</button></div>
+      <p class="help">このURLはYouTuber本人または正式なチャンネル運営者だけへ、安全な連絡手段で送ってください。</p>
+    </div>
+  `;
 }
 
 function editorQuestionCard(question, index) {
@@ -1287,6 +1498,7 @@ function creatorInviteHeaders() { return isCreatorInviteReady() ? { 'x-live-crea
 function hostHeaders() { return { 'x-live-host-token': state.hostToken, ...creatorInviteHeaders() }; }
 function subjectHeaders() { return { 'x-live-subject-token': state.subjectToken }; }
 function participantHeaders() { return { 'x-live-participant-token': state.participantToken }; }
+function verificationHeaders() { return { 'x-live-verification-token': state.channelVerificationToken }; }
 
 async function api(path, options = {}) {
   const contentHeaders = options.body instanceof FormData ? {} : { 'content-type': 'application/json' };
@@ -1313,6 +1525,16 @@ function humanError(error) {
     'youtube-api-not-configured': 'YouTube公式APIの設定が未完了です。運営者がAPIキーを設定するまで問題を生成できません',
     'youtube-api-quota-exceeded': 'YouTube公式APIの本日の利用上限に達しました。時間を置いてお試しください',
     'youtube-api-request-failed': 'YouTube公式APIから情報を取得できませんでした。URLを確認して再度お試しください',
+    'verification-forbidden': 'チャンネル確認URLが無効です。発行したスタッフへ確認してください',
+    'verification-not-found': 'チャンネル確認手続きが見つかりません。発行したスタッフへ確認してください',
+    'verification-already-verified': 'このチャンネルの所有確認は完了しています',
+    'verification-rejected': 'この確認申請は運営により却下されています。スタッフから新しい確認URLを受け取ってください',
+    'youtube-confirmation-code-not-found': 'チャンネル概要欄に確認コードが見つかりません。公開反映を確認してから再度お試しください',
+    'youtube-oauth-not-configured': 'YouTubeアカウント確認の本番設定が未完了です。概要欄コードまたは手動審査をご利用ください',
+    'youtube-oauth-callback-invalid': 'Googleからの確認結果が不完全です。もう一度お試しください',
+    'youtube-oauth-state-invalid': '確認の有効時間を過ぎました。元の画面からもう一度お試しください',
+    'youtube-oauth-token-failed': 'Googleアカウントの確認に失敗しました。もう一度お試しください',
+    'youtube-channel-not-owned': 'このGoogleアカウントでは対象チャンネルの所有を確認できませんでした',
     'youtube-creation-required': 'LIVEゲームはYouTubeチャンネルから作成してください',
     'creator-invite-required': '初期版は招待制です。運営から発行された招待コードを入力してください',
     'creator-invite-invalid': '招待コードが無効・期限切れ・別チャンネル用です。運営へ確認してください',

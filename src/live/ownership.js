@@ -1,4 +1,5 @@
 import { fetchOwnedYouTubeChannels, fetchYouTubeDataProfile } from './youtube.js';
+import { requireLiveCreatorInvite } from './security.js';
 
 const VERIFY_TOKEN_HEADER = 'x-live-verification-token';
 
@@ -6,6 +7,7 @@ export async function createChannelVerification(request, env) {
   requireD1(env);
   const body = await request.json().catch(() => ({}));
   const profile = await fetchYouTubeDataProfile(body.channelUrl, env);
+  await requireLiveCreatorInvite(request, env, profile.channelId);
   const verificationId = randomHex(16);
   const accessToken = randomHex(24);
   const confirmationCode = `SBLV-${randomHex(4).toUpperCase()}-${randomHex(4).toUpperCase()}`;
@@ -45,8 +47,21 @@ export async function getChannelVerification(request, env, verificationId) {
   return json(publicVerification(row));
 }
 
+export async function listChannelVerifications(env, limit = 100) {
+  requireD1(env);
+  const safeLimit = Math.min(200, Math.max(1, Number(limit) || 100));
+  const result = await env.REMOTE_DB.prepare(`
+    SELECT verification_id, channel_id, channel_name, channel_url, ownership_status,
+      ownership_method, stripe_account_id, stripe_identity_verified,
+      stripe_relationship_status, verified_at, reviewed_at, created_at, updated_at
+    FROM live_channel_verifications ORDER BY updated_at DESC LIMIT ?
+  `).bind(safeLimit).all();
+  return (result.results || []).map(adminVerification);
+}
+
 export async function verifyChannelDescription(request, env, verificationId) {
   const row = await requireVerification(request, env, verificationId);
+  assertVerificationOpen(row);
   const profile = await fetchYouTubeDataProfile(`https://www.youtube.com/channel/${row.channel_id}`, env);
   if (!String(profile.description || '').includes(row.confirmation_code)) {
     throw ownershipError('youtube-confirmation-code-not-found', 409);
@@ -61,7 +76,8 @@ export async function verifyChannelDescription(request, env, verificationId) {
 }
 
 export async function requestManualReview(request, env, verificationId) {
-  await requireVerification(request, env, verificationId);
+  const row = await requireVerification(request, env, verificationId);
+  assertVerificationOpen(row);
   await env.REMOTE_DB.prepare(`
     UPDATE live_channel_verifications
     SET ownership_status = 'manual_pending', ownership_method = 'manual', updated_at = ?
@@ -71,10 +87,12 @@ export async function requestManualReview(request, env, verificationId) {
 }
 
 export async function startYouTubeOAuth(request, env, verificationId) {
-  await requireVerification(request, env, verificationId);
+  const verification = await requireVerification(request, env, verificationId);
+  assertVerificationOpen(verification);
   const clientId = String(env.YOUTUBE_OAUTH_CLIENT_ID || '');
+  const clientSecret = String(env.YOUTUBE_OAUTH_CLIENT_SECRET || '');
   const redirectUri = String(env.YOUTUBE_OAUTH_REDIRECT_URI || '');
-  if (!clientId || !redirectUri) throw ownershipError('youtube-oauth-not-configured', 503);
+  if (!clientId || !clientSecret || !redirectUri) throw ownershipError('youtube-oauth-not-configured', 503);
   const state = randomHex(32);
   const expiresAt = Date.now() + 10 * 60 * 1000;
   await env.REMOTE_DB.prepare(`
@@ -95,6 +113,9 @@ export async function startYouTubeOAuth(request, env, verificationId) {
 
 export async function completeYouTubeOAuth(request, env) {
   requireD1(env);
+  if (!env.YOUTUBE_OAUTH_CLIENT_ID || !env.YOUTUBE_OAUTH_CLIENT_SECRET || !env.YOUTUBE_OAUTH_REDIRECT_URI) {
+    throw ownershipError('youtube-oauth-not-configured', 503);
+  }
   const url = new URL(request.url);
   const state = url.searchParams.get('state') || '';
   const code = url.searchParams.get('code') || '';
@@ -104,6 +125,7 @@ export async function completeYouTubeOAuth(request, env) {
     WHERE oauth_state_hash = ? AND oauth_state_expires_at > ?
   `).bind(await sha256(state), Date.now()).first();
   if (!row) throw ownershipError('youtube-oauth-state-invalid', 400);
+  assertVerificationOpen(row);
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -136,17 +158,31 @@ export async function completeYouTubeOAuth(request, env) {
 export async function reviewChannelVerification(request, env, verificationId) {
   requireD1(env);
   const body = await request.json().catch(() => ({}));
-  const ownershipStatus = ['verified', 'rejected', 'manual_pending'].includes(body.ownershipStatus)
-    ? body.ownershipStatus
-    : 'manual_pending';
-  const stripeRelationshipStatus = ['verified', 'rejected', 'pending'].includes(body.stripeRelationshipStatus)
-    ? body.stripeRelationshipStatus
-    : 'pending';
-  const stripeAccountId = /^acct_[A-Za-z0-9]+$/.test(String(body.stripeAccountId || '')) ? String(body.stripeAccountId) : '';
+  const current = await env.REMOTE_DB.prepare('SELECT * FROM live_channel_verifications WHERE verification_id = ?')
+    .bind(verificationId).first();
+  if (!current) throw ownershipError('verification-not-found', 404);
+  const ownershipStatus = body.ownershipStatus === undefined
+    ? current.ownership_status
+    : normalizeReviewStatus(body.ownershipStatus, ['verified', 'rejected', 'manual_pending'], 'invalid-ownership-status');
+  const stripeRelationshipStatus = body.stripeRelationshipStatus === undefined
+    ? current.stripe_relationship_status
+    : normalizeReviewStatus(body.stripeRelationshipStatus, ['verified', 'rejected', 'pending'], 'invalid-stripe-relationship-status');
+  const requestedStripeAccountId = body.stripeAccountId === undefined ? current.stripe_account_id : body.stripeAccountId;
+  const stripeAccountId = /^acct_[A-Za-z0-9]+$/.test(String(requestedStripeAccountId || ''))
+    ? String(requestedStripeAccountId)
+    : '';
+  const stripeIdentityVerified = body.stripeIdentityVerified === undefined
+    ? Number(current.stripe_identity_verified) === 1
+    : body.stripeIdentityVerified === true;
+  if ((stripeIdentityVerified || stripeRelationshipStatus === 'verified') && !stripeAccountId) {
+    throw ownershipError('stripe-account-required', 400);
+  }
   const now = Date.now();
   await env.REMOTE_DB.prepare(`
     UPDATE live_channel_verifications
-    SET ownership_status = ?, ownership_method = CASE WHEN ? = 'verified' THEN 'manual' ELSE ownership_method END,
+    SET ownership_status = ?, ownership_method = CASE
+          WHEN ownership_status != 'verified' AND ? = 'verified' THEN 'manual'
+          ELSE ownership_method END,
         stripe_account_id = ?, stripe_identity_verified = ?, stripe_relationship_status = ?,
         verified_at = CASE WHEN ? = 'verified' THEN COALESCE(verified_at, ?) ELSE verified_at END,
         reviewed_at = ?, reviewed_by = 'admin', updated_at = ?
@@ -155,7 +191,7 @@ export async function reviewChannelVerification(request, env, verificationId) {
     ownershipStatus,
     ownershipStatus,
     stripeAccountId,
-    body.stripeIdentityVerified === true ? 1 : 0,
+    stripeIdentityVerified ? 1 : 0,
     stripeRelationshipStatus,
     ownershipStatus,
     now,
@@ -164,19 +200,19 @@ export async function reviewChannelVerification(request, env, verificationId) {
     verificationId,
   ).run();
   const row = await env.REMOTE_DB.prepare('SELECT * FROM live_channel_verifications WHERE verification_id = ?').bind(verificationId).first();
-  if (!row) throw ownershipError('verification-not-found', 404);
-  return json(publicVerification(row));
+  return json(adminVerification(row));
 }
 
 export async function assertPaidChannelApproved(env, verificationId, channelId) {
   requireD1(env);
   if (!verificationId) throw ownershipError('paid-channel-verification-required', 403);
   const row = await env.REMOTE_DB.prepare(`
-    SELECT ownership_status, stripe_relationship_status, stripe_identity_verified, channel_id
+    SELECT ownership_status, stripe_relationship_status, stripe_identity_verified, stripe_account_id, channel_id
     FROM live_channel_verifications WHERE verification_id = ?
   `).bind(verificationId).first();
   if (!row || row.channel_id !== channelId || row.ownership_status !== 'verified'
-    || row.stripe_relationship_status !== 'verified' || Number(row.stripe_identity_verified) !== 1) {
+    || row.stripe_relationship_status !== 'verified' || Number(row.stripe_identity_verified) !== 1
+    || !/^acct_[A-Za-z0-9]+$/.test(String(row.stripe_account_id || ''))) {
     throw ownershipError('paid-channel-verification-required', 403);
   }
 }
@@ -190,10 +226,16 @@ async function requireVerification(request, env, verificationId) {
   return row;
 }
 
+function assertVerificationOpen(row) {
+  if (row.ownership_status === 'verified') throw ownershipError('verification-already-verified', 409);
+  if (row.ownership_status === 'rejected') throw ownershipError('verification-rejected', 409);
+}
+
 function publicVerification(row) {
   const canSellPaid = row.ownership_status === 'verified'
     && row.stripe_relationship_status === 'verified'
-    && Number(row.stripe_identity_verified) === 1;
+    && Number(row.stripe_identity_verified) === 1
+    && /^acct_[A-Za-z0-9]+$/.test(String(row.stripe_account_id || ''));
   return {
     verificationId: row.verification_id,
     channelId: row.channel_id,
@@ -208,6 +250,20 @@ function publicVerification(row) {
     verifiedAt: row.verified_at || undefined,
     updatedAt: row.updated_at,
   };
+}
+
+function adminVerification(row) {
+  return {
+    ...publicVerification(row),
+    stripeAccountId: String(row.stripe_account_id || ''),
+    reviewedAt: row.reviewed_at || undefined,
+    createdAt: row.created_at,
+  };
+}
+
+function normalizeReviewStatus(value, allowed, message) {
+  if (!allowed.includes(value)) throw ownershipError(message, 400);
+  return value;
 }
 
 function requireD1(env) {
