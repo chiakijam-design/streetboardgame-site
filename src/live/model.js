@@ -65,7 +65,7 @@ export function validateLiveDraft(input) {
     if (creationMode === 'youtube' && (!['guess-person', 'guess-majority'].includes(question.type) || question.type !== youtubeType)) {
       errors.push(`Q${index + 1}の問題タイプを統一してください`);
     }
-    if (question.type !== 'poll' && question.lockedIndex === null) {
+    if (creationMode !== 'youtube' && question.type !== 'poll' && question.lockedIndex === null) {
       errors.push(`Q${index + 1}の非公開回答・予想を選んでください`);
     }
   });

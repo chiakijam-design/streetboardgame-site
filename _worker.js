@@ -165,7 +165,7 @@ export default {
       },
       '/live-guide': {
         title: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE｜ライブ投票ゲーム',
-        description: 'YouTubeチャンネルや動画のURLからチャンネル固有の問題候補を作り、6桁のルームコードで視聴者を招待する無料ライブ投票ゲームです。',
+        description: '撮影スタッフがYouTubeチャンネルから問題企画を保存し、配信中に本人と視聴者が回答できる無料ライブ投票ゲームです。',
         url: CANONICAL_ORIGIN + '/live-guide',
         ogTitle: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
         imageAlt: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE ライブ投票ゲーム',
@@ -176,7 +176,7 @@ export default {
         genre: ['ライブ投票ゲーム', '視聴者参加型ゲーム', 'YouTuber向けゲーム', 'クイズゲーム'],
         keywords: 'ライブ投票ゲーム, 視聴者参加型ゲーム, YouTuber ゲーム, YouTube 企画, 無料ゲーム, わたちゃん',
         noscriptTitle: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
-        noscriptBody: 'YouTubeチャンネルや動画のURLから問題候補を作り、視聴者がルームコードで入って投票する無料ライブゲームです。',
+        noscriptBody: 'YouTubeチャンネルからスタッフが問題企画を保存し、配信中に本人が回答してから視聴者がルームコードで投票する無料ライブゲームです。',
         faq: [
           {
             question: '参加者はどうやってLIVEゲームに入りますか？',
@@ -189,6 +189,14 @@ export default {
           {
             question: '問題や選択肢は編集できますか？',
             answer: '問題文と選択肢は編集できます。選択肢は各問題5個で固定されます。',
+          },
+          {
+            question: '本人の答えはいつ入力しますか？',
+            answer: '企画作成時には入力しません。配信中に問題を1問ずつ表示し、本人が回答を確定してから視聴者投票を始めます。',
+          },
+          {
+            question: '視聴者も自分の結果を確認できますか？',
+            answer: '正解発表時と最終結果で、自分が選んだ回答と正誤を各視聴者の画面に表示します。',
           },
         ],
       },

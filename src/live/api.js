@@ -1,6 +1,7 @@
 import { calculateLiveResult, validateLiveDraft } from './model.js';
 
-const LIVE_TTL_SECONDS = 60 * 60 * 24;
+const LIVE_ACTIVE_TTL_SECONDS = 60 * 60 * 24;
+const LIVE_SAVED_TTL_SECONDS = 60 * 60 * 24 * 30;
 const LIVE_CODE_PATTERN = /^[0-9]{6}$/;
 let liveD1ReadyPromise = null;
 let liveRateLimitReadyPromise = null;
@@ -20,7 +21,7 @@ export async function handleLiveApi(request, env, path) {
       return await createLiveGame(request, env);
     }
 
-    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|vote|close|next))?$/);
+    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|vote|close|next))?$/);
     if (!route) return liveJson({ error: 'not-found' }, 404);
     const [, code, action = ''] = route;
     if (request.method === 'GET' && !action) return await getLiveGameResponse(request, env, code);
@@ -33,7 +34,7 @@ export async function handleLiveApi(request, env, path) {
       await enforceLiveRateLimit(request, env, 'vote', 600);
       return await voteLiveGame(request, env, code);
     }
-    if (['start', 'close', 'next'].includes(action)) {
+    if (['start', 'answer', 'close', 'next'].includes(action)) {
       await enforceLiveRateLimit(request, env, 'host', 300);
       return await updateLiveGameAsHost(request, env, code, action);
     }
@@ -51,7 +52,7 @@ async function createLiveGame(request, env) {
   await cleanupExpiredLiveData(env);
   const now = Date.now();
   const game = {
-    version: 1,
+    version: 2,
     title: validation.draft.title,
     subjectName: validation.draft.subjectName,
     questions: validation.draft.questions,
@@ -63,7 +64,7 @@ async function createLiveGame(request, env) {
     results: [],
     createdAt: now,
     updatedAt: now,
-    expiresAt: now + LIVE_TTL_SECONDS * 1000,
+    expiresAt: now + LIVE_SAVED_TTL_SECONDS * 1000,
   };
   let code = createLiveCode();
   for (let attempt = 0; attempt < 8 && await getStoredLiveGame(env, code); attempt += 1) code = createLiveCode();
@@ -149,10 +150,21 @@ async function updateLiveGameAsHost(request, env, code, action) {
   if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
   if (action === 'start') {
     if (game.phase !== 'lobby') throw liveError('game-already-started', 409);
+    game.phase = nextQuestionPhase(game.questions[game.currentQuestionIndex]);
+  } else if (action === 'answer') {
+    if (game.phase !== 'answering') throw liveError('answer-not-open', 409);
+    const question = game.questions[game.currentQuestionIndex];
+    const body = await readLiveJson(request);
+    const optionIndex = Number(body && body.optionIndex);
+    if (!question || !Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= question.options.length) {
+      throw liveError('invalid-option', 400);
+    }
+    question.lockedIndex = optionIndex;
     game.phase = 'voting';
   } else if (action === 'close') {
     if (game.phase !== 'voting') throw liveError('voting-not-open', 409);
     const question = game.questions[game.currentQuestionIndex];
+    if (question.type !== 'poll' && !Number.isInteger(question.lockedIndex)) throw liveError('answer-required', 409);
     const result = calculateLiveResult(question, game.votes[question.id] || {});
     game.results = [...game.results.filter((item) => item.questionId !== question.id), result];
     game.phase = 'reveal';
@@ -162,12 +174,16 @@ async function updateLiveGameAsHost(request, env, code, action) {
       game.phase = 'complete';
     } else {
       game.currentQuestionIndex += 1;
-      game.phase = 'voting';
+      game.phase = nextQuestionPhase(game.questions[game.currentQuestionIndex]);
     }
   }
   touchLiveGame(game);
   await putStoredLiveGame(env, code, game);
   return liveJson({ code, game: publicLiveGame(game, { host: true }) });
+}
+
+function nextQuestionPhase(question) {
+  return question && question.type !== 'poll' && !Number.isInteger(question.lockedIndex) ? 'answering' : 'voting';
 }
 
 export function publicLiveGame(game, access = {}) {
@@ -176,9 +192,15 @@ export function publicLiveGame(game, access = {}) {
   const participant = access.participantToken
     ? game.participants.find((item) => item.token === access.participantToken)
     : null;
-  const revealResult = question && ['reveal', 'complete'].includes(game.phase)
+  const storedRevealResult = question && ['reveal', 'complete'].includes(game.phase)
     ? game.results.find((item) => item.questionId === question.id) || null
     : null;
+  const revealResult = storedRevealResult
+    ? participantLiveResult(storedRevealResult, participant, game.votes)
+    : null;
+  const completedResults = game.phase === 'complete'
+    ? game.results.map((result) => participantLiveResult(result, participant, game.votes))
+    : [];
   return {
     title: game.title,
     subjectName: game.subjectName,
@@ -198,10 +220,25 @@ export function publicLiveGame(game, access = {}) {
     myVoteIndex: participant && Object.prototype.hasOwnProperty.call(currentVotes, participant.id)
       ? Number(currentVotes[participant.id])
       : null,
-    results: game.phase === 'complete' ? game.results : [],
+    results: completedResults,
     host: Boolean(access.host),
     questions: access.host ? game.questions.map(({ id, type, text, options }) => ({ id, type, text, options })) : undefined,
+    expiresAt: access.host ? game.expiresAt : undefined,
   };
+}
+
+function participantLiveResult(result, participant, votes) {
+  if (!participant || !result) return result;
+  const questionVotes = votes && votes[result.questionId] || {};
+  const hasVote = Object.prototype.hasOwnProperty.call(questionVotes, participant.id);
+  const myVoteIndex = hasVote ? Number(questionVotes[participant.id]) : null;
+  if (result.type === 'guess-person') {
+    return { ...result, myVoteIndex, myIsCorrect: hasVote ? myVoteIndex === result.subjectAnswerIndex : null };
+  }
+  if (result.type === 'guess-majority') {
+    return { ...result, myVoteIndex, myVoteWasPopular: hasVote ? result.popularIndices.includes(myVoteIndex) : null };
+  }
+  return { ...result, myVoteIndex };
 }
 
 async function createYouTubeCandidatesResponse(request) {
@@ -796,7 +833,8 @@ async function putStoredLiveGame(env, code, game) {
   }
   const kv = env.LIVE_KV || env.REMOTE_KV;
   if (!kv) throw liveError('live-storage-not-configured', 500);
-  await kv.put(`live:${code}`, JSON.stringify(game), { expirationTtl: LIVE_TTL_SECONDS });
+  const ttlSeconds = game.phase === 'lobby' ? LIVE_SAVED_TTL_SECONDS : LIVE_ACTIVE_TTL_SECONDS;
+  await kv.put(`live:${code}`, JSON.stringify(game), { expirationTtl: ttlSeconds });
 }
 
 async function cleanupExpiredLiveData(env) {
@@ -845,7 +883,8 @@ async function enforceLiveRateLimit(request, env, scope, limit) {
 
 function touchLiveGame(game) {
   game.updatedAt = Date.now();
-  game.expiresAt = game.updatedAt + LIVE_TTL_SECONDS * 1000;
+  const ttlSeconds = game.phase === 'lobby' ? LIVE_SAVED_TTL_SECONDS : LIVE_ACTIVE_TTL_SECONDS;
+  game.expiresAt = game.updatedAt + ttlSeconds * 1000;
 }
 
 function createLiveCode() {
