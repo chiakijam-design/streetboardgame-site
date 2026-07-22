@@ -268,8 +268,8 @@ export function generateYouTubeQuestions(profile, seed = 0, questionType = 'gues
   const name = String(profile && profile.channelName || 'このチャンネル').trim() || 'このチャンネル';
   const videos = Array.isArray(profile && profile.videoTitles) ? profile.videoTitles.filter(Boolean).slice(0, 20) : [];
   const videoOptions = (offset) => videos.length >= 2
-    ? Array.from({ length: Math.min(4, videos.length) }, (_, index) => videos[(offset + index) % videos.length])
-    : ['トーク企画', 'チャレンジ企画', 'コラボ企画', '生配信'];
+    ? Array.from({ length: Math.min(5, videos.length) }, (_, index) => videos[(offset + index) % videos.length])
+    : ['トーク企画', 'チャレンジ企画', 'コラボ企画', '生配信', '密着・日常企画'];
   const personTemplates = [
     ['本人が初めて見る人に一番おすすめしたい動画は？', videoOptions(0)],
     ['本人が今もう一度見てほしい動画は？', videoOptions(3)],
@@ -344,11 +344,20 @@ export function generateYouTubeQuestions(profile, seed = 0, questionType = 'gues
     id: `${idPrefix}-${seed}-${index}`,
     type: questionType === 'guess-majority' ? 'guess-majority' : 'guess-person',
     text,
-    options,
+    options: normalizeYouTubeOptions(options),
     lockedIndex: null,
     selected: index < 5,
     recommended: index < 5,
   }));
+}
+
+function normalizeYouTubeOptions(options) {
+  const normalized = [...new Set((options || []).map((option) => String(option || '').trim()).filter(Boolean))];
+  for (const fallback of ['その他', 'どれも同じくらい', 'まだわからない', '特に決めていない', '別の答え']) {
+    if (normalized.length >= 5) break;
+    if (!normalized.includes(fallback)) normalized.push(fallback);
+  }
+  return normalized.slice(0, 5);
 }
 
 function extractMeta(html, property) {

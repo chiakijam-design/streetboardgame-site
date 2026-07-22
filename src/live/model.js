@@ -8,7 +8,7 @@ export function createLiveQuestion(overrides = {}) {
     type: LIVE_TYPE_VALUES.includes(overrides.type) ? overrides.type : 'guess-person',
     text: String(overrides.text || ''),
     options: Array.isArray(overrides.options) && overrides.options.length >= 2
-      ? overrides.options.slice(0, 4).map(String)
+      ? overrides.options.slice(0, 5).map(String)
       : ['', ''],
     lockedIndex: Number.isInteger(overrides.lockedIndex) ? overrides.lockedIndex : null,
     selected: overrides.selected !== false,
@@ -16,10 +16,10 @@ export function createLiveQuestion(overrides = {}) {
   };
 }
 
-export function normalizeLiveQuestion(question) {
+export function normalizeLiveQuestion(question, maxOptions = 5) {
   const source = question && typeof question === 'object' ? question : {};
   const options = Array.isArray(source.options)
-    ? source.options.slice(0, 4).map((option) => normalizeText(option, 60)).filter(Boolean)
+    ? source.options.slice(0, maxOptions).map((option) => normalizeText(option, 60)).filter(Boolean)
     : [];
   const type = LIVE_TYPE_VALUES.includes(source.type) ? source.type : 'poll';
   const lockedIndex = source.lockedIndex === null || source.lockedIndex === undefined || source.lockedIndex === ''
@@ -38,8 +38,13 @@ export function normalizeLiveQuestion(question) {
 
 export function validateLiveDraft(input) {
   const source = input && typeof input === 'object' ? input : {};
-  const questions = Array.isArray(source.questions) ? source.questions.map(normalizeLiveQuestion) : [];
+  const creationMode = source.creationMode === 'youtube' ? 'youtube' : 'manual';
+  const maxOptions = creationMode === 'youtube' ? 5 : 4;
+  const questions = Array.isArray(source.questions)
+    ? source.questions.map((question) => normalizeLiveQuestion(question, maxOptions))
+    : [];
   const draft = {
+    creationMode,
     title: normalizeText(source.title, 80),
     subjectName: normalizeText(source.subjectName, 40),
     questions,
@@ -48,9 +53,18 @@ export function validateLiveDraft(input) {
   if (!draft.title) errors.push('ゲームタイトルを入力してください');
   if (!draft.subjectName) errors.push('主役または回答者の名前を入力してください');
   if (questions.length < 1) errors.push('問題を1問以上作ってください');
+  if (creationMode === 'youtube' && questions.length > 30) errors.push('YouTubeモードの問題は30問以内にしてください');
+  const youtubeType = creationMode === 'youtube' ? questions[0]?.type : '';
   questions.forEach((question, index) => {
     if (!question.text) errors.push(`Q${index + 1}の問題文を入力してください`);
-    if (question.options.length < 2) errors.push(`Q${index + 1}の選択肢を2個以上入力してください`);
+    if (creationMode === 'youtube' && question.options.length !== 5) {
+      errors.push(`Q${index + 1}の選択肢を5個入力してください`);
+    } else if (creationMode !== 'youtube' && question.options.length < 2) {
+      errors.push(`Q${index + 1}の選択肢を2個以上入力してください`);
+    }
+    if (creationMode === 'youtube' && (!['guess-person', 'guess-majority'].includes(question.type) || question.type !== youtubeType)) {
+      errors.push(`Q${index + 1}の問題タイプを統一してください`);
+    }
     if (question.type !== 'poll' && question.lockedIndex === null) {
       errors.push(`Q${index + 1}の非公開回答・予想を選んでください`);
     }

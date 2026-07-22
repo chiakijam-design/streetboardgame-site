@@ -168,6 +168,7 @@ function renderYouTubeCandidates() {
     const selected = state.candidates.filter((question) => question.selected);
     if (!selected.length) { state.error = '使用する問題を1問以上選んでください'; return render(); }
     state.draft = {
+      creationMode: 'youtube',
       title: `${state.channelProfile?.channelName || 'YouTube'} ${LIVE_SERIES.name}`,
       subjectName: state.channelProfile?.channelName || '',
       questions: selected.map((question) => createLiveQuestion({ ...question, id: undefined })),
@@ -242,13 +243,13 @@ function renderEditor() {
     <section class="panel">
       <span class="eyebrow">GAME EDITOR</span>
       <h2 style="margin-top:12px">問題を編集する</h2>
-      <p class="help">${escapeHtml(LIVE_SERIES.recommendedQuestionCount)}</p>
+      <p class="help">${isYouTubeEditor ? '30問の候補から選んだ問題だけを使います。各問題の選択肢は5個固定です。' : escapeHtml(LIVE_SERIES.recommendedQuestionCount)}</p>
       ${isYouTubeEditor ? `<div class="notice">このゲームの問題タイプは「${escapeHtml(LIVE_TYPE_LABELS[state.youtubeQuestionType] || '')}」で統一されます。</div>` : ''}
       <div class="field"><label for="gameTitle">ゲームタイトル</label><input id="gameTitle" maxlength="80" value="${escapeAttr(state.draft.title)}"></div>
       <div class="field"><label for="subjectName">主役または回答者の名前</label><input id="subjectName" maxlength="40" value="${escapeAttr(state.draft.subjectName)}"></div>
     </section>
     <section class="panel">
-      <div class="question-head"><div><h2>問題</h2><p class="help">現在 ${state.draft.questions.length}問</p></div><button class="secondary" id="addQuestion">＋ 問題を追加</button></div>
+      <div class="question-head"><div><h2>問題</h2><p class="help">現在 ${state.draft.questions.length}問${isYouTubeEditor ? '（30問から選択）' : ''}</p></div>${isYouTubeEditor ? '' : '<button class="secondary" id="addQuestion">＋ 問題を追加</button>'}</div>
       <div class="question-list">
         ${state.draft.questions.map((question, index) => editorQuestionCard(question, index)).join('')}
       </div>
@@ -260,7 +261,7 @@ function renderEditor() {
   bind('#gameTitle', 'input', (event) => { state.draft.title = event.target.value; });
   bind('#subjectName', 'input', (event) => { state.draft.subjectName = event.target.value; });
   bind('#addQuestion', 'click', () => {
-    state.draft.questions.push(createLiveQuestion({ type: isYouTubeEditor ? state.youtubeQuestionType : undefined }));
+    state.draft.questions.push(createLiveQuestion());
     render();
   });
   document.querySelectorAll('[data-question-index]').forEach((card) => bindEditorCard(card));
@@ -269,6 +270,7 @@ function renderEditor() {
 
 function editorQuestionCard(question, index) {
   const typeInfo = LIVE_QUESTION_TYPES.find((item) => item.value === question.type);
+  const isYouTubeEditor = state.view === 'youtube-editor';
   return `
     <article class="question-card" data-question-index="${index}">
       <div class="question-head">
@@ -281,12 +283,12 @@ function editorQuestionCard(question, index) {
       </div>
       <div class="field"><label>問題文</label><textarea data-field="question-text" maxlength="180">${escapeHtml(question.text)}</textarea></div>
       <div class="field"><label>問題タイプ</label>${typeSelect(question.type, 'question-type', state.view === 'youtube-editor')}</div>
-      <div class="field"><span class="field-label">選択肢（2〜4個）</span>
-        ${question.options.map((option, optionIndex) => `
-          <div class="option-row"><input data-editor-option="${optionIndex}" maxlength="60" value="${escapeAttr(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}">
-          <button data-action="remove-option" data-option="${optionIndex}" ${question.options.length <= 2 ? 'disabled' : ''} aria-label="選択肢${optionIndex + 1}を削除">−</button></div>
-        `).join('')}
-        ${question.options.length < 4 ? '<button class="mini" data-action="add-option" style="margin-top:8px">＋ 選択肢を追加</button>' : ''}
+      <div class="field"><span class="field-label">${isYouTubeEditor ? '選択肢（5個固定）' : '選択肢（2〜4個）'}</span>
+        ${question.options.map((option, optionIndex) => isYouTubeEditor
+          ? `<input data-editor-option="${optionIndex}" maxlength="60" value="${escapeAttr(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}">`
+          : `<div class="option-row"><input data-editor-option="${optionIndex}" maxlength="60" value="${escapeAttr(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}">
+          <button data-action="remove-option" data-option="${optionIndex}" ${question.options.length <= 2 ? 'disabled' : ''} aria-label="選択肢${optionIndex + 1}を削除">−</button></div>`).join('')}
+        ${!isYouTubeEditor && question.options.length < 4 ? '<button class="mini" data-action="add-option" style="margin-top:8px">＋ 選択肢を追加</button>' : ''}
       </div>
       ${question.type !== 'poll' ? `
         <div class="field"><label>${escapeHtml(typeInfo?.predictionLabel || '非公開回答')}</label>
@@ -499,7 +501,7 @@ function setPage(content, withTopbar = true) {
 }
 
 function createBlankDraft() {
-  return { title: LIVE_SERIES.defaultGameTitle, subjectName: '', questions: [createLiveQuestion()] };
+  return { creationMode: 'manual', title: LIVE_SERIES.defaultGameTitle, subjectName: '', questions: [createLiveQuestion()] };
 }
 
 function typeSelect(value, field, disabled = false) {
