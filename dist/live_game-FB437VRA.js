@@ -38,12 +38,20 @@
         <button class="secondary" data-youtube-type="guess-majority" ${t.systemStatus.mode==="maintenance"||!j()?"disabled":""}>${o(S.youtubeMajorityGenerateLabel)} <span class="accent">\u25B6</span></button>
       </div>
     </section>
-    <section class="panel" style="margin-top:18px">
-      <h2>\u30EB\u30FC\u30E0\u306B\u53C2\u52A0\u3059\u308B</h2>
-      <p class="help">\u53F8\u4F1A\u8005\u304B\u3089\u53D7\u3051\u53D6\u3063\u305F6\u6841\u306E\u30B3\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002</p>
-      <div class="field"><label for="entryRoomCode">\u30EB\u30FC\u30E0\u30B3\u30FC\u30C9</label><input id="entryRoomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div>
+    <section class="panel viewer-entry-panel" style="margin-top:18px" aria-labelledby="viewerEntryTitle">
+      <span class="eyebrow">YOUTUBE VIEWER</span>
+      <div class="viewer-entry-heading">
+        <span class="viewer-entry-icon" aria-hidden="true">\u{1F4FA}</span>
+        <div><h2 id="viewerEntryTitle">YouTube\u30E9\u30A4\u30D6\u3092\u898B\u3066\u3044\u308B\u8996\u8074\u8005\u306F\u3053\u3061\u3089</h2><p>\u914D\u4FE1\u306B\u53C2\u52A0\u3057\u3066\u3001YouTuber\u3068\u4E00\u7DD2\u306B\u554F\u984C\u3078\u56DE\u7B54\u3067\u304D\u307E\u3059\u3002</p></div>
+      </div>
+      <div class="viewer-entry-steps" aria-label="\u8996\u8074\u8005\u306E\u53C2\u52A0\u624B\u9806">
+        <span><b>1</b> \u914D\u4FE1\u30676\u6841\u30B3\u30FC\u30C9\u3092\u78BA\u8A8D</span>
+        <span><b>2</b> \u30B3\u30FC\u30C9\u5165\u529B\u5F8C\u306B\u540D\u524D\u3092\u767B\u9332</span>
+      </div>
+      <div class="field"><label for="entryRoomCode">\u914D\u4FE1\u3067\u6848\u5185\u3055\u308C\u305F6\u6841\u306E\u30EB\u30FC\u30E0\u30B3\u30FC\u30C9</label><input id="entryRoomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="\u4F8B\uFF1A123456"></div>
       <div class="error" id="entryCodeError" role="alert" hidden>6\u6841\u306E\u30EB\u30FC\u30E0\u30B3\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044</div>
-      <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">\u30B3\u30FC\u30C9\u3067\u53C2\u52A0</button>
+      <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">\u8996\u8074\u8005\u3068\u3057\u3066LIVE\u306B\u53C2\u52A0 <span aria-hidden="true">\u25B6</span></button>
+      <p class="help viewer-entry-note">\u53C2\u52A0\u5F8C\u306B\u8868\u793A\u540D\u3092\u5165\u529B\u3057\u307E\u3059\u3002YouTube\u306E\u8996\u8074\u753B\u9762\u306F\u9589\u3058\u305A\u306B\u304A\u5F85\u3061\u304F\u3060\u3055\u3044\u3002</p>
     </section>
     <section class="panel" style="margin-top:18px">
       <h2>\u8CFC\u5165\u6E08\u307F\u753B\u50CF\u3092\u518D\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9</h2>

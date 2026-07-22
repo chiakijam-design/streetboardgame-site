@@ -181,12 +181,20 @@ function renderEntry() {
         <button class="secondary" data-youtube-type="guess-majority" ${state.systemStatus.mode === 'maintenance' || !isCreatorInviteReady() ? 'disabled' : ''}>${escapeHtml(LIVE_SERIES.youtubeMajorityGenerateLabel)} <span class="accent">▶</span></button>
       </div>
     </section>
-    <section class="panel" style="margin-top:18px">
-      <h2>ルームに参加する</h2>
-      <p class="help">司会者から受け取った6桁のコードを入力してください。</p>
-      <div class="field"><label for="entryRoomCode">ルームコード</label><input id="entryRoomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div>
+    <section class="panel viewer-entry-panel" style="margin-top:18px" aria-labelledby="viewerEntryTitle">
+      <span class="eyebrow">YOUTUBE VIEWER</span>
+      <div class="viewer-entry-heading">
+        <span class="viewer-entry-icon" aria-hidden="true">📺</span>
+        <div><h2 id="viewerEntryTitle">YouTubeライブを見ている視聴者はこちら</h2><p>配信に参加して、YouTuberと一緒に問題へ回答できます。</p></div>
+      </div>
+      <div class="viewer-entry-steps" aria-label="視聴者の参加手順">
+        <span><b>1</b> 配信で6桁コードを確認</span>
+        <span><b>2</b> コード入力後に名前を登録</span>
+      </div>
+      <div class="field"><label for="entryRoomCode">配信で案内された6桁のルームコード</label><input id="entryRoomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="例：123456"></div>
       <div class="error" id="entryCodeError" role="alert" hidden>6桁のルームコードを入力してください</div>
-      <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">コードで参加</button>
+      <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">視聴者としてLIVEに参加 <span aria-hidden="true">▶</span></button>
+      <p class="help viewer-entry-note">参加後に表示名を入力します。YouTubeの視聴画面は閉じずにお待ちください。</p>
     </section>
     <section class="panel" style="margin-top:18px">
       <h2>購入済み画像を再ダウンロード</h2>

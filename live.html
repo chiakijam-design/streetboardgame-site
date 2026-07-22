@@ -88,6 +88,18 @@
     .invite-step:nth-child(2) > span { background:var(--cyan); }
     .invite-step:nth-child(3) > span { background:var(--pink); color:#fff; }
     .invite-code-help { background:#F2EEFF; }
+    .viewer-entry-panel { overflow:hidden; background:linear-gradient(145deg,#FFF5A8 0%,#FFF 58%,#DDF8FC 100%); }
+    .viewer-entry-heading { display:grid; grid-template-columns:46px minmax(0,1fr); gap:11px; align-items:center; margin-top:12px; }
+    .viewer-entry-heading h2 { margin:0; font-size:21px; }
+    .viewer-entry-heading p { margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.65; font-weight:800; }
+    .viewer-entry-icon { display:grid; place-items:center; width:46px; height:46px; border:2px solid #000; border-radius:50%; background:#fff; box-shadow:2px 2px 0 #000; font-size:23px; }
+    .viewer-entry-steps { display:grid; gap:7px; margin-top:14px; }
+    .viewer-entry-steps span { display:flex; align-items:center; gap:8px; min-height:40px; padding:7px 10px; border:2px solid #000; border-radius:10px; background:#fff; font-size:11px; font-weight:900; }
+    .viewer-entry-steps b { display:grid; flex:0 0 25px; place-items:center; width:25px; height:25px; border:2px solid #000; border-radius:50%; background:var(--cyan); font:900 11px "DotGothic16",monospace; }
+    .viewer-entry-steps span:nth-child(2) b { background:var(--pink); color:#fff; }
+    .viewer-entry-panel #entryRoomCode { font-size:18px; font-weight:900; letter-spacing:.08em; }
+    .viewer-entry-panel #joinByCode { background:var(--yellow); }
+    .viewer-entry-note { text-align:center; }
     .live-inquiry-form { margin-top:16px; padding-top:3px; }
     .live-inquiry-form .primary { margin-top:14px; }
     .inquiry-consent { background:#fff; }
@@ -237,6 +249,7 @@
       .verification-step span { text-align:left; }
       .invite-guide { grid-template-columns:repeat(3,minmax(0,1fr)); }
       .invite-step { grid-template-columns:1fr; }
+      .viewer-entry-steps { grid-template-columns:1fr 1fr; }
     }
   </style>
   <script data-build-entry="viewport_recovery" src="/dist/viewport_recovery-MXTVWKCL.js"></script>
@@ -255,6 +268,6 @@
     </nav>
     <p>本サービスはYouTubeまたはGoogleの提携・承認サービスではありません。</p>
   </footer>
-  <script data-build-entry="live_game" defer src="/dist/live_game-5PDUIT4J.js"></script>
+  <script data-build-entry="live_game" defer src="/dist/live_game-FB437VRA.js"></script>
 </body>
 </html>
