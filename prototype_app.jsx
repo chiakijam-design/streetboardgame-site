@@ -1716,7 +1716,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           textDecoration: 'none',
           textAlign: 'center',
         }}>
-          LIVEゲームを作って遊ぶ
+          YouTuber向けLIVEを作って遊ぶ
         </a>
         <div style={{
           marginTop: 9,
@@ -1730,7 +1730,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           marginLeft: 'auto',
           marginRight: 'auto',
         }}>
-          シリーズ作品の友情判定版・家族の絆判定版・LIVEもお楽しみください
+          シリーズ作品の友情判定版・家族の絆判定版・YouTuber向けLIVEもお楽しみください
         </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
           marginTop: 12,
@@ -1913,32 +1913,32 @@ const GAME_INTRO_CONTENT = {
   live: {
     pill: 'LIVE VOTING GAME',
     title: LIVE_SERIES.name,
-    heading: '自分で作った問題を、みんなでライブ投票',
-    lead: `${LIVE_SERIES.name}は、司会者が用意した問題に参加者が自分のスマホから投票するゲームです。問題は自分で入力する方法と、YouTubeチャンネルURLから候補を作る方法の2つから選べます。`,
-    body: 'YouTubeモードでは「YouTuberの答えを視聴者が予想する」または「YouTuberが視聴者投票の1位を予想する」のどちらかを選びます。30問の候補から1〜30問を採用でき、各問題の選択肢は5個固定です。司会者が発行した6桁のルームコードを共有すると、参加者が同じLIVEゲームに入れます。',
+    heading: 'YouTubeチャンネルから作る、視聴者参加型LIVE',
+    lead: `${LIVE_SERIES.name}は、YouTubeチャンネルまたは動画のURLから、そのチャンネルにちなんだ問題候補を作り、視聴者が自分のスマホから投票するゲームです。`,
+    body: '「YouTuberの答えを視聴者が予想する」または「YouTuberが視聴者投票の1位を予想する」のどちらかを選びます。30問の候補から1〜30問を採用でき、各問題の選択肢は5個固定です。司会者が発行した6桁のルームコードを共有すると、視聴者が同じLIVEゲームに入れます。',
     recommendTitle: 'こんな場面におすすめ',
     recommend: [
-      '自分たちだけの問題で、友達や家族とライブ投票を楽しみたい',
       'YouTuberが視聴者参加型の企画を作りたい',
+      'チャンネルにちなんだ内輪向けのお題で盛り上がりたい',
       '本人の答えや、みんなの投票1位を当てて盛り上がりたい',
       'スマホやPCから司会し、参加者にはルームコードで入ってもらいたい',
     ],
-    scenes: ['YouTube企画', '生配信', 'イベント', '友達の集まり', '家族で遊ぶ'],
+    scenes: ['YouTube企画', '生配信', 'ファンイベント', '記念配信', 'オフ会'],
     faq: [
       {
         q: '参加者はどうやってLIVEゲームに入りますか？',
         a: '司会者がゲームを作ると6桁のルームコードが発行されます。参加者はLIVEページでコードと名前を入力すると参加できます。',
       },
       {
-        q: 'YouTubeモードでは何問作れますか？',
+        q: '問題候補は何問作れますか？',
         a: '選んだ遊び方の候補を30問生成し、その中から1〜30問を採用できます。2種類の遊び方は1つのゲーム内では混ざりません。',
       },
       {
         q: '問題や選択肢は編集できますか？',
-        a: '問題文と選択肢は編集できます。YouTubeモードの選択肢は各問題5個で固定されます。',
+        a: '問題文と選択肢は編集できます。選択肢は各問題5個で固定されます。',
       },
     ],
-    cta: 'LIVEゲームを作って遊ぶ',
+    cta: 'YouTuber向けLIVEを作って遊ぶ',
     ctaHref: '/live',
     related: [
       { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },

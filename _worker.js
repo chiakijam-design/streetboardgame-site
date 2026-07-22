@@ -164,31 +164,31 @@ export default {
         ],
       },
       '/live-guide': {
-        title: '私のこと、ちゃんとわかってるよね？LIVE｜ライブ投票ゲーム',
-        description: '自作問題またはYouTubeチャンネルから問題を用意し、6桁のルームコードで参加者を招待して楽しむ無料ライブ投票ゲームです。',
+        title: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE｜ライブ投票ゲーム',
+        description: 'YouTubeチャンネルや動画のURLからチャンネル固有の問題候補を作り、6桁のルームコードで視聴者を招待する無料ライブ投票ゲームです。',
         url: CANONICAL_ORIGIN + '/live-guide',
-        ogTitle: '私のこと、ちゃんとわかってるよね？LIVE',
-        imageAlt: '私のこと、ちゃんとわかってるよね？LIVE ライブ投票ゲーム',
+        ogTitle: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
+        imageAlt: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE ライブ投票ゲーム',
         pageId: CANONICAL_ORIGIN + '/live-guide#webpage',
         gameId: CANONICAL_ORIGIN + '/live-guide#live-game',
-        gameName: '私のこと、ちゃんとわかってるよね？LIVE',
-        headline: '自分で作った問題をみんなで楽しむ無料ライブ投票ゲーム',
-        genre: ['ライブ投票ゲーム', 'パーティーゲーム', '視聴者参加型ゲーム', 'クイズゲーム'],
-        keywords: 'ライブ投票ゲーム, 視聴者参加型ゲーム, YouTuber ゲーム, パーティーゲーム, 自作問題, 無料ゲーム, わたちゃん',
-        noscriptTitle: '私のこと、ちゃんとわかってるよね？LIVE',
-        noscriptBody: '自分で入力した問題またはYouTubeチャンネルから作った候補を使い、参加者がルームコードで入って投票する無料ライブゲームです。',
+        gameName: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
+        headline: 'YouTubeチャンネルから作る無料の視聴者参加型ライブ投票ゲーム',
+        genre: ['ライブ投票ゲーム', '視聴者参加型ゲーム', 'YouTuber向けゲーム', 'クイズゲーム'],
+        keywords: 'ライブ投票ゲーム, 視聴者参加型ゲーム, YouTuber ゲーム, YouTube 企画, 無料ゲーム, わたちゃん',
+        noscriptTitle: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
+        noscriptBody: 'YouTubeチャンネルや動画のURLから問題候補を作り、視聴者がルームコードで入って投票する無料ライブゲームです。',
         faq: [
           {
             question: '参加者はどうやってLIVEゲームに入りますか？',
             answer: '司会者がゲームを作ると6桁のルームコードが発行されます。参加者はLIVEページでコードと名前を入力すると参加できます。',
           },
           {
-            question: 'YouTubeモードでは何問作れますか？',
+            question: '問題候補は何問作れますか？',
             answer: '選んだ遊び方の候補を30問生成し、その中から1〜30問を採用できます。2種類の遊び方は1つのゲーム内では混ざりません。',
           },
           {
             question: '問題や選択肢は編集できますか？',
-            answer: '問題文と選択肢は編集できます。YouTubeモードの選択肢は各問題5個で固定されます。',
+            answer: '問題文と選択肢は編集できます。選択肢は各問題5個で固定されます。',
           },
         ],
       },
@@ -300,7 +300,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/live-guide">LIVEゲームの説明を見る</a> / <a href="/live">LIVEゲームを作って遊ぶ</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/live-guide">YouTuber向けLIVEの説明を見る</a> / <a href="/live">YouTuber向けLIVEを作って遊ぶ</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -374,7 +374,7 @@ function buildStructuredData(page) {
         '彼氏の愛情判定',
         '友達の友情判定',
         '家族の絆判定',
-        '私のこと、ちゃんとわかってるよね？LIVE',
+        'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
         '製品版',
         'About',
       ],

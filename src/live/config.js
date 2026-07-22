@@ -1,11 +1,9 @@
 export const LIVE_SERIES = Object.freeze({
-  name: '私のこと、ちゃんとわかってるよね？LIVE',
+  name: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
   shortName: 'LIVE',
-  entryLead: '自分で作った問題を、みんなで同時に投票して楽しむライブゲーム',
-  manualEntry: '自分で問題を作る',
-  youtubeEntry: 'YouTubeチャンネルから作る',
-  defaultGameTitle: '私のこと、ちゃんとわかってるよね？LIVE',
-  recommendedQuestionCount: '5〜10問程度がおすすめです。1問から好きな数だけ作れます。',
+  entryLead: 'YouTubeチャンネルの公開動画から問題を作り、視聴者と同時投票で楽しむライブゲーム',
+  youtubeEntry: 'YouTubeチャンネルから問題を作る',
+  defaultGameTitle: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
   youtubePersonGenerateLabel: 'YouTuberの答えを視聴者が予想する（30問生成し、採用する問題を選ぶ）',
   youtubeMajorityGenerateLabel: 'YouTuberが視聴者投票の1位を予想する（30問生成し、採用する問題を選ぶ）',
 });

@@ -26,8 +26,7 @@ else render();
 function render() {
   if (state.view === 'room-loading') return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
   if (state.view === 'entry') return renderEntry();
-  if (state.view === 'manual-editor' || state.view === 'youtube-editor') return renderEditor();
-  if (state.view === 'youtube-setup') return renderYouTubeSetup();
+  if (state.view === 'youtube-editor') return renderEditor();
   if (state.view === 'youtube-candidates') return renderYouTubeCandidates();
   if (state.view === 'join') return renderJoin();
   if (state.view === 'host') return renderHost();
@@ -42,53 +41,10 @@ function renderEntry() {
       <h1>${escapeHtml(LIVE_SERIES.name)}</h1>
       <p>${escapeHtml(LIVE_SERIES.entryLead)}</p>
     </section>
-    <section class="grid entry-grid" aria-label="ゲームの作り方を選ぶ">
-      <button class="entry-card" data-action="manual-entry">
-        <span class="entry-icon" aria-hidden="true">✍️</span>
-        <strong>${escapeHtml(LIVE_SERIES.manualEntry)}</strong>
-        <small>タイトル・主役・問題・選択肢を自由に入力してライブ投票を始めます。</small>
-      </button>
-      <button class="entry-card" data-action="youtube-entry">
-        <span class="entry-icon" aria-hidden="true">▶️</span>
-        <strong>${escapeHtml(LIVE_SERIES.youtubeEntry)}</strong>
-        <small>2つの遊び方から1つを選び、公開チャンネル情報をもとに作った30問から採用する問題を選べます。</small>
-      </button>
-    </section>
     <section class="panel" style="margin-top:18px">
-      <h2>ルームに参加する</h2>
-      <p class="help">司会者から受け取った6桁のコードを入力してください。</p>
-      <div class="field"><label for="entryRoomCode">ルームコード</label><input id="entryRoomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div>
-      <div class="error" id="entryCodeError" role="alert" hidden>6桁のルームコードを入力してください</div>
-      <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">コードで参加</button>
-    </section>
-  `);
-  bind('[data-action="manual-entry"]', 'click', () => {
-    state.draft = createBlankDraft();
-    state.view = 'manual-editor';
-    render();
-  });
-  bind('[data-action="youtube-entry"]', 'click', () => {
-    state.view = 'youtube-setup';
-    state.error = '';
-    render();
-  });
-  bind('#entryRoomCode', 'input', (event) => { event.target.value = event.target.value.replace(/\D/g, '').slice(0, 6); });
-  bind('#joinByCode', 'click', () => {
-    const code = document.getElementById('entryRoomCode').value;
-    if (!/^\d{6}$/.test(code)) {
-      document.getElementById('entryRoomCode').setAttribute('aria-invalid', 'true');
-      document.getElementById('entryCodeError').hidden = false;
-      return;
-    }
-    location.assign(`/live?room=${code}`);
-  });
-}
-
-function renderYouTubeSetup() {
-  setPage(`
-    <section class="panel">
       <span class="eyebrow">YOUTUBE MODE</span>
       <h2 style="margin-top:12px">${escapeHtml(LIVE_SERIES.youtubeEntry)}</h2>
+      <p class="help">2つの遊び方から1つを選び、公開チャンネル情報をもとに作った30問から採用する問題を選べます。</p>
       <div class="field">
         <label for="channelUrl">YouTubeチャンネル・動画URL</label>
         <input id="channelUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://www.youtube.com/@handle または watch?v=..." value="${escapeAttr(state.channelUrl)}">
@@ -100,6 +56,13 @@ function renderYouTubeSetup() {
         <button class="secondary" data-youtube-type="guess-majority">${escapeHtml(LIVE_SERIES.youtubeMajorityGenerateLabel)} <span class="accent">▶</span></button>
       </div>
     </section>
+    <section class="panel" style="margin-top:18px">
+      <h2>ルームに参加する</h2>
+      <p class="help">司会者から受け取った6桁のコードを入力してください。</p>
+      <div class="field"><label for="entryRoomCode">ルームコード</label><input id="entryRoomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div>
+      <div class="error" id="entryCodeError" role="alert" hidden>6桁のルームコードを入力してください</div>
+      <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">コードで参加</button>
+    </section>
   `);
   bind('#channelUrl', 'input', (event) => {
     state.channelUrl = event.target.value;
@@ -108,6 +71,16 @@ function renderYouTubeSetup() {
   document.querySelectorAll('[data-youtube-type]').forEach((button) => button.addEventListener('click', () => {
     generateYouTubeCandidates(button.dataset.youtubeType);
   }));
+  bind('#entryRoomCode', 'input', (event) => { event.target.value = event.target.value.replace(/\D/g, '').slice(0, 6); });
+  bind('#joinByCode', 'click', () => {
+    const code = document.getElementById('entryRoomCode').value;
+    if (!/^\d{6}$/.test(code)) {
+      document.getElementById('entryRoomCode').setAttribute('aria-invalid', 'true');
+      document.getElementById('entryCodeError').hidden = false;
+      return;
+    }
+    location.assign(`/live?room=${code}`);
+  });
 }
 
 async function generateYouTubeCandidates(questionType) {
@@ -166,7 +139,7 @@ function renderYouTubeCandidates() {
     state.candidates = recommendYouTubeCandidates(state.candidates, 5);
     render();
   });
-  bind('#backYoutube', 'click', () => { state.view = 'youtube-setup'; render(); });
+  bind('#backYoutube', 'click', () => { state.view = 'entry'; state.error = ''; render(); });
   bind('#useCandidates', 'click', () => {
     const selected = state.candidates.filter((question) => question.selected);
     if (!selected.length) { state.error = '使用する問題を1問以上選んでください'; return render(); }
@@ -241,18 +214,17 @@ async function regenerateCandidate(index) {
 
 function renderEditor() {
   const validation = state.error ? null : validateLiveDraft(state.draft);
-  const isYouTubeEditor = state.view === 'youtube-editor';
   setPage(`
     <section class="panel">
       <span class="eyebrow">GAME EDITOR</span>
       <h2 style="margin-top:12px">問題を編集する</h2>
-      <p class="help">${isYouTubeEditor ? '30問の候補から選んだ問題だけを使います。各問題の選択肢は5個固定です。' : escapeHtml(LIVE_SERIES.recommendedQuestionCount)}</p>
-      ${isYouTubeEditor ? `<div class="notice">このゲームの問題タイプは「${escapeHtml(LIVE_TYPE_LABELS[state.youtubeQuestionType] || '')}」で統一されます。</div>` : ''}
+      <p class="help">30問の候補から選んだ問題だけを使います。各問題の選択肢は5個固定です。</p>
+      <div class="notice">このゲームの問題タイプは「${escapeHtml(LIVE_TYPE_LABELS[state.youtubeQuestionType] || '')}」で統一されます。</div>
       <div class="field"><label for="gameTitle">ゲームタイトル</label><input id="gameTitle" maxlength="80" value="${escapeAttr(state.draft.title)}"></div>
       <div class="field"><label for="subjectName">主役または回答者の名前</label><input id="subjectName" maxlength="40" value="${escapeAttr(state.draft.subjectName)}"></div>
     </section>
     <section class="panel">
-      <div class="question-head"><div><h2>問題</h2><p class="help">現在 ${state.draft.questions.length}問${isYouTubeEditor ? '（30問から選択）' : ''}</p></div>${isYouTubeEditor ? '' : '<button class="secondary" id="addQuestion">＋ 問題を追加</button>'}</div>
+      <div class="question-head"><div><h2>問題</h2><p class="help">現在 ${state.draft.questions.length}問（30問から選択）</p></div></div>
       <div class="question-list">
         ${state.draft.questions.map((question, index) => editorQuestionCard(question, index)).join('')}
       </div>
@@ -263,17 +235,12 @@ function renderEditor() {
   `);
   bind('#gameTitle', 'input', (event) => { state.draft.title = event.target.value; });
   bind('#subjectName', 'input', (event) => { state.draft.subjectName = event.target.value; });
-  bind('#addQuestion', 'click', () => {
-    state.draft.questions.push(createLiveQuestion());
-    render();
-  });
   document.querySelectorAll('[data-question-index]').forEach((card) => bindEditorCard(card));
   bind('#createGame', 'click', createGame);
 }
 
 function editorQuestionCard(question, index) {
   const typeInfo = LIVE_QUESTION_TYPES.find((item) => item.value === question.type);
-  const isYouTubeEditor = state.view === 'youtube-editor';
   return `
     <article class="question-card" data-question-index="${index}">
       <div class="question-head">
@@ -285,13 +252,9 @@ function editorQuestionCard(question, index) {
         </div>
       </div>
       <div class="field"><label>問題文</label><textarea data-field="question-text" maxlength="180">${escapeHtml(question.text)}</textarea></div>
-      <div class="field"><label>問題タイプ</label>${typeSelect(question.type, 'question-type', state.view === 'youtube-editor')}</div>
-      <div class="field"><span class="field-label">${isYouTubeEditor ? '選択肢（5個固定）' : '選択肢（2〜4個）'}</span>
-        ${question.options.map((option, optionIndex) => isYouTubeEditor
-          ? `<input data-editor-option="${optionIndex}" maxlength="60" value="${escapeAttr(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}">`
-          : `<div class="option-row"><input data-editor-option="${optionIndex}" maxlength="60" value="${escapeAttr(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}">
-          <button data-action="remove-option" data-option="${optionIndex}" ${question.options.length <= 2 ? 'disabled' : ''} aria-label="選択肢${optionIndex + 1}を削除">−</button></div>`).join('')}
-        ${!isYouTubeEditor && question.options.length < 4 ? '<button class="mini" data-action="add-option" style="margin-top:8px">＋ 選択肢を追加</button>' : ''}
+      <div class="field"><label>問題タイプ</label>${typeSelect(question.type, 'question-type', true)}</div>
+      <div class="field"><span class="field-label">選択肢（5個固定）</span>
+        ${question.options.map((option, optionIndex) => `<input data-editor-option="${optionIndex}" maxlength="60" value="${escapeAttr(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}">`).join('')}
       </div>
       ${question.type !== 'poll' ? `
         <div class="field"><label>${escapeHtml(typeInfo?.predictionLabel || '非公開回答')}</label>
@@ -316,11 +279,6 @@ function bindEditorCard(card) {
     if (state.draft.questions.length <= 1) { state.error = '問題は1問以上必要です'; return render(); }
     state.draft.questions.splice(index, 1); state.error = ''; render();
   });
-  const addOption = card.querySelector('[data-action="add-option"]');
-  if (addOption) addOption.addEventListener('click', () => { question.options.push(''); render(); });
-  card.querySelectorAll('[data-action="remove-option"]').forEach((button) => button.addEventListener('click', () => {
-    question.options.splice(Number(button.dataset.option), 1); question.lockedIndex = null; render();
-  }));
 }
 
 function moveQuestion(index, direction) {
@@ -501,10 +459,6 @@ function startPolling() {
 
 function setPage(content, withTopbar = true) {
   root.innerHTML = `<div class="shell">${withTopbar ? `<header class="topbar"><a class="brand" href="/live">${escapeHtml(LIVE_SERIES.name)}</a><a class="back" href="/">トップへ</a></header>` : ''}${content}</div>`;
-}
-
-function createBlankDraft() {
-  return { creationMode: 'manual', title: LIVE_SERIES.defaultGameTitle, subjectName: '', questions: [createLiveQuestion()] };
 }
 
 function typeSelect(value, field, disabled = false) {
