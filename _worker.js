@@ -16,11 +16,21 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 //   /live-guide/      → /live-guide にリダイレクト
 //   /contact          → /?screen=about&to=contact にリダイレクト
 //   /contact/         → /?screen=about&to=contact にリダイレクト
+//   /terms など       → 法務ページの静的HTMLをきれいなURLで返す
 //   その他の存在しないパス → 専用404ページを404ステータスで返す
 //   存在するファイル (HTML/画像/JS) → そのまま配信
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
 const HASHED_JS_PATH = /^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12})\.js$/i;
+const LEGAL_PAGE_FILES = Object.freeze({
+  '/terms': '/terms.html',
+  '/privacy': '/privacy.html',
+  '/legal': '/legal.html',
+  '/creator-terms': '/creator-terms.html',
+  '/refund-policy': '/refund-policy.html',
+  '/content-guidelines': '/content-guidelines.html',
+  '/minor-policy': '/minor-policy.html',
+});
 
 export default {
   async fetch(request, env) {
@@ -71,6 +81,30 @@ export default {
       const headers = new Headers(response.headers);
       headers.set('content-type', 'text/html; charset=UTF-8');
       return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
+    }
+
+    const cleanLegalPath = Object.entries(LEGAL_PAGE_FILES)
+      .find(([, file]) => rawPath === file)?.[0];
+    if (cleanLegalPath) {
+      return Response.redirect(url.origin + cleanLegalPath, 301);
+    }
+
+    if (rawPath !== '/' && rawPath.endsWith('/') && LEGAL_PAGE_FILES[path]) {
+      return Response.redirect(url.origin + path, 301);
+    }
+
+    if (LEGAL_PAGE_FILES[path]) {
+      const legalUrl = new URL(LEGAL_PAGE_FILES[path], url.origin);
+      const response = await env.ASSETS.fetch(new Request(legalUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      return new Response(request.method === 'HEAD' ? null : await response.text(), {
+        status: response.status,
+        headers,
+      });
     }
 
     const pageMap = {

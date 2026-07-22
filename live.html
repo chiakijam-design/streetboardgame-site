@@ -160,6 +160,10 @@
     .result-share-status { min-height:22px; margin-top:7px; color:#5E4650; font-size:11px; line-height:1.5; font-weight:900; }
     .loading { padding:42px 10px; color:#fff; text-align:center; font-weight:900; }
     .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .legal-footer { max-width:860px; margin:0 auto; padding:24px 18px 34px; color:#fff; text-align:center; font-size:11px; line-height:1.8; font-weight:800; }
+    .legal-footer nav { display:flex; flex-wrap:wrap; justify-content:center; gap:7px 14px; }
+    .legal-footer a { color:#fff; text-underline-offset:3px; }
+    .legal-footer p { margin:10px 0 0; opacity:.88; }
     @media (min-width:700px) {
       .shell { padding:32px 24px 56px; }
       .entry-grid { grid-template-columns:1fr 1fr; }
@@ -180,6 +184,18 @@
 </head>
 <body>
   <main id="liveRoot"><div class="loading">LIVEゲームを準備しています…</div></main>
+  <footer class="legal-footer">
+    <nav aria-label="法務ページ">
+      <a href="/terms">利用規約</a>
+      <a href="/privacy">プライバシーポリシー</a>
+      <a href="/legal">特定商取引法に基づく表記</a>
+      <a href="/creator-terms">YouTuber向け収益分配規約</a>
+      <a href="/refund-policy">返金・キャンセル</a>
+      <a href="/content-guidelines">コンテンツ・肖像権</a>
+      <a href="/minor-policy">未成年者利用規定</a>
+    </nav>
+    <p>本サービスはYouTubeまたはGoogleの提携・承認サービスではありません。</p>
+  </footer>
   <script data-build-entry="live_game" defer src="/dist/live_game-ZYRGUP3G.js"></script>
 </body>
 </html>

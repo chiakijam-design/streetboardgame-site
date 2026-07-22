@@ -1797,11 +1797,17 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
       {/* フッターリンク */}
       <footer style={{
         padding: '22px 24px 0', position: 'relative', zIndex: 1,
-        display: 'flex', justifyContent: 'center', gap: 18,
+        display: 'flex', justifyContent: 'center', gap: '9px 16px', flexWrap: 'wrap',
       }}>
         <FooterLink href="/about">About</FooterLink>
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
         <FooterLink href="/product">製品版</FooterLink>
+        <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
+        <FooterLink href="/terms">利用規約</FooterLink>
+        <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
+        <FooterLink href="/privacy">プライバシー</FooterLink>
+        <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
+        <FooterLink href="/legal">特商法表記</FooterLink>
       </footer>
     </main>
   );
