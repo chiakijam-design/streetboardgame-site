@@ -211,15 +211,24 @@ async function updateLiveGameAsHost(request, env, code, action) {
   const game = await requireLiveGame(env, code);
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
   if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
-  if (Number(game.version) >= 4) {
-    await updateSeparatedLiveGame(request, game, action);
-  } else if (Number(game.version) >= 3) {
-    await updateCurrentLiveGame(request, game, action);
-  } else {
-    await updateLegacyLiveGame(request, game, action);
+  const shouldAcquireActiveSlot = action === 'start' && Number(game.version) >= 4;
+  if (shouldAcquireActiveSlot && game.phase !== 'lobby') throw liveError('game-already-started', 409);
+  if (shouldAcquireActiveSlot) await acquireLiveActiveSlot(env, code, game);
+  try {
+    if (Number(game.version) >= 4) {
+      await updateSeparatedLiveGame(request, game, action);
+    } else if (Number(game.version) >= 3) {
+      await updateCurrentLiveGame(request, game, action);
+    } else {
+      await updateLegacyLiveGame(request, game, action);
+    }
+    touchLiveGame(game);
+    await putStoredLiveGame(env, code, game);
+  } catch (error) {
+    if (shouldAcquireActiveSlot) await releaseLiveActiveSlot(env, code);
+    throw error;
   }
-  touchLiveGame(game);
-  await putStoredLiveGame(env, code, game);
+  if (game.phase === 'complete') await releaseLiveActiveSlot(env, code);
   return liveJson({ code, game: publicLiveGame(game, { host: true }) });
 }
 
@@ -947,6 +956,14 @@ async function ensureLiveD1(env) {
           expires_at INTEGER NOT NULL
         )
       `).run(),
+      env.REMOTE_DB.prepare(`
+        CREATE TABLE IF NOT EXISTS live_active_sessions (
+          lock_key TEXT PRIMARY KEY,
+          code TEXT NOT NULL UNIQUE,
+          started_at INTEGER NOT NULL,
+          expires_at INTEGER NOT NULL
+        )
+      `).run(),
     ]).catch((error) => {
       liveD1ReadyPromise = null;
       throw error;
@@ -1025,6 +1042,7 @@ async function cleanupExpiredLiveData(env) {
   await env.REMOTE_DB.prepare('DELETE FROM live_games WHERE expires_at < ?').bind(now).run();
   await env.REMOTE_DB.prepare('DELETE FROM live_rate_limits WHERE expires_at < ?').bind(now).run();
   await env.REMOTE_DB.prepare('DELETE FROM live_reservations WHERE expires_at < ?').bind(now).run();
+  await env.REMOTE_DB.prepare('DELETE FROM live_active_sessions WHERE expires_at < ?').bind(now).run();
 }
 
 async function isLiveSlotAvailable(env, scheduledAt) {
@@ -1076,6 +1094,44 @@ async function releaseLiveReservation(env, code) {
   const kv = env.LIVE_KV || env.REMOTE_KV;
   const reservations = await getKvLiveReservations(kv);
   await kv.put('live:reservations', JSON.stringify(reservations.filter((item) => item.code !== code)));
+}
+
+async function acquireLiveActiveSlot(env, code, game) {
+  const now = Date.now();
+  const expiresAt = Math.min(
+    Number(game.reservationEndsAt) || now + LIVE_ACTIVE_TTL_SECONDS * 1000,
+    now + LIVE_ACTIVE_TTL_SECONDS * 1000,
+  );
+  if (await ensureLiveD1(env)) {
+    const locked = await env.REMOTE_DB.prepare(`
+      INSERT INTO live_active_sessions (lock_key, code, started_at, expires_at)
+      VALUES ('global', ?, ?, ?)
+      ON CONFLICT(lock_key) DO UPDATE SET
+        code = excluded.code,
+        started_at = excluded.started_at,
+        expires_at = excluded.expires_at
+      WHERE live_active_sessions.expires_at < excluded.started_at
+         OR live_active_sessions.code = excluded.code
+    `).bind(code, now, expiresAt).run();
+    if (Number(locked?.meta?.changes || 0) !== 1) throw liveError('another-live-active', 409);
+    return;
+  }
+  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const active = await kv.get('live:active', { type: 'json' });
+  if (active && active.code !== code && Number(active.expiresAt) >= now) throw liveError('another-live-active', 409);
+  await kv.put('live:active', JSON.stringify({ code, startedAt: now, expiresAt }), {
+    expirationTtl: Math.max(60, Math.ceil((expiresAt - now) / 1000)),
+  });
+}
+
+async function releaseLiveActiveSlot(env, code) {
+  if (await ensureLiveD1(env)) {
+    await env.REMOTE_DB.prepare('DELETE FROM live_active_sessions WHERE lock_key = ? AND code = ?').bind('global', code).run();
+    return;
+  }
+  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const active = await kv.get('live:active', { type: 'json' });
+  if (active?.code === code) await kv.delete('live:active');
 }
 
 async function getKvLiveReservations(kv) {

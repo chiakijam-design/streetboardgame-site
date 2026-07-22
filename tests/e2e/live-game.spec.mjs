@@ -374,6 +374,46 @@ test('予約日時の前後20時間は別のLIVE予約をAPIでも拒否する',
   expect(await availability.json()).toMatchObject({ available: false, viewerLimit: LIVE_VIEWER_LIMIT, bufferHours: 20 });
 });
 
+test('別のLIVEが進行中は開始を拒否し、完了後に全体ロックを解放する', async ({ request }, testInfo) => {
+  const createGame = async (slot, title, questionId) => {
+    const response = await request.post('/api/live/games', {
+      data: {
+        draft: {
+          creationMode: 'youtube', title, subjectName: '本人', channelName: `${title}チャンネル`,
+          scheduledAt: new Date(scheduleForTest(testInfo, slot)).getTime(),
+          questions: [{ id: questionId, type: 'guess-person', text: 'どれ？', options: ['A', 'B', 'C', 'D', 'E'] }],
+        },
+      },
+    });
+    expect(response.status()).toBe(201);
+    return response.json();
+  };
+  const first = await createGame(30, '進行ロック1', 'active-q-1');
+  const second = await createGame(31, '進行ロック2', 'active-q-2');
+  const hostHeaders = (token) => ({ 'x-live-host-token': token });
+
+  expect((await request.post(`/api/live/games/${first.code}/start`, { headers: hostHeaders(first.hostToken), data: {} })).status()).toBe(200);
+  const blocked = await request.post(`/api/live/games/${second.code}/start`, { headers: hostHeaders(second.hostToken), data: {} });
+  expect(blocked.status()).toBe(409);
+  expect(await blocked.json()).toEqual({ error: 'another-live-active' });
+
+  expect((await request.post(`/api/live/games/${first.code}/subject-answer`, {
+    headers: { 'x-live-subject-token': first.game.subjectToken },
+    data: { questionId: 'active-q-1', optionIndex: 0 },
+  })).status()).toBe(200);
+  for (const action of ['advance', 'reveal', 'next']) {
+    expect((await request.post(`/api/live/games/${first.code}/${action}`, { headers: hostHeaders(first.hostToken), data: {} })).status()).toBe(200);
+  }
+  expect((await request.post(`/api/live/games/${second.code}/start`, { headers: hostHeaders(second.hostToken), data: {} })).status()).toBe(200);
+  expect((await request.post(`/api/live/games/${second.code}/subject-answer`, {
+    headers: { 'x-live-subject-token': second.game.subjectToken },
+    data: { questionId: 'active-q-2', optionIndex: 0 },
+  })).status()).toBe(200);
+  for (const action of ['advance', 'reveal', 'next']) {
+    expect((await request.post(`/api/live/games/${second.code}/${action}`, { headers: hostHeaders(second.hostToken), data: {} })).status()).toBe(200);
+  }
+});
+
 test('安全運用上限を超える視聴者は参加APIで拒否する', async ({ request }, testInfo) => {
   const scheduledAt = new Date(scheduleForTest(testInfo, 20)).getTime();
   const created = await request.post('/api/live/games', {

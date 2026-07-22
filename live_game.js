@@ -967,6 +967,7 @@ function humanError(error) {
     'youtube-creation-required': 'LIVEゲームはYouTubeチャンネルから作成してください',
     'invalid-scheduled-at': '現在より後のライブ配信日時を選んでください',
     'live-slot-unavailable': `選んだ日時の前後${LIVE_RESERVATION_BUFFER_HOURS}時間以内に別の予約があります。別の日時を選んでください`,
+    'another-live-active': '別のYouTube LIVEが進行中です。終了後にもう一度お試しください',
     'participant-limit-reached': `安全運用上限の${LIVE_VIEWER_LIMIT}人に達したため、このルームには参加できません`,
     'invalid-creator-image': 'YouTuber画像はJPEG・PNG・WebP形式で選んでください',
     'creator-image-too-large': '画像を圧縮できませんでした。10MB以下の別画像を選んでください',

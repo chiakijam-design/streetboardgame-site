@@ -12,3 +12,10 @@ CREATE INDEX IF NOT EXISTS idx_live_reservations_window
 
 CREATE INDEX IF NOT EXISTS idx_live_reservations_expires_at
   ON live_reservations (expires_at);
+
+CREATE TABLE IF NOT EXISTS live_active_sessions (
+  lock_key TEXT PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  started_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+);
