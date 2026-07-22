@@ -1,6 +1,6 @@
 # プライバシー運用設定
 
-最終更新: 2026-07-22
+最終更新: 2026-07-23
 
 ## 1. コードで実行される処理
 
@@ -33,6 +33,15 @@ npx wrangler d1 execute streetboardgame-live-purchases --remote --file migration
 コードは購入・ダウンロード・返金・再発行処理で`LIVE_PURCHASE_DB`を必須とする。未設定時は有料処理を503で停止し、ゲーム用D1へフォールバックしない。
 
 旧`REMOTE_DB.live_result_entitlements`に本番購入が存在する場合は、件数とStripe PaymentIntent IDを照合して専用D1へ移行し、移行確認後に旧テーブルの個人データを削除する。購入が存在しないことを確認せずに旧テーブルを削除しない。
+
+## 2.1 非公開R2
+
+- 元画像、変換画像、購入結果画像は`streetboardgame-live-private`へ保存し、公開バケット・`r2.dev`・カスタムドメインを使わない
+- ブラウザへR2のオブジェクトキー、元画像Data URL、R2署名URLを返さない
+- 無料プレビューは参加者認証後にWorkerが生成し、`private, no-store`で返す
+- 有料画像は購入権限と10分以内のWorker署名URLを確認した場合だけ、Worker経由で`private, no-store`の添付ファイルとして返す
+- 画像差し替え・審査却下時は旧3オブジェクトを直ちに削除する。ゲーム終了後の元画像と、購入から30日後の結果画像は毎時Cronで削除する
+- 四半期点検ではPublic Development URLが`Disabled`、Custom Domainsが0件、不要なR2 APIトークンとWorkerバインディングがないことも確認する
 
 ## 3. 管理画面二要素認証
 

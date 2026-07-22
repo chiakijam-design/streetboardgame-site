@@ -210,6 +210,8 @@ export async function getLiveOpsOverview(env) {
       d1Configured: Boolean(env.REMOTE_DB),
       purchaseD1Configured: Boolean(purchaseDb),
       durableObjectsConfigured: hasLiveRealtime(env),
+      privateR2Configured: Boolean(env.LIVE_MEDIA),
+      imagesBindingConfigured: Boolean(env.IMAGES),
       alertWebhookConfigured: Boolean(env.LIVE_OPS_ALERT_WEBHOOK_URL),
       stripeWebhookConfigured: Boolean(env.STRIPE_WEBHOOK_SECRET),
       stripeCheckoutConfigured: /^sk_(test|live)_[A-Za-z0-9_]+$/.test(String(env.STRIPE_SECRET_KEY || '')),

@@ -55,7 +55,10 @@ class PassthroughImages {
     const bytes = new Response(stream).arrayBuffer();
     return {
       transform() { return this; },
-      async output() { return { body: new Uint8Array(await bytes) }; },
+      async output() {
+        const transformed = new Uint8Array(await bytes);
+        return { response: () => new Response(transformed, { headers: { 'content-type': 'image/webp' } }) };
+      },
     };
   }
 }

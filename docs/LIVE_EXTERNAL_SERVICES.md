@@ -85,15 +85,36 @@ Cloudflare Imagesは有料機能である。契約後に非公開バケットを
 
 ```powershell
 npx wrangler r2 bucket create streetboardgame-live-private
+npx wrangler r2 bucket dev-url disable streetboardgame-live-private
 ```
 
-作成後、`wrangler.jsonc`にある`LIVE_MEDIA`と`IMAGES`のコメントを外す。R2は公開バケット・カスタムドメイン・`r2.dev`公開を有効にしない。
+作成後、Cloudflare DashboardのR2 > `streetboardgame-live-private` > Settingsで、次を確認してから`wrangler.jsonc`にある`LIVE_MEDIA`と`IMAGES`のコメントを外す。
+
+- Public Development URLが`Disabled`である
+- Custom Domainsが0件である
+- CORSポリシーを設定していない（ブラウザからR2へ直接PUT/GETしない）
+- Workerの`LIVE_MEDIA`バインディング以外に、このバケットを読む不要なWorker・APIトークンがない
+
+R2バケットは既定では非公開だが、`r2.dev`とカスタムドメインは独立した公開経路である。どちらも有効化しない。アプリが発行する「署名URL」はR2のURLではなく、購入権限をD1で再確認するStreetboardgame WorkerのURLである。
+
+保存されるオブジェクトは次の通り。ゲームJSON、公開API、WebSocketにはオブジェクトキーも返さない。
+
+| キー | 内容 | 削除 |
+|---|---|---|
+| `live/{ルーム}/creator/{ランダムID}/original` | 実バイト検証済みの元画像 | 差し替え・却下・ゲーム失効時 |
+| `live/{ルーム}/creator/{ランダムID}/preview.webp` | 384×384の無料プレビュー素材 | 同上 |
+| `live/{ルーム}/creator/{ランダムID}/paid.webp` | 1,200×1,200の有料画像素材 | 同上 |
+| `live/results/{購入ID}.svg` | 2,160×2,700の購入済み結果画像 | 購入から30日後 |
+
+保存時は`Cache-Control: private, no-store`、用途メタデータ、SHA-256を付け、R2側にもSHA-256一致を検証させる。アップロードはJPEG/PNG/WebP・10MB以下に限定し、ファイル名や申告MIMEではなくマジックバイトとCloudflare Imagesのデコード結果を検証する。変換後の画像だけを結果生成へ使用し、元画像をブラウザへ返さない。
 
 署名URL用の32文字以上のランダム値を登録する。
 
 ```powershell
 npx wrangler secret put LIVE_DOWNLOAD_SIGNING_SECRET
 ```
+
+本番デプロイ後は`/live-ops`の「監視設定」に`非公開R2 / Images`が出ることを確認する。文字が出るのはバインディング存在確認であり、公開URLが無効であることの証明ではないため、Dashboardの公開設定も必ず確認する。
 
 ## 5. D1マイグレーション
 

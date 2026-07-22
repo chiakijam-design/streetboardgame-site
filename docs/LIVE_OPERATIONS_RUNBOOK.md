@@ -1,6 +1,6 @@
 # YouTuber向けLIVE 監視・障害対応手順書
 
-最終更新: 2026-07-22
+最終更新: 2026-07-23
 
 ## 1. 運営コンソールと本番設定
 
@@ -57,6 +57,7 @@ D1自体が利用不能な緊急時は、次のWorker環境変数を設定して
 | Stripe Webhook処理失敗 | 1件以上 | 署名secret、D1、Worker Logsを確認 |
 | D1 rows read/written | 月間枠の70% / 90% | 高負荷SQL、索引、プランを確認 |
 | Durable Objects | 通常値の2倍または予算70% / 90% | requests、WebSocket、duration、storageを名前空間別に確認 |
+| R2非公開画像 | 期限超過1件以上、または公開経路1件以上 | Cron、Public Development URL、Custom Domains、不要bindingを確認 |
 
 WebSocketしきい値は`LIVE_WS_ALERT_MIN_DISCONNECTS`（既定20）と`LIVE_WS_ALERT_RATE`（既定0.2）で変更できる。Cloudflareのデプロイは既存WebSocketを切断するため、予約時間中のデプロイは禁止する。
 
@@ -69,8 +70,10 @@ WebSocketしきい値は`LIVE_WS_ALERT_MIN_DISCONNECTS`（既定20）と`LIVE_WS
 3. D1 > `streetboardgame-remote` > MetricsでQPS、rows、latency、storageを週1回確認する。
 4. Workers & Pages > `streetboardgame` > Metrics / Logsで5xxとCPU時間を確認する。
 5. Durable Objectsの`LiveRoomCoordinator`と`LiveVoteShard`でrequests、WebSocket、duration、storageを確認する。
-6. EnterpriseではAdvanced Error Rate Alertを`streetboardgame.com`のedge/origin 5xxへ設定する。
-7. Enterprise以外では外形監視から`GET /api/live/status`を1分間隔で確認し、5分中2回失敗で通知する。
+6. R2 > `streetboardgame-live-private`でPublic Development URLが無効、Custom Domainsが0件、期限超過オブジェクトが0件であることを確認する。
+7. `/live-ops`の監視設定へ`非公開R2 / Images`が表示されることを確認する。表示されない環境では画像販売を開始しない。
+8. EnterpriseではAdvanced Error Rate Alertを`streetboardgame.com`のedge/origin 5xxへ設定する。
+9. Enterprise以外では外形監視から`GET /api/live/status`を1分間隔で確認し、5分中2回失敗で通知する。
 
 公式資料:
 

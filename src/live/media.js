@@ -1,5 +1,8 @@
 const CREATOR_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const CREATOR_IMAGE_MAX_DIMENSION = 12_000;
+const CREATOR_IMAGE_MAX_PIXELS = 100_000_000;
 const CREATOR_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const PRIVATE_MEDIA_SCHEMA = 'live-private-media-v1';
 
 export async function storePrivateCreatorImage(source, env, code, previous = null) {
   requireMediaBindings(env);
@@ -7,30 +10,49 @@ export async function storePrivateCreatorImage(source, env, code, previous = nul
     ? source
     : (await source.formData().catch(() => null))?.get('image');
   if (!file || typeof file.arrayBuffer !== 'function') throw mediaError('creator-image-required', 400);
-  const contentType = String(file.type || '').toLowerCase();
-  if (!CREATOR_IMAGE_TYPES.has(contentType)) throw mediaError('invalid-creator-image', 400);
-  if (Number(file.size) < 1 || Number(file.size) > CREATOR_IMAGE_MAX_BYTES) throw mediaError('creator-image-too-large', 413);
   const bytes = new Uint8Array(await file.arrayBuffer());
+  if (bytes.byteLength < 1 || bytes.byteLength > CREATOR_IMAGE_MAX_BYTES) throw mediaError('creator-image-too-large', 413);
+  const contentType = detectImageType(bytes);
+  const declaredType = String(file.type || '').toLowerCase();
+  if (!CREATOR_IMAGE_TYPES.has(contentType) || (declaredType && declaredType !== contentType)) {
+    throw mediaError('invalid-creator-image', 400);
+  }
   const info = await env.IMAGES.info(bytesToStream(bytes)).catch(() => null);
   if (!info?.width || !info?.height) throw mediaError('invalid-creator-image', 400);
+  if (Number(info.width) > CREATOR_IMAGE_MAX_DIMENSION || Number(info.height) > CREATOR_IMAGE_MAX_DIMENSION
+    || Number(info.width) * Number(info.height) > CREATOR_IMAGE_MAX_PIXELS) {
+    throw mediaError('creator-image-dimensions-too-large', 413);
+  }
   const assetId = randomHex(16);
   const prefix = `live/${code}/creator/${assetId}`;
   const originalKey = `${prefix}/original`;
   const previewKey = `${prefix}/preview.webp`;
   const paidKey = `${prefix}/paid.webp`;
-  const [preview, paid] = await Promise.all([
-    transformImage(env, bytes, 384, 384, 76),
-    transformImage(env, bytes, 1200, 1200, 88),
-  ]);
+  let previewBytes;
+  let paidBytes;
+  try {
+    [previewBytes, paidBytes] = await Promise.all([
+      transformImage(env, bytes, 384, 384, 76),
+      transformImage(env, bytes, 1200, 1200, 88),
+    ]);
+  } catch (error) {
+    throw mediaError('creator-image-transform-failed', 502);
+  }
   try {
     await Promise.all([
-      env.LIVE_MEDIA.put(originalKey, bytes, { httpMetadata: { contentType } }),
-      env.LIVE_MEDIA.put(previewKey, preview.body, { httpMetadata: { contentType: 'image/webp' } }),
-      env.LIVE_MEDIA.put(paidKey, paid.body, { httpMetadata: { contentType: 'image/webp' } }),
+      putPrivateObject(env.LIVE_MEDIA, originalKey, bytes, contentType, {
+        assetType: 'creator-original', gameCode: code,
+      }),
+      putPrivateObject(env.LIVE_MEDIA, previewKey, previewBytes, 'image/webp', {
+        assetType: 'creator-preview', gameCode: code,
+      }),
+      putPrivateObject(env.LIVE_MEDIA, paidKey, paidBytes, 'image/webp', {
+        assetType: 'creator-paid', gameCode: code,
+      }),
     ]);
   } catch (error) {
     await env.LIVE_MEDIA.delete([originalKey, previewKey, paidKey]).catch(() => {});
-    throw error;
+    throw mediaError('creator-image-storage-failed', 502);
   }
   await deleteCreatorImage(env, previous);
   return { assetId, originalKey, previewKey, paidKey, uploadedAt: Date.now(), moderationStatus: 'pending' };
@@ -38,7 +60,7 @@ export async function storePrivateCreatorImage(source, env, code, previous = nul
 
 export async function deleteCreatorImage(env, image) {
   if (!env.LIVE_MEDIA || !image) return;
-  const keys = [image.originalKey, image.previewKey, image.paidKey].filter(Boolean);
+  const keys = [image.originalKey, image.previewKey, image.paidKey].filter(isCreatorImageKey);
   if (keys.length) await env.LIVE_MEDIA.delete(keys).catch(() => {});
 }
 
@@ -80,8 +102,16 @@ export async function createPaidResultAsset(request, env, game, participantGame,
     portrait,
     sample: false,
   });
-  const assetKey = `live/results/${purchaseId}.svg`;
-  await env.LIVE_MEDIA.put(assetKey, svg, { httpMetadata: { contentType: 'image/svg+xml; charset=utf-8' } });
+  const normalizedPurchaseId = String(purchaseId || '');
+  if (!/^[A-Za-z0-9_-]{8,80}$/.test(normalizedPurchaseId)) throw mediaError('invalid-purchase-id', 400);
+  const assetKey = `live/results/${normalizedPurchaseId}.svg`;
+  try {
+    await putPrivateObject(env.LIVE_MEDIA, assetKey, svg, 'image/svg+xml; charset=utf-8', {
+      assetType: 'paid-result', purchaseId: normalizedPurchaseId,
+    });
+  } catch (error) {
+    throw mediaError('result-image-storage-failed', 502);
+  }
   return assetKey;
 }
 
@@ -108,6 +138,7 @@ export async function verifySignedDownload(env, purchaseId, expires, signature) 
 
 export async function streamPrivateResult(env, assetKey, filename) {
   if (!env.LIVE_MEDIA) throw mediaError('live-media-not-configured', 503);
+  if (!isPrivateResultKey(assetKey)) throw mediaError('invalid-private-media-key', 500);
   const object = await env.LIVE_MEDIA.get(assetKey);
   if (!object) throw mediaError('result-image-not-found', 404);
   const headers = new Headers();
@@ -125,6 +156,7 @@ async function loadPortrait(request, env, game, paid) {
   const key = imageApproved ? (paid ? game.creatorImage?.paidKey : game.creatorImage?.previewKey) : '';
   if (key) {
     if (!env.LIVE_MEDIA) throw mediaError('live-media-not-configured', 503);
+    if (!isCreatorImageKey(key)) throw mediaError('invalid-private-media-key', 500);
     const object = await env.LIVE_MEDIA.get(key);
     if (object) return toEmbeddedImage(await object.arrayBuffer(), 'image/webp');
   }
@@ -162,9 +194,14 @@ function buildResultSvg(input) {
 }
 
 async function transformImage(env, bytes, width, height, quality) {
-  return env.IMAGES.input(bytesToStream(bytes))
+  const output = await env.IMAGES.input(bytesToStream(bytes))
     .transform({ width, height, fit: 'cover', gravity: 'center' })
-    .output({ format: 'image/webp', quality });
+    .output({ format: 'image/webp', quality, anim: false });
+  const response = output?.response?.();
+  if (!response?.ok) throw mediaError('creator-image-transform-failed', 502);
+  const transformed = new Uint8Array(await response.arrayBuffer());
+  if (!transformed.byteLength) throw mediaError('creator-image-transform-failed', 502);
+  return transformed;
 }
 
 function requireMediaBindings(env) {
@@ -173,6 +210,43 @@ function requireMediaBindings(env) {
 
 function bytesToStream(bytes) {
   return new Blob([bytes]).stream();
+}
+
+async function putPrivateObject(bucket, key, value, contentType, metadata) {
+  const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : new Uint8Array(value);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  await bucket.put(key, bytes, {
+    httpMetadata: {
+      contentType,
+      cacheControl: 'private, no-store',
+    },
+    customMetadata: {
+      schema: PRIVATE_MEDIA_SCHEMA,
+      ...Object.fromEntries(Object.entries(metadata || {}).map(([name, item]) => [name, String(item)])),
+      sha256: hex(new Uint8Array(digest)),
+    },
+    sha256: digest,
+  });
+}
+
+function detectImageType(bytes) {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+  if (bytes.length >= 8 && [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+    .every((value, index) => bytes[index] === value)) return 'image/png';
+  if (bytes.length >= 12 && ascii(bytes, 0, 4) === 'RIFF' && ascii(bytes, 8, 12) === 'WEBP') return 'image/webp';
+  return '';
+}
+
+function ascii(bytes, start, end) {
+  return String.fromCharCode(...bytes.subarray(start, end));
+}
+
+function isCreatorImageKey(value) {
+  return /^live\/[0-9]{6}\/creator\/[a-f0-9]{32}\/(?:original|preview\.webp|paid\.webp)$/.test(String(value || ''));
+}
+
+function isPrivateResultKey(value) {
+  return /^live\/results\/[A-Za-z0-9_-]{8,80}\.svg$/.test(String(value || ''));
 }
 
 function toEmbeddedImage(buffer, contentType) {
@@ -223,6 +297,10 @@ function timingSafeEqual(left, right) {
 function randomHex(byteLength) {
   const bytes = new Uint8Array(byteLength);
   crypto.getRandomValues(bytes);
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function hex(bytes) {
   return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 

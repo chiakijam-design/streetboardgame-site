@@ -116,7 +116,7 @@ function renderMetrics() {
   document.getElementById('metrics').innerHTML = [
     metric('重大APIエラー', critical, '直近15分'), metric('Stripe関連イベント', stripe, '直近15分'),
     metric('WebSocket予期せぬ切断率', `${wsRate}%`, `${unexpected}/${disconnected}切断`),
-    metric('監視設定', [infra.d1Configured && 'ゲームD1', infra.purchaseD1Configured && '購入D1', infra.durableObjectsConfigured && 'DO', infra.alertWebhookConfigured && '通知Webhook', infra.stripeCheckoutConfigured && 'Stripe Checkout', infra.stripeWebhookConfigured && 'Stripe Webhook'].filter(Boolean).join(' / ') || '未設定', 'コードから確認できる範囲'),
+    metric('監視設定', [infra.d1Configured && 'ゲームD1', infra.purchaseD1Configured && '購入D1', infra.durableObjectsConfigured && 'DO', infra.privateR2Configured && '非公開R2', infra.imagesBindingConfigured && 'Images', infra.alertWebhookConfigured && '通知Webhook', infra.stripeCheckoutConfigured && 'Stripe Checkout', infra.stripeWebhookConfigured && 'Stripe Webhook'].filter(Boolean).join(' / ') || '未設定', 'コードから確認できる範囲'),
   ].join('');
 }
 
