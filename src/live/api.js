@@ -51,6 +51,7 @@ import {
 } from './ops.js';
 import { createLiveAdminSession, requireLiveAdminSession } from './admin-auth.js';
 import { getLivePurchaseDb, requireLivePurchaseDb } from './purchases.js';
+import { liveResultImageCheckoutConfigured, liveSupportCheckoutConfigured } from './checkout-config.js';
 import { calculateLiveRevenueAllocation } from './revenue.js';
 import {
   createLiveCheckoutSession,
@@ -503,8 +504,12 @@ async function getLiveGameResponse(request, env, code) {
   if (participantToken && game.phase === 'complete') {
     try {
       await assertPaidChannelApproved(env, game.channelVerificationId, game.channelId);
-      publicGame.paidSalesEnabled = liveCheckoutConfigured(env);
+      publicGame.supportPaymentsEnabled = liveSupportCheckoutConfigured(env);
+      publicGame.resultImageSalesEnabled = liveResultImageCheckoutConfigured(env);
+      publicGame.paidSalesEnabled = publicGame.supportPaymentsEnabled || publicGame.resultImageSalesEnabled;
     } catch (error) {
+      publicGame.supportPaymentsEnabled = false;
+      publicGame.resultImageSalesEnabled = false;
       publicGame.paidSalesEnabled = false;
     }
   }
@@ -538,18 +543,24 @@ async function getLiveResultPreview(request, env, code) {
 
 async function createLiveCheckout(request, env, code) {
   const purchaseDb = await requireLivePurchaseDb(env);
-  if (!liveCheckoutConfigured(env)) throw liveError('live-checkout-not-configured', 503);
   const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
   if (!participantToken) throw liveError('participant-forbidden', 403);
   const checkoutRequestId = String(request.headers.get('x-live-checkout-request') || '');
   if (!/^[a-f0-9]{32,80}$/i.test(checkoutRequestId)) throw liveError('checkout-request-id-required', 400);
   const body = await readLiveJson(request);
+  const productType = String(body.productType || '');
+  if (productType === 'support') {
+    if (!liveSupportCheckoutConfigured(env)) throw liveError('live-support-checkout-not-configured', 503);
+  } else if (productType === 'result_image') {
+    if (!liveResultImageCheckoutConfigured(env)) throw liveError('live-result-checkout-not-configured', 503);
+  } else {
+    throw liveError('invalid-checkout-product', 400);
+  }
   const game = await requireLiveGame(env, code, { polling: true, participantToken });
   if (game.phase !== 'complete') throw liveError('result-not-ready', 409);
   const approval = await assertPaidChannelApproved(env, game.channelVerificationId, game.channelId);
   const participant = game.participants.find((item) => item.token === participantToken);
   if (!participant) throw liveError('participant-forbidden', 403);
-  const productType = String(body.productType || '');
   let amount;
   let productName;
   if (productType === 'result_image') {
@@ -560,8 +571,6 @@ async function createLiveCheckout(request, env, code) {
     amount = Number(body.amount);
     if (!LIVE_SUPPORT_AMOUNTS.includes(amount)) throw liveError('invalid-support-amount', 400);
     productName = `${game.channelName || game.subjectName} LIVE応援`;
-  } else {
-    throw liveError('invalid-checkout-product', 400);
   }
   const viewerName = normalizeParticipantName(body.viewerName || participant.name);
   const existing = await purchaseDb.prepare(`
@@ -650,15 +659,6 @@ function checkoutResponse(row) {
     checkoutSessionId: row.stripe_checkout_session_id,
     expiresAt: Number(row.stripe_checkout_expires_at),
   };
-}
-
-function liveCheckoutConfigured(env) {
-  const purchaseSecret = String(env.LIVE_PURCHASE_ACCESS_SECRET || env.LIVE_DOWNLOAD_SIGNING_SECRET || '');
-  return Boolean(
-    env.LIVE_PURCHASE_DB && env.LIVE_MEDIA && env.IMAGES
-    && /^sk_(test|live)_[A-Za-z0-9_]+$/.test(String(env.STRIPE_SECRET_KEY || ''))
-    && purchaseSecret.length >= 32,
-  );
 }
 
 async function grantLiveResultEntitlement(request, env) {

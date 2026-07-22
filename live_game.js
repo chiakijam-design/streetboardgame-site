@@ -1284,6 +1284,8 @@ function renderParticipant() {
 
 function liveCheckoutHtml(game) {
   const price = Number(game.resultImagePrice) || 0;
+  const supportPaymentsEnabled = game.supportPaymentsEnabled ?? Boolean(game.paidSalesEnabled);
+  const resultImageSalesEnabled = game.resultImageSalesEnabled ?? Boolean(game.paidSalesEnabled);
   const status = state.checkoutStatus;
   let returnMessage = '';
   if (state.checkoutResult === 'cancelled') returnMessage = '<div class="notice">決済はキャンセルされました。請求は確定していません。</div>';
@@ -1299,14 +1301,14 @@ function liveCheckoutHtml(game) {
   } else if (status) {
     returnMessage = '<div class="notice">Stripeから決済完了通知を確認しています。反映されない場合は少し待ってから画面を更新してください。</div>';
   }
-  if (!game.paidSalesEnabled) {
+  if (!supportPaymentsEnabled && !resultImageSalesEnabled) {
     return `<div class="live-checkout-panel">${returnMessage}<div class="notice">このLIVEでは有料販売の本人確認・契約・Stripe審査が完了していないため、購入と応援は受け付けていません。</div></div>`;
   }
   return `<div class="live-checkout-panel">
     ${returnMessage}
-    <button class="primary" id="buyLiveResultImage" type="button" ${state.checkoutBusy || !price ? 'disabled' : ''}>${state.checkoutBusy ? 'Stripeへ接続中…' : `${price.toLocaleString('ja-JP')}円で高画質版を購入`}</button>
-    <button class="mini live-support-toggle" id="toggleLiveSupport" type="button" ${state.checkoutBusy ? 'disabled' : ''}>♡ 応援する</button>
-    ${state.supportPanelOpen ? `<div class="live-support-amounts"><strong>応援金額を選ぶ</strong>${(game.supportAmounts || []).map((amount) => `<button class="mini" data-live-support-amount="${amount}" type="button">${Number(amount).toLocaleString('ja-JP')}円</button>`).join('')}<p class="help">応援メッセージは初期版では公開されません。</p></div>` : ''}
+    ${resultImageSalesEnabled ? `<button class="primary" id="buyLiveResultImage" type="button" ${state.checkoutBusy || !price ? 'disabled' : ''}>${state.checkoutBusy ? 'Stripeへ接続中…' : `${price.toLocaleString('ja-JP')}円で高画質版を購入`}</button>` : ''}
+    ${supportPaymentsEnabled ? `<button class="mini live-support-toggle" id="toggleLiveSupport" type="button" aria-expanded="${state.supportPanelOpen}" aria-controls="liveSupportAmounts" ${state.checkoutBusy ? 'disabled' : ''}>♡ 応援金を送る</button>
+    ${state.supportPanelOpen ? `<div class="live-support-amounts" id="liveSupportAmounts" role="group" aria-label="応援金額を選ぶ"><strong>応援金額を選ぶ</strong>${(game.supportAmounts || []).map((amount) => `<button class="mini" data-live-support-amount="${amount}" type="button">${Number(amount).toLocaleString('ja-JP')}円</button>`).join('')}<p class="help">決済はStreetboardgame運営者が受け付け、売上の70%をYouTuberへ分配します。応援メッセージは初期版では公開されません。</p></div>` : ''}` : ''}
   </div>`;
 }
 
@@ -1833,6 +1835,8 @@ function humanError(error) {
     'paid-channel-verification-required': 'このLIVEは有料販売の本人確認・契約・Stripe審査が完了していません',
     'result-image-not-for-sale': 'このLIVEでは高画質結果画像を販売していません',
     'invalid-support-amount': '応援金額を選び直してください',
+    'live-support-checkout-not-configured': '応援金決済の本番設定が完了していません。運営へお問い合わせください',
+    'live-result-checkout-not-configured': '高画質画像決済の本番設定が完了していません。運営へお問い合わせください',
     'stripe-secret-key-not-configured': '決済の本番設定が完了していません。運営へお問い合わせください',
     'live-checkout-not-configured': '決済・購入画像の本番設定が完了していません。運営へお問い合わせください',
     'stripe-api-request-failed': 'Stripeへ接続できませんでした。時間を置いてもう一度お試しください',
