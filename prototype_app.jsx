@@ -1716,7 +1716,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           textDecoration: 'none',
           textAlign: 'center',
         }}>
-          YouTuber向けLIVEを作って遊ぶ
+          Youtuber専用LIVEを作って遊ぶ
         </a>
         <div style={{
           marginTop: 9,
@@ -1730,7 +1730,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           marginLeft: 'auto',
           marginRight: 'auto',
         }}>
-          シリーズ作品の友情判定版・家族の絆判定版・YouTuber向けLIVEもお楽しみください
+          シリーズ作品の友情判定版・家族の絆判定版・Youtuber専用LIVEもお楽しみください
         </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
           marginTop: 12,
@@ -1946,7 +1946,7 @@ const GAME_INTRO_CONTENT = {
         a: '正解発表時と最終結果で、自分が選んだ回答と正誤を各視聴者の画面に表示します。',
       },
     ],
-    cta: 'YouTuber向けLIVEを作って遊ぶ',
+    cta: 'Youtuber専用LIVEを作って遊ぶ',
     ctaHref: '/live',
     related: [
       { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },

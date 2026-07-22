@@ -164,18 +164,18 @@ export default {
         ],
       },
       '/live-guide': {
-        title: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE｜ライブ投票ゲーム',
+        title: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE｜ライブ投票ゲーム',
         description: '撮影スタッフがYouTubeチャンネルから問題企画を保存し、配信中に本人と視聴者が回答できる無料ライブ投票ゲームです。',
         url: CANONICAL_ORIGIN + '/live-guide',
-        ogTitle: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
-        imageAlt: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE ライブ投票ゲーム',
+        ogTitle: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE',
+        imageAlt: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE ライブ投票ゲーム',
         pageId: CANONICAL_ORIGIN + '/live-guide#webpage',
         gameId: CANONICAL_ORIGIN + '/live-guide#live-game',
-        gameName: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
+        gameName: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE',
         headline: 'YouTubeチャンネルから作る無料の視聴者参加型ライブ投票ゲーム',
         genre: ['ライブ投票ゲーム', '視聴者参加型ゲーム', 'YouTuber向けゲーム', 'クイズゲーム'],
         keywords: 'ライブ投票ゲーム, 視聴者参加型ゲーム, YouTuber ゲーム, YouTube 企画, 無料ゲーム, わたちゃん',
-        noscriptTitle: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
+        noscriptTitle: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE',
         noscriptBody: 'YouTubeチャンネルからスタッフが問題企画を保存し、配信中に本人が回答してから視聴者がルームコードで投票する無料ライブゲームです。',
         faq: [
           {
@@ -308,7 +308,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/live-guide">YouTuber向けLIVEの説明を見る</a> / <a href="/live">YouTuber向けLIVEを作って遊ぶ</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/live-guide">Youtuber専用LIVEの説明を見る</a> / <a href="/live">Youtuber専用LIVEを作って遊ぶ</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -382,7 +382,7 @@ function buildStructuredData(page) {
         '彼氏の愛情判定',
         '友達の友情判定',
         '家族の絆判定',
-        'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
+        'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE',
         '製品版',
         'About',
       ],

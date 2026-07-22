@@ -1,9 +1,9 @@
 export const LIVE_SERIES = Object.freeze({
-  name: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
+  name: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE',
   shortName: 'LIVE',
   entryLead: 'スタッフがYouTubeチャンネルから企画を作り、配信中に本人と視聴者が回答するライブゲーム',
   youtubeEntry: 'YouTubeチャンネルから問題を作る',
-  defaultGameTitle: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE',
+  defaultGameTitle: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE',
   youtubePersonGenerateLabel: 'YouTuberの答えを視聴者が予想する（30問生成し、採用する問題を選ぶ）',
   youtubeMajorityGenerateLabel: 'YouTuberが視聴者投票の1位を予想する（30問生成し、採用する問題を選ぶ）',
 });
