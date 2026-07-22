@@ -45,6 +45,7 @@ export async function handleLiveApi(request, env, path) {
 
 async function createLiveGame(request, env) {
   const body = await readLiveJson(request);
+  if (body?.draft?.creationMode !== 'youtube') throw liveError('youtube-creation-required', 400);
   const validation = validateLiveDraft(body && body.draft);
   if (!validation.valid) throw liveError(validation.errors[0] || 'invalid-game', 400);
   await cleanupExpiredLiveData(env);

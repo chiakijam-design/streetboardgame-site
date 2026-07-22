@@ -487,6 +487,7 @@ function humanError(error) {
     'invalid-youtube-channel-url': 'YouTubeチャンネルURLまたは動画URLを確認してください',
     'invalid-youtube-url': 'YouTubeチャンネルURLまたは動画URLを確認してください',
     'youtube-video-channel-not-found': 'この動画から投稿元チャンネルを確認できませんでした。公開中の動画URLかチャンネルURLを入力してください',
+    'youtube-creation-required': 'LIVEゲームはYouTubeチャンネルから作成してください',
     'room-not-found': 'ルームが見つかりません。コードを確認してください',
     'name-required': '名前を入力してください',
     'game-finished': 'このゲームは終了しています',

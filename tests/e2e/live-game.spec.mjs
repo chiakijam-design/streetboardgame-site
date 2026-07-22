@@ -4,6 +4,21 @@ test.beforeEach(async ({ context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 });
 
+test('手入力形式の新規作成APIを受け付けない', async ({ request }) => {
+  const response = await request.post('/api/live/games', {
+    data: {
+      draft: {
+        creationMode: 'manual',
+        title: '手入力LIVE',
+        subjectName: '本人',
+        questions: [{ type: 'poll', text: '手入力問題', options: ['A', 'B'] }],
+      },
+    },
+  });
+  expect(response.status()).toBe(400);
+  expect(await response.json()).toEqual({ error: 'youtube-creation-required' });
+});
+
 test('YouTubeの本人回答モードだけ30問を生成し、1問以上を選んで共通編集へ進む', async ({ page }) => {
   await page.goto('/live');
   await expect(page.getByRole('heading', { name: 'YouTuber向け 私のこと、ちゃんとわかってるよね？LIVE' })).toBeVisible();
