@@ -44,6 +44,11 @@ const state = {
   resultViewerName: '',
   resultShareBusy: false,
   pollTimer: null,
+  realtimeSocket: null,
+  realtimeConnected: false,
+  realtimeReconnectTimer: null,
+  votePending: false,
+  participantAnswers: initialRoomCode ? readParticipantAnswers(initialRoomCode) : {},
 };
 
 document.title = `${LIVE_SERIES.name} | わたちゃん`;
@@ -269,7 +274,7 @@ function renderEditor() {
           <button class="secondary" id="checkSchedule" type="button" ${state.draft.scheduledAt && !state.scheduleChecking ? '' : 'disabled'}>${state.scheduleChecking ? '空き状況を確認中…' : 'この日時の空きを確認する'}</button>
           ${scheduleAvailabilityHtml()}
           <p class="help">予約時刻の前後${LIVE_RESERVATION_BUFFER_HOURS}時間は、ほかのYouTuberが予約できません。企画保存時にもサーバー側で再確認します。</p>
-          <div class="capacity-notice"><strong>安全運用上限：視聴者${LIVE_VIEWER_LIMIT}人</strong><span>${LIVE_VIEWER_LIMIT + 1}人目からは参加できません。現在構成の実負荷試験が終わるまでは、この人数を引き上げません。</span></div>
+          <div class="capacity-notice"><strong>設計上限：視聴者${LIVE_VIEWER_LIMIT.toLocaleString('ja-JP')}人</strong><span>投票処理を32分割し、上限を超えた参加はサーバー側で拒否します。本番開放前には契約環境で段階的な負荷試験を行います。</span></div>
         </div>
         <div class="field editor-creator-image">
           <label for="creatorImage">結果画像に入れるYouTuber画像</label>
@@ -510,6 +515,8 @@ async function joinGame() {
     const response = await api(`/api/live/games/${state.roomCode}/join`, { method: 'POST', body: JSON.stringify({ name }) });
     state.participantToken = response.participantToken;
     state.game = response.game;
+    state.participantAnswers = {};
+    saveParticipantAnswers();
     state.resultViewerName = response.game?.participantName || name;
     sessionStorage.setItem(`live:participant:${state.roomCode}`, state.participantToken);
     state.view = 'participant';
@@ -654,7 +661,7 @@ function renderParticipant() {
     content = `<section class="panel">${liveQuestionHeader(game)}<div class="notice">${escapeHtml(game.subjectName)}本人が回答中です。回答が確定すると投票できるようになります。</div></section>`;
   } else if (game.phase === 'voting') {
     const waitingMessage = game.flowVersion >= 4 ? '回答しました。スタッフが次の問題へ進むまでお待ちください。' : '回答しました。YouTuberが次の問題へ進むまでお待ちください。';
-    content = `<section class="panel">${liveQuestionHeader(game, '出題')}<div class="vote-options">${game.question.options.map((option, index) => `<button class="vote-option ${game.myVoteIndex === index ? 'selected' : ''}" data-vote-index="${index}" ${game.myVoteIndex !== null ? 'disabled' : ''}><span class="badge">${index + 1}</span><span>${escapeHtml(option)}</span>${game.showVoteCount ? `<span class="live-vote-count">${game.question.voteCounts?.[index] || 0}票</span>` : ''}</button>`).join('')}</div>${game.showVoteCount ? '<div class="notice">選択肢別の現在票数を表示しています。</div>' : ''}${game.myVoteIndex !== null ? `<div class="notice">${waitingMessage}</div>` : '<div class="notice">YouTuberと同時に回答してください。</div>'}</section>`;
+    content = `<section class="panel">${liveQuestionHeader(game, '出題')}<div class="vote-options">${game.question.options.map((option, index) => `<button class="vote-option ${game.myVoteIndex === index ? 'selected' : ''}" data-vote-index="${index}" ${game.myVoteIndex !== null || state.votePending ? 'disabled' : ''}><span class="badge">${index + 1}</span><span>${escapeHtml(option)}</span>${game.showVoteCount ? `<span class="live-vote-count">${game.question.voteCounts?.[index] || 0}票</span>` : ''}</button>`).join('')}</div>${game.showVoteCount ? '<div class="notice">選択肢別の現在票数を表示しています。</div>' : ''}${game.myVoteIndex !== null ? `<div class="notice">${waitingMessage}</div>` : state.votePending ? '<div class="notice">回答を送信しています…</div>' : '<div class="notice">YouTuberと同時に回答してください。</div>'}</section>`;
   } else if (game.phase === 'review-question') {
     content = `<section class="panel"><span class="eyebrow">ANSWER CHECK</span>${liveQuestionHeader(game, '答え合わせ')}<div class="notice">スタッフが答えを発表するまでお待ちください。</div></section>`;
   } else if (game.phase === 'review-answer') {
@@ -862,7 +869,8 @@ function liveQuestionHeader(game, stage = '') {
 }
 
 function participantHtml(game) {
-  return `<h3 style="margin-top:18px">参加者 ${game.participantCount} / ${game.participantLimit || LIVE_VIEWER_LIMIT}人</h3><div class="participant-chips">${game.participants.map((participant) => `<span>${escapeHtml(participant.name)}</span>`).join('') || '<span>参加待ち</span>'}</div>`;
+  const omitted = Math.max(0, Number(game.participantCount || 0) - Number(game.participants?.length || 0));
+  return `<h3 style="margin-top:18px">参加者 ${game.participantCount} / ${game.participantLimit || LIVE_VIEWER_LIMIT}人</h3><div class="participant-chips">${game.participants.map((participant) => `<span>${escapeHtml(participant.name)}</span>`).join('') || '<span>参加待ち</span>'}${omitted ? `<span>ほか${omitted}人</span>` : ''}</div>`;
 }
 
 function resultBlock(result, subjectName, showQuestion = true) {
@@ -909,12 +917,24 @@ function personalSummary(results) {
 }
 
 async function vote(optionIndex) {
+  if (state.realtimeConnected && state.realtimeSocket?.readyState === WebSocket.OPEN) {
+    state.votePending = true;
+    state.error = '';
+    state.realtimeSocket.send(JSON.stringify({
+      type: 'vote',
+      questionId: state.game.question.id,
+      optionIndex,
+    }));
+    render();
+    return;
+  }
   try {
     const response = await api(`/api/live/games/${state.roomCode}/vote`, {
       method: 'POST', headers: participantHeaders(),
       body: JSON.stringify({ questionId: state.game.question.id, optionIndex }),
     });
     state.game = response.game;
+    rememberParticipantAnswer(state.game.question?.id, optionIndex);
   } catch (error) { state.error = humanError(error); }
   render();
 }
@@ -980,7 +1000,10 @@ async function loadRoom() {
   const headers = state.hostToken ? hostHeaders() : state.subjectToken ? subjectHeaders() : state.participantToken ? participantHeaders() : {};
   const response = await api(`/api/live/games/${state.roomCode}`, { headers });
   state.game = response.game;
-  if (response.game?.phase === 'complete') clearInterval(state.pollTimer);
+  if (response.game?.phase === 'complete') {
+    clearInterval(state.pollTimer);
+    closeRealtimeSocket();
+  }
   if (state.participantToken && !state.resultViewerName && response.game?.participantName) {
     state.resultViewerName = response.game.participantName;
   }
@@ -999,10 +1022,132 @@ function syncSubjectAnswer(game) {
 
 function startPolling() {
   clearInterval(state.pollTimer);
+  if (state.view === 'participant' && state.game?.realtime && state.participantToken) connectRealtimeSocket();
   state.pollTimer = setInterval(async () => {
     if (!['host', 'subject', 'participant'].includes(state.view)) return;
+    if (state.view === 'participant' && state.realtimeConnected) return;
     try { await loadRoom(); render(); } catch (error) { /* 次のポーリングで再試行 */ }
   }, LIVE_POLL_INTERVAL_MS);
+}
+
+function connectRealtimeSocket() {
+  if (!state.game?.realtime || !state.participantToken || state.game?.phase === 'complete') return;
+  if ([WebSocket.OPEN, WebSocket.CONNECTING].includes(state.realtimeSocket?.readyState)) return;
+  clearTimeout(state.realtimeReconnectTimer);
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const socket = new WebSocket(`${protocol}//${location.host}/api/live/games/${state.roomCode}/socket`, ['live-v1', state.participantToken]);
+  state.realtimeSocket = socket;
+  socket.addEventListener('open', () => {
+    if (state.realtimeSocket !== socket) return;
+    state.realtimeConnected = true;
+  });
+  socket.addEventListener('message', (event) => {
+    if (state.realtimeSocket !== socket) return;
+    let message;
+    try { message = JSON.parse(event.data); } catch (error) { return; }
+    if ((message.type === 'ready' || message.type === 'state') && message.game) {
+      if (message.answers && typeof message.answers === 'object') {
+        state.participantAnswers = message.answers;
+        saveParticipantAnswers();
+      }
+      state.game = personalizeRealtimeState(
+        message.game,
+        state.participantAnswers,
+        message.participantName || state.resultViewerName,
+      );
+      state.votePending = false;
+      if (state.game.phase === 'complete') {
+        clearInterval(state.pollTimer);
+        closeRealtimeSocket();
+      }
+      render();
+      return;
+    }
+    if (message.type === 'vote-accepted') {
+      state.votePending = false;
+      rememberParticipantAnswer(message.questionId, Number(message.optionIndex));
+      if (state.game?.question?.id === message.questionId) state.game.myVoteIndex = Number(message.optionIndex);
+      state.error = '';
+      render();
+      return;
+    }
+    if (message.type === 'vote-rejected') {
+      state.votePending = false;
+      state.error = humanError(new Error(message.error || 'live-vote-error'));
+      render();
+    }
+  });
+  socket.addEventListener('close', () => {
+    if (state.realtimeSocket !== socket) return;
+    state.realtimeSocket = null;
+    state.realtimeConnected = false;
+    state.votePending = false;
+    if (state.view === 'participant' && state.game?.phase !== 'complete') {
+      state.realtimeReconnectTimer = setTimeout(connectRealtimeSocket, 1_000 + Math.floor(Math.random() * 2_000));
+    }
+  });
+  socket.addEventListener('error', () => socket.close());
+}
+
+function closeRealtimeSocket() {
+  clearTimeout(state.realtimeReconnectTimer);
+  state.realtimeReconnectTimer = null;
+  const socket = state.realtimeSocket;
+  state.realtimeSocket = null;
+  state.realtimeConnected = false;
+  if (socket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(socket.readyState)) socket.close(1000, 'complete');
+}
+
+function rememberParticipantAnswer(questionId, optionIndex) {
+  if (!questionId || !Number.isInteger(optionIndex)) return;
+  state.participantAnswers = { ...state.participantAnswers, [questionId]: optionIndex };
+  saveParticipantAnswers();
+}
+
+function saveParticipantAnswers() {
+  if (!state.roomCode) return;
+  sessionStorage.setItem(`live:answers:${state.roomCode}`, JSON.stringify(state.participantAnswers || {}));
+}
+
+function readParticipantAnswers(roomCode) {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(`live:answers:${roomCode}`) || '{}');
+    return value && typeof value === 'object' ? value : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function personalizeRealtimeState(game, answers, participantName) {
+  const questionId = game?.question?.id;
+  const hasCurrentAnswer = questionId && Object.prototype.hasOwnProperty.call(answers || {}, questionId);
+  const personalized = {
+    ...game,
+    participantName: participantName || game.participantName,
+    myVoteIndex: hasCurrentAnswer ? Number(answers[questionId]) : null,
+  };
+  if (game.question) {
+    personalized.question = {
+      ...game.question,
+      result: game.question.result ? personalizeRealtimeResult(game.question.result, answers) : game.question.result,
+    };
+  }
+  if (Array.isArray(game.results)) {
+    personalized.results = game.results.map((result) => personalizeRealtimeResult(result, answers));
+  }
+  return personalized;
+}
+
+function personalizeRealtimeResult(result, answers) {
+  const hasVote = Object.prototype.hasOwnProperty.call(answers || {}, result.questionId);
+  const myVoteIndex = hasVote ? Number(answers[result.questionId]) : null;
+  if (result.type === 'guess-person') {
+    return { ...result, myVoteIndex, myIsCorrect: hasVote ? myVoteIndex === result.subjectAnswerIndex : null };
+  }
+  if (result.type === 'guess-majority') {
+    return { ...result, myVoteIndex, myVoteWasPopular: hasVote ? result.popularIndices.includes(myVoteIndex) : null };
+  }
+  return { ...result, myVoteIndex };
 }
 
 function setPage(content, withTopbar = true) {
@@ -1040,7 +1185,7 @@ function humanError(error) {
     'invalid-scheduled-at': '現在より後のライブ配信日時を選んでください',
     'live-slot-unavailable': `選んだ日時の前後${LIVE_RESERVATION_BUFFER_HOURS}時間以内に別の予約があります。別の日時を選んでください`,
     'another-live-active': '別のYouTube LIVEが進行中です。終了後にもう一度お試しください',
-    'participant-limit-reached': `安全運用上限の${LIVE_VIEWER_LIMIT}人に達したため、このルームには参加できません`,
+    'participant-limit-reached': `参加上限の${Number(state.game?.participantLimit || LIVE_VIEWER_LIMIT).toLocaleString('ja-JP')}人に達したため、このルームには参加できません`,
     'invalid-creator-image': 'YouTuber画像はJPEG・PNG・WebP形式で選んでください',
     'creator-image-too-large': '画像を圧縮できませんでした。10MB以下の別画像を選んでください',
     'room-not-found': 'ルームが見つかりません。コードを確認してください',

@@ -8,9 +8,12 @@ export const LIVE_SERIES = Object.freeze({
   youtubeMajorityGenerateLabel: 'YouTuberが視聴者投票の1位を予想する（30問生成し、採用する問題を選ぶ）',
 });
 
-// 現在のD1ポーリング構成で安全側に倒した初期上限。
-// 実負荷試験と本番メトリクスを確認するまでは引き上げない。
-export const LIVE_VIEWER_LIMIT = 50;
+// Durable Objects分散時の設計上限。バインディングがない環境は50人へ縮退する。
+// 本番で案内する上限は段階負荷試験とCloudflareメトリクスの確認後に決める。
+export const LIVE_VIEWER_LIMIT = 10_000;
+export const LIVE_FALLBACK_VIEWER_LIMIT = 50;
+export const LIVE_REALTIME_SHARD_COUNT = 32;
+export const LIVE_REALTIME_SHARD_CAPACITY = 400;
 export const LIVE_POLL_INTERVAL_MS = 3_000;
 export const LIVE_RESERVATION_BUFFER_HOURS = 20;
 export const LIVE_RESERVATION_MAX_DAYS = 365;

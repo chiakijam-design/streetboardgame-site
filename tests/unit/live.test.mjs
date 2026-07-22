@@ -17,7 +17,13 @@ import {
   normalizeYouTubeInputUrl,
   publicLiveGame,
 } from '../../src/live/api.js';
-import { LIVE_POLL_INTERVAL_MS, LIVE_VIEWER_LIMIT } from '../../src/live/config.js';
+import {
+  LIVE_POLL_INTERVAL_MS,
+  LIVE_REALTIME_SHARD_CAPACITY,
+  LIVE_REALTIME_SHARD_COUNT,
+  LIVE_VIEWER_LIMIT,
+} from '../../src/live/config.js';
+import { LiveRoomCoordinator, LiveVoteShard, liveShardIndexForToken, personalizeLiveRealtimeGame } from '../../src/live/realtime.js';
 
 test('LIVE問題は1問以上で、10問を超えても固定上限で切り捨てない', () => {
   const questions = Array.from({ length: 12 }, (_, index) => createLiveQuestion({
@@ -99,11 +105,96 @@ test('YouTube LIVEは未来の予約日時を必須にし、安全運用上限�
     version: 4, title: '予約LIVE', subjectName: '本人', channelName: '公式チャンネル',
     scheduledAt: now + 60_000, phase: 'lobby', currentQuestionIndex: 0,
     questions: [{ ...question, id: 'q-1', lockedIndex: null }], participants: [], votes: {}, results: [],
+    realtime: true, participantLimit: LIVE_VIEWER_LIMIT,
   });
   assert.equal(publicState.participantLimit, LIVE_VIEWER_LIMIT);
   assert.equal(publicState.scheduledAt, now + 60_000);
   assert.equal(publicState.channelName, '公式チャンネル');
   assert.equal(LIVE_POLL_INTERVAL_MS, 3_000);
+});
+
+test('LIVEリアルタイム設計は1万人を32分割し、各分割に余裕を確保する', () => {
+  assert.equal(LIVE_VIEWER_LIMIT, 10_000);
+  assert.equal(LIVE_REALTIME_SHARD_COUNT, 32);
+  assert.equal(LIVE_REALTIME_SHARD_COUNT * LIVE_REALTIME_SHARD_CAPACITY >= LIVE_VIEWER_LIMIT, true);
+  let seed = 0x12345678;
+  const shardCounts = Array(LIVE_REALTIME_SHARD_COUNT).fill(0);
+  for (let index = 0; index < LIVE_VIEWER_LIMIT; index += 1) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    const token = seed.toString(16).padStart(8, '0').repeat(3);
+    shardCounts[liveShardIndexForToken(token)] += 1;
+  }
+  assert.equal(shardCounts.every((count) => count > 0), true);
+  assert.equal(Math.max(...shardCounts) < LIVE_REALTIME_SHARD_CAPACITY, true);
+});
+
+test('リアルタイム配信状態は視聴者本人の回答と最終正誤だけを付与する', () => {
+  const game = {
+    phase: 'complete',
+    question: { id: 'q-1', options: ['A', 'B'], result: null },
+    results: [{
+      questionId: 'q-1', type: 'guess-person', subjectAnswerIndex: 1,
+      popularIndices: [1], options: [{ text: 'A' }, { text: 'B' }],
+    }],
+  };
+  const personalized = personalizeLiveRealtimeGame(game, { 'q-1': 1 }, '視聴者');
+  assert.equal(personalized.myVoteIndex, 1);
+  assert.equal(personalized.participantName, '視聴者');
+  assert.equal(personalized.results[0].myVoteIndex, 1);
+  assert.equal(personalized.results[0].myIsCorrect, true);
+  assert.equal('myVoteIndex' in game.results[0], false);
+});
+
+test('リアルタイム入場制御は1万人目を受け入れ、1万1人目を拒否する', async () => {
+  const values = new Map([['participantCount', LIVE_VIEWER_LIMIT - 1], ['shard:0:count', 0]]);
+  const storage = {
+    async get(key) { return values.get(key); },
+    async put(key, value) {
+      if (typeof key === 'object') Object.entries(key).forEach(([name, item]) => values.set(name, item));
+      else values.set(key, value);
+    },
+    async transaction(callback) { return callback(this); },
+  };
+  const coordinator = new LiveRoomCoordinator({ storage }, {});
+  const reserve = () => coordinator.fetch(new Request('https://live.internal/reserve', {
+    method: 'POST', body: JSON.stringify({ code: '123456', shardIndex: 0 }),
+  }));
+  assert.equal((await reserve()).status, 200);
+  assert.equal((await reserve()).status, 409);
+  assert.equal(values.get('participantCount'), LIVE_VIEWER_LIMIT);
+});
+
+test('分散投票は参加者ごとに一度だけ保存し、問題スナップショットへ集計する', async () => {
+  const values = new Map();
+  let alarm = null;
+  const storage = {
+    async get(key) { return values.get(key); },
+    async put(key, value) {
+      if (typeof key === 'object') Object.entries(key).forEach(([name, item]) => values.set(name, item));
+      else values.set(key, value);
+    },
+    async list({ prefix }) { return new Map([...values].filter(([key]) => key.startsWith(prefix))); },
+    async transaction(callback) { return callback(this); },
+    async getAlarm() { return alarm; },
+    async setAlarm(value) { alarm = value; },
+  };
+  const shard = new LiveVoteShard({ storage, getWebSockets: () => [] }, {});
+  const voteRequest = () => new Request('https://live.internal/vote', {
+    method: 'POST',
+    body: JSON.stringify({
+      code: '123456', shardIndex: 0, participantId: 'p-1', questionId: 'q-1', optionIndex: 2, optionCount: 5,
+    }),
+  });
+  assert.equal((await shard.fetch(voteRequest())).status, 200);
+  assert.equal((await shard.fetch(voteRequest())).status, 409);
+  const snapshot = await shard.fetch(new Request('https://live.internal/snapshot', {
+    method: 'POST', body: JSON.stringify({ questionId: 'q-1', optionCount: 5 }),
+  }));
+  assert.deepEqual(await snapshot.json(), { votes: { 'p-1': 2 }, voteCounts: [0, 0, 1, 0, 0] });
+  const personal = await shard.fetch(new Request('https://live.internal/participant-votes', {
+    method: 'POST', body: JSON.stringify({ participantId: 'p-1' }),
+  }));
+  assert.deepEqual(await personal.json(), { votes: { 'q-1': 2 } });
 });
 
 test('D1ポーリングは現在問の選択肢別集計と本人回答だけを取得する', async () => {

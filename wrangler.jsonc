@@ -8,6 +8,28 @@
     "directory": "./",
     "binding": "ASSETS"
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LIVE_ROOM_COORDINATOR",
+        "class_name": "LiveRoomCoordinator"
+      },
+      {
+        "name": "LIVE_VOTE_SHARD",
+        "class_name": "LiveVoteShard"
+      }
+    ]
+  },
+  "exports": {
+    "LiveRoomCoordinator": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    },
+    "LiveVoteShard": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
   "d1_databases": [
     {
       "binding": "REMOTE_DB",

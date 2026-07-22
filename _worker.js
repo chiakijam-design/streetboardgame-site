@@ -1,4 +1,5 @@
 import { handleLiveApi } from './src/live/api.js';
+export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
 // https://developers.cloudflare.com/pages/functions/advanced-mode/

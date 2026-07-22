@@ -1,8 +1,22 @@
 import { calculateLiveResult, validateLiveDraft } from './model.js';
 import {
+  LIVE_FALLBACK_VIEWER_LIMIT,
   LIVE_RESERVATION_BUFFER_HOURS,
   LIVE_VIEWER_LIMIT,
 } from './config.js';
+import {
+  broadcastLiveRealtimeState,
+  connectLiveRealtime,
+  hasLiveRealtime,
+  initializeLiveRealtime,
+  liveViewerLimit,
+  loadLiveRealtimeParticipantVotes,
+  loadLiveRealtimeQuestionSnapshot,
+  loadLiveRealtimeStats,
+  releaseLiveRealtimeParticipant,
+  reserveLiveRealtimeParticipant,
+  storeLiveRealtimeVote,
+} from './realtime.js';
 
 const LIVE_ACTIVE_TTL_SECONDS = 60 * 60 * 24;
 const LIVE_SAVED_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -30,17 +44,18 @@ export async function handleLiveApi(request, env, path) {
       return await createLiveGame(request, env);
     }
 
-    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|next))?$/);
+    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|next|socket))?$/);
     if (!route) return liveJson({ error: 'not-found' }, 404);
     const [, code, action = ''] = route;
     if (request.method === 'GET' && !action) return await getLiveGameResponse(request, env, code);
+    if (request.method === 'GET' && action === 'socket') return await connectLiveGameSocket(request, env, code);
     if (request.method !== 'POST') return liveJson({ error: 'method-not-allowed' }, 405);
     if (action === 'join') {
-      await enforceLiveRateLimit(request, env, 'join', 100);
+      if (!hasLiveRealtime(env)) await enforceLiveRateLimit(request, env, 'join', 100);
       return await joinLiveGame(request, env, code);
     }
     if (action === 'vote') {
-      await enforceLiveRateLimit(request, env, 'vote', 600);
+      if (!hasLiveRealtime(env)) await enforceLiveRateLimit(request, env, 'vote', 600);
       return await voteLiveGame(request, env, code);
     }
     if (action === 'subject-answer') {
@@ -84,12 +99,19 @@ async function createLiveGame(request, env) {
     votes: {},
     results: [],
     showVoteCount: validation.draft.showLiveVoteCounts,
+    participantCount: 0,
+    participantLimit: liveViewerLimit(env),
+    realtime: hasLiveRealtime(env),
     createdAt: now,
     updatedAt: now,
     expiresAt: reservation.blockedUntil,
   };
   try {
     await putStoredLiveGame(env, code, game);
+    if (hasLiveRealtime(env)) {
+      await initializeLiveRealtime(env, code);
+      await broadcastCurrentRealtimeState(env, code, game);
+    }
   } catch (error) {
     await releaseLiveReservation(env, code);
     throw error;
@@ -105,7 +127,7 @@ async function getLiveReservationAvailability(request, env) {
   return liveJson({
     available,
     scheduledAt,
-    viewerLimit: LIVE_VIEWER_LIMIT,
+    viewerLimit: liveViewerLimit(env),
     bufferHours: LIVE_RESERVATION_BUFFER_HOURS,
   });
 }
@@ -114,51 +136,100 @@ async function getLiveGameResponse(request, env, code) {
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
   const subjectToken = normalizeToken(request.headers.get('x-live-subject-token'));
   const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
-  const game = await requireLiveGame(env, code, { polling: true, participantToken });
+  const realtime = hasLiveRealtime(env);
+  const game = await requireLiveGame(env, code, realtime
+    ? { baseOnly: true }
+    : { polling: true, participantToken });
+  const host = Boolean(hostToken && hostToken === game.hostToken);
+  const subject = Boolean(subjectToken && subjectToken === game.subjectToken);
+  if (realtime) await enrichRealtimeGame(env, code, game, { host, participantToken });
   return liveJson({
     code,
     game: publicLiveGame(game, {
-      host: Boolean(hostToken && hostToken === game.hostToken),
-      subject: Boolean(subjectToken && subjectToken === game.subjectToken),
+      host,
+      subject,
       participantToken,
     }),
   });
 }
 
+async function connectLiveGameSocket(request, env, code) {
+  if (!hasLiveRealtime(env)) throw liveError('live-realtime-unavailable', 503);
+  const protocols = String(request.headers.get('Sec-WebSocket-Protocol') || '').split(',').map((item) => item.trim());
+  const participantToken = protocols.find((item) => /^[a-f0-9]{20,96}$/i.test(item)) || '';
+  const participant = await loadLiveParticipant(env, code, participantToken);
+  if (!participant) throw liveError('participant-forbidden', 403);
+  return connectLiveRealtime(request, env, code, participant);
+}
+
 async function joinLiveGame(request, env, code) {
-  const game = await requireLiveGame(env, code);
+  const realtime = hasLiveRealtime(env);
+  const game = await requireLiveGame(env, code, { baseOnly: realtime && Boolean(env.REMOTE_DB) });
   if (game.phase === 'complete') throw liveError('game-finished', 409);
   const body = await readLiveJson(request);
   const name = String(body && body.name || '').replace(/\s+/g, ' ').trim().slice(0, 24);
   if (!name) throw liveError('name-required', 400);
-  if (game.participants.length >= LIVE_VIEWER_LIMIT) throw liveError('participant-limit-reached', 409);
-  const participant = { id: createLiveToken(10), token: createLiveToken(24), name, joinedAt: Date.now() };
-  if (await ensureLiveD1(env)) {
-    const inserted = await env.REMOTE_DB.prepare(`
-      INSERT INTO live_participants (code, participant_id, participant_token, name, joined_at)
-      SELECT ?, ?, ?, ?, ?
-      WHERE (SELECT COUNT(*) FROM live_participants WHERE code = ?) < ?
-    `).bind(code, participant.id, participant.token, participant.name, participant.joinedAt, code, LIVE_VIEWER_LIMIT).run();
-    if (Number(inserted?.meta?.changes || 0) !== 1) throw liveError('participant-limit-reached', 409);
+  const viewerLimit = liveViewerLimit(env);
+  if (!realtime && game.participants.length >= viewerLimit) throw liveError('participant-limit-reached', 409);
+  let participant;
+  let reservation;
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    const candidate = { id: createLiveToken(10), token: createLiveToken(24), name, joinedAt: Date.now() };
+    try {
+      reservation = realtime ? await reserveLiveRealtimeParticipant(env, code, candidate.token) : null;
+      participant = candidate;
+      break;
+    } catch (error) {
+      if (error.message !== 'participant-limit-reached' || attempt === 15) throw error;
+    }
+  }
+  if (!participant) throw liveError('participant-limit-reached', 409);
+  const usesD1 = await ensureLiveD1(env);
+  if (usesD1) {
+    try {
+      const inserted = realtime
+        ? await env.REMOTE_DB.prepare(`
+            INSERT INTO live_participants (code, participant_id, participant_token, name, joined_at)
+            VALUES (?, ?, ?, ?, ?)
+          `).bind(code, participant.id, participant.token, participant.name, participant.joinedAt).run()
+        : await env.REMOTE_DB.prepare(`
+            INSERT INTO live_participants (code, participant_id, participant_token, name, joined_at)
+            SELECT ?, ?, ?, ?, ?
+            WHERE (SELECT COUNT(*) FROM live_participants WHERE code = ?) < ?
+          `).bind(code, participant.id, participant.token, participant.name, participant.joinedAt, code, viewerLimit).run();
+      if (Number(inserted?.meta?.changes || 0) !== 1) throw liveError('participant-limit-reached', 409);
+    } catch (error) {
+      if (realtime) await releaseLiveRealtimeParticipant(env, code, participant.token);
+      throw error;
+    }
   } else {
     game.participants.push(participant);
   }
-  touchLiveGame(game);
-  await putStoredLiveGame(env, code, game);
-  const updatedGame = await requireLiveGame(env, code);
+  if (!realtime || !usesD1) {
+    touchLiveGame(game);
+    await putStoredLiveGame(env, code, game);
+  }
+  const participantCount = realtime ? reservation.participantCount : game.participants.length;
+  game.participants = realtime ? [participant] : game.participants;
+  game.participantCount = participantCount;
+  game.participantLimit = viewerLimit;
+  game.realtime = realtime;
   return liveJson({
     code,
     participantId: participant.id,
     participantToken: participant.token,
-    game: publicLiveGame(updatedGame, { participantToken: participant.token }),
+    game: publicLiveGame(game, { participantToken: participant.token }),
   }, 201);
 }
 
 async function voteLiveGame(request, env, code) {
-  const game = await requireLiveGame(env, code);
+  const realtime = hasLiveRealtime(env);
+  const game = await requireLiveGame(env, code, { baseOnly: realtime });
   if (game.phase !== 'voting') throw liveError('voting-closed', 409);
   const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
-  const participant = game.participants.find((item) => item.token === participantToken);
+  const participant = realtime
+    ? await loadLiveParticipant(env, code, participantToken)
+    : game.participants.find((item) => item.token === participantToken);
   if (!participant) throw liveError('participant-forbidden', 403);
   const body = await readLiveJson(request);
   const question = game.questions[game.currentQuestionIndex];
@@ -167,8 +238,19 @@ async function voteLiveGame(request, env, code) {
   if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= question.options.length) {
     throw liveError('invalid-option', 400);
   }
-  if (Object.prototype.hasOwnProperty.call(game.votes[question.id] || {}, participant.id)) {
+  if (!realtime && Object.prototype.hasOwnProperty.call(game.votes[question.id] || {}, participant.id)) {
     throw liveError('already-voted', 409);
+  }
+  if (realtime) {
+    await storeLiveRealtimeVote(env, code, participant, question, optionIndex);
+    const stats = await loadLiveRealtimeStats(env, code, question);
+    game.participants = [participant];
+    game.participantCount = Number(stats?.participantCount) || 0;
+    game.participantLimit = liveViewerLimit(env);
+    game.realtime = true;
+    game.currentVoteCounts = stats?.voteCounts || question.options.map(() => 0);
+    game.votes = { [question.id]: { [participant.id]: optionIndex } };
+    return liveJson({ code, accepted: true, game: publicLiveGame(game, { participantToken }) });
   }
   if (await ensureLiveD1(env)) {
     await env.REMOTE_DB.prepare(`
@@ -188,7 +270,8 @@ async function voteLiveGame(request, env, code) {
 }
 
 async function answerLiveGameAsSubject(request, env, code) {
-  const game = await requireLiveGame(env, code);
+  const realtime = hasLiveRealtime(env);
+  const game = await requireLiveGame(env, code, { baseOnly: realtime });
   if (Number(game.version) < 4 || !game.subjectToken) throw liveError('subject-not-supported', 409);
   const subjectToken = normalizeToken(request.headers.get('x-live-subject-token'));
   if (!subjectToken || subjectToken !== game.subjectToken) throw liveError('subject-forbidden', 403);
@@ -204,17 +287,27 @@ async function answerLiveGameAsSubject(request, env, code) {
   question.lockedIndex = optionIndex;
   touchLiveGame(game);
   await putStoredLiveGame(env, code, game);
+  if (realtime) await broadcastCurrentRealtimeState(env, code, game);
   return liveJson({ code, accepted: true, game: publicLiveGame(game, { subject: true }) });
 }
 
 async function updateLiveGameAsHost(request, env, code, action) {
-  const game = await requireLiveGame(env, code);
+  const realtime = hasLiveRealtime(env);
+  const game = await requireLiveGame(env, code, { baseOnly: realtime });
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
   if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
   const shouldAcquireActiveSlot = action === 'start' && Number(game.version) >= 4;
   if (shouldAcquireActiveSlot && game.phase !== 'lobby') throw liveError('game-already-started', 409);
   if (shouldAcquireActiveSlot) await acquireLiveActiveSlot(env, code, game);
   try {
+    if (realtime && action === 'advance' && game.phase === 'voting') {
+      const question = game.questions[game.currentQuestionIndex];
+      const snapshot = question ? await loadLiveRealtimeQuestionSnapshot(env, code, question) : null;
+      if (question && snapshot) {
+        game.votes[question.id] = snapshot.votes || {};
+        game.currentVoteCounts = snapshot.voteCounts || question.options.map(() => 0);
+      }
+    }
     if (Number(game.version) >= 4) {
       await updateSeparatedLiveGame(request, game, action);
     } else if (Number(game.version) >= 3) {
@@ -224,11 +317,13 @@ async function updateLiveGameAsHost(request, env, code, action) {
     }
     touchLiveGame(game);
     await putStoredLiveGame(env, code, game);
+    if (realtime) await broadcastCurrentRealtimeState(env, code, game);
   } catch (error) {
     if (shouldAcquireActiveSlot) await releaseLiveActiveSlot(env, code);
     throw error;
   }
   if (game.phase === 'complete') await releaseLiveActiveSlot(env, code);
+  if (realtime) await enrichRealtimeGame(env, code, game, { host: true });
   return liveJson({ code, game: publicLiveGame(game, { host: true }) });
 }
 
@@ -340,9 +435,10 @@ async function updateLegacyLiveGame(request, game, action) {
 export function publicLiveGame(game, access = {}) {
   const question = game.questions[game.currentQuestionIndex] || null;
   const currentVotes = question ? game.votes[question.id] || {} : {};
+  const participants = Array.isArray(game.participants) ? game.participants : [];
   const flowVersion = Number(game.version) || 1;
   const participant = access.participantToken
-    ? game.participants.find((item) => item.token === access.participantToken)
+    ? participants.find((item) => item.token === access.participantToken)
     : null;
   const storedRevealResult = question && ['reveal', 'review-answer', 'complete'].includes(game.phase)
     ? game.results.find((item) => item.questionId === question.id) || null
@@ -381,15 +477,16 @@ export function publicLiveGame(game, access = {}) {
     phase: game.phase,
     currentQuestionIndex: game.currentQuestionIndex,
     questionCount: game.questions.length,
-    participantCount: game.participants.length,
-    participantLimit: LIVE_VIEWER_LIMIT,
-    participants: game.participants.map(({ id, name }) => ({ id, name })),
+    participantCount: Number.isInteger(game.participantCount) ? game.participantCount : participants.length,
+    participantLimit: Number(game.participantLimit) || (game.realtime ? LIVE_VIEWER_LIMIT : LIVE_FALLBACK_VIEWER_LIMIT),
+    participants: access.host ? participants.map(({ id, name }) => ({ id, name })) : [],
     question: publicQuestion,
     myVoteIndex: participant && Object.prototype.hasOwnProperty.call(currentVotes, participant.id)
       ? Number(currentVotes[participant.id])
       : null,
     results: completedResults,
     showVoteCount: Boolean(game.showVoteCount),
+    realtime: Boolean(game.realtime),
     scheduledAt: Number(game.scheduledAt) || undefined,
     channelName: game.channelName || game.subjectName,
     participantName: participant?.name,
@@ -969,7 +1066,10 @@ async function ensureLiveD1(env) {
           expires_at INTEGER NOT NULL
         )
       `).run(),
-    ]).catch((error) => {
+    ]).then(() => env.REMOTE_DB.prepare(`
+      CREATE INDEX IF NOT EXISTS idx_live_participants_token
+      ON live_participants (code, participant_token)
+    `).run()).catch((error) => {
       liveD1ReadyPromise = null;
       throw error;
     });
@@ -987,6 +1087,7 @@ async function getStoredLiveGame(env, code, options = {}) {
       return null;
     }
     const game = JSON.parse(row.payload);
+    if (options.baseOnly) return { ...game, participants: [], votes: {} };
     if (options.polling) return loadD1PollingSnapshot(env, code, game, options.participantToken);
     const [participantsResult, votesResult] = await Promise.all([
       env.REMOTE_DB.prepare(`
@@ -1015,6 +1116,7 @@ async function getStoredLiveGame(env, code, options = {}) {
   }
   const kv = env.LIVE_KV || env.REMOTE_KV;
   const game = kv ? await kv.get(`live:${code}`, { type: 'json' }) : null;
+  if (options.baseOnly && game) return { ...game, participants: [], votes: {} };
   return options.polling ? createPollingSnapshot(game, options.participantToken) : game;
 }
 
@@ -1108,6 +1210,85 @@ function resultVoteCounts(game, question) {
   if (!question) return [];
   const result = (game.results || []).find((item) => item.questionId === question.id);
   return question.options.map((_, optionIndex) => Math.max(0, Number(result?.options?.[optionIndex]?.count) || 0));
+}
+
+async function loadLiveParticipant(env, code, participantToken) {
+  if (!participantToken) return null;
+  if (await ensureLiveD1(env)) {
+    const row = await env.REMOTE_DB.prepare(`
+      SELECT participant_id, participant_token, name, joined_at
+      FROM live_participants
+      WHERE code = ? AND participant_token = ?
+      LIMIT 1
+    `).bind(code, participantToken).first();
+    return row ? {
+      id: row.participant_id,
+      token: row.participant_token,
+      name: row.name,
+      joinedAt: Number(row.joined_at),
+    } : null;
+  }
+  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const game = kv ? await kv.get(`live:${code}`, { type: 'json' }) : null;
+  return game?.participants?.find((item) => item.token === participantToken) || null;
+}
+
+async function enrichRealtimeGame(env, code, game, access = {}) {
+  const question = game.questions[game.currentQuestionIndex] || null;
+  const participantPromise = access.participantToken
+    ? loadLiveParticipant(env, code, access.participantToken)
+    : Promise.resolve(null);
+  const hostParticipantsPromise = access.host && env.REMOTE_DB
+    ? env.REMOTE_DB.prepare(`
+        SELECT participant_id, participant_token, name, joined_at
+        FROM live_participants
+        WHERE code = ?
+        ORDER BY joined_at ASC
+        LIMIT 100
+      `).bind(code).all()
+    : Promise.resolve({ results: [] });
+  const [stats, participant, hostParticipants] = await Promise.all([
+    loadLiveRealtimeStats(env, code, question),
+    participantPromise,
+    hostParticipantsPromise,
+  ]);
+  game.participantCount = Number(stats?.participantCount) || 0;
+  game.participantLimit = liveViewerLimit(env);
+  game.realtime = true;
+  game.currentVoteCounts = question
+    ? (stats?.voteCounts || question.options.map(() => 0))
+    : [];
+  game.participants = (hostParticipants.results || []).map((item) => ({
+    id: item.participant_id,
+    token: item.participant_token,
+    name: item.name,
+    joinedAt: Number(item.joined_at),
+  }));
+  if (participant && !game.participants.some((item) => item.id === participant.id)) game.participants.push(participant);
+  game.votes = {};
+  if (participant) {
+    const answers = await loadLiveRealtimeParticipantVotes(env, code, participant.token, participant.id);
+    for (const [questionId, optionIndex] of Object.entries(answers)) {
+      game.votes[questionId] = { [participant.id]: Number(optionIndex) };
+    }
+  }
+  return game;
+}
+
+async function broadcastCurrentRealtimeState(env, code, game) {
+  if (!hasLiveRealtime(env)) return;
+  const question = game.questions[game.currentQuestionIndex] || null;
+  const stats = await loadLiveRealtimeStats(env, code, question);
+  game.participantCount = Number(stats?.participantCount) || Number(game.participantCount) || 0;
+  game.participantLimit = liveViewerLimit(env);
+  game.realtime = true;
+  game.currentVoteCounts = question
+    ? (stats?.voteCounts || game.currentVoteCounts || question.options.map(() => 0))
+    : [];
+  const publicState = publicLiveGame(game, {});
+  publicState.participants = [];
+  publicState.realtimeExpiresAt = Number(game.expiresAt) || Date.now() + LIVE_ACTIVE_TTL_SECONDS * 1000;
+  await broadcastLiveRealtimeState(env, code, publicState);
 }
 
 async function putStoredLiveGame(env, code, game) {
