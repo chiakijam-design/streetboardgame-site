@@ -85,6 +85,54 @@
     .personal-summary { display:grid; gap:4px; margin:12px 0 18px; padding:16px; border:3px solid #000; border-radius:14px; background:var(--cyan); text-align:center; box-shadow:4px 4px 0 #000; }
     .personal-summary strong { font-size:24px; }
     .personal-summary span { font-size:12px; font-weight:800; }
+    .editor-intro-panel { overflow:hidden; padding:0; background:linear-gradient(145deg,#FFF5A8 0%,#FFD9E8 52%,#DDF8FC 100%); }
+    .editor-intro-copy { padding:20px 18px 16px; }
+    .editor-intro-copy h2 { margin-top:10px; }
+    .editor-flow { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; padding:0 14px 16px; }
+    .editor-flow-step { position:relative; min-width:0; padding:11px 7px 10px; border:2px solid #000; border-radius:13px; background:#fff; text-align:center; box-shadow:2px 2px 0 #000; }
+    .editor-flow-step.is-done { background:var(--cyan); }
+    .editor-flow-step.is-current { background:var(--yellow); transform:translateY(-3px); box-shadow:3px 4px 0 #000; }
+    .editor-flow-step strong { display:grid; place-items:center; width:25px; height:25px; margin:0 auto 5px; border:2px solid #000; border-radius:50%; background:#fff; font:900 12px "DotGothic16",monospace; }
+    .editor-flow-step span { display:block; font-size:10px; line-height:1.35; font-weight:900; }
+    .editor-flow-step small { display:block; margin-top:3px; color:#7E1235; font-size:8px; font-weight:900; }
+    .editor-settings { display:grid; gap:11px; padding:16px 18px 20px; border-top:3px solid #000; background:rgba(255,255,255,.84); }
+    .editor-settings-title { display:flex; align-items:center; gap:8px; margin-bottom:-2px; font-size:14px; font-weight:900; }
+    .editor-settings-title span { display:grid; place-items:center; width:31px; height:31px; border:2px solid #000; border-radius:50%; background:var(--pink); color:#fff; }
+    .editor-settings .field { margin-top:0; }
+    .editor-settings input { background:#fff; box-shadow:2px 2px 0 rgba(0,0,0,.15); }
+    .editor-type-summary { display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding:10px 12px; border:2px solid #000; border-radius:11px; background:#E8FAFD; font-size:11px; font-weight:900; }
+    .editor-type-summary .badge { flex:0 0 auto; }
+    .editor-question-panel { background:#FFF8F1; }
+    .editor-question-heading { align-items:center; margin-bottom:15px; padding:2px 2px 12px; border-bottom:2px dashed #D6AEBB; }
+    .editor-question-heading h2 { margin-bottom:2px; }
+    .editor-count { display:inline-grid; place-items:center; min-width:64px; min-height:43px; padding:6px 10px; border:3px solid #000; border-radius:999px; background:var(--yellow); box-shadow:2px 2px 0 #000; font-size:12px; font-weight:900; }
+    .editor-question-card { --card-accent:var(--pink); overflow:hidden; padding:0; background:#FFF0F6; }
+    .editor-question-card:nth-child(4n + 2) { --card-accent:#20BCD3; background:#E9FBFE; }
+    .editor-question-card:nth-child(4n + 3) { --card-accent:#F0B900; background:#FFF9D7; }
+    .editor-question-card:nth-child(4n) { --card-accent:#8D72D9; background:#F2EEFF; }
+    .editor-question-top { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 13px; border-bottom:3px solid #000; background:var(--card-accent); }
+    .editor-question-number { display:flex; align-items:center; gap:8px; color:#fff; font-size:13px; font-weight:900; text-shadow:1px 1px 0 #000; }
+    .editor-question-number .badge { min-width:42px; justify-content:center; background:#fff; color:#000; text-shadow:none; font-size:12px; }
+    .editor-question-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
+    .editor-question-actions .mini { min-height:36px; padding:6px 9px; background:#fff; font-size:10px; }
+    .editor-question-actions .delete-question { background:#FFE2EC; color:#8E173D; }
+    .editor-question-body { padding:15px 14px 16px; }
+    .editor-field-label { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:900; }
+    .editor-field-label::before { display:grid; place-items:center; flex:0 0 23px; width:23px; height:23px; border:2px solid #000; border-radius:7px; background:#fff; content:attr(data-icon); font-size:11px; }
+    .editor-question-body textarea { background:#fff; font-weight:700; box-shadow:2px 2px 0 rgba(0,0,0,.12); }
+    .editor-type-lock { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; }
+    .editor-type-lock select { min-height:44px; background:#fff; font-weight:900; }
+    .editor-lock-badge { padding:5px 8px; border:2px solid #000; border-radius:999px; background:var(--cyan); font-size:9px; font-weight:900; white-space:nowrap; }
+    .editor-options { display:grid; gap:8px; margin-top:8px; }
+    .editor-option-row { display:grid; grid-template-columns:32px minmax(0,1fr); align-items:center; gap:8px; }
+    .editor-option-number { display:grid; place-items:center; width:32px; height:32px; border:2px solid #000; border-radius:50%; background:var(--yellow); box-shadow:1px 1px 0 #000; font:900 12px "DotGothic16",monospace; }
+    .editor-option-row:nth-child(even) .editor-option-number { background:var(--cyan); }
+    .editor-option-row input { min-height:45px; background:#fff; font-weight:700; box-shadow:2px 2px 0 rgba(0,0,0,.1); }
+    .editor-live-note { position:relative; padding-left:42px; background:#fff; }
+    .editor-live-note::before { position:absolute; left:10px; top:50%; transform:translateY(-50%); content:'🎥'; font-size:21px; }
+    .editor-save-bar { display:grid; gap:8px; padding:10px; background:rgba(255,255,255,.96); }
+    .editor-save-guide { margin:0; color:#5E4650; font-size:10px; line-height:1.5; text-align:center; font-weight:900; }
+    .editor-save-bar .primary { background:var(--black); }
     .loading { padding:42px 10px; color:#fff; text-align:center; font-weight:900; }
     .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
     @media (min-width:700px) {
@@ -92,12 +140,21 @@
       .entry-grid { grid-template-columns:1fr 1fr; }
       .panel { padding:24px; }
       .question-card { padding:18px; }
+      .editor-intro-panel,.editor-question-card { padding:0; }
+      .editor-intro-copy { padding:24px 24px 18px; }
+      .editor-flow { gap:12px; padding:0 22px 20px; }
+      .editor-flow-step { padding:13px 9px 12px; }
+      .editor-flow-step span { font-size:11px; }
+      .editor-settings { grid-template-columns:1fr 1fr; gap:14px; padding:20px 24px 24px; }
+      .editor-settings-title,.editor-type-summary { grid-column:1 / -1; }
+      .editor-question-body { padding:18px; }
+      .editor-question-top { padding:13px 16px; }
     }
   </style>
   <script data-build-entry="viewport_recovery" src="/dist/viewport_recovery-MXTVWKCL.js"></script>
 </head>
 <body>
   <main id="liveRoot"><div class="loading">LIVEゲームを準備しています…</div></main>
-  <script data-build-entry="live_game" defer src="/dist/live_game-C42NHOUH.js"></script>
+  <script data-build-entry="live_game" defer src="/dist/live_game-OHUROKL2.js"></script>
 </body>
 </html>

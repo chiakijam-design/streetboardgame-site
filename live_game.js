@@ -220,22 +220,32 @@ async function regenerateCandidate(index) {
 function renderEditor() {
   const validation = state.error ? null : validateLiveDraft(state.draft);
   setPage(`
-    <section class="panel">
-      <span class="eyebrow">GAME EDITOR</span>
-      <h2 style="margin-top:12px">問題を編集する</h2>
-      <p class="help">30問の候補から選んだ問題だけを保存します。本人の答えは、ライブ配信中に視聴者と同時に1問ずつ入力します。</p>
-      <div class="notice">このゲームの問題タイプは「${escapeHtml(LIVE_TYPE_LABELS[state.youtubeQuestionType] || '')}」で統一されます。</div>
-      <div class="field"><label for="gameTitle">ゲームタイトル</label><input id="gameTitle" maxlength="80" value="${escapeAttr(state.draft.title)}"></div>
-      <div class="field"><label for="subjectName">主役または回答者の名前</label><input id="subjectName" maxlength="40" value="${escapeAttr(state.draft.subjectName)}"></div>
+    <section class="panel editor-intro-panel">
+      <div class="editor-intro-copy">
+        <span class="eyebrow">GAME EDITOR</span>
+        <h2>問題を編集する</h2>
+        <p class="help">選んだ問題を配信用に仕上げます。上から順番に確認すれば、そのまま企画を保存できます。</p>
+      </div>
+      <div class="editor-flow" aria-label="企画作成の手順">
+        <div class="editor-flow-step is-done"><strong>1</strong><span>問題を選ぶ</span><small>完了</small></div>
+        <div class="editor-flow-step is-current"><strong>2</strong><span>内容を整える</span><small>いまここ</small></div>
+        <div class="editor-flow-step"><strong>3</strong><span>保存してURL発行</span></div>
+      </div>
+      <div class="editor-settings">
+        <div class="editor-settings-title"><span>✎</span>まず、企画の基本情報を確認</div>
+        <div class="editor-type-summary"><span>遊び方</span><span class="badge">${escapeHtml(LIVE_TYPE_LABELS[state.youtubeQuestionType] || '')}</span><span>すべての問題で共通です</span></div>
+        <div class="field"><label for="gameTitle">ゲームタイトル</label><input id="gameTitle" maxlength="80" value="${escapeAttr(state.draft.title)}"><p class="help">スタッフ用URLや配信画面に表示されます</p></div>
+        <div class="field"><label for="subjectName">YouTuber・回答者の名前</label><input id="subjectName" maxlength="40" value="${escapeAttr(state.draft.subjectName)}"><p class="help">視聴者の画面で「本人」として表示されます</p></div>
+      </div>
     </section>
-    <section class="panel">
-      <div class="question-head"><div><h2>問題</h2><p class="help">現在 ${state.draft.questions.length}問（30問から選択）</p></div></div>
+    <section class="panel editor-question-panel">
+      <div class="question-head editor-question-heading"><div><h2>次に、問題と5択を確認</h2><p class="help">問題文・選択肢を編集できます。上下ボタンで出題順も変更できます。</p></div><span class="editor-count">${state.draft.questions.length}問</span></div>
       <div class="question-list">
         ${state.draft.questions.map((question, index) => editorQuestionCard(question, index)).join('')}
       </div>
       ${errorHtml()}
       ${!state.error && !validation.valid ? `<div class="notice">入力途中です。開始前にすべての問題を確認します。</div>` : ''}
-      <div class="sticky-actions"><button class="primary" id="createGame">企画を保存してルームを作る <span class="accent">▶</span></button></div>
+      <div class="sticky-actions editor-save-bar"><p class="editor-save-guide">すべて確認できたら、スタッフ用URLと視聴者参加URLを発行します</p><button class="primary" id="createGame">確認できたので企画を保存する <span class="accent">▶</span></button></div>
     </section>
   `);
   bind('#gameTitle', 'input', (event) => { state.draft.title = event.target.value; });
@@ -246,21 +256,23 @@ function renderEditor() {
 
 function editorQuestionCard(question, index) {
   return `
-    <article class="question-card" data-question-index="${index}">
-      <div class="question-head">
-        <div><span class="badge">Q${index + 1}</span></div>
-        <div class="order">
-          <button class="mini" data-action="question-up" ${index === 0 ? 'disabled' : ''} aria-label="Q${index + 1}を上へ">↑</button>
-          <button class="mini" data-action="question-down" ${index === state.draft.questions.length - 1 ? 'disabled' : ''} aria-label="Q${index + 1}を下へ">↓</button>
-          <button class="mini" data-action="question-delete" aria-label="Q${index + 1}を削除">削除</button>
+    <article class="question-card editor-question-card" data-question-index="${index}">
+      <div class="editor-question-top">
+        <div class="editor-question-number"><span class="badge">Q${index + 1}</span><span>${index + 1}問目</span></div>
+        <div class="editor-question-actions">
+          <button class="mini" data-action="question-up" ${index === 0 ? 'disabled' : ''} aria-label="Q${index + 1}を上へ">↑ 上へ</button>
+          <button class="mini" data-action="question-down" ${index === state.draft.questions.length - 1 ? 'disabled' : ''} aria-label="Q${index + 1}を下へ">↓ 下へ</button>
+          <button class="mini delete-question" data-action="question-delete" aria-label="Q${index + 1}を削除">削除</button>
         </div>
       </div>
-      <div class="field"><label>問題文</label><textarea data-field="question-text" maxlength="180">${escapeHtml(question.text)}</textarea></div>
-      <div class="field"><label>問題タイプ</label>${typeSelect(question.type, 'question-type', true)}</div>
-      <div class="field"><span class="field-label">選択肢（5個固定）</span>
-        ${question.options.map((option, optionIndex) => `<input data-editor-option="${optionIndex}" maxlength="60" value="${escapeAttr(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}">`).join('')}
+      <div class="editor-question-body">
+        <div class="field"><label class="editor-field-label" data-icon="問">問題文</label><textarea data-field="question-text" maxlength="180">${escapeHtml(question.text)}</textarea></div>
+        <div class="field"><label class="editor-field-label" data-icon="型">問題タイプ</label><div class="editor-type-lock">${typeSelect(question.type, 'question-type', true)}<span class="editor-lock-badge">変更なし</span></div></div>
+        <div class="field"><span class="editor-field-label" data-icon="択">選択肢（5個固定）</span>
+          <div class="editor-options">${question.options.map((option, optionIndex) => `<label class="editor-option-row"><span class="editor-option-number">${optionIndex + 1}</span><input data-editor-option="${optionIndex}" maxlength="60" value="${escapeAttr(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}"></label>`).join('')}</div>
+        </div>
+        <div class="notice editor-live-note">本人の答えは配信中に入力します。視聴者と同時に回答し、「次の問題へ」で締め切ります。</div>
       </div>
-      <div class="notice">本人の答えはここでは設定しません。ライブ配信中、視聴者と同じ問題に回答し、「次の問題へ」で同時に締め切ります。</div>
     </article>
   `;
 }
