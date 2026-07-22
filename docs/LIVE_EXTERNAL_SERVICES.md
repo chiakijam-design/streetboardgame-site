@@ -39,7 +39,9 @@ npx wrangler secret put YOUTUBE_OAUTH_CLIENT_SECRET
 npx wrangler secret put YOUTUBE_OAUTH_REDIRECT_URI
 ```
 
-`YOUTUBE_OAUTH_REDIRECT_URI`は本番の`https://www.streetboardgame.com/api/live/channel-verifications/oauth/callback`にする。OAuthでは`youtube.readonly`だけを要求し、`channels.list(mine=true)`で対象チャンネルを確認後、アクセストークンを破棄・失効させる。アクセストークンとリフレッシュトークンはD1へ保存しない。
+`YOUTUBE_OAUTH_REDIRECT_URI`は本番の`https://www.streetboardgame.com/api/live/channel-verifications/oauth/callback`にする。OAuthでは字幕ダウンロードに必要な`youtube.force-ssl`を要求し、`channels.list(mine=true)`で対象チャンネルを確認する。続けて本人が管理する最近の公開動画を最大8本まで`captions.list`・`captions.download`で取得し、字幕本文だけを30日間D1へ保存する。アクセストークンは処理直後に失効させ、アクセストークンとリフレッシュトークンはD1へ保存しない。Googleの同意画面では編集・削除を含む広い権限名が表示されるため、本サービスが実行するのは所有確認と字幕読取りだけであることを画面と規約で明示する。公開アプリとしてこの制限付きスコープを使う前にGoogle OAuthアプリ審査を完了する。
+
+字幕APIのクォータは1動画あたり`captions.list` 50単位＋`captions.download` 200単位である。最大8本の取込は約2,000単位となるため、所有確認の再実行回数を監視する。字幕がない動画・取得権限がない動画はスキップし、1本も取得できない場合は従来どおりタイトル・説明・タグから候補を生成する。
 
 画面上の運用フローは次の通り。
 
@@ -131,7 +133,7 @@ npx wrangler secret put STRIPE_WEBHOOK_SECRET
 npx wrangler secret put LIVE_PURCHASE_ACCESS_SECRET
 ```
 
-ゲーム用D1には通常マイグレーションを順番に適用し、Web契約同意には`migrations/0008_live_creator_agreements.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0004_live_entitlement_recovery.sql`までを順番に適用する。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入メールは平文保存せず、サーバー秘密鍵によるHMAC-SHA-256だけを購入権限へ保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
+ゲーム用D1には通常マイグレーションを順番に適用し、字幕由来の内輪問題生成には`migrations/0009_live_youtube_caption_sources.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0004_live_entitlement_recovery.sql`までを順番に適用する。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入メールは平文保存せず、サーバー秘密鍵によるHMAC-SHA-256だけを購入権限へ保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
 
 ## 6. Stripe Webhook接続時の手順
 

@@ -1,8 +1,9 @@
-import { fetchOwnedYouTubeChannels, fetchYouTubeDataProfile } from './youtube.js';
+import { fetchOwnedYouTubeCaptionSources, fetchOwnedYouTubeChannels, fetchYouTubeDataProfile } from './youtube.js';
 import { requireLiveCreatorInvite } from './security.js';
 import { CREATOR_TERMS } from './creator-agreement-config.js';
 
 const VERIFY_TOKEN_HEADER = 'x-live-verification-token';
+const CAPTION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 export async function createChannelVerification(request, env) {
   requireD1(env);
@@ -95,7 +96,7 @@ export async function requestManualReview(request, env, verificationId) {
 
 export async function startYouTubeOAuth(request, env, verificationId) {
   const verification = await requireVerification(request, env, verificationId);
-  assertVerificationOpen(verification);
+  if (verification.ownership_status === 'rejected') throw ownershipError('verification-rejected', 409);
   const clientId = String(env.YOUTUBE_OAUTH_CLIENT_ID || '');
   const clientSecret = String(env.YOUTUBE_OAUTH_CLIENT_SECRET || '');
   const redirectUri = String(env.YOUTUBE_OAUTH_REDIRECT_URI || '');
@@ -111,7 +112,7 @@ export async function startYouTubeOAuth(request, env, verificationId) {
   authorizationUrl.searchParams.set('client_id', clientId);
   authorizationUrl.searchParams.set('redirect_uri', redirectUri);
   authorizationUrl.searchParams.set('response_type', 'code');
-  authorizationUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/youtube.readonly');
+  authorizationUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/youtube.force-ssl');
   authorizationUrl.searchParams.set('state', state);
   authorizationUrl.searchParams.set('access_type', 'online');
   authorizationUrl.searchParams.set('include_granted_scopes', 'true');
@@ -132,8 +133,9 @@ export async function completeYouTubeOAuth(request, env) {
     WHERE oauth_state_hash = ? AND oauth_state_expires_at > ?
   `).bind(await sha256(state), Date.now()).first();
   if (!row) throw ownershipError('youtube-oauth-state-invalid', 400);
-  assertVerificationOpen(row);
-  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+  if (row.ownership_status === 'rejected') throw ownershipError('verification-rejected', 409);
+  const oauthFetch = typeof env.YOUTUBE_OAUTH_FETCH === 'function' ? env.YOUTUBE_OAUTH_FETCH : fetch;
+  const tokenResponse = await oauthFetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -146,10 +148,21 @@ export async function completeYouTubeOAuth(request, env) {
   });
   const token = await tokenResponse.json().catch(() => ({}));
   if (!tokenResponse.ok || !token.access_token) throw ownershipError('youtube-oauth-token-failed', 502);
-  const ownedChannels = await fetchOwnedYouTubeChannels(token.access_token);
-  const ownsTarget = ownedChannels.some(({ channelId }) => channelId === row.channel_id);
-  await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token.access_token)}`, { method: 'POST' }).catch(() => {});
-  if (!ownsTarget) throw ownershipError('youtube-channel-not-owned', 403);
+  let captionSources = [];
+  try {
+    const ownedChannels = await fetchOwnedYouTubeChannels(token.access_token, oauthFetch);
+    const ownsTarget = ownedChannels.some(({ channelId }) => channelId === row.channel_id);
+    if (!ownsTarget) throw ownershipError('youtube-channel-not-owned', 403);
+    const profile = await fetchYouTubeDataProfile(`https://www.youtube.com/channel/${row.channel_id}`, env);
+    captionSources = await fetchOwnedYouTubeCaptionSources(profile, token.access_token, oauthFetch);
+    await replaceCaptionSources(env, row.channel_id, captionSources);
+  } catch (error) {
+    if (error.message === 'youtube-channel-not-owned' || error.message === 'youtube-oauth-api-failed') throw error;
+    // 所有確認は成功させる。字幕がない・字幕APIが一時失敗した場合はメタデータ生成へ戻す。
+    captionSources = [];
+  } finally {
+    await oauthFetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token.access_token)}`, { method: 'POST' }).catch(() => {});
+  }
   const now = Date.now();
   await env.REMOTE_DB.prepare(`
     UPDATE live_channel_verifications
@@ -157,7 +170,7 @@ export async function completeYouTubeOAuth(request, env) {
         oauth_state_hash = NULL, oauth_state_expires_at = NULL, updated_at = ?
     WHERE verification_id = ?
   `).bind(now, now, row.verification_id).run();
-  return new Response(successHtml(row.channel_name), {
+  return new Response(successHtml(row.channel_name, captionSources.length), {
     headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
   });
 }
@@ -326,8 +339,42 @@ function clientIp(request) {
   return String(request.headers.get('cf-connecting-ip') || '').slice(0, 64);
 }
 
-function successHtml(channelName) {
-  return `<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>所有確認完了</title><body><main><h1>チャンネル所有確認が完了しました</h1><p>${escapeHtml(channelName)} の確認結果を保存しました。この画面を閉じて元の画面へ戻ってください。</p></main></body></html>`;
+async function replaceCaptionSources(env, channelId, sources) {
+  await env.REMOTE_DB.prepare(`
+    CREATE TABLE IF NOT EXISTS live_youtube_caption_sources (
+      channel_id TEXT NOT NULL, video_id TEXT NOT NULL, video_title TEXT NOT NULL,
+      transcript TEXT NOT NULL, transcript_sha256 TEXT NOT NULL, language TEXT NOT NULL DEFAULT '',
+      auto_generated INTEGER NOT NULL DEFAULT 0, fetched_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
+      PRIMARY KEY (channel_id, video_id)
+    )
+  `).run();
+  await env.REMOTE_DB.prepare('DELETE FROM live_youtube_caption_sources WHERE channel_id = ?').bind(channelId).run();
+  const now = Date.now();
+  for (const source of sources) {
+    await env.REMOTE_DB.prepare(`
+      INSERT INTO live_youtube_caption_sources (
+        channel_id, video_id, video_title, transcript, transcript_sha256,
+        language, auto_generated, fetched_at, expires_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      channelId,
+      source.videoId,
+      source.title,
+      source.transcript,
+      await sha256(source.transcript),
+      source.language || '',
+      source.autoGenerated ? 1 : 0,
+      now,
+      now + CAPTION_RETENTION_MS,
+    ).run();
+  }
+}
+
+function successHtml(channelName, captionCount = 0) {
+  const detail = captionCount > 0
+    ? `公開動画${captionCount}本の字幕を安全に取り込みました。スタッフが問題を再生成すると、動画内の話題を反映した候補になります。`
+    : '所有確認は完了しました。取得できる字幕がなかったため、問題生成では動画タイトル・説明・タグを利用します。';
+  return `<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>所有確認完了</title><body><main><h1>チャンネル所有確認が完了しました</h1><p>${escapeHtml(channelName)} の確認結果を保存しました。</p><p>${escapeHtml(detail)}</p><p>Googleのアクセストークンは保存せず、失効処理を行いました。この画面を閉じて元の画面へ戻ってください。</p></main></body></html>`;
 }
 
 function escapeHtml(value) {

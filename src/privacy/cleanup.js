@@ -4,6 +4,7 @@ export const PRIVACY_RETENTION = Object.freeze({
   remoteGameHours: 24,
   liveGameHoursAfterEnd: 24,
   paidAssetDays: 30,
+  youtubeCaptionDays: 30,
   pendingChannelVerificationDays: 90,
   expiredCreatorInviteDays: 90,
   operationsLogDays: 180,
@@ -27,6 +28,7 @@ export async function runPrivacyCleanup(env, now = Date.now()) {
     deletedPayoutBatches: 0,
     deletedStripeEvents: 0,
     deletedOperationsLogs: 0,
+    deletedCaptionSources: 0,
     deletedPendingVerifications: 0,
     deletedCreatorInvites: 0,
   };
@@ -57,6 +59,8 @@ async function cleanupGameDatabase(env, now, summary) {
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_rate_limits WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_reservations WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_active_sessions WHERE expires_at < ?', [now]);
+  const deletedCaptions = await safeRun(env.REMOTE_DB, 'DELETE FROM live_youtube_caption_sources WHERE expires_at < ?', [now]);
+  summary.deletedCaptionSources = changes(deletedCaptions);
   const deletedLogs = await safeRun(
     env.REMOTE_DB,
     'DELETE FROM live_ops_events WHERE created_at < ?',

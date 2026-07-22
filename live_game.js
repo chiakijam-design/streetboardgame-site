@@ -285,8 +285,8 @@ function renderChannelVerification() {
         <div class="verification-methods">
           <article class="question-card">
             <span class="badge">推奨</span><h3>YouTubeアカウントで確認</h3>
-            <p class="help">Googleへログインし、このチャンネルを管理できるアカウントか確認します。読み取り権限だけを使い、確認後にアクセストークンを破棄します。</p>
-            <button class="primary" id="startChannelOAuth" ${verification.ownershipStatus === 'verified' || state.channelVerificationBusy ? 'disabled' : ''}>Googleでチャンネル所有を確認</button>
+            <p class="help">Googleへログインし、このチャンネルを管理できるアカウントか確認します。同時に、本人が管理する公開動画の字幕を最大8本取り込み、内輪向け問題の材料にします。Googleが表示する権限名は広い表現ですが、本サービスはチャンネル確認と字幕の読み取り以外を行わず、処理後にアクセストークンを失効させます。</p>
+            <button class="primary" id="startChannelOAuth" ${state.channelVerificationBusy ? 'disabled' : ''}>${verification.ownershipStatus === 'verified' ? 'Googleで字幕を再取り込み' : 'Googleでチャンネル所有を確認・字幕を取り込む'}</button>
           </article>
           <article class="question-card">
             <span class="badge">代替1</span><h3>チャンネル概要欄のコードで確認</h3>
@@ -580,7 +580,11 @@ function renderYouTubeCandidates() {
       <h2 style="margin-top:12px">${escapeHtml(state.channelProfile?.channelName || 'YouTubeチャンネル')}</h2>
       <p class="help">「${escapeHtml(typeLabel)}」の30問から、採用する問題を1問以上、好きな数だけ選べます。このゲームではもう一方の種類とは混ざりません。</p>
       ${state.channelProfile?.inputKind === 'video' ? `<div class="notice">動画URLから投稿元の「${escapeHtml(state.channelProfile?.channelName || 'YouTubeチャンネル')}」を特定し、チャンネル内の公開動画をもとに候補を作りました。</div>` : ''}
-      ${state.channelProfile?.videoTitles?.length ? `<div class="notice">公開動画 ${state.channelProfile.videoTitles.length}件の${state.channelProfile.videoDescriptionCount ? 'タイトル・公開説明' : 'タイトル'}から、このチャンネル向けのお題を作成しました。</div>` : ''}
+      ${state.channelProfile?.contentSourceCount > 0
+        ? `<div class="notice schedule-ok"><strong>動画の中身を反映済み</strong><br>YouTuber本人が許可した公開動画 ${state.channelProfile.contentSourceCount}本の字幕から、実際の発言・場面を使った内輪向け問題を作成しました。</div>`
+        : state.channelProfile?.videoTitles?.length
+          ? `<div class="notice">現在は公開動画 ${state.channelProfile.videoTitles.length}件の${state.channelProfile.videoDescriptionCount ? 'タイトル・公開説明' : 'タイトル'}を使っています。動画の発言まで反映するには、編集画面で本人確認URLを発行し、YouTuber本人がGoogle認証した後に問題を再生成してください。</div>`
+          : ''}
       <div class="actions">
         <button class="secondary" id="autoRecommend">おすすめ問題を自動選択</button>
         <button class="mini" id="backYoutube">URLを変更</button>
@@ -776,20 +780,20 @@ function channelOwnershipEditorHtml() {
   if (!state.channelVerificationId) {
     return `
       <div class="field editor-channel-verification">
-        <span class="field-label">有料結果画像の販売準備（任意）</span>
-        <div class="notice">無料LIVEの企画保存・配信には不要です。有料販売を行う場合だけ、YouTuber本人へチャンネル確認URLを送ってください。</div>
+        <span class="field-label">動画内容の取込・有料販売の本人確認（任意）</span>
+        <div class="notice">Google認証すると、本人が管理する公開動画の字幕を最大8本取り込み、実際の発言を使った内輪問題を作れます。無料LIVEは認証なしでも利用できます。有料販売では本人確認が必須です。</div>
         <button class="secondary" id="createChannelVerification" type="button" ${state.channelVerificationBusy ? 'disabled' : ''}>チャンネル所有確認URLを発行する</button>
       </div>
     `;
   }
   return `
     <div class="field editor-channel-verification">
-      <span class="field-label">有料結果画像の販売準備</span>
+      <span class="field-label">動画内容の取込・有料販売の本人確認</span>
       ${state.channelVerification ? verificationProgressHtml(state.channelVerification) : '<div class="notice">この企画には所有確認手続きが紐づいています。最新状況を取得してください。</div>'}
       <label for="channelVerificationUrl">YouTuber本人へ送る秘密URL</label>
       <input id="channelVerificationUrl" readonly value="${escapeAttr(channelVerificationUrl())}">
       <div class="actions"><button class="mini" id="copyChannelVerificationUrl" type="button">確認URLをコピー</button><button class="mini" id="refreshEditorChannelVerification" type="button">確認状況を更新</button></div>
-      <p class="help">このURLはYouTuber本人または正式なチャンネル運営者だけへ、安全な連絡手段で送ってください。</p>
+      <p class="help">このURLはYouTuber本人または正式なチャンネル運営者だけへ、安全な連絡手段で送ってください。Google認証完了後、LIVEトップで同じチャンネルURLから問題を再生成すると字幕の内容が反映されます。</p>
     </div>
   `;
 }

@@ -292,7 +292,7 @@ test('スタッフが秘密の所有確認URLを発行し、YouTuber本人が概
   await page.locator('#channelUrl').fill('https://www.youtube.com/@sample');
   await page.locator('[data-youtube-type="guess-person"]').click();
   await page.locator('#useCandidates').click();
-  await expect(page.getByText('有料結果画像の販売準備（任意）')).toBeVisible();
+  await expect(page.getByText('動画内容の取込・有料販売の本人確認（任意）')).toBeVisible();
   await page.locator('#createChannelVerification').click();
   const verificationUrl = await page.locator('#channelVerificationUrl').inputValue();
   expect(verificationUrl).toContain(`/live?verify=${verificationId}#verification=${accessToken}`);
@@ -302,7 +302,7 @@ test('スタッフが秘密の所有確認URLを発行し、YouTuber本人が概
   await expect(page).toHaveURL(`/live?verify=${verificationId}`);
   await expect(page.getByRole('heading', { name: 'YouTubeチャンネル所有者確認' })).toBeVisible();
   await expect(page.getByText('SBLV-ABCD-EF01')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Googleでチャンネル所有を確認' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Googleでチャンネル所有を確認・字幕を取り込む' })).toBeVisible();
   await page.getByRole('button', { name: '概要欄に掲載したコードを確認' }).click();
   await expect(page.getByText('所有確認済み')).toBeVisible();
   await expect(page.getByRole('heading', { name: '収益分配契約へ同意する' })).toBeVisible();
@@ -388,6 +388,8 @@ test('動画URLを入力すると投稿元チャンネルを使った30問を表
           source: 'youtube-video-and-channel',
           videoTitles: Array.from({ length: 15 }, (_, index) => `公開動画${index + 1}`),
           videoDescriptionCount: 15,
+          contentSourceCount: 3,
+          contentGrounding: 'owner-authorized-captions',
         },
         questionType: 'guess-person',
         questions,
@@ -398,7 +400,8 @@ test('動画URLを入力すると投稿元チャンネルを使った30問を表
   await page.locator('[data-youtube-type="guess-person"]').click();
   await expect(page.getByRole('heading', { name: 'わたちゃんず' })).toBeVisible();
   await expect(page.getByText(/動画URLから投稿元の「わたちゃんず」を特定/)).toBeVisible();
-  await expect(page.getByText(/公開動画 15件のタイトル・公開説明/)).toBeVisible();
+  await expect(page.getByText(/動画の中身を反映済み/)).toBeVisible();
+  await expect(page.getByText(/公開動画 3本の字幕から、実際の発言・場面/)).toBeVisible();
   await expect(page.locator('[data-candidate-index]')).toHaveCount(30);
 });
 

@@ -7,6 +7,7 @@ test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2
     remoteGameHours: 24,
     liveGameHoursAfterEnd: 24,
     paidAssetDays: 30,
+    youtubeCaptionDays: 30,
     pendingChannelVerificationDays: 90,
     expiredCreatorInviteDays: 90,
     operationsLogDays: 180,
@@ -40,6 +41,7 @@ test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2
   assert.equal(summary.deletedCheckoutOrders, 1);
   assert.equal(summary.deletedStripeEvents, 2);
   assert.equal(summary.deletedOperationsLogs, 2);
+  assert.equal(summary.deletedCaptionSources, 3);
   assert.equal(summary.deletedPendingVerifications, 1);
   assert.equal(summary.deletedCreatorInvites, 1);
   assert.equal(gameDb.games.length, 0);
@@ -106,6 +108,7 @@ class CleanupDb {
         }
         if (/DELETE FROM live_stripe_events/i.test(normalized)) return { meta: { changes: 2 } };
         if (/DELETE FROM live_ops_events/i.test(normalized)) return { meta: { changes: 2 } };
+        if (/DELETE FROM live_youtube_caption_sources/i.test(normalized)) return { meta: { changes: 3 } };
         if (/DELETE FROM live_channel_verifications/i.test(normalized)) return { meta: { changes: 1 } };
         if (/DELETE FROM live_creator_invites/i.test(normalized)) return { meta: { changes: 1 } };
         return { meta: { changes: 0 } };
