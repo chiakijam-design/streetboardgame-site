@@ -130,6 +130,27 @@ test('参加者だけに各問題の自分の回答と正誤を返す', () => {
   assert.equal(participantResult.results[0].myIsCorrect, true);
 });
 
+test('全問出題後の答え合わせでは発表ボタンを押すまで正解を返さない', () => {
+  const result = calculateLiveResult(
+    { id: 'q-1', type: 'guess-person', text: '本人の答え', options: ['A', 'B'], lockedIndex: 1 },
+    { 'p-1': 1 },
+  );
+  const game = {
+    version: 3, title: '答え合わせテスト', subjectName: '本人', phase: 'review-question', currentQuestionIndex: 0,
+    hostToken: 'secret-host', expiresAt: Date.now() + 1000,
+    questions: [{ id: 'q-1', type: 'guess-person', text: '本人の答え', options: ['A', 'B'], lockedIndex: 1 }],
+    participants: [{ id: 'p-1', token: 'secret-participant', name: '参加者' }],
+    votes: { 'q-1': { 'p-1': 1 } }, results: [result],
+  };
+  const beforeReveal = publicLiveGame(game, { participantToken: 'secret-participant' });
+  assert.equal(beforeReveal.question.result, null);
+  assert.equal(beforeReveal.results.length, 0);
+  assert.equal(JSON.stringify(beforeReveal).includes('subjectAnswerIndex'), false);
+  const afterReveal = publicLiveGame({ ...game, phase: 'review-answer' }, { participantToken: 'secret-participant' });
+  assert.equal(afterReveal.question.result.subjectAnswerIndex, 1);
+  assert.equal(afterReveal.question.result.myIsCorrect, true);
+});
+
 test('YouTubeの一般的なチャンネルURLを正規化し、選んだ1種類だけ30問を作る', () => {
   assert.equal(normalizeYouTubeChannelUrl('https://www.youtube.com/@sample/videos'), 'https://www.youtube.com/@sample');
   assert.equal(normalizeYouTubeChannelUrl('youtube.com/channel/UC1234567890'), 'https://www.youtube.com/channel/UC1234567890');

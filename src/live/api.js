@@ -21,7 +21,7 @@ export async function handleLiveApi(request, env, path) {
       return await createLiveGame(request, env);
     }
 
-    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|vote|close|next))?$/);
+    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|advance|vote|close|reveal|next))?$/);
     if (!route) return liveJson({ error: 'not-found' }, 404);
     const [, code, action = ''] = route;
     if (request.method === 'GET' && !action) return await getLiveGameResponse(request, env, code);
@@ -34,7 +34,7 @@ export async function handleLiveApi(request, env, path) {
       await enforceLiveRateLimit(request, env, 'vote', 600);
       return await voteLiveGame(request, env, code);
     }
-    if (['start', 'answer', 'close', 'next'].includes(action)) {
+    if (['start', 'answer', 'advance', 'close', 'reveal', 'next'].includes(action)) {
       await enforceLiveRateLimit(request, env, 'host', 300);
       return await updateLiveGameAsHost(request, env, code, action);
     }
@@ -52,7 +52,7 @@ async function createLiveGame(request, env) {
   await cleanupExpiredLiveData(env);
   const now = Date.now();
   const game = {
-    version: 2,
+    version: 3,
     title: validation.draft.title,
     subjectName: validation.draft.subjectName,
     questions: validation.draft.questions,
@@ -148,9 +148,58 @@ async function updateLiveGameAsHost(request, env, code, action) {
   const game = await requireLiveGame(env, code);
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
   if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
+  if (Number(game.version) >= 3) {
+    await updateCurrentLiveGame(request, game, action);
+  } else {
+    await updateLegacyLiveGame(request, game, action);
+  }
+  touchLiveGame(game);
+  await putStoredLiveGame(env, code, game);
+  return liveJson({ code, game: publicLiveGame(game, { host: true }) });
+}
+
+async function updateCurrentLiveGame(request, game, action) {
   if (action === 'start') {
     if (game.phase !== 'lobby') throw liveError('game-already-started', 409);
-    game.phase = nextQuestionPhase(game.questions[game.currentQuestionIndex]);
+    game.currentQuestionIndex = 0;
+    game.phase = 'voting';
+  } else if (action === 'advance') {
+    if (game.phase !== 'voting') throw liveError('voting-not-open', 409);
+    const question = game.questions[game.currentQuestionIndex];
+    const body = await readLiveJson(request);
+    const optionIndex = Number(body && body.optionIndex);
+    if (!question || !Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= question.options.length) {
+      throw liveError('invalid-option', 400);
+    }
+    question.lockedIndex = optionIndex;
+    const result = calculateLiveResult(question, game.votes[question.id] || {});
+    game.results = [...game.results.filter((item) => item.questionId !== question.id), result];
+    if (game.currentQuestionIndex + 1 >= game.questions.length) {
+      game.currentQuestionIndex = 0;
+      game.phase = 'review-question';
+    } else {
+      game.currentQuestionIndex += 1;
+    }
+  } else if (action === 'reveal') {
+    if (game.phase !== 'review-question') throw liveError('review-not-open', 409);
+    game.phase = 'review-answer';
+  } else if (action === 'next') {
+    if (game.phase !== 'review-answer') throw liveError('result-not-open', 409);
+    if (game.currentQuestionIndex + 1 >= game.questions.length) {
+      game.phase = 'complete';
+    } else {
+      game.currentQuestionIndex += 1;
+      game.phase = 'review-question';
+    }
+  } else {
+    throw liveError('invalid-host-action', 409);
+  }
+}
+
+async function updateLegacyLiveGame(request, game, action) {
+  if (action === 'start') {
+    if (game.phase !== 'lobby') throw liveError('game-already-started', 409);
+    game.phase = game.questions[game.currentQuestionIndex]?.lockedIndex === null ? 'answering' : 'voting';
   } else if (action === 'answer') {
     if (game.phase !== 'answering') throw liveError('answer-not-open', 409);
     const question = game.questions[game.currentQuestionIndex];
@@ -174,16 +223,11 @@ async function updateLiveGameAsHost(request, env, code, action) {
       game.phase = 'complete';
     } else {
       game.currentQuestionIndex += 1;
-      game.phase = nextQuestionPhase(game.questions[game.currentQuestionIndex]);
+      game.phase = game.questions[game.currentQuestionIndex]?.lockedIndex === null ? 'answering' : 'voting';
     }
+  } else {
+    throw liveError('invalid-host-action', 409);
   }
-  touchLiveGame(game);
-  await putStoredLiveGame(env, code, game);
-  return liveJson({ code, game: publicLiveGame(game, { host: true }) });
-}
-
-function nextQuestionPhase(question) {
-  return question && question.type !== 'poll' && !Number.isInteger(question.lockedIndex) ? 'answering' : 'voting';
 }
 
 export function publicLiveGame(game, access = {}) {
@@ -192,7 +236,7 @@ export function publicLiveGame(game, access = {}) {
   const participant = access.participantToken
     ? game.participants.find((item) => item.token === access.participantToken)
     : null;
-  const storedRevealResult = question && ['reveal', 'complete'].includes(game.phase)
+  const storedRevealResult = question && ['reveal', 'review-answer', 'complete'].includes(game.phase)
     ? game.results.find((item) => item.questionId === question.id) || null
     : null;
   const revealResult = storedRevealResult
@@ -204,6 +248,7 @@ export function publicLiveGame(game, access = {}) {
   return {
     title: game.title,
     subjectName: game.subjectName,
+    flowVersion: Number(game.version) || 1,
     phase: game.phase,
     currentQuestionIndex: game.currentQuestionIndex,
     questionCount: game.questions.length,

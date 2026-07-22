@@ -223,7 +223,7 @@ function renderEditor() {
     <section class="panel">
       <span class="eyebrow">GAME EDITOR</span>
       <h2 style="margin-top:12px">問題を編集する</h2>
-      <p class="help">30問の候補から選んだ問題だけを保存します。本人の答えは、ライブ配信中に1問ずつ入力します。</p>
+      <p class="help">30問の候補から選んだ問題だけを保存します。本人の答えは、ライブ配信中に視聴者と同時に1問ずつ入力します。</p>
       <div class="notice">このゲームの問題タイプは「${escapeHtml(LIVE_TYPE_LABELS[state.youtubeQuestionType] || '')}」で統一されます。</div>
       <div class="field"><label for="gameTitle">ゲームタイトル</label><input id="gameTitle" maxlength="80" value="${escapeAttr(state.draft.title)}"></div>
       <div class="field"><label for="subjectName">主役または回答者の名前</label><input id="subjectName" maxlength="40" value="${escapeAttr(state.draft.subjectName)}"></div>
@@ -260,7 +260,7 @@ function editorQuestionCard(question, index) {
       <div class="field"><span class="field-label">選択肢（5個固定）</span>
         ${question.options.map((option, optionIndex) => `<input data-editor-option="${optionIndex}" maxlength="60" value="${escapeAttr(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}">`).join('')}
       </div>
-      <div class="notice">本人の答えはここでは設定しません。ライブ配信中、視聴者投票を始める直前に本人が回答します。</div>
+      <div class="notice">本人の答えはここでは設定しません。ライブ配信中、視聴者と同じ問題に回答し、「次の問題へ」で同時に締め切ります。</div>
     </article>
   `;
 }
@@ -382,7 +382,22 @@ function renderHost() {
       ${participantHtml(game)}
     </section>`;
   } else if (game.phase === 'voting') {
-    content = `<section class="panel">${liveQuestionHeader(game)}<div class="notice">投票受付中：${game.question.voteCount}票</div><div class="vote-options">${game.question.options.map((option, index) => `<div class="vote-option"><span class="badge">${index + 1}</span> ${escapeHtml(option)}</div>`).join('')}</div><button class="primary" id="closeVoting" style="margin-top:18px">投票を締め切って結果発表</button>${participantHtml(game)}</section>`;
+    if (game.flowVersion >= 3) {
+      const isLastQuestion = game.currentQuestionIndex + 1 >= game.questionCount;
+      const personMode = game.question.type === 'guess-person';
+      content = `<section class="panel">${liveQuestionHeader(game, '出題')}
+        <div class="notice">視聴者も同じ問題に回答中です。${personMode ? `${escapeHtml(game.subjectName)}の答え` : `${escapeHtml(game.subjectName)}の1位予想`}を選んでください。</div>
+        <div class="vote-options">${game.question.options.map((option, index) => `<button class="vote-option ${state.hostAnswerIndex === index ? 'selected' : ''}" data-host-answer-index="${index}"><span class="badge">${index + 1}</span> ${escapeHtml(option)}</button>`).join('')}</div>
+        <button class="primary" id="advanceQuestion" style="margin-top:18px" ${state.hostAnswerIndex === null ? 'disabled' : ''}>${isLastQuestion ? '投票を締め切って答え合わせへ' : '投票を締め切って次の問題へ'} <span class="accent">▶</span></button>
+        <div class="notice">視聴者の回答：${game.question.voteCount}票</div>${participantHtml(game)}
+      </section>`;
+    } else {
+      content = `<section class="panel">${liveQuestionHeader(game)}<div class="notice">投票受付中：${game.question.voteCount}票</div><div class="vote-options">${game.question.options.map((option, index) => `<div class="vote-option"><span class="badge">${index + 1}</span> ${escapeHtml(option)}</div>`).join('')}</div><button class="primary" id="closeVoting" style="margin-top:18px">投票を締め切って結果発表</button>${participantHtml(game)}</section>`;
+    }
+  } else if (game.phase === 'review-question') {
+    content = `<section class="panel"><span class="eyebrow">ANSWER CHECK</span>${liveQuestionHeader(game, '答え合わせ')}<div class="notice">まず問題を振り返ります。準備ができたら本人の答えを発表してください。</div><button class="primary" id="revealAnswer" style="margin-top:18px">答えを発表する <span class="accent">▶</span></button></section>`;
+  } else if (game.phase === 'review-answer') {
+    content = `<section class="panel"><span class="eyebrow">ANSWER</span>${liveQuestionHeader(game, '答え合わせ')}${resultBlock(game.question.result, game.subjectName, false)}<button class="primary" id="nextQuestion" style="margin-top:18px">${game.currentQuestionIndex + 1 >= game.questionCount ? `${game.questionCount}問の結果発表へ` : '次の答え合わせへ'} <span class="accent">▶</span></button></section>`;
   } else if (game.phase === 'reveal') {
     content = `<section class="panel">${liveQuestionHeader(game)}${resultBlock(game.question.result, game.subjectName)}<button class="primary" id="nextQuestion" style="margin-top:18px">${game.currentQuestionIndex + 1 >= game.questionCount ? '最終結果を見る' : '次の問題へ'} <span class="accent">▶</span></button></section>`;
   } else {
@@ -403,7 +418,9 @@ function renderHost() {
   }));
   bind('#startLive', 'click', () => hostAction('start'));
   bind('#confirmHostAnswer', 'click', submitHostAnswer);
+  bind('#advanceQuestion', 'click', advanceHostQuestion);
   bind('#closeVoting', 'click', () => hostAction('close'));
+  bind('#revealAnswer', 'click', () => hostAction('reveal'));
   bind('#nextQuestion', 'click', () => hostAction('next'));
 }
 
@@ -416,7 +433,11 @@ function renderParticipant() {
   } else if (game.phase === 'answering') {
     content = `<section class="panel">${liveQuestionHeader(game)}<div class="notice">${escapeHtml(game.subjectName)}本人が回答中です。回答が確定すると投票できるようになります。</div></section>`;
   } else if (game.phase === 'voting') {
-    content = `<section class="panel">${liveQuestionHeader(game)}<div class="vote-options">${game.question.options.map((option, index) => `<button class="vote-option ${game.myVoteIndex === index ? 'selected' : ''}" data-vote-index="${index}" ${game.myVoteIndex !== null ? 'disabled' : ''}><span class="badge">${index + 1}</span> ${escapeHtml(option)}</button>`).join('')}</div>${game.myVoteIndex !== null ? '<div class="notice">投票しました。結果発表をお待ちください。</div>' : ''}</section>`;
+    content = `<section class="panel">${liveQuestionHeader(game, '出題')}<div class="vote-options">${game.question.options.map((option, index) => `<button class="vote-option ${game.myVoteIndex === index ? 'selected' : ''}" data-vote-index="${index}" ${game.myVoteIndex !== null ? 'disabled' : ''}><span class="badge">${index + 1}</span> ${escapeHtml(option)}</button>`).join('')}</div>${game.myVoteIndex !== null ? '<div class="notice">回答しました。YouTuberが次の問題へ進むまでお待ちください。</div>' : '<div class="notice">YouTuberと同時に回答してください。</div>'}</section>`;
+  } else if (game.phase === 'review-question') {
+    content = `<section class="panel"><span class="eyebrow">ANSWER CHECK</span>${liveQuestionHeader(game, '答え合わせ')}<div class="notice">YouTuberが答えを発表するまでお待ちください。</div></section>`;
+  } else if (game.phase === 'review-answer') {
+    content = `<section class="panel"><span class="eyebrow">ANSWER</span>${liveQuestionHeader(game, '答え合わせ')}${personalResultBlock(game.question.result)}${resultBlock(game.question.result, game.subjectName, false)}<div class="notice">YouTuberが次の答え合わせへ進むまでお待ちください。</div></section>`;
   } else if (game.phase === 'reveal') {
     content = `<section class="panel">${liveQuestionHeader(game)}${personalResultBlock(game.question.result)}${resultBlock(game.question.result, game.subjectName)}<div class="notice">司会者が次の問題へ進むまでお待ちください。</div></section>`;
   } else {
@@ -426,26 +447,30 @@ function renderParticipant() {
   document.querySelectorAll('[data-vote-index]').forEach((button) => button.addEventListener('click', () => vote(Number(button.dataset.voteIndex))));
 }
 
-function liveQuestionHeader(game) {
-  return `<div class="progress">Q${game.currentQuestionIndex + 1} / ${game.questionCount} · ${escapeHtml(LIVE_TYPE_LABELS[game.question.type] || '')}</div><h2>${escapeHtml(game.question.text)}</h2>`;
+function liveQuestionHeader(game, stage = '') {
+  return `<div class="progress">${stage ? `${escapeHtml(stage)} · ` : ''}Q${game.currentQuestionIndex + 1} / ${game.questionCount} · ${escapeHtml(LIVE_TYPE_LABELS[game.question.type] || '')}</div><h2>${escapeHtml(game.question.text)}</h2>`;
 }
 
 function participantHtml(game) {
   return `<h3 style="margin-top:18px">参加者 ${game.participantCount}人</h3><div class="participant-chips">${game.participants.map((participant) => `<span>${escapeHtml(participant.name)}</span>`).join('') || '<span>参加待ち</span>'}</div>`;
 }
 
-function resultBlock(result, subjectName) {
+function resultBlock(result, subjectName, showQuestion = true) {
   if (!result) return '<div class="notice">結果を集計しています…</div>';
   const popular = result.popularIndices.length
     ? result.popularIndices.map((index) => result.options[index]?.text).filter(Boolean).join('／')
     : '投票なし';
-  let summary = `<div class="notice">参加者の最多回答：${escapeHtml(popular)}</div>`;
+  let answer = '';
+  let verdict = '';
   if (result.type === 'guess-person') {
-    summary += `<div class="notice">${escapeHtml(subjectName)}の答え：${escapeHtml(result.options[result.subjectAnswerIndex]?.text || '未設定')}</div><div class="verdict">みんなの予想は${result.isCorrect ? '当たり！' : 'ハズレ'}</div>`;
+    answer = `<div class="verdict">${escapeHtml(subjectName)}の答え：${escapeHtml(result.options[result.subjectAnswerIndex]?.text || '未設定')}</div>`;
+    verdict = `<div class="notice">みんなの予想は${result.isCorrect ? '当たり！' : 'ハズレ'}</div>`;
   } else if (result.type === 'guess-majority') {
-    summary += `<div class="notice">${escapeHtml(subjectName)}の予想：${escapeHtml(result.options[result.predictionIndex]?.text || '未設定')}</div><div class="verdict">${result.isCorrect ? '予想的中！' : '予想はハズレ'}</div>`;
+    answer = `<div class="verdict">${escapeHtml(subjectName)}の予想：${escapeHtml(result.options[result.predictionIndex]?.text || '未設定')}</div>`;
+    verdict = `<div class="notice">${result.isCorrect ? '予想的中！' : '予想はハズレ'}</div>`;
   }
-  return `<h3 style="margin-top:12px">${escapeHtml(result.text)}</h3>${result.options.map((option) => `<div class="bar-row"><div class="bar-label"><span>${escapeHtml(option.text)}</span><span>${option.count}票・${option.percentage}%</span></div><div class="bar"><span style="width:${Math.max(0, Math.min(100, option.percentage))}%"></span></div></div>`).join('')}${summary}`;
+  const questionHeading = showQuestion ? `<h3 style="margin-top:12px">${escapeHtml(result.text)}</h3>` : '';
+  return `${questionHeading}${answer}${result.options.map((option) => `<div class="bar-row"><div class="bar-label"><span>${escapeHtml(option.text)}</span><span>${option.count}票・${option.percentage}%</span></div><div class="bar"><span style="width:${Math.max(0, Math.min(100, option.percentage))}%"></span></div></div>`).join('')}<div class="notice">参加者の最多回答：${escapeHtml(popular)}</div>${verdict}`;
 }
 
 function personalResultBlock(result) {
@@ -488,7 +513,7 @@ async function hostAction(action) {
   try {
     const response = await api(`/api/live/games/${state.roomCode}/${action}`, { method: 'POST', headers: hostHeaders(), body: '{}' });
     state.game = response.game;
-    if (action === 'start' || action === 'next') state.hostAnswerIndex = null;
+    if (action === 'start' || action === 'next' || action === 'reveal') state.hostAnswerIndex = null;
     state.error = '';
   } catch (error) { state.error = humanError(error); }
   render();
@@ -498,6 +523,19 @@ async function submitHostAnswer() {
   if (state.hostAnswerIndex === null) return;
   try {
     const response = await api(`/api/live/games/${state.roomCode}/answer`, {
+      method: 'POST', headers: hostHeaders(), body: JSON.stringify({ optionIndex: state.hostAnswerIndex }),
+    });
+    state.game = response.game;
+    state.hostAnswerIndex = null;
+    state.error = '';
+  } catch (error) { state.error = humanError(error); }
+  render();
+}
+
+async function advanceHostQuestion() {
+  if (state.hostAnswerIndex === null) return;
+  try {
+    const response = await api(`/api/live/games/${state.roomCode}/advance`, {
       method: 'POST', headers: hostHeaders(), body: JSON.stringify({ optionIndex: state.hostAnswerIndex }),
     });
     state.game = response.game;
