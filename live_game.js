@@ -358,7 +358,7 @@ function renderChannelVerification() {
         <div class="verification-methods">
           <article class="question-card">
             <span class="badge">推奨</span><h3>YouTubeアカウントで確認</h3>
-            <p class="help">Googleへログインし、このチャンネルを管理できるアカウントか確認します。同時に、本人が管理する公開動画の字幕を最大8本取り込み、内輪向け問題の材料にします。Googleが表示する権限名は広い表現ですが、本サービスはチャンネル確認と字幕の読み取り以外を行わず、処理後にアクセストークンを失効させます。</p>
+            <p class="help">Googleへログインし、このチャンネルを管理できるアカウントか確認します。同時に、過去1年の公開動画から、再生数を主軸に公開日の新しさも加味して優先した最大8本の字幕を取り込み、内輪向け問題の材料にします。Googleが表示する権限名は広い表現ですが、本サービスはチャンネル確認と字幕の読み取り以外を行わず、処理後にアクセストークンを失効させます。</p>
             <button class="primary" id="startChannelOAuth" ${state.channelVerificationBusy ? 'disabled' : ''}>${verification.ownershipStatus === 'verified' ? 'Googleで字幕を再取り込み' : 'Googleでチャンネル所有を確認・字幕を取り込む'}</button>
           </article>
           <article class="question-card">
@@ -854,7 +854,7 @@ function channelOwnershipEditorHtml() {
     return `
       <div class="field editor-channel-verification">
         <span class="field-label">動画内容の取込・有料販売の本人確認（任意）</span>
-        <div class="notice">Google認証すると、本人が管理する公開動画の字幕を最大8本取り込み、実際の発言を使った内輪問題を作れます。無料LIVEは認証なしでも利用できます。有料販売では本人確認が必須です。</div>
+        <div class="notice">Google認証すると、本人が管理する過去1年の公開動画から、再生数と公開日で優先した最大8本の字幕を取り込み、実際の発言を使った内輪問題を作れます。無料LIVEは認証なしでも利用できます。有料販売では本人確認が必須です。</div>
         <button class="secondary" id="createChannelVerification" type="button" ${state.channelVerificationBusy ? 'disabled' : ''}>チャンネル所有確認URLを発行する</button>
       </div>
     `;

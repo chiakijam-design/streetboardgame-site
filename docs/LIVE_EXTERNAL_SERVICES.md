@@ -39,9 +39,9 @@ npx wrangler secret put YOUTUBE_OAUTH_CLIENT_SECRET
 npx wrangler secret put YOUTUBE_OAUTH_REDIRECT_URI
 ```
 
-`YOUTUBE_OAUTH_REDIRECT_URI`は本番の`https://www.streetboardgame.com/api/live/channel-verifications/oauth/callback`にする。OAuthでは字幕ダウンロードに必要な`youtube.force-ssl`を要求し、`channels.list(mine=true)`で対象チャンネルを確認する。続けて本人が管理する最近の公開動画を最大8本まで`captions.list`・`captions.download`で取得し、字幕本文だけを30日間D1へ保存する。アクセストークンは処理直後に失効させ、アクセストークンとリフレッシュトークンはD1へ保存しない。Googleの同意画面では編集・削除を含む広い権限名が表示されるため、本サービスが実行するのは所有確認と字幕読取りだけであることを画面と規約で明示する。公開アプリとしてこの制限付きスコープを使う前にGoogle OAuthアプリ審査を完了する。
+`YOUTUBE_OAUTH_REDIRECT_URI`は本番の`https://www.streetboardgame.com/api/live/channel-verifications/oauth/callback`にする。OAuthでは字幕ダウンロードに必要な`youtube.force-ssl`を要求し、`channels.list(mine=true)`で対象チャンネルを確認する。続けて、過去1年について`search.list(order=viewCount)`の再生数上位50本と`search.list(order=date)`の新着50本を統合し、`videos.list`の再生数・公開日・公開状態から優先順位を計算する。再生数を主軸、公開日の新しさを補助点として上位最大8本を選び、`captions.list`・`captions.download`で字幕を取得して本文だけを30日間D1へ保存する。アクセストークンは処理直後に失効させ、アクセストークンとリフレッシュトークンはD1へ保存しない。Googleの同意画面では編集・削除を含む広い権限名が表示されるため、本サービスが実行するのは所有確認と字幕読取りだけであることを画面と規約で明示する。公開アプリとしてこの制限付きスコープを使う前にGoogle OAuthアプリ審査を完了する。
 
-字幕APIのクォータは1動画あたり`captions.list` 50単位＋`captions.download` 200単位である。最大8本の取込は約2,000単位となるため、所有確認の再実行回数を監視する。字幕がない動画・取得権限がない動画はスキップし、1本も取得できない場合は従来どおりタイトル・説明・タグから候補を生成する。
+字幕APIのクォータは1動画あたり`captions.list` 50単位＋`captions.download` 200単位である。優先候補の取得には`search.list` 2回で200単位、`videos.list`は最大2回で2単位を使い、最大8本の字幕取込を含む合計は約2,202単位となるため、所有確認の再実行回数を監視する。字幕がない動画・取得権限がない動画はスキップし、1本も取得できない場合は従来どおりタイトル・説明・タグから候補を生成する。
 
 画面上の運用フローは次の通り。
 

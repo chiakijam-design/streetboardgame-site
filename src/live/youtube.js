@@ -3,6 +3,10 @@ const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{6,15}$/;
 const CHANNEL_ID_PATTERN = /^UC[A-Za-z0-9_-]{10,}$/;
 const MAX_CAPTION_VIDEOS = 8;
 const MAX_CAPTION_CHARACTERS = 12_000;
+const CAPTION_PRIORITY_WINDOW_MS = 365 * 24 * 60 * 60 * 1000;
+const CAPTION_PRIORITY_SEARCH_LIMIT = 50;
+// 再生数が10倍なら1点差。新しさの補助点は最大0.35点に抑え、再生数を主軸にする。
+const CAPTION_RECENCY_WEIGHT = 0.35;
 
 export function normalizeYouTubeInput(value) {
   let url;
@@ -120,9 +124,7 @@ export async function fetchOwnedYouTubeChannels(accessToken, fetchImpl = fetch) 
 export async function fetchOwnedYouTubeCaptionSources(profile, accessToken, fetchImpl = fetch) {
   const token = String(accessToken || '').trim();
   if (!token) throw youtubeError('youtube-oauth-token-required', 400);
-  const videos = Array.isArray(profile?.videoSummaries)
-    ? profile.videoSummaries.filter(({ videoId }) => VIDEO_ID_PATTERN.test(String(videoId || ''))).slice(0, MAX_CAPTION_VIDEOS)
-    : [];
+  const videos = await fetchPriorityCaptionVideos(profile, token, fetchImpl);
   const sources = [];
   for (const video of videos) {
     try {
@@ -149,6 +151,80 @@ export async function fetchOwnedYouTubeCaptionSources(profile, accessToken, fetc
     }
   }
   return sources;
+}
+
+async function fetchPriorityCaptionVideos(profile, accessToken, fetchImpl) {
+  const channelId = String(profile?.channelId || '').trim();
+  if (!CHANNEL_ID_PATTERN.test(channelId)) return fallbackCaptionVideos(profile);
+  const now = Date.now();
+  const publishedAfter = new Date(now - CAPTION_PRIORITY_WINDOW_MS).toISOString();
+  const searchParameters = {
+    part: 'snippet',
+    channelId,
+    type: 'video',
+    publishedAfter,
+    maxResults: String(CAPTION_PRIORITY_SEARCH_LIMIT),
+  };
+  const [popularResponse, recentResponse] = await Promise.all([
+    youtubeAuthorizedJson(fetchImpl, accessToken, 'search', { ...searchParameters, order: 'viewCount' }),
+    youtubeAuthorizedJson(fetchImpl, accessToken, 'search', { ...searchParameters, order: 'date' }),
+  ]);
+  const videoIds = [...new Set([
+    ...(popularResponse.items || []),
+    ...(recentResponse.items || []),
+  ].map((item) => item?.id?.videoId).filter((videoId) => VIDEO_ID_PATTERN.test(String(videoId || ''))))];
+  if (!videoIds.length) return [];
+
+  const detailResponses = await Promise.all(chunk(videoIds, 50).map((ids) => youtubeAuthorizedJson(
+    fetchImpl,
+    accessToken,
+    'videos',
+    { part: 'snippet,statistics,status', id: ids.join(','), maxResults: String(ids.length) },
+  )));
+  return detailResponses.flatMap(({ items = [] }) => items)
+    .filter((video) => video?.status?.privacyStatus === 'public')
+    .map((video) => ({
+      videoId: String(video.id || ''),
+      title: cleanText(video.snippet?.title || '').slice(0, 120),
+      publishedAt: String(video.snippet?.publishedAt || ''),
+      viewCount: Number(video.statistics?.viewCount || 0),
+    }))
+    .filter((video) => (
+      VIDEO_ID_PATTERN.test(video.videoId)
+      && Number.isFinite(Date.parse(video.publishedAt))
+      && Date.parse(video.publishedAt) >= now - CAPTION_PRIORITY_WINDOW_MS
+    ))
+    .sort((left, right) => compareCaptionPriority(left, right, now))
+    .slice(0, MAX_CAPTION_VIDEOS);
+}
+
+function fallbackCaptionVideos(profile) {
+  return Array.isArray(profile?.videoSummaries)
+    ? profile.videoSummaries.filter(({ videoId }) => VIDEO_ID_PATTERN.test(String(videoId || ''))).slice(0, MAX_CAPTION_VIDEOS)
+    : [];
+}
+
+function compareCaptionPriority(left, right, now) {
+  const scoreDifference = captionPriorityScore(right, now) - captionPriorityScore(left, now);
+  if (scoreDifference) return scoreDifference;
+  const viewDifference = Number(right.viewCount || 0) - Number(left.viewCount || 0);
+  if (viewDifference) return viewDifference;
+  const dateDifference = Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
+  if (dateDifference) return dateDifference;
+  return left.videoId.localeCompare(right.videoId);
+}
+
+function captionPriorityScore(video, now) {
+  const viewScore = Math.log10(Math.max(0, Number(video.viewCount || 0)) + 1);
+  const age = Math.max(0, Math.min(CAPTION_PRIORITY_WINDOW_MS, now - Date.parse(video.publishedAt)));
+  const recencyScore = 1 - (age / CAPTION_PRIORITY_WINDOW_MS);
+  return viewScore + (recencyScore * CAPTION_RECENCY_WEIGHT);
+}
+
+function chunk(items, size) {
+  const result = [];
+  for (let index = 0; index < items.length; index += size) result.push(items.slice(index, index + size));
+  return result;
 }
 
 async function resolveChannelId(channelUrl, fetchImpl, apiKey) {
