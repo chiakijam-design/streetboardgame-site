@@ -12,6 +12,7 @@ document.getElementById('forgetToken').addEventListener('click', () => {
 });
 document.getElementById('saveStatus').addEventListener('click', saveStatus);
 document.getElementById('issueInvite').addEventListener('click', issueCreatorInvite);
+document.getElementById('createPayoutBatches').addEventListener('click', createPayoutBatches);
 document.getElementById('purchaseSearch').addEventListener('input', () => { renderCheckouts(); renderEntitlements(); });
 
 async function loadOverview() {
@@ -49,7 +50,7 @@ function renderAll() {
   document.getElementById('statusMode').value = status.mode || 'normal';
   document.getElementById('statusTitle').value = status.title || '';
   document.getElementById('statusMessage').value = status.message || '';
-  renderMetrics(); renderCreatorInvites(); renderChannelVerifications(); renderSessions(); renderCheckouts(); renderEntitlements(); renderEvents();
+  renderMetrics(); renderCreatorInvites(); renderChannelVerifications(); renderSessions(); renderRevenue(); renderCheckouts(); renderEntitlements(); renderEvents();
 }
 
 function renderCreatorInvites() {
@@ -126,6 +127,46 @@ function renderSessions() {
   document.querySelectorAll('[data-terminate]').forEach((button) => button.addEventListener('click', () => terminateGame(button.dataset.terminate)));
   document.querySelectorAll('[data-rotate]').forEach((button) => button.addEventListener('click', () => rotateLinks(button.dataset.rotate, button.dataset.target)));
   document.querySelectorAll('[data-image-review]').forEach((button) => button.addEventListener('click', () => reviewCreatorImage(button.dataset.imageReview, button.dataset.decision)));
+}
+
+function renderRevenue() {
+  const revenue = overview.revenue || { policy: {}, balances: [], batches: [], ledger: [] };
+  const periodInput = document.getElementById('payoutPeriod');
+  if (!periodInput.value && revenue.policy.defaultPeriod) periodInput.value = revenue.policy.defaultPeriod;
+  const channelByAccount = new Map((overview.channelVerifications || [])
+    .filter((item) => item.stripeAccountId)
+    .map((item) => [item.stripeAccountId, item.channelName]));
+  document.getElementById('revenueBalances').innerHTML = revenue.balances?.length ? revenue.balances.map((item) => {
+    const channelName = channelByAccount.get(item.stripe_account_id) || 'チャンネル名未取得';
+    const eligibility = item.review_amount > 0 ? '返金・不正審査中' : item.payout_eligible ? '月次送金対象' : '5,000円未満・翌月繰越';
+    return `<article class="card"><strong>${escapeHtml(channelName)} <span class="pill ${item.payout_eligible ? 'info' : 'warning'}">${escapeHtml(eligibility)}</span></strong><div class="meta">Connect: <code>${escapeHtml(item.stripe_account_id)}</code><br>送金可能: ${yen(item.payable_amount)} / 14日保留中: ${yen(item.holding_amount)} / 返金相殺: ${yen(item.offset_amount)}<br>審査・返金確認中: ${yen(item.review_amount)} / 累計送金済み売上分: ${yen(item.transferred_amount)} / 台帳${Number(item.entry_count)}件</div></article>`;
+  }).join('') : empty('売上台帳はまだありません。');
+  document.getElementById('payoutBatches').innerHTML = revenue.batches?.length ? revenue.batches.map((item) => {
+    const canTransfer = ['draft', 'transfer_failed'].includes(item.status);
+    return `<article class="card"><strong>${escapeHtml(item.period_key)} ${yen(item.transfer_amount)} <span class="pill ${item.status === 'transferred' ? 'info' : item.status === 'transfer_failed' || item.status === 'reversed' ? 'critical' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">バッチ: <code>${escapeHtml(item.batch_id)}</code><br>Connect: <code>${escapeHtml(item.stripe_account_id)}</code><br>対象売上: ${yen(item.gross_sales_amount)} / YouTuber70%: ${yen(item.creator_sales_amount)} / 返金等の相殺: ${yen(item.offset_amount)} / ${Number(item.order_count)}件${item.stripe_transfer_id ? `<br>Transfer: <code>${escapeHtml(item.stripe_transfer_id)}</code>` : ''}${item.failure_code ? `<br>失敗理由: ${escapeHtml(item.failure_code)}` : ''}</div><div class="actions"><button class="button good" data-payout-transfer="${escapeAttr(item.batch_id)}" ${canTransfer ? '' : 'disabled'}>Stripe Connectへ送金</button></div></article>`;
+  }).join('') : empty('月次送金バッチはまだありません。');
+  document.querySelectorAll('[data-payout-transfer]').forEach((button) => button.addEventListener('click', () => transferPayoutBatch(button.dataset.payoutTransfer)));
+  document.getElementById('revenueLedger').innerHTML = revenue.ledger?.length ? revenue.ledger.map((item) => `<article class="card"><strong>${yen(item.gross_amount)} <span class="pill ${['available','transferred'].includes(item.status) ? 'info' : ['refunded','offset_due','payout_reversed'].includes(item.status) ? 'critical' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">注文: <code>${escapeHtml(item.order_id)}</code> / Connect: <code>${escapeHtml(item.stripe_account_id)}</code><br>YouTuber70%: ${yen(item.creator_amount)} / 運営名目分: ${yen(item.platform_amount)} / Stripe実手数料: ${item.stripe_fee_amount === null || item.stripe_fee_amount === undefined ? '未取得' : yen(item.stripe_fee_amount)}<br>運営実残額: ${item.platform_net_amount === null || item.platform_net_amount === undefined ? '未確定' : yen(item.platform_net_amount)} / 売上確定: ${formatDate(item.paid_at)} / 保留解除: ${formatDate(item.available_at)}</div></article>`).join('') : empty('注文別売上はまだありません。');
+}
+
+async function createPayoutBatches() {
+  const periodKey = document.getElementById('payoutPeriod').value;
+  if (!periodKey) return alert('売上対象月を選択してください。');
+  if (!confirm(`${periodKey}までの売上を締め、5,000円以上のアカウントについて分配台帳を作成しますか？この操作だけでは送金されません。`)) return;
+  try {
+    const result = await adminApi('/api/live/admin/revenue/monthly-close', { method: 'POST', body: JSON.stringify({ periodKey }) });
+    document.getElementById('payoutOutput').innerHTML = `<div class="status">作成: ${result.created.length}件 / 繰越・保留: ${result.skipped.length}件。内容確認後に各バッチの送金ボタンを押してください。</div>`;
+    await loadOverview();
+  } catch (error) { alert(humanError(error)); }
+}
+
+async function transferPayoutBatch(batchId) {
+  const batch = (overview.revenue?.batches || []).find((item) => item.batch_id === batchId);
+  if (!batch || !confirm(`${batch.period_key}分 ${yen(batch.transfer_amount)}を${batch.stripe_account_id}へ送金しますか？Stripe上の資金移動が発生します。`)) return;
+  try {
+    await adminApi(`/api/live/admin/revenue/payouts/${batchId}/transfer`, { method: 'POST', body: '{}' });
+    await loadOverview();
+  } catch (error) { alert(humanError(error)); }
 }
 
 async function issueCreatorInvite() {
@@ -223,7 +264,8 @@ async function acknowledgeEvent(eventId) { try { await adminApi(`/api/live/admin
 async function adminApi(path, options = {}) { const response = await fetch(path, { ...options, headers: { 'content-type': 'application/json', 'x-live-admin-session': sessionStorage.getItem('live:admin-session') || '', ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (!response.ok) { const error = new Error(data.error || 'request-failed'); error.status = response.status; throw error; } return data; }
 function metric(label, value, note) { return `<div class="metric"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b><small>${escapeHtml(note)}</small></div>`; }
 function empty(text) { return `<div class="empty">${escapeHtml(text)}</div>`; }
-function formatDate(value) { const date = new Date(Number(value)); return Number.isNaN(date.getTime()) ? '未設定' : date.toLocaleString('ja-JP'); }
+function formatDate(value) { if (value === null || value === undefined || value === '' || Number(value) <= 0) return '未設定'; const date = new Date(Number(value)); return Number.isNaN(date.getTime()) ? '未設定' : date.toLocaleString('ja-JP'); }
+function yen(value) { return `${Number(value || 0).toLocaleString('ja-JP')}円`; }
 function showStatus(text, error = false) { authStatus.hidden = false; authStatus.className = `status${error ? ' error' : ''}`; authStatus.textContent = text; }
 function humanError(error) {
   const messages = {
@@ -242,6 +284,14 @@ function humanError(error) {
     'stripe-payment-intent-missing': 'Stripe PaymentIntentが未確定のため返金できません。',
     'stripe-secret-key-not-configured': 'STRIPE_SECRET_KEYが未設定です。',
     'stripe-api-request-failed': 'Stripe APIで返金処理に失敗しました。Stripe DashboardとWorker Logsを確認してください。',
+    'invalid-payout-period': '売上対象月を選び直してください。',
+    'payout-period-still-on-hold': 'この対象月はまだ14日間の返金保留期間を終えていません。翌月15日以降に締めてください。',
+    'payout-batch-not-found': '月次分配バッチが見つかりません。',
+    'payout-batch-not-transferable': 'このバッチは送金できる状態ではありません。画面を再読み込みしてください。',
+    'payout-batch-ledger-mismatch': '分配明細の合計と送金額が一致しません。送金せず、売上台帳を確認してください。',
+    'payout-below-threshold': '分配額が5,000円未満のため送金できません。',
+    'stripe-transfer-destination-invalid': 'Stripe ConnectアカウントIDを確認してください。',
+    'stripe-transfer-response-invalid': 'Stripeから送金結果を確認できませんでした。Stripe Dashboardを確認してください。',
   };
   return messages[error?.message] || error?.message || '処理に失敗しました。';
 }

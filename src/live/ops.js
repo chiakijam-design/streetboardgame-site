@@ -2,6 +2,7 @@ import { hasLiveRealtime, loadLiveRealtimeStats } from './realtime.js';
 import { ensureLivePurchaseD1, getLivePurchaseDb } from './purchases.js';
 import { listLiveCreatorInvites } from './security.js';
 import { listChannelVerifications } from './ownership.js';
+import { getLiveRevenueOverview } from './revenue-ledger.js';
 
 let opsReadyPromise = null;
 
@@ -147,7 +148,10 @@ export async function getLiveOpsOverview(env) {
         FROM live_checkout_orders ORDER BY updated_at DESC LIMIT 100
       `).all())
     : Promise.resolve({ results: [] });
-  const [reservations, activeSessions, entitlements, checkouts, events, recentCounts, status, creatorInvites, channelVerifications] = await Promise.all([
+  const revenuePromise = purchaseDb
+    ? ensureLivePurchaseD1(env).then(() => getLiveRevenueOverview(purchaseDb, now))
+    : Promise.resolve({ policy: {}, balances: [], ledger: [], batches: [] });
+  const [reservations, activeSessions, entitlements, checkouts, revenue, events, recentCounts, status, creatorInvites, channelVerifications] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT r.code, r.scheduled_at, r.blocked_from, r.blocked_until, r.expires_at, g.payload
       FROM live_reservations r LEFT JOIN live_games g ON g.code = r.code
@@ -160,6 +164,7 @@ export async function getLiveOpsOverview(env) {
     `).bind(now).all(),
     entitlementsPromise,
     checkoutsPromise,
+    revenuePromise,
     env.REMOTE_DB.prepare(`
       SELECT event_id, category, severity, event_type, code, purchase_id, external_id,
         message, metadata, created_at, acknowledged_at, acknowledged_by
@@ -195,6 +200,7 @@ export async function getLiveOpsOverview(env) {
     activeSessions: active,
     entitlements: entitlements.results || [],
     checkouts: checkouts.results || [],
+    revenue,
     events: (events.results || []).map((item) => ({ ...item, metadata: parseJson(item.metadata) })),
     recentEventCounts: recentCounts.results || [],
     realtime,

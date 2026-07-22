@@ -10,7 +10,7 @@
 - 未完了チャンネル所有確認: 90日で削除
 - 運用・セキュリティイベント: 180日で削除
 - 有料結果画像: 30日でR2から削除。同時に参加者名、参加者ID、ゲームコード、アクセス用ハッシュを購入権限から消去し、Checkout注文の参加者名・画像表示名も匿名化
-- 購入・返金記録: 購入履歴専用D1で7年保存後に削除
+- 購入・返金・売上・分配記録: 購入履歴専用D1で7年保存後に削除
 
 Cronの直近実行と失敗はCloudflare WorkersのCron Trigger、Logs、Notificationsで確認する。
 
@@ -26,6 +26,8 @@ npx wrangler d1 create streetboardgame-live-purchases
 
 ```powershell
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0001_live_purchase_records.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0002_live_checkout_orders.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0003_live_revenue_ledger.sql
 ```
 
 コードは購入・ダウンロード・返金・再発行処理で`LIVE_PURCHASE_DB`を必須とする。未設定時は有料処理を503で停止し、ゲーム用D1へフォールバックしない。

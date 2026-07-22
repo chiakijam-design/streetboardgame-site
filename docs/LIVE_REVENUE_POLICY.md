@@ -12,7 +12,11 @@ CheckoutはStreetboardgameのプラットフォームアカウントで決済し
 運営実純額 = 売上総額 - YouTuber確定分配額 - Stripeが記録した実決済手数料
 ```
 
-現段階のCheckout注文台帳は`src/live/revenue.js`を使用し、YouTuber分70%と運営名目分30%を記録する。月次送金を実装する際は、決済完了後のStripe残高取引に記録された実手数料を取得して照合し、3.6%から計算した推定額だけで運営実純額や送金処理を確定してはいけない。
+Checkout注文台帳と売上台帳は`src/live/revenue.js`・`src/live/revenue-ledger.js`を使用し、YouTuber分70%と運営名目分30%を注文単位で記録する。`charge.succeeded`時にStripe残高取引の実手数料を取得し、運営実純額を記録する。3.6%から計算した推定額だけで運営実純額を確定しない。
+
+月次分配は日本時間の対象月終了から14日後以降に運営コンソールで締める。返金・不正審査中の残高は送金せず、返金確定分を控除したYouTuber残高が5,000円以上の場合だけ分配バッチを作る。運営者がバッチ内容を確認してからStripe Connectへ送金し、5,000円未満は次月以降へ繰り越す。送金後の返金・チャージバックは`offset_due`として次回分配から相殺する。
+
+この月次処理はプラットフォーム残高からConnect残高への`Transfer`であり、Connect残高から銀行口座への`Payout`とは別である。銀行着金日を月1回に固定する場合は、利用するConnectアカウント種別に応じてStripe側の入金スケジュールも設定・確認する。
 
 返金、チャージバック、Connect固有料金、税金、海外カードや別決済手段の追加料金は26.4%に含まれない。これらが発生した場合、運営の実純額は26.4%を下回る可能性がある。
 
@@ -20,3 +24,4 @@ CheckoutはStreetboardgameのプラットフォームアカウントで決済し
 
 - [日本のStripe料金体系](https://stripe.com/jp/pricing)
 - [Separate charges and transfers](https://docs.stripe.com/connect/separate-charges-and-transfers)
+- [Create a transfer](https://docs.stripe.com/api/transfers/create)

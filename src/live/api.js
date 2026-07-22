@@ -52,7 +52,25 @@ import {
 import { createLiveAdminSession, requireLiveAdminSession } from './admin-auth.js';
 import { getLivePurchaseDb, requireLivePurchaseDb } from './purchases.js';
 import { calculateLiveRevenueAllocation } from './revenue.js';
-import { createLiveCheckoutSession, createLiveStripeRefund } from './stripe.js';
+import {
+  createLiveCheckoutSession,
+  createLiveCreatorTransfer,
+  createLiveStripeRefund,
+  retrieveLiveStripeBalanceTransaction,
+  retrieveLiveStripeCharge,
+} from './stripe.js';
+import {
+  buildMonthlyPayoutBatches,
+  completePayoutBatch,
+  failPayoutBatch,
+  getPayoutBatch,
+  markPayoutBatchProcessing,
+  recordPaidRevenue,
+  recordRevenueProcessingFee,
+  syncPayoutTransferEvent,
+  syncRevenueOrderStatus,
+  verifyPayoutBatchAllocations,
+} from './revenue-ledger.js';
 import {
   LIVE_SUPPORT_MESSAGES_PUBLIC,
   assessStripePaymentRisk,
@@ -135,6 +153,13 @@ export async function handleLiveApi(request, env, path) {
     if (adminCheckoutRefundRoute && request.method === 'POST') {
       await requireLivePurchaseDb(env);
       return await refundLiveCheckout(request, env, adminCheckoutRefundRoute[1]);
+    }
+    if (path === '/api/live/admin/revenue/monthly-close' && request.method === 'POST') {
+      return await createLiveMonthlyPayoutBatches(request, env);
+    }
+    const payoutTransferRoute = path.match(/^\/api\/live\/admin\/revenue\/payouts\/(payout_[a-f0-9]{32})\/transfer$/i);
+    if (payoutTransferRoute && request.method === 'POST') {
+      return await transferLiveMonthlyPayout(request, env, payoutTransferRoute[1]);
     }
     if (path === '/api/live/youtube-candidates' && request.method === 'POST') {
       await assertLiveServiceAvailable(env, true);
@@ -825,6 +850,7 @@ async function refundLiveCheckout(request, env, orderId) {
     await purchaseDb.prepare(`UPDATE live_result_entitlements SET status = ?, updated_at = ? WHERE purchase_id = ?`)
       .bind(status, Date.now(), row.purchase_id).run();
   }
+  await syncRevenueOrderStatus(purchaseDb, row.order_id, status, Date.now());
   await recordLiveOpsEvent(env, {
     category: 'stripe', severity: status === 'refunded' ? 'info' : status === 'refund_failed' ? 'critical' : 'warning',
     eventType: status === 'refunded' ? 'refund-completed' : status,
@@ -835,6 +861,61 @@ async function refundLiveCheckout(request, env, orderId) {
   return liveJson({ orderId, status, refundId: String(refund.id || '') });
 }
 
+async function createLiveMonthlyPayoutBatches(request, env) {
+  const purchaseDb = await requireLivePurchaseDb(env);
+  const body = await readLiveJson(request);
+  const result = await buildMonthlyPayoutBatches(purchaseDb, body.periodKey, Date.now());
+  await recordLiveOpsEvent(env, {
+    category: 'payout', severity: 'info', eventType: 'monthly-payout-close-created',
+    message: `${result.period.key}分の70%分配台帳を作成しました。`,
+    metadata: { periodKey: result.period.key, created: result.created, skipped: result.skipped },
+  });
+  return liveJson(result, 201);
+}
+
+async function transferLiveMonthlyPayout(request, env, batchId) {
+  const purchaseDb = await requireLivePurchaseDb(env);
+  const batch = await getPayoutBatch(purchaseDb, batchId);
+  if (!batch) throw liveError('payout-batch-not-found', 404);
+  if (batch.status === 'transferred') {
+    return liveJson({ batchId, status: 'transferred', transferId: batch.stripe_transfer_id });
+  }
+  if (Number(batch.transfer_amount) < 5000) throw liveError('payout-below-threshold', 409);
+  if (!/^acct_[A-Za-z0-9]+$/.test(String(batch.stripe_account_id || ''))) {
+    throw liveError('stripe-transfer-destination-invalid', 409);
+  }
+  await verifyPayoutBatchAllocations(purchaseDb, batch);
+  await markPayoutBatchProcessing(purchaseDb, batchId);
+  try {
+    const transfer = await createLiveCreatorTransfer(env, {
+      batchId,
+      periodKey: batch.period_key,
+      destination: batch.stripe_account_id,
+      amount: Number(batch.transfer_amount),
+      currency: batch.currency,
+    });
+    if (!/^tr_[A-Za-z0-9_]+$/.test(String(transfer.id || ''))) {
+      throw liveError('stripe-transfer-response-invalid', 502);
+    }
+    await completePayoutBatch(purchaseDb, batchId, transfer.id);
+    await recordLiveOpsEvent(env, {
+      category: 'payout', severity: 'info', eventType: 'creator-transfer-completed',
+      externalId: transfer.id,
+      message: `${batch.period_key}分のYouTuber70%をStripe Connectへ送金しました。`,
+      metadata: { batchId, stripeAccountId: batch.stripe_account_id, amount: Number(batch.transfer_amount) },
+    });
+    return liveJson({ batchId, status: 'transferred', transferId: transfer.id });
+  } catch (error) {
+    await failPayoutBatch(purchaseDb, batchId, error?.stripeCode || error?.message);
+    await recordLiveOpsEvent(env, {
+      category: 'payout', severity: 'critical', eventType: 'creator-transfer-failed',
+      message: 'Stripe Connectへの月次送金に失敗しました。台帳を確認して再実行してください。',
+      metadata: { batchId, stripeCode: error?.stripeCode || '', error: error?.message || '' },
+    });
+    throw error;
+  }
+}
+
 async function updateRefundState(purchaseDb, row, status) {
   const now = Date.now();
   await purchaseDb.prepare(`UPDATE live_checkout_orders SET status = ?, updated_at = ? WHERE order_id = ?`)
@@ -843,6 +924,7 @@ async function updateRefundState(purchaseDb, row, status) {
     await purchaseDb.prepare(`UPDATE live_result_entitlements SET status = ?, updated_at = ? WHERE purchase_id = ?`)
       .bind(status, now, row.purchase_id).run();
   }
+  await syncRevenueOrderStatus(purchaseDb, row.order_id, status, now);
 }
 
 async function reissueLiveResultEntitlement(request, env, purchaseId) {
@@ -893,7 +975,9 @@ async function handleLiveStripeWebhook(request, env) {
   const requiresPurchaseDb = [
     'checkout.session.completed', 'checkout.session.async_payment_succeeded',
     'checkout.session.async_payment_failed', 'refund.updated', 'refund.failed',
-    'charge.refunded', 'charge.dispute.created', 'radar.early_fraud_warning.created', 'charge.succeeded',
+    'charge.refunded', 'charge.dispute.created', 'charge.dispute.closed',
+    'radar.early_fraud_warning.created', 'charge.succeeded',
+    'transfer.created', 'transfer.updated', 'transfer.reversed',
   ].includes(type);
   const purchaseDb = getLivePurchaseDb(env);
   if (requiresPurchaseDb && !purchaseDb) throw liveError('live-purchase-storage-not-configured', 503);
@@ -921,8 +1005,20 @@ async function handleLiveStripeWebhook(request, env) {
       });
     }
     if (type === 'charge.succeeded') await syncSucceededCharge(env, object);
+    if (['transfer.created', 'transfer.updated', 'transfer.reversed'].includes(type)) {
+      const payout = await syncPayoutTransferEvent(purchaseDb, object, type);
+      if (payout?.status === 'reversed') {
+        await recordLiveOpsEvent(env, {
+          category: 'payout', severity: 'critical', eventType: 'creator-transfer-reversed',
+          externalId: String(object.id || ''),
+          message: 'YouTuberへのConnect送金が取り消されました。売上台帳を手動確認してください。',
+          metadata: payout,
+        });
+      }
+    }
     const risk = assessStripePaymentRisk(event);
     if (risk.blocked) await holdRiskyPayment(env, event, risk);
+    if (type === 'charge.dispute.closed') await syncClosedDispute(env, object);
     if (type === 'charge.refunded') await syncRefundByPaymentIntent(env, String(object.payment_intent || ''), 'refunded', object.id);
     if (type === 'refund.updated' || type === 'refund.failed') {
       const refundStatus = object.status === 'succeeded' ? 'refunded'
@@ -983,6 +1079,7 @@ async function fulfillLiveCheckout(request, env, session) {
     SET purchase_id = ?, stripe_payment_intent_id = ?, status = 'paid', paid_at = ?, updated_at = ?
     WHERE order_id = ?
   `).bind(purchaseId, paymentIntentId, paidAt, paidAt, row.order_id).run();
+  await recordPaidRevenue(purchaseDb, row, paidAt);
   await recordLiveOpsEvent(env, {
     category: 'purchase', severity: 'info', eventType: 'checkout-paid', code: row.code,
     purchaseId: purchaseId || '', externalId: paymentIntentId,
@@ -1056,6 +1153,29 @@ async function syncSucceededCharge(env, object) {
     SET stripe_charge_id = ?, stripe_payment_intent_id = COALESCE(stripe_payment_intent_id, ?), updated_at = ?
     WHERE order_id = ? OR stripe_payment_intent_id = ?
   `).bind(chargeId, paymentIntentId, Date.now(), orderId, paymentIntentId).run();
+  const order = await purchaseDb.prepare(`
+    SELECT order_id, channel_verification_id, stripe_account_id, amount, currency,
+      creator_amount, platform_amount
+    FROM live_checkout_orders WHERE order_id = ? OR stripe_payment_intent_id = ? LIMIT 1
+  `).bind(orderId, paymentIntentId).first();
+  const charge = object.balance_transaction ? object : await retrieveLiveStripeCharge(env, chargeId);
+  const balanceTransactionValue = charge.balance_transaction;
+  const balanceTransactionId = String(
+    typeof balanceTransactionValue === 'object' ? balanceTransactionValue?.id : balanceTransactionValue || '',
+  );
+  if (order && balanceTransactionId.startsWith('txn_')) {
+    const balanceTransaction = typeof balanceTransactionValue === 'object'
+      ? balanceTransactionValue
+      : await retrieveLiveStripeBalanceTransaction(env, balanceTransactionId);
+    await recordRevenueProcessingFee(purchaseDb, order, balanceTransaction);
+  } else if (order) {
+    await recordLiveOpsEvent(env, {
+      category: 'payout', severity: 'warning', eventType: 'stripe-fee-pending',
+      externalId: chargeId,
+      message: 'Stripe残高取引が未確定のため、実決済手数料は売上台帳で未取得です。送金前にStripe Dashboardと照合してください。',
+      metadata: { orderId: order.order_id, paymentIntentId },
+    });
+  }
 }
 
 async function holdRiskyPayment(env, event, risk) {
@@ -1078,6 +1198,7 @@ async function holdRiskyPayment(env, event, risk) {
         UPDATE live_result_entitlements SET status = 'fraud_review', updated_at = ?
         WHERE stripe_payment_intent_id = ? AND status = 'active'
       `).bind(Date.now(), matchedPaymentIntentId).run();
+    if (order?.order_id) await syncRevenueOrderStatus(purchaseDb, order.order_id, 'fraud_review', Date.now());
   }
   await recordLiveOpsEvent(env, {
     category: 'stripe', severity: 'critical', eventType: String(event.type || ''),
@@ -1099,9 +1220,42 @@ async function syncRefundByPaymentIntent(env, paymentIntentId, status, externalI
   `).bind(status, status === 'refunded' ? Date.now() : null, Date.now(), row.order_id).run();
   if (row.purchase_id) await purchaseDb.prepare(`UPDATE live_result_entitlements SET status = ?, updated_at = ? WHERE purchase_id = ?`)
     .bind(status, Date.now(), row.purchase_id).run();
+  await syncRevenueOrderStatus(purchaseDb, row.order_id, status, Date.now());
   await recordLiveOpsEvent(env, {
     category: 'stripe', severity: 'info', eventType: 'refund-synchronized', purchaseId: row.purchase_id || '',
     externalId: String(externalId || paymentIntentId), message: 'Stripe Webhookから返金完了を同期しました。', metadata: { orderId: row.order_id },
+  });
+}
+
+async function syncClosedDispute(env, dispute) {
+  const paymentIntentId = String(dispute?.payment_intent || '');
+  const chargeId = String(dispute?.charge || '');
+  const purchaseDb = await requireLivePurchaseDb(env);
+  const row = await purchaseDb.prepare(`
+    SELECT order_id, purchase_id FROM live_checkout_orders
+    WHERE stripe_payment_intent_id = ? OR stripe_charge_id = ? LIMIT 1
+  `).bind(paymentIntentId, chargeId).first();
+  if (!row) return;
+  const won = ['won', 'warning_closed'].includes(String(dispute.status || ''));
+  const status = won ? 'paid' : 'chargeback';
+  const now = Date.now();
+  await purchaseDb.prepare('UPDATE live_checkout_orders SET status = ?, updated_at = ? WHERE order_id = ?')
+    .bind(status, now, row.order_id).run();
+  if (row.purchase_id) {
+    await purchaseDb.prepare(`
+      UPDATE live_result_entitlements
+      SET status = CASE WHEN ? = 'paid' AND available_until > ? THEN 'active' ELSE ? END, updated_at = ?
+      WHERE purchase_id = ?
+    `).bind(status, now, status, now, row.purchase_id).run();
+  }
+  await syncRevenueOrderStatus(purchaseDb, row.order_id, status, now);
+  await recordLiveOpsEvent(env, {
+    category: 'stripe', severity: won ? 'info' : 'critical', eventType: won ? 'dispute-won' : 'chargeback-confirmed',
+    purchaseId: row.purchase_id || '', externalId: String(dispute.id || ''),
+    message: won
+      ? 'チャージバック審査の勝訴を確認し、未送金分の保留を解除しました。'
+      : 'チャージバック敗訴を確認し、YouTuber送金済み70%を次回分配の相殺対象にしました。',
+    metadata: { orderId: row.order_id, disputeStatus: dispute.status || '' },
   });
 }
 
@@ -1117,6 +1271,7 @@ async function syncRefundByRefundId(env, refundId, status) {
   `).bind(status, status === 'refunded' ? Date.now() : null, Date.now(), row.order_id).run();
   if (row.purchase_id) await purchaseDb.prepare(`UPDATE live_result_entitlements SET status = ?, updated_at = ? WHERE purchase_id = ?`)
     .bind(status, Date.now(), row.purchase_id).run();
+  await syncRevenueOrderStatus(purchaseDb, row.order_id, status, Date.now());
 }
 
 export async function verifyLiveStripeSignature(payload, signatureHeader, secret, now = Date.now()) {

@@ -43,6 +43,39 @@ export async function createLiveStripeRefund(env, input) {
   return stripeRequest(env, '/v1/refunds', params, `refund-${input.orderId}`);
 }
 
+export async function retrieveLiveStripeBalanceTransaction(env, transactionId) {
+  if (!/^txn_[A-Za-z0-9_]+$/.test(String(transactionId || ''))) {
+    throw stripeError('stripe-balance-transaction-invalid', 400);
+  }
+  return stripeGet(env, `/v1/balance_transactions/${encodeURIComponent(transactionId)}`);
+}
+
+export async function retrieveLiveStripeCharge(env, chargeId) {
+  if (!/^ch_[A-Za-z0-9_]+$/.test(String(chargeId || ''))) {
+    throw stripeError('stripe-charge-invalid', 400);
+  }
+  return stripeGet(env, `/v1/charges/${encodeURIComponent(chargeId)}`);
+}
+
+export async function createLiveCreatorTransfer(env, input) {
+  if (!Number.isSafeInteger(input.amount) || input.amount < 5000) {
+    throw stripeError('stripe-transfer-amount-invalid', 400);
+  }
+  if (!/^acct_[A-Za-z0-9]+$/.test(String(input.destination || ''))) {
+    throw stripeError('stripe-transfer-destination-invalid', 400);
+  }
+  const params = new URLSearchParams({
+    amount: String(input.amount),
+    currency: String(input.currency || 'jpy').toLowerCase(),
+    destination: input.destination,
+    transfer_group: `live-payout-${input.periodKey}`,
+    'metadata[live_payout_batch_id]': input.batchId,
+    'metadata[live_payout_period]': input.periodKey,
+    'metadata[live_revenue_share]': '70-percent',
+  });
+  return stripeRequest(env, '/v1/transfers', params, `payout-${input.batchId}`);
+}
+
 async function stripeRequest(env, path, params, idempotencyKey) {
   const secret = String(env.STRIPE_SECRET_KEY || '');
   if (!/^sk_(test|live)_[A-Za-z0-9_]+$/.test(secret)) throw stripeError('stripe-secret-key-not-configured', 503);
@@ -54,6 +87,22 @@ async function stripeRequest(env, path, params, idempotencyKey) {
   };
   if (env.STRIPE_API_VERSION) headers['stripe-version'] = String(env.STRIPE_API_VERSION);
   const response = await fetcher(`${STRIPE_API_ORIGIN}${path}`, { method: 'POST', headers, body: params.toString() });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = stripeError('stripe-api-request-failed', 502);
+    error.stripeCode = String(data?.error?.code || data?.error?.type || '').slice(0, 80);
+    throw error;
+  }
+  return data;
+}
+
+async function stripeGet(env, path) {
+  const secret = String(env.STRIPE_SECRET_KEY || '');
+  if (!/^sk_(test|live)_[A-Za-z0-9_]+$/.test(secret)) throw stripeError('stripe-secret-key-not-configured', 503);
+  const fetcher = typeof env.STRIPE_FETCH === 'function' ? env.STRIPE_FETCH : fetch;
+  const headers = { authorization: `Bearer ${secret}` };
+  if (env.STRIPE_API_VERSION) headers['stripe-version'] = String(env.STRIPE_API_VERSION);
+  const response = await fetcher(`${STRIPE_API_ORIGIN}${path}`, { method: 'GET', headers });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = stripeError('stripe-api-request-failed', 502);

@@ -2,7 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { handleLiveApi } from '../../src/live/api.js';
-import { createLiveCheckoutSession, createLiveStripeRefund } from '../../src/live/stripe.js';
+import {
+  createLiveCheckoutSession,
+  createLiveCreatorTransfer,
+  createLiveStripeRefund,
+  retrieveLiveStripeBalanceTransaction,
+  retrieveLiveStripeCharge,
+} from '../../src/live/stripe.js';
 
 test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キーをStripeへ送る', async () => {
   let captured;
@@ -43,6 +49,48 @@ test('返金はPaymentIntent全額・理由・注文単位の冪等キーでStri
   assert.equal(captured.params.get('payment_intent'), 'pi_test01');
   assert.equal(captured.params.get('reason'), 'duplicate');
   assert.equal(captured.params.has('amount'), false);
+});
+
+test('月次70%分配はConnect宛のTransferをバッチ単位の冪等キーで送る', async () => {
+  let captured;
+  const env = stripeEnv(async (url, options) => {
+    captured = { url, options, params: new URLSearchParams(options.body) };
+    return Response.json({ id: 'tr_monthly01', amount: 5600, currency: 'jpy' });
+  });
+  const transfer = await createLiveCreatorTransfer(env, {
+    batchId: `payout_${'a'.repeat(32)}`, periodKey: '2026-07',
+    destination: 'acct_creator123', amount: 5600, currency: 'jpy',
+  });
+  assert.equal(transfer.id, 'tr_monthly01');
+  assert.equal(captured.url, 'https://api.stripe.com/v1/transfers');
+  assert.equal(captured.options.headers['idempotency-key'], `payout-payout_${'a'.repeat(32)}`);
+  assert.equal(captured.params.get('amount'), '5600');
+  assert.equal(captured.params.get('destination'), 'acct_creator123');
+  assert.equal(captured.params.get('metadata[live_revenue_share]'), '70-percent');
+});
+
+test('Stripe残高取引はGETで実手数料を取得する', async () => {
+  let captured;
+  const env = stripeEnv(async (url, options) => {
+    captured = { url, options };
+    return Response.json({ id: 'txn_fee01', amount: 1000, fee: 36, net: 964, currency: 'jpy' });
+  });
+  const transaction = await retrieveLiveStripeBalanceTransaction(env, 'txn_fee01');
+  assert.equal(transaction.fee, 36);
+  assert.equal(captured.url, 'https://api.stripe.com/v1/balance_transactions/txn_fee01');
+  assert.equal(captured.options.method, 'GET');
+});
+
+test('ChargeはGETで残高取引IDを再確認できる', async () => {
+  let captured;
+  const env = stripeEnv(async (url, options) => {
+    captured = { url, options };
+    return Response.json({ id: 'ch_fee01', balance_transaction: 'txn_fee01' });
+  });
+  const charge = await retrieveLiveStripeCharge(env, 'ch_fee01');
+  assert.equal(charge.balance_transaction, 'txn_fee01');
+  assert.equal(captured.url, 'https://api.stripe.com/v1/charges/ch_fee01');
+  assert.equal(captured.options.method, 'GET');
 });
 
 test('決済成功Webhookは1回だけ高画質画像と30日権限を発行する', async () => {

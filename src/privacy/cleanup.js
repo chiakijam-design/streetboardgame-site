@@ -23,6 +23,8 @@ export async function runPrivacyCleanup(env, now = Date.now()) {
     anonymizedCheckoutOrders: 0,
     deletedPurchaseRecords: 0,
     deletedCheckoutOrders: 0,
+    deletedRevenueEntries: 0,
+    deletedPayoutBatches: 0,
     deletedStripeEvents: 0,
     deletedOperationsLogs: 0,
     deletedPendingVerifications: 0,
@@ -116,6 +118,14 @@ async function cleanupPurchaseDatabase(env, now, summary) {
   summary.anonymizedCheckoutOrders = changes(anonymizedOrders);
   const deletedOrders = await safeRun(db, 'DELETE FROM live_checkout_orders WHERE created_at < ?', [purchaseCutoff]);
   summary.deletedCheckoutOrders = changes(deletedOrders);
+  await safeRun(db, `
+    DELETE FROM live_payout_allocations
+    WHERE revenue_entry_id IN (SELECT revenue_entry_id FROM live_revenue_entries WHERE created_at < ?)
+  `, [purchaseCutoff]);
+  const deletedRevenue = await safeRun(db, 'DELETE FROM live_revenue_entries WHERE created_at < ?', [purchaseCutoff]);
+  summary.deletedRevenueEntries = changes(deletedRevenue);
+  const deletedPayouts = await safeRun(db, 'DELETE FROM live_payout_batches WHERE created_at < ?', [purchaseCutoff]);
+  summary.deletedPayoutBatches = changes(deletedPayouts);
   const deletedStripeEvents = await safeRun(
     db,
     'DELETE FROM live_stripe_events WHERE created_at < ?',

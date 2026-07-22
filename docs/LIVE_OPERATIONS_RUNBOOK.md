@@ -83,7 +83,7 @@ WebSocketしきい値は`LIVE_WS_ALERT_MIN_DISCONNECTS`（既定20）と`LIVE_WS
 
 1. Stripe Workbench > Webhooksで本番エンドポイントを作る。
 2. URLを`https://www.streetboardgame.com/api/live/stripe/webhook`にする。
-3. `checkout.session.completed`、`checkout.session.async_payment_succeeded`、`checkout.session.async_payment_failed`、`payment_intent.payment_failed`、`charge.failed`、`charge.succeeded`、`charge.refunded`、`refund.updated`、`refund.failed`、`charge.dispute.created`、`radar.early_fraud_warning.created`を購読する。
+3. `checkout.session.completed`、`checkout.session.async_payment_succeeded`、`checkout.session.async_payment_failed`、`payment_intent.payment_failed`、`charge.failed`、`charge.succeeded`、`charge.refunded`、`refund.updated`、`refund.failed`、`charge.dispute.created`、`charge.dispute.closed`、`radar.early_fraud_warning.created`、`transfer.created`、`transfer.updated`、`transfer.reversed`を購読する。
 4. 署名secretを`STRIPE_WEBHOOK_SECRET`へ保存する。
 5. テストイベントを送り、運営コンソールと通知Webhookの両方へ出ることを確認する。
 6. StripeのWebhook配信失敗通知を有効化し、毎日Undelivered eventsが0件であることを確認する。
@@ -144,6 +144,17 @@ Stripeは本番Webhookを最大3日間再送する。復旧後は未配信イベ
 - `refund.updated`または`charge.refunded` Webhookで`refunded`へ同期されたことを確認する。
 - URL紛失・期限再発行は「購入権限を再発行」。旧URLを失効し、新しい30日間のURLを発行する。
 - `refund_pending`または`refunded`の購入は再発行できない。
+
+### 5.7 70%月次分配と売上台帳
+
+1. 毎月15日以降に運営コンソールの「70%分配・売上台帳」を開き、前月を選んで「月次分配台帳を作成」を押す。
+2. 14日保留中、返金待ち、不正審査中の売上が送金対象に入っていないことを確認する。
+3. YouTuber70%残高から返金確定後の相殺額を引いた金額が5,000円未満なら翌月へ繰り越す。
+4. バッチの対象売上、70%、相殺額、ConnectアカウントIDを契約記録と照合する。
+5. 確認後だけ「Stripe Connectへ送金」を押す。ボタンはStripe上の資金移動を発生させるため、二重操作せず結果を待つ。
+6. `tr_...`が表示され、状態が`transferred`になったことをStripe Dashboardと照合する。
+7. `transfer_failed`は失敗理由とプラットフォーム残高、Connect制限を確認してから同じバッチを再実行する。冪等キーにより同一バッチの二重送金を防止する。
+8. `reversed`または`payout_reversed`は自動再送金せず、Connect残高・返金・不正利用を手動調査する。
 
 ## 6. 復旧判定
 
