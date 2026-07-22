@@ -1,5 +1,7 @@
 # streetboardgame.com
 
+LIVEの監視・障害対応は[`docs/LIVE_OPERATIONS_RUNBOOK.md`](docs/LIVE_OPERATIONS_RUNBOOK.md)を参照してください。
+
 『私のこと、ちゃんと分かってるよね？』彼氏の愛情判定ゲームの公式サイト。
 
 ## 構成

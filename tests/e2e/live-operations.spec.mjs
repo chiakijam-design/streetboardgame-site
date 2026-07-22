@@ -1,0 +1,46 @@
+import { test, expect } from '@playwright/test';
+
+test('LIVE運営コンソールで監視・予約・購入対応を確認できる', async ({ page }) => {
+  const overview = {
+    generatedAt: Date.now(),
+    status: { mode: 'degraded', title: '接続遅延', message: '復旧対応中です。' },
+    reservations: [{ code: '123456', title: 'テストLIVE', channelName: 'テスト', phase: 'lobby', scheduledAt: Date.now() + 3_600_000, participantLimit: 50 }],
+    activeSessions: [],
+    entitlements: [{ purchase_id: 'purchase_test_01', code: '123456', participant_id: 'p1', participant_name: '参加者', stripe_payment_intent_id: 'pi_test_01', status: 'active', purchased_at: Date.now(), available_until: Date.now() + 86_400_000, updated_at: Date.now() }],
+    events: [{ event_id: '11111111-1111-4111-8111-111111111111', category: 'stripe', severity: 'critical', event_type: 'payment_intent.payment_failed', code: '123456', purchase_id: '', external_id: 'pi_test_01', message: 'カード決済失敗', metadata: {}, created_at: Date.now(), acknowledged_at: null, acknowledged_by: '' }],
+    recentEventCounts: [{ category: 'stripe', severity: 'critical', event_count: 1 }],
+    realtime: [],
+    infrastructure: { d1Configured: true, durableObjectsConfigured: true, alertWebhookConfigured: true, stripeWebhookConfigured: true },
+  };
+  await page.route('**/api/live/admin/overview', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(overview) }));
+  const response = await page.goto('/live-ops');
+  expect(response?.headers()['x-robots-tag']).toBe('noindex, nofollow, noarchive');
+  await expect(page).toHaveTitle('LIVE運営コンソール | Streetboardgame');
+  await page.locator('#adminToken').fill('x'.repeat(32));
+  await page.locator('#loadOps').click();
+  await expect(page.locator('#dashboard')).toBeVisible();
+  await expect(page.locator('#sessions')).toContainText('テストLIVE');
+  await expect(page.locator('#entitlements')).toContainText('purchase_test_01');
+  await expect(page.locator('#events')).toContainText('カード決済失敗');
+  await expect(page.locator('#metrics')).toContainText('WebSocket予期せぬ切断率');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,nofollow,noarchive');
+});
+
+test('障害告知を運営コンソールから更新できる', async ({ page }) => {
+  const statusBodies = [];
+  const base = { generatedAt: Date.now(), status: { mode: 'normal', title: '', message: '' }, reservations: [], activeSessions: [], entitlements: [], events: [], recentEventCounts: [], realtime: [], infrastructure: {} };
+  await page.route('**/api/live/admin/overview', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(base) }));
+  await page.route('**/api/live/admin/status', async (route) => {
+    statusBodies.push(route.request().postDataJSON());
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: statusBodies.at(-1) }) });
+  });
+  await page.goto('/live-ops');
+  await page.locator('#adminToken').fill('x'.repeat(32));
+  await page.locator('#loadOps').click();
+  await page.locator('#statusMode').selectOption('maintenance');
+  await page.locator('#statusTitle').fill('緊急メンテナンス');
+  await page.locator('#statusMessage').fill('新規参加を停止しています。');
+  await page.locator('#saveStatus').click();
+  await expect.poll(() => statusBodies.length).toBe(1);
+  expect(statusBodies[0]).toEqual({ mode: 'maintenance', title: '緊急メンテナンス', message: '新規参加を停止しています。' });
+});

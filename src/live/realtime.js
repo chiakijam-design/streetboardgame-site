@@ -183,7 +183,42 @@ export class LiveRoomCoordinator {
       const voteCounts = questionId
         ? normalizeCounts(await this.ctx.storage.get(`aggregate:${questionId}`), optionCount)
         : [];
-      return json({ participantCount, voteCounts });
+      const wsWindow = await this.ctx.storage.get('wsWindow') || {};
+      return json({
+        participantCount,
+        voteCounts,
+        webSocket: {
+          windowStartedAt: Number(wsWindow.windowStartedAt) || 0,
+          connected: Number(wsWindow.connected) || 0,
+          disconnected: Number(wsWindow.disconnected) || 0,
+          unexpectedDisconnects: Number(wsWindow.unexpectedDisconnects) || 0,
+          activeConnections: Math.max(0, Number(await this.ctx.storage.get('wsActiveConnections')) || 0),
+        },
+      });
+    }
+    if (url.pathname === '/ws-event' && request.method === 'POST') {
+      const { type, unexpected } = await request.json();
+      const windowMs = 5 * 60 * 1000;
+      const windowStartedAt = Math.floor(Date.now() / windowMs) * windowMs;
+      const wsWindow = await this.ctx.storage.transaction(async (storage) => {
+        const current = await storage.get('wsWindow') || {};
+        const wsWindow = Number(current.windowStartedAt) === windowStartedAt
+          ? current
+          : { windowStartedAt, connected: 0, disconnected: 0, unexpectedDisconnects: 0 };
+        const activeConnections = Math.max(0, Number(await storage.get('wsActiveConnections')) || 0);
+        if (type === 'connect') {
+          wsWindow.connected = Number(wsWindow.connected || 0) + 1;
+          await storage.put('wsActiveConnections', activeConnections + 1);
+        } else if (type === 'disconnect') {
+          wsWindow.disconnected = Number(wsWindow.disconnected || 0) + 1;
+          if (unexpected) wsWindow.unexpectedDisconnects = Number(wsWindow.unexpectedDisconnects || 0) + 1;
+          await storage.put('wsActiveConnections', Math.max(0, activeConnections - 1));
+        }
+        await storage.put('wsWindow', wsWindow);
+        return wsWindow;
+      });
+      if (type === 'disconnect') await this.alertOnWebSocketDisconnectRate(wsWindow);
+      return json({ recorded: true });
     }
     if (url.pathname === '/state' && request.method === 'POST') {
       const { code, game } = await request.json();
@@ -254,6 +289,28 @@ export class LiveRoomCoordinator {
       voteShardStub(this.env, code, shardIndex).fetch(`${INTERNAL_ORIGIN}/broadcast`, internalJson({ code, shardIndex, game }))
     )));
   }
+
+  async alertOnWebSocketDisconnectRate(wsWindow) {
+    const disconnected = Number(wsWindow.disconnected) || 0;
+    const unexpected = Number(wsWindow.unexpectedDisconnects) || 0;
+    const minimum = Math.max(5, Number(this.env.LIVE_WS_ALERT_MIN_DISCONNECTS) || 20);
+    const threshold = Math.min(1, Math.max(0.01, Number(this.env.LIVE_WS_ALERT_RATE) || 0.2));
+    if (disconnected < minimum || unexpected / disconnected < threshold) return;
+    const alertedWindow = Number(await this.ctx.storage.get('wsAlertedWindow')) || 0;
+    if (alertedWindow === Number(wsWindow.windowStartedAt)) return;
+    await this.ctx.storage.put('wsAlertedWindow', Number(wsWindow.windowStartedAt));
+    const webhookUrl = String(this.env.LIVE_OPS_ALERT_WEBHOOK_URL || '');
+    if (!/^https:\/\//i.test(webhookUrl)) return;
+    const code = String(await this.ctx.storage.get('code') || 'unknown');
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        text: `[Streetboardgame LIVE][critical] WebSocket予期せぬ切断率 ${Math.round(unexpected / disconnected * 1000) / 10}% (room ${code}, ${unexpected}/${disconnected})`,
+        event: { category: 'websocket', severity: 'critical', code, disconnected, unexpectedDisconnects: unexpected },
+      }),
+    }).catch(() => null);
+  }
 }
 
 export class LiveVoteShard {
@@ -301,6 +358,7 @@ export class LiveVoteShard {
     const requestedProtocols = String(request.headers.get('Sec-WebSocket-Protocol') || '').split(',').map((item) => item.trim());
     if (!requestedProtocols.includes(LIVE_PROTOCOL)) return json({ error: 'websocket-protocol-required' }, 400);
     const participantId = request.headers.get('x-live-internal-participant-id') || '';
+    const code = request.headers.get('x-live-internal-code') || '';
     const name = decodeURIComponent(request.headers.get('x-live-internal-participant-name') || '');
     if (!participantId) return json({ error: 'participant-forbidden' }, 403);
     const answers = await this.ctx.storage.get(`participant:${participantId}:votes`) || {};
@@ -315,6 +373,9 @@ export class LiveVoteShard {
       answers,
       participantName: name,
     }));
+    if (code && hasLiveRealtime(this.env)) {
+      await coordinatorStub(this.env, code).fetch(`${INTERNAL_ORIGIN}/ws-event`, internalJson({ type: 'connect' }));
+    }
     return new Response(null, {
       status: 101,
       webSocket: client,
@@ -350,7 +411,15 @@ export class LiveVoteShard {
     }
   }
 
-  async webSocketClose(socket, code, reason) {
+  async webSocketClose(socket, code, reason, wasClean) {
+    const roomCode = await this.ctx.storage.get('code');
+    if (roomCode && hasLiveRealtime(this.env)) {
+      const unexpected = !wasClean || ![1000, 1001].includes(Number(code));
+      await coordinatorStub(this.env, roomCode).fetch(`${INTERNAL_ORIGIN}/ws-event`, internalJson({
+        type: 'disconnect',
+        unexpected,
+      }));
+    }
     socket.close(code, reason);
   }
 

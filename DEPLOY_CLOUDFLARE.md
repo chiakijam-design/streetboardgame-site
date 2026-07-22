@@ -25,6 +25,8 @@ LIVEのリアルタイム投票は`wrangler.jsonc`に定義した2種類のDurab
 
 YouTube Data API v3、チャンネル所有確認、非公開R2、Cloudflare Images、有料画像権限を有効化する場合は、先に[`docs/LIVE_EXTERNAL_SERVICES.md`](docs/LIVE_EXTERNAL_SERVICES.md)の資格情報・バインディング・`0005_live_paid_media.sql`の適用を完了する。R2バケット作成前に`wrangler.jsonc`の`LIVE_MEDIA`コメントを外すとデプロイが失敗するため、作成と契約を先に行う。
 
+LIVE運営コンソール、障害告知、Stripe失敗通知、WebSocket切断率監視は、[`docs/LIVE_OPERATIONS_RUNBOOK.md`](docs/LIVE_OPERATIONS_RUNBOOK.md)に従い、`0006_live_operations.sql`、`LIVE_ADMIN_TOKEN`、`LIVE_OPS_ALERT_WEBHOOK_URL`、`STRIPE_WEBHOOK_SECRET`を設定する。
+
 ## Manual GitHub Flow
 
 1. Commit changes in this folder.

@@ -51,11 +51,20 @@ const state = {
   realtimeReconnectTimer: null,
   votePending: false,
   participantAnswers: initialRoomCode ? readParticipantAnswers(initialRoomCode) : {},
+  systemStatus: { mode: 'normal', title: '', message: '' },
 };
 
 document.title = `${LIVE_SERIES.name} | わたちゃん`;
-if (initialRoomCode) initializeRoom();
-else render();
+initializeLivePage();
+
+async function initializeLivePage() {
+  try {
+    const response = await api('/api/live/status');
+    state.systemStatus = response.status || state.systemStatus;
+  } catch (error) { /* 状態APIが落ちていても静的ページ自体は表示する */ }
+  if (initialRoomCode) initializeRoom();
+  else render();
+}
 
 function render() {
   if (state.view === 'room-loading') return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
@@ -87,8 +96,8 @@ function renderEntry() {
       </div>
       ${errorHtml()}
       <div id="youtubeGenerationChoices" class="grid" style="margin-top:16px" ${state.channelUrl.trim() ? '' : 'hidden'}>
-        <button class="primary" data-youtube-type="guess-person">${escapeHtml(LIVE_SERIES.youtubePersonGenerateLabel)} <span class="accent">▶</span></button>
-        <button class="secondary" data-youtube-type="guess-majority">${escapeHtml(LIVE_SERIES.youtubeMajorityGenerateLabel)} <span class="accent">▶</span></button>
+        <button class="primary" data-youtube-type="guess-person" ${state.systemStatus.mode === 'maintenance' ? 'disabled' : ''}>${escapeHtml(LIVE_SERIES.youtubePersonGenerateLabel)} <span class="accent">▶</span></button>
+        <button class="secondary" data-youtube-type="guess-majority" ${state.systemStatus.mode === 'maintenance' ? 'disabled' : ''}>${escapeHtml(LIVE_SERIES.youtubeMajorityGenerateLabel)} <span class="accent">▶</span></button>
       </div>
     </section>
     <section class="panel" style="margin-top:18px">
@@ -520,6 +529,7 @@ async function joinGame() {
 function renderHost() {
   const game = state.game;
   if (!game) return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
+  if (game.phase === 'terminated') return setPage(terminatedLiveHtml(game));
   let content = '';
   if (game.phase === 'lobby') {
     const shareUrl = `${location.origin}/live?room=${state.roomCode}`;
@@ -615,6 +625,7 @@ function renderHost() {
 function renderSubject() {
   const game = state.game;
   if (!game) return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
+  if (game.phase === 'terminated') return setPage(terminatedLiveHtml(game));
   let content = '';
   if (game.phase === 'lobby') {
     content = `<section class="panel"><span class="eyebrow">YOUTUBER</span><h2 style="margin-top:12px">YouTuber本人専用画面</h2><p class="help">このURLは本人の秘密回答に使います。視聴者には共有しないでください。</p><div class="notice">スタッフがライブを開始するまで、この画面でお待ちください。</div></section>`;
@@ -645,6 +656,7 @@ function renderSubject() {
 function renderParticipant() {
   const game = state.game;
   if (!game) return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
+  if (game.phase === 'terminated') return setPage(terminatedLiveHtml(game));
   let content = '';
   if (game.phase === 'lobby') {
     content = `<section class="panel"><span class="eyebrow">WAITING</span><h2 style="margin-top:12px">${escapeHtml(game.title)}</h2><div class="notice">参加しました。司会者が開始するまでこの画面でお待ちください。</div>${participantHtml(game)}</section>`;
@@ -1077,7 +1089,15 @@ function personalizeRealtimeResult(result, answers) {
 }
 
 function setPage(content, withTopbar = true) {
-  root.innerHTML = `<div class="shell">${withTopbar ? `<header class="topbar"><a class="brand" href="/live">${escapeHtml(LIVE_SERIES.name)}</a><a class="back" href="/">トップへ</a></header>` : ''}${content}</div>`;
+  const status = state.systemStatus || {};
+  const statusBanner = status.mode !== 'normal'
+    ? `<section class="system-status ${status.mode}" role="status"><strong>${escapeHtml(status.title || 'LIVEサービスからのお知らせ')}</strong><span>${escapeHtml(status.message || '')}</span></section>`
+    : '';
+  root.innerHTML = `<div class="shell">${withTopbar ? `<header class="topbar"><a class="brand" href="/live">${escapeHtml(LIVE_SERIES.name)}</a><a class="back" href="/">トップへ</a></header>` : ''}${statusBanner}${content}</div>`;
+}
+
+function terminatedLiveHtml(game) {
+  return `<section class="panel"><span class="eyebrow">LIVE CLOSED</span><h2 style="margin-top:12px">このLIVEは運営により終了しました</h2><div class="error" role="alert">${escapeHtml(game.terminationMessage || '運営上の理由により、このLIVEは終了しました。')}</div><a class="primary" style="display:grid;place-items:center;margin-top:16px;text-decoration:none" href="/live">LIVEトップへ</a></section>`;
 }
 
 function typeSelect(value, field, disabled = false) {
@@ -1124,6 +1144,8 @@ function humanError(error) {
     'room-not-found': 'ルームが見つかりません。コードを確認してください',
     'name-required': '名前を入力してください',
     'game-finished': 'このゲームは終了しています',
+    'game-terminated': 'このLIVEは運営により終了しました',
+    'live-maintenance': '現在、LIVEサービスはメンテナンス中です。お知らせをご確認ください',
     'voting-closed': '投票は締め切られました',
     'question-changed': '次の問題へ進みました。画面を更新します',
     'already-voted': 'この問題には投票済みです',

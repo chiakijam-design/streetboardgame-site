@@ -87,6 +87,7 @@ function staticPath(urlPath) {
   if (['/', '/love', '/friends', '/family', '/about', '/product'].includes(urlPath)) return 'index.html';
   if (urlPath === '/remote') return 'remote.html';
   if (urlPath === '/live') return 'live.html';
+  if (urlPath === '/live-ops') return 'live_ops.html';
   return urlPath.replace(/^\/+/, '');
 }
 

@@ -36,6 +36,14 @@ import {
   startYouTubeOAuth,
   verifyChannelDescription,
 } from './ownership.js';
+import {
+  acknowledgeLiveOpsEvent,
+  ensureLiveOpsD1,
+  getLiveOpsOverview,
+  getLiveSystemStatus,
+  recordLiveOpsEvent,
+  setLiveSystemStatus,
+} from './ops.js';
 
 const LIVE_ACTIVE_TTL_SECONDS = 60 * 60 * 24;
 const LIVE_SAVED_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -47,7 +55,47 @@ let liveRateLimitReadyPromise = null;
 export async function handleLiveApi(request, env, path) {
   if (request.method === 'OPTIONS') return liveJson({});
   try {
+    if (path === '/api/live/stripe/webhook' && request.method === 'POST') {
+      return await handleLiveStripeWebhook(request, env);
+    }
+    if (path === '/api/live/status' && request.method === 'GET') {
+      return liveJson({ status: await getLiveSystemStatus(env) });
+    }
+    if (path === '/api/live/admin/overview' && request.method === 'GET') {
+      requireLiveAdmin(request, env);
+      return liveJson(await getLiveOpsOverview(env));
+    }
+    if (path === '/api/live/admin/status' && request.method === 'POST') {
+      requireLiveAdmin(request, env);
+      return liveJson({ status: await setLiveSystemStatus(env, await readLiveJson(request)) });
+    }
+    if (path === '/api/live/admin/ops-events' && request.method === 'POST') {
+      requireLiveAdmin(request, env);
+      return liveJson({ event: await recordLiveOpsEvent(env, await readLiveJson(request)) }, 201);
+    }
+    const acknowledgeRoute = path.match(/^\/api\/live\/admin\/ops-events\/([a-f0-9-]{36})\/acknowledge$/i);
+    if (acknowledgeRoute && request.method === 'POST') {
+      requireLiveAdmin(request, env);
+      return liveJson(await acknowledgeLiveOpsEvent(env, acknowledgeRoute[1]));
+    }
+    const adminGameRoute = path.match(/^\/api\/live\/admin\/games\/([0-9]{6})\/(terminate|rotate-links)$/);
+    if (adminGameRoute && request.method === 'POST') {
+      requireLiveAdmin(request, env);
+      await ensureLiveD1(env);
+      return adminGameRoute[2] === 'terminate'
+        ? await terminateLiveGameAsAdmin(request, env, adminGameRoute[1])
+        : await rotateLiveGameLinksAsAdmin(request, env, adminGameRoute[1]);
+    }
+    const adminEntitlementRoute = path.match(/^\/api\/live\/admin\/result-entitlements\/([A-Za-z0-9_-]{8,80})\/(refund|reissue)$/);
+    if (adminEntitlementRoute && request.method === 'POST') {
+      requireLiveAdmin(request, env);
+      await ensureLiveD1(env);
+      return adminEntitlementRoute[2] === 'refund'
+        ? await refundLiveResultEntitlement(request, env, adminEntitlementRoute[1])
+        : await reissueLiveResultEntitlement(request, env, adminEntitlementRoute[1]);
+    }
     if (path === '/api/live/youtube-candidates' && request.method === 'POST') {
+      await assertLiveServiceAvailable(env, true);
       await enforceLiveRateLimit(request, env, 'youtube', 15);
       return await createYouTubeCandidatesResponse(request, env);
     }
@@ -96,6 +144,7 @@ export async function handleLiveApi(request, env, path) {
       return await getLiveReservationAvailability(request, env);
     }
     if (path === '/api/live/games' && request.method === 'POST') {
+      await assertLiveServiceAvailable(env, true);
       await enforceLiveRateLimit(request, env, 'create', 10);
       return await createLiveGame(request, env);
     }
@@ -109,6 +158,7 @@ export async function handleLiveApi(request, env, path) {
     if (request.method !== 'POST') return liveJson({ error: 'method-not-allowed' }, 405);
     if (action === 'creator-image') return await uploadLiveCreatorImage(request, env, code);
     if (action === 'join') {
+      await assertLiveServiceAvailable(env, true);
       if (!hasLiveRealtime(env)) await enforceLiveRateLimit(request, env, 'join', 100);
       return await joinLiveGame(request, env, code);
     }
@@ -126,7 +176,17 @@ export async function handleLiveApi(request, env, path) {
     }
     return liveJson({ error: 'not-found' }, 404);
   } catch (error) {
-    return liveJson({ error: error && error.message ? error.message : 'live-api-error' }, Number(error && error.status) || 500);
+    const status = Number(error && error.status) || 500;
+    if (status >= 500) {
+      await recordLiveOpsEvent(env, {
+        category: path === '/api/live/stripe/webhook' ? 'stripe' : 'application',
+        severity: 'critical',
+        eventType: path === '/api/live/stripe/webhook' ? 'stripe-webhook-processing-failed' : 'live-api-error',
+        message: error && error.message ? error.message : 'live-api-error',
+        metadata: { path, method: request.method, status },
+      }).catch(() => {});
+    }
+    return liveJson({ error: error && error.message ? error.message : 'live-api-error' }, status);
   }
 }
 
@@ -320,6 +380,145 @@ async function downloadLiveResult(request, env, purchaseId) {
   return streamPrivateResult(env, row.asset_key, `streetboardgame-live-${purchaseId}.svg`);
 }
 
+async function terminateLiveGameAsAdmin(request, env, code) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  const body = await readLiveJson(request);
+  const message = String(body.message || '運営上の理由により、このLIVEは終了しました。').trim().slice(0, 300);
+  const previousPhase = game.phase;
+  game.phase = 'terminated';
+  game.terminationMessage = message;
+  game.terminatedAt = Date.now();
+  game.updatedAt = game.terminatedAt;
+  game.expiresAt = game.terminatedAt + 24 * 60 * 60 * 1000;
+  await putStoredLiveGame(env, code, game);
+  if (hasLiveRealtime(env)) await broadcastCurrentRealtimeState(env, code, game);
+  await Promise.all([releaseLiveActiveSlot(env, code), releaseLiveReservation(env, code)]);
+  await recordLiveOpsEvent(env, {
+    category: 'operations', severity: 'warning', eventType: 'game-force-terminated', code,
+    message, metadata: { previousPhase },
+  });
+  return liveJson({ code, game: publicLiveGame(game, { host: true }) });
+}
+
+async function rotateLiveGameLinksAsAdmin(request, env, code) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  const body = await readLiveJson(request);
+  const rotateHost = body.host !== false;
+  const rotateSubject = body.subject !== false;
+  if (!rotateHost && !rotateSubject) throw liveError('rotation-target-required', 400);
+  if (rotateHost) game.hostToken = createLiveToken(24);
+  if (rotateSubject) game.subjectToken = createLiveToken(24);
+  game.updatedAt = Date.now();
+  await putStoredLiveGame(env, code, game);
+  await recordLiveOpsEvent(env, {
+    category: 'security', severity: 'warning', eventType: 'private-links-rotated', code,
+    message: `漏えい対策として${rotateHost ? 'スタッフURL' : ''}${rotateHost && rotateSubject ? '・' : ''}${rotateSubject ? '本人URL' : ''}を失効しました。`,
+    metadata: { host: rotateHost, subject: rotateSubject },
+  });
+  const origin = new URL(request.url).origin;
+  return liveJson({
+    code,
+    hostUrl: rotateHost ? `${origin}/live?room=${code}#host=${game.hostToken}` : undefined,
+    subjectUrl: rotateSubject ? `${origin}/live?room=${code}#subject=${game.subjectToken}` : undefined,
+  });
+}
+
+async function refundLiveResultEntitlement(request, env, purchaseId) {
+  const body = await readLiveJson(request);
+  const status = body.confirmed === true ? 'refunded' : 'refund_pending';
+  const row = await env.REMOTE_DB.prepare(`
+    SELECT purchase_id, code, stripe_payment_intent_id, status FROM live_result_entitlements WHERE purchase_id = ?
+  `).bind(purchaseId).first();
+  if (!row) throw liveError('entitlement-not-found', 404);
+  if (row.status === 'refunded' && status !== 'refunded') throw liveError('already-refunded', 409);
+  await env.REMOTE_DB.prepare(`
+    UPDATE live_result_entitlements SET status = ?, updated_at = ? WHERE purchase_id = ?
+  `).bind(status, Date.now(), purchaseId).run();
+  await recordLiveOpsEvent(env, {
+    category: 'stripe', severity: status === 'refunded' ? 'info' : 'warning',
+    eventType: status === 'refunded' ? 'refund-confirmed' : 'refund-requested',
+    code: row.code, purchaseId, externalId: row.stripe_payment_intent_id,
+    message: status === 'refunded'
+      ? 'Stripe上の返金完了を確認し、購入権限を返金済みにしました。'
+      : '購入権限を停止し、Stripe上の返金待ちにしました。',
+  });
+  return liveJson({ purchaseId, status, stripePaymentIntentId: row.stripe_payment_intent_id });
+}
+
+async function reissueLiveResultEntitlement(request, env, purchaseId) {
+  const row = await env.REMOTE_DB.prepare(`
+    SELECT purchase_id, code, status FROM live_result_entitlements WHERE purchase_id = ?
+  `).bind(purchaseId).first();
+  if (!row) throw liveError('entitlement-not-found', 404);
+  if (['refund_pending', 'refunded'].includes(row.status)) throw liveError('refunded-entitlement', 409);
+  const accessToken = createLiveToken(32);
+  const availableUntil = Date.now() + 30 * 24 * 60 * 60 * 1000;
+  await env.REMOTE_DB.prepare(`
+    UPDATE live_result_entitlements
+    SET access_token_hash = ?, status = 'active', available_until = ?, updated_at = ?
+    WHERE purchase_id = ?
+  `).bind(await hashLiveSecret(accessToken), availableUntil, Date.now(), purchaseId).run();
+  await recordLiveOpsEvent(env, {
+    category: 'purchase', severity: 'info', eventType: 'entitlement-reissued',
+    code: row.code, purchaseId, message: '購入権限を30日間で再発行し、旧アクセスURLを失効しました。',
+  });
+  const origin = new URL(request.url).origin;
+  return liveJson({
+    purchaseId,
+    accessToken,
+    availableUntil,
+    entitlementUrl: `${origin}/api/live/result-entitlements/${purchaseId}?access=${accessToken}`,
+  });
+}
+
+async function assertLiveServiceAvailable(env, blocksMaintenance) {
+  const status = await getLiveSystemStatus(env);
+  if (blocksMaintenance && status.mode === 'maintenance') throw liveError('live-maintenance', 503);
+  return status;
+}
+
+async function handleLiveStripeWebhook(request, env) {
+  const secret = String(env.STRIPE_WEBHOOK_SECRET || '');
+  if (!secret.startsWith('whsec_')) throw liveError('stripe-webhook-not-configured', 503);
+  const payload = await request.text();
+  const signatureHeader = String(request.headers.get('Stripe-Signature') || '');
+  if (!await verifyLiveStripeSignature(payload, signatureHeader, secret)) throw liveError('stripe-signature-invalid', 400);
+  let event;
+  try { event = JSON.parse(payload); } catch (error) { throw liveError('stripe-payload-invalid', 400); }
+  const type = String(event?.type || 'unknown');
+  if (['payment_intent.payment_failed', 'checkout.session.async_payment_failed', 'charge.failed'].includes(type)) {
+    const object = event?.data?.object || {};
+    await recordLiveOpsEvent(env, {
+      category: 'stripe', severity: 'critical', eventType: type,
+      externalId: String(event.id || object.id || '').slice(0, 160),
+      message: String(object.last_payment_error?.message || object.failure_message || 'Stripe決済が失敗しました。').slice(0, 500),
+      metadata: { objectId: String(object.id || ''), livemode: Boolean(event.livemode) },
+    });
+  }
+  return liveJson({ received: true });
+}
+
+export async function verifyLiveStripeSignature(payload, signatureHeader, secret, now = Date.now()) {
+  const signatureParts = signatureHeader.split(',').map((part) => part.trim().split('=', 2));
+  const timestamp = Number(signatureParts.find(([key]) => key === 't')?.[1]);
+  const signatures = signatureParts.filter(([key, value]) => key === 'v1' && /^[a-f0-9]{64}$/i.test(value || '')).map(([, value]) => value);
+  if (!Number.isFinite(timestamp) || Math.abs(now / 1000 - timestamp) > 300 || signatures.length === 0) return false;
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const expectedBytes = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${timestamp}.${payload}`)));
+  return signatures.some((signature) => constantTimeEqual(expectedBytes, hexToBytes(signature)));
+}
+
+function hexToBytes(value) {
+  return new Uint8Array(String(value).match(/.{2}/g)?.map((pair) => Number.parseInt(pair, 16)) || []);
+}
+
+function constantTimeEqual(left, right) {
+  if (left.length !== right.length) return false;
+  let difference = 0;
+  for (let index = 0; index < left.length; index += 1) difference |= left[index] ^ right[index];
+  return difference === 0;
+}
+
 async function connectLiveGameSocket(request, env, code) {
   if (!hasLiveRealtime(env)) throw liveError('live-realtime-unavailable', 503);
   const protocols = String(request.headers.get('Sec-WebSocket-Protocol') || '').split(',').map((item) => item.trim());
@@ -333,6 +532,7 @@ async function joinLiveGame(request, env, code) {
   const realtime = hasLiveRealtime(env);
   const game = await requireLiveGame(env, code, { baseOnly: realtime && Boolean(env.REMOTE_DB) });
   if (game.phase === 'complete') throw liveError('game-finished', 409);
+  if (game.phase === 'terminated') throw liveError('game-terminated', 410);
   const body = await readLiveJson(request);
   const name = String(body && body.name || '').replace(/\s+/g, ' ').trim().slice(0, 24);
   if (!name) throw liveError('name-required', 400);
@@ -642,6 +842,8 @@ export function publicLiveGame(game, access = {}) {
     subjectName: game.subjectName,
     flowVersion,
     phase: game.phase,
+    terminated: game.phase === 'terminated',
+    terminationMessage: game.phase === 'terminated' ? String(game.terminationMessage || '') : undefined,
     currentQuestionIndex: game.currentQuestionIndex,
     questionCount: game.questions.length,
     participantCount: Number.isInteger(game.participantCount) ? game.participantCount : participants.length,

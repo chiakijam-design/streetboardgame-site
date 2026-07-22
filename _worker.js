@@ -83,6 +83,23 @@ export default {
       return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
     }
 
+    if (rawPath !== '/' && rawPath.endsWith('/') && path === '/live-ops') {
+      return Response.redirect(url.origin + path, 301);
+    }
+
+    if (path === '/live-ops') {
+      const opsUrl = new URL('/live_ops.html', url.origin);
+      const response = await env.ASSETS.fetch(new Request(opsUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+      headers.set('cache-control', 'no-store');
+      return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
+    }
+
     const cleanLegalPath = Object.entries(LEGAL_PAGE_FILES)
       .find(([, file]) => rawPath === file)?.[0];
     if (cleanLegalPath) {

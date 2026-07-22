@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#172033">
+  <title>LIVE運営コンソール | Streetboardgame</title>
+  <style>
+    :root{--ink:#172033;--paper:#f7f8fc;--pink:#ec4f88;--cyan:#5bd4e8;--yellow:#ffe26b;--red:#c5294c;--green:#16805d;--muted:#667085}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.shell{width:min(1180px,100%);margin:auto;padding:18px 14px 70px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.top a{color:var(--ink);font-weight:800}.hero{margin-top:14px;padding:22px;border:3px solid var(--ink);border-radius:18px;background:var(--ink);color:#fff;box-shadow:6px 6px 0 var(--cyan)}h1{margin:0 0 6px;font-size:clamp(25px,6vw,42px)}h2{margin:0 0 12px;font-size:20px}.hero p,.help{margin:4px 0;color:#d9deea;font-size:13px;line-height:1.6}.help{color:var(--muted)}.panel{margin-top:18px;padding:18px;border:2px solid var(--ink);border-radius:16px;background:#fff;box-shadow:4px 4px 0 var(--ink)}.grid{display:grid;gap:14px}.grid.two{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.field{display:grid;gap:5px;margin-top:10px}.field label{font-size:12px;font-weight:800}input,select,textarea{width:100%;min-height:44px;padding:9px 11px;border:2px solid var(--ink);border-radius:9px;background:#fff}textarea{min-height:90px;resize:vertical}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.button{min-height:42px;padding:8px 12px;border:2px solid var(--ink);border-radius:9px;background:var(--yellow);color:var(--ink);font-weight:900;box-shadow:2px 2px 0 var(--ink)}.button.secondary{background:#fff}.button.danger{background:#ffe4e9;color:#8c1732}.button.good{background:#dff8ef;color:#0a6446}.button:disabled{opacity:.5;cursor:not-allowed}.status{padding:10px;border:2px solid var(--ink);border-radius:10px;background:#eefcff;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}.status.error{background:#ffe4e9;color:#8c1732}.cards{display:grid;gap:10px}.card{padding:13px;border:2px solid #ccd2df;border-radius:11px;background:#fff}.card strong{display:block}.meta{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.55}.pill{display:inline-flex;margin:0 5px 4px 0;padding:3px 8px;border-radius:999px;background:#e9edf5;font-size:11px;font-weight:800}.pill.critical{background:#ffe4e9;color:#8c1732}.pill.warning{background:#fff1bd}.pill.info{background:#dff8ef}.metric{padding:14px;border:2px solid var(--ink);border-radius:12px;background:#fff}.metric b{display:block;font-size:27px}.empty{padding:18px;border:2px dashed #b8c0d1;border-radius:10px;color:var(--muted);text-align:center}.secret-output{margin-top:10px;padding:12px;border:2px solid var(--red);border-radius:10px;background:#fff4f6;overflow-wrap:anywhere}.secret-output a{color:#791631}code{font-family:ui-monospace,monospace}@media(max-width:560px){.panel{padding:14px}.button{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="top"><strong>Streetboardgame Operations</strong><a href="/">サイトへ</a></div>
+    <section class="hero"><h1>LIVE運営コンソール</h1><p>予約、強制終了、漏えいURL失効、購入権限、障害告知、監視イベントを一か所で扱います。</p></section>
+    <section class="panel" id="authPanel">
+      <h2>管理者認証</h2><p class="help">LIVE_ADMIN_TOKENを入力してください。値はこのタブのsessionStorageだけに保存され、URLには入りません。</p>
+      <div class="field"><label for="adminToken">管理トークン</label><input id="adminToken" type="password" autocomplete="off" spellcheck="false"></div>
+      <div class="actions"><button class="button" id="loadOps">読み込む</button><button class="button secondary" id="forgetToken">このタブから消す</button></div>
+      <div id="authStatus" class="status" hidden></div>
+    </section>
+    <div id="dashboard" hidden>
+      <section class="panel"><h2>障害時のお知らせ</h2><div class="grid two"><div class="field"><label for="statusMode">状態</label><select id="statusMode"><option value="normal">通常</option><option value="degraded">一部障害</option><option value="maintenance">メンテナンス（新規作成・参加停止）</option></select></div><div class="field"><label for="statusTitle">見出し</label><input id="statusTitle" maxlength="80"></div></div><div class="field"><label for="statusMessage">利用者への案内</label><textarea id="statusMessage" maxlength="500"></textarea></div><div class="actions"><button class="button" id="saveStatus">公開状態を更新</button></div></section>
+      <section class="panel"><h2>監視サマリー（直近15分）</h2><div class="grid two" id="metrics"></div><p class="help">Cloudflare全体の5xx・D1行数・Durable Objects使用量はCloudflare Dashboardの通知とMetricsが正です。この画面はアプリ内イベントと稼働中ルームのWebSocket切断率を表示します。</p></section>
+      <section class="panel"><h2>稼働中・予約一覧</h2><div class="cards" id="sessions"></div><div id="privateLinkOutput"></div></section>
+      <section class="panel"><h2>購入権限・返金対応</h2><div class="field"><label for="purchaseSearch">購入ID・決済ID・ルームコードで絞り込み</label><input id="purchaseSearch" autocomplete="off"></div><div class="cards" id="entitlements" style="margin-top:12px"></div><div id="entitlementOutput"></div><p class="help">「返金待ち」は購入権限を即停止します。Stripe Dashboardで実返金後に「返金完了」を押してください。</p></section>
+      <section class="panel"><h2>監視イベント</h2><div class="cards" id="events"></div></section>
+    </div>
+  </main>
+  <script data-build-entry="live_ops" src="/dist/live_ops-FQV5AMYN.js"></script>
+</body>
+</html>
