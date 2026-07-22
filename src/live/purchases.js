@@ -50,6 +50,15 @@ export async function ensureLivePurchaseD1(env) {
         )
       `).run(),
       db.prepare(`
+        CREATE TABLE IF NOT EXISTS live_checkout_consents (
+          order_id TEXT PRIMARY KEY,
+          terms_version TEXT NOT NULL,
+          terms_document_sha256 TEXT NOT NULL,
+          terms_accepted_at INTEGER NOT NULL,
+          created_at INTEGER NOT NULL
+        )
+      `).run(),
+      db.prepare(`
         CREATE TABLE IF NOT EXISTS live_stripe_events (
           event_id TEXT PRIMARY KEY, event_type TEXT NOT NULL,
           status TEXT NOT NULL DEFAULT 'processing', attempt_count INTEGER NOT NULL DEFAULT 1,

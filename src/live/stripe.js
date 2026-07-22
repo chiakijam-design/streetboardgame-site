@@ -26,10 +26,16 @@ export async function createLiveCheckoutSession(env, input, now = Date.now()) {
     'metadata[live_order_id]': input.orderId,
     'metadata[live_product_type]': input.productType,
     'metadata[live_room_code]': input.code,
+    'metadata[live_terms_version]': input.termsVersion,
+    'metadata[live_terms_sha256]': input.termsDocumentSha256,
+    'metadata[live_terms_accepted_at]': String(input.termsAcceptedAt),
     'payment_intent_data[transfer_group]': input.orderId,
     'payment_intent_data[metadata][live_order_id]': input.orderId,
     'payment_intent_data[metadata][live_product_type]': input.productType,
     'payment_intent_data[metadata][live_room_code]': input.code,
+    'payment_intent_data[metadata][live_terms_version]': input.termsVersion,
+    'payment_intent_data[metadata][live_terms_sha256]': input.termsDocumentSha256,
+    'payment_intent_data[metadata][live_terms_accepted_at]': String(input.termsAcceptedAt),
   });
   if (input.productType === 'result_image') {
     params.set(

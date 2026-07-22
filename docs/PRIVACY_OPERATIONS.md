@@ -30,6 +30,7 @@ npx wrangler d1 execute streetboardgame-live-purchases --remote --file migration
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0002_live_checkout_orders.sql
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0003_live_revenue_ledger.sql
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0004_live_entitlement_recovery.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0005_live_checkout_consent.sql
 ```
 
 コードは購入・ダウンロード・返金・再発行処理で`LIVE_PURCHASE_DB`を必須とする。未設定時は有料処理を503で停止し、ゲーム用D1へフォールバックしない。

@@ -8,6 +8,7 @@ import {
   LIVE_TYPE_LABELS,
   LIVE_VIEWER_LIMIT,
 } from './src/live/config.js';
+import { CHECKOUT_TERMS } from './src/live/checkout-terms-config.js';
 import { createLiveQuestion, recommendYouTubeCandidates, validateLiveDraft } from './src/live/model.js';
 import { sharePreparedImage } from './src/platform/imageSave.js';
 import { openLineShare, openXShare } from './src/platform/share.js';
@@ -74,6 +75,7 @@ const state = {
   resultViewerName: '',
   resultShareBusy: false,
   checkoutBusy: false,
+  checkoutTermsAccepted: false,
   checkoutStatusBusy: false,
   checkoutStatusAttempts: 0,
   checkoutResult: initialCheckoutResult,
@@ -1341,7 +1343,6 @@ function renderParticipant() {
           <button class="live-share-button live-share-image" id="shareLiveResultImage" type="button">結果画像を保存／送る</button>
           <div class="result-share-status" id="resultShareStatus" aria-live="polite"></div>
         </div>
-        <div class="notice">決済はStreetboardgame運営者がStripe Checkoutで受け付けます。購入前に<a href="/terms" target="_blank" rel="noopener noreferrer">利用規約</a>、<a href="/legal" target="_blank" rel="noopener noreferrer">特定商取引法に基づく表記</a>、<a href="/refund-policy" target="_blank" rel="noopener noreferrer">返金・キャンセルポリシー</a>、<a href="/privacy" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>、未成年者は<a href="/minor-policy" target="_blank" rel="noopener noreferrer">未成年者利用規定</a>をご確認ください。</div>
       </section>`;
   }
   setPage(content);
@@ -1353,6 +1354,10 @@ function renderParticipant() {
   bind('#shareLiveResultX', 'click', shareLiveResultX);
   bind('#shareLiveResultLine', 'click', shareLiveResultLine);
   bind('#shareLiveResultImage', 'click', shareLiveResultImage);
+  bind('#checkoutTermsConsent', 'change', (event) => {
+    state.checkoutTermsAccepted = event.target.checked;
+    updateCheckoutConsentControls();
+  });
   bind('#buyLiveResultImage', 'click', () => startLiveCheckout('result_image'));
   bind('#toggleLiveSupport', 'click', () => { state.supportPanelOpen = !state.supportPanelOpen; render(); });
   document.querySelectorAll('[data-live-support-amount]').forEach((button) => button.addEventListener('click', () => {
@@ -1390,14 +1395,25 @@ function liveCheckoutHtml(game) {
   }
   return `<div class="live-checkout-panel">
     ${returnMessage}
-    ${resultImageSalesEnabled ? `<div class="notice"><strong>${LIVE_RESULT_IMAGE_SERVICE.name}</strong><br>決済完了後に、チャンネル名・登録画像・LIVE配信日・入力した名前を含む${LIVE_RESULT_IMAGE_SERVICE.resolution}の高画質結果画像を生成します。ダウンロードリンクが利用可能になった時点で本サービスの提供完了となり、決済日から${LIVE_RESULT_IMAGE_SERVICE.downloadDays}日間ダウンロードできます。</div><button class="primary" id="buyLiveResultImage" type="button" ${state.checkoutBusy || !price ? 'disabled' : ''}>${state.checkoutBusy ? 'Stripeへ接続中…' : `${price.toLocaleString('ja-JP')}円で生成・ダウンロードを申し込む`}</button>` : ''}
+    <label class="agreement-check live-checkout-consent"><input id="checkoutTermsConsent" type="checkbox" ${state.checkoutTermsAccepted ? 'checked' : ''}> <span><a href="/terms" target="_blank" rel="noopener noreferrer">利用規約</a>に同意し、<a href="/legal" target="_blank" rel="noopener noreferrer">特定商取引法に基づく表記</a>、<a href="/refund-policy" target="_blank" rel="noopener noreferrer">返金・キャンセルポリシー</a>、<a href="/privacy" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>を確認しました。表示金額の決済と提供条件に同意します。未成年の場合は<a href="/minor-policy" target="_blank" rel="noopener noreferrer">未成年者利用規定</a>を確認し、保護者の同意を得ています。</span></label>
+    ${resultImageSalesEnabled ? `<div class="notice"><strong>${LIVE_RESULT_IMAGE_SERVICE.name}</strong><br>決済完了後に、チャンネル名・登録画像・LIVE配信日・入力した名前を含む${LIVE_RESULT_IMAGE_SERVICE.resolution}の高画質結果画像を生成します。ダウンロードリンクが利用可能になった時点で本サービスの提供完了となり、決済日から${LIVE_RESULT_IMAGE_SERVICE.downloadDays}日間ダウンロードできます。</div><button class="primary" id="buyLiveResultImage" type="button" ${state.checkoutBusy || !state.checkoutTermsAccepted || !price ? 'disabled' : ''}>${state.checkoutBusy ? 'Stripeへ接続中…' : `${price.toLocaleString('ja-JP')}円で生成・ダウンロードを申し込む`}</button>` : ''}
     ${supportPaymentsEnabled ? `<button class="mini live-support-toggle" id="toggleLiveSupport" type="button" aria-expanded="${state.supportPanelOpen}" aria-controls="liveSupportAmounts" ${state.checkoutBusy ? 'disabled' : ''}>♡ 応援金を送る</button>
-    ${state.supportPanelOpen ? `<div class="live-support-amounts" id="liveSupportAmounts" role="group" aria-label="応援金額を選ぶ"><strong>応援金額を選ぶ</strong>${(game.supportAmounts || []).map((amount) => `<button class="mini" data-live-support-amount="${amount}" type="button">${Number(amount).toLocaleString('ja-JP')}円</button>`).join('')}<p class="help">決済はStreetboardgame運営者が受け付け、売上の70%をYouTuberへ分配します。応援メッセージは初期版では公開されません。</p></div>` : ''}` : ''}
+    ${state.supportPanelOpen ? `<div class="live-support-amounts" id="liveSupportAmounts" role="group" aria-label="応援金額を選ぶ"><strong>応援金額を選ぶ</strong>${(game.supportAmounts || []).map((amount) => `<button class="mini" data-live-support-amount="${amount}" type="button" ${state.checkoutBusy || !state.checkoutTermsAccepted ? 'disabled' : ''}>${Number(amount).toLocaleString('ja-JP')}円</button>`).join('')}<p class="help">決済はStreetboardgame運営者が受け付け、売上の70%をYouTuberへ分配します。応援メッセージは初期版では公開されません。</p></div>` : ''}` : ''}
   </div>`;
+}
+
+function updateCheckoutConsentControls() {
+  document.querySelectorAll('#buyLiveResultImage, [data-live-support-amount]').forEach((button) => {
+    button.disabled = state.checkoutBusy || !state.checkoutTermsAccepted;
+  });
 }
 
 async function startLiveCheckout(productType, amount = null) {
   if (state.checkoutBusy || !state.game) return;
+  if (!state.checkoutTermsAccepted) {
+    state.error = '利用規約と決済条件への同意が必要です';
+    return render();
+  }
   state.checkoutBusy = true;
   state.error = '';
   render();
@@ -1410,6 +1426,9 @@ async function startLiveCheckout(productType, amount = null) {
         productType,
         amount,
         viewerName: state.resultViewerName || state.game.participantName || '視聴者',
+        termsAccepted: true,
+        termsVersion: CHECKOUT_TERMS.version,
+        termsDocumentSha256: CHECKOUT_TERMS.documentSha256,
       }),
     });
     if (!/^https:\/\/checkout\.stripe\.com\//.test(response.checkoutUrl || '')) throw new Error('stripe-checkout-response-invalid');
@@ -1917,6 +1936,7 @@ function humanError(error) {
     'contract-contact-email-required': '有効な契約連絡先メールアドレスを入力してください',
     'creator-agreement-confirmation-required': '3つの確認事項すべてへの同意が必要です',
     'paid-channel-verification-required': 'このLIVEは有料販売の本人確認・契約・Stripe審査が完了していません',
+    'checkout-terms-acceptance-required': '利用規約と決済条件への同意が必要です',
     'result-image-not-for-sale': 'このLIVEではオリジナル結果画像生成・ダウンロードサービスを利用できません',
     'invalid-support-amount': '応援金額を選び直してください',
     'live-support-checkout-not-configured': '応援金決済の本番設定が完了していません。運営へお問い合わせください',

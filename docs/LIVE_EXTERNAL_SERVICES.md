@@ -128,12 +128,13 @@ npx wrangler d1 execute streetboardgame-live-purchases --remote --file migration
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0002_live_checkout_orders.sql
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0003_live_revenue_ledger.sql
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0004_live_entitlement_recovery.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0005_live_checkout_consent.sql
 npx wrangler secret put STRIPE_SECRET_KEY
 npx wrangler secret put STRIPE_WEBHOOK_SECRET
 npx wrangler secret put LIVE_PURCHASE_ACCESS_SECRET
 ```
 
-ゲーム用D1には通常マイグレーションを順番に適用し、字幕由来の内輪問題生成には`migrations/0009_live_youtube_caption_sources.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0004_live_entitlement_recovery.sql`までを順番に適用する。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入メールは平文保存せず、サーバー秘密鍵によるHMAC-SHA-256だけを購入権限へ保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
+ゲーム用D1には通常マイグレーションを順番に適用し、字幕由来の内輪問題生成には`migrations/0009_live_youtube_caption_sources.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0005_live_checkout_consent.sql`までを順番に適用する。`live_checkout_consents`はWorkerも`CREATE TABLE IF NOT EXISTS`で初期化するため既存注文表は停止させないが、環境構築の証跡としてマイグレーション適用履歴を残す。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入メールは平文保存せず、サーバー秘密鍵によるHMAC-SHA-256だけを購入権限へ保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
 
 ## 6. Stripe Webhook接続時の手順
 

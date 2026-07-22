@@ -174,10 +174,13 @@ export async function getLiveOpsOverview(env) {
     : Promise.resolve({ results: [] });
   const checkoutsPromise = purchaseDb
     ? ensureLivePurchaseD1(env).then(() => purchaseDb.prepare(`
-        SELECT order_id, product_type, code, participant_name, amount, currency,
-          creator_amount, platform_amount, purchase_id, stripe_checkout_session_id,
-          stripe_payment_intent_id, stripe_refund_id, status, paid_at, refunded_at, created_at, updated_at
-        FROM live_checkout_orders ORDER BY updated_at DESC LIMIT 100
+        SELECT o.order_id, o.product_type, o.code, o.participant_name, o.amount, o.currency,
+          o.creator_amount, o.platform_amount, o.purchase_id, o.stripe_checkout_session_id,
+          o.stripe_payment_intent_id, o.stripe_refund_id, c.terms_version, c.terms_document_sha256,
+          c.terms_accepted_at, o.status, o.paid_at, o.refunded_at, o.created_at, o.updated_at
+        FROM live_checkout_orders o
+        LEFT JOIN live_checkout_consents c ON c.order_id = o.order_id
+        ORDER BY o.updated_at DESC LIMIT 100
       `).all())
     : Promise.resolve({ results: [] });
   const revenuePromise = purchaseDb

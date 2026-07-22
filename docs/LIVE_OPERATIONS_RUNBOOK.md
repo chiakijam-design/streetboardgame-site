@@ -21,6 +21,9 @@ npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0006_l
 npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0007_live_abuse_prevention.sql
 npx wrangler d1 execute streetboardgame-remote --remote --file migrations/0008_live_creator_agreements.sql
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0002_live_checkout_orders.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0003_live_revenue_ledger.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0004_live_entitlement_recovery.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0005_live_checkout_consent.sql
 ```
 
 荒らし・なりすまし・不適切画像・カード不正利用への対応は[`LIVE_ABUSE_PREVENTION.md`](LIVE_ABUSE_PREVENTION.md)を使用する。初期版の応援メッセージは公開せず、YouTuber招待は二要素認証済みの運営コンソールから手動審査後にだけ発行する。

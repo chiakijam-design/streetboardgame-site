@@ -25,7 +25,7 @@ LIVEのリアルタイム投票は`wrangler.jsonc`に定義した2種類のDurab
 
 YouTube Data API v3、チャンネル所有確認、字幕由来の内輪問題生成、非公開R2、Cloudflare Images、有料画像権限を有効化する場合は、先に[`docs/LIVE_EXTERNAL_SERVICES.md`](docs/LIVE_EXTERNAL_SERVICES.md)の資格情報・OAuth審査・バインディングと、ゲーム用D1の`0009_live_youtube_caption_sources.sql`までの適用を完了する。R2バケット作成前に`wrangler.jsonc`の`LIVE_MEDIA`コメントを外すとデプロイが失敗するため、作成と契約を先に行う。
 
-LIVE運営コンソール、障害告知、Stripe Checkout・Webhook・返金・70%月次分配、WebSocket切断率監視、招待・手動審査・収益分配規約同意は、[`docs/LIVE_OPERATIONS_RUNBOOK.md`](docs/LIVE_OPERATIONS_RUNBOOK.md)と[`docs/LIVE_ABUSE_PREVENTION.md`](docs/LIVE_ABUSE_PREVENTION.md)に従い、ゲーム用D1へ`0009_live_youtube_caption_sources.sql`まで、購入用D1へ`migrations-purchases/0004_live_entitlement_recovery.sql`まで適用し、`LIVE_ADMIN_TOKEN`、`LIVE_OPS_ALERT_WEBHOOK_URL`、`STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`、`LIVE_PURCHASE_ACCESS_SECRET`を設定する。本番ではE2E専用の`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定してはならない。
+LIVE運営コンソール、障害告知、Stripe Checkout・Webhook・返金・70%月次分配、WebSocket切断率監視、招待・手動審査・収益分配規約同意は、[`docs/LIVE_OPERATIONS_RUNBOOK.md`](docs/LIVE_OPERATIONS_RUNBOOK.md)と[`docs/LIVE_ABUSE_PREVENTION.md`](docs/LIVE_ABUSE_PREVENTION.md)に従い、ゲーム用D1へ`0009_live_youtube_caption_sources.sql`まで、購入用D1へ`migrations-purchases/0005_live_checkout_consent.sql`まで適用し、`LIVE_ADMIN_TOKEN`、`LIVE_OPS_ALERT_WEBHOOK_URL`、`STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`、`LIVE_PURCHASE_ACCESS_SECRET`を設定する。本番ではE2E専用の`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定してはならない。
 
 ## Manual GitHub Flow
 

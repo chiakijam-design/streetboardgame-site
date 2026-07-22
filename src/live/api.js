@@ -1,4 +1,5 @@
 import { calculateLiveResult, validateLiveDraft } from './model.js';
+import { assertCheckoutConsent } from './checkout-consent.js';
 import {
   LIVE_FALLBACK_VIEWER_LIMIT,
   LIVE_RESERVATION_BUFFER_HOURS,
@@ -554,6 +555,7 @@ async function createLiveCheckout(request, env, code) {
   const checkoutRequestId = String(request.headers.get('x-live-checkout-request') || '');
   if (!/^[a-f0-9]{32,80}$/i.test(checkoutRequestId)) throw liveError('checkout-request-id-required', 400);
   const body = await readLiveJson(request);
+  const checkoutConsent = assertCheckoutConsent(body);
   const productType = String(body.productType || '');
   if (productType === 'support') {
     if (!liveSupportCheckoutConfigured(env)) throw liveError('live-support-checkout-not-configured', 503);
@@ -608,9 +610,17 @@ async function createLiveCheckout(request, env, code) {
       allocation.creatorAmount, allocation.applicationFeeAmount, now, now,
     ).run();
   }
+  await purchaseDb.prepare(`
+    INSERT OR IGNORE INTO live_checkout_consents (
+      order_id, terms_version, terms_document_sha256, terms_accepted_at, created_at
+    ) VALUES (?, ?, ?, ?, ?)
+  `).bind(orderId, checkoutConsent.termsVersion, checkoutConsent.termsDocumentSha256, now, now).run();
   try {
     const session = await createLiveCheckoutSession(env, {
       requestUrl: request.url, orderId, productType, code, amount, productName,
+      termsVersion: checkoutConsent.termsVersion,
+      termsDocumentSha256: checkoutConsent.termsDocumentSha256,
+      termsAcceptedAt: now,
     }, now);
     if (!/^cs_(?:test_|live_)?[A-Za-z0-9_]+$/.test(String(session.id || '')) || !/^https:\/\/checkout\.stripe\.com\//.test(String(session.url || ''))) {
       throw liveError('stripe-checkout-response-invalid', 502);

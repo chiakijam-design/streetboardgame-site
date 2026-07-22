@@ -10,6 +10,7 @@ import {
   retrieveLiveStripeCharge,
 } from '../../src/live/stripe.js';
 import { LIVE_RESULT_IMAGE_SERVICE } from '../../src/live/config.js';
+import { CHECKOUT_TERMS } from '../../src/live/checkout-terms-config.js';
 
 test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キーをStripeへ送る', async () => {
   let captured;
@@ -21,6 +22,8 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
     requestUrl: 'https://www.streetboardgame.com/api/live/games/123456/checkout',
     orderId: 'ord_test01', productType: 'result_image', code: '123456', amount: 1000,
     productName: `テストチャンネル ${LIVE_RESULT_IMAGE_SERVICE.name}`,
+    termsVersion: CHECKOUT_TERMS.version, termsDocumentSha256: CHECKOUT_TERMS.documentSha256,
+    termsAcceptedAt: 1_800_000_000_000,
   }, 1_800_000_000_000);
   assert.equal(session.id, 'cs_test_checkout01');
   assert.equal(captured.url, 'https://api.stripe.com/v1/checkout/sessions');
@@ -31,6 +34,10 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
   assert.equal(captured.params.get('line_items[0][price_data][tax_behavior]'), 'inclusive');
   assert.equal(captured.params.get('line_items[0][price_data][product_data][name]'), `テストチャンネル ${LIVE_RESULT_IMAGE_SERVICE.name}`);
   assert.equal(captured.params.get('metadata[live_order_id]'), 'ord_test01');
+  assert.equal(captured.params.get('metadata[live_terms_version]'), CHECKOUT_TERMS.version);
+  assert.equal(captured.params.get('metadata[live_terms_sha256]'), CHECKOUT_TERMS.documentSha256);
+  assert.equal(captured.params.get('metadata[live_terms_accepted_at]'), '1800000000000');
+  assert.equal(captured.params.get('payment_intent_data[metadata][live_terms_version]'), CHECKOUT_TERMS.version);
   assert.equal(captured.params.get('payment_intent_data[transfer_group]'), 'ord_test01');
   assert.equal(captured.params.has('payment_intent_data[transfer_data][destination]'), false);
   assert.match(captured.params.get('payment_intent_data[description]'), /\/live\?recover=1/);
@@ -48,11 +55,14 @@ test('応援金Checkoutは選択金額と応援商品名をStripeへ送り、画
     requestUrl: 'https://www.streetboardgame.com/api/live/games/123456/checkout',
     orderId: 'ord_support01', productType: 'support', code: '123456', amount: 500,
     productName: 'テストチャンネル LIVE応援',
+    termsVersion: CHECKOUT_TERMS.version, termsDocumentSha256: CHECKOUT_TERMS.documentSha256,
+    termsAcceptedAt: 1_800_000_000_000,
   }, 1_800_000_000_000);
   assert.equal(session.id, 'cs_test_support01');
   assert.equal(captured.params.get('line_items[0][price_data][unit_amount]'), '500');
   assert.equal(captured.params.get('line_items[0][price_data][product_data][name]'), 'テストチャンネル LIVE応援');
   assert.equal(captured.params.get('metadata[live_product_type]'), 'support');
+  assert.equal(captured.params.get('metadata[live_terms_version]'), CHECKOUT_TERMS.version);
   assert.equal(captured.params.has('payment_intent_data[description]'), false);
 });
 

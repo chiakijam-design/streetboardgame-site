@@ -38,6 +38,7 @@ test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2
   assert.equal(summary.anonymizedPurchases, 2);
   assert.equal(summary.anonymizedCheckoutOrders, 1);
   assert.equal(summary.deletedPurchaseRecords, 1);
+  assert.equal(summary.deletedCheckoutConsents, 1);
   assert.equal(summary.deletedCheckoutOrders, 1);
   assert.equal(summary.deletedStripeEvents, 2);
   assert.equal(summary.deletedOperationsLogs, 2);
@@ -68,6 +69,7 @@ class CleanupDb {
       purchase('purchase-old', 'live/results/purchase-old.svg', now - 8 * 365 * 24 * 60 * 60 * 1000),
     ] : [];
     this.checkoutOrders = kind === 'purchase' ? [{ order_id: 'order-old', participant_name: '視聴者', viewer_name: '視聴者', paid_at: now - 40 * 24 * 60 * 60 * 1000, created_at: now - 8 * 365 * 24 * 60 * 60 * 1000 }] : [];
+    this.checkoutConsents = kind === 'purchase' ? [{ order_id: 'order-old' }] : [];
   }
 
   prepare(sql) {
@@ -105,6 +107,12 @@ class CleanupDb {
           const before = db.checkoutOrders.length;
           db.checkoutOrders = db.checkoutOrders.filter((item) => item.created_at >= db.now - 7 * 365 * 24 * 60 * 60 * 1000);
           return { meta: { changes: before - db.checkoutOrders.length } };
+        }
+        if (/DELETE FROM live_checkout_consents/i.test(normalized)) {
+          const before = db.checkoutConsents.length;
+          const expiredOrderIds = new Set(db.checkoutOrders.filter((item) => item.created_at < db.now - 7 * 365 * 24 * 60 * 60 * 1000).map((item) => item.order_id));
+          db.checkoutConsents = db.checkoutConsents.filter((item) => !expiredOrderIds.has(item.order_id));
+          return { meta: { changes: before - db.checkoutConsents.length } };
         }
         if (/DELETE FROM live_stripe_events/i.test(normalized)) return { meta: { changes: 2 } };
         if (/DELETE FROM live_ops_events/i.test(normalized)) return { meta: { changes: 2 } };

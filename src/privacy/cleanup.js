@@ -122,6 +122,11 @@ async function cleanupPurchaseDatabase(env, now, summary) {
     WHERE paid_at IS NOT NULL AND paid_at < ? AND (participant_name <> '' OR viewer_name <> '')
   `, [now, now - PRIVACY_RETENTION.paidAssetDays * DAY_MS]);
   summary.anonymizedCheckoutOrders = changes(anonymizedOrders);
+  const deletedCheckoutConsents = await safeRun(db, `
+    DELETE FROM live_checkout_consents
+    WHERE order_id IN (SELECT order_id FROM live_checkout_orders WHERE created_at < ?)
+  `, [purchaseCutoff]);
+  summary.deletedCheckoutConsents = changes(deletedCheckoutConsents);
   const deletedOrders = await safeRun(db, 'DELETE FROM live_checkout_orders WHERE created_at < ?', [purchaseCutoff]);
   summary.deletedCheckoutOrders = changes(deletedOrders);
   await safeRun(db, `
