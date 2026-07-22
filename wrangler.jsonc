@@ -4,6 +4,8 @@
   "name": "streetboardgame",
   "compatibility_date": "2025-01-01",
   "main": "./_worker.js",
+  // 負荷試験後に1,000→5,000→10,000と段階的に設定する。未設定時は50人。
+  // "vars": { "LIVE_OPERATIONAL_VIEWER_LIMIT": "1000" },
   "assets": {
     "directory": "./",
     "binding": "ASSETS"

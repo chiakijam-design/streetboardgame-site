@@ -21,7 +21,7 @@ This site is designed to deploy as static assets with Cloudflare Workers routing
 
 Do not ignore `wrangler.jsonc`; it contains the `ASSETS` binding and Worker entry point.
 
-LIVEのリアルタイム投票は`wrangler.jsonc`に定義した2種類のDurable Objectsと、SQLiteストレージを指定した`exports`を使用する。これらのバインディングがない環境では安全のため従来ポーリングへ戻り、視聴者上限は50人になる。デプロイ後は契約環境でWebSocket接続と段階負荷試験を確認してから、1万人枠を本番企画へ案内する。
+LIVEのリアルタイム投票は`wrangler.jsonc`に定義した2種類のDurable Objectsと、SQLiteストレージを指定した`exports`を使用する。これらのバインディングがない環境、または`LIVE_OPERATIONAL_VIEWER_LIMIT`が未設定の環境では安全のため視聴者上限は50人になる。デプロイ後は契約環境でWebSocket接続と段階負荷試験を確認し、環境変数を1,000、5,000、10,000と引き上げてから1万人枠を本番企画へ案内する。
 
 ## Manual GitHub Flow
 

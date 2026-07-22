@@ -13,7 +13,10 @@ export function hasLiveRealtime(env) {
 }
 
 export function liveViewerLimit(env) {
-  return hasLiveRealtime(env) ? LIVE_VIEWER_LIMIT : LIVE_FALLBACK_VIEWER_LIMIT;
+  if (!hasLiveRealtime(env)) return LIVE_FALLBACK_VIEWER_LIMIT;
+  const configuredLimit = Number(env?.LIVE_OPERATIONAL_VIEWER_LIMIT);
+  if (!Number.isFinite(configuredLimit)) return LIVE_FALLBACK_VIEWER_LIMIT;
+  return Math.min(LIVE_VIEWER_LIMIT, Math.max(1, Math.floor(configuredLimit)));
 }
 
 export function liveShardIndexForToken(token) {
@@ -31,7 +34,11 @@ export async function initializeLiveRealtime(env, code) {
 export async function reserveLiveRealtimeParticipant(env, code, participantToken) {
   if (!hasLiveRealtime(env)) return null;
   const shardIndex = liveShardIndexForToken(participantToken);
-  const response = await coordinatorStub(env, code).fetch(`${INTERNAL_ORIGIN}/reserve`, internalJson({ code, shardIndex }));
+  const response = await coordinatorStub(env, code).fetch(`${INTERNAL_ORIGIN}/reserve`, internalJson({
+    code,
+    shardIndex,
+    viewerLimit: liveViewerLimit(env),
+  }));
   const data = await response.json();
   if (!response.ok) throw realtimeError(data.error || 'participant-limit-reached', response.status);
   return { shardIndex, participantCount: Number(data.participantCount) || 0 };
@@ -142,12 +149,16 @@ export class LiveRoomCoordinator {
       return json({ initialized: true });
     }
     if (url.pathname === '/reserve' && request.method === 'POST') {
-      const { code, shardIndex } = await request.json();
+      const { code, shardIndex, viewerLimit } = await request.json();
+      const operationalLimit = Math.min(
+        LIVE_VIEWER_LIMIT,
+        Math.max(1, Math.floor(Number(viewerLimit) || LIVE_FALLBACK_VIEWER_LIMIT)),
+      );
       const result = await this.ctx.storage.transaction(async (storage) => {
         const participantCount = Number(await storage.get('participantCount')) || 0;
         const shardKey = `shard:${Number(shardIndex)}:count`;
         const shardCount = Number(await storage.get(shardKey)) || 0;
-        if (participantCount >= LIVE_VIEWER_LIMIT || shardCount >= LIVE_REALTIME_SHARD_CAPACITY) return null;
+        if (participantCount >= operationalLimit || shardCount >= LIVE_REALTIME_SHARD_CAPACITY) return null;
         await storage.put({ code, participantCount: participantCount + 1, [shardKey]: shardCount + 1 });
         return participantCount + 1;
       });
