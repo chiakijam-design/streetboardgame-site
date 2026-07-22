@@ -8,7 +8,28 @@
   // "vars": { "LIVE_OPERATIONAL_VIEWER_LIMIT": "1000" },
   "assets": {
     "directory": "./",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // HTMLだけWorkerを先に通し、nonce付きCSPを適用する。JS・CSS・画像はAssetsの直配信を維持する。
+    "run_worker_first": [
+      "/",
+      "/*.html",
+      "/love", "/love/",
+      "/friends", "/friends/",
+      "/family", "/family/",
+      "/live-guide", "/live-guide/",
+      "/about", "/about/",
+      "/product", "/product/",
+      "/remote", "/remote/",
+      "/live", "/live/",
+      "/live-ops", "/live-ops/",
+      "/terms", "/terms/",
+      "/privacy", "/privacy/",
+      "/legal", "/legal/",
+      "/creator-terms", "/creator-terms/",
+      "/refund-policy", "/refund-policy/",
+      "/content-guidelines", "/content-guidelines/",
+      "/minor-policy", "/minor-policy/"
+    ]
   },
   "triggers": {
     // 期限切れD1データとR2画像を毎時削除・匿名化する。
