@@ -1,8 +1,4 @@
-import {
-  LIVE_CREATOR_IMAGE_MAX_LENGTH,
-  LIVE_QUESTION_TYPES,
-  LIVE_RESERVATION_MAX_DAYS,
-} from './config.js';
+import { LIVE_QUESTION_TYPES, LIVE_RESERVATION_MAX_DAYS } from './config.js';
 
 export const LIVE_TYPE_VALUES = Object.freeze(LIVE_QUESTION_TYPES.map(({ value }) => value));
 
@@ -53,8 +49,11 @@ export function validateLiveDraft(input, options = {}) {
     title: normalizeText(source.title, 80),
     subjectName: normalizeText(source.subjectName, 40),
     channelName: normalizeText(source.channelName, 80),
+    channelId: /^UC[A-Za-z0-9_-]{10,}$/.test(String(source.channelId || '')) ? String(source.channelId) : '',
+    channelVerificationId: /^[a-f0-9]{24,64}$/i.test(String(source.channelVerificationId || ''))
+      ? String(source.channelVerificationId)
+      : '',
     scheduledAt: normalizeTimestamp(source.scheduledAt),
-    creatorImageDataUrl: normalizeCreatorImage(source.creatorImageDataUrl),
     showLiveVoteCounts: source.showLiveVoteCounts === true,
     questions,
   };
@@ -67,9 +66,6 @@ export function validateLiveDraft(input, options = {}) {
     errors.push('予約日時は現在より後を選んでください');
   } else if (creationMode === 'youtube' && draft.scheduledAt > now + LIVE_RESERVATION_MAX_DAYS * 24 * 60 * 60 * 1000) {
     errors.push(`予約日時は${LIVE_RESERVATION_MAX_DAYS}日以内を選んでください`);
-  }
-  if (source.creatorImageDataUrl && !draft.creatorImageDataUrl) {
-    errors.push('登録画像はJPEG・PNG・WebP形式で選び直してください');
   }
   if (questions.length < 1) errors.push('問題を1問以上作ってください');
   if (creationMode === 'youtube' && questions.length > 30) errors.push('YouTubeモードの問題は30問以内にしてください');
@@ -148,12 +144,6 @@ function normalizeId(value) {
 function normalizeTimestamp(value) {
   const timestamp = Number(value);
   return Number.isFinite(timestamp) && timestamp > 0 ? Math.trunc(timestamp) : 0;
-}
-
-function normalizeCreatorImage(value) {
-  const dataUrl = String(value || '');
-  if (!/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(dataUrl)) return '';
-  return dataUrl.length <= LIVE_CREATOR_IMAGE_MAX_LENGTH ? dataUrl : '';
 }
 
 function createClientId() {

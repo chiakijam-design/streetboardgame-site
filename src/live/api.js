@@ -17,6 +17,25 @@ import {
   reserveLiveRealtimeParticipant,
   storeLiveRealtimeVote,
 } from './realtime.js';
+import { fetchYouTubeDataProfile, normalizeYouTubeInput } from './youtube.js';
+import {
+  createFreeResultPreview,
+  createPaidResultAsset,
+  createSignedDownloadUrl,
+  storePrivateCreatorImage,
+  streamPrivateResult,
+  verifySignedDownload,
+} from './media.js';
+import {
+  assertPaidChannelApproved,
+  completeYouTubeOAuth,
+  createChannelVerification,
+  getChannelVerification,
+  requestManualReview,
+  reviewChannelVerification,
+  startYouTubeOAuth,
+  verifyChannelDescription,
+} from './ownership.js';
 
 const LIVE_ACTIVE_TTL_SECONDS = 60 * 60 * 24;
 const LIVE_SAVED_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -30,7 +49,44 @@ export async function handleLiveApi(request, env, path) {
   try {
     if (path === '/api/live/youtube-candidates' && request.method === 'POST') {
       await enforceLiveRateLimit(request, env, 'youtube', 15);
-      return await createYouTubeCandidatesResponse(request);
+      return await createYouTubeCandidatesResponse(request, env);
+    }
+    if (path === '/api/live/channel-verifications/oauth/callback' && request.method === 'GET') {
+      return await completeYouTubeOAuth(request, env);
+    }
+    if (path === '/api/live/channel-verifications' && request.method === 'POST') {
+      await enforceLiveRateLimit(request, env, 'channel-verification', 10);
+      await ensureLiveD1(env);
+      return await createChannelVerification(request, env);
+    }
+    const verificationRoute = path.match(/^\/api\/live\/channel-verifications\/([a-f0-9]{32})(?:\/(verify-description|manual-review|oauth-start))?$/i);
+    if (verificationRoute) {
+      await ensureLiveD1(env);
+      const [, verificationId, action = ''] = verificationRoute;
+      if (request.method === 'GET' && !action) return await getChannelVerification(request, env, verificationId);
+      if (request.method === 'POST' && action === 'verify-description') return await verifyChannelDescription(request, env, verificationId);
+      if (request.method === 'POST' && action === 'manual-review') return await requestManualReview(request, env, verificationId);
+      if (request.method === 'POST' && action === 'oauth-start') return await startYouTubeOAuth(request, env, verificationId);
+      return liveJson({ error: 'method-not-allowed' }, 405);
+    }
+    const verificationAdminRoute = path.match(/^\/api\/live\/admin\/channel-verifications\/([a-f0-9]{32})\/review$/i);
+    if (verificationAdminRoute && request.method === 'POST') {
+      await ensureLiveD1(env);
+      return await reviewChannelVerification(request, env, verificationAdminRoute[1]);
+    }
+    if (path === '/api/live/admin/result-entitlements' && request.method === 'POST') {
+      await ensureLiveD1(env);
+      return await grantLiveResultEntitlement(request, env);
+    }
+    const entitlementRoute = path.match(/^\/api\/live\/result-entitlements\/([A-Za-z0-9_-]{8,80})$/);
+    if (entitlementRoute && request.method === 'GET') {
+      await ensureLiveD1(env);
+      return await getLiveResultEntitlement(request, env, entitlementRoute[1]);
+    }
+    const downloadRoute = path.match(/^\/api\/live\/downloads\/([A-Za-z0-9_-]{8,80})$/);
+    if (downloadRoute && request.method === 'GET') {
+      await ensureLiveD1(env);
+      return await downloadLiveResult(request, env, downloadRoute[1]);
     }
     if (!env.REMOTE_DB && !env.LIVE_KV && !env.REMOTE_KV) {
       return liveJson({ error: 'live-storage-not-configured' }, 500);
@@ -44,12 +100,14 @@ export async function handleLiveApi(request, env, path) {
       return await createLiveGame(request, env);
     }
 
-    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|next|socket))?$/);
+    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|next|socket|creator-image|result-preview))?$/);
     if (!route) return liveJson({ error: 'not-found' }, 404);
     const [, code, action = ''] = route;
     if (request.method === 'GET' && !action) return await getLiveGameResponse(request, env, code);
     if (request.method === 'GET' && action === 'socket') return await connectLiveGameSocket(request, env, code);
+    if (request.method === 'GET' && action === 'result-preview') return await getLiveResultPreview(request, env, code);
     if (request.method !== 'POST') return liveJson({ error: 'method-not-allowed' }, 405);
+    if (action === 'creator-image') return await uploadLiveCreatorImage(request, env, code);
     if (action === 'join') {
       if (!hasLiveRealtime(env)) await enforceLiveRateLimit(request, env, 'join', 100);
       return await joinLiveGame(request, env, code);
@@ -73,7 +131,16 @@ export async function handleLiveApi(request, env, path) {
 }
 
 async function createLiveGame(request, env) {
-  const body = await readLiveJson(request);
+  let body;
+  let creatorImageFile = null;
+  if (/^multipart\/form-data/i.test(request.headers.get('content-type') || '')) {
+    const formData = await request.formData().catch(() => null);
+    try { body = JSON.parse(String(formData?.get('draft') || '{}')); } catch (error) { body = {}; }
+    const image = formData?.get('image');
+    if (image && typeof image.arrayBuffer === 'function' && Number(image.size) > 0) creatorImageFile = image;
+  } else {
+    body = await readLiveJson(request);
+  }
   if (body?.draft?.creationMode !== 'youtube') throw liveError('youtube-creation-required', 400);
   const now = Date.now();
   const validation = validateLiveDraft(body && body.draft, { now });
@@ -83,11 +150,13 @@ async function createLiveGame(request, env) {
   for (let attempt = 0; attempt < 8 && await getStoredLiveGame(env, code); attempt += 1) code = createLiveCode();
   const reservation = await reserveLiveSlot(env, code, validation.draft.scheduledAt, now);
   const game = {
-    version: 4,
+    version: 5,
     title: validation.draft.title,
     subjectName: validation.draft.subjectName,
     channelName: validation.draft.channelName || validation.draft.subjectName,
-    creatorImageDataUrl: validation.draft.creatorImageDataUrl,
+    channelId: validation.draft.channelId,
+    channelVerificationId: validation.draft.channelVerificationId,
+    creatorImage: null,
     scheduledAt: reservation.scheduledAt,
     reservationEndsAt: reservation.blockedUntil,
     questions: validation.draft.questions,
@@ -107,6 +176,7 @@ async function createLiveGame(request, env) {
     expiresAt: reservation.blockedUntil,
   };
   try {
+    if (creatorImageFile) game.creatorImage = await storePrivateCreatorImage(creatorImageFile, env, code);
     await putStoredLiveGame(env, code, game);
     if (hasLiveRealtime(env)) {
       await initializeLiveRealtime(env, code);
@@ -151,6 +221,103 @@ async function getLiveGameResponse(request, env, code) {
       participantToken,
     }),
   });
+}
+
+async function uploadLiveCreatorImage(request, env, code) {
+  const game = await requireLiveGame(env, code);
+  const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
+  if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
+  const creatorImage = await storePrivateCreatorImage(request, env, code, game.creatorImage);
+  game.creatorImage = creatorImage;
+  game.version = Math.max(5, Number(game.version) || 0);
+  touchLiveGame(game);
+  await putStoredLiveGame(env, code, game);
+  if (hasLiveRealtime(env)) await broadcastCurrentRealtimeState(env, code, game);
+  return liveJson({ code, uploaded: true, game: publicLiveGame(game, { host: true }) });
+}
+
+async function getLiveResultPreview(request, env, code) {
+  const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
+  if (!participantToken) throw liveError('participant-forbidden', 403);
+  const game = await requireLiveGame(env, code, { polling: true, participantToken });
+  if (game.phase !== 'complete') throw liveError('result-not-ready', 409);
+  const participantGame = publicLiveGame(game, { participantToken });
+  if (!participantGame.participantName) throw liveError('participant-forbidden', 403);
+  return createFreeResultPreview(request, env, game, participantGame);
+}
+
+async function grantLiveResultEntitlement(request, env) {
+  requireLiveAdmin(request, env);
+  const body = await readLiveJson(request);
+  const code = String(body.code || '');
+  const purchaseId = String(body.purchaseId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
+  const paymentIntentId = String(body.stripePaymentIntentId || '');
+  const participantToken = normalizeToken(body.participantToken);
+  if (!LIVE_CODE_PATTERN.test(code) || purchaseId.length < 8 || !/^pi_[A-Za-z0-9_]+$/.test(paymentIntentId) || !participantToken) {
+    throw liveError('invalid-entitlement', 400);
+  }
+  const game = await requireLiveGame(env, code, { polling: true, participantToken });
+  if (game.phase !== 'complete') throw liveError('result-not-ready', 409);
+  await assertPaidChannelApproved(env, game.channelVerificationId, game.channelId);
+  const participantGame = publicLiveGame(game, { participantToken });
+  if (!participantGame.participantName) throw liveError('participant-forbidden', 403);
+  const participant = game.participants.find((item) => item.token === participantToken);
+  const accessToken = createLiveToken(32);
+  const now = Date.now();
+  const availableUntil = now + 30 * 24 * 60 * 60 * 1000;
+  const assetKey = await createPaidResultAsset(
+    request,
+    env,
+    game,
+    participantGame,
+    purchaseId,
+    String(body.viewerName || participant.name).replace(/\s+/g, ' ').trim().slice(0, 24),
+  );
+  await env.REMOTE_DB.prepare(`
+    INSERT INTO live_result_entitlements (
+      purchase_id, code, participant_id, participant_name, access_token_hash,
+      stripe_payment_intent_id, asset_key, status, purchased_at, available_until, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+  `).bind(
+    purchaseId,
+    code,
+    participant.id,
+    participant.name,
+    await hashLiveSecret(accessToken),
+    paymentIntentId,
+    assetKey,
+    now,
+    availableUntil,
+    now,
+    now,
+  ).run();
+  return liveJson({ purchaseId, accessToken, availableUntil }, 201);
+}
+
+async function getLiveResultEntitlement(request, env, purchaseId) {
+  const accessToken = new URL(request.url).searchParams.get('access') || '';
+  const row = await env.REMOTE_DB.prepare(`
+    SELECT purchase_id, access_token_hash, status, available_until
+    FROM live_result_entitlements WHERE purchase_id = ?
+  `).bind(purchaseId).first();
+  if (!row || !accessToken || row.access_token_hash !== await hashLiveSecret(accessToken)) throw liveError('entitlement-forbidden', 403);
+  if (row.status !== 'active' || Number(row.available_until) <= Date.now()) throw liveError('download-expired', 410);
+  return liveJson({
+    purchaseId,
+    availableUntil: Number(row.available_until),
+    downloadUrl: await createSignedDownloadUrl(request, env, purchaseId, Number(row.available_until)),
+  });
+}
+
+async function downloadLiveResult(request, env, purchaseId) {
+  const url = new URL(request.url);
+  const row = await env.REMOTE_DB.prepare(`
+    SELECT asset_key, status, available_until FROM live_result_entitlements WHERE purchase_id = ?
+  `).bind(purchaseId).first();
+  const valid = row && row.status === 'active' && Number(row.available_until) > Date.now()
+    && await verifySignedDownload(env, purchaseId, url.searchParams.get('expires'), url.searchParams.get('signature'));
+  if (!valid) throw liveError('download-forbidden', 403);
+  return streamPrivateResult(env, row.asset_key, `streetboardgame-live-${purchaseId}.svg`);
 }
 
 async function connectLiveGameSocket(request, env, code) {
@@ -489,14 +656,12 @@ export function publicLiveGame(game, access = {}) {
     realtime: Boolean(game.realtime),
     scheduledAt: Number(game.scheduledAt) || undefined,
     channelName: game.channelName || game.subjectName,
+    hasCreatorImage: Boolean(game.creatorImage?.previewKey),
     participantName: participant?.name,
     host: Boolean(access.host),
     subject: Boolean(access.subject),
     questions: access.host ? game.questions.map(({ id, type, text, options }) => ({ id, type, text, options })) : undefined,
     ...(access.host && flowVersion >= 4 ? { subjectToken: game.subjectToken } : {}),
-    ...((participant && game.phase === 'complete') && game.creatorImageDataUrl
-      ? { creatorImageDataUrl: game.creatorImageDataUrl }
-      : {}),
     expiresAt: access.host ? game.expiresAt : undefined,
   };
 }
@@ -515,29 +680,14 @@ function participantLiveResult(result, participant, votes) {
   return { ...result, myVoteIndex };
 }
 
-async function createYouTubeCandidatesResponse(request) {
+async function createYouTubeCandidatesResponse(request, env) {
   const body = await readLiveJson(request);
   const input = normalizeYouTubeInput(body && body.channelUrl);
   if (!input) throw liveError('invalid-youtube-url', 400);
   const questionType = body && body.questionType;
   if (!['guess-person', 'guess-majority'].includes(questionType)) throw liveError('invalid-youtube-question-type', 400);
   const seed = Number(body && body.seed) || 0;
-  let profile;
-  try {
-    profile = await fetchYouTubeChannelProfile(input);
-  } catch (error) {
-    if (input.kind === 'video') throw liveError('youtube-video-channel-not-found', 422);
-    const fallbackName = decodeURIComponent(new URL(input.url).pathname.split('/').filter(Boolean).pop() || 'YouTubeチャンネル');
-    profile = {
-      channelName: fallbackName.replace(/^@/, '') || 'YouTubeチャンネル',
-      channelUrl: input.url,
-      description: '',
-      videoTitles: [],
-      videoSummaries: [],
-      source: 'url-fallback',
-      inputKind: input.kind,
-    };
-  }
+  const profile = await fetchYouTubeChannelProfile(input, env);
   return liveJson({
     channelUrl: profile.channelUrl || input.url,
     profile,
@@ -555,131 +705,8 @@ export function normalizeYouTubeInputUrl(value) {
   return normalizeYouTubeInput(value)?.url || '';
 }
 
-function normalizeYouTubeInput(value) {
-  let url;
-  try {
-    const input = String(value || '').trim();
-    url = new URL(/^https?:\/\//i.test(input) ? input : `https://${input}`);
-  } catch (error) {
-    return null;
-  }
-  const hostname = url.hostname.toLowerCase().replace(/^www\./, '');
-  if (!['youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtu.be'].includes(hostname)) return null;
-  const parts = url.pathname.split('/').filter(Boolean);
-  let videoId = '';
-  if (hostname === 'youtu.be') videoId = parts[0] || '';
-  if (hostname !== 'youtu.be' && url.pathname === '/watch') videoId = url.searchParams.get('v') || '';
-  if (hostname !== 'youtu.be' && ['shorts', 'live', 'embed'].includes(parts[0])) videoId = parts[1] || '';
-  if (videoId) {
-    if (!/^[A-Za-z0-9_-]{6,15}$/.test(videoId)) return null;
-    return { kind: 'video', videoId, url: `https://www.youtube.com/watch?v=${videoId}` };
-  }
-  if (!parts.length) return null;
-  const first = parts[0];
-  const reserved = ['watch', 'shorts', 'live', 'embed', 'playlist', 'results', 'feed', 'redirect'];
-  const valid = first.startsWith('@')
-    || (['channel', 'c', 'user'].includes(first) && Boolean(parts[1]))
-    || (!reserved.includes(first.toLowerCase()) && parts.length === 1);
-  if (!valid) return null;
-  const normalizedPath = first.startsWith('@') || parts.length === 1 ? `/${first}` : `/${first}/${parts[1]}`;
-  return { kind: 'channel', url: `https://www.youtube.com${normalizedPath}` };
-}
-
-export async function fetchYouTubeChannelProfile(inputValue) {
-  const input = typeof inputValue === 'string' ? normalizeYouTubeInput(inputValue) : inputValue;
-  if (!input) throw new Error('invalid-youtube-url');
-  let channelUrl = input.url;
-  let sourceVideo = null;
-  if (input.kind === 'video') {
-    sourceVideo = await fetchYouTubeVideoSource(input);
-    channelUrl = sourceVideo.channelUrl;
-    if (!channelUrl) throw new Error('youtube-video-channel-not-found');
-  }
-
-  let channelHtml = '';
-  try {
-    channelHtml = await fetchYouTubeText(`${channelUrl}/videos`);
-  } catch (error) {
-    if (!sourceVideo) throw error;
-  }
-  const channelId = extractYouTubeChannelId(channelHtml)
-    || sourceVideo?.channelId
-    || (/\/channel\/(UC[A-Za-z0-9_-]+)/.exec(channelUrl)?.[1] || '');
-  let feedVideos = [];
-  if (channelId) {
-    try {
-      const feedXml = await fetchYouTubeText(`https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`);
-      feedVideos = extractYouTubeFeedVideos(feedXml);
-    } catch (error) {
-      feedVideos = [];
-    }
-  }
-  const pageVideos = extractYouTubeVideoEntries(channelHtml);
-  const videoSummaries = mergeYouTubeVideos(sourceVideo ? [sourceVideo] : [], feedVideos, pageVideos).slice(0, 20);
-  const pageChannelName = extractMeta(channelHtml, 'og:title') || extractHtmlTitle(channelHtml);
-  const pageDescription = extractMeta(channelHtml, 'og:description') || extractNamedMeta(channelHtml, 'description');
-  const channelName = cleanChannelName(pageChannelName || sourceVideo?.channelName || 'YouTubeチャンネル');
-  const description = decodeHtml(pageDescription || '').slice(0, 1000);
-  return {
-    channelName,
-    channelUrl,
-    channelId,
-    description,
-    videoTitles: videoSummaries.map(({ title }) => title),
-    videoSummaries,
-    videoDescriptionCount: videoSummaries.filter(({ description: videoDescription }) => Boolean(videoDescription)).length,
-    sourceVideo: sourceVideo ? {
-      title: sourceVideo.title,
-      description: sourceVideo.description,
-      keywords: sourceVideo.keywords,
-    } : null,
-    source: input.kind === 'video' ? 'youtube-video-and-channel' : 'youtube-public-page',
-    inputKind: input.kind,
-  };
-}
-
-async function fetchYouTubeVideoSource(input) {
-  let html = '';
-  try {
-    html = await fetchYouTubeText(input.url);
-  } catch (error) {
-    html = '';
-  }
-  const source = extractYouTubeVideoSource(html);
-  if (source.channelUrl) return { ...source, videoId: input.videoId };
-  const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(input.url)}&format=json`;
-  const oembed = JSON.parse(await fetchYouTubeText(oembedUrl));
-  const channelUrl = normalizeYouTubeChannelUrl(oembed.author_url || '');
-  if (!channelUrl) throw new Error('youtube-video-channel-not-found');
-  return {
-    videoId: input.videoId,
-    title: cleanYouTubeText(source.title || oembed.title || ''),
-    description: cleanYouTubeText(source.description || ''),
-    keywords: source.keywords || [],
-    channelName: cleanChannelName(source.channelName || oembed.author_name || ''),
-    channelUrl,
-    channelId: source.channelId || '',
-  };
-}
-
-async function fetchYouTubeText(url) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  let response;
-  try {
-    response = await fetch(url, {
-      headers: {
-        'user-agent': 'Mozilla/5.0 (compatible; WatachanLive/1.0; +https://www.streetboardgame.com/)',
-        'accept-language': 'ja,en;q=0.8',
-      },
-      redirect: 'follow',
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-  if (!response.ok) throw new Error('youtube-fetch-failed');
-  return response.text();
+export async function fetchYouTubeChannelProfile(inputValue, env = {}) {
+  return fetchYouTubeDataProfile(inputValue, env);
 }
 
 export function generateYouTubeQuestions(profile, seed = 0, questionType = 'guess-person') {
@@ -850,133 +877,6 @@ function normalizeYouTubeOptions(options) {
   return normalized.slice(0, 5);
 }
 
-function extractMeta(html, property) {
-  return extractTagContent(html, `property=["']${escapeRegExp(property)}["']`);
-}
-
-function extractNamedMeta(html, name) {
-  return extractTagContent(html, `name=["']${escapeRegExp(name)}["']`);
-}
-
-function extractTagContent(html, marker) {
-  const first = new RegExp(`<meta[^>]*${marker}[^>]*content=["']([^"']*)["'][^>]*>`, 'i').exec(html);
-  if (first) return decodeHtml(first[1]);
-  const second = new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*${marker}[^>]*>`, 'i').exec(html);
-  return second ? decodeHtml(second[1]) : '';
-}
-
-function extractHtmlTitle(html) {
-  const match = /<title[^>]*>([^<]*)<\/title>/i.exec(html);
-  return match ? decodeHtml(match[1]).replace(/\s*-\s*YouTube\s*$/i, '') : '';
-}
-
-export function extractYouTubeVideoSource(html) {
-  const channelId = extractYouTubeChannelId(html);
-  const ownerProfileUrl = decodeYouTubeJsonValue(firstMatch(html, [
-    /"ownerProfileUrl":"((?:\\.|[^"\\])*)"/,
-    /"vanityChannelUrl":"((?:\\.|[^"\\])*)"/,
-  ]));
-  const normalizedOwnerUrl = normalizeYouTubeChannelUrl(ownerProfileUrl.replace(/^http:/i, 'https:'));
-  const channelUrl = channelId ? `https://www.youtube.com/channel/${channelId}` : normalizedOwnerUrl;
-  const channelName = decodeYouTubeJsonValue(firstMatch(html, [
-    /"ownerChannelName":"((?:\\.|[^"\\])*)"/,
-    /"videoDetails":\{[\s\S]{0,12000}?"author":"((?:\\.|[^"\\])*)"/,
-  ]));
-  const keywordsMatch = /"videoDetails":\{[\s\S]{0,16000}?"keywords":(\[(?:"(?:\\.|[^"\\])*",?)*\])/.exec(html);
-  let keywords = [];
-  try { keywords = keywordsMatch ? JSON.parse(keywordsMatch[1]).map(cleanYouTubeText).filter(Boolean).slice(0, 20) : []; } catch (error) { keywords = []; }
-  return {
-    title: cleanYouTubeText(extractMeta(html, 'og:title') || extractHtmlTitle(html)),
-    description: cleanYouTubeText(extractMeta(html, 'og:description') || extractNamedMeta(html, 'description')).slice(0, 1200),
-    keywords,
-    channelName: cleanChannelName(channelName),
-    channelUrl,
-    channelId,
-  };
-}
-
-function extractYouTubeChannelId(html) {
-  return firstMatch(html, [
-    /"videoDetails":\{[\s\S]{0,12000}?"channelId":"(UC[A-Za-z0-9_-]+)"/,
-    /"externalChannelId":"(UC[A-Za-z0-9_-]+)"/,
-    /"externalId":"(UC[A-Za-z0-9_-]+)"/,
-    /"channelId":"(UC[A-Za-z0-9_-]+)"/,
-    /"browseId":"(UC[A-Za-z0-9_-]+)"/,
-    /itemprop=["']channelId["'][^>]*content=["'](UC[A-Za-z0-9_-]+)["']/i,
-  ]);
-}
-
-export function extractYouTubeFeedVideos(xml) {
-  const videos = [];
-  for (const entry of String(xml || '').matchAll(/<entry>([\s\S]*?)<\/entry>/gi)) {
-    const block = entry[1];
-    const videoId = cleanYouTubeText(firstMatch(block, [/<yt:videoId>([^<]+)<\/yt:videoId>/i]));
-    const title = cleanYouTubeText(firstMatch(block, [/<media:title>([\s\S]*?)<\/media:title>/i, /<title>([\s\S]*?)<\/title>/i]));
-    const description = cleanYouTubeText(firstMatch(block, [/<media:description>([\s\S]*?)<\/media:description>/i])).slice(0, 1200);
-    if (title) videos.push({ videoId, title, description, keywords: [] });
-  }
-  return videos;
-}
-
-function extractYouTubeVideoEntries(html) {
-  const found = [];
-  const rendererPatterns = [
-    /"videoRenderer":\{"videoId":"([^"]+)"[\s\S]{0,2600}?"title":\{"runs":\[\{"text":"((?:\\.|[^"\\])*)"/g,
-    /"gridVideoRenderer":\{"videoId":"([^"]+)"[\s\S]{0,2600}?"title":\{"runs":\[\{"text":"((?:\\.|[^"\\])*)"/g,
-  ];
-  for (const pattern of rendererPatterns) {
-    for (const match of html.matchAll(pattern)) addYouTubeVideo(found, match[1], match[2]);
-  }
-  if (!found.length) {
-    const fallbackPattern = /"videoId":"([A-Za-z0-9_-]{6,15})"[\s\S]{0,2600}?"title":\{"runs":\[\{"text":"((?:\\.|[^"\\])*)"/g;
-    for (const match of html.matchAll(fallbackPattern)) addYouTubeVideo(found, match[1], match[2]);
-  }
-  return found;
-}
-
-function addYouTubeVideo(found, videoId, encodedTitle) {
-  const title = cleanYouTubeText(decodeYouTubeJsonValue(encodedTitle));
-  const looksLikeNavigation = /^(ショート|ホーム|動画|ライブ|再生リスト|コミュニティ|キーボード ショートカット)$/i.test(title)
-    || /のYouTube$/i.test(title);
-  if (!looksLikeNavigation && title.length >= 4 && title.length <= 100 && !found.some((video) => video.title === title)) {
-    found.push({ videoId, title, description: '', keywords: [] });
-  }
-}
-
-function mergeYouTubeVideos(...collections) {
-  const merged = [];
-  for (const video of collections.flat()) {
-    const title = cleanYouTubeText(video && video.title);
-    if (!title) continue;
-    const existing = merged.find((item) => (video.videoId && item.videoId === video.videoId) || item.title === title);
-    if (existing) {
-      if (!existing.description && video.description) existing.description = cleanYouTubeText(video.description).slice(0, 1200);
-      existing.keywords = [...new Set([...(existing.keywords || []), ...(video.keywords || [])])].slice(0, 20);
-      continue;
-    }
-    merged.push({
-      videoId: cleanYouTubeText(video.videoId || ''),
-      title,
-      description: cleanYouTubeText(video.description || '').slice(0, 1200),
-      keywords: Array.isArray(video.keywords) ? video.keywords.map(cleanYouTubeText).filter(Boolean).slice(0, 20) : [],
-    });
-  }
-  return merged;
-}
-
-function firstMatch(value, patterns) {
-  const input = String(value || '');
-  for (const pattern of patterns) {
-    const match = pattern.exec(input);
-    if (match) return match[1] || '';
-  }
-  return '';
-}
-
-function decodeYouTubeJsonValue(value) {
-  if (!value) return '';
-  try { return JSON.parse(`"${value}"`); } catch (error) { return String(value).replace(/\\\//g, '/'); }
-}
 
 function cleanYouTubeText(value) {
   return decodeHtml(String(value || '').replace(/^<!\[CDATA\[|\]\]>$/g, ''))
@@ -986,18 +886,10 @@ function cleanYouTubeText(value) {
     .trim();
 }
 
-function cleanChannelName(value) {
-  return decodeHtml(value).replace(/\s*-\s*YouTube\s*$/i, '').trim().slice(0, 80) || 'YouTubeチャンネル';
-}
-
 function decodeHtml(value) {
   return String(value || '')
     .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
     .replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-}
-
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 async function requireLiveGame(env, code, options = {}) {
@@ -1064,6 +956,27 @@ async function ensureLiveD1(env) {
           code TEXT NOT NULL UNIQUE,
           started_at INTEGER NOT NULL,
           expires_at INTEGER NOT NULL
+        )
+      `).run(),
+      env.REMOTE_DB.prepare(`
+        CREATE TABLE IF NOT EXISTS live_channel_verifications (
+          verification_id TEXT PRIMARY KEY, channel_id TEXT NOT NULL, channel_name TEXT NOT NULL,
+          channel_url TEXT NOT NULL, access_token_hash TEXT NOT NULL, confirmation_code TEXT NOT NULL,
+          ownership_status TEXT NOT NULL DEFAULT 'pending', ownership_method TEXT NOT NULL DEFAULT '',
+          stripe_account_id TEXT NOT NULL DEFAULT '', stripe_identity_verified INTEGER NOT NULL DEFAULT 0,
+          stripe_relationship_status TEXT NOT NULL DEFAULT 'pending', oauth_state_hash TEXT,
+          oauth_state_expires_at INTEGER, verified_at INTEGER, reviewed_at INTEGER,
+          reviewed_by TEXT NOT NULL DEFAULT '', request_ip TEXT NOT NULL DEFAULT '',
+          created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+        )
+      `).run(),
+      env.REMOTE_DB.prepare(`
+        CREATE TABLE IF NOT EXISTS live_result_entitlements (
+          purchase_id TEXT PRIMARY KEY, code TEXT NOT NULL, participant_id TEXT NOT NULL,
+          participant_name TEXT NOT NULL, access_token_hash TEXT NOT NULL,
+          stripe_payment_intent_id TEXT NOT NULL UNIQUE, asset_key TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'active', purchased_at INTEGER NOT NULL,
+          available_until INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
         )
       `).run(),
     ]).then(() => env.REMOTE_DB.prepare(`
@@ -1453,6 +1366,17 @@ async function enforceLiveRateLimit(request, env, scope, limit) {
   `).bind(key, windowStart, windowStart + windowMs * 2).run();
   const row = await env.REMOTE_DB.prepare('SELECT request_count FROM live_rate_limits WHERE rate_key = ?').bind(key).first();
   if (Number(row && row.request_count || 0) > limit) throw liveError('rate-limit-exceeded', 429);
+}
+
+function requireLiveAdmin(request, env) {
+  const expected = String(env.LIVE_ADMIN_TOKEN || '');
+  const actual = String(request.headers.get('x-live-admin-token') || '');
+  if (expected.length < 32 || expected !== actual) throw liveError('admin-forbidden', 403);
+}
+
+async function hashLiveSecret(value) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value || '')));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 function touchLiveGame(game) {

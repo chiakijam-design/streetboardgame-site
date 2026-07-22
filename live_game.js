@@ -1,5 +1,4 @@
 import {
-  LIVE_CREATOR_IMAGE_MAX_LENGTH,
   LIVE_POLL_INTERVAL_MS,
   LIVE_QUESTION_TYPES,
   LIVE_RESERVATION_BUFFER_HOURS,
@@ -43,6 +42,9 @@ const state = {
   scheduleChecking: false,
   resultViewerName: '',
   resultShareBusy: false,
+  creatorImageFile: null,
+  creatorImagePreviewUrl: '',
+  resultPreviewUrl: '',
   pollTimer: null,
   realtimeSocket: null,
   realtimeConnected: false,
@@ -152,7 +154,6 @@ function renderYouTubeCandidates() {
       <p class="help">「${escapeHtml(typeLabel)}」の30問から、採用する問題を1問以上、好きな数だけ選べます。このゲームではもう一方の種類とは混ざりません。</p>
       ${state.channelProfile?.inputKind === 'video' ? `<div class="notice">動画URLから投稿元の「${escapeHtml(state.channelProfile?.channelName || 'YouTubeチャンネル')}」を特定し、チャンネル内の公開動画をもとに候補を作りました。</div>` : ''}
       ${state.channelProfile?.videoTitles?.length ? `<div class="notice">公開動画 ${state.channelProfile.videoTitles.length}件の${state.channelProfile.videoDescriptionCount ? 'タイトル・公開説明' : 'タイトル'}から、このチャンネル向けのお題を作成しました。</div>` : ''}
-      ${state.channelProfile?.source === 'url-fallback' ? '<div class="notice">YouTube側から公開情報を取得できなかったため、チャンネルURLの名前を使った候補を作成しました。</div>' : ''}
       <div class="actions">
         <button class="secondary" id="autoRecommend">おすすめ問題を自動選択</button>
         <button class="mini" id="backYoutube">URLを変更</button>
@@ -181,8 +182,9 @@ function renderYouTubeCandidates() {
       title: `${state.channelProfile?.channelName || 'YouTube'} ${LIVE_SERIES.name}`,
       subjectName: state.channelProfile?.channelName || '',
       channelName: state.channelProfile?.channelName || '',
+      channelId: state.channelProfile?.channelId || '',
+      channelVerificationId: '',
       scheduledAt: 0,
-      creatorImageDataUrl: '',
       showLiveVoteCounts: false,
       questions: selected.map((question) => createLiveQuestion({ ...question, id: undefined })),
     };
@@ -280,7 +282,8 @@ function renderEditor() {
           <label for="creatorImage">結果画像に入れるYouTuber画像</label>
           <input id="creatorImage" type="file" accept="image/jpeg,image/png,image/webp">
           <p class="help">似顔絵・宣材写真などを登録できます。結果画像では通常の黒髪の女の子と差し替えます。中央に人物が写った正方形に近い画像がおすすめです。</p>
-          ${state.draft.creatorImageDataUrl ? `<div class="creator-image-preview"><img src="${escapeAttr(state.draft.creatorImageDataUrl)}" alt="登録したYouTuber画像"><button class="mini" id="removeCreatorImage" type="button">画像を外す</button></div>` : '<div class="notice">画像を登録しない場合は、従来の黒髪の女の子を表示します。</div>'}
+          ${state.creatorImagePreviewUrl ? `<div class="creator-image-preview"><img src="${escapeAttr(state.creatorImagePreviewUrl)}" alt="登録するYouTuber画像"><button class="mini" id="removeCreatorImage" type="button">画像を外す</button></div>` : '<div class="notice">画像を登録しない場合は、従来の黒髪の女の子を表示します。</div>'}
+          <div class="notice">元画像は視聴者へ送らず、企画保存時に非公開ストレージへ直接アップロードします。</div>
         </div>
         <div class="field editor-vote-setting"><span class="field-label">視聴者画面のライブ票数</span><label class="check"><input id="showLiveVoteCounts" type="checkbox" ${state.draft.showLiveVoteCounts ? 'checked' : ''}>全問題で選択肢別の現在票数を表示する</label><p class="help">この設定は企画全体に適用され、配信中は変更できません。</p></div>
       </div>
@@ -310,14 +313,22 @@ function renderEditor() {
     const [file] = event.target.files || [];
     if (!file) return;
     try {
-      state.draft.creatorImageDataUrl = await prepareCreatorImage(file);
+      validateCreatorImageFile(file);
+      if (state.creatorImagePreviewUrl) URL.revokeObjectURL(state.creatorImagePreviewUrl);
+      state.creatorImageFile = file;
+      state.creatorImagePreviewUrl = URL.createObjectURL(file);
       state.error = '';
     } catch (error) {
       state.error = humanError(error);
     }
     render();
   });
-  bind('#removeCreatorImage', 'click', () => { state.draft.creatorImageDataUrl = ''; render(); });
+  bind('#removeCreatorImage', 'click', () => {
+    if (state.creatorImagePreviewUrl) URL.revokeObjectURL(state.creatorImagePreviewUrl);
+    state.creatorImageFile = null;
+    state.creatorImagePreviewUrl = '';
+    render();
+  });
   bind('#showLiveVoteCounts', 'change', (event) => { state.draft.showLiveVoteCounts = event.target.checked; });
   document.querySelectorAll('[data-question-index]').forEach((card) => bindEditorCard(card));
   bind('#createGame', 'click', createGame);
@@ -416,41 +427,10 @@ async function checkScheduleAvailability() {
   render();
 }
 
-async function prepareCreatorImage(file) {
+function validateCreatorImageFile(file) {
   if (!/^image\/(?:jpeg|png|webp)$/i.test(file.type || '')) throw new Error('invalid-creator-image');
   if (Number(file.size) > 10 * 1024 * 1024) throw new Error('creator-image-too-large');
-  const objectUrl = URL.createObjectURL(file);
-  try {
-    const image = await loadImage(objectUrl);
-    const sizes = [512, 448, 384];
-    const qualities = [0.82, 0.72, 0.62];
-    for (const size of sizes) {
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      const scale = Math.max(size / image.naturalWidth, size / image.naturalHeight);
-      const width = image.naturalWidth * scale;
-      const height = image.naturalHeight * scale;
-      ctx.drawImage(image, (size - width) / 2, (size - height) / 2, width, height);
-      for (const quality of qualities) {
-        const dataUrl = canvas.toDataURL('image/webp', quality);
-        if (dataUrl.length <= LIVE_CREATOR_IMAGE_MAX_LENGTH) return dataUrl;
-      }
-    }
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-  throw new Error('creator-image-too-large');
-}
-
-function loadImage(src) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('invalid-creator-image'));
-    image.src = src;
-  });
+  if (Number(file.size) < 1) throw new Error('invalid-creator-image');
 }
 
 async function createGame() {
@@ -461,10 +441,21 @@ async function createGame() {
   button.disabled = true;
   button.textContent = '企画を保存しています…';
   try {
-    const response = await api('/api/live/games', { method: 'POST', body: JSON.stringify({ draft: validation.draft }) });
+    let body;
+    if (state.creatorImageFile) {
+      body = new FormData();
+      body.append('draft', JSON.stringify({ draft: validation.draft }));
+      body.append('image', state.creatorImageFile, state.creatorImageFile.name || 'creator-image');
+    } else {
+      body = JSON.stringify({ draft: validation.draft });
+    }
+    const response = await api('/api/live/games', { method: 'POST', body });
     state.roomCode = response.code;
     state.hostToken = response.hostToken;
     state.game = response.game;
+    if (state.creatorImagePreviewUrl) URL.revokeObjectURL(state.creatorImagePreviewUrl);
+    state.creatorImageFile = null;
+    state.creatorImagePreviewUrl = '';
     sessionStorage.setItem(`live:host:${state.roomCode}`, state.hostToken);
     history.replaceState({}, '', `/live?room=${state.roomCode}#host=${state.hostToken}`);
     state.view = 'host';
@@ -715,7 +706,7 @@ function liveResultShareContent() {
   return {
     text,
     url: `${location.origin}/live`,
-    filename: `watachan-live-result-${correctCount}-${total}.jpg`,
+    filename: `watachan-live-result-${correctCount}-${total}.svg`,
     title: `${channelName} LIVE結果`,
   };
 }
@@ -745,7 +736,12 @@ async function shareLiveResultImage() {
     const viewerName = state.resultViewerName || state.game.participantName || '視聴者';
     const src = await createLiveResultPreview(state.game, viewerName);
     const details = liveResultShareContent();
-    const result = await sharePreparedImage({ src, ...details });
+    let result;
+    try {
+      result = await sharePreparedImage({ src, ...details });
+    } finally {
+      URL.revokeObjectURL(src);
+    }
     if (status) status.textContent = result === 'downloaded' ? '結果画像を保存しました。' : '共有・保存画面を開きました。';
   } catch (error) {
     if (error?.name !== 'AbortError' && status) status.textContent = '画像を準備できませんでした。もう一度お試しください。';
@@ -765,7 +761,10 @@ async function refreshLiveResultPreview() {
   status.textContent = 'プレビューを作成しています…';
   try {
     const viewerName = state.resultViewerName || state.game.participantName || '視聴者';
-    preview.src = await createLiveResultPreview(state.game, viewerName);
+    const nextUrl = await createLiveResultPreview(state.game, viewerName);
+    if (state.resultPreviewUrl) URL.revokeObjectURL(state.resultPreviewUrl);
+    state.resultPreviewUrl = nextUrl;
+    preview.src = nextUrl;
     preview.dataset.viewerName = viewerName;
     preview.dataset.channelName = state.game.channelName || state.game.subjectName || '';
     preview.dataset.liveDate = formatLiveDate(state.game.scheduledAt, false);
@@ -778,90 +777,17 @@ async function refreshLiveResultPreview() {
 }
 
 async function createLiveResultPreview(game, viewerName) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 540;
-  canvas.height = 675;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#EC4F88';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawRoundRect(ctx, 28, 28, 484, 619, 22, '#1A1A1A');
-  drawRoundRect(ctx, 38, 38, 464, 599, 18, '#FFF8F1');
-  drawRoundRect(ctx, 38, 38, 464, 88, 18, '#1A1A1A');
-
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = '900 16px "Zen Maru Gothic", sans-serif';
-  ctx.textAlign = 'left';
-  drawFittedText(ctx, game.channelName || game.subjectName || 'YouTubeチャンネル', 58, 76, 420, 20, 13);
-  ctx.fillStyle = '#5BD4E8';
-  ctx.font = '900 12px "DotGothic16", monospace';
-  ctx.fillText('LIVE RESULT', 58, 104);
-
-  const resultImage = await loadImage(game.creatorImageDataUrl || '/assets/character/girl-default.webp');
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(270, 235, 92, 0, Math.PI * 2);
-  ctx.clip();
-  const scale = Math.max(184 / resultImage.naturalWidth, 184 / resultImage.naturalHeight);
-  const imageWidth = resultImage.naturalWidth * scale;
-  const imageHeight = resultImage.naturalHeight * scale;
-  ctx.drawImage(resultImage, 270 - imageWidth / 2, 235 - imageHeight / 2, imageWidth, imageHeight);
-  ctx.restore();
-  ctx.strokeStyle = '#1A1A1A';
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.arc(270, 235, 95, 0, Math.PI * 2);
-  ctx.stroke();
-
-  const correctCount = (game.results || []).filter((result) => (
-    result.type === 'guess-person' ? result.myIsCorrect === true : result.myVoteWasPopular === true
-  )).length;
-  ctx.fillStyle = '#1A1A1A';
-  ctx.textAlign = 'center';
-  ctx.font = '900 20px "Zen Maru Gothic", sans-serif';
-  ctx.fillText(`${String(viewerName || '視聴者').trim().slice(0, 24) || '視聴者'} さんの結果`, 270, 365);
-  ctx.fillStyle = '#EC4F88';
-  ctx.font = '900 66px "RocknRoll One", sans-serif';
-  ctx.fillText(`${correctCount}/${game.questionCount || game.results.length}`, 270, 443);
-  ctx.fillStyle = '#1A1A1A';
-  ctx.font = '900 15px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('問正解', 270, 472);
-
-  drawRoundRect(ctx, 74, 497, 392, 70, 14, '#FFE26B');
-  ctx.fillStyle = '#1A1A1A';
-  ctx.font = '900 16px "Zen Maru Gothic", sans-serif';
-  ctx.fillText(formatLiveDate(game.scheduledAt, false), 270, 526);
-  ctx.font = '800 12px "Zen Maru Gothic", sans-serif';
-  ctx.fillText('視聴者参加型LIVE 記念結果', 270, 550);
-
-  ctx.save();
-  ctx.translate(270, 594);
-  ctx.rotate(-0.08);
-  ctx.globalAlpha = 0.2;
-  ctx.fillStyle = '#D63A75';
-  ctx.font = '900 42px "RocknRoll One", sans-serif';
-  ctx.fillText('SAMPLE', 0, 0);
-  ctx.restore();
-  ctx.fillStyle = '#1A1A1A';
-  ctx.font = '700 10px "DotGothic16", monospace';
-  ctx.fillText('streetboardgame.com', 270, 622);
-  return canvas.toDataURL('image/jpeg', 0.82);
-}
-
-function drawRoundRect(ctx, x, y, width, height, radius, fillStyle) {
-  ctx.beginPath();
-  ctx.roundRect(x, y, width, height, radius);
-  ctx.fillStyle = fillStyle;
-  ctx.fill();
-}
-
-function drawFittedText(ctx, text, x, y, maxWidth, startSize, minSize) {
-  let size = startSize;
-  do {
-    ctx.font = `900 ${size}px "Zen Maru Gothic", sans-serif`;
-    if (ctx.measureText(String(text)).width <= maxWidth || size <= minSize) break;
-    size -= 1;
-  } while (size >= minSize);
-  ctx.fillText(String(text), x, y);
+  const response = await fetch(`/api/live/games/${state.roomCode}/result-preview?name=${encodeURIComponent(String(viewerName || '').slice(0, 24))}`, {
+    headers: participantHeaders(),
+    cache: 'no-store',
+  });
+  if (!response.ok) {
+    const json = await response.json().catch(() => ({}));
+    const error = new Error(json.error || 'result-preview-failed');
+    error.status = response.status;
+    throw error;
+  }
+  return URL.createObjectURL(await response.blob());
 }
 
 function liveQuestionHeader(game, stage = '') {
@@ -1163,9 +1089,10 @@ function subjectHeaders() { return { 'x-live-subject-token': state.subjectToken 
 function participantHeaders() { return { 'x-live-participant-token': state.participantToken }; }
 
 async function api(path, options = {}) {
+  const contentHeaders = options.body instanceof FormData ? {} : { 'content-type': 'application/json' };
   const response = await fetch(path, {
     ...options,
-    headers: { 'content-type': 'application/json', ...(options.headers || {}) },
+    headers: { ...contentHeaders, ...(options.headers || {}) },
   });
   const json = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -1181,6 +1108,11 @@ function humanError(error) {
     'invalid-youtube-channel-url': 'YouTubeチャンネルURLまたは動画URLを確認してください',
     'invalid-youtube-url': 'YouTubeチャンネルURLまたは動画URLを確認してください',
     'youtube-video-channel-not-found': 'この動画から投稿元チャンネルを確認できませんでした。公開中の動画URLかチャンネルURLを入力してください',
+    'youtube-channel-not-found': 'YouTube公式APIでこのチャンネルを確認できませんでした。@handleまたはチャンネルID形式のURLをお試しください',
+    'youtube-channel-url-ambiguous': 'この旧形式URLはチャンネルを一意に特定できません。@handleまたはチャンネルID形式のURLを入力してください',
+    'youtube-api-not-configured': 'YouTube公式APIの設定が未完了です。運営者がAPIキーを設定するまで問題を生成できません',
+    'youtube-api-quota-exceeded': 'YouTube公式APIの本日の利用上限に達しました。時間を置いてお試しください',
+    'youtube-api-request-failed': 'YouTube公式APIから情報を取得できませんでした。URLを確認して再度お試しください',
     'youtube-creation-required': 'LIVEゲームはYouTubeチャンネルから作成してください',
     'invalid-scheduled-at': '現在より後のライブ配信日時を選んでください',
     'live-slot-unavailable': `選んだ日時の前後${LIVE_RESERVATION_BUFFER_HOURS}時間以内に別の予約があります。別の日時を選んでください`,
@@ -1188,6 +1120,7 @@ function humanError(error) {
     'participant-limit-reached': `参加上限の${Number(state.game?.participantLimit || LIVE_VIEWER_LIMIT).toLocaleString('ja-JP')}人に達したため、このルームには参加できません`,
     'invalid-creator-image': 'YouTuber画像はJPEG・PNG・WebP形式で選んでください',
     'creator-image-too-large': '画像を圧縮できませんでした。10MB以下の別画像を選んでください',
+    'live-media-not-configured': '非公開画像ストレージの設定が未完了です。画像を外すか、運営者がR2・Imagesを設定してから保存してください',
     'room-not-found': 'ルームが見つかりません。コードを確認してください',
     'name-required': '名前を入力してください',
     'game-finished': 'このゲームは終了しています',

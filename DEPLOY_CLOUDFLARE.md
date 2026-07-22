@@ -23,6 +23,8 @@ Do not ignore `wrangler.jsonc`; it contains the `ASSETS` binding and Worker entr
 
 LIVEのリアルタイム投票は`wrangler.jsonc`に定義した2種類のDurable Objectsと、SQLiteストレージを指定した`exports`を使用する。これらのバインディングがない環境、または`LIVE_OPERATIONAL_VIEWER_LIMIT`が未設定の環境では安全のため視聴者上限は50人になる。デプロイ後は契約環境でWebSocket接続と段階負荷試験を確認し、環境変数を1,000、5,000、10,000と引き上げてから1万人枠を本番企画へ案内する。
 
+YouTube Data API v3、チャンネル所有確認、非公開R2、Cloudflare Images、有料画像権限を有効化する場合は、先に[`docs/LIVE_EXTERNAL_SERVICES.md`](docs/LIVE_EXTERNAL_SERVICES.md)の資格情報・バインディング・`0005_live_paid_media.sql`の適用を完了する。R2バケット作成前に`wrangler.jsonc`の`LIVE_MEDIA`コメントを外すとデプロイが失敗するため、作成と契約を先に行う。
+
 ## Manual GitHub Flow
 
 1. Commit changes in this folder.

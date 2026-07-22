@@ -17,7 +17,6 @@ export const LIVE_REALTIME_SHARD_CAPACITY = 400;
 export const LIVE_POLL_INTERVAL_MS = 3_000;
 export const LIVE_RESERVATION_BUFFER_HOURS = 20;
 export const LIVE_RESERVATION_MAX_DAYS = 365;
-export const LIVE_CREATOR_IMAGE_MAX_LENGTH = 450_000;
 
 export const LIVE_QUESTION_TYPES = Object.freeze([
   Object.freeze({

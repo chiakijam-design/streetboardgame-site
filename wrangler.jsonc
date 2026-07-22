@@ -10,6 +10,12 @@
     "directory": "./",
     "binding": "ASSETS"
   },
+  // 有料画像を有効化する前に非公開R2バケットを作成し、以下を有効化する。
+  // 未作成のバケットを先に記載すると本番デプロイが失敗するため、現時点ではコメントのままにする。
+  // "r2_buckets": [
+  //   { "binding": "LIVE_MEDIA", "bucket_name": "streetboardgame-live-private" }
+  // ],
+  // "images": { "binding": "IMAGES" },
   "durable_objects": {
     "bindings": [
       {

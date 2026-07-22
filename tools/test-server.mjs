@@ -27,6 +27,39 @@ class MemoryKV {
   async delete(key) { this.values.delete(key); }
 }
 
+class MemoryR2 {
+  constructor() { this.values = new Map(); }
+  async put(key, value, options = {}) {
+    const bytes = value instanceof ReadableStream
+      ? new Uint8Array(await new Response(value).arrayBuffer())
+      : new Uint8Array(await new Response(value).arrayBuffer());
+    this.values.set(key, { bytes, httpMetadata: options.httpMetadata || {} });
+  }
+  async get(key) {
+    const item = this.values.get(key);
+    if (!item) return null;
+    return {
+      body: new Blob([item.bytes]).stream(),
+      arrayBuffer: async () => item.bytes.buffer.slice(item.bytes.byteOffset, item.bytes.byteOffset + item.bytes.byteLength),
+      writeHttpMetadata(headers) {
+        if (item.httpMetadata.contentType) headers.set('content-type', item.httpMetadata.contentType);
+      },
+    };
+  }
+  async delete(keys) { (Array.isArray(keys) ? keys : [keys]).forEach((key) => this.values.delete(key)); }
+}
+
+class PassthroughImages {
+  async info() { return { width: 512, height: 512, format: 'image/png' }; }
+  input(stream) {
+    const bytes = new Response(stream).arrayBuffer();
+    return {
+      transform() { return this; },
+      async output() { return { body: new Uint8Array(await bytes) }; },
+    };
+  }
+}
+
 const bundle = await build({
   entryPoints: [path.join(root, '_worker.js')],
   bundle: true,
@@ -39,6 +72,8 @@ const workerPath = path.join(root, '.test-worker.mjs');
 await writeFile(workerPath, bundle.outputFiles[0].text);
 const worker = (await import(`${pathToFileURL(workerPath).href}?v=${Date.now()}`)).default;
 const kv = new MemoryKV();
+const media = new MemoryR2();
+const images = new PassthroughImages();
 
 const mime = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -109,6 +144,8 @@ const server = http.createServer(async (req, res) => {
     }
     const response = await worker.fetch(await toRequest(req), {
       REMOTE_KV: kv,
+      LIVE_MEDIA: media,
+      IMAGES: images,
       ASSETS: { fetch: fetchStaticAsset },
     });
     await sendWebResponse(res, response);
