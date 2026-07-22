@@ -1,7 +1,12 @@
 import { calculateLiveResult, validateLiveDraft } from './model.js';
+import {
+  LIVE_RESERVATION_BUFFER_HOURS,
+  LIVE_VIEWER_LIMIT,
+} from './config.js';
 
 const LIVE_ACTIVE_TTL_SECONDS = 60 * 60 * 24;
 const LIVE_SAVED_TTL_SECONDS = 60 * 60 * 24 * 30;
+const LIVE_RESERVATION_BUFFER_MS = LIVE_RESERVATION_BUFFER_HOURS * 60 * 60 * 1000;
 const LIVE_CODE_PATTERN = /^[0-9]{6}$/;
 let liveD1ReadyPromise = null;
 let liveRateLimitReadyPromise = null;
@@ -15,6 +20,10 @@ export async function handleLiveApi(request, env, path) {
     }
     if (!env.REMOTE_DB && !env.LIVE_KV && !env.REMOTE_KV) {
       return liveJson({ error: 'live-storage-not-configured' }, 500);
+    }
+    if (path === '/api/live/reservations/availability' && request.method === 'GET') {
+      await enforceLiveRateLimit(request, env, 'availability', 120);
+      return await getLiveReservationAvailability(request, env);
     }
     if (path === '/api/live/games' && request.method === 'POST') {
       await enforceLiveRateLimit(request, env, 'create', 10);
@@ -51,14 +60,21 @@ export async function handleLiveApi(request, env, path) {
 async function createLiveGame(request, env) {
   const body = await readLiveJson(request);
   if (body?.draft?.creationMode !== 'youtube') throw liveError('youtube-creation-required', 400);
-  const validation = validateLiveDraft(body && body.draft);
+  const now = Date.now();
+  const validation = validateLiveDraft(body && body.draft, { now });
   if (!validation.valid) throw liveError(validation.errors[0] || 'invalid-game', 400);
   await cleanupExpiredLiveData(env);
-  const now = Date.now();
+  let code = createLiveCode();
+  for (let attempt = 0; attempt < 8 && await getStoredLiveGame(env, code); attempt += 1) code = createLiveCode();
+  const reservation = await reserveLiveSlot(env, code, validation.draft.scheduledAt, now);
   const game = {
     version: 4,
     title: validation.draft.title,
     subjectName: validation.draft.subjectName,
+    channelName: validation.draft.channelName || validation.draft.subjectName,
+    creatorImageDataUrl: validation.draft.creatorImageDataUrl,
+    scheduledAt: reservation.scheduledAt,
+    reservationEndsAt: reservation.blockedUntil,
     questions: validation.draft.questions,
     hostToken: createLiveToken(24),
     subjectToken: createLiveToken(24),
@@ -70,12 +86,28 @@ async function createLiveGame(request, env) {
     showVoteCount: validation.draft.showLiveVoteCounts,
     createdAt: now,
     updatedAt: now,
-    expiresAt: now + LIVE_SAVED_TTL_SECONDS * 1000,
+    expiresAt: reservation.blockedUntil,
   };
-  let code = createLiveCode();
-  for (let attempt = 0; attempt < 8 && await getStoredLiveGame(env, code); attempt += 1) code = createLiveCode();
-  await putStoredLiveGame(env, code, game);
+  try {
+    await putStoredLiveGame(env, code, game);
+  } catch (error) {
+    await releaseLiveReservation(env, code);
+    throw error;
+  }
   return liveJson({ code, hostToken: game.hostToken, game: publicLiveGame(game, { host: true }) }, 201);
+}
+
+async function getLiveReservationAvailability(request, env) {
+  const scheduledAt = Number(new URL(request.url).searchParams.get('scheduledAt'));
+  if (!Number.isFinite(scheduledAt) || scheduledAt <= Date.now()) throw liveError('invalid-scheduled-at', 400);
+  await cleanupExpiredLiveData(env);
+  const available = await isLiveSlotAvailable(env, scheduledAt);
+  return liveJson({
+    available,
+    scheduledAt,
+    viewerLimit: LIVE_VIEWER_LIMIT,
+    bufferHours: LIVE_RESERVATION_BUFFER_HOURS,
+  });
 }
 
 async function getLiveGameResponse(request, env, code) {
@@ -99,12 +131,15 @@ async function joinLiveGame(request, env, code) {
   const body = await readLiveJson(request);
   const name = String(body && body.name || '').replace(/\s+/g, ' ').trim().slice(0, 24);
   if (!name) throw liveError('name-required', 400);
+  if (game.participants.length >= LIVE_VIEWER_LIMIT) throw liveError('participant-limit-reached', 409);
   const participant = { id: createLiveToken(10), token: createLiveToken(24), name, joinedAt: Date.now() };
   if (await ensureLiveD1(env)) {
-    await env.REMOTE_DB.prepare(`
+    const inserted = await env.REMOTE_DB.prepare(`
       INSERT INTO live_participants (code, participant_id, participant_token, name, joined_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).bind(code, participant.id, participant.token, participant.name, participant.joinedAt).run();
+      SELECT ?, ?, ?, ?, ?
+      WHERE (SELECT COUNT(*) FROM live_participants WHERE code = ?) < ?
+    `).bind(code, participant.id, participant.token, participant.name, participant.joinedAt, code, LIVE_VIEWER_LIMIT).run();
+    if (Number(inserted?.meta?.changes || 0) !== 1) throw liveError('participant-limit-reached', 409);
   } else {
     game.participants.push(participant);
   }
@@ -333,6 +368,7 @@ export function publicLiveGame(game, access = {}) {
     currentQuestionIndex: game.currentQuestionIndex,
     questionCount: game.questions.length,
     participantCount: game.participants.length,
+    participantLimit: LIVE_VIEWER_LIMIT,
     participants: game.participants.map(({ id, name }) => ({ id, name })),
     question: publicQuestion,
     myVoteIndex: participant && Object.prototype.hasOwnProperty.call(currentVotes, participant.id)
@@ -340,10 +376,16 @@ export function publicLiveGame(game, access = {}) {
       : null,
     results: completedResults,
     showVoteCount: Boolean(game.showVoteCount),
+    scheduledAt: Number(game.scheduledAt) || undefined,
+    channelName: game.channelName || game.subjectName,
+    participantName: participant?.name,
     host: Boolean(access.host),
     subject: Boolean(access.subject),
     questions: access.host ? game.questions.map(({ id, type, text, options }) => ({ id, type, text, options })) : undefined,
     ...(access.host && flowVersion >= 4 ? { subjectToken: game.subjectToken } : {}),
+    ...((participant && game.phase === 'complete') && game.creatorImageDataUrl
+      ? { creatorImageDataUrl: game.creatorImageDataUrl }
+      : {}),
     expiresAt: access.host ? game.expiresAt : undefined,
   };
 }
@@ -895,6 +937,16 @@ async function ensureLiveD1(env) {
           expires_at INTEGER NOT NULL
         )
       `).run(),
+      env.REMOTE_DB.prepare(`
+        CREATE TABLE IF NOT EXISTS live_reservations (
+          code TEXT PRIMARY KEY,
+          scheduled_at INTEGER NOT NULL,
+          blocked_from INTEGER NOT NULL,
+          blocked_until INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          expires_at INTEGER NOT NULL
+        )
+      `).run(),
     ]).catch((error) => {
       liveD1ReadyPromise = null;
       throw error;
@@ -954,17 +1006,82 @@ async function putStoredLiveGame(env, code, game) {
   }
   const kv = env.LIVE_KV || env.REMOTE_KV;
   if (!kv) throw liveError('live-storage-not-configured', 500);
-  const ttlSeconds = game.phase === 'lobby' ? LIVE_SAVED_TTL_SECONDS : LIVE_ACTIVE_TTL_SECONDS;
+  const fallbackTtl = game.phase === 'lobby' ? LIVE_SAVED_TTL_SECONDS : LIVE_ACTIVE_TTL_SECONDS;
+  const ttlSeconds = Math.max(60, Math.ceil((Number(game.expiresAt) - Date.now()) / 1000) || fallbackTtl);
   await kv.put(`live:${code}`, JSON.stringify(game), { expirationTtl: ttlSeconds });
 }
 
 async function cleanupExpiredLiveData(env) {
-  if (!await ensureLiveD1(env)) return;
   const now = Date.now();
+  if (!await ensureLiveD1(env)) {
+    const kv = env.LIVE_KV || env.REMOTE_KV;
+    if (!kv) return;
+    const reservations = await getKvLiveReservations(kv);
+    await kv.put('live:reservations', JSON.stringify(reservations.filter((item) => Number(item.expiresAt) >= now)));
+    return;
+  }
   await env.REMOTE_DB.prepare('DELETE FROM live_votes WHERE code IN (SELECT code FROM live_games WHERE expires_at < ?)').bind(now).run();
   await env.REMOTE_DB.prepare('DELETE FROM live_participants WHERE code IN (SELECT code FROM live_games WHERE expires_at < ?)').bind(now).run();
   await env.REMOTE_DB.prepare('DELETE FROM live_games WHERE expires_at < ?').bind(now).run();
   await env.REMOTE_DB.prepare('DELETE FROM live_rate_limits WHERE expires_at < ?').bind(now).run();
+  await env.REMOTE_DB.prepare('DELETE FROM live_reservations WHERE expires_at < ?').bind(now).run();
+}
+
+async function isLiveSlotAvailable(env, scheduledAt) {
+  const blockedFrom = scheduledAt - LIVE_RESERVATION_BUFFER_MS;
+  const blockedUntil = scheduledAt + LIVE_RESERVATION_BUFFER_MS;
+  if (await ensureLiveD1(env)) {
+    const row = await env.REMOTE_DB.prepare(`
+      SELECT code FROM live_reservations
+      WHERE scheduled_at > ? AND scheduled_at < ? AND expires_at >= ?
+      LIMIT 1
+    `).bind(blockedFrom, blockedUntil, Date.now()).first();
+    return !row;
+  }
+  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const reservations = await getKvLiveReservations(kv);
+  return !reservations.some((item) => Math.abs(Number(item.scheduledAt) - scheduledAt) < LIVE_RESERVATION_BUFFER_MS);
+}
+
+async function reserveLiveSlot(env, code, scheduledAt, now) {
+  const blockedFrom = scheduledAt - LIVE_RESERVATION_BUFFER_MS;
+  const blockedUntil = scheduledAt + LIVE_RESERVATION_BUFFER_MS;
+  if (await ensureLiveD1(env)) {
+    const inserted = await env.REMOTE_DB.prepare(`
+      INSERT INTO live_reservations (code, scheduled_at, blocked_from, blocked_until, created_at, expires_at)
+      SELECT ?, ?, ?, ?, ?, ?
+      WHERE NOT EXISTS (
+        SELECT 1 FROM live_reservations
+        WHERE scheduled_at > ? AND scheduled_at < ? AND expires_at >= ?
+      )
+    `).bind(code, scheduledAt, blockedFrom, blockedUntil, now, blockedUntil, blockedFrom, blockedUntil, now).run();
+    if (Number(inserted?.meta?.changes || 0) !== 1) throw liveError('live-slot-unavailable', 409);
+    return { scheduledAt, blockedFrom, blockedUntil };
+  }
+  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const reservations = await getKvLiveReservations(kv);
+  if (reservations.some((item) => Math.abs(Number(item.scheduledAt) - scheduledAt) < LIVE_RESERVATION_BUFFER_MS)) {
+    throw liveError('live-slot-unavailable', 409);
+  }
+  reservations.push({ code, scheduledAt, blockedFrom, blockedUntil, createdAt: now, expiresAt: blockedUntil });
+  await kv.put('live:reservations', JSON.stringify(reservations));
+  return { scheduledAt, blockedFrom, blockedUntil };
+}
+
+async function releaseLiveReservation(env, code) {
+  if (await ensureLiveD1(env)) {
+    await env.REMOTE_DB.prepare('DELETE FROM live_reservations WHERE code = ?').bind(code).run();
+    return;
+  }
+  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const reservations = await getKvLiveReservations(kv);
+  await kv.put('live:reservations', JSON.stringify(reservations.filter((item) => item.code !== code)));
+}
+
+async function getKvLiveReservations(kv) {
+  if (!kv) return [];
+  const value = await kv.get('live:reservations', { type: 'json' });
+  return Array.isArray(value) ? value : [];
 }
 
 async function enforceLiveRateLimit(request, env, scope, limit) {
@@ -1005,7 +1122,10 @@ async function enforceLiveRateLimit(request, env, scope, limit) {
 function touchLiveGame(game) {
   game.updatedAt = Date.now();
   const ttlSeconds = game.phase === 'lobby' ? LIVE_SAVED_TTL_SECONDS : LIVE_ACTIVE_TTL_SECONDS;
-  game.expiresAt = game.updatedAt + ttlSeconds * 1000;
+  game.expiresAt = Math.min(
+    game.updatedAt + ttlSeconds * 1000,
+    Number(game.reservationEndsAt) || Number.POSITIVE_INFINITY,
+  );
 }
 
 function createLiveCode() {

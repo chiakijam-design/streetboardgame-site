@@ -1,4 +1,11 @@
-import { LIVE_QUESTION_TYPES, LIVE_SERIES, LIVE_TYPE_LABELS } from './src/live/config.js';
+import {
+  LIVE_CREATOR_IMAGE_MAX_LENGTH,
+  LIVE_QUESTION_TYPES,
+  LIVE_RESERVATION_BUFFER_HOURS,
+  LIVE_SERIES,
+  LIVE_TYPE_LABELS,
+  LIVE_VIEWER_LIMIT,
+} from './src/live/config.js';
 import { createLiveQuestion, recommendYouTubeCandidates, validateLiveDraft } from './src/live/model.js';
 
 const root = document.getElementById('liveRoot');
@@ -29,6 +36,9 @@ const state = {
   hostAnswerIndex: null,
   subjectAnswerIndex: null,
   subjectQuestionId: '',
+  scheduleAvailability: null,
+  scheduleChecking: false,
+  resultViewerName: '',
   pollTimer: null,
 };
 
@@ -161,6 +171,9 @@ function renderYouTubeCandidates() {
       creationMode: 'youtube',
       title: `${state.channelProfile?.channelName || 'YouTube'} ${LIVE_SERIES.name}`,
       subjectName: state.channelProfile?.channelName || '',
+      channelName: state.channelProfile?.channelName || '',
+      scheduledAt: 0,
+      creatorImageDataUrl: '',
       showLiveVoteCounts: false,
       questions: selected.map((question) => createLiveQuestion({ ...question, id: undefined })),
     };
@@ -246,6 +259,20 @@ function renderEditor() {
         <div class="editor-type-summary"><span>遊び方</span><span class="badge">${escapeHtml(LIVE_TYPE_LABELS[state.youtubeQuestionType] || '')}</span><span>すべての問題で共通です</span></div>
         <div class="field"><label for="gameTitle">ゲームタイトル</label><input id="gameTitle" maxlength="80" value="${escapeAttr(state.draft.title)}"><p class="help">スタッフ用URLや配信画面に表示されます</p></div>
         <div class="field"><label for="subjectName">YouTuber・回答者の名前</label><input id="subjectName" maxlength="40" value="${escapeAttr(state.draft.subjectName)}"><p class="help">視聴者の画面で「本人」として表示されます</p></div>
+        <div class="field editor-schedule-setting">
+          <label for="scheduledAt">ライブ配信の予約日時</label>
+          <input id="scheduledAt" type="datetime-local" min="${escapeAttr(minimumScheduleValue())}" value="${escapeAttr(formatDateTimeInput(state.draft.scheduledAt))}">
+          <button class="secondary" id="checkSchedule" type="button" ${state.draft.scheduledAt && !state.scheduleChecking ? '' : 'disabled'}>${state.scheduleChecking ? '空き状況を確認中…' : 'この日時の空きを確認する'}</button>
+          ${scheduleAvailabilityHtml()}
+          <p class="help">予約時刻の前後${LIVE_RESERVATION_BUFFER_HOURS}時間は、ほかのYouTuberが予約できません。企画保存時にもサーバー側で再確認します。</p>
+          <div class="capacity-notice"><strong>安全運用上限：視聴者${LIVE_VIEWER_LIMIT}人</strong><span>${LIVE_VIEWER_LIMIT + 1}人目からは参加できません。現在構成の実負荷試験が終わるまでは、この人数を引き上げません。</span></div>
+        </div>
+        <div class="field editor-creator-image">
+          <label for="creatorImage">結果画像に入れるYouTuber画像</label>
+          <input id="creatorImage" type="file" accept="image/jpeg,image/png,image/webp">
+          <p class="help">似顔絵・宣材写真などを登録できます。結果画像では通常の黒髪の女の子と差し替えます。中央に人物が写った正方形に近い画像がおすすめです。</p>
+          ${state.draft.creatorImageDataUrl ? `<div class="creator-image-preview"><img src="${escapeAttr(state.draft.creatorImageDataUrl)}" alt="登録したYouTuber画像"><button class="mini" id="removeCreatorImage" type="button">画像を外す</button></div>` : '<div class="notice">画像を登録しない場合は、従来の黒髪の女の子を表示します。</div>'}
+        </div>
         <div class="field editor-vote-setting"><span class="field-label">視聴者画面のライブ票数</span><label class="check"><input id="showLiveVoteCounts" type="checkbox" ${state.draft.showLiveVoteCounts ? 'checked' : ''}>全問題で選択肢別の現在票数を表示する</label><p class="help">この設定は企画全体に適用され、配信中は変更できません。</p></div>
       </div>
     </section>
@@ -260,7 +287,28 @@ function renderEditor() {
     </section>
   `);
   bind('#gameTitle', 'input', (event) => { state.draft.title = event.target.value; });
-  bind('#subjectName', 'input', (event) => { state.draft.subjectName = event.target.value; });
+  bind('#subjectName', 'input', (event) => {
+    state.draft.subjectName = event.target.value;
+    if (!state.draft.channelName) state.draft.channelName = event.target.value;
+  });
+  bind('#scheduledAt', 'change', (event) => {
+    state.draft.scheduledAt = new Date(event.target.value).getTime() || 0;
+    state.scheduleAvailability = null;
+    render();
+  });
+  bind('#checkSchedule', 'click', checkScheduleAvailability);
+  bind('#creatorImage', 'change', async (event) => {
+    const [file] = event.target.files || [];
+    if (!file) return;
+    try {
+      state.draft.creatorImageDataUrl = await prepareCreatorImage(file);
+      state.error = '';
+    } catch (error) {
+      state.error = humanError(error);
+    }
+    render();
+  });
+  bind('#removeCreatorImage', 'click', () => { state.draft.creatorImageDataUrl = ''; render(); });
   bind('#showLiveVoteCounts', 'change', (event) => { state.draft.showLiveVoteCounts = event.target.checked; });
   document.querySelectorAll('[data-question-index]').forEach((card) => bindEditorCard(card));
   bind('#createGame', 'click', createGame);
@@ -310,6 +358,92 @@ function moveQuestion(index, direction) {
   render();
 }
 
+function minimumScheduleValue() {
+  return formatDateTimeInput(Date.now() + 10 * 60 * 1000);
+}
+
+function formatDateTimeInput(value) {
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return '';
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '';
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000);
+  return local.toISOString().slice(0, 16);
+}
+
+function formatLiveDate(value, includeTime = true) {
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return '日時未設定';
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '日時未設定';
+  return new Intl.DateTimeFormat('ja-JP', {
+    year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
+    ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+  }).format(date);
+}
+
+function scheduleAvailabilityHtml() {
+  if (!state.draft.scheduledAt) return '<div class="notice">カレンダーから配信日と開始時刻を選んでください。</div>';
+  if (state.scheduleChecking) return '<div class="notice">予約枠を確認しています…</div>';
+  if (state.scheduleAvailability === true) return '<div class="notice schedule-ok">この日時は予約できます。企画保存時に予約を確定します。</div>';
+  if (state.scheduleAvailability === false) return `<div class="error">前後${LIVE_RESERVATION_BUFFER_HOURS}時間以内に別の予約があります。別の日時を選んでください。</div>`;
+  return `<div class="notice">選択中：${escapeHtml(formatLiveDate(state.draft.scheduledAt))}</div>`;
+}
+
+async function checkScheduleAvailability() {
+  if (!state.draft.scheduledAt) return;
+  state.scheduleChecking = true;
+  state.scheduleAvailability = null;
+  render();
+  try {
+    const response = await api(`/api/live/reservations/availability?scheduledAt=${encodeURIComponent(state.draft.scheduledAt)}`);
+    state.scheduleAvailability = response.available === true;
+    state.error = '';
+  } catch (error) {
+    state.scheduleAvailability = null;
+    state.error = humanError(error);
+  }
+  state.scheduleChecking = false;
+  render();
+}
+
+async function prepareCreatorImage(file) {
+  if (!/^image\/(?:jpeg|png|webp)$/i.test(file.type || '')) throw new Error('invalid-creator-image');
+  if (Number(file.size) > 10 * 1024 * 1024) throw new Error('creator-image-too-large');
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await loadImage(objectUrl);
+    const sizes = [512, 448, 384];
+    const qualities = [0.82, 0.72, 0.62];
+    for (const size of sizes) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const scale = Math.max(size / image.naturalWidth, size / image.naturalHeight);
+      const width = image.naturalWidth * scale;
+      const height = image.naturalHeight * scale;
+      ctx.drawImage(image, (size - width) / 2, (size - height) / 2, width, height);
+      for (const quality of qualities) {
+        const dataUrl = canvas.toDataURL('image/webp', quality);
+        if (dataUrl.length <= LIVE_CREATOR_IMAGE_MAX_LENGTH) return dataUrl;
+      }
+    }
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+  throw new Error('creator-image-too-large');
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('invalid-creator-image'));
+    image.src = src;
+  });
+}
+
 async function createGame() {
   const validation = validateLiveDraft(state.draft);
   if (!validation.valid) { state.error = validation.errors.join('\n'); return render(); }
@@ -349,14 +483,17 @@ async function initializeRoom() {
 }
 
 function renderJoin() {
+  const isFull = Number(state.game?.participantCount || 0) >= Number(state.game?.participantLimit || LIVE_VIEWER_LIMIT);
   setPage(`
     <section class="panel">
       <span class="eyebrow">JOIN LIVE</span>
       <h2 style="margin-top:12px">${escapeHtml(state.game?.title || LIVE_SERIES.name)}</h2>
+      ${state.game?.scheduledAt ? `<div class="notice">配信予定：${escapeHtml(formatLiveDate(state.game.scheduledAt))}</div>` : ''}
+      <div class="capacity-notice"><strong>視聴者上限 ${state.game?.participantLimit || LIVE_VIEWER_LIMIT}人</strong><span>現在 ${state.game?.participantCount || 0}人が参加しています。</span></div>
       <div class="room-code" aria-label="ルームコード ${escapeAttr(state.roomCode)}">${escapeHtml(state.roomCode)}</div>
       <div class="field"><label for="participantName">あなたの名前</label><input id="participantName" maxlength="24" autocomplete="nickname" placeholder="名前を入力"></div>
       ${errorHtml()}
-      <button class="primary" id="joinGame" style="margin-top:16px">参加する <span class="accent">▶</span></button>
+      <button class="primary" id="joinGame" style="margin-top:16px" ${isFull ? 'disabled' : ''}>${isFull ? '参加上限に達しました' : '参加する <span class="accent">▶</span>'}</button>
     </section>
   `);
   bind('#joinGame', 'click', joinGame);
@@ -369,6 +506,7 @@ async function joinGame() {
     const response = await api(`/api/live/games/${state.roomCode}/join`, { method: 'POST', body: JSON.stringify({ name }) });
     state.participantToken = response.participantToken;
     state.game = response.game;
+    state.resultViewerName = response.game?.participantName || name;
     sessionStorage.setItem(`live:participant:${state.roomCode}`, state.participantToken);
     state.view = 'participant';
     state.error = '';
@@ -389,6 +527,8 @@ function renderHost() {
       <section class="panel">
         <span class="eyebrow">SAVED</span><h2 style="margin-top:12px">企画を保存しました</h2>
         <p class="help">${escapeHtml(game.title)}は${escapeHtml(formatSavedUntil(game.expiresAt))}まで保存されます。配信当日は、このスタッフ用URLから戻ってきてください。</p>
+        <div class="notice"><strong>予約日時：</strong>${escapeHtml(formatLiveDate(game.scheduledAt))}<br>この時刻の前後${LIVE_RESERVATION_BUFFER_HOURS}時間は、ほかのLIVE予約を受け付けません。</div>
+        <div class="capacity-notice"><strong>視聴者上限 ${game.participantLimit || LIVE_VIEWER_LIMIT}人</strong><span>上限を超えた視聴者は参加APIでも拒否されます。</span></div>
         <div class="field"><label for="managementUrl">スタッフ用URL（視聴者には共有しない）</label><input id="managementUrl" readonly value="${escapeAttr(managementUrl)}"></div>
         <button class="secondary" id="copyManagementUrl" style="width:100%;margin-top:10px">スタッフ用URLをコピー</button>
         ${subjectUrl ? `<div class="field"><label for="subjectUrl">YouTuber本人用URL（本人だけに共有）</label><input id="subjectUrl" readonly value="${escapeAttr(subjectUrl)}"></div><button class="secondary" id="copySubjectUrl" style="width:100%;margin-top:10px">YouTuber本人用URLをコピー</button>` : ''}
@@ -518,10 +658,131 @@ function renderParticipant() {
   } else if (game.phase === 'reveal') {
     content = `<section class="panel">${liveQuestionHeader(game)}${personalResultBlock(game.question.result)}${resultBlock(game.question.result, game.subjectName)}<div class="notice">司会者が次の問題へ進むまでお待ちください。</div></section>`;
   } else {
-    content = `<section class="panel"><span class="eyebrow">FINISH</span><h2 style="margin-top:12px">あなたの最終結果</h2>${personalSummary(game.results)}<div class="result-list">${game.results.map((result, index) => `<article class="result-card"><span class="badge">Q${index + 1}</span>${personalResultBlock(result)}${resultBlock(result, game.subjectName)}</article>`).join('')}</div></section>`;
+    const viewerName = state.resultViewerName || game.participantName || '視聴者';
+    content = `<section class="panel"><span class="eyebrow">FINISH</span><h2 style="margin-top:12px">あなたの最終結果</h2>${personalSummary(game.results)}<div class="result-list">${game.results.map((result, index) => `<article class="result-card"><span class="badge">Q${index + 1}</span>${personalResultBlock(result)}${resultBlock(result, game.subjectName)}</article>`).join('')}</div></section>
+      <section class="panel live-result-image-panel">
+        <span class="eyebrow">RESULT IMAGE</span>
+        <h2 style="margin-top:12px">購入用結果画像のプレビュー</h2>
+        <p class="help">YouTubeチャンネル名・登録したYouTuber画像・ライブ配信日・あなたの名前が入ります。</p>
+        <div class="field"><label for="resultViewerName">結果画像に入れるあなたの名前</label><input id="resultViewerName" maxlength="24" value="${escapeAttr(viewerName)}" placeholder="名前を入力"></div>
+        <div class="result-image-status" id="resultImageStatus">プレビューを作成しています…</div>
+        <img class="live-result-preview" id="liveResultPreview" alt="購入用結果画像のプレビュー" hidden>
+        <div class="notice">現在は画像内容のプレビューです。決済完了後だけ高画質版を取得できる購入処理は、Stripe Connectと画像保存先の接続後に有効化します。</div>
+      </section>`;
   }
   setPage(content);
   document.querySelectorAll('[data-vote-index]').forEach((button) => button.addEventListener('click', () => vote(Number(button.dataset.voteIndex))));
+  bind('#resultViewerName', 'input', (event) => {
+    state.resultViewerName = event.target.value.slice(0, 24);
+    refreshLiveResultPreview();
+  });
+  if (game.phase === 'complete') refreshLiveResultPreview();
+}
+
+async function refreshLiveResultPreview() {
+  const preview = document.getElementById('liveResultPreview');
+  const status = document.getElementById('resultImageStatus');
+  if (!preview || !status || !state.game) return;
+  status.textContent = 'プレビューを作成しています…';
+  try {
+    const viewerName = state.resultViewerName || state.game.participantName || '視聴者';
+    preview.src = await createLiveResultPreview(state.game, viewerName);
+    preview.dataset.viewerName = viewerName;
+    preview.dataset.channelName = state.game.channelName || state.game.subjectName || '';
+    preview.dataset.liveDate = formatLiveDate(state.game.scheduledAt, false);
+    preview.hidden = false;
+    status.textContent = '画像に入る内容を確認してください。名前は上の欄で変更できます。';
+  } catch (error) {
+    preview.hidden = true;
+    status.textContent = 'プレビューを作成できませんでした。画面を更新して再度お試しください。';
+  }
+}
+
+async function createLiveResultPreview(game, viewerName) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 540;
+  canvas.height = 675;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#EC4F88';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawRoundRect(ctx, 28, 28, 484, 619, 22, '#1A1A1A');
+  drawRoundRect(ctx, 38, 38, 464, 599, 18, '#FFF8F1');
+  drawRoundRect(ctx, 38, 38, 464, 88, 18, '#1A1A1A');
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '900 16px "Zen Maru Gothic", sans-serif';
+  ctx.textAlign = 'left';
+  drawFittedText(ctx, game.channelName || game.subjectName || 'YouTubeチャンネル', 58, 76, 420, 20, 13);
+  ctx.fillStyle = '#5BD4E8';
+  ctx.font = '900 12px "DotGothic16", monospace';
+  ctx.fillText('LIVE RESULT', 58, 104);
+
+  const resultImage = await loadImage(game.creatorImageDataUrl || '/assets/character/girl-default.webp');
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(270, 235, 92, 0, Math.PI * 2);
+  ctx.clip();
+  const scale = Math.max(184 / resultImage.naturalWidth, 184 / resultImage.naturalHeight);
+  const imageWidth = resultImage.naturalWidth * scale;
+  const imageHeight = resultImage.naturalHeight * scale;
+  ctx.drawImage(resultImage, 270 - imageWidth / 2, 235 - imageHeight / 2, imageWidth, imageHeight);
+  ctx.restore();
+  ctx.strokeStyle = '#1A1A1A';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(270, 235, 95, 0, Math.PI * 2);
+  ctx.stroke();
+
+  const correctCount = (game.results || []).filter((result) => (
+    result.type === 'guess-person' ? result.myIsCorrect === true : result.myVoteWasPopular === true
+  )).length;
+  ctx.fillStyle = '#1A1A1A';
+  ctx.textAlign = 'center';
+  ctx.font = '900 20px "Zen Maru Gothic", sans-serif';
+  ctx.fillText(`${String(viewerName || '視聴者').trim().slice(0, 24) || '視聴者'} さんの結果`, 270, 365);
+  ctx.fillStyle = '#EC4F88';
+  ctx.font = '900 66px "RocknRoll One", sans-serif';
+  ctx.fillText(`${correctCount}/${game.questionCount || game.results.length}`, 270, 443);
+  ctx.fillStyle = '#1A1A1A';
+  ctx.font = '900 15px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('問正解', 270, 472);
+
+  drawRoundRect(ctx, 74, 497, 392, 70, 14, '#FFE26B');
+  ctx.fillStyle = '#1A1A1A';
+  ctx.font = '900 16px "Zen Maru Gothic", sans-serif';
+  ctx.fillText(formatLiveDate(game.scheduledAt, false), 270, 526);
+  ctx.font = '800 12px "Zen Maru Gothic", sans-serif';
+  ctx.fillText('視聴者参加型LIVE 記念結果', 270, 550);
+
+  ctx.save();
+  ctx.translate(270, 594);
+  ctx.rotate(-0.08);
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = '#D63A75';
+  ctx.font = '900 42px "RocknRoll One", sans-serif';
+  ctx.fillText('SAMPLE', 0, 0);
+  ctx.restore();
+  ctx.fillStyle = '#1A1A1A';
+  ctx.font = '700 10px "DotGothic16", monospace';
+  ctx.fillText('streetboardgame.com', 270, 622);
+  return canvas.toDataURL('image/jpeg', 0.82);
+}
+
+function drawRoundRect(ctx, x, y, width, height, radius, fillStyle) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, width, height, radius);
+  ctx.fillStyle = fillStyle;
+  ctx.fill();
+}
+
+function drawFittedText(ctx, text, x, y, maxWidth, startSize, minSize) {
+  let size = startSize;
+  do {
+    ctx.font = `900 ${size}px "Zen Maru Gothic", sans-serif`;
+    if (ctx.measureText(String(text)).width <= maxWidth || size <= minSize) break;
+    size -= 1;
+  } while (size >= minSize);
+  ctx.fillText(String(text), x, y);
 }
 
 function liveQuestionHeader(game, stage = '') {
@@ -529,7 +790,7 @@ function liveQuestionHeader(game, stage = '') {
 }
 
 function participantHtml(game) {
-  return `<h3 style="margin-top:18px">参加者 ${game.participantCount}人</h3><div class="participant-chips">${game.participants.map((participant) => `<span>${escapeHtml(participant.name)}</span>`).join('') || '<span>参加待ち</span>'}</div>`;
+  return `<h3 style="margin-top:18px">参加者 ${game.participantCount} / ${game.participantLimit || LIVE_VIEWER_LIMIT}人</h3><div class="participant-chips">${game.participants.map((participant) => `<span>${escapeHtml(participant.name)}</span>`).join('') || '<span>参加待ち</span>'}</div>`;
 }
 
 function resultBlock(result, subjectName, showQuestion = true) {
@@ -647,6 +908,10 @@ async function loadRoom() {
   const headers = state.hostToken ? hostHeaders() : state.subjectToken ? subjectHeaders() : state.participantToken ? participantHeaders() : {};
   const response = await api(`/api/live/games/${state.roomCode}`, { headers });
   state.game = response.game;
+  if (response.game?.phase === 'complete') clearInterval(state.pollTimer);
+  if (state.participantToken && !state.resultViewerName && response.game?.participantName) {
+    state.resultViewerName = response.game.participantName;
+  }
   if (state.subjectToken) syncSubjectAnswer(response.game);
 }
 
@@ -665,7 +930,7 @@ function startPolling() {
   state.pollTimer = setInterval(async () => {
     if (!['host', 'subject', 'participant'].includes(state.view)) return;
     try { await loadRoom(); render(); } catch (error) { /* 次のポーリングで再試行 */ }
-  }, 1200);
+  }, 2000);
 }
 
 function setPage(content, withTopbar = true) {
@@ -700,6 +965,11 @@ function humanError(error) {
     'invalid-youtube-url': 'YouTubeチャンネルURLまたは動画URLを確認してください',
     'youtube-video-channel-not-found': 'この動画から投稿元チャンネルを確認できませんでした。公開中の動画URLかチャンネルURLを入力してください',
     'youtube-creation-required': 'LIVEゲームはYouTubeチャンネルから作成してください',
+    'invalid-scheduled-at': '現在より後のライブ配信日時を選んでください',
+    'live-slot-unavailable': `選んだ日時の前後${LIVE_RESERVATION_BUFFER_HOURS}時間以内に別の予約があります。別の日時を選んでください`,
+    'participant-limit-reached': `安全運用上限の${LIVE_VIEWER_LIMIT}人に達したため、このルームには参加できません`,
+    'invalid-creator-image': 'YouTuber画像はJPEG・PNG・WebP形式で選んでください',
+    'creator-image-too-large': '画像を圧縮できませんでした。10MB以下の別画像を選んでください',
     'room-not-found': 'ルームが見つかりません。コードを確認してください',
     'name-required': '名前を入力してください',
     'game-finished': 'このゲームは終了しています',

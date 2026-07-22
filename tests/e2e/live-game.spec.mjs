@@ -1,4 +1,20 @@
 import { expect, test } from '@playwright/test';
+import { LIVE_RESERVATION_BUFFER_HOURS, LIVE_VIEWER_LIMIT } from '../../src/live/config.js';
+
+function scheduleForTest(testInfo, slot) {
+  const projectOffsetDays = testInfo.project.name === 'mobile-chrome' ? 100 : 0;
+  const date = new Date(Date.now() + (projectOffsetDays + slot * 2 + 2) * 24 * 60 * 60 * 1000);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000);
+  return local.toISOString().slice(0, 16);
+}
+
+async function selectLiveSchedule(page, testInfo, slot) {
+  const input = page.locator('#scheduledAt');
+  await expect(input).toHaveAttribute('type', 'datetime-local');
+  await input.fill(scheduleForTest(testInfo, slot));
+  await page.locator('#checkSchedule').click();
+  await expect(page.getByText('この日時は予約できます。企画保存時に予約を確定します。')).toBeVisible();
+}
 
 test.beforeEach(async ({ context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -19,7 +35,7 @@ test('手入力形式の新規作成APIを受け付けない', async ({ request 
   expect(await response.json()).toEqual({ error: 'youtube-creation-required' });
 });
 
-test('YouTubeの本人回答モードだけ30問を生成し、1問以上を選んで共通編集へ進む', async ({ page }) => {
+test('YouTubeの本人回答モードだけ30問を生成し、1問以上を選んで共通編集へ進む', async ({ page }, testInfo) => {
   await page.goto('/live');
   await expect(page.getByRole('heading', { name: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE' })).toBeVisible();
   await expect(page.getByRole('button', { name: /自分で問題を作る/ })).toHaveCount(0);
@@ -92,6 +108,10 @@ test('YouTubeの本人回答モードだけ30問を生成し、1問以上を選�
   await expect(page.locator('[data-question-index="0"] [data-editor-option]')).toHaveCount(5);
   await expect(page.locator('[data-question-index="0"] .editor-option-number')).toHaveText(['1', '2', '3', '4', '5']);
   await expect(page.locator('#showLiveVoteCounts')).not.toBeChecked();
+  await expect(page.locator('#scheduledAt')).toHaveValue('');
+  await expect(page.getByText(`安全運用上限：視聴者${LIVE_VIEWER_LIMIT}人`)).toBeVisible();
+  await expect(page.getByText(`予約時刻の前後${LIVE_RESERVATION_BUFFER_HOURS}時間は、ほかのYouTuberが予約できません。`)).toBeVisible();
+  await selectLiveSchedule(page, testInfo, 0);
   await expect(page.getByText('全問題で選択肢別の現在票数を表示する')).toBeVisible();
   await expect(page.locator('.editor-question-card')).toHaveCount(1);
   await expect(page.locator('.editor-question-card').first()).not.toHaveCSS('background-color', 'rgb(255, 255, 255)');
@@ -186,7 +206,7 @@ test('動画URLを入力すると投稿元チャンネルを使った30問を表
   await expect(page.locator('[data-candidate-index]')).toHaveCount(30);
 });
 
-test('5問を同時回答した後、一問ずつ答え合わせして個人結果を表示する', async ({ browser, page, request }) => {
+test('5問を同時回答した後、一問ずつ答え合わせして個人結果を表示する', async ({ browser, page, request }, testInfo) => {
   await page.goto('/live');
   await page.route('**/api/live/youtube-candidates', async (route) => {
     const questions = Array.from({ length: 30 }, (_, index) => ({
@@ -212,9 +232,17 @@ test('5問を同時回答した後、一問ずつ答え合わせして個人結�
   await page.locator('[data-youtube-type="guess-person"]').click();
   await page.locator('#useCandidates').click();
   await expect(page.locator('[data-question-index]')).toHaveCount(5);
+  await selectLiveSchedule(page, testInfo, 2);
+  await page.locator('#creatorImage').setInputFiles({
+    name: 'creator.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFElEQVR42mNkYPj/n4GBgYGJAQoAHgQCAf2uS0sAAAAASUVORK5CYII=', 'base64'),
+  });
+  await expect(page.locator('.creator-image-preview img')).toBeVisible();
   await page.locator('#showLiveVoteCounts').check();
   await page.locator('#createGame').click();
   await expect(page.getByText('HOST LOBBY')).toBeVisible();
+  await expect(page.getByText(`視聴者上限 ${LIVE_VIEWER_LIMIT}人`)).toBeVisible();
   const roomCode = await page.locator('.room-code').first().textContent();
   expect(roomCode).toMatch(/^\d{6}$/);
   const subjectUrl = await page.locator('#subjectUrl').inputValue();
@@ -226,6 +254,7 @@ test('5問を同時回答した後、一問ずつ答え合わせして個人結�
   expect(publicBeforeText).not.toContain('subjectAnswerIndex');
   expect(publicBeforeText).not.toContain('hostToken');
   expect(publicBeforeText).not.toContain('subjectToken');
+  expect(publicBeforeText).not.toContain('creatorImageDataUrl');
 
   const subjectContext = await browser.newContext();
   const subject = await subjectContext.newPage();
@@ -308,10 +337,62 @@ test('5問を同時回答した後、一問ずつ答え合わせして個人結�
   await expect(participant.getByRole('heading', { name: 'あなたの最終結果' })).toBeVisible();
   await expect(participant.getByText('5 / 5問正解')).toBeVisible();
   await expect(participant.locator('.result-card')).toHaveCount(5);
+  await expect(participant.getByRole('heading', { name: '購入用結果画像のプレビュー' })).toBeVisible();
+  await expect(participant.locator('#resultViewerName')).toHaveValue('参加者A');
+  await expect(participant.locator('#liveResultPreview')).toBeVisible();
+  await expect(participant.locator('#liveResultPreview')).toHaveAttribute('src', /^data:image\/jpeg;base64,/);
+  expect(await participant.locator('#liveResultPreview').evaluate((image) => ({ width: image.naturalWidth, height: image.naturalHeight }))).toEqual({ width: 540, height: 675 });
+  await participant.locator('#resultViewerName').fill('視聴者テスト');
+  await expect(participant.locator('#liveResultPreview')).toHaveAttribute('data-viewer-name', '視聴者テスト');
   await expect(subject.getByRole('heading', { name: '最終結果' })).toBeVisible();
   await expect(subject.locator('.result-card')).toHaveCount(5);
   await subjectContext.close();
   await participantContext.close();
+});
+
+test('予約日時の前後20時間は別のLIVE予約をAPIでも拒否する', async ({ request }, testInfo) => {
+  const scheduledAt = new Date(scheduleForTest(testInfo, 10)).getTime();
+  const draft = {
+    creationMode: 'youtube',
+    title: '予約競合テスト',
+    subjectName: '本人',
+    channelName: '予約テストチャンネル',
+    scheduledAt,
+    questions: [{ id: 'reservation-q', type: 'guess-person', text: 'どれ？', options: ['A', 'B', 'C', 'D', 'E'] }],
+  };
+  const first = await request.post('/api/live/games', { data: { draft } });
+  expect(first.status()).toBe(201);
+
+  const conflict = await request.post('/api/live/games', {
+    data: { draft: { ...draft, title: '競合する予約', scheduledAt: scheduledAt + 60 * 60 * 1000 } },
+  });
+  expect(conflict.status()).toBe(409);
+  expect(await conflict.json()).toEqual({ error: 'live-slot-unavailable' });
+
+  const availability = await request.get(`/api/live/reservations/availability?scheduledAt=${scheduledAt + 2 * 60 * 60 * 1000}`);
+  expect(availability.status()).toBe(200);
+  expect(await availability.json()).toMatchObject({ available: false, viewerLimit: LIVE_VIEWER_LIMIT, bufferHours: 20 });
+});
+
+test('安全運用上限を超える視聴者は参加APIで拒否する', async ({ request }, testInfo) => {
+  const scheduledAt = new Date(scheduleForTest(testInfo, 20)).getTime();
+  const created = await request.post('/api/live/games', {
+    data: {
+      draft: {
+        creationMode: 'youtube', title: '人数上限テスト', subjectName: '本人', channelName: '上限テストチャンネル', scheduledAt,
+        questions: [{ id: 'capacity-q', type: 'guess-person', text: 'どれ？', options: ['A', 'B', 'C', 'D', 'E'] }],
+      },
+    },
+  });
+  expect(created.status()).toBe(201);
+  const { code } = await created.json();
+  for (let index = 0; index < LIVE_VIEWER_LIMIT; index += 1) {
+    const joined = await request.post(`/api/live/games/${code}/join`, { data: { name: `参加者${index + 1}` } });
+    expect(joined.status(), `参加者${index + 1}`).toBe(201);
+  }
+  const rejected = await request.post(`/api/live/games/${code}/join`, { data: { name: '参加者51' } });
+  expect(rejected.status()).toBe(409);
+  expect(await rejected.json()).toEqual({ error: 'participant-limit-reached' });
 });
 
 test('トップの家族ボタン直下からLIVEを開始し、紹介カードから説明ページへ移動できる', async ({ page }) => {

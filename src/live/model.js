@@ -1,4 +1,8 @@
-import { LIVE_QUESTION_TYPES } from './config.js';
+import {
+  LIVE_CREATOR_IMAGE_MAX_LENGTH,
+  LIVE_QUESTION_TYPES,
+  LIVE_RESERVATION_MAX_DAYS,
+} from './config.js';
 
 export const LIVE_TYPE_VALUES = Object.freeze(LIVE_QUESTION_TYPES.map(({ value }) => value));
 
@@ -36,8 +40,9 @@ export function normalizeLiveQuestion(question, maxOptions = 5) {
   };
 }
 
-export function validateLiveDraft(input) {
+export function validateLiveDraft(input, options = {}) {
   const source = input && typeof input === 'object' ? input : {};
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
   const creationMode = source.creationMode === 'youtube' ? 'youtube' : 'manual';
   const maxOptions = creationMode === 'youtube' ? 5 : 4;
   const questions = Array.isArray(source.questions)
@@ -47,12 +52,25 @@ export function validateLiveDraft(input) {
     creationMode,
     title: normalizeText(source.title, 80),
     subjectName: normalizeText(source.subjectName, 40),
+    channelName: normalizeText(source.channelName, 80),
+    scheduledAt: normalizeTimestamp(source.scheduledAt),
+    creatorImageDataUrl: normalizeCreatorImage(source.creatorImageDataUrl),
     showLiveVoteCounts: source.showLiveVoteCounts === true,
     questions,
   };
   const errors = [];
   if (!draft.title) errors.push('ゲームタイトルを入力してください');
   if (!draft.subjectName) errors.push('主役または回答者の名前を入力してください');
+  if (creationMode === 'youtube' && !draft.scheduledAt) {
+    errors.push('ライブ配信の予約日時を選んでください');
+  } else if (creationMode === 'youtube' && draft.scheduledAt <= now) {
+    errors.push('予約日時は現在より後を選んでください');
+  } else if (creationMode === 'youtube' && draft.scheduledAt > now + LIVE_RESERVATION_MAX_DAYS * 24 * 60 * 60 * 1000) {
+    errors.push(`予約日時は${LIVE_RESERVATION_MAX_DAYS}日以内を選んでください`);
+  }
+  if (source.creatorImageDataUrl && !draft.creatorImageDataUrl) {
+    errors.push('登録画像はJPEG・PNG・WebP形式で選び直してください');
+  }
   if (questions.length < 1) errors.push('問題を1問以上作ってください');
   if (creationMode === 'youtube' && questions.length > 30) errors.push('YouTubeモードの問題は30問以内にしてください');
   const youtubeType = creationMode === 'youtube' ? questions[0]?.type : '';
@@ -125,6 +143,17 @@ function normalizeText(value, maxLength) {
 function normalizeId(value) {
   const text = String(value || '').trim();
   return /^[A-Za-z0-9_-]{1,80}$/.test(text) ? text : '';
+}
+
+function normalizeTimestamp(value) {
+  const timestamp = Number(value);
+  return Number.isFinite(timestamp) && timestamp > 0 ? Math.trunc(timestamp) : 0;
+}
+
+function normalizeCreatorImage(value) {
+  const dataUrl = String(value || '');
+  if (!/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(dataUrl)) return '';
+  return dataUrl.length <= LIVE_CREATOR_IMAGE_MAX_LENGTH ? dataUrl : '';
 }
 
 function createClientId() {
