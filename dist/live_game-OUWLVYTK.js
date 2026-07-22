@@ -38,9 +38,21 @@
         <button class="secondary" data-youtube-type="guess-majority" ${t.systemStatus.mode==="maintenance"||!q()?"disabled":""}>${o(S.youtubeMajorityGenerateLabel)} <span class="accent">\u25B6</span></button>
       </div>
     </section>
+    <section class="panel" style="margin-top:18px">
+      <h2>\u30EB\u30FC\u30E0\u306B\u53C2\u52A0\u3059\u308B</h2>
+      <p class="help">\u53F8\u4F1A\u8005\u304B\u3089\u53D7\u3051\u53D6\u3063\u305F6\u6841\u306E\u30B3\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002</p>
+      <div class="field"><label for="entryRoomCode">\u30EB\u30FC\u30E0\u30B3\u30FC\u30C9</label><input id="entryRoomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div>
+      <div class="error" id="entryCodeError" role="alert" hidden>6\u6841\u306E\u30EB\u30FC\u30E0\u30B3\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044</div>
+      <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">\u30B3\u30FC\u30C9\u3067\u53C2\u52A0</button>
+    </section>
+    <section class="panel" style="margin-top:18px">
+      <h2>\u8CFC\u5165\u6E08\u307F\u753B\u50CF\u3092\u518D\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9</h2>
+      <p class="help">Stripe\u306E\u8CFC\u5165\u30E1\u30FC\u30EB\u306B\u8A18\u8F09\u3055\u308C\u305F\u6CE8\u6587\u756A\u53F7\u3068\u3001\u6C7A\u6E08\u6642\u306E\u30E1\u30FC\u30EB\u30A2\u30C9\u30EC\u30B9\u306730\u65E5\u9593\u518D\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3067\u304D\u307E\u3059\u3002</p>
+      <a class="secondary link-button" style="width:100%;margin-top:12px" href="/live?recover=1">\u518D\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u753B\u9762\u3092\u958B\u304F</a>
+    </section>
     <section class="panel inquiry-panel" id="liveInquiry" style="margin-top:18px">
       <span class="eyebrow">CONTACT &amp; INVITATION</span>
-      <h2 style="margin-top:12px">\u62DB\u5F85\u30B3\u30FC\u30C9\u306E\u7533\u8ACB\u30FB\u4F7F\u3044\u65B9\u306E\u554F\u3044\u5408\u308F\u305B</h2>
+      <h2 style="margin-top:12px">\u3010YouTuber\u5411\u3051\u3011\u62DB\u5F85\u30B3\u30FC\u30C9\u306E\u7533\u8ACB\u30FB\u4F7F\u3044\u65B9\u306E\u554F\u3044\u5408\u308F\u305B</h2>
       <p class="help">YouTuber\u672C\u4EBA\u3001\u6240\u5C5E\u4E8B\u52D9\u6240\u3001\u6B63\u5F0F\u306A\u64AE\u5F71\u30FB\u914D\u4FE1\u30B9\u30BF\u30C3\u30D5\u304B\u3089\u7533\u8ACB\u3067\u304D\u307E\u3059\u3002\u300C\u8208\u5473\u306F\u3042\u308B\u3051\u308C\u3069\u4F7F\u3044\u65B9\u304C\u5206\u304B\u3089\u306A\u3044\u300D\u3068\u3044\u3046\u6BB5\u968E\u3067\u3082\u304A\u554F\u3044\u5408\u308F\u305B\u304F\u3060\u3055\u3044\u3002</p>
       <div class="invite-guide" aria-label="\u62DB\u5F85\u30B3\u30FC\u30C9\u304C\u767A\u884C\u3055\u308C\u308B\u307E\u3067">
         <article class="invite-step"><span>1</span><div><strong>\u30D5\u30A9\u30FC\u30E0\u304B\u3089\u7533\u8ACB</strong><p>\u9023\u7D61\u5148\u3001YouTube\u30C1\u30E3\u30F3\u30CD\u30EBURL\u3001\u5229\u7528\u4E88\u5B9A\u3092\u9001\u308A\u307E\u3059\u3002</p></div></article>
@@ -62,18 +74,6 @@
         <button class="primary" id="submitLiveInquiry" type="submit">\u554F\u3044\u5408\u308F\u305B\u30FB\u62DB\u5F85\u30B3\u30FC\u30C9\u7533\u8ACB\u3092\u9001\u4FE1\u3059\u308B <span class="accent">\u25B6</span></button>
         <p class="help">\u30D5\u30A9\u30FC\u30E0\u9001\u4FE1\u3060\u3051\u3067\u306F\u62DB\u5F85\u30B3\u30FC\u30C9\u306F\u5373\u6642\u767A\u884C\u3055\u308C\u307E\u305B\u3093\u3002\u5185\u5BB9\u78BA\u8A8D\u5F8C\u3001\u904B\u55B6\u304B\u3089\u8FD4\u4FE1\u3057\u307E\u3059\u3002</p>
       </form>
-    </section>
-    <section class="panel" style="margin-top:18px">
-      <h2>\u30EB\u30FC\u30E0\u306B\u53C2\u52A0\u3059\u308B</h2>
-      <p class="help">\u53F8\u4F1A\u8005\u304B\u3089\u53D7\u3051\u53D6\u3063\u305F6\u6841\u306E\u30B3\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002</p>
-      <div class="field"><label for="entryRoomCode">\u30EB\u30FC\u30E0\u30B3\u30FC\u30C9</label><input id="entryRoomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div>
-      <div class="error" id="entryCodeError" role="alert" hidden>6\u6841\u306E\u30EB\u30FC\u30E0\u30B3\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044</div>
-      <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">\u30B3\u30FC\u30C9\u3067\u53C2\u52A0</button>
-    </section>
-    <section class="panel" style="margin-top:18px">
-      <h2>\u8CFC\u5165\u6E08\u307F\u753B\u50CF\u3092\u518D\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9</h2>
-      <p class="help">Stripe\u306E\u8CFC\u5165\u30E1\u30FC\u30EB\u306B\u8A18\u8F09\u3055\u308C\u305F\u6CE8\u6587\u756A\u53F7\u3068\u3001\u6C7A\u6E08\u6642\u306E\u30E1\u30FC\u30EB\u30A2\u30C9\u30EC\u30B9\u306730\u65E5\u9593\u518D\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3067\u304D\u307E\u3059\u3002</p>
-      <a class="secondary link-button" style="width:100%;margin-top:12px" href="/live?recover=1">\u518D\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u753B\u9762\u3092\u958B\u304F</a>
     </section>
   `),d("#creatorInvite","input",e=>{t.creatorInvite=e.target.value.trim(),q()?sessionStorage.setItem("live:creator-invite",t.creatorInvite):sessionStorage.removeItem("live:creator-invite"),document.querySelectorAll("[data-youtube-type]").forEach(n=>{n.disabled=t.systemStatus.mode==="maintenance"||!q()})}),d("#channelUrl","input",e=>{let n=t.channelUrl;t.channelUrl=e.target.value,document.getElementById("youtubeGenerationChoices").hidden=!t.channelUrl.trim();let a=document.getElementById("inquiryChannelUrl");a&&(!a.value.trim()||a.value===n)&&(a.value=t.channelUrl)}),document.querySelectorAll("[data-youtube-type]").forEach(e=>e.addEventListener("click",()=>{ct(e.dataset.youtubeType)})),d("#entryRoomCode","input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,6)}),d("#joinByCode","click",()=>{let e=document.getElementById("entryRoomCode").value;if(!/^\d{6}$/.test(e)){document.getElementById("entryRoomCode").setAttribute("aria-invalid","true"),document.getElementById("entryCodeError").hidden=!1;return}location.assign(`/live?room=${e}`)}),d("#liveInquiryForm","submit",We)}async function We(e){var s,r;e.preventDefault();let n=e.currentTarget,a=document.getElementById("submitLiveInquiry"),i=document.getElementById("liveInquiryStatus");if(!(!n.reportValidity()||a.disabled)){a.disabled=!0,a.textContent="\u9001\u4FE1\u4E2D\u2026",i.hidden=!0,i.className="inquiry-status";try{let c=await fetch(Me,{method:"POST",body:new FormData(n),headers:{Accept:"application/json"}});if(!c.ok){let p=await c.json().catch(()=>({}));throw new Error(((r=(s=p==null?void 0:p.errors)==null?void 0:s[0])==null?void 0:r.message)||"\u9001\u4FE1\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u6642\u9593\u3092\u304A\u3044\u3066\u518D\u5EA6\u304A\u8A66\u3057\u304F\u3060\u3055\u3044\u3002")}n.reset(),i.className="inquiry-status notice schedule-ok",i.textContent="\u9001\u4FE1\u3057\u307E\u3057\u305F\u3002\u904B\u55B6\u304C\u5185\u5BB9\u3092\u78BA\u8A8D\u3057\u3001\u5165\u529B\u3057\u305F\u30E1\u30FC\u30EB\u30A2\u30C9\u30EC\u30B9\u3078\u8FD4\u4FE1\u3057\u307E\u3059\u3002",i.hidden=!1,a.textContent="\u9001\u4FE1\u3057\u307E\u3057\u305F",typeof window.trackEvent=="function"&&window.trackEvent("contact_form_submit",{result:"success",source:"live_invitation"})}catch(c){i.className="inquiry-status error",i.textContent=(c==null?void 0:c.message)||"\u901A\u4FE1\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F\u3002\u30CD\u30C3\u30C8\u63A5\u7D9A\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002",i.hidden=!1,a.disabled=!1,a.textContent="\u554F\u3044\u5408\u308F\u305B\u30FB\u62DB\u5F85\u30B3\u30FC\u30C9\u7533\u8ACB\u3092\u9001\u4FE1\u3059\u308B \u25B6"}}}function ze(){let e=!!t.purchaseRecoveryDownloadUrl;v(`
     <section class="hero">

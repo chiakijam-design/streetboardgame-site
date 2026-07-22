@@ -178,9 +178,21 @@ function renderEntry() {
         <button class="secondary" data-youtube-type="guess-majority" ${state.systemStatus.mode === 'maintenance' || !isCreatorInviteReady() ? 'disabled' : ''}>${escapeHtml(LIVE_SERIES.youtubeMajorityGenerateLabel)} <span class="accent">▶</span></button>
       </div>
     </section>
+    <section class="panel" style="margin-top:18px">
+      <h2>ルームに参加する</h2>
+      <p class="help">司会者から受け取った6桁のコードを入力してください。</p>
+      <div class="field"><label for="entryRoomCode">ルームコード</label><input id="entryRoomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div>
+      <div class="error" id="entryCodeError" role="alert" hidden>6桁のルームコードを入力してください</div>
+      <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">コードで参加</button>
+    </section>
+    <section class="panel" style="margin-top:18px">
+      <h2>購入済み画像を再ダウンロード</h2>
+      <p class="help">Stripeの購入メールに記載された注文番号と、決済時のメールアドレスで30日間再ダウンロードできます。</p>
+      <a class="secondary link-button" style="width:100%;margin-top:12px" href="/live?recover=1">再ダウンロード画面を開く</a>
+    </section>
     <section class="panel inquiry-panel" id="liveInquiry" style="margin-top:18px">
       <span class="eyebrow">CONTACT &amp; INVITATION</span>
-      <h2 style="margin-top:12px">招待コードの申請・使い方の問い合わせ</h2>
+      <h2 style="margin-top:12px">【YouTuber向け】招待コードの申請・使い方の問い合わせ</h2>
       <p class="help">YouTuber本人、所属事務所、正式な撮影・配信スタッフから申請できます。「興味はあるけれど使い方が分からない」という段階でもお問い合わせください。</p>
       <div class="invite-guide" aria-label="招待コードが発行されるまで">
         <article class="invite-step"><span>1</span><div><strong>フォームから申請</strong><p>連絡先、YouTubeチャンネルURL、利用予定を送ります。</p></div></article>
@@ -202,18 +214,6 @@ function renderEntry() {
         <button class="primary" id="submitLiveInquiry" type="submit">問い合わせ・招待コード申請を送信する <span class="accent">▶</span></button>
         <p class="help">フォーム送信だけでは招待コードは即時発行されません。内容確認後、運営から返信します。</p>
       </form>
-    </section>
-    <section class="panel" style="margin-top:18px">
-      <h2>ルームに参加する</h2>
-      <p class="help">司会者から受け取った6桁のコードを入力してください。</p>
-      <div class="field"><label for="entryRoomCode">ルームコード</label><input id="entryRoomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456"></div>
-      <div class="error" id="entryCodeError" role="alert" hidden>6桁のルームコードを入力してください</div>
-      <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">コードで参加</button>
-    </section>
-    <section class="panel" style="margin-top:18px">
-      <h2>購入済み画像を再ダウンロード</h2>
-      <p class="help">Stripeの購入メールに記載された注文番号と、決済時のメールアドレスで30日間再ダウンロードできます。</p>
-      <a class="secondary link-button" style="width:100%;margin-top:12px" href="/live?recover=1">再ダウンロード画面を開く</a>
     </section>
   `);
   bind('#creatorInvite', 'input', (event) => {
