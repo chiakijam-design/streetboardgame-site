@@ -40,6 +40,10 @@ const state = {
   subjectQuestionId: '',
   scheduleAvailability: null,
   scheduleChecking: false,
+  reservationScheduledAt: 0,
+  rescheduleAvailability: null,
+  rescheduleChecking: false,
+  managementMessage: '',
   resultViewerName: '',
   resultShareBusy: false,
   creatorImageFile: null,
@@ -436,6 +440,96 @@ async function checkScheduleAvailability() {
   render();
 }
 
+function rescheduleAvailabilityHtml(game) {
+  const scheduledAt = Number(state.reservationScheduledAt || game?.scheduledAt || 0);
+  if (!scheduledAt) return '<div class="notice">変更先の配信日と開始時刻を選んでください。</div>';
+  if (state.rescheduleChecking) return '<div class="notice">変更先の予約枠を確認しています…</div>';
+  if (state.rescheduleAvailability === true) return '<div class="notice schedule-ok">この日時へ変更できます。確定するまでは現在の予約枠を保持します。</div>';
+  if (state.rescheduleAvailability === false) return `<div class="error">前後${LIVE_RESERVATION_BUFFER_HOURS}時間以内に別の予約があります。現在の予約は変更されていません。</div>`;
+  if (scheduledAt === Number(game?.scheduledAt)) return '<div class="notice">現在の予約日時です。変更するときは新しい日時を選んでください。</div>';
+  return `<div class="notice">変更候補：${escapeHtml(formatLiveDate(scheduledAt))}</div>`;
+}
+
+async function checkReservationRescheduleAvailability() {
+  const scheduledAt = Number(state.reservationScheduledAt || state.game?.scheduledAt || 0);
+  if (!scheduledAt || scheduledAt === Number(state.game?.scheduledAt)) {
+    state.rescheduleAvailability = null;
+    state.error = scheduledAt ? '現在と異なる予約日時を選んでください' : '変更先の予約日時を選んでください';
+    return render();
+  }
+  state.rescheduleChecking = true;
+  state.rescheduleAvailability = null;
+  state.managementMessage = '';
+  state.error = '';
+  render();
+  try {
+    const response = await api(`/api/live/reservations/availability?scheduledAt=${encodeURIComponent(scheduledAt)}&code=${encodeURIComponent(state.roomCode)}`, { headers: hostHeaders() });
+    state.rescheduleAvailability = response.available === true;
+  } catch (error) {
+    state.error = humanError(error);
+  }
+  state.rescheduleChecking = false;
+  render();
+}
+
+async function rescheduleReservation() {
+  const scheduledAt = Number(state.reservationScheduledAt || 0);
+  if (state.rescheduleAvailability !== true || !scheduledAt) return;
+  if (!window.confirm(`予約日時を「${formatLiveDate(scheduledAt)}」へ変更しますか？\n現在の予約枠は、変更が成功するまで保持されます。`)) return;
+  try {
+    const response = await api(`/api/live/games/${state.roomCode}/reschedule`, {
+      method: 'POST', headers: hostHeaders(), body: JSON.stringify({ scheduledAt }),
+    });
+    state.game = response.game;
+    state.reservationScheduledAt = Number(response.game?.scheduledAt) || 0;
+    state.rescheduleAvailability = null;
+    state.managementMessage = `予約日時を${formatLiveDate(response.game?.scheduledAt)}へ変更しました。`;
+    state.error = '';
+  } catch (error) {
+    state.rescheduleAvailability = null;
+    state.error = humanError(error);
+  }
+  render();
+}
+
+async function rotateReservationLink(target) {
+  const label = target === 'host' ? 'スタッフ用URL' : 'YouTuber本人用URL';
+  if (!window.confirm(`${label}を再発行しますか？\n再発行すると、古いURLは直ちに使えなくなります。`)) return;
+  try {
+    const response = await api(`/api/live/games/${state.roomCode}/rotate-links`, {
+      method: 'POST', headers: hostHeaders(),
+      body: JSON.stringify({ host: target === 'host', subject: target === 'subject' }),
+    });
+    state.game = response.game;
+    if (target === 'host' && response.hostToken) {
+      state.hostToken = response.hostToken;
+      sessionStorage.setItem(`live:host:${state.roomCode}`, response.hostToken);
+      history.replaceState({}, '', `/live?room=${state.roomCode}#host=${response.hostToken}`);
+    }
+    state.managementMessage = `${label}を再発行しました。表示された新URLをコピーして、安全な方法で共有してください。`;
+    state.error = '';
+  } catch (error) {
+    state.error = humanError(error);
+  }
+  render();
+}
+
+async function cancelReservation() {
+  if (!window.confirm('このLIVE予約をキャンセルしますか？\n予約枠は解放され、視聴者・YouTuber本人・古いスタッフURLにはキャンセル済みと表示されます。この操作は元に戻せません。')) return;
+  try {
+    const response = await api(`/api/live/games/${state.roomCode}/cancel`, {
+      method: 'POST', headers: hostHeaders(), body: JSON.stringify({}),
+    });
+    state.game = response.game;
+    state.error = '';
+    clearInterval(state.pollTimer);
+    closeRealtimeSocket();
+  } catch (error) {
+    state.error = humanError(error);
+  }
+  render();
+}
+
 function validateCreatorImageFile(file) {
   if (!/^image\/(?:jpeg|png|webp)$/i.test(file.type || '')) throw new Error('invalid-creator-image');
   if (Number(file.size) > 10 * 1024 * 1024) throw new Error('creator-image-too-large');
@@ -492,6 +586,8 @@ async function initializeRoom() {
 }
 
 function renderJoin() {
+  if (state.game?.phase === 'cancelled') return setPage(cancelledLiveHtml(state.game));
+  if (state.game?.phase === 'terminated') return setPage(terminatedLiveHtml(state.game));
   const isFull = Number(state.game?.participantCount || 0) >= Number(state.game?.participantLimit || LIVE_VIEWER_LIMIT);
   setPage(`
     <section class="panel">
@@ -529,6 +625,7 @@ async function joinGame() {
 function renderHost() {
   const game = state.game;
   if (!game) return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
+  if (game.phase === 'cancelled') return setPage(cancelledLiveHtml(game));
   if (game.phase === 'terminated') return setPage(terminatedLiveHtml(game));
   let content = '';
   if (game.phase === 'lobby') {
@@ -544,6 +641,18 @@ function renderHost() {
         <div class="field"><label for="managementUrl">スタッフ用URL（視聴者には共有しない）</label><input id="managementUrl" readonly value="${escapeAttr(managementUrl)}"></div>
         <button class="secondary" id="copyManagementUrl" style="width:100%;margin-top:10px">スタッフ用URLをコピー</button>
         ${subjectUrl ? `<div class="field"><label for="subjectUrl">YouTuber本人用URL（本人だけに共有）</label><input id="subjectUrl" readonly value="${escapeAttr(subjectUrl)}"></div><button class="secondary" id="copySubjectUrl" style="width:100%;margin-top:10px">YouTuber本人用URLをコピー</button>` : ''}
+      </section>
+      <section class="panel live-reservation-management">
+        <span class="eyebrow">RESERVATION</span><h2 style="margin-top:12px">予約を変更・キャンセル</h2>
+        <p class="help">クローズドβ中は変更後も予約時刻の前後${LIVE_RESERVATION_BUFFER_HOURS}時間を確保します。ライブ開始後は変更できません。</p>
+        <div class="field"><label for="reservationScheduledAt">新しい配信日時</label><input id="reservationScheduledAt" type="datetime-local" min="${escapeAttr(minimumScheduleValue())}" value="${escapeAttr(formatDateTimeInput(state.reservationScheduledAt || game.scheduledAt))}"></div>
+        <div class="actions"><button class="secondary" id="checkReschedule">変更先の空きを確認</button><button class="primary" id="confirmReschedule" ${state.rescheduleAvailability === true ? '' : 'disabled'}>この日時へ変更</button></div>
+        ${rescheduleAvailabilityHtml(game)}
+        <h3 style="margin-top:20px">非公開URLの再発行</h3><p class="help">再発行した瞬間に古いURLは使えなくなります。新URLを安全な方法で担当者へ共有してください。</p>
+        <div class="actions"><button class="secondary" id="rotateHostUrl">スタッフ用URLを再発行</button><button class="secondary" id="rotateSubjectUrl">本人用URLを再発行</button></div>
+        <button class="danger" id="cancelReservation" style="width:100%;margin-top:22px">このLIVE予約をキャンセル</button>
+        ${state.managementMessage ? `<div class="notice" role="status">${escapeHtml(state.managementMessage)}</div>` : ''}
+        ${errorHtml()}
       </section>
       <section class="panel">
         <span class="eyebrow">HOST LOBBY</span><h2 style="margin-top:12px">配信当日の参加受付</h2>
@@ -610,6 +719,18 @@ function renderHost() {
     await copyText(document.getElementById('subjectUrl').value);
     document.getElementById('copySubjectUrl').textContent = 'コピーしました';
   });
+  bind('#reservationScheduledAt', 'change', (event) => {
+    state.reservationScheduledAt = new Date(event.target.value).getTime() || 0;
+    state.rescheduleAvailability = null;
+    state.managementMessage = '';
+    state.error = '';
+    render();
+  });
+  bind('#checkReschedule', 'click', checkReservationRescheduleAvailability);
+  bind('#confirmReschedule', 'click', rescheduleReservation);
+  bind('#rotateHostUrl', 'click', () => rotateReservationLink('host'));
+  bind('#rotateSubjectUrl', 'click', () => rotateReservationLink('subject'));
+  bind('#cancelReservation', 'click', cancelReservation);
   document.querySelectorAll('[data-host-answer-index]').forEach((button) => button.addEventListener('click', () => {
     state.hostAnswerIndex = Number(button.dataset.hostAnswerIndex);
     render();
@@ -625,6 +746,7 @@ function renderHost() {
 function renderSubject() {
   const game = state.game;
   if (!game) return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
+  if (game.phase === 'cancelled') return setPage(cancelledLiveHtml(game));
   if (game.phase === 'terminated') return setPage(terminatedLiveHtml(game));
   let content = '';
   if (game.phase === 'lobby') {
@@ -656,6 +778,7 @@ function renderSubject() {
 function renderParticipant() {
   const game = state.game;
   if (!game) return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
+  if (game.phase === 'cancelled') return setPage(cancelledLiveHtml(game));
   if (game.phase === 'terminated') return setPage(terminatedLiveHtml(game));
   let content = '';
   if (game.phase === 'lobby') {
@@ -938,7 +1061,17 @@ async function loadRoom() {
   const headers = state.hostToken ? hostHeaders() : state.subjectToken ? subjectHeaders() : state.participantToken ? participantHeaders() : {};
   const response = await api(`/api/live/games/${state.roomCode}`, { headers });
   state.game = response.game;
-  if (response.game?.phase === 'complete') {
+  if (state.view === 'host' && state.hostToken && !response.game?.host) {
+    sessionStorage.removeItem(`live:host:${state.roomCode}`);
+    state.hostToken = '';
+    state.view = state.participantToken ? 'participant' : 'join';
+  }
+  if (state.view === 'subject' && state.subjectToken && !response.game?.subject) {
+    sessionStorage.removeItem(`live:subject:${state.roomCode}`);
+    state.subjectToken = '';
+    state.view = state.participantToken ? 'participant' : 'join';
+  }
+  if (['complete', 'cancelled', 'terminated'].includes(response.game?.phase)) {
     clearInterval(state.pollTimer);
     closeRealtimeSocket();
   }
@@ -969,7 +1102,7 @@ function startPolling() {
 }
 
 function connectRealtimeSocket() {
-  if (!state.game?.realtime || !state.participantToken || state.game?.phase === 'complete') return;
+  if (!state.game?.realtime || !state.participantToken || ['complete', 'cancelled', 'terminated'].includes(state.game?.phase)) return;
   if ([WebSocket.OPEN, WebSocket.CONNECTING].includes(state.realtimeSocket?.readyState)) return;
   clearTimeout(state.realtimeReconnectTimer);
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -994,7 +1127,7 @@ function connectRealtimeSocket() {
         message.participantName || state.resultViewerName,
       );
       state.votePending = false;
-      if (state.game.phase === 'complete') {
+      if (['complete', 'cancelled', 'terminated'].includes(state.game.phase)) {
         clearInterval(state.pollTimer);
         closeRealtimeSocket();
       }
@@ -1020,7 +1153,7 @@ function connectRealtimeSocket() {
     state.realtimeSocket = null;
     state.realtimeConnected = false;
     state.votePending = false;
-    if (state.view === 'participant' && state.game?.phase !== 'complete') {
+    if (state.view === 'participant' && !['complete', 'cancelled', 'terminated'].includes(state.game?.phase)) {
       state.realtimeReconnectTimer = setTimeout(connectRealtimeSocket, 1_000 + Math.floor(Math.random() * 2_000));
     }
   });
@@ -1100,6 +1233,10 @@ function terminatedLiveHtml(game) {
   return `<section class="panel"><span class="eyebrow">LIVE CLOSED</span><h2 style="margin-top:12px">このLIVEは運営により終了しました</h2><div class="error" role="alert">${escapeHtml(game.terminationMessage || '運営上の理由により、このLIVEは終了しました。')}</div><a class="primary" style="display:grid;place-items:center;margin-top:16px;text-decoration:none" href="/live">LIVEトップへ</a></section>`;
 }
 
+function cancelledLiveHtml(game) {
+  return `<section class="panel"><span class="eyebrow">RESERVATION CANCELLED</span><h2 style="margin-top:12px">このLIVE予約はキャンセルされました</h2><div class="notice" role="status">${escapeHtml(game.cancellationMessage || 'スタッフにより、このLIVE予約はキャンセルされました。')}</div><p class="help">このルームでは参加・回答できません。新しい開催案内がある場合は、配信者から共有されたURLをご確認ください。</p><a class="primary" style="display:grid;place-items:center;margin-top:16px;text-decoration:none" href="/live">LIVEトップへ</a></section>`;
+}
+
 function typeSelect(value, field, disabled = false) {
   return `<select data-field="${field}" ${disabled ? 'disabled' : ''}>${LIVE_QUESTION_TYPES.map((type) => `<option value="${type.value}" ${value === type.value ? 'selected' : ''}>${escapeHtml(type.label)}</option>`).join('')}</select>`;
 }
@@ -1135,7 +1272,11 @@ function humanError(error) {
     'youtube-api-request-failed': 'YouTube公式APIから情報を取得できませんでした。URLを確認して再度お試しください',
     'youtube-creation-required': 'LIVEゲームはYouTubeチャンネルから作成してください',
     'invalid-scheduled-at': '現在より後のライブ配信日時を選んでください',
+    'scheduled-at-too-far': '予約できるのは現在から365日以内です',
     'live-slot-unavailable': `選んだ日時の前後${LIVE_RESERVATION_BUFFER_HOURS}時間以内に別の予約があります。別の日時を選んでください`,
+    'reservation-change-closed': '予約の変更・キャンセル・URL再発行はライブ開始前だけ行えます',
+    'reservation-not-found': '予約枠が見つかりません。画面を更新してからもう一度お試しください',
+    'rotation-target-required': '再発行するURLを選んでください',
     'another-live-active': '別のYouTube LIVEが進行中です。終了後にもう一度お試しください',
     'participant-limit-reached': `参加上限の${Number(state.game?.participantLimit || LIVE_VIEWER_LIMIT).toLocaleString('ja-JP')}人に達したため、このルームには参加できません`,
     'invalid-creator-image': 'YouTuber画像はJPEG・PNG・WebP形式で選んでください',
@@ -1144,6 +1285,7 @@ function humanError(error) {
     'room-not-found': 'ルームが見つかりません。コードを確認してください',
     'name-required': '名前を入力してください',
     'game-finished': 'このゲームは終了しています',
+    'game-cancelled': 'このLIVE予約はキャンセルされています',
     'game-terminated': 'このLIVEは運営により終了しました',
     'live-maintenance': '現在、LIVEサービスはメンテナンス中です。お知らせをご確認ください',
     'voting-closed': '投票は締め切られました',

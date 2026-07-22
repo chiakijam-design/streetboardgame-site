@@ -403,6 +403,63 @@ test('予約日時の前後20時間は別のLIVE予約をAPIでも拒否する',
   expect(await availability.json()).toMatchObject({ available: false, viewerLimit: LIVE_FALLBACK_VIEWER_LIMIT, bufferHours: 20 });
 });
 
+test('スタッフ用URLから予約日時変更・URL再発行・キャンセルを完了できる', async ({ page, request }, testInfo) => {
+  const originalScheduledAt = new Date(scheduleForTest(testInfo, 70)).getTime();
+  const changedScheduleValue = scheduleForTest(testInfo, 75);
+  const changedScheduledAt = new Date(changedScheduleValue).getTime();
+  const createdResponse = await request.post('/api/live/games', {
+    data: {
+      draft: {
+        creationMode: 'youtube', title: '予約セルフサービステスト', subjectName: '本人', channelName: '予約管理チャンネル',
+        scheduledAt: originalScheduledAt,
+        questions: [{ id: 'reservation-manage-q', type: 'guess-person', text: 'どれ？', options: ['A', 'B', 'C', 'D', 'E'] }],
+      },
+    },
+  });
+  expect(createdResponse.status()).toBe(201);
+  const created = await createdResponse.json();
+  const oldHostToken = created.hostToken;
+  const oldSubjectToken = created.game.subjectToken;
+
+  await page.goto(`/live?room=${created.code}#host=${oldHostToken}`);
+  await expect(page.getByRole('heading', { name: '予約を変更・キャンセル' })).toBeVisible();
+  await expect(page.getByText(`クローズドβ中は変更後も予約時刻の前後${LIVE_RESERVATION_BUFFER_HOURS}時間を確保します。`)).toBeVisible();
+  await page.locator('#reservationScheduledAt').fill(changedScheduleValue);
+  await page.locator('#checkReschedule').click();
+  await expect(page.getByText('この日時へ変更できます。確定するまでは現在の予約枠を保持します。')).toBeVisible();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('#confirmReschedule').click();
+  await expect(page.getByText(/予約日時を.+へ変更しました。/)).toBeVisible();
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('#rotateSubjectUrl').click();
+  await expect(page.locator('#subjectUrl')).not.toHaveValue(new RegExp(`${oldSubjectToken}$`));
+  const oldSubjectAccess = await request.get(`/api/live/games/${created.code}`, {
+    headers: { 'x-live-subject-token': oldSubjectToken },
+  });
+  expect((await oldSubjectAccess.json()).game.subject).toBe(false);
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('#rotateHostUrl').click();
+  const newHostUrl = await page.locator('#managementUrl').inputValue();
+  expect(newHostUrl).toMatch(new RegExp(`/live\\?room=${created.code}#host=[a-f0-9]{48}$`));
+  expect(newHostUrl).not.toContain(oldHostToken);
+  const oldHostAccess = await request.get(`/api/live/games/${created.code}`, {
+    headers: { 'x-live-host-token': oldHostToken },
+  });
+  expect((await oldHostAccess.json()).game.host).toBe(false);
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('#cancelReservation').click();
+  await expect(page.getByRole('heading', { name: 'このLIVE予約はキャンセルされました' })).toBeVisible();
+  const publicGame = await request.get(`/api/live/games/${created.code}`);
+  expect((await publicGame.json()).game.phase).toBe('cancelled');
+  const join = await request.post(`/api/live/games/${created.code}/join`, { data: { name: '視聴者' } });
+  expect(join.status()).toBe(410);
+  expect(await join.json()).toEqual({ error: 'game-cancelled' });
+  expect(changedScheduledAt).toBeGreaterThan(originalScheduledAt);
+});
+
 test('別のLIVEが進行中は開始を拒否し、完了後に全体ロックを解放する', async ({ request }, testInfo) => {
   const createGame = async (slot, title, questionId) => {
     const response = await request.post('/api/live/games', {

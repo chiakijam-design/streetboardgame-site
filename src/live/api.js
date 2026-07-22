@@ -2,6 +2,7 @@ import { calculateLiveResult, validateLiveDraft } from './model.js';
 import {
   LIVE_FALLBACK_VIEWER_LIMIT,
   LIVE_RESERVATION_BUFFER_HOURS,
+  LIVE_RESERVATION_MAX_DAYS,
   LIVE_VIEWER_LIMIT,
 } from './config.js';
 import {
@@ -149,13 +150,16 @@ export async function handleLiveApi(request, env, path) {
       return await createLiveGame(request, env);
     }
 
-    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|next|socket|creator-image|result-preview))?$/);
+    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|next|socket|creator-image|result-preview|cancel|reschedule|rotate-links))?$/);
     if (!route) return liveJson({ error: 'not-found' }, 404);
     const [, code, action = ''] = route;
     if (request.method === 'GET' && !action) return await getLiveGameResponse(request, env, code);
     if (request.method === 'GET' && action === 'socket') return await connectLiveGameSocket(request, env, code);
     if (request.method === 'GET' && action === 'result-preview') return await getLiveResultPreview(request, env, code);
     if (request.method !== 'POST') return liveJson({ error: 'method-not-allowed' }, 405);
+    if (action === 'cancel') return await cancelLiveReservationAsHost(request, env, code);
+    if (action === 'reschedule') return await rescheduleLiveGameAsHost(request, env, code);
+    if (action === 'rotate-links') return await rotateLiveGameLinksAsHost(request, env, code);
     if (action === 'creator-image') return await uploadLiveCreatorImage(request, env, code);
     if (action === 'join') {
       await assertLiveServiceAvailable(env, true);
@@ -250,15 +254,105 @@ async function createLiveGame(request, env) {
 }
 
 async function getLiveReservationAvailability(request, env) {
-  const scheduledAt = Number(new URL(request.url).searchParams.get('scheduledAt'));
-  if (!Number.isFinite(scheduledAt) || scheduledAt <= Date.now()) throw liveError('invalid-scheduled-at', 400);
+  const url = new URL(request.url);
+  const scheduledAt = validateLiveScheduledAt(url.searchParams.get('scheduledAt'));
+  let excludeCode = '';
+  const requestedCode = String(url.searchParams.get('code') || '');
+  if (LIVE_CODE_PATTERN.test(requestedCode)) {
+    const game = await requireLiveGame(env, requestedCode, { baseOnly: true });
+    requireLiveHost(request, game);
+    if (game.phase !== 'lobby') throw liveError('reservation-change-closed', 409);
+    excludeCode = requestedCode;
+  }
   await cleanupExpiredLiveData(env);
-  const available = await isLiveSlotAvailable(env, scheduledAt);
+  const available = await isLiveSlotAvailable(env, scheduledAt, excludeCode);
   return liveJson({
     available,
     scheduledAt,
     viewerLimit: liveViewerLimit(env),
     bufferHours: LIVE_RESERVATION_BUFFER_HOURS,
+  });
+}
+
+async function cancelLiveReservationAsHost(request, env, code) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  requireLiveHost(request, game);
+  if (game.phase !== 'lobby') throw liveError('reservation-change-closed', 409);
+  const body = await readLiveJson(request);
+  const message = String(body.message || 'スタッフにより、このLIVE予約はキャンセルされました。').trim().slice(0, 300);
+  game.phase = 'cancelled';
+  game.cancellationMessage = message;
+  game.cancelledAt = Date.now();
+  game.updatedAt = game.cancelledAt;
+  game.expiresAt = game.cancelledAt + 24 * 60 * 60 * 1000;
+  await putStoredLiveGame(env, code, game);
+  await Promise.all([releaseLiveReservation(env, code), releaseLiveActiveSlot(env, code)]);
+  if (hasLiveRealtime(env)) await broadcastCurrentRealtimeState(env, code, game);
+  await recordLiveOpsEvent(env, {
+    category: 'reservation', severity: 'info', eventType: 'reservation-cancelled', code,
+    message, metadata: { scheduledAt: Number(game.scheduledAt) || 0 },
+  });
+  return liveJson({ code, game: publicLiveGame(game, { host: true }) });
+}
+
+async function rescheduleLiveGameAsHost(request, env, code) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  requireLiveHost(request, game);
+  if (game.phase !== 'lobby') throw liveError('reservation-change-closed', 409);
+  const body = await readLiveJson(request);
+  const scheduledAt = validateLiveScheduledAt(body.scheduledAt);
+  const previous = {
+    scheduledAt: Number(game.scheduledAt),
+    blockedFrom: Number(game.scheduledAt) - LIVE_RESERVATION_BUFFER_MS,
+    blockedUntil: Number(game.reservationEndsAt),
+  };
+  if (scheduledAt === previous.scheduledAt) {
+    return liveJson({ code, unchanged: true, game: publicLiveGame(game, { host: true }) });
+  }
+  const reservation = await moveLiveReservation(env, code, scheduledAt);
+  game.scheduledAt = reservation.scheduledAt;
+  game.reservationEndsAt = reservation.blockedUntil;
+  game.updatedAt = Date.now();
+  game.expiresAt = reservation.blockedUntil;
+  try {
+    await putStoredLiveGame(env, code, game);
+  } catch (error) {
+    await moveLiveReservation(env, code, previous.scheduledAt).catch(() => {});
+    throw error;
+  }
+  await recordLiveOpsEvent(env, {
+    category: 'reservation', severity: 'info', eventType: 'reservation-rescheduled', code,
+    message: 'スタッフがLIVE予約日時を変更しました。',
+    metadata: { previousScheduledAt: previous.scheduledAt, scheduledAt },
+  });
+  return liveJson({ code, game: publicLiveGame(game, { host: true }) });
+}
+
+async function rotateLiveGameLinksAsHost(request, env, code) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  requireLiveHost(request, game);
+  if (game.phase !== 'lobby') throw liveError('reservation-change-closed', 409);
+  const body = await readLiveJson(request);
+  const rotateHost = body.host === true;
+  const rotateSubject = body.subject === true;
+  if (!rotateHost && !rotateSubject) throw liveError('rotation-target-required', 400);
+  if (rotateHost) game.hostToken = createLiveToken(24);
+  if (rotateSubject) game.subjectToken = createLiveToken(24);
+  game.updatedAt = Date.now();
+  await putStoredLiveGame(env, code, game);
+  await recordLiveOpsEvent(env, {
+    category: 'security', severity: 'warning', eventType: 'private-links-rotated-by-host', code,
+    message: `${rotateHost ? 'スタッフURL' : ''}${rotateHost && rotateSubject ? '・' : ''}${rotateSubject ? '本人URL' : ''}をスタッフが再発行しました。`,
+    metadata: { host: rotateHost, subject: rotateSubject },
+  });
+  const origin = new URL(request.url).origin;
+  return liveJson({
+    code,
+    hostToken: rotateHost ? game.hostToken : undefined,
+    subjectToken: rotateSubject ? game.subjectToken : undefined,
+    hostUrl: rotateHost ? `${origin}/live?room=${code}#host=${game.hostToken}` : undefined,
+    subjectUrl: rotateSubject ? `${origin}/live?room=${code}#subject=${game.subjectToken}` : undefined,
+    game: publicLiveGame(game, { host: true }),
   });
 }
 
@@ -533,6 +627,7 @@ async function joinLiveGame(request, env, code) {
   const game = await requireLiveGame(env, code, { baseOnly: realtime && Boolean(env.REMOTE_DB) });
   if (game.phase === 'complete') throw liveError('game-finished', 409);
   if (game.phase === 'terminated') throw liveError('game-terminated', 410);
+  if (game.phase === 'cancelled') throw liveError('game-cancelled', 410);
   const body = await readLiveJson(request);
   const name = String(body && body.name || '').replace(/\s+/g, ' ').trim().slice(0, 24);
   if (!name) throw liveError('name-required', 400);
@@ -844,6 +939,8 @@ export function publicLiveGame(game, access = {}) {
     phase: game.phase,
     terminated: game.phase === 'terminated',
     terminationMessage: game.phase === 'terminated' ? String(game.terminationMessage || '') : undefined,
+    cancelled: game.phase === 'cancelled',
+    cancellationMessage: game.phase === 'cancelled' ? String(game.cancellationMessage || '') : undefined,
     currentQuestionIndex: game.currentQuestionIndex,
     questionCount: game.questions.length,
     participantCount: Number.isInteger(game.participantCount) ? game.participantCount : participants.length,
@@ -1440,20 +1537,53 @@ async function cleanupExpiredLiveData(env) {
   await env.REMOTE_DB.prepare('DELETE FROM live_active_sessions WHERE expires_at < ?').bind(now).run();
 }
 
-async function isLiveSlotAvailable(env, scheduledAt) {
+async function isLiveSlotAvailable(env, scheduledAt, excludeCode = '') {
   const blockedFrom = scheduledAt - LIVE_RESERVATION_BUFFER_MS;
   const blockedUntil = scheduledAt + LIVE_RESERVATION_BUFFER_MS;
   if (await ensureLiveD1(env)) {
     const row = await env.REMOTE_DB.prepare(`
       SELECT code FROM live_reservations
-      WHERE scheduled_at > ? AND scheduled_at < ? AND expires_at >= ?
+      WHERE scheduled_at > ? AND scheduled_at < ? AND expires_at >= ? AND code <> ?
       LIMIT 1
-    `).bind(blockedFrom, blockedUntil, Date.now()).first();
+    `).bind(blockedFrom, blockedUntil, Date.now(), excludeCode).first();
     return !row;
   }
   const kv = env.LIVE_KV || env.REMOTE_KV;
   const reservations = await getKvLiveReservations(kv);
-  return !reservations.some((item) => Math.abs(Number(item.scheduledAt) - scheduledAt) < LIVE_RESERVATION_BUFFER_MS);
+  return !reservations.some((item) => item.code !== excludeCode
+    && Math.abs(Number(item.scheduledAt) - scheduledAt) < LIVE_RESERVATION_BUFFER_MS);
+}
+
+async function moveLiveReservation(env, code, scheduledAt) {
+  const now = Date.now();
+  const blockedFrom = scheduledAt - LIVE_RESERVATION_BUFFER_MS;
+  const blockedUntil = scheduledAt + LIVE_RESERVATION_BUFFER_MS;
+  if (await ensureLiveD1(env)) {
+    const moved = await env.REMOTE_DB.prepare(`
+      UPDATE live_reservations
+      SET scheduled_at = ?, blocked_from = ?, blocked_until = ?, expires_at = ?
+      WHERE code = ? AND expires_at >= ? AND NOT EXISTS (
+        SELECT 1 FROM live_reservations AS other
+        WHERE other.code <> ? AND other.scheduled_at > ? AND other.scheduled_at < ? AND other.expires_at >= ?
+      )
+    `).bind(scheduledAt, blockedFrom, blockedUntil, blockedUntil, code, now, code, blockedFrom, blockedUntil, now).run();
+    if (Number(moved?.meta?.changes || 0) !== 1) throw liveError('live-slot-unavailable', 409);
+    return { scheduledAt, blockedFrom, blockedUntil };
+  }
+  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const reservations = await getKvLiveReservations(kv);
+  const currentIndex = reservations.findIndex((item) => item.code === code && Number(item.expiresAt) >= now);
+  if (currentIndex < 0) throw liveError('reservation-not-found', 404);
+  if (reservations.some((item, index) => index !== currentIndex
+    && Math.abs(Number(item.scheduledAt) - scheduledAt) < LIVE_RESERVATION_BUFFER_MS
+    && Number(item.expiresAt) >= now)) {
+    throw liveError('live-slot-unavailable', 409);
+  }
+  reservations[currentIndex] = {
+    ...reservations[currentIndex], scheduledAt, blockedFrom, blockedUntil, expiresAt: blockedUntil,
+  };
+  await kv.put('live:reservations', JSON.stringify(reservations));
+  return { scheduledAt, blockedFrom, blockedUntil };
 }
 
 async function reserveLiveSlot(env, code, scheduledAt, now) {
@@ -1574,6 +1704,22 @@ function requireLiveAdmin(request, env) {
   const expected = String(env.LIVE_ADMIN_TOKEN || '');
   const actual = String(request.headers.get('x-live-admin-token') || '');
   if (expected.length < 32 || expected !== actual) throw liveError('admin-forbidden', 403);
+}
+
+function requireLiveHost(request, game) {
+  const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
+  if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
+  return hostToken;
+}
+
+function validateLiveScheduledAt(value) {
+  const scheduledAt = Number(value);
+  const now = Date.now();
+  if (!Number.isFinite(scheduledAt) || scheduledAt <= now) throw liveError('invalid-scheduled-at', 400);
+  if (scheduledAt > now + LIVE_RESERVATION_MAX_DAYS * 24 * 60 * 60 * 1000) {
+    throw liveError('scheduled-at-too-far', 400);
+  }
+  return scheduledAt;
 }
 
 async function hashLiveSecret(value) {

@@ -80,6 +80,83 @@ test('漏えいURLを再発行すると旧トークンを失効し、強制終�
   assert.deepEqual(await kv.get('live:reservations', { type: 'json' }), []);
 });
 
+test('スタッフは開始前の予約を安全に変更・URL再発行・キャンセルできる', async () => {
+  const kv = memoryKv();
+  const now = Date.now();
+  const originalScheduledAt = now + 48 * 60 * 60 * 1000;
+  const conflictingScheduledAt = now + 96 * 60 * 60 * 1000;
+  const changedScheduledAt = now + 144 * 60 * 60 * 1000;
+  const hostToken = 'c'.repeat(48);
+  const game = {
+    version: 5, title: '予約管理テスト', subjectName: '本人', channelName: 'チャンネル',
+    questions: [{ id: 'q1', type: 'guess-person', text: '問題', options: ['1','2','3','4','5'], lockedIndex: null }],
+    hostToken, subjectToken: 'd'.repeat(48), phase: 'lobby', currentQuestionIndex: 0,
+    participants: [], votes: {}, results: [], showVoteCount: false, participantCount: 0, participantLimit: 50,
+    createdAt: now, updatedAt: now, scheduledAt: originalScheduledAt,
+    reservationEndsAt: originalScheduledAt + 20 * 60 * 60 * 1000,
+    expiresAt: originalScheduledAt + 20 * 60 * 60 * 1000,
+  };
+  await kv.put('live:654321', JSON.stringify(game));
+  await kv.put('live:reservations', JSON.stringify([
+    { code: '654321', scheduledAt: originalScheduledAt, expiresAt: game.expiresAt },
+    { code: '999999', scheduledAt: conflictingScheduledAt, expiresAt: conflictingScheduledAt + 20 * 60 * 60 * 1000 },
+  ]));
+  const env = { LIVE_KV: kv };
+  const hostHeaders = { 'content-type': 'application/json', 'x-live-host-token': hostToken };
+
+  const unavailableResponse = await handleLiveApi(new Request(
+    `https://example.com/api/live/reservations/availability?scheduledAt=${conflictingScheduledAt}&code=654321`,
+    { headers: hostHeaders },
+  ), env, '/api/live/reservations/availability');
+  assert.equal(unavailableResponse.status, 200);
+  assert.equal((await unavailableResponse.json()).available, false);
+
+  const conflictingMoveResponse = await handleLiveApi(new Request('https://example.com/api/live/games/654321/reschedule', {
+    method: 'POST', headers: hostHeaders, body: JSON.stringify({ scheduledAt: conflictingScheduledAt }),
+  }), env, '/api/live/games/654321/reschedule');
+  assert.equal(conflictingMoveResponse.status, 409);
+  assert.equal((await conflictingMoveResponse.json()).error, 'live-slot-unavailable');
+  assert.equal((await kv.get('live:654321', { type: 'json' })).scheduledAt, originalScheduledAt);
+  assert.equal((await kv.get('live:reservations', { type: 'json' })).find((item) => item.code === '654321').scheduledAt, originalScheduledAt);
+
+  const rescheduleResponse = await handleLiveApi(new Request('https://example.com/api/live/games/654321/reschedule', {
+    method: 'POST', headers: hostHeaders, body: JSON.stringify({ scheduledAt: changedScheduledAt }),
+  }), env, '/api/live/games/654321/reschedule');
+  assert.equal(rescheduleResponse.status, 200);
+  assert.equal((await rescheduleResponse.json()).game.scheduledAt, changedScheduledAt);
+  const reservationsAfterMove = await kv.get('live:reservations', { type: 'json' });
+  assert.equal(reservationsAfterMove.find((item) => item.code === '654321').scheduledAt, changedScheduledAt);
+
+  const rotateResponse = await handleLiveApi(new Request('https://example.com/api/live/games/654321/rotate-links', {
+    method: 'POST', headers: hostHeaders, body: JSON.stringify({ host: true }),
+  }), env, '/api/live/games/654321/rotate-links');
+  assert.equal(rotateResponse.status, 200);
+  const rotated = await rotateResponse.json();
+  assert.match(rotated.hostUrl, /\/live\?room=654321#host=[a-f0-9]{48}$/);
+  assert.notEqual(rotated.hostToken, hostToken);
+
+  const oldTokenResponse = await handleLiveApi(new Request('https://example.com/api/live/games/654321/cancel', {
+    method: 'POST', headers: hostHeaders, body: '{}',
+  }), env, '/api/live/games/654321/cancel');
+  assert.equal(oldTokenResponse.status, 403);
+  assert.equal((await oldTokenResponse.json()).error, 'host-forbidden');
+
+  const cancelResponse = await handleLiveApi(new Request('https://example.com/api/live/games/654321/cancel', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-live-host-token': rotated.hostToken },
+    body: '{}',
+  }), env, '/api/live/games/654321/cancel');
+  assert.equal(cancelResponse.status, 200);
+  assert.equal((await cancelResponse.json()).game.phase, 'cancelled');
+  assert.deepEqual((await kv.get('live:reservations', { type: 'json' })).map((item) => item.code), ['999999']);
+
+  const joinResponse = await handleLiveApi(new Request('https://example.com/api/live/games/654321/join', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: '視聴者' }),
+  }), env, '/api/live/games/654321/join');
+  assert.equal(joinResponse.status, 410);
+  assert.equal((await joinResponse.json()).error, 'game-cancelled');
+});
+
 async function sign(secret, value) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const bytes = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value)));
