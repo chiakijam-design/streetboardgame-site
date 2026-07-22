@@ -61,6 +61,38 @@ export async function getLiveSystemStatus(env) {
   } : { mode: 'normal', title: '', message: '', source: 'default', updatedAt: 0 };
 }
 
+export async function getLiveHealth(env, now = Date.now()) {
+  const checkedAt = Number(now) || Date.now();
+  const realtimeConfigured = hasLiveRealtime(env);
+  if (!env?.REMOTE_DB || !realtimeConfigured) {
+    return {
+      ok: false,
+      state: 'unavailable',
+      checkedAt,
+      checks: { worker: true, database: false, realtime: realtimeConfigured },
+    };
+  }
+  try {
+    const databaseProbe = await env.REMOTE_DB.prepare('SELECT 1 AS ok').first();
+    const databaseOk = Number(databaseProbe?.ok) === 1;
+    const status = await getLiveSystemStatus(env);
+    const acceptingTraffic = status.mode !== 'maintenance';
+    return {
+      ok: databaseOk && acceptingTraffic,
+      state: !databaseOk ? 'unavailable' : status.mode,
+      checkedAt,
+      checks: { worker: true, database: databaseOk, realtime: true },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      state: 'unavailable',
+      checkedAt,
+      checks: { worker: true, database: false, realtime: true },
+    };
+  }
+}
+
 export async function setLiveSystemStatus(env, input, operator = 'admin') {
   if (!await ensureLiveOpsD1(env)) throw opsError('live-storage-not-configured', 500);
   const mode = normalizeMode(input?.mode);

@@ -33,6 +33,8 @@ LIVE運営コンソール、障害告知、Stripe Checkout・Webhook・返金・
 2. Push to `chiakijam-design/streetboardgame-site`.
 3. Wait for Cloudflare Pages / Workers to redeploy.
 4. Verify `https://streetboardgame.com`.
+5. Run `pnpm run check:live-health` and confirm that the production Worker returns `ok: true`.
+6. Confirm Workers & Pages > `streetboardgame` > Observability is enabled and Invocation Logs remain disabled to avoid storing capability URLs.
 
 ## Manual Cloudflare Checks
 

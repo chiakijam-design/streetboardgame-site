@@ -47,6 +47,33 @@ test('緊急メンテナンス中は公開状態を返し、新規LIVE処理を5
   assert.equal((await createResponse.json()).error, 'live-maintenance');
 });
 
+test('外形監視はWorker・D1・リアルタイム構成が正常な場合だけ200を返す', async () => {
+  const healthyEnv = {
+    REMOTE_DB: healthD1(),
+    LIVE_ROOM_COORDINATOR: {},
+    LIVE_VOTE_SHARD: {},
+  };
+  const healthyResponse = await handleLiveApi(
+    new Request('https://example.com/api/live/health'), healthyEnv, '/api/live/health',
+  );
+  assert.equal(healthyResponse.status, 200);
+  assert.deepEqual((await healthyResponse.json()).checks, { worker: true, database: true, realtime: true });
+
+  const missingBindingResponse = await handleLiveApi(
+    new Request('https://example.com/api/live/health'), {}, '/api/live/health',
+  );
+  assert.equal(missingBindingResponse.status, 503);
+  assert.equal((await missingBindingResponse.json()).state, 'unavailable');
+
+  const maintenanceResponse = await handleLiveApi(
+    new Request('https://example.com/api/live/health'),
+    { ...healthyEnv, LIVE_EMERGENCY_MODE: 'maintenance' },
+    '/api/live/health',
+  );
+  assert.equal(maintenanceResponse.status, 503);
+  assert.equal((await maintenanceResponse.json()).state, 'maintenance');
+});
+
 test('管理画面は管理トークンとTOTPの二要素で15分セッションを発行する', async () => {
   assert.equal(await generateLiveAdminTotp('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', 59_000), '287082');
   const now = 1_800_000_000_000;
@@ -245,5 +272,20 @@ function adminAuthEnv(kv) {
     LIVE_ADMIN_TOKEN: 'admin-token-'.repeat(4),
     LIVE_ADMIN_TOTP_SECRET: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',
     LIVE_ADMIN_SESSION_SECRET: 'session-secret-'.repeat(3),
+  };
+}
+
+function healthD1() {
+  return {
+    prepare(sql) {
+      return {
+        bind() { return this; },
+        async run() { return { success: true }; },
+        async first() {
+          if (/SELECT 1 AS ok/i.test(sql)) return { ok: 1 };
+          return null;
+        },
+      };
+    },
   };
 }

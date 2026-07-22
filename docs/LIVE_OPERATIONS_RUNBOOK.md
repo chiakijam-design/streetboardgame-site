@@ -51,6 +51,7 @@ D1自体が利用不能な緊急時は、次のWorker環境変数を設定して
 
 | 項目 | 初期しきい値 | 一次対応 |
 |---|---:|---|
+| 外形監視 `/api/live/health` | 5分中2回の503・タイムアウト | Workers Metrics・例外ログ、D1、メンテナンス状態、bindingを確認 |
 | LIVE API 5xx | 1件以上 | 運営イベント、Cloudflare Logs、該当APIを確認 |
 | WebSocket予期せぬ切断率 | 5分で20切断以上かつ20%以上 | Cloudflare障害、デプロイ時刻、特定ルーム集中を確認 |
 | Stripe決済失敗 | 1件以上 | 決済IDと理由を確認し、別決済方法を案内 |
@@ -61,23 +62,36 @@ D1自体が利用不能な緊急時は、次のWorker環境変数を設定して
 
 WebSocketしきい値は`LIVE_WS_ALERT_MIN_DISCONNECTS`（既定20）と`LIVE_WS_ALERT_RATE`（既定0.2）で変更できる。Cloudflareのデプロイは既存WebSocketを切断するため、予約時間中のデプロイは禁止する。
 
+`GET /api/live/health`はWorker、ゲーム用D1、Durable Objects binding、メンテナンス状態を確認する。正常・一部障害は200、D1異常・binding不足・メンテナンス中は503を返す。決済、R2、YouTube APIへ外部通信は行わないため、それらは専用通知と運営コンソールで別に監視する。
+
+手元から同じ判定を行う場合は次を実行する。秘密情報は不要で、成功時は終了コード0、異常時は1になる。
+
+```powershell
+pnpm run check:live-health
+```
+
 ## 3. Cloudflare Dashboardで必ず行う設定
 
 コードだけではCloudflareアカウント全体の利用量・エッジエラー率を監視できない。
 
-1. NotificationsでCloudflare IncidentとUsage Based Billingを有効化する。
-2. D1 Rows Read / Rows Writtenを70%と90%で通知する。
-3. D1 > `streetboardgame-remote` > MetricsでQPS、rows、latency、storageを週1回確認する。
-4. Workers & Pages > `streetboardgame` > Metrics / Logsで5xxとCPU時間を確認する。
-5. Durable Objectsの`LiveRoomCoordinator`と`LiveVoteShard`でrequests、WebSocket、duration、storageを確認する。
-6. R2 > `streetboardgame-live-private`でPublic Development URLが無効、Custom Domainsが0件、期限超過オブジェクトが0件であることを確認する。
-7. `/live-ops`の監視設定へ`非公開R2 / Images`が表示されることを確認する。表示されない環境では画像販売を開始しない。
-8. EnterpriseではAdvanced Error Rate Alertを`streetboardgame.com`のedge/origin 5xxへ設定する。
-9. Enterprise以外では外形監視から`GET /api/live/status`を1分間隔で確認し、5分中2回失敗で通知する。
+1. `wrangler.jsonc`の`observability.enabled=true`、`logs.invocation_logs=false`、`traces.enabled=false`を維持する。デプロイ後、Workers & Pages > `streetboardgame` > Observabilityで例外ログを確認できることを確かめる。
+2. Invocation LogsはリクエストURLを保存するため、遠隔プレイの権限クエリを記録しないよう無効にしている。5xxの全体傾向はCloudflare Metrics、LIVEの重大APIエラーはD1と`LIVE_OPS_ALERT_WEBHOOK_URL`で全件確認する。Workers Logsだけを唯一の通知経路にしない。
+3. NotificationsでCloudflare Incidentを有効化する。これは全プランで利用できる。
+4. Pay-as-you-goかつPro以上ではUsage Based Billingまたは各製品画面のbudget alertを設定する。70%と90%は「月間許容金額」に対する金額しきい値とし、製品画面から作ってもアカウント全体の支出に対する通知である点に注意する。
+5. D1 > `streetboardgame-remote` > Metricsでqueries、rows read/written、latency、storageを週1回確認する。行数の70%・90%はDashboardの自動通知と断定せず、契約枠との比較を運用記録へ残す。
+6. Durable Objectsの`LiveRoomCoordinator`と`LiveVoteShard`でrequests、errors、WebSocket messages、duration、storage、memory P90/P99を確認する。障害時は対象Object IDまたは名前へ絞り込む。
+7. R2 > `streetboardgame-live-private`でPublic Development URLが無効、Custom Domainsが0件、期限超過オブジェクトが0件であることを確認する。
+8. `/live-ops`の監視設定へ`非公開R2 / Images`が表示されることを確認する。表示されない環境では画像販売を開始しない。
+9. Pro以上ではHealth ChecksをHTTPS・host=`www.streetboardgame.com`・path=`/api/live/health`・期待HTTP=200で設定し、状態がhealthy/unhealthyのどちらへ変化した場合も通知する。複数リージョンを選択し、60秒間隔を初期値とする。
+10. FreeプランではCloudflare Health Checksを利用できない。別事業者の外形監視から同じURLを60秒間隔で確認し、5分中2回の503・タイムアウトで通知する。
+11. EnterpriseではAdvanced Error Rate Alertを`streetboardgame.com`のedge 5xxへ設定する。低トラフィックで高感度にすると単発5xxでも頻繁に通知されるため、初期はmedium sensitivityとする。
 
 公式資料:
 
 - https://developers.cloudflare.com/notifications/notification-available/
+- https://developers.cloudflare.com/workers/observability/logs/workers-logs/
+- https://developers.cloudflare.com/health-checks/
+- https://developers.cloudflare.com/health-checks/how-to/health-checks-notifications/
 - https://developers.cloudflare.com/d1/observability/metrics-analytics/
 - https://developers.cloudflare.com/d1/observability/billing/
 - https://developers.cloudflare.com/durable-objects/observability/metrics-and-analytics/
@@ -101,12 +115,24 @@ Stripeは本番Webhookを最大3日間再送する。復旧後は未配信イベ
 
 ## 5. 障害対応フロー
 
+### 5.0 重大度
+
+| 重大度 | 条件 | 目標 |
+|---|---|---|
+| SEV1 | サイト全体停止、投票不能、データ不整合、決済・画像の誤提供、情報漏えい疑い | 5分以内に着手、10分以内に停止または告知 |
+| SEV2 | 一部ルーム・一部機能の障害、切断率しきい値超過、決済失敗増加 | 15分以内に着手、30分以内に告知判断 |
+| SEV3 | 単発エラー、使用量警告、利用者影響のない設定不備 | 当日中に確認し、次回配信前に解消 |
+
+SEV1・SEV2では1名を対応責任者に固定する。調査担当が複数でも、告知、強制終了、復旧宣言は責任者が一本化する。
+
 ### 5.1 最初の5分
 
 1. 運営コンソールで重大イベント、稼働中ルーム、WebSocket切断率を確認する。
-2. `/api/live/status`、`/live`、対象ルームを別回線から確認する。
-3. Cloudflare Status、Workers Logs、D1/DO Metrics、Stripe Webhookを確認する。
-4. 影響を「新規作成のみ」「参加・投票」「決済・画像DL」「サイト全体」に分類する。
+2. `pnpm run check:live-health`を実行し、`/api/live/health`、`/live`、CSPを同時確認する。対象ルームは別回線からも確認する。
+3. Cloudflare Status、Workers Metrics、例外ログ、D1/DO Metrics、Stripe Webhookを確認する。発生時刻の前後5分へ絞り、D1の運営イベントと対象Durable Objectを照合する。
+4. 直前のデプロイ時刻とコミットを確認する。稼働中LIVEがある間は追加デプロイを行わない。
+5. 影響を「新規作成のみ」「参加・投票」「決済・画像DL」「サイト全体」に分類する。
+6. SEV、発見時刻、最初の異常時刻、担当者、影響範囲を障害記録へ記入する。
 
 ### 5.2 利用者告知
 
@@ -163,15 +189,41 @@ Stripeは本番Webhookを最大3日間再送する。復旧後は未配信イベ
 ## 6. 復旧判定
 
 1. 原因を修正し、該当APIを本番で確認する。
-2. テストルームで参加、本人回答、投票、答え合わせまで確認する。
-3. 15分間、API重大エラー0件、WebSocket予期せぬ切断率5%未満を確認する。
-4. 告知を`normal`へ戻す。
-5. 発生・検知・告知・復旧時刻、影響ルーム、決済影響、再発防止策を記録する。
+2. `pnpm run check:live-health`が2回連続で成功することを確認する。
+3. テストルームで参加、本人回答、投票、答え合わせまで確認する。
+4. 15分間、外形監視成功、API重大エラー0件、WebSocket予期せぬ切断率5%未満を確認する。
+5. 決済影響があった場合はStripeの未配信Webhook、注文状態、購入権限、返金・分配保留を照合する。
+6. 告知を`normal`へ戻す。Cloudflare Health Checksのhealthy復帰通知も確認する。
+7. 発生・検知・告知・復旧時刻、影響ルーム、決済影響、再発防止策を記録する。
 
 ## 7. 制約
 
 - コンソールの「Stripeへ全額返金」はStripe APIを直接呼ぶ。実行前に必ず「権限停止・返金待ち」で対象を確定し、TOTP管理セッションを第三者へ共有しない。
 - Cloudflare全体のエラー率とD1/DO請求使用量はCloudflare Dashboardが正。アプリ画面だけで請求判断しない。
+- WorkersのInvocation Logsは秘密URL保護のため無効であり、個別リクエスト履歴を検索する用途には使えない。Metrics、例外ログ、重大イベントのD1記録、Webhook通知、外形監視を併用する。
+- Cloudflare Health ChecksはPro以上で、Freeでは利用できない。契約プランを確認して外形監視の空白を作らない。
 - `LIVE_OPS_ALERT_WEBHOOK_URL`未設定ではアプリ通知は送られない。
 - 管理トークン、Stripe署名secret、通知Webhook URLをGitへコミットしない。
 - TOTP秘密鍵、管理セッション署名secret、購入履歴データもGitへコミットしない。
+
+## 8. 障害記録テンプレート
+
+```text
+障害ID:
+重大度: SEV1 / SEV2 / SEV3
+対応責任者:
+発見時刻:
+最初の異常時刻:
+告知時刻:
+復旧時刻:
+検知元: Health Checks / 外形監視 / Cloudflare通知 / アプリ通知 / 利用者連絡
+影響: サイト全体 / 作成 / 参加・投票 / 決済 / 画像DL / その他
+対象ルーム・注文:
+直前デプロイのコミット:
+確認したWorkers Logs・D1・DO・Stripe:
+実施した停止・告知・返金・URL失効:
+原因:
+再発防止策と期限:
+```
+
+四半期ごとに、テスト環境または利用者のいない時間帯で`degraded`告知、`maintenance`停止、外形監視の503検知、`normal`復帰を一巡させる。実決済、実返金、稼働中ルームの強制終了は訓練に使用しない。

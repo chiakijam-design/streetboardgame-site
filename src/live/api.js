@@ -44,6 +44,7 @@ import { acceptCreatorAgreement, getCreatorAgreement } from './agreement.js';
 import {
   acknowledgeLiveOpsEvent,
   ensureLiveOpsD1,
+  getLiveHealth,
   getLiveOpsOverview,
   getLiveSystemStatus,
   recordLiveOpsEvent,
@@ -96,6 +97,10 @@ export async function handleLiveApi(request, env, path) {
     }
     if (path === '/api/live/status' && request.method === 'GET') {
       return liveJson({ status: await getLiveSystemStatus(env) });
+    }
+    if (path === '/api/live/health' && request.method === 'GET') {
+      const health = await getLiveHealth(env);
+      return liveJson(health, health.ok ? 200 : 503);
     }
     if (path === '/api/live/admin/session' && request.method === 'POST') {
       await enforceLiveRateLimit(request, env, 'admin-auth', 10);
