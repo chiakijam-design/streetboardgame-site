@@ -47,6 +47,12 @@
   Cache-Control: public, max-age=31536000, immutable
   Access-Control-Allow-Origin: *
 
+# ファイル名に内容ハッシュを含む本番JSは再訪時に再検証しない
+/dist/*
+  Cache-Control: public, max-age=31536000, immutable
+/assets/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # assets直下の更新可能な画像
 /assets/apple-touch-icon.png
   Cache-Control: public, max-age=86400, must-revalidate
@@ -69,10 +75,8 @@
 /assets/qr-site.png
   Cache-Control: public, max-age=300, must-revalidate
 
-# JS/JSXは短めキャッシュ (アプリ更新を素早く反映するため)
+# 開発用の未ハッシュJSXだけ短めキャッシュ (本番はdistのハッシュ付きJSを使用)
 /*.jsx
-  Cache-Control: public, max-age=300, must-revalidate
-/*.js
   Cache-Control: public, max-age=300, must-revalidate
 
 # favicon

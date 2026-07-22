@@ -10,7 +10,12 @@ const IMAGE_BASE = 'assets/character/';
 
 // 各バリアントの画像と自然なアスペクト比 (height / width)
 const VARIANTS = {
-  full:    { file: 'girl-full.png',    webp: 'girl-full.webp',    aspect: 3072/2088 },
+  full:    {
+    file: 'girl-full.png',
+    webp: 'girl-full.webp',
+    webpSrcSet: 'girl-full-480.webp 326w, girl-full-960.webp 653w, girl-full.webp 2088w',
+    aspect: 3072/2088,
+  },
   default: { file: 'girl-default.png', webp: 'girl-default.webp', aspect: 297/244 },
   upper:   { file: 'girl-upper.png',   webp: 'girl-upper.webp',   aspect: 297/244 },
 
@@ -49,10 +54,19 @@ function Girl({
     userSelect: 'none',
     ...style,
   };
+  const responsiveSizes = typeof w === 'number' ? `${w}px` : undefined;
 
   return (
     <picture style={{ display: 'block' }}>
-      {conf.webp && <source srcSet={IMAGE_BASE + conf.webp} type="image/webp" />}
+      {conf.webp && (
+        <source
+          srcSet={conf.webpSrcSet
+            ? conf.webpSrcSet.split(', ').map((candidate) => IMAGE_BASE + candidate).join(', ')
+            : IMAGE_BASE + conf.webp}
+          sizes={conf.webpSrcSet ? responsiveSizes : undefined}
+          type="image/webp"
+        />
+      )}
       <img
         src={IMAGE_BASE + conf.file}
         alt={alt}

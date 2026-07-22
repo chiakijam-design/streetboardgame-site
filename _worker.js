@@ -54,6 +54,16 @@ async function handleRequest(request, env) {
     const rawPath = decodeURIComponent(url.pathname);
     const path = rawPath.replace(/\/+$/, '');
 
+    const cleanHtmlPaths = {
+      '/index.html': '/',
+      '/remote.html': '/remote',
+      '/live.html': '/live',
+      '/live_ops.html': '/live-ops',
+    };
+    if (cleanHtmlPaths[rawPath]) {
+      return Response.redirect(url.origin + cleanHtmlPaths[rawPath] + url.search, 301);
+    }
+
     if (path.startsWith('/api/live')) {
       return handleLiveApi(request, env, path);
     }
@@ -74,7 +84,10 @@ async function handleRequest(request, env) {
       }));
       const headers = new Headers(response.headers);
       headers.set('content-type', 'text/html; charset=UTF-8');
-      return new Response(await response.text(), { status: response.status, headers });
+      if (url.searchParams.has('room') || url.searchParams.has('manage') || url.searchParams.has('turn')) {
+        headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+      }
+      return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
     }
 
     if (rawPath !== '/' && rawPath.endsWith('/') && path === '/live') {
@@ -89,6 +102,7 @@ async function handleRequest(request, env) {
       }));
       const headers = new Headers(response.headers);
       headers.set('content-type', 'text/html; charset=UTF-8');
+      headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
     }
 
@@ -294,6 +308,7 @@ async function handleRequest(request, env) {
         ogTitle: '製品版｜私のこと、ちゃんと分かってるよね？',
         imageAlt: 'ボードゲーム版 私のこと、ちゃんと分かってるよね？',
         pageId: CANONICAL_ORIGIN + '/product#webpage',
+        preloadImage: '/assets/character/girl-full-960.webp',
         noscriptTitle: '製品版｜私のこと、ちゃんと分かってるよね？',
         noscriptBody: 'Amazonで販売中のボードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、飲み会や旅行、おうちデートでも遊べます。',
       },
@@ -411,12 +426,17 @@ function createCspNonce() {
 
 function applySeoMeta(html, page) {
   const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2';
+  const preloadImage = page.preloadImage || '/assets/character/girl-default.webp';
+  const preloadTag = preloadImage.includes('girl-full')
+    ? '<link rel="preload" as="image" href="/assets/character/girl-full-960.webp" imagesrcset="/assets/character/girl-full-480.webp 326w, /assets/character/girl-full-960.webp 653w, /assets/character/girl-full.webp 2088w" imagesizes="156px" type="image/webp" fetchpriority="high" />'
+    : `<link rel="preload" as="image" href="${preloadImage}" type="image/webp" fetchpriority="high" />`;
   return html
     .replace(/<title>.*?<\/title>/, `<title>${page.title}</title>`)
     .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${page.description}" />`)
     .replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${page.url}" />`)
     .replace(/<link rel="alternate" hreflang="ja" href="[^"]*" \/>/, `<link rel="alternate" hreflang="ja" href="${page.url}" />`)
     .replace(/<link rel="alternate" hreflang="x-default" href="[^"]*" \/>/, `<link rel="alternate" hreflang="x-default" href="${page.url}" />`)
+    .replace(/<link rel="preload" as="image"[^>]*\/>/, preloadTag)
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${page.ogTitle}" />`)
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${page.description}" />`)
     .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${page.url}" />`)

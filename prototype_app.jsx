@@ -2029,7 +2029,7 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
           opacity: 0.82,
           pointerEvents: 'none',
         }}>
-          <Girl variant="default" height={150} />
+          <Girl variant="default" height={150} loading="eager" fetchPriority="high" />
         </div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <PillLabel>{content.pill}</PillLabel>
@@ -2186,7 +2186,7 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
           </button>
         )}
 
-        <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+        <nav aria-label="関連ゲーム" style={{ display: 'grid', gap: 10, marginTop: 14 }}>
           {content.related.map((item) => {
             const action = actionMap[item.action];
             return (
@@ -2211,7 +2211,7 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
               </a>
             );
           })}
-        </div>
+        </nav>
 
         <section style={{
           marginTop: 16,
@@ -2284,9 +2284,9 @@ function Decor() {
 function CardStack() {
   // ランダムに3枚お題カードから引いてバラ撒く
   const stacks = [
-    { rotate: -8, top: 10,  left: 30,  delay: 0,    z: 1, src: 'assets/cards/1.png', webp: 'assets/cards/1.webp' },
-    { rotate: 4,  top: 0,   left: 100, delay: 0.1,  z: 3, src: 'assets/cards/20.png', webp: 'assets/cards/20.webp' },
-    { rotate: -3, top: 18,  left: 170, delay: 0.2,  z: 2, src: 'assets/cards/15.png', webp: 'assets/cards/15.webp' },
+    { rotate: -8, top: 10,  left: 30,  delay: 0,    z: 1, src: 'assets/cards/1.png', webp: 'assets/cards/1.webp', thumb: 'assets/cards/hero/1.webp' },
+    { rotate: 4,  top: 0,   left: 100, delay: 0.1,  z: 3, src: 'assets/cards/20.png', webp: 'assets/cards/20.webp', thumb: 'assets/cards/hero/20.webp' },
+    { rotate: -3, top: 18,  left: 170, delay: 0.2,  z: 2, src: 'assets/cards/15.png', webp: 'assets/cards/15.webp', thumb: 'assets/cards/hero/15.webp' },
   ];
   return (
     <div style={{
@@ -2308,8 +2308,8 @@ function CardStack() {
           animation: `cardFloat 4s ${s.delay}s ease-in-out infinite`,
         }}>
           <picture style={{ display: 'block', width: '100%', height: '100%' }}>
-            <source srcSet={s.webp} type="image/webp" />
-            <img src={s.src} alt="" width="110" height="165" loading="eager" decoding="async" fetchPriority="low" style={{
+            <source srcSet={`${s.thumb} 334w, ${s.webp} 756w`} sizes="110px" type="image/webp" />
+            <img src={s.src} alt="" width="110" height="165" loading="lazy" decoding="async" fetchPriority="low" style={{
               width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top',
               display: 'block',
             }} />
@@ -6540,7 +6540,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
 function AboutScreen() {
   return (
     <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
-      <div style={{
+      <header style={{
         background: proto.black, padding: '50px 24px 28px',
         textAlign: 'center', position: 'relative',
         overflow: 'hidden',
@@ -6553,7 +6553,7 @@ function AboutScreen() {
           opacity: 0.9, pointerEvents: 'none',
           filter: 'drop-shadow(0 4px 12px rgba(255,77,109,0.4))',
         }}>
-          <Girl variant="default" height={160} flip />
+          <Girl variant="default" height={160} flip loading="eager" fetchPriority="high" />
         </div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: 32, marginBottom: 4 }}>💌</div>
@@ -6563,9 +6563,9 @@ function AboutScreen() {
             opacity: 0.7, marginTop: 4, letterSpacing: '0.25em',
           }}>STREET BOARD GAME とは</div>
         </div>
-      </div>
+      </header>
 
-      <div style={{ padding: '24px 22px' }}>
+      <main style={{ padding: '24px 22px' }}>
         <SectionTitle>♡ コンセプト</SectionTitle>
         <Card>
           <div style={{ fontSize: 12, lineHeight: 1.8, color: proto.text, fontWeight: 600 }}>
@@ -6577,11 +6577,14 @@ function AboutScreen() {
         </Card>
 
         <SectionTitle style={{ marginTop: 22 }}>♡ シリーズ展開</SectionTitle>
-        <Card>
-          <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="メインゲーム" active href="/love" />
-          <SeriesRow emoji="👯" title="友達の友情判定" sub="シリーズ" active href="/friends" />
-          <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="シリーズ" active href="/family" last />
-        </Card>
+        <nav aria-label="ゲームシリーズ">
+          <Card>
+            <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="メインゲーム" active href="/love" />
+            <SeriesRow emoji="👯" title="友達の友情判定" sub="シリーズ" active href="/friends" />
+            <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="シリーズ" active href="/family" />
+            <SeriesRow emoji="📣" title="YouTuber専用LIVE" sub="ライブ配信企画" active href="/live-guide" last />
+          </Card>
+        </nav>
 
         <div id="contact-section" style={{ scrollMarginTop: 20 }}>
           <SectionTitle style={{ marginTop: 22 }}>♡ お問い合わせ</SectionTitle>
@@ -6592,14 +6595,14 @@ function AboutScreen() {
 
         <BottomHomeButton />
 
-        <div style={{
+        <footer style={{
           marginTop: 22, padding: '10px 0', textAlign: 'center',
           fontFamily: proto.caption, fontSize: 10,
           color: proto.white, letterSpacing: '0.15em', opacity: 0.7,
         }}>
           © 2026 streetboardgame.com
-        </div>
-      </div>
+        </footer>
+      </main>
     </div>
   );
 }
@@ -6793,7 +6796,7 @@ const inputStyle = {
 function ProductScreen() {
   return (
     <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
-      <div style={{
+      <header style={{
         background: proto.black, padding: '50px 24px 24px',
         textAlign: 'center', position: 'relative',
       }}>
@@ -6802,9 +6805,9 @@ function ProductScreen() {
         <div style={{ marginTop: 14 }}>
           <LogoText as="h1" size={22}>製品版もあります</LogoText>
         </div>
-      </div>
+      </header>
 
-      <div style={{ padding: '24px 22px 0' }}>
+      <main style={{ padding: '24px 22px 0' }}>
         <div style={{
           padding: 4,
           background: proto.yellow,
@@ -6857,7 +6860,7 @@ function ProductScreen() {
                 filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.22))',
                 zIndex: 2,
               }}>
-                <Girl variant="full" height={230} />
+                <Girl variant="full" height={230} loading="eager" fetchPriority="high" />
               </div>
 
               {/* タイトルテキスト (右上寄り、縦組み風) */}
@@ -6957,9 +6960,7 @@ function ProductScreen() {
             </div>
           </div>
         </div>
-      </div>
-
-      <div style={{ padding: '24px 22px 0' }}>
+      <div style={{ paddingTop: 24 }}>
         <SectionTitle>♡ こんな場面にぴったり</SectionTitle>
         {[
           ['🌙', 'デート中の沈黙タイムに'],
@@ -6981,6 +6982,7 @@ function ProductScreen() {
         ))}
         <BottomHomeButton />
       </div>
+      </main>
     </div>
   );
 }
