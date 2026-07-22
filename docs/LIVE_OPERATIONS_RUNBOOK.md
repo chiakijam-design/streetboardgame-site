@@ -145,8 +145,9 @@ Stripeは本番Webhookを最大3日間再送する。復旧後は未配信イベ
 - 返金対象を確認したら「権限停止・返金待ち」。ダウンロードとYouTuber分配を即時停止する。
 - 注文・PaymentIntent・返金理由を照合後、「Stripeへ全額返金」を押す。WorkerがRefund APIを注文単位の冪等キー付きで呼ぶ。
 - `refund.updated`または`charge.refunded` Webhookで`refunded`へ同期されたことを確認する。
-- URL紛失・期限再発行は「購入権限を再発行」。旧URLを失効し、新しい30日間のURLを発行する。
-- `refund_pending`または`refunded`の購入は再発行できない。
+- 購入者は`/live?recover=1`で、Stripe購入メールの`ord_...`注文番号と決済時メールを入力して再ダウンロードする。照合成功後の署名URLは10分間有効。
+- URL紛失時の手動対応は「購入権限を再発行」。旧アクセスキーを失効するが、提供期限は購入時から30日間のまま延長しない。
+- 期限切れ、`refund_pending`、`refunded`、`fraud_review`、チャージバック対象の購入は再発行できない。
 
 ### 5.7 70%月次分配と売上台帳
 

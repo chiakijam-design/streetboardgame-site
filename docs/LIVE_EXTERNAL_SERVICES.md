@@ -125,12 +125,13 @@ npx wrangler d1 migrations apply streetboardgame-remote --remote
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0001_live_purchase_records.sql
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0002_live_checkout_orders.sql
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0003_live_revenue_ledger.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0004_live_entitlement_recovery.sql
 npx wrangler secret put STRIPE_SECRET_KEY
 npx wrangler secret put STRIPE_WEBHOOK_SECRET
 npx wrangler secret put LIVE_PURCHASE_ACCESS_SECRET
 ```
 
-ゲーム用D1には通常マイグレーションを順番に適用し、Web契約同意には`migrations/0008_live_creator_agreements.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0003_live_revenue_ledger.sql`までを順番に適用する。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
+ゲーム用D1には通常マイグレーションを順番に適用し、Web契約同意には`migrations/0008_live_creator_agreements.sql`まで必要である。購入用D1は通常マイグレーションと混ざらない専用ディレクトリの`migrations-purchases/0004_live_entitlement_recovery.sql`までを順番に適用する。所有確認アクセストークン、作成者招待コード、購入アクセスキーは平文保存せずSHA-256ハッシュだけを保存する。購入メールは平文保存せず、サーバー秘密鍵によるHMAC-SHA-256だけを購入権限へ保存する。購入用`LIVE_PURCHASE_DB`が未設定の場合、有料処理はゲーム用D1へフォールバックせず停止する。本番で`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定しない。
 
 ## 6. Stripe Webhook接続時の手順
 
@@ -139,10 +140,12 @@ npx wrangler secret put LIVE_PURCHASE_ACCESS_SECRET
 3. `checkout.session.completed`の金額・通貨・Session ID・PaymentIntentを注文台帳と照合する
 4. 同一Worker内で高解像度画像と購入権限を冪等発行する。管理APIをWebhookからHTTP経由で呼ばない
 5. 購入者はCheckout成功URLから元の参加端末へ戻り、30日間のダウンロード権限を受け取る
-6. 不正リスクが高い決済は注文・権限を`fraud_review`へ変更し、分配を保留する
-7. 返金・チャージバック時は権限を失効させ、YouTuber分配を保留・相殺する
-8. `charge.succeeded`から残高取引を取得し、注文ごとの実Stripe手数料と運営実残額を売上台帳へ保存する
-9. `charge.dispute.closed`で勝訴時は保留解除、敗訴時は次回分配の相殺へ移す
-10. `transfer.created`・`transfer.updated`・`transfer.reversed`でConnect送金状態を分配台帳へ同期する
+6. Stripe DashboardのCustomer emailsでSuccessful paymentsを有効にする。結果画像のReceiptには`/live?recover=1`と`ord_...`注文番号が記載される
+7. 別端末では注文番号と決済時メールを照合し、10分間だけ有効な署名URLを再発行する。照合は10分間に5回までとする
+8. 不正リスクが高い決済は注文・権限を`fraud_review`へ変更し、分配を保留する
+9. 返金・チャージバック時は権限を失効させ、YouTuber分配を保留・相殺する
+10. `charge.succeeded`から残高取引を取得し、注文ごとの実Stripe手数料と運営実残額を売上台帳へ保存する
+11. `charge.dispute.closed`で勝訴時は保留解除、敗訴時は次回分配の相殺へ移す
+12. `transfer.created`・`transfer.updated`・`transfer.reversed`でConnect送金状態を分配台帳へ同期する
 
 人間向け管理APIは管理トークンとTOTPで発行した15分セッション専用とする。Stripe Webhookは署名検証後に同一Worker内の関数を直接呼び、管理者のTOTPセッションをサービス間認証の代用にしない。

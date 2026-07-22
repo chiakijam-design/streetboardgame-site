@@ -86,7 +86,8 @@ async function cleanupPurchaseDatabase(env, now, summary) {
   for (let batch = 0; batch < 20; batch += 1) {
     const rows = await safeRows(db, `
       SELECT purchase_id, asset_key FROM live_result_entitlements
-      WHERE available_until < ? AND (asset_key <> '' OR participant_name <> '' OR participant_id <> '' OR code <> '')
+      WHERE available_until < ? AND (asset_key <> '' OR participant_name <> '' OR participant_id <> ''
+        OR code <> '' OR purchaser_email_hash <> '')
       ORDER BY available_until ASC LIMIT 100
     `, [now]);
     if (!rows.length) break;
@@ -96,7 +97,8 @@ async function cleanupPurchaseDatabase(env, now, summary) {
     const placeholders = purchaseIds.map(() => '?').join(',');
     await db.prepare(`
       UPDATE live_result_entitlements
-      SET code = '', participant_id = '', participant_name = '', access_token_hash = '', asset_key = '',
+      SET code = '', participant_id = '', participant_name = '', access_token_hash = '',
+        purchaser_email_hash = '', asset_key = '',
         status = CASE WHEN status = 'active' THEN 'expired' ELSE status END, updated_at = ?
       WHERE purchase_id IN (${placeholders}) AND available_until < ?
     `).bind(now, ...purchaseIds, now).run();
@@ -132,6 +134,7 @@ async function cleanupPurchaseDatabase(env, now, summary) {
     [now - PRIVACY_RETENTION.operationsLogDays * DAY_MS],
   );
   summary.deletedStripeEvents = changes(deletedStripeEvents);
+  await safeRun(db, 'DELETE FROM live_purchase_recovery_limits WHERE expires_at < ?', [now]);
 }
 
 function creatorAssetKeys(payload) {

@@ -101,6 +101,9 @@ test('有料結果画像も公開URLを作らず非公開R2へ保存し、任意
   assert.equal(assetKey, 'live/results/purchase_12345678.svg');
   assert.equal(stored.options.httpMetadata.cacheControl, 'private, no-store');
   assert.equal(stored.options.customMetadata.assetType, 'paid-result');
+  const svg = new TextDecoder().decode(stored.value);
+  assert.match(svg, /width="2160" height="2700"/);
+  assert.equal(svg.includes('>SAMPLE<'), false);
   await assert.rejects(
     streamPrivateResult(state.env, '../creator/original', 'result.svg'),
     (error) => error.message === 'invalid-private-media-key' && error.status === 500,

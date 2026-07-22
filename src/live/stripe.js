@@ -31,6 +31,12 @@ export async function createLiveCheckoutSession(env, input, now = Date.now()) {
     'payment_intent_data[metadata][live_product_type]': input.productType,
     'payment_intent_data[metadata][live_room_code]': input.code,
   });
+  if (input.productType === 'result_image') {
+    params.set(
+      'payment_intent_data[description]',
+      `${input.productName} / 再ダウンロード: ${origin}/live?recover=1 / 注文番号: ${input.orderId}`,
+    );
+  }
   return stripeRequest(env, '/v1/checkout/sessions', params, `checkout-${input.orderId}`);
 }
 

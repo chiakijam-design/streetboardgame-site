@@ -24,6 +24,7 @@ const initialVerificationToken = hashParams.get('verification')
 const initialCreatorInvite = sessionStorage.getItem('live:creator-invite') || '';
 const initialCheckoutResult = String(query.get('checkout') || '');
 const initialCheckoutSessionId = String(query.get('session_id') || '');
+const initialPurchaseRecovery = query.get('recover') === '1';
 if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialHostToken)) {
   sessionStorage.setItem(`live:host:${initialRoomCode}`, initialHostToken);
 }
@@ -31,7 +32,7 @@ if (initialRoomCode && /^[a-f0-9]{20,96}$/i.test(initialSubjectToken)) {
   sessionStorage.setItem(`live:subject:${initialRoomCode}`, initialSubjectToken);
 }
 const state = {
-  view: initialVerificationId ? 'channel-verification'
+  view: initialPurchaseRecovery ? 'purchase-recovery' : initialVerificationId ? 'channel-verification'
     : initialRoomCode && initialHostToken && !initialCreatorInvite ? 'staff-auth' : initialRoomCode ? 'room-loading' : 'entry',
   roomCode: initialRoomCode,
   game: null,
@@ -71,6 +72,9 @@ const state = {
   checkoutSessionId: initialCheckoutSessionId,
   checkoutStatus: null,
   checkoutEntitlementUrl: '',
+  purchaseRecoveryBusy: false,
+  purchaseRecoveryDownloadUrl: '',
+  purchaseRecoveryAvailableUntil: 0,
   supportPanelOpen: false,
   creatorImageFile: null,
   creatorImagePreviewUrl: '',
@@ -93,6 +97,7 @@ async function initializeLivePage() {
     state.systemStatus = response.status || state.systemStatus;
   } catch (error) { /* 状態APIが落ちていても静的ページ自体は表示する */ }
   if (state.view === 'channel-verification') await loadChannelVerification();
+  else if (state.view === 'purchase-recovery') render();
   else if (state.view === 'staff-auth') render();
   else if (initialRoomCode) initializeRoom();
   else render();
@@ -102,6 +107,7 @@ function render() {
   if (state.view === 'room-loading') return setPage('<div class="loading">ルームを読み込んでいます…</div>', false);
   if (state.view === 'staff-auth') return renderStaffAuth();
   if (state.view === 'entry') return renderEntry();
+  if (state.view === 'purchase-recovery') return renderPurchaseRecovery();
   if (state.view === 'channel-verification') return renderChannelVerification();
   if (state.view === 'youtube-editor') return renderEditor();
   if (state.view === 'youtube-candidates') return renderYouTubeCandidates();
@@ -168,6 +174,11 @@ function renderEntry() {
       <div class="error" id="entryCodeError" role="alert" hidden>6桁のルームコードを入力してください</div>
       <button class="secondary" id="joinByCode" style="width:100%;margin-top:12px">コードで参加</button>
     </section>
+    <section class="panel" style="margin-top:18px">
+      <h2>購入済み画像を再ダウンロード</h2>
+      <p class="help">Stripeの購入メールに記載された注文番号と、決済時のメールアドレスで30日間再ダウンロードできます。</p>
+      <a class="secondary link-button" style="width:100%;margin-top:12px" href="/live?recover=1">再ダウンロード画面を開く</a>
+    </section>
   `);
   bind('#creatorInvite', 'input', (event) => {
     state.creatorInvite = event.target.value.trim();
@@ -194,6 +205,62 @@ function renderEntry() {
     }
     location.assign(`/live?room=${code}`);
   });
+}
+
+function renderPurchaseRecovery() {
+  const completed = Boolean(state.purchaseRecoveryDownloadUrl);
+  setPage(`
+    <section class="hero">
+      <span class="eyebrow">PURCHASE DOWNLOAD</span>
+      <h1>高画質結果画像を再ダウンロード</h1>
+      <p>Stripeの購入メールを確認し、注文番号と決済時のメールアドレスを入力してください。</p>
+    </section>
+    <section class="panel" style="margin-top:18px">
+      ${completed ? `<div class="notice schedule-ok"><strong>購入権限を確認しました。</strong><br>${escapeHtml(formatRecoveryExpiry(state.purchaseRecoveryAvailableUntil))}までダウンロードできます。</div>
+        <a class="primary link-button" id="recoveryDownloadLink" style="margin-top:14px" href="${escapeAttr(state.purchaseRecoveryDownloadUrl)}">高画質画像をダウンロード</a>
+        <button class="secondary" id="retryPurchaseRecovery" style="width:100%;margin-top:14px">別の購入を確認する</button>` : `
+        <div class="field"><label for="recoveryOrderId">Stripe購入メールの注文番号</label><input id="recoveryOrderId" autocomplete="off" maxlength="36" placeholder="ord_から始まる注文番号"></div>
+        <div class="field"><label for="recoveryEmail">決済時のメールアドレス</label><input id="recoveryEmail" type="email" inputmode="email" autocomplete="email" maxlength="254" placeholder="name@example.com"></div>
+        <p class="help">メールアドレスは照合時だけ使用し、平文では保存しません。入力を5回間違えると一時的に再試行できなくなります。</p>
+        ${errorHtml()}
+        <button class="primary" id="recoverPurchase" style="margin-top:16px" ${state.purchaseRecoveryBusy ? 'disabled' : ''}>${state.purchaseRecoveryBusy ? '購入権限を確認中…' : '購入権限を確認する'}</button>`}
+      <a class="back link-button" style="margin-top:18px" href="/live">LIVEトップへ戻る</a>
+    </section>
+  `);
+  bind('#recoverPurchase', 'click', recoverPurchase);
+  bind('#retryPurchaseRecovery', 'click', () => {
+    state.purchaseRecoveryDownloadUrl = '';
+    state.purchaseRecoveryAvailableUntil = 0;
+    state.error = '';
+    render();
+  });
+}
+
+async function recoverPurchase() {
+  if (state.purchaseRecoveryBusy) return;
+  const orderId = document.getElementById('recoveryOrderId')?.value.trim() || '';
+  const email = document.getElementById('recoveryEmail')?.value.trim() || '';
+  state.purchaseRecoveryBusy = true;
+  state.error = '';
+  try {
+    const recovery = await api('/api/live/purchases/recover', {
+      method: 'POST', body: JSON.stringify({ orderId, email }),
+    });
+    state.purchaseRecoveryDownloadUrl = recovery.downloadUrl || '';
+    state.purchaseRecoveryAvailableUntil = Number(recovery.availableUntil) || 0;
+    state.purchaseRecoveryBusy = false;
+    if (!state.purchaseRecoveryDownloadUrl) throw new Error('purchase-recovery-forbidden');
+    render();
+  } catch (error) {
+    state.purchaseRecoveryBusy = false;
+    state.error = humanError(error);
+    render();
+  }
+}
+
+function formatRecoveryExpiry(value) {
+  const date = new Date(Number(value));
+  return Number.isNaN(date.getTime()) ? '購入から30日間' : date.toLocaleString('ja-JP');
 }
 
 function renderChannelVerification() {
@@ -1774,6 +1841,10 @@ function humanError(error) {
     'checkout-request-conflict': '決済操作が重複しました。画面を更新してもう一度お試しください',
     'checkout-forbidden': 'この端末では決済結果を確認できません',
     'purchase-access-signing-not-configured': '購入画像の受け取り設定が完了していません。運営へお問い合わせください',
+    'invalid-purchase-recovery': 'Stripe購入メールの注文番号と決済時のメールアドレスを確認してください',
+    'purchase-recovery-forbidden': '購入情報を確認できませんでした。注文番号と決済時のメールアドレスが一致しているか確認してください',
+    'download-expired': '購入画像の30日間のダウンロード期限が終了しているか、返金・確認処理により権限が停止されています',
+    'rate-limit-exceeded': '入力回数が上限に達しました。10分ほど待ってからもう一度お試しください',
     'youtube-confirmation-code-not-found': 'チャンネル概要欄に確認コードが見つかりません。公開反映を確認してから再度お試しください',
     'youtube-oauth-not-configured': 'YouTubeアカウント確認の本番設定が未完了です。概要欄コードまたは手動審査をご利用ください',
     'youtube-oauth-callback-invalid': 'Googleからの確認結果が不完全です。もう一度お試しください',

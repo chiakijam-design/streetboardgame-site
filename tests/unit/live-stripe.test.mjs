@@ -31,6 +31,8 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
   assert.equal(captured.params.get('metadata[live_order_id]'), 'ord_test01');
   assert.equal(captured.params.get('payment_intent_data[transfer_group]'), 'ord_test01');
   assert.equal(captured.params.has('payment_intent_data[transfer_data][destination]'), false);
+  assert.match(captured.params.get('payment_intent_data[description]'), /\/live\?recover=1/);
+  assert.match(captured.params.get('payment_intent_data[description]'), /ord_test01/);
   assert.match(captured.params.get('success_url'), /session_id=\{CHECKOUT_SESSION_ID\}/);
 });
 
@@ -106,7 +108,7 @@ test('決済成功Webhookは1回だけ高画質画像と30日権限を発行す�
     creatorImage: null, createdAt: Date.now(), updatedAt: Date.now(), expiresAt: Date.now() + 60_000,
   };
   purchaseDb.order = {
-    order_id: 'ord_webhook01', checkout_request_id: 'c'.repeat(32), product_type: 'result_image',
+    order_id: `ord_${'a'.repeat(32)}`, checkout_request_id: 'c'.repeat(32), product_type: 'result_image',
     code: '123456', participant_id: 'p1', participant_name: '視聴者A', viewer_name: '視聴者A',
     amount: 500, currency: 'jpy', creator_amount: 350, platform_amount: 150,
     stripe_checkout_session_id: 'cs_test_webhook01', status: 'checkout_created', purchase_id: null,
@@ -124,9 +126,10 @@ test('決済成功Webhookは1回だけ高画質画像と30日権限を発行す�
   const event = {
     id: 'evt_checkout01', type: 'checkout.session.completed', livemode: false,
     data: { object: {
-      id: 'cs_test_webhook01', client_reference_id: 'ord_webhook01', payment_status: 'paid',
+      id: 'cs_test_webhook01', client_reference_id: `ord_${'a'.repeat(32)}`, payment_status: 'paid',
       payment_intent: 'pi_webhook01', amount_total: 500, currency: 'jpy',
-      metadata: { live_order_id: 'ord_webhook01' },
+      customer_details: { email: 'viewer@example.com' },
+      metadata: { live_order_id: `ord_${'a'.repeat(32)}` },
     } },
   };
   const payload = JSON.stringify(event);
@@ -140,6 +143,7 @@ test('決済成功Webhookは1回だけ高画質画像と30日権限を発行す�
   assert.equal(purchaseDb.order.stripe_payment_intent_id, 'pi_webhook01');
   assert.equal(purchaseDb.entitlements.length, 1);
   assert.equal(purchaseDb.entitlements[0].status, 'active');
+  assert.match(purchaseDb.entitlements[0].purchaser_email_hash, /^[a-f0-9]{64}$/);
   assert.match(purchaseDb.entitlements[0].purchase_id, /^purchase_/);
   assert.equal(media.has(`live/results/${purchaseDb.entitlements[0].purchase_id}.svg`), true);
 
@@ -154,6 +158,30 @@ test('決済成功Webhookは1回だけ高画質画像と30日権限を発行す�
   assert.equal(second.status, 200);
   assert.equal((await second.json()).duplicate, true);
   assert.equal(purchaseDb.entitlements.length, 1);
+
+  const recovered = await handleLiveApi(new Request('https://www.streetboardgame.com/api/live/purchases/recover', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ orderId: `ord_${'a'.repeat(32)}`, email: 'VIEWER@example.com' }),
+  }), env, '/api/live/purchases/recover');
+  assert.equal(recovered.status, 200);
+  const recoveredBody = await recovered.json();
+  assert.match(recoveredBody.downloadUrl, /\/api\/live\/downloads\/purchase_/);
+  assert.equal('accessToken' in recoveredBody, false);
+
+  const denied = await handleLiveApi(new Request('https://www.streetboardgame.com/api/live/purchases/recover', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ orderId: `ord_${'a'.repeat(32)}`, email: 'other@example.com' }),
+  }), env, '/api/live/purchases/recover');
+  assert.equal(denied.status, 403);
+  const throttledStatuses = [];
+  for (let index = 0; index < 4; index += 1) {
+    const response = await handleLiveApi(new Request('https://www.streetboardgame.com/api/live/purchases/recover', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orderId: `ord_${'a'.repeat(32)}`, email: `other${index}@example.com` }),
+    }), env, '/api/live/purchases/recover');
+    throttledStatuses.push(response.status);
+  }
+  assert.deepEqual(throttledStatuses, [403, 403, 403, 429]);
 });
 
 function stripeEnv(fetcher) {
@@ -178,7 +206,7 @@ function memoryKv(initial = {}) {
 }
 
 class PurchaseDb {
-  constructor() { this.order = null; this.events = new Map(); this.entitlements = []; }
+  constructor() { this.order = null; this.events = new Map(); this.entitlements = []; this.recoveryCount = 0; }
   prepare(sql) {
     const db = this;
     const normalized = String(sql).replace(/\s+/g, ' ').trim();
@@ -188,10 +216,28 @@ class PurchaseDb {
       async first() {
         if (/SELECT \* FROM live_checkout_orders/i.test(normalized)) return db.order;
         if (/SELECT status, updated_at FROM live_stripe_events/i.test(normalized)) return db.events.get(this.bindings[0]) || null;
+        if (/SELECT request_count FROM live_purchase_recovery_limits/i.test(normalized)) {
+          return { request_count: db.recoveryCount };
+        }
+        if (/INNER JOIN live_result_entitlements AS entitlement/i.test(normalized)) {
+          const entitlement = db.entitlements[0];
+          if (!entitlement || db.order?.order_id !== this.bindings[0]) return null;
+          return {
+            purchase_id: entitlement.purchase_id,
+            purchaser_email_hash: entitlement.purchaser_email_hash,
+            entitlement_status: entitlement.status,
+            available_until: entitlement.available_until,
+            checkout_status: db.order.status,
+          };
+        }
         return null;
       },
       async all() { return { results: [] }; },
       async run() {
+        if (/INSERT INTO live_purchase_recovery_limits/i.test(normalized)) {
+          db.recoveryCount += 1;
+          return { meta: { changes: 1 } };
+        }
         if (/INSERT OR IGNORE INTO live_stripe_events/i.test(normalized)) {
           const [eventId, eventType, createdAt, updatedAt] = this.bindings;
           if (db.events.has(eventId)) return { meta: { changes: 0 } };
@@ -202,8 +248,8 @@ class PurchaseDb {
           const event = db.events.get(this.bindings[2]);
           Object.assign(event, { status: 'processed', processed_at: this.bindings[0], updated_at: this.bindings[1] });
         } else if (/INSERT OR IGNORE INTO live_result_entitlements/i.test(normalized)) {
-          const [purchase_id, code, participant_id, participant_name, access_token_hash, stripe_payment_intent_id, asset_key, purchased_at, available_until, created_at, updated_at] = this.bindings;
-          if (!db.entitlements.some((item) => item.purchase_id === purchase_id)) db.entitlements.push({ purchase_id, code, participant_id, participant_name, access_token_hash, stripe_payment_intent_id, asset_key, status: 'active', purchased_at, available_until, created_at, updated_at });
+          const [purchase_id, code, participant_id, participant_name, access_token_hash, purchaser_email_hash, stripe_payment_intent_id, asset_key, purchased_at, available_until, created_at, updated_at] = this.bindings;
+          if (!db.entitlements.some((item) => item.purchase_id === purchase_id)) db.entitlements.push({ purchase_id, code, participant_id, participant_name, access_token_hash, purchaser_email_hash, stripe_payment_intent_id, asset_key, status: 'active', purchased_at, available_until, created_at, updated_at });
         } else if (/UPDATE live_checkout_orders SET purchase_id/i.test(normalized)) {
           Object.assign(db.order, { purchase_id: this.bindings[0], stripe_payment_intent_id: this.bindings[1], status: 'paid', paid_at: this.bindings[2], updated_at: this.bindings[3] });
         }

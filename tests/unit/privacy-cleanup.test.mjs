@@ -45,6 +45,7 @@ test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2
   assert.equal(gameDb.games.length, 0);
   assert.equal(purchaseDb.purchases.length, 1);
   assert.equal(purchaseDb.purchases[0].participant_name, '');
+  assert.equal(purchaseDb.purchases[0].purchaser_email_hash, '');
   assert.equal(purchaseDb.purchases[0].asset_key, '');
 });
 
@@ -84,7 +85,8 @@ class CleanupDb {
         if (/DELETE FROM live_games/i.test(normalized)) db.games = [];
         if (/UPDATE live_result_entitlements SET code = ''/i.test(normalized)) {
           db.purchases = db.purchases.map((item) => ({
-            ...item, code: '', participant_id: '', participant_name: '', access_token_hash: '', asset_key: '',
+            ...item, code: '', participant_id: '', participant_name: '', access_token_hash: '',
+            purchaser_email_hash: '', asset_key: '',
             status: item.status === 'active' ? 'expired' : item.status,
           }));
         }
@@ -119,6 +121,7 @@ function purchase(purchaseId, assetKey, purchasedAt) {
     participant_id: 'participant',
     participant_name: '視聴者',
     access_token_hash: 'hash',
+    purchaser_email_hash: 'email-hash',
     stripe_payment_intent_id: `pi_${purchaseId}`,
     asset_key: assetKey,
     status: 'active',

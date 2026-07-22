@@ -25,6 +25,7 @@ export async function ensureLivePurchaseD1(env) {
           participant_id TEXT NOT NULL,
           participant_name TEXT NOT NULL,
           access_token_hash TEXT NOT NULL,
+          purchaser_email_hash TEXT NOT NULL DEFAULT '',
           stripe_payment_intent_id TEXT NOT NULL UNIQUE,
           asset_key TEXT NOT NULL,
           status TEXT NOT NULL DEFAULT 'active',
@@ -88,24 +89,43 @@ export async function ensureLivePurchaseD1(env) {
           PRIMARY KEY (batch_id, revenue_entry_id, allocation_type)
         )
       `).run(),
-    ]).then(() => Promise.all([
-      db.prepare('CREATE INDEX IF NOT EXISTS idx_live_result_entitlements_participant ON live_result_entitlements (code, participant_id, status)').run(),
-      db.prepare('CREATE INDEX IF NOT EXISTS idx_live_result_entitlements_expiry ON live_result_entitlements (available_until, status)').run(),
-      db.prepare('CREATE INDEX IF NOT EXISTS idx_live_result_entitlements_purchase_date ON live_result_entitlements (purchased_at)').run(),
-      db.prepare('CREATE INDEX IF NOT EXISTS idx_live_checkout_orders_participant ON live_checkout_orders (code, participant_id, created_at DESC)').run(),
-      db.prepare('CREATE INDEX IF NOT EXISTS idx_live_checkout_orders_status ON live_checkout_orders (status, updated_at DESC)').run(),
-      db.prepare('CREATE INDEX IF NOT EXISTS idx_live_stripe_events_status ON live_stripe_events (status, updated_at DESC)').run(),
-      db.prepare('CREATE INDEX IF NOT EXISTS idx_live_revenue_entries_account_status ON live_revenue_entries (stripe_account_id, currency, status, available_at)').run(),
-      db.prepare('CREATE INDEX IF NOT EXISTS idx_live_revenue_entries_paid ON live_revenue_entries (paid_at, status)').run(),
-      db.prepare('CREATE INDEX IF NOT EXISTS idx_live_payout_batches_status ON live_payout_batches (status, created_at DESC)').run(),
-      db.prepare('CREATE INDEX IF NOT EXISTS idx_live_payout_allocations_entry ON live_payout_allocations (revenue_entry_id, allocation_type)').run(),
-    ])).catch((error) => {
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS live_purchase_recovery_limits (
+          ip_hash TEXT PRIMARY KEY,
+          window_start INTEGER NOT NULL,
+          request_count INTEGER NOT NULL,
+          expires_at INTEGER NOT NULL
+        )
+      `).run(),
+    ]).then(async () => {
+      await assertPurchaseRecoveryColumn(db);
+      return Promise.all([
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_live_result_entitlements_participant ON live_result_entitlements (code, participant_id, status)').run(),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_live_result_entitlements_expiry ON live_result_entitlements (available_until, status)').run(),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_live_result_entitlements_purchase_date ON live_result_entitlements (purchased_at)').run(),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_live_checkout_orders_participant ON live_checkout_orders (code, participant_id, created_at DESC)').run(),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_live_checkout_orders_status ON live_checkout_orders (status, updated_at DESC)').run(),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_live_stripe_events_status ON live_stripe_events (status, updated_at DESC)').run(),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_live_revenue_entries_account_status ON live_revenue_entries (stripe_account_id, currency, status, available_at)').run(),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_live_revenue_entries_paid ON live_revenue_entries (paid_at, status)').run(),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_live_payout_batches_status ON live_payout_batches (status, created_at DESC)').run(),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_live_payout_allocations_entry ON live_payout_allocations (revenue_entry_id, allocation_type)').run(),
+      ]);
+    }).catch((error) => {
       purchaseReadyPromise = null;
       throw error;
     });
   }
   await purchaseReadyPromise;
   return true;
+}
+
+async function assertPurchaseRecoveryColumn(db) {
+  const columns = await db.prepare('PRAGMA table_info(live_result_entitlements)').all();
+  const results = columns?.results || [];
+  if (results.length > 0 && !results.some((column) => column.name === 'purchaser_email_hash')) {
+    throw purchaseError('live-purchase-schema-outdated', 503);
+  }
 }
 
 function purchaseError(message, status) {

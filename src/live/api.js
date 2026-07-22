@@ -210,6 +210,9 @@ export async function handleLiveApi(request, env, path) {
       await requireLivePurchaseDb(env);
       return await getLiveCheckoutStatus(request, env, checkoutStatusRoute[1]);
     }
+    if (path === '/api/live/purchases/recover' && request.method === 'POST') {
+      return await recoverLiveResultPurchase(request, env);
+    }
     const downloadRoute = path.match(/^\/api\/live\/downloads\/([A-Za-z0-9_-]{8,80})$/);
     if (downloadRoute && request.method === 'GET') {
       await requireLivePurchaseDb(env);
@@ -665,7 +668,8 @@ async function grantLiveResultEntitlement(request, env) {
   const purchaseId = String(body.purchaseId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
   const paymentIntentId = String(body.stripePaymentIntentId || '');
   const participantToken = normalizeToken(body.participantToken);
-  if (!LIVE_CODE_PATTERN.test(code) || purchaseId.length < 8 || !/^pi_[A-Za-z0-9_]+$/.test(paymentIntentId) || !participantToken) {
+  if (!LIVE_CODE_PATTERN.test(code) || purchaseId.length < 8
+    || !/^pi_[A-Za-z0-9_]+$/.test(paymentIntentId) || !participantToken) {
     throw liveError('invalid-entitlement', 400);
   }
   const game = await requireLiveGame(env, code, { polling: true, participantToken });
@@ -688,14 +692,16 @@ async function grantLiveResultEntitlement(request, env) {
   await purchaseDb.prepare(`
     INSERT INTO live_result_entitlements (
       purchase_id, code, participant_id, participant_name, access_token_hash,
-      stripe_payment_intent_id, asset_key, status, purchased_at, available_until, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+      purchaser_email_hash, stripe_payment_intent_id, asset_key, status,
+      purchased_at, available_until, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
   `).bind(
     purchaseId,
     code,
     participant.id,
     participant.name,
     await hashLiveSecret(accessToken),
+    '',
     paymentIntentId,
     assetKey,
     now,
@@ -704,6 +710,66 @@ async function grantLiveResultEntitlement(request, env) {
     now,
   ).run();
   return liveJson({ purchaseId, accessToken, availableUntil }, 201);
+}
+
+async function recoverLiveResultPurchase(request, env) {
+  const purchaseDb = await requireLivePurchaseDb(env);
+  await enforcePurchaseRecoveryRateLimit(request, purchaseDb);
+  const body = await readLiveJson(request);
+  const orderId = String(body.orderId || '').trim();
+  const purchaserEmail = normalizePurchaseEmail(body.email);
+  if (!/^ord_[a-f0-9]{32}$/i.test(orderId) || !purchaserEmail) {
+    throw liveError('invalid-purchase-recovery', 400);
+  }
+  const row = await purchaseDb.prepare(`
+    SELECT entitlement.purchase_id, entitlement.purchaser_email_hash,
+      entitlement.status AS entitlement_status, entitlement.available_until,
+      checkout.status AS checkout_status
+    FROM live_checkout_orders AS checkout
+    INNER JOIN live_result_entitlements AS entitlement
+      ON entitlement.purchase_id = checkout.purchase_id
+    WHERE checkout.order_id = ? AND checkout.product_type = 'result_image'
+    LIMIT 1
+  `).bind(orderId).first();
+  const suppliedHash = await hashPurchaseEmail(env, purchaserEmail);
+  const expectedHash = String(row?.purchaser_email_hash || '');
+  if (!row || expectedHash.length !== 64
+    || !constantTimeEqual(hexToBytes(expectedHash), hexToBytes(suppliedHash))) {
+    throw liveError('purchase-recovery-forbidden', 403);
+  }
+  if (row.checkout_status !== 'paid' || row.entitlement_status !== 'active'
+    || Number(row.available_until) <= Date.now()) {
+    throw liveError('download-expired', 410);
+  }
+  return liveJson({
+    purchaseId: row.purchase_id,
+    availableUntil: Number(row.available_until),
+    downloadUrl: await createSignedDownloadUrl(request, env, row.purchase_id, Number(row.available_until)),
+  });
+}
+
+async function enforcePurchaseRecoveryRateLimit(request, purchaseDb) {
+  const now = Date.now();
+  const windowMs = 10 * 60 * 1000;
+  const windowStart = Math.floor(now / windowMs) * windowMs;
+  const ip = String(request.headers.get('CF-Connecting-IP') || 'unknown');
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
+  const ipHash = [...new Uint8Array(digest).slice(0, 12)]
+    .map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  await purchaseDb.prepare(`
+    INSERT INTO live_purchase_recovery_limits (ip_hash, window_start, request_count, expires_at)
+    VALUES (?, ?, 1, ?)
+    ON CONFLICT(ip_hash) DO UPDATE SET
+      window_start = CASE WHEN live_purchase_recovery_limits.window_start = excluded.window_start
+        THEN live_purchase_recovery_limits.window_start ELSE excluded.window_start END,
+      request_count = CASE WHEN live_purchase_recovery_limits.window_start = excluded.window_start
+        THEN live_purchase_recovery_limits.request_count + 1 ELSE 1 END,
+      expires_at = excluded.expires_at
+  `).bind(ipHash, windowStart, windowStart + windowMs * 2).run();
+  const row = await purchaseDb.prepare(`
+    SELECT request_count FROM live_purchase_recovery_limits WHERE ip_hash = ?
+  `).bind(ipHash).first();
+  if (Number(row?.request_count || 0) > 5) throw liveError('rate-limit-exceeded', 429);
 }
 
 async function getLiveResultEntitlement(request, env, purchaseId) {
@@ -930,20 +996,22 @@ async function updateRefundState(purchaseDb, row, status) {
 async function reissueLiveResultEntitlement(request, env, purchaseId) {
   const purchaseDb = await requireLivePurchaseDb(env);
   const row = await purchaseDb.prepare(`
-    SELECT purchase_id, code, status FROM live_result_entitlements WHERE purchase_id = ?
+    SELECT purchase_id, code, status, available_until FROM live_result_entitlements WHERE purchase_id = ?
   `).bind(purchaseId).first();
   if (!row) throw liveError('entitlement-not-found', 404);
-  if (['refund_pending', 'refunded'].includes(row.status)) throw liveError('refunded-entitlement', 409);
+  if (row.status !== 'active' || Number(row.available_until) <= Date.now()) {
+    throw liveError('entitlement-reissue-blocked', 409);
+  }
   const accessToken = createLiveToken(32);
-  const availableUntil = Date.now() + 30 * 24 * 60 * 60 * 1000;
+  const availableUntil = Number(row.available_until);
   await purchaseDb.prepare(`
     UPDATE live_result_entitlements
-    SET access_token_hash = ?, status = 'active', available_until = ?, updated_at = ?
+    SET access_token_hash = ?, updated_at = ?
     WHERE purchase_id = ?
-  `).bind(await hashLiveSecret(accessToken), availableUntil, Date.now(), purchaseId).run();
+  `).bind(await hashLiveSecret(accessToken), Date.now(), purchaseId).run();
   await recordLiveOpsEvent(env, {
     category: 'purchase', severity: 'info', eventType: 'entitlement-reissued',
-    code: row.code, purchaseId, message: '購入権限を30日間で再発行し、旧アクセスURLを失効しました。',
+    code: row.code, purchaseId, message: '購入権限を元の期限内で再発行し、旧アクセスURLを失効しました。',
   });
   const origin = new URL(request.url).origin;
   return liveJson({
@@ -1060,6 +1128,8 @@ async function fulfillLiveCheckout(request, env, session) {
     const participantGame = publicLiveGame(game, { participantToken: participant.token });
     purchaseId = purchaseId || `purchase_${String(row.order_id).replace(/^ord_/, '')}`;
     const accessToken = await derivePurchaseAccessToken(env, row.order_id);
+    const purchaserEmail = normalizePurchaseEmail(session?.customer_details?.email || session?.customer_email);
+    if (!purchaserEmail) throw liveError('checkout-customer-email-missing', 409);
     const availableUntil = paidAt + 30 * 24 * 60 * 60 * 1000;
     const assetKey = await createPaidResultAsset(
       request, env, game, participantGame, purchaseId, row.viewer_name || participant.name,
@@ -1067,11 +1137,13 @@ async function fulfillLiveCheckout(request, env, session) {
     await purchaseDb.prepare(`
       INSERT OR IGNORE INTO live_result_entitlements (
         purchase_id, code, participant_id, participant_name, access_token_hash,
-        stripe_payment_intent_id, asset_key, status, purchased_at, available_until, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+        purchaser_email_hash, stripe_payment_intent_id, asset_key, status,
+        purchased_at, available_until, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
     `).bind(
       purchaseId, row.code, participant.id, participant.name, await hashLiveSecret(accessToken),
-      paymentIntentId, assetKey, paidAt, availableUntil, paidAt, paidAt,
+      await hashPurchaseEmail(env, purchaserEmail), paymentIntentId, assetKey,
+      paidAt, availableUntil, paidAt, paidAt,
     ).run();
   }
   await purchaseDb.prepare(`
@@ -2422,6 +2494,23 @@ async function derivePurchaseAccessToken(env, orderId) {
   );
   const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`live-purchase.${orderId}`));
   return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashPurchaseEmail(env, value) {
+  const secret = String(env.LIVE_PURCHASE_ACCESS_SECRET || env.LIVE_DOWNLOAD_SIGNING_SECRET || '');
+  if (secret.length < 32) throw liveError('purchase-access-signing-not-configured', 503);
+  const email = normalizePurchaseEmail(value);
+  if (!email) throw liveError('invalid-purchase-email', 400);
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`live-purchase-email.${email}`));
+  return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function normalizePurchaseEmail(value) {
+  const email = String(value || '').normalize('NFKC').trim().toLowerCase();
+  return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
 }
 
 function touchLiveGame(game) {
