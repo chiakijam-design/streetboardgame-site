@@ -17,12 +17,14 @@ Stripe Checkout / Connectの決済開始・Webhookはまだ未接続である。
 ## 1. YouTube Data API v3
 
 1. Google CloudでYouTube Data API v3を有効にする
-2. 本番ドメインと必要なAPIだけに制限したAPIキーを発行する
+2. API制限を「YouTube Data API v3」だけにした標準APIキーを発行する。Workerからのサーバー間通信にはブラウザのHTTPリファラーが付かないため、ウェブサイト制限は使わない。Cloudflareの送信元IPも固定ではないためIP制限は使わず、Worker secret・API制限・クォータ監視で保護する
 3. Worker secretへ登録する
 
 ```powershell
 npx wrangler secret put YOUTUBE_API_KEY
 ```
+
+登録後は`https://www.streetboardgame.com/api/live/youtube-candidates`が`youtube-api-not-configured`を返さないことを確認する。APIキーの平文はソース、`wrangler.jsonc`、GitHub、ブラウザ側JavaScriptへ書かない。
 
 動画URLは`videos.list`で投稿元`channelId`を取得する。チャンネルは`channels.list`、最近の公開動画はアップロード再生リストに対する`playlistItems.list`と`videos.list`で取得する。旧`/c/`形式など一意に解決できないURLだけ`search.list`を使うため、通常は`@handle`または`/channel/UC...`を案内する。
 
