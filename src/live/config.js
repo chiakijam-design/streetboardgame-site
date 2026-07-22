@@ -6,7 +6,8 @@ export const LIVE_SERIES = Object.freeze({
   youtubeEntry: 'YouTubeチャンネルから作る',
   defaultGameTitle: '私のこと、ちゃんとわかってるよね？LIVE',
   recommendedQuestionCount: '5〜10問程度がおすすめです。1問から好きな数だけ作れます。',
-  youtubeGenerateLabel: 'このチャンネルの問題を30問作る',
+  youtubePersonGenerateLabel: 'YouTuberの答えを視聴者が予想する（30問生成し、採用する問題を選ぶ）',
+  youtubeMajorityGenerateLabel: 'YouTuberが視聴者投票の1位を予想する（30問生成し、採用する問題を選ぶ）',
 });
 
 export const LIVE_QUESTION_TYPES = Object.freeze([

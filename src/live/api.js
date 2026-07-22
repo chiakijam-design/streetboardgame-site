@@ -207,6 +207,8 @@ async function createYouTubeCandidatesResponse(request) {
   const body = await readLiveJson(request);
   const channelUrl = normalizeYouTubeChannelUrl(body && body.channelUrl);
   if (!channelUrl) throw liveError('invalid-youtube-channel-url', 400);
+  const questionType = body && body.questionType;
+  if (!['guess-person', 'guess-majority'].includes(questionType)) throw liveError('invalid-youtube-question-type', 400);
   const seed = Number(body && body.seed) || 0;
   let profile;
   try {
@@ -215,7 +217,7 @@ async function createYouTubeCandidatesResponse(request) {
     const fallbackName = decodeURIComponent(new URL(channelUrl).pathname.split('/').filter(Boolean).pop() || 'YouTubeチャンネル');
     profile = { channelName: fallbackName.replace(/^@/, '') || 'YouTubeチャンネル', description: '', videoTitles: [], source: 'url-fallback' };
   }
-  return liveJson({ channelUrl, profile, questions: generateYouTubeQuestions(profile, seed) });
+  return liveJson({ channelUrl, profile, questionType, questions: generateYouTubeQuestions(profile, seed, questionType) });
 }
 
 export function normalizeYouTubeChannelUrl(value) {
@@ -262,7 +264,7 @@ async function fetchYouTubeChannelProfile(channelUrl) {
   return { channelName: cleanChannelName(channelName), description: decodeHtml(description).slice(0, 500), videoTitles, source: 'youtube-public-page' };
 }
 
-export function generateYouTubeQuestions(profile, seed = 0) {
+export function generateYouTubeQuestions(profile, seed = 0, questionType = 'guess-person') {
   const name = String(profile && profile.channelName || 'このチャンネル').trim() || 'このチャンネル';
   const videos = Array.isArray(profile && profile.videoTitles) ? profile.videoTitles.filter(Boolean).slice(0, 20) : [];
   const videoOptions = (offset) => videos.length >= 2
@@ -284,6 +286,21 @@ export function generateYouTubeQuestions(profile, seed = 0) {
     ['本人が企画を決める時に一番頼るものは？', ['自分の直感', 'コメント', '流行', '仲間の意見']],
     ['本人が動画を公開する時の気持ちに近いものは？', ['楽しみ', '緊張', '達成感', 'すぐ次を作りたい']],
     [`本人が「${name}」を一言で表すなら？`, ['挑戦', '笑い', 'つながり', '自分らしさ']],
+    ['本人が動画を一本だけ残すならどれを選ぶ？', videoOptions(6)],
+    ['本人が一番自分らしく話せたと思う動画は？', videoOptions(9)],
+    ['本人が朝起きて最初に確認するものは？', ['コメント', '再生数', '今日の予定', 'SNS']],
+    ['本人が編集で一番こだわる部分は？', ['テンポ', '音楽・効果音', 'テロップ', '映像の色']],
+    ['本人が撮影で予想外に苦労しやすいことは？', ['準備', '話の流れ', '機材', '時間管理']],
+    ['本人が一番伸ばしたいスキルは？', ['トーク', '企画', '撮影', '編集']],
+    ['本人が動画のアイデアを思いつきやすい場所は？', ['自宅', '移動中', '人と話している時', 'コメントを見ている時']],
+    ['本人が撮影後に最初にすることは？', ['映像を確認する', '休憩する', '編集を始める', 'SNSを更新する']],
+    ['本人が一番大切にしたいチャンネルの雰囲気は？', ['楽しい', '落ち着く', '学べる', '驚きがある']],
+    ['本人が視聴者と一緒に実現したいことは？', ['記念企画', 'イベント', '商品作り', '社会貢献']],
+    ['本人が過去の自分に一つ助言するなら？', ['もっと投稿する', '失敗を恐れない', '得意を伸ばす', '休む時間を作る']],
+    ['本人が撮影日に一番欠かせないものは？', ['飲み物', '台本・メモ', 'お気に入りの機材', '応援してくれる仲間']],
+    ['本人が一番達成感を感じる瞬間は？', ['撮影が終わった時', '編集が完成した時', '公開した時', '反響が届いた時']],
+    ['本人が次の節目でやりたいことは？', ['特別動画', '生配信', 'コラボ', '視聴者参加企画']],
+    [`本人が「${name}」を続ける一番の原動力は？`, ['作る楽しさ', '視聴者の反応', '仲間との活動', '目標の実現']],
   ];
   const majorityTemplates = [
     ['視聴者が初めての人に一番すすめたい動画は？', videoOptions(1)],
@@ -301,15 +318,37 @@ export function generateYouTubeQuestions(profile, seed = 0) {
     ['視聴者が一番応援したくなる瞬間は？', ['新しい挑戦', '失敗からの再挑戦', '目標達成', '視聴者への感謝']],
     ['視聴者がグッズにするなら一番ほしいものは？', ['ステッカー', 'Tシャツ', 'アクリルグッズ', '実用品']],
     [`視聴者が「${name}」に今後一番期待することは？`, ['もっと大きな企画', '今の雰囲気を続ける', '更新回数を増やす', '視聴者参加を増やす']],
+    ['視聴者が一番人に見せたくなる動画は？', videoOptions(7)],
+    ['視聴者がチャンネルを知るきっかけになりそうな動画は？', videoOptions(10)],
+    ['視聴者が通知を見てすぐ再生したくなる企画は？', ['新シリーズ', '大型チャレンジ', '人気企画の続編', 'コラボ']],
+    ['視聴者が動画で一番聞きたい話は？', ['最近の出来事', '失敗談', '将来の目標', '制作の裏話']],
+    ['視聴者が一番まねしてみたいものは？', ['企画', '習慣', '話し方', '使っている道具']],
+    ['視聴者が動画を最後まで見る決め手は？', ['展開が気になる', '話が面白い', '役に立つ', '雰囲気が好き']],
+    ['視聴者が一番親近感を持つ瞬間は？', ['失敗した時', '日常を見せた時', '本音を話した時', 'コメントに反応した時']],
+    ['視聴者が生配信で一番やってほしいことは？', ['質問回答', 'ゲーム・挑戦', '雑談', '一緒に企画を決める']],
+    ['視聴者が動画の長さとして一番見やすいのは？', ['1分未満', '5分前後', '10〜20分', '30分以上']],
+    ['視聴者が一番保存したくなる動画は？', ['役立つ解説', 'お気に入り企画', '感動する話', '何度も笑える動画']],
+    ['視聴者が新しく見てみたい撮影場所は？', ['自宅・スタジオ', '街中', '自然の中', '海外']],
+    ['視聴者が一番好きな投稿ペースは？', ['毎日', '週2〜3回', '週1回', '質重視で不定期']],
+    ['視聴者がメンバーになったら一番ほしい特典は？', ['限定動画', '限定配信', '制作の裏側', '先行公開']],
+    ['視聴者がチャンネルの次の目標にしてほしいことは？', ['登録者の節目', '大型企画', 'イベント開催', '新しい分野への挑戦']],
+    [`視聴者が「${name}」を見続ける一番の理由は？`, ['動画が面白い', '本人が好き', '役に立つ', '一緒に成長を感じる']],
   ];
   const rotate = (items) => {
     const offset = Math.abs(Number(seed) || 0) % items.length;
     return [...items.slice(offset), ...items.slice(0, offset)];
   };
-  return [
-    ...rotate(personTemplates).map(([text, options], index) => ({ id: `yt-person-${seed}-${index}`, type: 'guess-person', text, options, lockedIndex: null, selected: index < 5, recommended: index < 5 })),
-    ...rotate(majorityTemplates).map(([text, options], index) => ({ id: `yt-majority-${seed}-${index}`, type: 'guess-majority', text, options, lockedIndex: null, selected: index < 5, recommended: index < 5 })),
-  ];
+  const templates = questionType === 'guess-majority' ? majorityTemplates : personTemplates;
+  const idPrefix = questionType === 'guess-majority' ? 'yt-majority' : 'yt-person';
+  return rotate(templates).map(([text, options], index) => ({
+    id: `${idPrefix}-${seed}-${index}`,
+    type: questionType === 'guess-majority' ? 'guess-majority' : 'guess-person',
+    text,
+    options,
+    lockedIndex: null,
+    selected: index < 5,
+    recommended: index < 5,
+  }));
 }
 
 function extractMeta(html, property) {

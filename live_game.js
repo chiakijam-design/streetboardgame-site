@@ -11,7 +11,7 @@ const state = {
   error: '',
   draft: null,
   candidates: [],
-  candidateTab: 'guess-person',
+  youtubeQuestionType: '',
   channelUrl: '',
   channelProfile: null,
   hostToken: initialRoomCode ? sessionStorage.getItem(`live:host:${initialRoomCode}`) || '' : '',
@@ -51,7 +51,7 @@ function renderEntry() {
       <button class="entry-card" data-action="youtube-entry">
         <span class="entry-icon" aria-hidden="true">▶️</span>
         <strong>${escapeHtml(LIVE_SERIES.youtubeEntry)}</strong>
-        <small>公開チャンネル情報から30問を作り、使う問題だけ選んで編集できます。</small>
+        <small>2つの遊び方から1つを選び、公開チャンネル情報をもとに作った30問から採用する問題を選べます。</small>
       </button>
     </section>
     <section class="panel" style="margin-top:18px">
@@ -94,27 +94,40 @@ function renderYouTubeSetup() {
         <input id="channelUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://www.youtube.com/@handle" value="${escapeAttr(state.channelUrl)}">
       </div>
       ${errorHtml()}
-      <button class="primary" id="generateYouTube" style="margin-top:16px">${escapeHtml(LIVE_SERIES.youtubeGenerateLabel)} <span class="accent">▶</span></button>
+      <div id="youtubeGenerationChoices" class="grid" style="margin-top:16px" ${state.channelUrl.trim() ? '' : 'hidden'}>
+        <button class="primary" data-youtube-type="guess-person">${escapeHtml(LIVE_SERIES.youtubePersonGenerateLabel)} <span class="accent">▶</span></button>
+        <button class="secondary" data-youtube-type="guess-majority">${escapeHtml(LIVE_SERIES.youtubeMajorityGenerateLabel)} <span class="accent">▶</span></button>
+      </div>
     </section>
   `);
-  bind('#channelUrl', 'input', (event) => { state.channelUrl = event.target.value; });
-  bind('#generateYouTube', 'click', generateYouTubeCandidates);
+  bind('#channelUrl', 'input', (event) => {
+    state.channelUrl = event.target.value;
+    document.getElementById('youtubeGenerationChoices').hidden = !state.channelUrl.trim();
+  });
+  document.querySelectorAll('[data-youtube-type]').forEach((button) => button.addEventListener('click', () => {
+    generateYouTubeCandidates(button.dataset.youtubeType);
+  }));
 }
 
-async function generateYouTubeCandidates() {
+async function generateYouTubeCandidates(questionType) {
   state.error = '';
-  const button = document.getElementById('generateYouTube');
-  button.disabled = true;
-  button.textContent = 'チャンネル情報を確認しています…';
+  state.youtubeQuestionType = questionType;
+  document.querySelectorAll('[data-youtube-type]').forEach((button) => {
+    button.disabled = true;
+    if (button.dataset.youtubeType === questionType) button.textContent = 'チャンネル情報を確認しています…';
+  });
   try {
     const response = await api('/api/live/youtube-candidates', {
       method: 'POST',
-      body: JSON.stringify({ channelUrl: state.channelUrl }),
+      body: JSON.stringify({ channelUrl: state.channelUrl, questionType }),
     });
     state.channelUrl = response.channelUrl;
     state.channelProfile = response.profile;
-    state.candidates = response.questions.map((question) => createLiveQuestion(question));
-    state.candidateTab = 'guess-person';
+    state.youtubeQuestionType = response.questionType || questionType;
+    state.candidates = response.questions.map((question) => createLiveQuestion({
+      ...question,
+      type: state.youtubeQuestionType,
+    }));
     state.view = 'youtube-candidates';
   } catch (error) {
     state.error = humanError(error);
@@ -123,27 +136,21 @@ async function generateYouTubeCandidates() {
 }
 
 function renderYouTubeCandidates() {
-  const displayed = state.candidates
-    .map((question, index) => ({ question, index }))
-    .filter(({ question }) => question.type === state.candidateTab);
   const selectedCount = state.candidates.filter((question) => question.selected).length;
+  const typeLabel = LIVE_TYPE_LABELS[state.youtubeQuestionType] || '';
   setPage(`
     <section class="panel">
       <span class="eyebrow">30 QUESTIONS</span>
       <h2 style="margin-top:12px">${escapeHtml(state.channelProfile?.channelName || 'YouTubeチャンネル')}</h2>
-      <p class="help">30問から1問以上を選べます。2種類を混ぜたまま、次の共通編集画面で仕上げられます。</p>
+      <p class="help">「${escapeHtml(typeLabel)}」の30問から、採用する問題を1問以上、好きな数だけ選べます。このゲームではもう一方の種類とは混ざりません。</p>
       ${state.channelProfile?.source === 'url-fallback' ? '<div class="notice">YouTube側から公開情報を取得できなかったため、チャンネルURLの名前を使った候補を作成しました。</div>' : ''}
       <div class="actions">
         <button class="secondary" id="autoRecommend">おすすめ問題を自動選択</button>
         <button class="mini" id="backYoutube">URLを変更</button>
       </div>
-      <div class="tabs" role="tablist" aria-label="問題タイプ">
-        ${candidateTab('guess-person', `本人の答えを予想する ${state.candidates.filter((question) => question.type === 'guess-person').length}問`)}
-        ${candidateTab('guess-majority', `視聴者の1位を予想する ${state.candidates.filter((question) => question.type === 'guess-majority').length}問`)}
-        ${candidateTab('poll', `アンケートに変更 ${state.candidates.filter((question) => question.type === 'poll').length}問`)}
-      </div>
+      <div class="notice">選択中：${escapeHtml(typeLabel)}（30問）</div>
       <div class="candidate-list">
-        ${displayed.map(({ question, index }, visibleIndex) => candidateCard(question, index, visibleIndex, displayed.length)).join('')}
+        ${state.candidates.map((question, index) => candidateCard(question, index, state.candidates.length)).join('')}
       </div>
       ${errorHtml()}
       <div class="sticky-actions">
@@ -151,10 +158,6 @@ function renderYouTubeCandidates() {
       </div>
     </section>
   `);
-  document.querySelectorAll('[data-tab]').forEach((button) => button.addEventListener('click', () => {
-    state.candidateTab = button.dataset.tab;
-    render();
-  }));
   document.querySelectorAll('[data-candidate-index]').forEach((card) => bindCandidateCard(card));
   bind('#autoRecommend', 'click', () => {
     state.candidates = recommendYouTubeCandidates(state.candidates, 5);
@@ -175,22 +178,18 @@ function renderYouTubeCandidates() {
   });
 }
 
-function candidateTab(type, label) {
-  return `<button class="tab" role="tab" data-tab="${type}" aria-selected="${state.candidateTab === type}">${escapeHtml(label)}</button>`;
-}
-
-function candidateCard(question, index, visibleIndex, visibleCount) {
+function candidateCard(question, index, candidateCount) {
   return `
     <article class="question-card" data-candidate-index="${index}">
       <div class="question-head">
         <label class="check"><input type="checkbox" data-field="selected" ${question.selected ? 'checked' : ''}>使用する</label>
         <div class="order">
-          <button class="mini" data-action="candidate-up" ${visibleIndex === 0 ? 'disabled' : ''} aria-label="上へ移動">↑</button>
-          <button class="mini" data-action="candidate-down" ${visibleIndex === visibleCount - 1 ? 'disabled' : ''} aria-label="下へ移動">↓</button>
+          <button class="mini" data-action="candidate-up" ${index === 0 ? 'disabled' : ''} aria-label="上へ移動">↑</button>
+          <button class="mini" data-action="candidate-down" ${index === candidateCount - 1 ? 'disabled' : ''} aria-label="下へ移動">↓</button>
         </div>
       </div>
       <div class="field"><label>問題文</label><textarea data-field="text">${escapeHtml(question.text)}</textarea></div>
-      <div class="field"><label>問題タイプ</label>${typeSelect(question.type, 'type')}</div>
+      <div class="field"><span class="field-label">問題タイプ</span><span class="badge">${escapeHtml(LIVE_TYPE_LABELS[question.type] || '')}</span></div>
       <div class="field"><span class="field-label">選択肢</span>
         ${question.options.map((option, optionIndex) => `<input data-option-index="${optionIndex}" value="${escapeAttr(option)}" aria-label="選択肢${optionIndex + 1}">`).join('')}
       </div>
@@ -204,26 +203,17 @@ function bindCandidateCard(card) {
   const question = state.candidates[index];
   card.querySelector('[data-field="selected"]').addEventListener('change', (event) => { question.selected = event.target.checked; render(); });
   card.querySelector('[data-field="text"]').addEventListener('input', (event) => { question.text = event.target.value; });
-  card.querySelector('[data-field="type"]').addEventListener('change', (event) => {
-    question.type = event.target.value;
-    question.lockedIndex = null;
-    state.candidateTab = question.type;
-    render();
-  });
   card.querySelectorAll('[data-option-index]').forEach((input) => input.addEventListener('input', (event) => {
     question.options[Number(input.dataset.optionIndex)] = event.target.value;
   }));
-  card.querySelector('[data-action="candidate-up"]').addEventListener('click', () => moveCandidateWithinType(index, -1));
-  card.querySelector('[data-action="candidate-down"]').addEventListener('click', () => moveCandidateWithinType(index, 1));
+  card.querySelector('[data-action="candidate-up"]').addEventListener('click', () => moveCandidate(index, -1));
+  card.querySelector('[data-action="candidate-down"]').addEventListener('click', () => moveCandidate(index, 1));
   card.querySelector('[data-action="regenerate"]').addEventListener('click', () => regenerateCandidate(index));
 }
 
-function moveCandidateWithinType(index, direction) {
-  const type = state.candidates[index].type;
-  const sameTypeIndices = state.candidates.map((item, itemIndex) => item.type === type ? itemIndex : -1).filter((itemIndex) => itemIndex >= 0);
-  const position = sameTypeIndices.indexOf(index);
-  const otherIndex = sameTypeIndices[position + direction];
-  if (otherIndex === undefined) return;
+function moveCandidate(index, direction) {
+  const otherIndex = index + direction;
+  if (otherIndex < 0 || otherIndex >= state.candidates.length) return;
   [state.candidates[index], state.candidates[otherIndex]] = [state.candidates[otherIndex], state.candidates[index]];
   render();
 }
@@ -234,12 +224,11 @@ async function regenerateCandidate(index) {
   try {
     const response = await api('/api/live/youtube-candidates', {
       method: 'POST',
-      body: JSON.stringify({ channelUrl: state.channelUrl, seed: Date.now() }),
+      body: JSON.stringify({ channelUrl: state.channelUrl, questionType: state.youtubeQuestionType, seed: Date.now() }),
     });
-    const generationType = current.type === 'poll' ? 'guess-person' : current.type;
-    const replacement = response.questions.find((question) => question.type === generationType && question.text !== current.text);
+    const replacement = response.questions.find((question) => question.type === state.youtubeQuestionType && question.text !== current.text);
     if (!replacement) throw new Error('regenerate-failed');
-    state.candidates[index] = createLiveQuestion({ ...replacement, type: current.type, selected: current.selected });
+    state.candidates[index] = createLiveQuestion({ ...replacement, type: state.youtubeQuestionType, selected: current.selected });
   } catch (error) {
     state.error = humanError(error);
   }
@@ -248,11 +237,13 @@ async function regenerateCandidate(index) {
 
 function renderEditor() {
   const validation = state.error ? null : validateLiveDraft(state.draft);
+  const isYouTubeEditor = state.view === 'youtube-editor';
   setPage(`
     <section class="panel">
       <span class="eyebrow">GAME EDITOR</span>
       <h2 style="margin-top:12px">問題を編集する</h2>
       <p class="help">${escapeHtml(LIVE_SERIES.recommendedQuestionCount)}</p>
+      ${isYouTubeEditor ? `<div class="notice">このゲームの問題タイプは「${escapeHtml(LIVE_TYPE_LABELS[state.youtubeQuestionType] || '')}」で統一されます。</div>` : ''}
       <div class="field"><label for="gameTitle">ゲームタイトル</label><input id="gameTitle" maxlength="80" value="${escapeAttr(state.draft.title)}"></div>
       <div class="field"><label for="subjectName">主役または回答者の名前</label><input id="subjectName" maxlength="40" value="${escapeAttr(state.draft.subjectName)}"></div>
     </section>
@@ -268,7 +259,10 @@ function renderEditor() {
   `);
   bind('#gameTitle', 'input', (event) => { state.draft.title = event.target.value; });
   bind('#subjectName', 'input', (event) => { state.draft.subjectName = event.target.value; });
-  bind('#addQuestion', 'click', () => { state.draft.questions.push(createLiveQuestion()); render(); });
+  bind('#addQuestion', 'click', () => {
+    state.draft.questions.push(createLiveQuestion({ type: isYouTubeEditor ? state.youtubeQuestionType : undefined }));
+    render();
+  });
   document.querySelectorAll('[data-question-index]').forEach((card) => bindEditorCard(card));
   bind('#createGame', 'click', createGame);
 }
@@ -286,7 +280,7 @@ function editorQuestionCard(question, index) {
         </div>
       </div>
       <div class="field"><label>問題文</label><textarea data-field="question-text" maxlength="180">${escapeHtml(question.text)}</textarea></div>
-      <div class="field"><label>問題タイプ</label>${typeSelect(question.type, 'question-type')}</div>
+      <div class="field"><label>問題タイプ</label>${typeSelect(question.type, 'question-type', state.view === 'youtube-editor')}</div>
       <div class="field"><span class="field-label">選択肢（2〜4個）</span>
         ${question.options.map((option, optionIndex) => `
           <div class="option-row"><input data-editor-option="${optionIndex}" maxlength="60" value="${escapeAttr(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}">
@@ -508,8 +502,8 @@ function createBlankDraft() {
   return { title: LIVE_SERIES.defaultGameTitle, subjectName: '', questions: [createLiveQuestion()] };
 }
 
-function typeSelect(value, field) {
-  return `<select data-field="${field}">${LIVE_QUESTION_TYPES.map((type) => `<option value="${type.value}" ${value === type.value ? 'selected' : ''}>${escapeHtml(type.label)}</option>`).join('')}</select>`;
+function typeSelect(value, field, disabled = false) {
+  return `<select data-field="${field}" ${disabled ? 'disabled' : ''}>${LIVE_QUESTION_TYPES.map((type) => `<option value="${type.value}" ${value === type.value ? 'selected' : ''}>${escapeHtml(type.label)}</option>`).join('')}</select>`;
 }
 
 function hostHeaders() { return { 'x-live-host-token': state.hostToken }; }

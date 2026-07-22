@@ -17,7 +17,7 @@ async function fillQuestion(page, index, { type, text, options, lockedIndex }) {
   if (lockedIndex !== undefined) await card.locator('[data-field="locked-index"]').selectOption(String(lockedIndex));
 }
 
-test('入口に手入力とYouTubeの2モードを並べ、どちらも共通編集へ進む', async ({ page }) => {
+test('YouTubeの本人回答モードだけ30問を生成し、1問以上を選んで共通編集へ進む', async ({ page }) => {
   await page.goto('/live');
   await expect(page.getByRole('heading', { name: '私のこと、ちゃんとわかってるよね？LIVE' })).toBeVisible();
   await expect(page.getByRole('button', { name: /自分で問題を作る/ })).toBeVisible();
@@ -27,14 +27,22 @@ test('入口に手入力とYouTubeの2モードを並べ、どちらも共通編
   await page.getByRole('button', { name: /YouTubeチャンネルから作る/ }).click();
   await expect(page.locator('#channelUrl')).toBeVisible();
   await expect(page.locator('#gameTitle')).toHaveCount(0);
+  const personModeButton = page.locator('[data-youtube-type="guess-person"]');
+  const majorityModeButton = page.locator('[data-youtube-type="guess-majority"]');
+  await expect(personModeButton).toBeHidden();
+  await expect(majorityModeButton).toBeHidden();
   await page.route('**/api/live/youtube-candidates', async (route) => {
+    const body = route.request().postDataJSON();
+    expect(body.questionType).toBe('guess-person');
+    const label = body.questionType === 'guess-majority' ? '1位' : '本人';
+    const regenerated = body.seed ? '再生成' : '';
     const questions = Array.from({ length: 30 }, (_, index) => ({
       id: `mock-${index}`,
-      type: index < 15 ? 'guess-person' : 'guess-majority',
-      text: `候補問題${index + 1}`,
+      type: body.questionType,
+      text: `${label}${regenerated}候補問題${index + 1}`,
       options: ['選択A', '選択B', '選択C', '選択D'],
-      selected: index < 5 || (index >= 15 && index < 20),
-      recommended: index < 5 || (index >= 15 && index < 20),
+      selected: index < 5,
+      recommended: index < 5,
     }));
     await route.fulfill({
       status: 200,
@@ -42,32 +50,81 @@ test('入口に手入力とYouTubeの2モードを並べ、どちらも共通編
       body: JSON.stringify({
         channelUrl: 'https://www.youtube.com/@sample',
         profile: { channelName: 'サンプルチャンネル', source: 'youtube-public-page' },
+        questionType: body.questionType,
         questions,
       }),
     });
   });
   await page.locator('#channelUrl').fill('https://www.youtube.com/@sample');
-  await page.locator('#generateYouTube').click();
-  await expect(page.getByRole('tab', { name: /本人の答えを予想する 15問/ })).toBeVisible();
-  await expect(page.getByRole('tab', { name: /視聴者の1位を予想する 15問/ })).toBeVisible();
-  await page.locator('[data-candidate-index="0"] [data-field="type"]').selectOption('poll');
-  await expect(page.getByRole('tab', { name: /アンケートに変更 1問/ })).toHaveAttribute('aria-selected', 'true');
-  await page.locator('[data-candidate-index="0"] [data-field="type"]').selectOption('guess-person');
+  await expect(personModeButton).toBeVisible();
+  await expect(majorityModeButton).toBeVisible();
+  await expect(personModeButton).toContainText('YouTuberの答えを視聴者が予想する（30問生成し、採用する問題を選ぶ）');
+  await expect(majorityModeButton).toContainText('YouTuberが視聴者投票の1位を予想する（30問生成し、採用する問題を選ぶ）');
+  await personModeButton.click();
+  await expect(page.locator('[data-candidate-index]')).toHaveCount(30);
+  await expect(page.getByText('選択中：本人の答えを当てる（30問）')).toBeVisible();
+  await expect(page.locator('[data-candidate-index] [data-field="type"]')).toHaveCount(0);
   await page.locator('[data-candidate-index="1"] [data-action="candidate-up"]').click();
-  await expect(page.locator('[data-candidate-index="0"] [data-field="text"]')).toHaveValue('候補問題2');
+  await expect(page.locator('[data-candidate-index="0"] [data-field="text"]')).toHaveValue('本人候補問題2');
   await page.locator('[data-candidate-index="0"] [data-action="regenerate"]').click();
+  await expect(page.locator('[data-candidate-index="0"] [data-field="text"]')).toHaveValue(/本人再生成候補問題/);
   await page.locator('[data-candidate-index="0"] [data-field="text"]').fill('編集した候補問題');
-  await page.locator('[data-candidate-index="0"] [data-field="selected"]').uncheck();
   await page.locator('#autoRecommend').click();
   await expect(page.locator('[data-field="selected"]:checked')).toHaveCount(5);
-  await page.getByRole('tab', { name: /視聴者の1位を予想する 15問/ }).click();
-  await expect(page.locator('[data-field="selected"]:checked')).toHaveCount(5);
-  await page.getByRole('tab', { name: /本人の答えを予想する 15問/ }).click();
-  await page.locator('[data-candidate-index="0"] [data-field="text"]').fill('編集した候補問題');
+  for (let index = 0; index < 5; index += 1) {
+    await page.locator(`[data-candidate-index="${index}"] [data-field="selected"]`).uncheck();
+  }
+  await expect(page.locator('#useCandidates')).toBeDisabled();
+  await page.locator('[data-candidate-index="0"] [data-field="selected"]').check();
+  await expect(page.locator('#useCandidates')).toBeEnabled();
   await page.locator('#useCandidates').click();
   await expect(page.getByRole('heading', { name: '問題を編集する' })).toBeVisible();
   await expect(page.locator('#gameTitle')).toHaveValue(/サンプルチャンネル/);
   await expect(page.locator('[data-question-index="0"] [data-field="question-text"]')).toHaveValue('編集した候補問題');
+  await expect(page.locator('[data-question-index="0"] [data-field="question-type"]')).toBeDisabled();
+  await expect(page.locator('[data-question-index="0"] [data-field="question-type"]')).toHaveValue('guess-person');
+  await page.locator('#addQuestion').click();
+  await expect(page.locator('[data-question-index="1"] [data-field="question-type"]')).toBeDisabled();
+  await expect(page.locator('[data-question-index="1"] [data-field="question-type"]')).toHaveValue('guess-person');
+});
+
+test('YouTubeの視聴者1位モードを選ぶと30問すべてを同じタイプに固定する', async ({ page }) => {
+  await page.goto('/live');
+  await page.getByRole('button', { name: /YouTubeチャンネルから作る/ }).click();
+  await page.route('**/api/live/youtube-candidates', async (route) => {
+    const body = route.request().postDataJSON();
+    expect(body.questionType).toBe('guess-majority');
+    const questions = Array.from({ length: 30 }, (_, index) => ({
+      id: `majority-${index}`,
+      type: 'guess-majority',
+      text: `視聴者1位候補${index + 1}`,
+      options: ['選択A', '選択B', '選択C', '選択D'],
+      selected: index < 5,
+      recommended: index < 5,
+    }));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        channelUrl: 'https://www.youtube.com/@sample',
+        profile: { channelName: 'サンプルチャンネル', source: 'youtube-public-page' },
+        questionType: body.questionType,
+        questions,
+      }),
+    });
+  });
+  await page.locator('#channelUrl').fill('https://www.youtube.com/@sample');
+  await page.locator('[data-youtube-type="guess-majority"]').click();
+  await expect(page.locator('[data-candidate-index]')).toHaveCount(30);
+  await expect(page.getByText('選択中：みんなの1位を当てる（30問）')).toBeVisible();
+  await expect(page.locator('[data-candidate-index] .badge')).toHaveCount(30);
+  await expect(page.locator('[data-candidate-index] .badge').first()).toHaveText('みんなの1位を当てる');
+  await page.locator('#useCandidates').click();
+  await expect(page.locator('[data-question-index]')).toHaveCount(5);
+  await expect(page.locator('[data-field="question-type"]:not(:disabled)')).toHaveCount(0);
+  expect(await page.locator('[data-field="question-type"]').evaluateAll((selects) => selects.map((select) => select.value))).toEqual([
+    'guess-majority', 'guess-majority', 'guess-majority', 'guess-majority', 'guess-majority',
+  ]);
 });
 
 test('手入力の問題を追加・並べ替え・削除できる', async ({ page }) => {
