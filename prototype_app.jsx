@@ -1913,9 +1913,9 @@ const GAME_INTRO_CONTENT = {
   live: {
     pill: 'LIVE VOTING GAME',
     title: LIVE_SERIES.name,
-    heading: 'YouTubeチャンネルから作る、視聴者参加型LIVE',
-    lead: `${LIVE_SERIES.name}は、撮影スタッフがYouTubeチャンネルまたは動画のURLから問題企画を作って保存し、スタッフ・YouTuber本人・視聴者の3端末で進めるゲームです。`,
-    body: '「YouTuberの答えを視聴者が予想する」または「YouTuberが視聴者投票の1位を予想する」のどちらかを選びます。30問の候補から1〜30問を採用し、スタッフ用URLで企画を保存できます。配信中はスタッフが進行し、YouTuberは本人用URLから、視聴者は参加URLから同じ問題へ同時に回答します。視聴者画面へ選択肢別の現在票数を表示するかは企画作成時に全問題共通で設定できます。全問の出題後に一問ずつ答えを発表し、最後に各視聴者の正解数と全問題の結果を表示します。',
+    heading: 'YouTubeライブの企画ネタが、チャンネルURLだけで作れる',
+    lead: `「次の配信で何をやろう？」と迷った時に使える、YouTuber向けの視聴者参加型ゲームです。${LIVE_SERIES.name}なら、YouTubeチャンネルまたは動画のURLから、そのチャンネルにちなんだ5択問題の候補を30問作れます。`,
+    body: '候補から配信で使う1〜30問を選び、問題文と選択肢を編集して企画を保存できます。配信当日は撮影スタッフ・YouTuber本人・視聴者が別端末から参加し、同じ問題へ一問ずつ回答。全問の出題後に一問ずつ答え合わせし、最後に各視聴者の正解数を発表します。',
     recommendTitle: 'こんな場面におすすめ',
     recommend: [
       '撮影スタッフが先に視聴者参加型の企画を準備したい',
@@ -1924,7 +1924,43 @@ const GAME_INTRO_CONTENT = {
       '配信中に本人が初めて問題を見て、視聴者と一緒に回答したい',
     ],
     scenes: ['YouTube企画', '生配信', 'ファンイベント', '記念配信', 'オフ会'],
+    seoSections: [
+      {
+        title: 'YouTubeライブで使える2つの視聴者参加型企画',
+        items: [
+          {
+            title: '視聴者がYouTuber本人の答えを予想',
+            body: 'たとえば「本人が一番撮影で苦労した動画は？」に、本人と視聴者が同時回答。答え合わせでファンの理解度が分かります。',
+          },
+          {
+            title: 'YouTuberが視聴者投票の1位を予想',
+            body: 'たとえば「視聴者が続編を見たい動画は？」の1位を本人が予想。視聴者の本音と本人の予想が一致するかを楽しめます。',
+          },
+        ],
+      },
+      {
+        title: '企画ネタが決まるまでの3ステップ',
+        ordered: true,
+        items: [
+          { title: 'URLを貼る', body: '公開されているYouTubeチャンネルまたは動画のURLを入力します。' },
+          { title: '30問から選んで編集', body: '5択の問題候補から1〜30問を採用し、問題文と選択肢を整えます。' },
+          { title: '3つのURLでライブ開始', body: 'スタッフ用・本人用・視聴者用のURLを使い、一問ずつ出題と答え合わせを進めます。' },
+        ],
+      },
+    ],
     faq: [
+      {
+        q: 'YouTubeの企画ネタが思いつかない時に使えますか？',
+        a: '使えます。公開されているチャンネル情報や動画タイトルなどをもとに5択の問題候補を30問生成し、配信で使う1〜30問を選んで編集できます。',
+      },
+      {
+        q: 'ライブ配信で盛り上がる視聴者参加型企画ですか？',
+        a: 'YouTuber本人と視聴者が同じ問題へ回答し、全問出題後に一問ずつ答え合わせします。選択肢別の現在票数を視聴者に見せる設定も選べます。',
+      },
+      {
+        q: 'VTuberや顔出しなしのYouTubeチャンネルでも使えますか？',
+        a: '公開されているYouTubeチャンネルまたは動画のURLを読み取れる場合は利用できます。生成後に問題文と選択肢を編集して、チャンネルに合う内容へ調整できます。',
+      },
       {
         q: '参加者はどうやってLIVEゲームに入りますか？',
         a: '司会者がゲームを作ると6桁のルームコードが発行されます。参加者はLIVEページでコードと名前を入力すると参加できます。',
@@ -2093,6 +2129,39 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
             ))}
           </div>
         </section>
+
+        {content.seoSections?.map((section, sectionIndex) => (
+          <section key={section.title} style={{
+            marginTop: 16,
+            background: sectionIndex % 2 === 0 ? '#FFF7F1' : proto.white,
+            border: `3px solid ${proto.black}`,
+            borderRadius: 14,
+            boxShadow: proto.shadowHard,
+            padding: '16px 14px',
+          }}>
+            <h2 style={{ margin: '0 0 12px', fontSize: 17, lineHeight: 1.5 }}>{section.title}</h2>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {section.items.map((item, itemIndex) => (
+                <article key={item.title} style={{
+                  padding: '12px',
+                  background: proto.white,
+                  border: `2px solid ${proto.black}`,
+                  borderRadius: 12,
+                }}>
+                  <h3 style={{ margin: 0, fontSize: 13, lineHeight: 1.55 }}>
+                    {section.ordered && (
+                      <span aria-hidden="true" style={{ color: proto.pink, marginRight: 6 }}>{itemIndex + 1}.</span>
+                    )}
+                    {item.title}
+                  </h3>
+                  <p style={{ margin: '6px 0 0', fontSize: 12, lineHeight: 1.75, fontWeight: 700 }}>
+                    {item.body}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
 
         {content.ctaHref ? (
           <a href={content.ctaHref} style={{

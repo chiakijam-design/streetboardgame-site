@@ -7,7 +7,7 @@ const PUBLIC_ROUTES = [
   { path: '/remote', title: '遠隔で2人の理解度判定 | わたちゃん', h1: '遠隔で理解度判定' },
   { path: '/friends', title: '友達の友情判定｜わたちゃん無料友情診断ゲーム', h1: '友達の友情判定ゲーム' },
   { path: '/family', title: '家族の絆判定｜わたちゃん無料家族診断ゲーム', h1: '家族の絆判定ゲーム' },
-  { path: '/live-guide', title: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE｜ライブ投票ゲーム', h1: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE' },
+  { path: '/live-guide', title: 'YouTube企画のネタに｜視聴者参加型ライブゲーム【無料】｜わたちゃん', h1: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE' },
   { path: '/about', title: 'About｜わたちゃん・彼氏の愛情判定ゲーム', h1: 'About' },
   { path: '/product', title: '製品版｜私のこと、ちゃんと分かってるよね？', h1: '製品版もあります' },
 ];
@@ -28,6 +28,23 @@ test('公開ページのtitle・canonical・見出し・構造化データが一
     expect(structuredData.length, `${route.path}に構造化データがある`).toBeGreaterThan(0);
     for (const json of structuredData) expect(() => JSON.parse(json), `${route.path}のJSON-LD`).not.toThrow();
   }
+});
+
+test('LIVE紹介ページがYouTube企画を探す人向けの検索情報と本文を持つ', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'SEOメタと構造化データは画面幅に依存しないためPCで1回検証');
+
+  await page.goto('/live-guide');
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /YouTubeのライブ配信企画・視聴者参加型のネタ/);
+  await expect(page.getByRole('heading', { name: 'YouTubeライブの企画ネタが、チャンネルURLだけで作れる' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'YouTubeライブで使える2つの視聴者参加型企画' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '企画ネタが決まるまでの3ステップ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'YouTubeの企画ネタが思いつかない時に使えますか？' })).toBeVisible();
+
+  const structuredData = await page.locator('script[type="application/ld+json"]').allTextContents();
+  const parsed = structuredData.map((json) => JSON.parse(json));
+  const structuredItems = parsed.flatMap((item) => item['@graph'] || [item]);
+  const faq = structuredItems.find((item) => item['@type'] === 'FAQPage');
+  expect(faq?.mainEntity.some((item) => item.name === 'YouTubeの企画ネタが思いつかない時に使えますか？')).toBe(true);
 });
 
 test('内部リンクを実URLで辿れ、主要ランドマークが存在する', async ({ page }, testInfo) => {

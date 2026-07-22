@@ -164,20 +164,32 @@ export default {
         ],
       },
       '/live-guide': {
-        title: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE｜ライブ投票ゲーム',
-        description: 'スタッフが進行し、YouTuberと視聴者が別端末から一問ずつ同時回答する無料ライブ投票ゲームです。',
+        title: 'YouTube企画のネタに｜視聴者参加型ライブゲーム【無料】｜わたちゃん',
+        description: 'YouTubeのライブ配信企画・視聴者参加型のネタを探している方向け。チャンネルURLから5択問題を30問生成し、YouTuber本人と視聴者が同時回答。無料で企画を作成できます。',
         url: CANONICAL_ORIGIN + '/live-guide',
-        ogTitle: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE',
-        imageAlt: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE ライブ投票ゲーム',
+        ogTitle: 'YouTube企画のネタに｜視聴者参加型LIVEゲーム',
+        imageAlt: 'YouTubeのライブ配信企画に使える視聴者参加型ゲーム',
         pageId: CANONICAL_ORIGIN + '/live-guide#webpage',
         gameId: CANONICAL_ORIGIN + '/live-guide#live-game',
         gameName: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE',
-        headline: 'YouTubeチャンネルから作る無料の視聴者参加型ライブ投票ゲーム',
-        genre: ['ライブ投票ゲーム', '視聴者参加型ゲーム', 'YouTuber向けゲーム', 'クイズゲーム'],
-        keywords: 'ライブ投票ゲーム, 視聴者参加型ゲーム, YouTuber ゲーム, YouTube 企画, 無料ゲーム, わたちゃん',
-        noscriptTitle: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE',
-        noscriptBody: 'YouTubeチャンネルからスタッフが問題企画を保存し、配信中はスタッフ・YouTuber・視聴者の別端末で同時回答した後、一問ずつ答え合わせする無料ライブゲームです。',
+        headline: 'YouTube企画のネタをチャンネルURLから作れる視聴者参加型ライブゲーム',
+        genre: ['YouTube企画', 'ライブ配信企画', 'ライブ投票ゲーム', '視聴者参加型ゲーム', 'クイズゲーム'],
+        keywords: 'YouTube 企画 ネタ, YouTube ライブ 企画, ライブ配信 盛り上がる企画, 視聴者参加型 企画, 視聴者参加型 クイズ',
+        noscriptTitle: 'YouTube企画のネタに使える視聴者参加型ライブゲーム',
+        noscriptBody: 'YouTubeのライブ配信企画を探している方向けの無料ゲームです。チャンネルまたは動画のURLから5択問題を30問生成し、YouTuber本人と視聴者が同じ問題へ同時回答。一問ずつ答え合わせできます。',
         faq: [
+          {
+            question: 'YouTubeの企画ネタが思いつかない時に使えますか？',
+            answer: '使えます。公開されているチャンネル情報や動画タイトルなどをもとに5択の問題候補を30問生成し、配信で使う1〜30問を選んで編集できます。',
+          },
+          {
+            question: 'ライブ配信で盛り上がる視聴者参加型企画ですか？',
+            answer: 'YouTuber本人と視聴者が同じ問題へ回答し、全問出題後に一問ずつ答え合わせします。選択肢別の現在票数を視聴者に見せる設定も選べます。',
+          },
+          {
+            question: 'VTuberや顔出しなしのYouTubeチャンネルでも使えますか？',
+            answer: '公開されているYouTubeチャンネルまたは動画のURLを読み取れる場合は利用できます。生成後に問題文と選択肢を編集して、チャンネルに合う内容へ調整できます。',
+          },
           {
             question: '参加者はどうやってLIVEゲームに入りますか？',
             answer: '司会者がゲームを作ると6桁のルームコードが発行されます。参加者はLIVEページでコードと名前を入力すると参加できます。',
@@ -312,7 +324,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/live-guide">Youtuber専用LIVEの説明を見る</a> / <a href="/live">Youtuber専用LIVEを作って遊ぶ</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/live-guide">YouTube企画・視聴者参加型LIVEを見る</a> / <a href="/live">Youtuber専用LIVEを作って遊ぶ</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }
