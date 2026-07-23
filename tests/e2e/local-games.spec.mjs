@@ -173,6 +173,47 @@ test('通常4シリーズは外部通信を遮断しても完走できる', asyn
   expect(remoteApiRequests).toHaveLength(0);
 });
 
+test('ボドゲ結果画像は本番CSP下でもPC・スマホで保存できる', async ({ page }, testInfo) => {
+  const isMobile = testInfo.project.name === 'mobile-chrome';
+  if (isMobile) {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'canShare', {
+        configurable: true,
+        value: () => true,
+      });
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: async ({ files, title }) => {
+          window.__sharedResultImage = {
+            title,
+            files: files?.map(({ name, size, type }) => ({ name, size, type })),
+          };
+        },
+      });
+    });
+  }
+  await playGroup(page, 'boardgame', 2, 3);
+  const saveButton = page.getByRole('button', { name: '判定画像も送りたい。まずは画像を保存' }).first();
+  await expect(saveButton).toBeVisible();
+  await expect(saveButton).toBeEnabled();
+  if (isMobile) {
+    await saveButton.click();
+    await expect.poll(() => page.evaluate(() => window.__sharedResultImage)).toMatchObject({
+      title: 'わたちゃん ボドゲ仲間の絆判定ゲーム',
+      files: [{
+        name: 'watachan-boardgame-result-5.png',
+        type: 'image/png',
+      }],
+    });
+    return;
+  }
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    saveButton.click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('watachan-boardgame-result-5.png');
+});
+
 test('全JSをハッシュ付きで自前配信しsource mapを公開しない', async ({ page, request }) => {
   await page.goto('/?screen=top');
   const scriptSources = await page.locator('script[src]').evaluateAll((scripts) => scripts.map((script) => script.src));
