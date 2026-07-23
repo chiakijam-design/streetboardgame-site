@@ -150,6 +150,18 @@ async function playGroupMixed(page, kind, scores) {
 
 test.beforeEach(async ({ page }) => preparePage(page));
 
+test('トップのボドゲ仲間ボタン直下から遠隔版へ移動できる', async ({ page }) => {
+  await page.goto('/?screen=top');
+  const localButton = page.getByRole('button', { name: 'ボドゲ仲間の絆を判定する', exact: true });
+  const remoteLink = page.getByRole('link', { name: '遠隔で、ボドゲ仲間と二人の理解度チェック', exact: true });
+  await expect(localButton).toBeVisible();
+  await expect(remoteLink).toHaveAttribute('href', '/remote-boardgame');
+  expect(await localButton.evaluate((button, link) => Boolean(button.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING), await remoteLink.elementHandle())).toBe(true);
+  await remoteLink.click();
+  await expect(page).toHaveURL('/remote-boardgame');
+  await expect(page.locator('h1')).toContainText('ボドゲ仲間の絆判定');
+});
+
 test('通常4シリーズは外部通信を遮断しても完走できる', async ({ page }) => {
   const remoteApiRequests = [];
   await page.route('**/*', async (route) => {
@@ -252,7 +264,7 @@ test('全JSをハッシュ付きで自前配信しsource mapを公開しない',
   expect(indexBuildSources).toHaveLength(9);
   await page.goto('/remote');
   const remoteBuildSources = await page.locator('script[data-build-entry]').evaluateAll((scripts) => scripts.map((script) => script.src));
-  expect(remoteBuildSources).toHaveLength(3);
+  expect(remoteBuildSources).toHaveLength(4);
 
   for (const source of [...new Set([...indexBuildSources, ...remoteBuildSources])]) {
     const url = new URL(source);

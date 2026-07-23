@@ -1855,6 +1855,21 @@ function TopScreen({ onStart, onFriend, onFamily, onBoardgame, onLovePage, onFri
         }}>
           ボドゲ仲間の絆を判定する
         </button>
+        <a href="/remote-boardgame" style={{
+          ...secondaryBtn(),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: 10,
+          background: 'rgba(255,255,255,0.2)',
+          color: proto.white,
+          border: '2.5px solid rgba(255,255,255,0.94)',
+          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
+          textDecoration: 'none',
+          textAlign: 'center',
+        }}>
+          遠隔で、ボドゲ仲間と二人の理解度チェック
+        </a>
         <a href="/live" style={{
           ...secondaryBtn(),
           display: 'flex',

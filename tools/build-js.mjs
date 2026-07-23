@@ -31,6 +31,7 @@ const HTML_ENTRY_MAP = {
   'remote.html': [
     'viewport_recovery',
     'prototype_quiz_data',
+    'prototype_boardgame_data',
     'remote_love',
   ],
   'live.html': [

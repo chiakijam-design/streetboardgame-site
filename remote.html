@@ -1139,6 +1139,63 @@
       line-height: 1.75;
     }
     .remote-point strong { color: var(--yellow); }
+    .boardgame-question {
+      padding: 16px;
+      border: 3px solid var(--black);
+      border-radius: 14px;
+      background: var(--yellow);
+      box-shadow: 4px 4px 0 var(--black);
+      font-weight: 900;
+      line-height: 1.65;
+      text-align: center;
+    }
+    .choices.is-boardgame {
+      position: static;
+      width: 100%;
+      margin-top: 14px;
+      padding: 0;
+      transform: none;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+    .choices.is-boardgame::before,
+    .choices.is-boardgame::after { display: none; }
+    .choices.is-boardgame .choice {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      align-items: center;
+      justify-content: stretch;
+      gap: 10px;
+      min-height: 54px;
+      padding: 9px 12px;
+      border: 3px solid var(--black);
+      border-radius: 12px;
+      background: var(--white);
+      box-shadow: 3px 3px 0 var(--black);
+      text-align: left;
+    }
+    .choices.is-boardgame .choice.is-selected {
+      background: var(--yellow);
+      transform: translateY(-1px);
+      box-shadow: 3px 3px 0 var(--cyan);
+    }
+    .choices.is-boardgame .dot {
+      width: 30px;
+      height: 30px;
+      outline: 0;
+    }
+    .choices.is-boardgame .choice span:last-child {
+      color: var(--black);
+      font-size: 13px;
+      line-height: 1.4;
+      text-shadow: none;
+      white-space: normal;
+    }
+    #play.has-boardgame-choices { padding-bottom: 16px; }
     #play {
       scroll-margin-top: 14px;
     }
@@ -1180,8 +1237,8 @@
 
     <section class="hero">
       <div class="pill">ROOM CODE</div>
-      <h1 class="logo">遠隔で<br>理解度判定</h1>
-      <p>離れている恋人や友達など、好きな相手と2人でLINEを使って遊べます。</p>
+      <h1 id="remoteHeroTitle" class="logo">遠隔で<br>理解度判定</h1>
+      <p id="remoteHeroLead">離れている恋人や友達など、好きな相手と2人でLINEを使って遊べます。</p>
     </section>
 
     <section class="card remote-guide" aria-labelledby="remoteGuideTitle">
@@ -1189,7 +1246,7 @@
         <div class="pill" style="margin-bottom:10px">HOW TO PLAY</div>
         <h2 id="remoteGuideTitle" class="section-title">2人の理解度判定とは？</h2>
       </div>
-      <p>
+      <p id="remoteGuideLead">
         5問のお題を出題、どちらか1人が選ぶ答えを、もう1人がどれだけ当てられるかで理解度を判定するゲームです。
         2人が同じ場所にいなくても、それぞれのスマホから回答できます。
       </p>
@@ -1197,7 +1254,7 @@
         遠隔版は<strong>最初の人が5問まとめて回答し、LINEでURLを送り、相手も5問まとめて回答</strong>します。
         2人目の回答が終わると、その場で判定結果と答え合わせが表示されます。
       </p>
-      <div class="remote-flow" aria-label="遠隔プレイの流れ">
+      <div id="remoteFlow" class="remote-flow" aria-label="遠隔プレイの流れ">
         <div class="remote-flow-item"><span>①私と相手の名前（各6文字以内・必須）、<br>②自分が当てる側か当てられる側か、設定</span></div>
         <div class="remote-flow-item">①、②を設定した人が、自分の役割で5問まとめて回答</div>
         <div class="remote-flow-item">表示されたメッセージとURLをLINEで相手へ送信</div>
@@ -1351,6 +1408,7 @@
 
   <script data-build-entry="viewport_recovery" src="/dist/viewport_recovery-MXTVWKCL.js"></script>
   <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
-  <script data-build-entry="remote_love" src="/dist/remote_love-SWAYYHE6.js"></script>
+  <script data-build-entry="prototype_boardgame_data" src="/dist/prototype_boardgame_data-TJ5XOVK3.js"></script>
+  <script data-build-entry="remote_love" src="/dist/remote_love-6LLWSMVM.js"></script>
 </body>
 </html>

@@ -9,9 +9,10 @@ import { saveImageBlob as saveImageBlobPlatform } from './src/platform/imageSave
 import { BOARD_GAME_PRODUCT } from './src/product/config.js';
 
 (function () {
-  const ROOM_STORAGE_KEY = 'watachan-remote-love-role-v3';
-  const ROOM_SWAP_STORAGE_KEY = 'watachan-remote-love-role-swap-v1';
-  const ROOM_RECOVERY_STORAGE_KEY = 'watachan-remote-love-recovery-v1';
+  const INITIAL_GAME_TYPE = window.location.pathname === '/remote-boardgame' ? 'boardgame' : 'love';
+  const ROOM_STORAGE_KEY = `watachan-remote-${INITIAL_GAME_TYPE}-role-v3`;
+  const ROOM_SWAP_STORAGE_KEY = `watachan-remote-${INITIAL_GAME_TYPE}-role-swap-v1`;
+  const ROOM_RECOVERY_STORAGE_KEY = `watachan-remote-${INITIAL_GAME_TYPE}-recovery-v1`;
   const ROOM_RECOVERY_TTL_MS = 24 * 60 * 60 * 1000;
   const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
   const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
@@ -30,8 +31,8 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
     trackRemoteEvent('share', {
       method,
       content_type: contentType,
-      item_id: `remote_${contentType}`,
-      game_type: 'remote',
+      item_id: `${INITIAL_GAME_TYPE === 'boardgame' ? 'remote_boardgame' : 'remote'}_${contentType}`,
+      game_type: INITIAL_GAME_TYPE === 'boardgame' ? 'boardgame' : 'remote',
       play_mode: 'remote',
     });
   }
@@ -84,6 +85,14 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
       emoji: '💕',
       msg: '全問正解はさすがに強すぎ。\n好みも迷いどころも、ちゃんと見てる彼氏。\nこれは堂々と自慢していいやつ ♡',
     },
+  ];
+  const BOARDGAME_RESULT_TIERS = [
+    { title: '好みのルール確認中', tag: '初見卓', tagBg: '#1a1a1a', tagColor: '#fff', emoji: '🎲', msg: 'まだ知らないゲームの好みがたくさん。\n答え合わせを、次のボドゲ会のインストにしよう。' },
+    { title: '同卓したての仲間', tag: '1 HIT', tagBg: '#f4a261', tagColor: '#fff', emoji: '🃏', msg: '1問正解から絆チェック開始。\n遊ぶ回数が増えるほど、好みも読めるようになるはず。' },
+    { title: '次のボドゲ会で更新予定', tag: '2 HIT', tagBg: '#5bd4e8', tagColor: '#1a1a1a', emoji: '♟️', msg: '知っている好みと意外な答えが半々。\nズレたお題こそ、次のゲーム選びのヒント。' },
+    { title: 'ボドゲの好みは半分把握', tag: 'GOOD', tagBg: '#ec7b98', tagColor: '#fff', emoji: '🎯', msg: '3問正解なら観察力はかなり高め。\nあと少しで、安心してゲーム選びを任せられる仲間。' },
+    { title: 'ボドゲ棚の好みほぼ把握', tag: 'あと1問', tagBg: '#ec4f88', tagColor: '#fff', emoji: '🏆', msg: '4問正解は同卓経験の強さ。\nあと1問で、ボドゲ仲間マスター。' },
+    { title: '公認・ボドゲ仲間マスター', tag: 'PERFECT', tagBg: '#ffe26b', tagColor: '#1a1a1a', emoji: '👑', msg: '全問正解は、好みもプレイスタイルも完全把握。\n次のゲーム選びも安心して任せられる仲間です。' },
   ];
 
   const REVIEW_CATEGORY_LABELS = {
@@ -168,6 +177,18 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
   let latestResult = null;
   let lastPlayViewKey = '';
   let resultReturnMode = false;
+
+  function currentGameType(room = state) {
+    return room && room.type === 'boardgame' ? 'boardgame' : INITIAL_GAME_TYPE;
+  }
+
+  function isBoardgame(room = state) {
+    return currentGameType(room) === 'boardgame';
+  }
+
+  function remotePath(room = state) {
+    return isBoardgame(room) ? '/remote-boardgame' : '/remote';
+  }
 
   function cleanName(value, fallback) {
     const text = String(value || '').replace(/\s+/g, ' ').trim().slice(0, 6);
@@ -346,6 +367,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
   }
 
   function pickCards() {
+    if (isBoardgame() && window.pickRandomBoardgameCards) return window.pickRandomBoardgameCards(5);
     if (window.pickRandomCards) return window.pickRandomCards(5);
     return pickRandomItems(Array.isArray(window.ALL_CARDS) ? window.ALL_CARDS : [], 5);
   }
@@ -368,10 +390,12 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
   }
 
   function loveResultHeaderLabel(names) {
+    if (isBoardgame()) return 'ボドゲ仲間の絆判定';
     return '2人の理解度判定';
   }
 
   function loveScoreLabel(names) {
+    if (isBoardgame()) return `${names.guesser}の${names.target}理解度`;
     if (names.targetSide === 'girl' && names.guesserSide === 'boy' && isDefaultNames(names)) {
       return '彼氏の彼女理解度';
     }
@@ -390,7 +414,8 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
 
   function getTier(score) {
     const safeScore = Math.max(0, Math.min(5, Number(score) || 0));
-    return RESULT_TIERS[safeScore] || RESULT_TIERS[0];
+    const tiers = isBoardgame() ? BOARDGAME_RESULT_TIERS : RESULT_TIERS;
+    return tiers[safeScore] || tiers[0];
   }
 
   function inferReviewCategory(card = {}) {
@@ -457,11 +482,11 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
     if (roomCode && state && state.phase === 'result') {
       return resultRoomUrl(oppositeRole(role), false);
     }
-    return `${window.location.origin}/remote`;
+    return `${window.location.origin}${remotePath()}`;
   }
 
   function resultShareText(data, platform = 'x') {
-    const hashTag = '#2人の理解度判定';
+    const hashTag = isBoardgame() ? '#ボドゲ仲間の絆判定' : '#2人の理解度判定';
     if (platform === 'line') {
       return `わたちゃんで${data.headerLabel}をやってみた！${data.names.guesser}は${data.names.target}の答えを${data.score}/${data.total}問正解。称号は「${data.title}」でした。あなたなら何問当てられる？\n${resultPublicUrl()}`;
     }
@@ -718,7 +743,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
   }
 
   function roomInviteUrl(nextRole = activeRole(), nextToken = turnToken) {
-    const url = new URL('/remote', window.location.origin);
+    const url = new URL(remotePath(), window.location.origin);
     url.searchParams.set('room', roomCode);
     url.searchParams.set('role', nextRole);
     url.searchParams.set('turn', nextToken);
@@ -727,7 +752,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
   }
 
   function senderStateUrl(viewerRole = role, nextRole = handoffRole, nextToken = turnToken) {
-    const url = new URL('/remote', window.location.origin);
+    const url = new URL(remotePath(), window.location.origin);
     url.searchParams.set('room', roomCode);
     url.searchParams.set('role', viewerRole);
     url.searchParams.set('next', nextRole);
@@ -753,7 +778,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
     if (state && state.phase === 'result') {
       const resultSuffix = resultReturnMode ? '&result=1' : '';
       const manageSuffix = manageToken ? `&manage=${manageToken}` : '';
-      window.history.replaceState(null, '', `/remote?room=${roomCode}&role=${role}${resultSuffix}${manageSuffix}`);
+      window.history.replaceState(null, '', `${remotePath()}?room=${roomCode}&role=${role}${resultSuffix}${manageSuffix}`);
       saveRecovery();
       return;
     }
@@ -767,7 +792,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
       saveRecovery();
       return;
     }
-    window.history.replaceState(null, '', `/remote?room=${roomCode}&role=${role}`);
+    window.history.replaceState(null, '', `${remotePath()}?room=${roomCode}&role=${role}`);
     saveRecovery();
   }
 
@@ -802,8 +827,9 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
     if (!roomCode || !state) return;
     const names = targetAndGuesser(state);
     if (state.phase === 'guess') {
+      const gameLabel = isBoardgame() ? 'ボドゲ仲間の絆判定' : '2人の理解度判定';
       return [
-        `${names.guesser}へ。${names.target}との2人の理解度判定に挑戦してね！`,
+        `${names.guesser}へ。${names.target}との${gameLabel}に挑戦してね！`,
         '',
         `${names.target}は、URLで表示される5問に自分の答えを選び終えました。`,
         `あなたは、${names.target}が何と答えたかを予想して5問に回答してください。`,
@@ -823,7 +849,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
   }
 
   function resultRoomUrl(recipientRole = oppositeRole(role), includeManage = true) {
-    const url = new URL('/remote', window.location.origin);
+    const url = new URL(remotePath(), window.location.origin);
     url.searchParams.set('room', roomCode);
     url.searchParams.set('role', recipientRole);
     url.searchParams.set('result', '1');
@@ -917,7 +943,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
       const cards = pickCards();
       const created = await api('/api/remote/rooms', {
         method: 'POST',
-        body: JSON.stringify({ loveMode, players, creatorSide, cards }),
+        body: JSON.stringify({ type: currentGameType(), loveMode, players, creatorSide, cards }),
       });
       roomCode = created.code;
       state = created.room;
@@ -927,7 +953,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
       setFreshTurnAccess();
       markSwapSeen(roomCode, state.roleSwapNonce);
       trackRemoteEvent('game_start', {
-        game_type: 'remote',
+        game_type: isBoardgame() ? 'boardgame' : 'remote',
         play_mode: 'remote',
         player_count: 2,
         question_count: cards.length,
@@ -1049,7 +1075,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
       if (state && state.phase === 'result') {
         const resultAnswers = Array.isArray(state.answers) ? state.answers : [];
         trackRemoteEvent('game_result', {
-          game_type: 'remote',
+          game_type: isBoardgame() ? 'boardgame' : 'remote',
           play_mode: 'remote',
           player_count: 2,
           question_count: resultAnswers.length || 5,
@@ -1159,18 +1185,22 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
             ? '回答権を確認できませんでした。LINEで届いた最新のURLを開き直してください。'
           : `${names.guesser}が予想しています。LINEで届くURLを待ってね。`;
     }
-    $('questionWrap').innerHTML = `<img class="question-img" src="${card.image}" alt="${escapeHtml(card.title || 'お題カード')}">`;
+    $('questionWrap').innerHTML = isBoardgame()
+      ? `<div class="boardgame-question">${escapeHtml(card.title || 'お題')}</div>`
+      : `<img class="question-img" src="${card.image}" alt="${escapeHtml(card.title || 'お題カード')}">`;
     setHidden('questionWrap', !canChoose);
     const choices = Array.isArray(card.choices) ? card.choices : [];
     const choicesEl = $('choices');
     const choicesEnabled = canChoose && !selectedChoice;
     choicesEl.classList.toggle('is-guess', isGuesserTurn);
+    choicesEl.classList.toggle('is-boardgame', isBoardgame());
     choicesEl.classList.toggle('is-waiting', !canChoose);
     choicesEl.classList.toggle('has-selection', Boolean(selectedChoice));
     choicesEl.classList.toggle('can-choose', choicesEnabled);
     setHidden('choices', !choicesEnabled);
     setHidden('handoff', !canHandOff);
     $('play').classList.toggle('has-choices', choicesEnabled);
+    $('play').classList.toggle('has-boardgame-choices', choicesEnabled && isBoardgame());
     if (canHandOff) {
       $('handoffTitle').textContent = `5問回答できました。次は${currentPlayer}の番です`;
       $('handoffLine').textContent = `LINEで${currentPlayer}に送る`;
@@ -1181,10 +1211,11 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
       const selectedClass = selected ? (selectedChoice.mode === 'waiting' ? ' is-selected is-waiting' : ' is-locked') : '';
       const disabled = choicesEnabled ? '' : 'disabled';
       const colorName = COLOR_NAMES[index] || choice || '';
+      const choiceLabel = isBoardgame() ? choice : colorName;
       return `
         <button class="choice${selectedClass}" data-choice="${index}" ${disabled} aria-pressed="${selected ? 'true' : 'false'}" aria-label="${escapeHtml(`${colorName}：${choice || ''}`)}">
           <span class="dot" style="background:${color}"></span>
-          <span>${escapeHtml(colorName)}</span>
+          <span>${escapeHtml(choiceLabel)}</span>
         </button>
       `;
     }).join('');
@@ -1324,8 +1355,8 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
       if (!blob) throw new Error('画像の作成に失敗しました');
       await saveImageBlob(
         blob,
-        `watachan-love-result-${latestResult.score}-${latestResult.total}.png`,
-        'わたちゃん 判定画像'
+        `watachan-${isBoardgame() ? 'boardgame-remote' : 'love'}-result-${latestResult.score}-${latestResult.total}.png`,
+        isBoardgame() ? 'わたちゃん ボドゲ仲間の絆判定画像' : 'わたちゃん 判定画像'
       );
       trackRemoteShare('image');
     } catch (e) {
@@ -1367,7 +1398,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
     try {
       await updateRoom(replayPatch(Boolean(swapRoles)));
       trackRemoteEvent('game_start', {
-        game_type: 'remote',
+        game_type: isBoardgame() ? 'boardgame' : 'remote',
         play_mode: 'remote',
         player_count: 2,
         question_count: Array.isArray(state && state.cards) ? state.cards.length : 5,
@@ -1408,6 +1439,19 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
   }
 
   function init() {
+    if (INITIAL_GAME_TYPE === 'boardgame') {
+      document.title = '遠隔でボドゲ仲間の絆判定 | わたちゃん';
+      const canonical = document.querySelector('link[rel="canonical"]');
+      if (canonical) canonical.href = 'https://www.streetboardgame.com/remote-boardgame';
+      const description = '離れているボドゲ仲間と2人で遊べる無料の絆判定ゲーム。5問のボードゲームのお題にそれぞれ回答し、相手の好みをどれだけ理解しているかチェックできます。';
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) metaDescription.content = description;
+      $('remoteHeroTitle').innerHTML = '遠隔で<br>ボドゲ仲間の絆判定';
+      $('remoteHeroLead').textContent = '離れているボドゲ仲間と2人で、LINEを使って遊べます。';
+      $('remoteGuideTitle').textContent = 'ボドゲ仲間の絆判定とは？';
+      $('remoteGuideLead').textContent = '5問のボードゲームのお題を出題し、どちらか1人が選ぶ答えを、もう1人がどれだけ当てられるかで理解度を判定するゲームです。2人が同じ場所にいなくても、それぞれのスマホから回答できます。';
+      $('resultGameTitle').textContent = 'ボドゲ仲間の絆判定';
+    }
     ['selfName', 'otherName'].forEach((id) => {
       $(id).addEventListener('input', (event) => {
         event.currentTarget.setCustomValidity('');

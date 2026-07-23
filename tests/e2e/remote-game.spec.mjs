@@ -35,8 +35,8 @@ async function copyNextUrl(page) {
   return match[0];
 }
 
-async function createRemoteRoom(page, creatorRole) {
-  await page.goto('/remote');
+async function createRemoteRoom(page, creatorRole, path = '/remote') {
+  await page.goto(path);
   await page.locator('#selfName').fill('テストA');
   await page.locator('#otherName').fill('テストB');
   await page.locator('#creatorRole').selectOption(creatorRole);
@@ -143,6 +143,36 @@ for (const creatorRole of ['target', 'guesser']) {
   });
 }
 
+for (const creatorRole of ['target', 'guesser']) {
+  test(`ボドゲ仲間の遠隔版 ${creatorRole}先行: 2端末で回答・結果・再プレイ`, async ({ browser, page }) => {
+    await createRemoteRoom(page, creatorRole, '/remote-boardgame');
+    await expect(page.locator('.boardgame-question')).toBeVisible();
+    await expect(page.locator('#choices')).toHaveClass(/is-boardgame/);
+    await expect(page.locator('[data-choice]').first()).not.toHaveText(/^(緑|青|黄|赤|橙)$/);
+
+    await answerFive(page, [0, 1, 2, 3, 4]);
+    const nextUrl = await copyNextUrl(page);
+    expect(new URL(nextUrl).pathname).toBe('/remote-boardgame');
+
+    const secondContext = await browser.newContext();
+    await secondContext.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const second = await secondContext.newPage();
+    await second.goto(nextUrl);
+    await expect(second.locator('h1')).toContainText('ボドゲ仲間の絆判定');
+    await answerFive(second, [0, 1, 2, 3, 4], false);
+
+    await expect(second.locator('#score')).toHaveText('5/5');
+    await expect(second.locator('#resultGameTitle')).toHaveText('ボドゲ仲間の絆判定');
+    await expect(second.locator('#resultTitle')).toHaveText('公認・ボドゲ仲間マスター');
+    await expect(second.locator('#answerDetails .answer-row')).toHaveCount(5);
+
+    await second.locator('#replaySameRoom').click();
+    await expect(second.locator('#score')).toBeHidden();
+    await expect(second.locator('.boardgame-question')).toBeVisible();
+    await secondContext.close();
+  });
+}
+
 test('遠隔プレイの結果画像はPC・スマホで保存できる', async ({ browser, page }, testInfo) => {
   await createRemoteRoom(page, 'target');
   await answerFive(page, [0, 0, 0, 0, 0]);
@@ -192,5 +222,42 @@ test('遠隔プレイの結果画像はPC・スマホで保存できる', async 
     expect((await stat(await download.path())).size).toBeGreaterThan(1_000);
   }
 
+  await secondContext.close();
+});
+
+test('ボドゲ仲間の遠隔結果画像はPC・スマホで保存できる', async ({ browser, page }, testInfo) => {
+  await createRemoteRoom(page, 'target', '/remote-boardgame');
+  await answerFive(page, [0, 0, 0, 0, 0]);
+  const nextUrl = await copyNextUrl(page);
+  const isMobile = testInfo.project.name === 'mobile-chrome';
+  const secondContext = await browser.newContext(isMobile ? devices['Pixel 7'] : {});
+  if (isMobile) {
+    await secondContext.addInitScript(() => {
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: async ({ files, title }) => {
+          window.__sharedResultImage = {
+            title,
+            files: files?.map(({ name, size, type }) => ({ name, size, type })),
+          };
+        },
+      });
+    });
+  }
+  const second = await secondContext.newPage();
+  await second.goto(nextUrl);
+  await answerFive(second, [0, 0, 0, 1, 1], false);
+  const saveButton = second.locator('#saveResultImage');
+  if (isMobile) {
+    await saveButton.click();
+    await expect.poll(() => second.evaluate(() => window.__sharedResultImage)).toMatchObject({
+      files: [{ name: 'watachan-boardgame-remote-result-3-5.png', type: 'image/png' }],
+    });
+  } else {
+    const [download] = await Promise.all([second.waitForEvent('download'), saveButton.click()]);
+    expect(download.suggestedFilename()).toBe('watachan-boardgame-remote-result-3-5.png');
+    expect((await stat(await download.path())).size).toBeGreaterThan(1_000);
+  }
   await secondContext.close();
 });

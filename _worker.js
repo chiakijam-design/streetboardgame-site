@@ -74,11 +74,11 @@ async function handleRequest(request, env) {
       return handleRemoteApi(request, env, path);
     }
 
-    if (rawPath !== '/' && rawPath.endsWith('/') && path === '/remote') {
+    if (rawPath !== '/' && rawPath.endsWith('/') && (path === '/remote' || path === '/remote-boardgame')) {
       return Response.redirect(url.origin + path, 301);
     }
 
-    if (path === '/remote') {
+    if (path === '/remote' || path === '/remote-boardgame') {
       const remoteUrl = new URL('/remote.html', url.origin);
       const response = await env.ASSETS.fetch(new Request(remoteUrl.toString(), {
         method: 'GET',
@@ -408,7 +408,7 @@ async function withSecurityHeaders(response, request) {
   const isHtml = /text\/html/i.test(headers.get('content-type') || '');
   const nonce = isHtml ? createCspNonce() : '';
   const requestPath = request ? new URL(request.url).pathname : '';
-  const sensitivePath = /^\/(?:live(?:-ops)?|remote|api(?:\/|$))/.test(requestPath);
+  const sensitivePath = /^\/(?:live(?:-ops)?|remote(?:-boardgame)?|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
     "default-src 'none'",
     "base-uri 'self'",
@@ -815,9 +815,10 @@ function sanitizeNewRemoteRoom(body) {
   const targetSide = loveMode === 'boyTarget' ? 'boy' : 'girl';
   const creatorPhase = creatorSide === targetSide ? 'target' : 'guess';
   const players = body && body.players ? body.players : {};
+  const type = body && body.type === 'boardgame' ? 'boardgame' : 'love';
   const now = Date.now();
   return {
-    type: 'love',
+    type,
     version: 4,
     loveMode,
     creatorSide,

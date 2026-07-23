@@ -90,7 +90,7 @@ const mime = {
 
 function staticPath(urlPath) {
   if (['/', '/love', '/friends', '/family', '/boardgame', '/about', '/product'].includes(urlPath)) return 'index.html';
-  if (urlPath === '/remote') return 'remote.html';
+  if (urlPath === '/remote' || urlPath === '/remote-boardgame') return 'remote.html';
   if (urlPath === '/live') return 'live.html';
   if (urlPath === '/live-ops') return 'live_ops.html';
   return urlPath.replace(/^\/+/, '');
