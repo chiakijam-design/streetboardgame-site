@@ -593,6 +593,7 @@ test('5問を同時回答した後、一問ずつ答え合わせして個人結�
 
   await expect(page.getByRole('heading', { name: '最終結果' })).toBeVisible();
   await expect(page.locator('.result-card')).toHaveCount(5);
+  await expect(page.getByTestId('amazon-product-card')).toHaveAttribute('href', 'https://www.amazon.co.jp/dp/B0G87M4ZYK');
   await expect(participant.getByRole('heading', { name: 'あなたの最終結果' })).toBeVisible();
   await expect(participant.getByText('5 / 5問正解')).toBeVisible();
   await expect(participant.locator('.result-card')).toHaveCount(5);
@@ -606,6 +607,12 @@ test('5問を同時回答した後、一問ずつ答え合わせして個人結�
   await expect(participant.getByRole('button', { name: 'Xで結果をツイート' })).toBeVisible();
   await expect(participant.getByRole('button', { name: 'LINEで結果を送る' })).toBeVisible();
   await expect(participant.getByRole('button', { name: '結果画像を保存／送る' })).toBeVisible();
+  const participantProductCard = participant.getByTestId('amazon-product-card');
+  await expect(participantProductCard).toBeVisible();
+  await expect(participantProductCard).toHaveAttribute('href', 'https://www.amazon.co.jp/dp/B0G87M4ZYK');
+  await expect(participantProductCard).toHaveAttribute('target', '_blank');
+  await expect(participantProductCard).toHaveAttribute('rel', /sponsored/);
+  await expect(participantProductCard).toContainText('Amazonアフィリエイトを利用しています');
   await participant.evaluate(() => {
     Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
   });
@@ -634,6 +641,7 @@ test('5問を同時回答した後、一問ずつ答え合わせして個人結�
   }
   await expect(subject.getByRole('heading', { name: '最終結果' })).toBeVisible();
   await expect(subject.locator('.result-card')).toHaveCount(5);
+  await expect(subject.getByTestId('amazon-product-card')).toHaveAttribute('href', 'https://www.amazon.co.jp/dp/B0G87M4ZYK');
   await subjectContext.close();
   await participantContext.close();
 });

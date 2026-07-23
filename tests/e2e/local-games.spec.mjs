@@ -21,6 +21,16 @@ async function openResult(page) {
   await button.click();
 }
 
+async function expectAmazonProductCard(page) {
+  const card = page.getByTestId('amazon-product-card');
+  await expect(card).toBeVisible();
+  await expect(card).toHaveAttribute('href', 'https://www.amazon.co.jp/dp/B0G87M4ZYK');
+  await expect(card).toHaveAttribute('target', '_blank');
+  await expect(card).toHaveAttribute('rel', /sponsored/);
+  await expect(card).toContainText('Web版で盛り上がったら、製品版でもう一度');
+  await expect(card).toContainText('Amazonアフィリエイトを利用しています');
+}
+
 async function expectAnswerPickLayout(page, expectedCount) {
   const answerLayout = await page.locator('.result-answer-pick').evaluateAll((picks) => picks.map((pick) => {
     const name = pick.querySelector('.result-answer-name').getBoundingClientRect();
@@ -152,8 +162,11 @@ test('通常3シリーズは外部通信を遮断しても完走できる', asyn
   });
 
   await playLove(page, 'girlTarget', 3);
+  await expectAmazonProductCard(page);
   await playGroup(page, 'friend', 2, 3);
+  await expectAmazonProductCard(page);
   await playGroup(page, 'family', 2, 3);
+  await expectAmazonProductCard(page);
 
   expect(remoteApiRequests).toHaveLength(0);
 });

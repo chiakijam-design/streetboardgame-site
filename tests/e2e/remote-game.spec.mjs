@@ -67,6 +67,14 @@ for (const creatorRole of ['target', 'guesser']) {
       await expect(second.locator('#answerDetails .answer-row')).toHaveCount(5);
       await expect(second.locator('#resultReview')).toBeVisible();
       await expect(second.locator('#shareResultLine')).toBeVisible();
+      if (score === 0) {
+        const productCard = second.getByTestId('amazon-product-card');
+        await expect(productCard).toBeVisible();
+        await expect(productCard).toHaveAttribute('href', 'https://www.amazon.co.jp/dp/B0G87M4ZYK');
+        await expect(productCard).toHaveAttribute('target', '_blank');
+        await expect(productCard).toHaveAttribute('rel', /sponsored/);
+        await expect(productCard).toContainText('Amazonアフィリエイトを利用しています');
+      }
 
       const answerLayout = await second.locator('#answerDetails .answer-pick').evaluateAll((picks) => picks.map((pick) => {
         const name = pick.querySelector('.answer-name').getBoundingClientRect();

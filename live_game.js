@@ -12,6 +12,7 @@ import { CHECKOUT_TERMS } from './src/live/checkout-terms-config.js';
 import { createLiveQuestion, recommendYouTubeCandidates, validateLiveDraft } from './src/live/model.js';
 import { sharePreparedImage } from './src/platform/imageSave.js';
 import { openLineShare, openXShare } from './src/platform/share.js';
+import { BOARD_GAME_PRODUCT } from './src/product/config.js';
 
 const root = document.getElementById('liveRoot');
 const LIVE_INQUIRY_ENDPOINT = 'https://formspree.io/f/xrevejjr';
@@ -1239,7 +1240,7 @@ function renderHost() {
   } else if (game.phase === 'reveal') {
     content = `<section class="panel">${liveQuestionHeader(game)}${resultBlock(game.question.result, game.subjectName)}<button class="primary" id="nextQuestion" style="margin-top:18px">${game.currentQuestionIndex + 1 >= game.questionCount ? '最終結果を見る' : '次の問題へ'} <span class="accent">▶</span></button></section>`;
   } else {
-    content = `<section class="panel"><span class="eyebrow">FINISH</span><h2 style="margin-top:12px">最終結果</h2><div class="result-list">${game.results.map((result, index) => `<article class="result-card"><span class="badge">Q${index + 1}</span>${resultBlock(result, game.subjectName)}</article>`).join('')}</div><a class="primary" href="/live" style="display:block;margin-top:18px;text-align:center;text-decoration:none">新しいLIVEを作る</a></section>`;
+    content = `<section class="panel"><span class="eyebrow">FINISH</span><h2 style="margin-top:12px">最終結果</h2><div class="result-list">${game.results.map((result, index) => `<article class="result-card"><span class="badge">Q${index + 1}</span>${resultBlock(result, game.subjectName)}</article>`).join('')}</div><a class="primary" href="/live" style="display:block;margin-top:18px;text-align:center;text-decoration:none">新しいLIVEを作る</a></section>${amazonProductCardHtml()}`;
   }
   setPage(content);
   bind('#copyShareUrl', 'click', async () => {
@@ -1300,7 +1301,7 @@ function renderSubject() {
   } else if (game.phase === 'review-answer') {
     content = `<section class="panel"><span class="eyebrow">ANSWER</span>${liveQuestionHeader(game, '答え合わせ')}${resultBlock(game.question.result, game.subjectName, false)}<div class="notice">スタッフが次の答え合わせへ進むまでお待ちください。</div></section>`;
   } else {
-    content = `<section class="panel"><span class="eyebrow">FINISH</span><h2 style="margin-top:12px">最終結果</h2><div class="result-list">${game.results.map((result, index) => `<article class="result-card"><span class="badge">Q${index + 1}</span>${resultBlock(result, game.subjectName)}</article>`).join('')}</div></section>`;
+    content = `<section class="panel"><span class="eyebrow">FINISH</span><h2 style="margin-top:12px">最終結果</h2><div class="result-list">${game.results.map((result, index) => `<article class="result-card"><span class="badge">Q${index + 1}</span>${resultBlock(result, game.subjectName)}</article>`).join('')}</div></section>${amazonProductCardHtml()}`;
   }
   setPage(content);
   document.querySelectorAll('[data-subject-answer-index]').forEach((button) => button.addEventListener('click', () => {
@@ -1351,7 +1352,7 @@ function renderParticipant() {
           <button class="live-share-button live-share-image" id="shareLiveResultImage" type="button">結果画像を保存／送る</button>
           <div class="result-share-status" id="resultShareStatus" aria-live="polite"></div>
         </div>
-      </section>`;
+      </section>${amazonProductCardHtml()}`;
   }
   setPage(content);
   document.querySelectorAll('[data-vote-index]').forEach((button) => button.addEventListener('click', () => vote(Number(button.dataset.voteIndex))));
@@ -1408,6 +1409,16 @@ function liveCheckoutHtml(game) {
     ${supportPaymentsEnabled ? `<button class="mini live-support-toggle" id="toggleLiveSupport" type="button" aria-expanded="${state.supportPanelOpen}" aria-controls="liveSupportAmounts" ${state.checkoutBusy ? 'disabled' : ''}>♡ 応援金を送る</button>
     ${state.supportPanelOpen ? `<div class="live-support-amounts" id="liveSupportAmounts" role="group" aria-label="応援金額を選ぶ"><strong>応援金額を選ぶ</strong>${(game.supportAmounts || []).map((amount) => `<button class="mini" data-live-support-amount="${amount}" type="button" ${state.checkoutBusy || !state.checkoutTermsAccepted ? 'disabled' : ''}>${Number(amount).toLocaleString('ja-JP')}円</button>`).join('')}<p class="help">決済はStreetboardgame運営者が受け付け、売上の70%をYouTuberへ分配します。応援メッセージは初期版では公開されません。</p></div>` : ''}` : ''}
   </div>`;
+}
+
+function amazonProductCardHtml() {
+  return `<a class="amazon-product-card" data-testid="amazon-product-card" href="${escapeAttr(BOARD_GAME_PRODUCT.amazonUrl)}" target="_blank" rel="noopener noreferrer sponsored">
+    <span class="product-badge">${escapeHtml(BOARD_GAME_PRODUCT.badge)}</span>
+    <strong>${escapeHtml(BOARD_GAME_PRODUCT.title)}</strong>
+    <span class="product-description">${escapeHtml(BOARD_GAME_PRODUCT.description)}</span>
+    <span class="product-cta">${escapeHtml(BOARD_GAME_PRODUCT.cta)}</span>
+    <small>${escapeHtml(BOARD_GAME_PRODUCT.disclosure)}</small>
+  </a>`;
 }
 
 function updateCheckoutConsentControls() {

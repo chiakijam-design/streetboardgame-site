@@ -6,6 +6,7 @@ import {
   openXShare as openXSharePlatform,
 } from './src/platform/share.js';
 import { saveImageBlob as saveImageBlobPlatform } from './src/platform/imageSave.js';
+import { BOARD_GAME_PRODUCT } from './src/product/config.js';
 
 (function () {
   const ROOM_STORAGE_KEY = 'watachan-remote-love-role-v3';
@@ -1288,6 +1289,12 @@ import { saveImageBlob as saveImageBlobPlatform } from './src/platform/imageSave
     setHidden('replaySwapRoles', !manageToken);
     $('resultReturnTitle').textContent = `${recipientName}に判定結果を返す`;
     $('resultReturnLine').textContent = `LINEで${recipientName}に結果を返す`;
+    $('amazonProductCard').href = BOARD_GAME_PRODUCT.amazonUrl;
+    $('amazonProductBadge').textContent = BOARD_GAME_PRODUCT.badge;
+    $('amazonProductTitle').textContent = BOARD_GAME_PRODUCT.title;
+    $('amazonProductDescription').textContent = BOARD_GAME_PRODUCT.description;
+    $('amazonProductCta').textContent = BOARD_GAME_PRODUCT.cta;
+    $('amazonProductDisclosure').textContent = BOARD_GAME_PRODUCT.disclosure;
   }
 
   function shareResultLine() {

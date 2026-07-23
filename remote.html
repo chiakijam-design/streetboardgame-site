@@ -876,6 +876,43 @@
       color: var(--black);
       box-shadow: 4px 4px 0 var(--black);
     }
+    .amazon-product-card {
+      display: block;
+      margin-top: 24px;
+      padding: 16px;
+      border: 3px solid var(--black);
+      border-radius: 16px;
+      background: linear-gradient(145deg, var(--yellow) 0%, var(--white) 58%, #ffe4ee 100%);
+      color: var(--black);
+      text-align: left;
+      text-decoration: none;
+      box-shadow: 5px 5px 0 #000;
+    }
+    .amazon-product-card .product-badge {
+      display: inline-flex;
+      padding: 4px 9px;
+      border: 2px solid var(--black);
+      border-radius: 999px;
+      background: var(--white);
+      font: 900 9px "DotGothic16", monospace;
+      letter-spacing: .06em;
+    }
+    .amazon-product-card strong { display: block; margin-top: 10px; font-size: 17px; line-height: 1.5; }
+    .amazon-product-card .product-description { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.65; font-weight: 800; }
+    .amazon-product-card .product-cta {
+      display: block;
+      margin-top: 12px;
+      padding: 12px 10px;
+      border: 3px solid var(--black);
+      border-radius: 11px;
+      background: #ff9900;
+      color: var(--white);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 3px 3px 0 #000;
+    }
+    .amazon-product-card small { display: block; margin-top: 8px; color: var(--muted); text-align: center; font-size: 9px; line-height: 1.5; }
     .answer-row {
       border: 2px solid var(--black);
       border-radius: 12px;
@@ -1302,11 +1339,18 @@
         <button id="replaySwapRoles" class="btn secondary" type="button">今と役割を入れ替えて、もう一度やる</button>
         <button id="remoteTop" class="btn light" type="button">トップページに戻る</button>
       </div>
+      <a id="amazonProductCard" class="amazon-product-card" data-testid="amazon-product-card" href="/product" target="_blank" rel="noopener noreferrer sponsored">
+        <span id="amazonProductBadge" class="product-badge">BOARD GAME EDITION・54問入り</span>
+        <strong id="amazonProductTitle">Web版で盛り上がったら、製品版でもう一度</strong>
+        <span id="amazonProductDescription" class="product-description">スマホを置いてカードを囲める製品版です。飲み会・旅行・おうち時間にも。</span>
+        <span id="amazonProductCta" class="product-cta">Amazonで製品版を見る →</span>
+        <small id="amazonProductDisclosure">※ Amazonアフィリエイトを利用しています</small>
+      </a>
     </section>
   </main>
 
   <script data-build-entry="viewport_recovery" src="/dist/viewport_recovery-MXTVWKCL.js"></script>
   <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
-  <script data-build-entry="remote_love" src="/dist/remote_love-XKVPDQWT.js"></script>
+  <script data-build-entry="remote_love" src="/dist/remote_love-DRMJJ6O5.js"></script>
 </body>
 </html>

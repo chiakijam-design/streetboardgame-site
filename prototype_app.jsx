@@ -15,6 +15,7 @@ import {
 import { getBrowserStorage } from './src/platform/storage.js';
 import { triggerHaptic } from './src/platform/haptics.js';
 import { LIVE_SERIES } from './src/live/config.js';
+import { BOARD_GAME_PRODUCT } from './src/product/config.js';
 
 // 私のこと、ちゃんと分かってるよね? — インタラクティブプロトタイプ
 // パッケージDNA版: ホットピンク + 黒 + シアン縁取り + イエローシール
@@ -52,7 +53,6 @@ const { useState, useEffect, useMemo, useRef } = React;
 const ROUND_SIZE = 5;
 const FRIEND_ROUND_SIZE = 5;
 const FAMILY_ROUND_SIZE = 5;
-const AMAZON_URL = 'https://www.amazon.co.jp/dp/B0G87M4ZYK';
 const COLOR_LABELS = ['緑', '青', '黄', '赤', '橙'];
 const RESULT_IMAGE_VERSION = 'results-20260707-2';
 const HANDOFF_DELAY_MS = 600;
@@ -3933,6 +3933,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
         }}>
           全 {window.ALL_CARDS ? window.ALL_CARDS.length : 42} 問の中からランダム出題 ✦
         </div>
+        <AmazonProductCard />
       </div>
 
       <div style={{ textAlign: 'center', marginTop: 24, paddingBottom: 8, position: 'relative', zIndex: 1 }}>
@@ -4262,6 +4263,63 @@ function ResultReplayActions({
         </button>
       )}
     </div>
+  );
+}
+
+function AmazonProductCard() {
+  return (
+    <a
+      data-testid="amazon-product-card"
+      href={BOARD_GAME_PRODUCT.amazonUrl}
+      target="_blank"
+      rel="noopener noreferrer sponsored"
+      style={{
+        display: 'block',
+        marginTop: 24,
+        padding: 16,
+        border: `3px solid ${proto.black}`,
+        borderRadius: 16,
+        background: `linear-gradient(145deg, ${proto.yellow} 0%, ${proto.white} 58%, ${proto.pinkSoft} 100%)`,
+        color: proto.black,
+        textDecoration: 'none',
+        textAlign: 'left',
+        boxShadow: '5px 5px 0 #000',
+      }}
+    >
+      <span style={{
+        display: 'inline-flex',
+        padding: '4px 9px',
+        border: `2px solid ${proto.black}`,
+        borderRadius: 999,
+        background: proto.white,
+        fontFamily: proto.caption,
+        fontSize: 9,
+        fontWeight: 900,
+        letterSpacing: '0.06em',
+      }}>{BOARD_GAME_PRODUCT.badge}</span>
+      <strong style={{ display: 'block', marginTop: 10, fontSize: 17, lineHeight: 1.5 }}>
+        {BOARD_GAME_PRODUCT.title}
+      </strong>
+      <span style={{ display: 'block', marginTop: 5, color: proto.textSoft, fontSize: 11, lineHeight: 1.65, fontWeight: 800 }}>
+        {BOARD_GAME_PRODUCT.description}
+      </span>
+      <span style={{
+        display: 'block',
+        marginTop: 12,
+        padding: '12px 10px',
+        border: `2.5px solid ${proto.black}`,
+        borderRadius: 11,
+        background: '#FF9900',
+        color: proto.white,
+        textAlign: 'center',
+        fontSize: 13,
+        fontWeight: 900,
+        boxShadow: '3px 3px 0 #000',
+      }}>{BOARD_GAME_PRODUCT.cta}</span>
+      <small style={{ display: 'block', marginTop: 8, color: proto.textSoft, textAlign: 'center', fontSize: 9, lineHeight: 1.5 }}>
+        {BOARD_GAME_PRODUCT.disclosure}
+      </small>
+    </a>
   );
 }
 
@@ -6037,6 +6095,7 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
           secondaryLabel="トップに戻る"
           onSecondary={onHome}
         />
+        <AmazonProductCard />
         <div style={{ textAlign: 'center', marginTop: 18 }}>
           <FooterLink href="/about">About / お問い合わせ</FooterLink>
         </div>
@@ -6516,6 +6575,7 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
           secondaryLabel="トップに戻る"
           onSecondary={onHome}
         />
+        <AmazonProductCard />
         <div style={{ textAlign: 'center', marginTop: 18 }}>
           <FooterLink href="/about">About / お問い合わせ</FooterLink>
         </div>
@@ -6939,8 +6999,8 @@ function ProductScreen() {
             </div>
 
             <a
-              href={AMAZON_URL}
-              target="_blank" rel="noopener noreferrer"
+              href={BOARD_GAME_PRODUCT.amazonUrl}
+              target="_blank" rel="noopener noreferrer sponsored"
               style={{
                 display: 'block', textAlign: 'center', textDecoration: 'none',
                 width: '100%', padding: '12px', marginTop: 16, boxSizing: 'border-box',
@@ -6956,7 +7016,7 @@ function ProductScreen() {
               fontFamily: proto.caption, fontSize: 9,
               color: proto.textSoft, letterSpacing: '0.05em',
             }}>
-              ※ Amazonアフィリエイトを利用しています
+              {BOARD_GAME_PRODUCT.disclosure}
             </div>
           </div>
         </div>
