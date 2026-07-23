@@ -7,7 +7,7 @@ const PUBLIC_ROUTES = [
   { path: '/remote', title: '遠隔で2人の理解度判定 | わたちゃん', h1: '遠隔で理解度判定' },
   { path: '/friends', title: '友達の友情判定｜わたちゃん無料友情診断ゲーム', h1: '友達の友情判定ゲーム' },
   { path: '/family', title: '家族の絆判定｜わたちゃん無料家族診断ゲーム', h1: '家族の絆判定ゲーム' },
-  { path: '/live-guide', title: 'YouTube企画のネタに｜視聴者参加型ライブゲーム【無料】｜わたちゃん', h1: 'Youtuber専用　私のこと、ちゃんと分かってるよねLIVE' },
+  { path: '/live-guide', title: 'YouTube企画のネタに｜視聴者参加型ライブゲーム【無料】｜わたちゃん', h1: 'YouTuberと視聴者の絆を判定する、私のことちゃんとわかってるよね?Youtubeライブver.' },
   { path: '/about', title: 'About｜わたちゃん・彼氏の愛情判定ゲーム', h1: 'About' },
   { path: '/product', title: '製品版｜私のこと、ちゃんと分かってるよね？', h1: '製品版もあります' },
   { path: '/terms', title: '利用規約｜Streetboardgame', h1: '利用規約' },

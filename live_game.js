@@ -1497,7 +1497,7 @@ function liveResultShareContent() {
   )).length;
   const total = Number(game.questionCount) || game.results?.length || 0;
   const channelName = game.channelName || game.subjectName || 'YouTubeチャンネル';
-  const text = `${channelName}の「私のこと、ちゃんと分かってるよねLIVE」に参加！\n${viewerName}は${correctCount}/${total}問正解でした。\n\nみんなは何問当たる？👇\n#わたちゃん #視聴者参加型LIVE`;
+  const text = `${channelName}の「${LIVE_SERIES.name}」に参加！\n${viewerName}は${correctCount}/${total}問正解でした。\n\nみんなは何問当たる？👇\n#わたちゃん #視聴者参加型LIVE`;
   return {
     text,
     url: `${location.origin}/live`,
