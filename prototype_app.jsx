@@ -1618,6 +1618,7 @@ function App() {
             qIdx={qIdx}
             total={cards.length}
             pairMode
+            onPrevious={() => setQIdx((index) => Math.max(0, index - 1))}
             onNext={() => qIdx + 1 >= cards.length ? setScreen('result') : setQIdx(qIdx + 1)}
           />
         )}
@@ -1648,6 +1649,7 @@ function App() {
             players={friendPlayPlayers}
             qIdx={qIdx}
             total={cards.length}
+            onPrevious={() => setQIdx((index) => Math.max(0, index - 1))}
             onNext={() => qIdx + 1 >= cards.length ? setScreen('friendResult') : setQIdx(qIdx + 1)}
           />
         )}
@@ -1678,6 +1680,7 @@ function App() {
             players={familyPlayPlayers}
             qIdx={qIdx}
             total={cards.length}
+            onPrevious={() => setQIdx((index) => Math.max(0, index - 1))}
             onNext={() => qIdx + 1 >= cards.length ? setScreen('familyResult') : setQIdx(qIdx + 1)}
           />
         )}
@@ -1708,6 +1711,7 @@ function App() {
             players={boardgamePlayPlayers}
             qIdx={qIdx}
             total={cards.length}
+            onPrevious={() => setQIdx((index) => Math.max(0, index - 1))}
             onNext={() => qIdx + 1 >= cards.length ? setScreen('boardgameResult') : setQIdx(qIdx + 1)}
           />
         )}
@@ -4546,8 +4550,45 @@ function AmazonProductCard() {
   );
 }
 
-function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary, largePrimary = false, lifted = false, primaryTestId }) {
+function FixedActionBar({
+  primaryLabel,
+  onPrimary,
+  secondaryLabel,
+  onSecondary,
+  largePrimary = false,
+  lifted = false,
+  primaryTestId,
+  secondaryTestId,
+  inlineActions = false,
+}) {
   const primaryStyle = primaryBtn();
+  const hasSecondary = Boolean(secondaryLabel && onSecondary);
+  const primaryButton = (
+    <button data-testid={primaryTestId} onClick={onPrimary} style={{
+      ...primaryStyle,
+      minHeight: inlineActions ? 64 : (largePrimary ? 84 : primaryStyle.minHeight),
+      padding: inlineActions ? '14px 10px' : (largePrimary ? '22px 16px' : primaryStyle.padding),
+      fontSize: inlineActions ? 15 : (largePrimary ? 21 : primaryStyle.fontSize),
+      borderRadius: largePrimary ? 18 : primaryStyle.borderRadius,
+      boxShadow: largePrimary ? '6px 6px 0 #5BD4E8' : primaryStyle.boxShadow,
+      letterSpacing: inlineActions ? '0.03em' : (largePrimary ? '0.1em' : primaryStyle.letterSpacing),
+      lineHeight: inlineActions ? 1.45 : undefined,
+      minWidth: 0,
+    }}>
+      {primaryLabel}
+    </button>
+  );
+  const secondaryButton = hasSecondary ? (
+    <button data-testid={secondaryTestId} onClick={onSecondary} style={{
+      ...secondaryBtn(),
+      minHeight: inlineActions ? 64 : 50,
+      minWidth: 0,
+      padding: inlineActions ? '12px 8px' : '12px 14px',
+      fontSize: inlineActions ? 14 : undefined,
+    }}>
+      {secondaryLabel}
+    </button>
+  ) : null;
   return (
     <div style={{
       position: 'fixed',
@@ -4564,27 +4605,16 @@ function FixedActionBar({ primaryLabel, onPrimary, secondaryLabel, onSecondary, 
       zIndex: 30,
       pointerEvents: 'none',
     }}>
-      <div style={{ display: 'grid', gap: largePrimary ? 14 : 12, pointerEvents: 'auto' }}>
-        <button data-testid={primaryTestId} onClick={onPrimary} style={{
-          ...primaryStyle,
-          minHeight: largePrimary ? 84 : primaryStyle.minHeight,
-          padding: largePrimary ? '22px 16px' : primaryStyle.padding,
-          fontSize: largePrimary ? 21 : primaryStyle.fontSize,
-          borderRadius: largePrimary ? 18 : primaryStyle.borderRadius,
-          boxShadow: largePrimary ? '6px 6px 0 #5BD4E8' : primaryStyle.boxShadow,
-          letterSpacing: largePrimary ? '0.1em' : primaryStyle.letterSpacing,
-        }}>
-          {primaryLabel}
-        </button>
-        {secondaryLabel && onSecondary && (
-          <button onClick={onSecondary} style={{
-            ...secondaryBtn(),
-            minHeight: 50,
-            padding: '12px 14px',
-          }}>
-            {secondaryLabel}
-          </button>
-        )}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: inlineActions && hasSecondary ? 'minmax(0, 0.8fr) minmax(0, 1.7fr)' : undefined,
+        gap: inlineActions ? 10 : (largePrimary ? 14 : 12),
+        alignItems: 'stretch',
+        pointerEvents: 'auto',
+      }}>
+        {inlineActions && secondaryButton}
+        {primaryButton}
+        {!inlineActions && secondaryButton}
       </div>
     </div>
   );
@@ -4944,7 +4974,17 @@ const GROUP_CONFETTI_PIECES = Array.from({ length: 32 }, (_, index) => ({
   shape: index % 3 === 0 ? '50%' : '2px',
 }));
 
-function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext, pairMode = false }) {
+function GroupRevealScreen({
+  kind,
+  answer,
+  card,
+  players,
+  qIdx,
+  total,
+  onPrevious,
+  onNext,
+  pairMode = false,
+}) {
   const celebratedRef = useRef('');
   const guesses = Array.isArray(answer && answer.guesses) ? answer.guesses : [];
   const correctCount = guesses.filter((guess) => guess === (answer && answer.target)).length;
@@ -5161,6 +5201,10 @@ function GroupRevealScreen({ kind, answer, card, players, qIdx, total, onNext, p
         primaryLabel={qIdx + 1 >= total ? '結果を見る ▶' : `次の答え合わせへ（${qIdx + 2}/${total}）▶`}
         onPrimary={onNext}
         primaryTestId={qIdx + 1 >= total ? `${kind}-reveal-result` : `${kind}-reveal-next`}
+        secondaryLabel={qIdx > 0 ? '前に戻る' : ''}
+        onSecondary={qIdx > 0 ? onPrevious : null}
+        secondaryTestId={`${kind}-reveal-previous`}
+        inlineActions={qIdx > 0}
         largePrimary
       />
     </div>

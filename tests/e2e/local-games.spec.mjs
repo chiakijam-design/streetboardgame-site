@@ -160,7 +160,53 @@ async function playGroupMixed(page, kind, scores) {
   await expectGroupAnswerDetails(page, kind, playerCount);
 }
 
+async function openFirstRevealForBackNavigation(page, kind) {
+  if (kind === 'love') {
+    await page.goto('/?screen=intro');
+    await page.getByTestId('love-mode-girlTarget').click();
+    await page.getByTestId('love-start').click();
+    for (let question = 0; question < 5; question += 1) await pickColor(page, 0);
+    await page.getByTestId('love-batch-next-button').click();
+    for (let question = 0; question < 5; question += 1) await pickColor(page, 0);
+    await openResult(page);
+    return;
+  }
+  await page.goto(`/?screen=${kind}Intro`);
+  await page.getByTestId(`${kind}-count-2`).click();
+  await page.getByRole('button', { name: /この順番で始める/ }).click();
+  await answerGroupInBatches(page, kind, [5]);
+  await page.getByTestId(`${kind}-reveal-start`).click();
+}
+
 test.beforeEach(async ({ page }) => preparePage(page));
+
+test('1問ずつ答え合わせする通常4シリーズは2〜5問目から前の問題へ戻れる', async ({ page }) => {
+  for (const kind of ['love', 'friend', 'family', 'boardgame']) {
+    await openFirstRevealForBackNavigation(page, kind);
+    await expect(page.getByTestId(`${kind}-reveal-question`)).toContainText('Q1');
+    await expect(page.getByTestId(`${kind}-reveal-previous`)).toHaveCount(0);
+
+    await page.getByTestId(`${kind}-reveal-next`).click();
+    for (let questionIndex = 1; questionIndex < 5; questionIndex += 1) {
+      await expect(page.getByTestId(`${kind}-reveal-question`)).toContainText(`Q${questionIndex + 1}`);
+      const previousButton = page.getByTestId(`${kind}-reveal-previous`);
+      const nextButton = page.getByTestId(questionIndex === 4 ? `${kind}-reveal-result` : `${kind}-reveal-next`);
+      await expect(previousButton).toHaveText('前に戻る');
+      await expect(nextButton).toBeVisible();
+      const [previousBox, nextBox] = await Promise.all([previousButton.boundingBox(), nextButton.boundingBox()]);
+      expect(previousBox).not.toBeNull();
+      expect(nextBox).not.toBeNull();
+      expect(previousBox.x + previousBox.width).toBeLessThanOrEqual(nextBox.x);
+      expect(Math.abs((previousBox.y + previousBox.height / 2) - (nextBox.y + nextBox.height / 2))).toBeLessThanOrEqual(1);
+
+      await previousButton.click();
+      await expect(page.getByTestId(`${kind}-reveal-question`)).toContainText(`Q${questionIndex}`);
+      await page.getByTestId(`${kind}-reveal-next`).click();
+      await expect(page.getByTestId(`${kind}-reveal-question`)).toContainText(`Q${questionIndex + 1}`);
+      if (questionIndex < 4) await page.getByTestId(`${kind}-reveal-next`).click();
+    }
+  }
+});
 
 test('トップのボドゲ仲間ボタン直下から遠隔版へ移動できる', async ({ page }) => {
   await page.goto('/?screen=top');

@@ -239,7 +239,7 @@ export async function handleLiveApi(request, env, path) {
       return await createLiveGame(request, env);
     }
 
-    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|next|socket|creator-image|result-preview|checkout|cancel|reschedule|rotate-links))?$/);
+    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|previous|next|socket|creator-image|result-preview|checkout|cancel|reschedule|rotate-links))?$/);
     if (!route) return liveJson({ error: 'not-found' }, 404);
     const [, code, action = ''] = route;
     if (request.method === 'GET' && !action) return await getLiveGameResponse(request, env, code);
@@ -267,7 +267,7 @@ export async function handleLiveApi(request, env, path) {
       await enforceLiveRateLimit(request, env, 'subject', 300);
       return await answerLiveGameAsSubject(request, env, code);
     }
-    if (['start', 'answer', 'advance', 'close', 'reveal', 'next'].includes(action)) {
+    if (['start', 'answer', 'advance', 'close', 'reveal', 'previous', 'next'].includes(action)) {
       await enforceLiveRateLimit(request, env, 'host', 300);
       return await updateLiveGameAsHost(request, env, code, action);
     }
@@ -327,6 +327,7 @@ async function createLiveGame(request, env) {
     participants: [],
     votes: {},
     results: [],
+    reviewedThroughIndex: -1,
     showVoteCount: validation.draft.showLiveVoteCounts,
     participantCount: 0,
     participantLimit: liveViewerLimit(env),
@@ -1577,6 +1578,40 @@ async function updateLiveGameAsHost(request, env, code, action) {
   return liveJson({ code, game: publicLiveGame(game, { host: true }) });
 }
 
+function revealedLiveReviewIndex(game) {
+  const value = Number(game.reviewedThroughIndex);
+  return Number.isInteger(value) && value >= 0 ? value : -1;
+}
+
+function revealCurrentLiveReview(game) {
+  if (game.phase !== 'review-question') throw liveError('review-not-open', 409);
+  game.reviewedThroughIndex = Math.max(revealedLiveReviewIndex(game), game.currentQuestionIndex);
+  game.currentVoteCounts = null;
+  game.phase = 'review-answer';
+}
+
+function moveToPreviousLiveReview(game) {
+  if (game.phase !== 'review-answer') throw liveError('result-not-open', 409);
+  if (game.currentQuestionIndex <= 0) throw liveError('first-review', 409);
+  game.reviewedThroughIndex = Math.max(revealedLiveReviewIndex(game), game.currentQuestionIndex);
+  game.currentQuestionIndex -= 1;
+  game.currentVoteCounts = null;
+  game.phase = 'review-answer';
+}
+
+function moveToNextLiveReview(game) {
+  if (game.phase !== 'review-answer') throw liveError('result-not-open', 409);
+  if (game.currentQuestionIndex + 1 >= game.questions.length) {
+    game.phase = 'complete';
+    return;
+  }
+  game.currentQuestionIndex += 1;
+  game.currentVoteCounts = null;
+  game.phase = game.currentQuestionIndex <= revealedLiveReviewIndex(game)
+    ? 'review-answer'
+    : 'review-question';
+}
+
 async function updateSeparatedLiveGame(request, game, action) {
   if (action === 'start') {
     if (game.phase !== 'lobby') throw liveError('game-already-started', 409);
@@ -1590,21 +1625,18 @@ async function updateSeparatedLiveGame(request, game, action) {
     game.results = [...game.results.filter((item) => item.questionId !== question.id), result];
     if (game.currentQuestionIndex + 1 >= game.questions.length) {
       game.currentQuestionIndex = 0;
+      game.reviewedThroughIndex = -1;
+      game.currentVoteCounts = null;
       game.phase = 'review-question';
     } else {
       game.currentQuestionIndex += 1;
     }
   } else if (action === 'reveal') {
-    if (game.phase !== 'review-question') throw liveError('review-not-open', 409);
-    game.phase = 'review-answer';
+    revealCurrentLiveReview(game);
+  } else if (action === 'previous') {
+    moveToPreviousLiveReview(game);
   } else if (action === 'next') {
-    if (game.phase !== 'review-answer') throw liveError('result-not-open', 409);
-    if (game.currentQuestionIndex + 1 >= game.questions.length) {
-      game.phase = 'complete';
-    } else {
-      game.currentQuestionIndex += 1;
-      game.phase = 'review-question';
-    }
+    moveToNextLiveReview(game);
   } else {
     throw liveError('invalid-host-action', 409);
   }
@@ -1628,21 +1660,18 @@ async function updateCurrentLiveGame(request, game, action) {
     game.results = [...game.results.filter((item) => item.questionId !== question.id), result];
     if (game.currentQuestionIndex + 1 >= game.questions.length) {
       game.currentQuestionIndex = 0;
+      game.reviewedThroughIndex = -1;
+      game.currentVoteCounts = null;
       game.phase = 'review-question';
     } else {
       game.currentQuestionIndex += 1;
     }
   } else if (action === 'reveal') {
-    if (game.phase !== 'review-question') throw liveError('review-not-open', 409);
-    game.phase = 'review-answer';
+    revealCurrentLiveReview(game);
+  } else if (action === 'previous') {
+    moveToPreviousLiveReview(game);
   } else if (action === 'next') {
-    if (game.phase !== 'review-answer') throw liveError('result-not-open', 409);
-    if (game.currentQuestionIndex + 1 >= game.questions.length) {
-      game.phase = 'complete';
-    } else {
-      game.currentQuestionIndex += 1;
-      game.phase = 'review-question';
-    }
+    moveToNextLiveReview(game);
   } else {
     throw liveError('invalid-host-action', 409);
   }

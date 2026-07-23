@@ -1238,7 +1238,11 @@ function renderHost() {
   } else if (game.phase === 'review-question') {
     content = `<section class="panel"><span class="eyebrow">ANSWER CHECK</span>${liveQuestionHeader(game, '答え合わせ')}<div class="notice">まず問題を振り返ります。準備ができたら本人の答えを発表してください。</div><button class="primary" id="revealAnswer" style="margin-top:18px">答えを発表する <span class="accent">▶</span></button></section>`;
   } else if (game.phase === 'review-answer') {
-    content = `<section class="panel"><span class="eyebrow">ANSWER</span>${liveQuestionHeader(game, '答え合わせ')}${resultBlock(game.question.result, game.subjectName, false)}<button class="primary" id="nextQuestion" style="margin-top:18px">${game.currentQuestionIndex + 1 >= game.questionCount ? `${game.questionCount}問の結果発表へ` : '次の答え合わせへ'} <span class="accent">▶</span></button></section>`;
+    const nextReviewLabel = game.currentQuestionIndex + 1 >= game.questionCount ? `${game.questionCount}問の結果発表へ` : '次の答え合わせへ';
+    const reviewNavigation = game.currentQuestionIndex > 0
+      ? `<div class="review-navigation"><button class="secondary" id="previousQuestion">前に戻る</button><button class="primary" id="nextQuestion">${nextReviewLabel} <span class="accent">▶</span></button></div>`
+      : `<button class="primary" id="nextQuestion" style="margin-top:18px">${nextReviewLabel} <span class="accent">▶</span></button>`;
+    content = `<section class="panel"><span class="eyebrow">ANSWER</span>${liveQuestionHeader(game, '答え合わせ')}${resultBlock(game.question.result, game.subjectName, false)}${reviewNavigation}</section>`;
   } else if (game.phase === 'reveal') {
     content = `<section class="panel">${liveQuestionHeader(game)}${resultBlock(game.question.result, game.subjectName)}<button class="primary" id="nextQuestion" style="margin-top:18px">${game.currentQuestionIndex + 1 >= game.questionCount ? '最終結果を見る' : '次の問題へ'} <span class="accent">▶</span></button></section>`;
   } else {
@@ -1278,6 +1282,7 @@ function renderHost() {
   bind('#advanceQuestion', 'click', advanceHostQuestion);
   bind('#closeVoting', 'click', () => hostAction('close'));
   bind('#revealAnswer', 'click', () => hostAction('reveal'));
+  bind('#previousQuestion', 'click', () => hostAction('previous'));
   bind('#nextQuestion', 'click', () => hostAction('next'));
 }
 
@@ -1677,7 +1682,7 @@ async function hostAction(action) {
   try {
     const response = await api(`/api/live/games/${state.roomCode}/${action}`, { method: 'POST', headers: hostHeaders(), body: '{}' });
     state.game = response.game;
-    if (action === 'start' || action === 'next' || action === 'reveal') state.hostAnswerIndex = null;
+    if (action === 'start' || action === 'next' || action === 'previous' || action === 'reveal') state.hostAnswerIndex = null;
     state.error = '';
   } catch (error) { state.error = humanError(error); }
   render();
