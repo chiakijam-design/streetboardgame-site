@@ -175,7 +175,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=RocknRoll+One&family=DotGothic16&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Maru+Gothic:wght@500;700;900&family=RocknRoll+One&family=DotGothic16&display=swap" rel="stylesheet">
   <style>
     :root {
       --pink: #ec4f88;
@@ -1149,7 +1149,8 @@
       border-radius: 16px;
       background:
         linear-gradient(90deg, transparent 0 18%, rgba(238, 112, 120, .42) 18% 18.7%, transparent 18.7%),
-        repeating-linear-gradient(180deg, #fff 0 9.4%, #b8dff2 9.4% 10.2%);
+        repeating-linear-gradient(180deg, #fff 0 6.25%, #b8dff2 6.25% 6.65%);
+      background-position: 0 0, 0 -3.25%;
       box-shadow: 0 12px 28px rgba(0,0,0,.25);
       color: var(--black);
       isolation: isolate;
@@ -1176,43 +1177,58 @@
       pointer-events: none;
     }
     .boardgame-question-title {
-      position: relative;
+      position: absolute;
+      top: 5%;
+      left: 9%;
       z-index: 2;
       display: grid;
       place-items: center;
-      width: 80%;
-      min-height: 54px;
-      margin: 28px auto 12px;
-      padding: 8px 12px;
+      width: 82%;
+      min-height: 14%;
+      margin: 0;
+      padding: 2% 5%;
       background: rgba(91, 194, 228, .72);
       clip-path: polygon(3% 4%, 97% 0, 100% 89%, 1% 100%);
-      font-size: clamp(12px, 4vw, 17px);
-      font-weight: 900;
-      line-height: 1.4;
+      font-family: "Klee One", cursive;
+      font-size: clamp(13px, 4.45vw, 19px);
+      font-weight: 600;
+      line-height: 1.35;
       text-align: center;
     }
     .boardgame-card-choices {
-      position: relative;
+      position: absolute;
+      inset: 0;
       z-index: 2;
-      display: grid;
-      gap: 4px;
-      width: 85%;
-      margin: 0 auto;
     }
     .boardgame-card-choice {
-      display: grid;
-      grid-template-columns: 30px minmax(0, 1fr);
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 12%;
+      display: flex;
       align-items: center;
-      gap: 10px;
-      min-height: 40px;
-      padding: 3px 5px;
-      font-size: clamp(10px, 3.2vw, 14px);
-      font-weight: 900;
-      line-height: 1.3;
+      justify-content: center;
+      padding: 0 13% 0 20%;
+      font-family: "Klee One", cursive;
+      font-size: clamp(12px, 3.75vw, 16px);
+      font-weight: 600;
+      line-height: 1.25;
+      text-align: center;
+    }
+    .boardgame-card-choice:nth-child(1) { top: 20.7%; }
+    .boardgame-card-choice:nth-child(2) { top: 33.9%; }
+    .boardgame-card-choice:nth-child(3) { top: 47.1%; }
+    .boardgame-card-choice:nth-child(4) { top: 60.3%; }
+    .boardgame-card-choice:nth-child(5) { top: 73.5%; }
+    .boardgame-card-choice > span:last-child {
+      display: block;
+      width: 100%;
     }
     .boardgame-card-dot {
-      width: 27px;
-      height: 27px;
+      position: absolute;
+      left: 5%;
+      width: 10.7%;
+      aspect-ratio: 1;
       border: 1px solid rgba(0,0,0,.18);
       border-radius: 50%;
       box-shadow: 0 3px 7px rgba(0,0,0,.2);

@@ -157,10 +157,14 @@ for (const creatorRole of ['target', 'guesser']) {
       return {
         aspectRatio: card.width / card.height,
         cardWidth: card.width,
+        titleFont: getComputedStyle(document.querySelector('.boardgame-question-title')).fontFamily,
+        choiceFont: getComputedStyle(document.querySelector('.boardgame-card-choice')).fontFamily,
       };
     });
     expect(Math.abs(answerLayout.aspectRatio - (756 / 1122))).toBeLessThan(0.02);
     expect(answerLayout.cardWidth).toBeLessThanOrEqual(300);
+    expect(answerLayout.titleFont).toContain('Klee One');
+    expect(answerLayout.choiceFont).toContain('Klee One');
     await expect.poll(() => page.evaluate(() => {
       const card = document.querySelector('.boardgame-question-card').getBoundingClientRect();
       const controls = document.querySelector('#choices').getBoundingClientRect();
