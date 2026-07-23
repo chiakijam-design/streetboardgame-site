@@ -253,6 +253,7 @@ async function handleRequest(request, env) {
         description: 'ボドゲ仲間の絆判定は、本人が選んだ答えを仲間が予想し、好きなゲームやプレイスタイルをどれだけ理解しているか判定する2〜4人用の無料ゲームです。',
         url: CANONICAL_ORIGIN + '/boardgame',
         ogTitle: 'ボドゲ仲間の絆判定｜わたちゃん',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-boardgame.jpg?v=20260724-ogp-1',
         imageAlt: 'わたちゃん ボドゲ仲間の絆判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/boardgame#webpage',
         gameId: CANONICAL_ORIGIN + '/boardgame#boardgame-bond-game',

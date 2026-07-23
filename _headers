@@ -70,6 +70,8 @@
   Cache-Control: public, max-age=300, must-revalidate
 /assets/ogp-family.png
   Cache-Control: public, max-age=300, must-revalidate
+/assets/ogp-boardgame.jpg
+  Cache-Control: public, max-age=300, must-revalidate
 /assets/ogp-remote.png
   Cache-Control: public, max-age=300, must-revalidate
 /assets/qr-site.png
