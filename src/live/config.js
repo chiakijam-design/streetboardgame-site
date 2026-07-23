@@ -1,7 +1,13 @@
 const LIVE_SERIES_NAME = 'YouTuberと視聴者の絆を判定する、私のことちゃんとわかってるよね?Youtubeライブver.';
+const LIVE_SERIES_HERO_LINES = Object.freeze([
+  'YouTuberと視聴者の絆を判定する、',
+  '私のことちゃんとわかってるよね？',
+  'Youtubeライブver.',
+]);
 
 export const LIVE_SERIES = Object.freeze({
   name: LIVE_SERIES_NAME,
+  heroLines: LIVE_SERIES_HERO_LINES,
   shortName: 'LIVE',
   entryLead: 'スタッフがYouTubeチャンネルから企画を作り、配信中に本人と視聴者が回答するライブゲーム',
   youtubeEntry: 'YouTubeチャンネルから問題を作る',

@@ -154,7 +154,9 @@ function renderEntry() {
   setPage(`
     <section class="hero">
       <span class="eyebrow">NEW SERIES</span>
-      <h1>${escapeHtml(LIVE_SERIES.name)}</h1>
+      <h1 class="live-series-title" aria-label="${escapeAttr(LIVE_SERIES.name)}">
+        ${LIVE_SERIES.heroLines.map((line) => `<span aria-hidden="true">${escapeHtml(line)}</span>`).join('')}
+      </h1>
       <p>${escapeHtml(LIVE_SERIES.entryLead)}</p>
     </section>
     <section class="panel" style="margin-top:18px">
