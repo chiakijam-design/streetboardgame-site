@@ -186,6 +186,51 @@ test('通常4シリーズは外部通信を遮断しても完走できる', asyn
   expect(remoteApiRequests).toHaveLength(0);
 });
 
+test('非遠隔ボドゲのLINE共有URLは別端末でも結果を復元できる', async ({ browser, page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (value) => {
+          window.__copiedBoardgameResult = value;
+        },
+      },
+    });
+  });
+  await page.goto('/?screen=boardgameIntro');
+  await page.getByLabel('本人の表示名。6文字まで').fill('ちあき');
+  await page.getByLabel('ボドゲ仲間Aの表示名。6文字まで').fill('ゆう');
+  await page.getByTestId('boardgame-count-2').click();
+  await page.getByRole('button', { name: /この順番で始める/ }).click();
+  await answerGroupInBatches(page, 'boardgame', [3]);
+  await revealGroupAnswers(page, 'boardgame', 2);
+
+  await page.getByRole('button', { name: '文章だけコピーする' }).click();
+  const copied = await page.evaluate(() => window.__copiedBoardgameResult);
+  const resultUrl = copied.trim().split(/\s+/).at(-1);
+  expect(resultUrl).toMatch(/^http:\/\/127\.0\.0\.1:4173\/boardgame#result=[A-Za-z0-9_-]+$/);
+
+  const recipientContext = await browser.newContext();
+  const recipient = await recipientContext.newPage();
+  try {
+    await recipient.addInitScript(() => {
+      localStorage.setItem('watachan-player-names-v1', JSON.stringify({
+        boardgame: ['受信者', 'いつもの仲間'],
+      }));
+    });
+    await recipient.goto(resultUrl);
+    await expect(recipient.getByText('BOARDGAME RESULT', { exact: true })).toBeVisible();
+    await expect(recipient.getByText('ちあきの理解度', { exact: true })).toBeVisible();
+    await expect(recipient.getByText('ゆう', { exact: true }).first()).toBeVisible();
+    await expect(recipient.getByText('3/5', { exact: true }).first()).toBeVisible();
+    expect(await recipient.evaluate(() => (
+      JSON.parse(localStorage.getItem('watachan-player-names-v1')).boardgame[0]
+    ))).toBe('受信者');
+  } finally {
+    await recipientContext.close();
+  }
+});
+
 test('通常5シリーズの結果画像は本番CSP下でもPC・スマホで保存できる', async ({ page }, testInfo) => {
   const isMobile = testInfo.project.name === 'mobile-chrome';
   if (isMobile) {

@@ -16,6 +16,10 @@ import { getBrowserStorage } from './src/platform/storage.js';
 import { triggerHaptic } from './src/platform/haptics.js';
 import { LIVE_SERIES } from './src/live/config.js';
 import { BOARD_GAME_PRODUCT } from './src/product/config.js';
+import {
+  createBoardgameResultShareHash,
+  parseBoardgameResultShareHash,
+} from './src/core/boardgameResultShare.js';
 
 // 私のこと、ちゃんと分かってるよね? — インタラクティブプロトタイプ
 // パッケージDNA版: ホットピンク + 黒 + シアン縁取り + イエローシール
@@ -1053,7 +1057,23 @@ function App() {
   // URL からのリクエスト (旧Wix URLリダイレクト): window.__INITIAL_SCREEN
   const urlScreen = (typeof window !== 'undefined' && window.__INITIAL_SCREEN) || null;
   const recoveredViewportState = loadViewportRecoveryState();
-  const initial = recoveredViewportState || (urlScreen
+  const sharedBoardgameResult = useMemo(() => (
+    typeof window !== 'undefined'
+      ? parseBoardgameResultShareHash(window.location.hash, window.BOARDGAME_CARDS)
+      : null
+  ), []);
+  const sharedBoardgameInitial = sharedBoardgameResult
+    ? {
+      screen: 'boardgameResult',
+      qIdx: 0,
+      answers: sharedBoardgameResult.answers,
+      cards: sharedBoardgameResult.cards,
+      playerCount: sharedBoardgameResult.playerCount,
+      playerNames: normalizePlayerNames({ boardgame: sharedBoardgameResult.players }),
+      boardgameTargetIndex: 0,
+    }
+    : null;
+  const initial = sharedBoardgameInitial || recoveredViewportState || (urlScreen
     ? { screen: urlScreen, qIdx: 0, answers: [], cards: [] }
     : { screen: 'top', qIdx: 0, answers: [], cards: [] });
   // 使ったら消す (リロード時に二重発動しないように)
@@ -1118,8 +1138,8 @@ function App() {
 
   useEffect(() => {
     preloadCanvasCharacterImage();
-    savePlayerNames(playerNames);
-  }, [playerNames]);
+    if (!sharedBoardgameResult) savePlayerNames(playerNames);
+  }, [playerNames, sharedBoardgameResult]);
 
   useEffect(() => {
     if (screen === 'about' && window.__SCROLL_TO_CONTACT) return;
@@ -6951,7 +6971,15 @@ function BoardgameResultScreen({ answers, cards, playerCount, playerNames, onRep
     setShowShareSheet(true);
   };
 
-  const shareUrl = `${location.origin}/boardgame`;
+  const shareHash = useMemo(
+    () => createBoardgameResultShareHash({
+      answers,
+      cards,
+      players: boardgamePlayers,
+    }),
+    [answers, cards, boardgamePlayers]
+  );
+  const shareUrl = `${location.origin}/boardgame${shareHash}`;
   const shareText = `わたちゃんのボドゲ仲間の絆判定をやってみた！\n今回は「${targetLabel}」を判定。\n${scoreSummary}。\n${groupHighlight}\n\nボドゲ仲間とやると好みが分かる。\nみんなは何問当たる？👇\n#わたちゃん #ボドゲ仲間の絆判定`;
 
   const copyShareText = () => {
