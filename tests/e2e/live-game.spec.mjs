@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { devices, expect, test } from '@playwright/test';
+import { stat } from 'node:fs/promises';
 import { LIVE_FALLBACK_VIEWER_LIMIT, LIVE_RESERVATION_BUFFER_HOURS, LIVE_RESULT_IMAGE_SERVICE, LIVE_VIEWER_LIMIT } from '../../src/live/config.js';
 import { CHECKOUT_TERMS } from '../../src/live/checkout-terms-config.js';
 
@@ -520,7 +521,9 @@ test('5問を同時回答した後、一問ずつ答え合わせして個人結�
   await subject.goto(subjectUrl);
   await expect(subject.getByRole('heading', { name: 'YouTuber本人専用画面' })).toBeVisible();
 
-  const participantContext = await browser.newContext();
+  const participantContext = await browser.newContext(
+    testInfo.project.name === 'mobile-chrome' ? devices['Pixel 7'] : {}
+  );
   const participant = await participantContext.newPage();
   await participant.goto(`/live?room=${roomCode}`);
   await participant.locator('#participantName').fill('参加者A');
@@ -613,15 +616,43 @@ test('5問を同時回答した後、一問ずつ答え合わせして個人結�
   await expect(participantProductCard).toHaveAttribute('target', '_blank');
   await expect(participantProductCard).toHaveAttribute('rel', /sponsored/);
   await expect(participantProductCard).toContainText('Amazonアフィリエイトを利用しています');
-  await participant.evaluate(() => {
-    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
-  });
-  const [download] = await Promise.all([
-    participant.waitForEvent('download'),
-    participant.getByRole('button', { name: '結果画像を保存／送る' }).click(),
-  ]);
-  expect(download.suggestedFilename()).toBe('watachan-live-result-5-5.svg');
-  await expect(participant.locator('#resultShareStatus')).toHaveText('結果画像を保存しました。');
+  if (testInfo.project.name === 'mobile-chrome') {
+    await participant.evaluate(() => {
+      Object.defineProperty(navigator, 'canShare', {
+        configurable: true,
+        value: () => true,
+      });
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: async ({ files, title }) => {
+          window.__sharedResultImage = {
+            title,
+            files: files?.map(({ name, size, type }) => ({ name, size, type })),
+          };
+        },
+      });
+    });
+    await participant.getByRole('button', { name: '結果画像を保存／送る' }).click();
+    await expect.poll(() => participant.evaluate(() => window.__sharedResultImage)).toMatchObject({
+      files: [{
+        name: 'watachan-live-result-5-5.svg',
+        type: 'image/svg+xml',
+      }],
+    });
+    expect(await participant.evaluate(() => window.__sharedResultImage.files[0].size)).toBeGreaterThan(1_000);
+    await expect(participant.locator('#resultShareStatus')).toHaveText('共有・保存画面を開きました。');
+  } else {
+    await participant.evaluate(() => {
+      Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
+    });
+    const [download] = await Promise.all([
+      participant.waitForEvent('download'),
+      participant.getByRole('button', { name: '結果画像を保存／送る' }).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe('watachan-live-result-5-5.svg');
+    expect((await stat(await download.path())).size).toBeGreaterThan(1_000);
+    await expect(participant.locator('#resultShareStatus')).toHaveText('結果画像を保存しました。');
+  }
   if (testInfo.project.name === 'desktop-chrome') {
     await participant.evaluate(() => {
       window.__liveResultShareUrl = '';

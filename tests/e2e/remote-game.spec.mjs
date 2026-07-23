@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { devices, expect, test } from '@playwright/test';
+import { stat } from 'node:fs/promises';
 
 async function answerFive(page, choices, expectHandoff = true) {
   for (let index = 0; index < 5; index += 1) {
@@ -141,3 +142,55 @@ for (const creatorRole of ['target', 'guesser']) {
     await secondContext.close();
   });
 }
+
+test('遠隔プレイの結果画像はPC・スマホで保存できる', async ({ browser, page }, testInfo) => {
+  await createRemoteRoom(page, 'target');
+  await answerFive(page, [0, 0, 0, 0, 0]);
+  const nextUrl = await copyNextUrl(page);
+  const isMobile = testInfo.project.name === 'mobile-chrome';
+  const secondContext = await browser.newContext(isMobile ? devices['Pixel 7'] : {});
+  if (isMobile) {
+    await secondContext.addInitScript(() => {
+      Object.defineProperty(navigator, 'canShare', {
+        configurable: true,
+        value: () => true,
+      });
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: async ({ files, title }) => {
+          window.__sharedResultImage = {
+            title,
+            files: files?.map(({ name, size, type }) => ({ name, size, type })),
+          };
+        },
+      });
+    });
+  }
+  const second = await secondContext.newPage();
+  await second.goto(nextUrl);
+  await answerFive(second, [0, 0, 0, 1, 1], false);
+  await expect(second.locator('#score')).toHaveText('3/5');
+  const saveButton = second.locator('#saveResultImage');
+  await expect(saveButton).toBeVisible();
+  await expect(saveButton).toBeEnabled();
+
+  if (isMobile) {
+    await saveButton.click();
+    await expect.poll(() => second.evaluate(() => window.__sharedResultImage)).toMatchObject({
+      files: [{
+        name: 'watachan-love-result-3-5.png',
+        type: 'image/png',
+      }],
+    });
+    expect(await second.evaluate(() => window.__sharedResultImage.files[0].size)).toBeGreaterThan(1_000);
+  } else {
+    const [download] = await Promise.all([
+      second.waitForEvent('download'),
+      saveButton.click(),
+    ]);
+    expect(download.suggestedFilename()).toBe('watachan-love-result-3-5.png');
+    expect((await stat(await download.path())).size).toBeGreaterThan(1_000);
+  }
+
+  await secondContext.close();
+});

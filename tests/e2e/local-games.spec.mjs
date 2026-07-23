@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { stat } from 'node:fs/promises';
 
 async function preparePage(page) {
   await page.addInitScript(() => {
@@ -173,7 +174,7 @@ test('通常4シリーズは外部通信を遮断しても完走できる', asyn
   expect(remoteApiRequests).toHaveLength(0);
 });
 
-test('ボドゲ結果画像は本番CSP下でもPC・スマホで保存できる', async ({ page }, testInfo) => {
+test('通常5シリーズの結果画像は本番CSP下でもPC・スマホで保存できる', async ({ page }, testInfo) => {
   const isMobile = testInfo.project.name === 'mobile-chrome';
   if (isMobile) {
     await page.addInitScript(() => {
@@ -192,26 +193,52 @@ test('ボドゲ結果画像は本番CSP下でもPC・スマホで保存できる
       });
     });
   }
-  await playGroup(page, 'boardgame', 2, 3);
-  const saveButton = page.getByRole('button', { name: '判定画像も送りたい。まずは画像を保存' }).first();
-  await expect(saveButton).toBeVisible();
-  await expect(saveButton).toBeEnabled();
-  if (isMobile) {
-    await saveButton.click();
-    await expect.poll(() => page.evaluate(() => window.__sharedResultImage)).toMatchObject({
-      title: 'わたちゃん ボドゲ仲間の絆判定ゲーム',
-      files: [{
-        name: 'watachan-boardgame-result-5.png',
-        type: 'image/png',
-      }],
-    });
-    return;
+  const cases = [
+    {
+      play: () => playLove(page, 'girlTarget', 3),
+      filename: 'watachan-love-result-3-5.png',
+    },
+    {
+      play: () => playLove(page, 'boyTarget', 3),
+      filename: 'watachan-love-result-3-5.png',
+    },
+    {
+      play: () => playGroup(page, 'friend', 2, 3),
+      filename: 'watachan-friend-result-5.png',
+    },
+    {
+      play: () => playGroup(page, 'family', 2, 3),
+      filename: 'watachan-family-result-5.png',
+    },
+    {
+      play: () => playGroup(page, 'boardgame', 2, 3),
+      filename: 'watachan-boardgame-result-5.png',
+    },
+  ];
+
+  for (const resultCase of cases) {
+    await resultCase.play();
+    const saveButton = page.getByRole('button', { name: '判定画像も送りたい。まずは画像を保存' }).first();
+    await expect(saveButton).toBeVisible();
+    await expect(saveButton).toBeEnabled();
+    if (isMobile) {
+      await saveButton.click();
+      await expect.poll(() => page.evaluate(() => window.__sharedResultImage)).toMatchObject({
+        files: [{
+          name: resultCase.filename,
+          type: 'image/png',
+        }],
+      });
+      expect(await page.evaluate(() => window.__sharedResultImage.files[0].size)).toBeGreaterThan(1_000);
+      continue;
+    }
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      saveButton.click(),
+    ]);
+    expect(download.suggestedFilename()).toBe(resultCase.filename);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1_000);
   }
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    saveButton.click(),
-  ]);
-  expect(download.suggestedFilename()).toBe('watachan-boardgame-result-5.png');
 });
 
 test('全JSをハッシュ付きで自前配信しsource mapを公開しない', async ({ page, request }) => {
