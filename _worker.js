@@ -13,6 +13,8 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 //   /friends/         → /friends にリダイレクト
 //   /family           → 家族の絆判定紹介ページとして専用SEOメタ付きHTMLを返す
 //   /family/          → /family にリダイレクト
+//   /boardgame        → ボドゲ仲間の絆判定紹介ページとして専用SEOメタ付きHTMLを返す
+//   /boardgame/       → /boardgame にリダイレクト
 //   /live-guide       → LIVEゲーム紹介ページとして専用SEOメタ付きHTMLを返す
 //   /live-guide/      → /live-guide にリダイレクト
 //   /contact          → /?screen=about&to=contact にリダイレクト
@@ -237,6 +239,35 @@ async function handleRequest(request, env) {
           },
         ],
       },
+      '/boardgame': {
+        title: 'ボドゲ仲間の絆判定｜2〜4人の無料ボードゲーム',
+        description: 'ボドゲ仲間の絆判定は、本人が選んだ答えを仲間が予想し、好きなゲームやプレイスタイルをどれだけ理解しているか判定する2〜4人用の無料ゲームです。',
+        url: CANONICAL_ORIGIN + '/boardgame',
+        ogTitle: 'ボドゲ仲間の絆判定｜わたちゃん',
+        imageAlt: 'わたちゃん ボドゲ仲間の絆判定ゲーム',
+        pageId: CANONICAL_ORIGIN + '/boardgame#webpage',
+        gameId: CANONICAL_ORIGIN + '/boardgame#boardgame-bond-game',
+        gameName: 'わたちゃん ボドゲ仲間の絆判定',
+        headline: 'ボードゲーム仲間の好みを当てる2〜4人用の無料絆判定ゲーム',
+        genre: ['ボードゲーム', 'パーティーゲーム', '友達ゲーム', '診断ゲーム'],
+        keywords: 'ボドゲ仲間, ボードゲーム仲間, ボドゲ会 ゲーム, ボードゲーム 2人, ボードゲーム 3人, ボードゲーム 4人, 絆判定, 無料ゲーム',
+        noscriptTitle: 'ボドゲ仲間の絆判定｜2〜4人の無料ボードゲーム',
+        noscriptBody: '本人が自分の答えを選び、ボドゲ仲間がその答えを予想する無料の絆判定ゲームです。選定した54問から毎回5問を出題し、スマホ1台で2〜4人プレイできます。',
+        faq: [
+          {
+            question: 'ボドゲ仲間の絆判定は何人で遊べますか？',
+            answer: '2〜4人で遊べます。本人が自分の答えを選び、ほかのボドゲ仲間が順番に予想します。',
+          },
+          {
+            question: 'どんな問題が出ますか？',
+            answer: '好きなゲーム、遊びたい人数、プレイスタイル、人狼やブラフゲームでの行動など、選定した54問から毎回5問を出題します。',
+          },
+          {
+            question: '結果は保存・共有できますか？',
+            answer: '結果画像を保存し、XやLINEで共有できます。ボドゲ仲間ごとの正解数とランクも確認できます。',
+          },
+        ],
+      },
       '/live-guide': {
         title: 'YouTube企画のネタに｜視聴者参加型ライブゲーム【無料】｜わたちゃん',
         description: 'YouTubeのライブ配信企画・視聴者参加型のネタを探している方向け。チャンネルURLから5択問題を30問生成し、YouTuber本人と視聴者が同時回答。無料で企画を作成できます。',
@@ -455,7 +486,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/live-guide">YouTube企画・視聴者参加型LIVEを見る</a> / <a href="/live">Youtuber専用LIVEを作って遊ぶ</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/boardgame">ボドゲ仲間の絆判定を見る</a> / <a href="/live-guide">YouTube企画・視聴者参加型LIVEを見る</a> / <a href="/live">Youtuber専用LIVEを作って遊ぶ</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -518,6 +549,9 @@ function buildStructuredData(page) {
           '@id': 'https://www.streetboardgame.com/family#family-game',
         },
         {
+          '@id': 'https://www.streetboardgame.com/boardgame#boardgame-bond-game',
+        },
+        {
           '@id': 'https://www.streetboardgame.com/live-guide#live-game',
         },
       ],
@@ -529,6 +563,7 @@ function buildStructuredData(page) {
         '彼氏の愛情判定',
         '友達の友情判定',
         '家族の絆判定',
+        'ボドゲ仲間の絆判定',
         'YouTuberと視聴者の絆を判定する、私のことちゃんとわかってるよね?Youtubeライブver.',
         '製品版',
         'About',
@@ -537,6 +572,7 @@ function buildStructuredData(page) {
         'https://www.streetboardgame.com/',
         'https://www.streetboardgame.com/friends',
         'https://www.streetboardgame.com/family',
+        'https://www.streetboardgame.com/boardgame',
         'https://www.streetboardgame.com/live-guide',
         'https://www.streetboardgame.com/product',
         'https://www.streetboardgame.com/about',

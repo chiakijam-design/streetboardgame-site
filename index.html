@@ -85,6 +85,9 @@
           "@id": "https://www.streetboardgame.com/family#family-game"
         },
         {
+          "@id": "https://www.streetboardgame.com/boardgame#boardgame-bond-game"
+        },
+        {
           "@id": "https://www.streetboardgame.com/live-guide#live-game"
         }
       ]
@@ -96,6 +99,7 @@
         "彼氏の愛情判定",
         "友達の友情判定",
         "家族の絆判定",
+        "ボドゲ仲間の絆判定",
         "YouTuberと視聴者の絆を判定する、私のことちゃんとわかってるよね?Youtubeライブver.",
         "製品版",
         "About"
@@ -104,6 +108,7 @@
         "https://www.streetboardgame.com/",
         "https://www.streetboardgame.com/friends",
         "https://www.streetboardgame.com/family",
+        "https://www.streetboardgame.com/boardgame",
         "https://www.streetboardgame.com/live-guide",
         "https://www.streetboardgame.com/product",
         "https://www.streetboardgame.com/about"
@@ -152,6 +157,9 @@
         },
         {
           "@id": "https://www.streetboardgame.com/family#family-game"
+        },
+        {
+          "@id": "https://www.streetboardgame.com/boardgame#boardgame-bond-game"
         },
         {
           "@id": "https://www.streetboardgame.com/live-guide#live-game"
@@ -267,6 +275,33 @@
       "publisher": {
         "@id": "https://www.streetboardgame.com/#organization"
       }
+    },
+    {
+      "@type": ["WebApplication", "Game"],
+      "@id": "https://www.streetboardgame.com/boardgame#boardgame-bond-game",
+      "url": "https://www.streetboardgame.com/boardgame",
+      "name": "わたちゃん ボドゲ仲間の絆判定",
+      "headline": "ボードゲーム仲間の好みを当てる2〜4人用の無料絆判定ゲーム",
+      "description": "本人が選んだ答えをボドゲ仲間が予想し、好きなゲームやプレイスタイルをどれだけ理解しているか判定するスマホ向け無料ゲームです。",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript",
+      "isAccessibleForFree": true,
+      "genre": ["ボードゲーム", "パーティーゲーム", "友達ゲーム", "診断ゲーム"],
+      "keywords": "ボドゲ仲間, ボードゲーム仲間, ボドゲ会, 絆判定, 2〜4人プレイ, 無料ゲーム",
+      "image": "https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2",
+      "inLanguage": "ja",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "JPY"
+      },
+      "mainEntityOfPage": {
+        "@id": "https://www.streetboardgame.com/boardgame#webpage"
+      },
+      "publisher": {
+        "@id": "https://www.streetboardgame.com/#organization"
+      }
     }
   ]
 }
@@ -303,6 +338,7 @@
     /love      → 彼氏の愛情判定紹介ページ（彼女版も対応）
     /friends   → 友達の友情判定紹介ページ
     /family    → 家族の絆判定紹介ページ
+    /boardgame → ボドゲ仲間の絆判定紹介ページ
     /live-guide → LIVEゲーム紹介ページ
     /about     → About ページ
     /product   → 製品版ページ
@@ -311,10 +347,10 @@
 ========================= -->
 <script>
   (function() {
-    // テスト用: ?screen=lovePage|friendPage|familyPage|livePage|intro|friendIntro|familyIntro|about|product|top で強制的に初期画面を指定可能
+    // テスト用: ?screen=lovePage|friendPage|familyPage|boardgamePage|livePage|intro|friendIntro|familyIntro|boardgameIntro|about|product|top で強制的に初期画面を指定可能
     var query = new URLSearchParams(location.search);
     var forceScreen = query.get('screen');
-    if (forceScreen && ['top','lovePage','friendPage','familyPage','livePage','intro','friendIntro','familyIntro','about','product'].indexOf(forceScreen) >= 0) {
+    if (forceScreen && ['top','lovePage','friendPage','familyPage','boardgamePage','livePage','intro','friendIntro','familyIntro','boardgameIntro','about','product'].indexOf(forceScreen) >= 0) {
       window.__INITIAL_SCREEN = forceScreen;
       if (forceScreen === 'about' && query.get('to') === 'contact') {
         window.__SCROLL_TO_CONTACT = true;
@@ -337,6 +373,7 @@
       'love': 'lovePage',
       'friends': 'friendPage',
       'family': 'familyPage',
+      'boardgame': 'boardgamePage',
       'live-guide': 'livePage',
       'about': 'about',
       'product': 'product',
@@ -421,7 +458,7 @@
     <h1>わたちゃん｜彼氏の愛情判定ゲーム</h1>
     <p>スマホ1台で無料で遊べるカップル診断ゲームです。メインは彼氏の彼女理解度を測定する「彼氏の愛情判定」。彼女版は同じゲーム内で切り替えて遊べます。</p>
     <p>大学生カップルのデート中、飲み会、旅行、おうち時間にも遊びやすい理解度チェックです。シリーズとして、友達の友情判定、家族の絆判定も公開中です。JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情を判定する</a> / <a href="/family">家族の絆を判定する</a> / <a href="/live-guide">YouTube企画・視聴者参加型LIVEを見る</a> / <a href="/live">Youtuber専用LIVEを作って遊ぶ</a> / <a href="/product">製品版を見る</a> / <a href="/about">About</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情を判定する</a> / <a href="/family">家族の絆を判定する</a> / <a href="/boardgame">ボドゲ仲間の絆を判定する</a> / <a href="/live-guide">YouTube企画・視聴者参加型LIVEを見る</a> / <a href="/live">Youtuber専用LIVEを作って遊ぶ</a> / <a href="/product">製品版を見る</a> / <a href="/about">About</a></p>
     <p><a href="/terms">利用規約</a> / <a href="/legal">特定商取引法に基づく表記</a></p>
   </main>
 </noscript>
@@ -431,7 +468,8 @@
 <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
 <script data-build-entry="prototype_friend_data" src="/dist/prototype_friend_data-3YOIQLSI.js"></script>
 <script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
+<script data-build-entry="prototype_boardgame_data" src="/dist/prototype_boardgame_data-TJ5XOVK3.js"></script>
 <script data-build-entry="prototype_character" defer src="/dist/prototype_character-D4RIZ5YT.js"></script>
-<script data-build-entry="prototype_app" defer src="/dist/prototype_app-CLUIDYQY.js"></script>
+<script data-build-entry="prototype_app" defer src="/dist/prototype_app-7DHL43MJ.js"></script>
 </body>
 </html>

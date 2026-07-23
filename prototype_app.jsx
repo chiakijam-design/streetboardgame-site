@@ -53,6 +53,7 @@ const { useState, useEffect, useMemo, useRef } = React;
 const ROUND_SIZE = 5;
 const FRIEND_ROUND_SIZE = 5;
 const FAMILY_ROUND_SIZE = 5;
+const BOARDGAME_ROUND_SIZE = 5;
 const COLOR_LABELS = ['緑', '青', '黄', '赤', '橙'];
 const RESULT_IMAGE_VERSION = 'results-20260707-2';
 const HANDOFF_DELAY_MS = 600;
@@ -64,6 +65,7 @@ const DEFAULT_PLAYER_NAMES = {
   love: ['彼女', '彼氏'],
   friend: ['本人', '友達A', '友達B', '友達C'],
   family: ['本人', '家族A', '家族B', '家族C'],
+  boardgame: ['本人', 'ボドゲ仲間A', 'ボドゲ仲間B', 'ボドゲ仲間C'],
 };
 
 function trackAnalyticsEvent(name, params = {}) {
@@ -655,13 +657,41 @@ const GROUP_REVIEW_VARIANTS = {
       '総合すると、日常の中にまだ聞いてない話が眠っているタイプです。',
     ],
   },
+  boardgame: {
+    opening: [
+      '{subject}とのボドゲ相性は{level}。「{rank}」タイプです。',
+      '{subject}のゲームの好みへの理解は{level}。「{rank}」の気配あり。',
+      '{subject}との卓上相性は{level}。選ぶゲームにも「{rank}」感が出ています。',
+      '{subject}との絆は{level}。答えのズレまでボドゲ仲間らしい結果です。',
+    ],
+    hit: [
+      '{hit}では好みが近く、次に遊ぶゲームも自然に決まりそう。',
+      '{hit}まわりは強め。普段の卓で相手の好みをよく見ています。',
+      '{hit}の読みは近め。遊び方やテンションまで理解できている印象。',
+      '{hit}ではボドゲ仲間としての観察力が出ています。',
+    ],
+    miss: [
+      '一方で{miss}は、次のボドゲ会で掘り下げたい未開拓ゾーン。',
+      '{miss}ではズレが出やすく、まだ一緒に遊んでいない好みがありそう。',
+      '{miss}の読み違いは、次に持ち込むゲームを選ぶヒントになります。',
+      '{miss}はまだ未確認。答え合わせから新しい卓が始まりそうです。',
+    ],
+    closing: [
+      '総合すると、遊ぶほど好みが見えてくるボドゲ仲間です。',
+      '総合すると、同卓経験の中にまだ発見が残っている組み合わせ。',
+      '総合すると、答え合わせが次のゲーム選びにつながる関係です。',
+      '総合すると、当たりもズレも次のボドゲ会の話題になるタイプです。',
+    ],
+  },
 };
 
 function getGroupReviewSections(answers, cards, players, kind = 'friend') {
   const total = Math.max(1, answers.length);
   const scores = getPlayerScores(answers, players);
   const subject = players[0] || '本人';
-  const relation = kind === 'family' ? '家族相性' : '友情相性';
+  const relation = kind === 'family'
+    ? '家族相性'
+    : (kind === 'boardgame' ? 'ボドゲ相性' : '友情相性');
   const variants = GROUP_REVIEW_VARIANTS[kind] || GROUP_REVIEW_VARIANTS.friend;
   const fillTemplate = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => values[key] || '');
   const pickVariant = (list, playerIndex, score, themes, offset = 0) => {
@@ -1038,6 +1068,7 @@ function App() {
   const [loveMode, setLoveMode] = useState(initial.loveMode || 'girlTarget');
   const [friendTargetIndex, setFriendTargetIndex] = useState(initial.friendTargetIndex || 0);
   const [familyTargetIndex, setFamilyTargetIndex] = useState(initial.familyTargetIndex || 0);
+  const [boardgameTargetIndex, setBoardgameTargetIndex] = useState(initial.boardgameTargetIndex || 0);
   const [groupResponderIndex, setGroupResponderIndex] = useState(initial.groupResponderIndex || 0);
   const [loveResponderIndex, setLoveResponderIndex] = useState(initial.loveResponderIndex || 0);
 
@@ -1056,6 +1087,7 @@ function App() {
             loveMode,
             friendTargetIndex,
             familyTargetIndex,
+            boardgameTargetIndex,
             groupResponderIndex,
             loveResponderIndex,
           },
@@ -1066,7 +1098,7 @@ function App() {
     };
     document.addEventListener('watachan:save-before-viewport-reload', saveBeforeViewportReload);
     return () => document.removeEventListener('watachan:save-before-viewport-reload', saveBeforeViewportReload);
-  }, [screen, qIdx, answers, cards, playerCount, playerNames, loveMode, friendTargetIndex, familyTargetIndex, groupResponderIndex, loveResponderIndex]);
+  }, [screen, qIdx, answers, cards, playerCount, playerNames, loveMode, friendTargetIndex, familyTargetIndex, boardgameTargetIndex, groupResponderIndex, loveResponderIndex]);
 
   // contact 指定だった場合、About にしてからフォームへスクロール
   useEffect(() => {
@@ -1136,6 +1168,14 @@ function App() {
     () => getPlayersWithTarget('family', playerCount, playerNames.family, familyTargetIndex),
     [playerCount, playerNames.family, familyTargetIndex]
   );
+  const boardgamePlayerOrder = useMemo(
+    () => getTargetPlayerOrder(playerCount, boardgameTargetIndex),
+    [playerCount, boardgameTargetIndex]
+  );
+  const boardgamePlayPlayers = useMemo(
+    () => getPlayersWithTarget('boardgame', playerCount, playerNames.boardgame, boardgameTargetIndex),
+    [playerCount, playerNames.boardgame, boardgameTargetIndex]
+  );
 
   const startNewRound = (requestedLoveMode) => {
     blurActiveControl();
@@ -1204,9 +1244,30 @@ function App() {
     });
   };
 
+  const startBoardgameRound = (count, targetIndex = boardgameTargetIndex) => {
+    blurActiveControl();
+    resetViewportPosition('auto');
+    const normalizedCount = normalizeFriendPlayerCount(count);
+    const picked = window.pickRandomBoardgameCards(BOARDGAME_ROUND_SIZE);
+    setPlayerCount(normalizedCount);
+    setBoardgameTargetIndex(getTargetPlayerOrder(normalizedCount, targetIndex)[0]);
+    setCards(picked);
+    setQIdx(0);
+    setAnswers([]);
+    setGroupResponderIndex(0);
+    setScreen('boardgameOrder');
+    trackAnalyticsEvent('game_start', {
+      game_type: 'boardgame',
+      play_mode: 'local',
+      player_count: normalizedCount,
+      question_count: picked.length,
+      target_position: getTargetPlayerOrder(normalizedCount, targetIndex)[0] + 1,
+    });
+  };
+
   const backToTop = () => {
     setScreen('top'); setQIdx(0); setAnswers([]); setCards([]); setPlayerCount(2);
-    setFriendTargetIndex(0); setFamilyTargetIndex(0);
+    setFriendTargetIndex(0); setFamilyTargetIndex(0); setBoardgameTargetIndex(0);
     setGroupResponderIndex(0);
     setLoveResponderIndex(0);
   };
@@ -1316,9 +1377,11 @@ function App() {
             onStart={() => setScreen('intro')}
             onFriend={() => setScreen('friendIntro')}
             onFamily={() => setScreen('familyIntro')}
+            onBoardgame={() => setScreen('boardgameIntro')}
             onLovePage={() => setScreen('lovePage')}
             onFriendPage={() => setScreen('friendPage')}
             onFamilyPage={() => setScreen('familyPage')}
+            onBoardgamePage={() => setScreen('boardgamePage')}
           />
         )}
         {screen === 'lovePage' && (
@@ -1346,6 +1409,16 @@ function App() {
             onStart={() => setScreen('familyIntro')}
             onLove={() => setScreen('lovePage')}
             onFriend={() => setScreen('friendPage')}
+          />
+        )}
+        {screen === 'boardgamePage' && (
+          <GameIntroPage
+            kind="boardgame"
+            onBack={() => setScreen('top')}
+            onStart={() => setScreen('boardgameIntro')}
+            onLove={() => setScreen('lovePage')}
+            onFriend={() => setScreen('friendPage')}
+            onFamily={() => setScreen('familyPage')}
           />
         )}
         {screen === 'livePage' && (
@@ -1383,6 +1456,14 @@ function App() {
             onPlayerNameChange={(index, value) => updatePlayerName('family', index, value)}
           />
         )}
+        {screen === 'boardgameIntro' && (
+          <BoardgameIntroScreen
+            onStart={(count) => startBoardgameRound(count, 0)}
+            onBack={() => setScreen('top')}
+            playerNames={playerNames.boardgame}
+            onPlayerNameChange={(index, value) => updatePlayerName('boardgame', index, value)}
+          />
+        )}
         {screen === 'friendOrder' && (
           <PassOrderScreen
             label="FRIEND ORDER"
@@ -1401,6 +1482,16 @@ function App() {
             guessName="家族"
             onStart={() => setScreen('familyPlay')}
             onBack={() => setScreen('familyIntro')}
+          />
+        )}
+        {screen === 'boardgameOrder' && (
+          <PassOrderScreen
+            label="BOARDGAME ORDER"
+            title="スマホを回す順番"
+            players={boardgamePlayPlayers}
+            guessName="ボドゲ仲間"
+            onStart={() => setScreen('boardgamePlay')}
+            onBack={() => setScreen('boardgameIntro')}
           />
         )}
         {screen === 'play' && cards.length > 0 && (
@@ -1463,6 +1554,27 @@ function App() {
             responderIndex={groupResponderIndex}
             onNext={() => setScreen('familyPlay')}
             onBack={() => confirmLeaveGame('familyIntro')}
+          />
+        )}
+        {screen === 'boardgamePlay' && cards.length > 0 && (
+          <GroupBatchPlayScreen
+            kind="boardgame"
+            card={cards[qIdx]}
+            qIdx={qIdx}
+            total={cards.length}
+            players={boardgamePlayPlayers}
+            responderIndex={groupResponderIndex}
+            onPick={(pick) => handleGroupBatchAnswer('boardgame', pick)}
+            onBack={() => confirmLeaveGame('boardgameIntro')}
+          />
+        )}
+        {screen === 'boardgameHandoff' && (
+          <GroupBatchHandoffScreen
+            kind="boardgame"
+            players={boardgamePlayPlayers}
+            responderIndex={groupResponderIndex}
+            onNext={() => setScreen('boardgamePlay')}
+            onBack={() => confirmLeaveGame('boardgameIntro')}
           />
         )}
         {screen === 'resultReady' && (
@@ -1559,6 +1671,36 @@ function App() {
             onHome={backToTop}
           />
         )}
+        {screen === 'boardgameResultReady' && (
+          <GroupRevealReadyScreen
+            kind="boardgame"
+            targetName={boardgamePlayPlayers[0]}
+            onResult={() => setScreen('boardgameReveal')}
+            onHome={backToTop}
+          />
+        )}
+        {screen === 'boardgameReveal' && (
+          <GroupRevealScreen
+            kind="boardgame"
+            answer={answers[qIdx]}
+            card={cards[qIdx]}
+            players={boardgamePlayPlayers}
+            qIdx={qIdx}
+            total={cards.length}
+            onNext={() => qIdx + 1 >= cards.length ? setScreen('boardgameResult') : setQIdx(qIdx + 1)}
+          />
+        )}
+        {screen === 'boardgameResult' && (
+          <BoardgameResultScreen
+            answers={answers}
+            cards={cards}
+            playerCount={playerCount}
+            playerNames={boardgamePlayPlayers}
+            onReplay={() => startBoardgameRound(playerCount, boardgameTargetIndex)}
+            onReplayTarget={(playerPosition) => startBoardgameRound(playerCount, boardgamePlayerOrder[playerPosition])}
+            onHome={backToTop}
+          />
+        )}
         {screen === 'about' && <AboutScreen />}
         {screen === 'product' && <ProductScreen />}
       </div>
@@ -1573,7 +1715,7 @@ function App() {
 // ・中央に巨大な白+シアン縁取りロゴ
 // ・右下に黄色注意書きシール
 // ─────────────────────────────────────────────────────
-function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFamilyPage }) {
+function TopScreen({ onStart, onFriend, onFamily, onBoardgame, onLovePage, onFriendPage, onFamilyPage, onBoardgamePage }) {
   return (
     <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
@@ -1589,7 +1731,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         わたちゃん 彼氏の愛情判定ゲーム
       </h1>
       <p style={srOnlyStyle()}>
-        彼氏の彼女理解度を測定できる無料カップル診断ゲームです。大学生カップルのデート、飲み会、旅行、おうち時間にもスマホ1台で遊べます。彼氏の愛情判定をメインに、同じゲーム内で遊べる彼女版、友達の友情判定、家族の絆判定も公開中です。
+        彼氏の彼女理解度を測定できる無料カップル診断ゲームです。大学生カップルのデート、飲み会、旅行、おうち時間にもスマホ1台で遊べます。彼氏の愛情判定をメインに、同じゲーム内で遊べる彼女版、友達の友情判定、家族の絆判定、ボドゲ仲間の絆判定も公開中です。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -1703,6 +1845,16 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
         }}>
           家族の絆を判定する
         </button>
+        <button onClick={onBoardgame} style={{
+          ...secondaryBtn(),
+          marginTop: 10,
+          background: 'rgba(255,255,255,0.2)',
+          color: proto.white,
+          border: '2.5px solid rgba(255,255,255,0.94)',
+          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
+        }}>
+          ボドゲ仲間の絆を判定する
+        </button>
         <a href="/live" style={{
           ...secondaryBtn(),
           display: 'flex',
@@ -1730,7 +1882,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           marginLeft: 'auto',
           marginRight: 'auto',
         }}>
-          シリーズ作品の友情判定版・家族の絆判定版・Youtuber専用LIVEもお楽しみください
+          シリーズ作品の友情判定版・家族の絆判定版・ボドゲ仲間の絆判定版・Youtuber専用LIVEもお楽しみください
         </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
           marginTop: 12,
@@ -1790,6 +1942,7 @@ function TopScreen({ onStart, onFriend, onFamily, onLovePage, onFriendPage, onFa
           <SeriesCard emoji="💕" title="彼氏の愛情判定" status="メイン" href="/love" onClick={onLovePage} />
           <SeriesCard emoji="👯" title="友達の友情判定" status="シリーズ" href="/friends" onClick={onFriendPage} />
           <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="シリーズ" href="/family" onClick={onFamilyPage} />
+          <SeriesCard emoji="🎲" title="ボドゲ仲間の絆判定" status="シリーズ" href="/boardgame" onClick={onBoardgamePage} />
           <SeriesCard emoji="📣" title={LIVE_SERIES.name} status="NEW" href="/live-guide" onClick={() => window.location.assign('/live-guide')} />
         </div>
       </nav>
@@ -1912,6 +2065,40 @@ const GAME_INTRO_CONTENT = {
     related: [
       { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },
       { label: '友達の友情判定を見る', href: '/friends', action: 'friend' },
+    ],
+  },
+  boardgame: {
+    pill: 'BOARDGAME CHECK',
+    title: 'ボドゲ仲間の絆判定ゲーム',
+    heading: 'ボードゲーム仲間の好みを当てる無料の絆チェック',
+    lead: 'ボドゲ仲間の絆判定は、本人が選んだ答えをボードゲーム仲間が予想して、お互いのゲームの好みやプレイスタイルをどれだけ分かっているかチェックするゲームです。5問中何問正解したかで、ボドゲ仲間としての理解度を判定します。',
+    body: 'スマホ1台で2〜4人プレイに対応しています。選定した54問から毎回ランダムに5問を出題し、好きなゲーム、遊ぶ人数、プレイスタイルなどを答え合わせできます。',
+    recommendTitle: 'こんなボドゲ仲間におすすめ',
+    recommend: [
+      'いつものボドゲ仲間の好みやプレイスタイルを当てたい',
+      'ボドゲ会の最初やゲームの合間に短く盛り上がりたい',
+      '次に遊ぶゲームを決める会話のきっかけがほしい',
+      '2〜4人でスマホ1台を回してすぐ遊びたい',
+    ],
+    scenes: ['ボドゲ会', 'ゲームの合間', 'ボドゲカフェ', '友達の家'],
+    faq: [
+      {
+        q: 'ボドゲ仲間の絆判定は何人で遊べますか？',
+        a: '2〜4人で遊べます。本人が自分の答えを選び、ほかのボドゲ仲間が順番に予想します。',
+      },
+      {
+        q: 'どんな問題が出ますか？',
+        a: '好きなゲーム、遊びたい人数、プレイスタイル、人狼やブラフゲームでの行動など、選定した54問から毎回5問を出題します。',
+      },
+      {
+        q: '結果は保存・共有できますか？',
+        a: '結果画像を保存し、XやLINEで共有できます。ボドゲ仲間ごとの正解数とランクも確認できます。',
+      },
+    ],
+    cta: 'ボドゲ仲間の絆判定をはじめる',
+    related: [
+      { label: '友達の友情判定を見る', href: '/friends', action: 'friend' },
+      { label: '家族の絆判定を見る', href: '/family', action: 'family' },
     ],
   },
   live: {
@@ -4593,8 +4780,10 @@ function GroupBatchPlayScreen({ kind, card, qIdx, total, players, responderIndex
   const activePlayer = players[responderIndex] || '参加者';
   const targetPlayer = players[0] || '本人';
   const isTarget = responderIndex === 0;
-  const kindLabel = kind === 'family' ? 'FAMILY' : 'FRIEND';
-  const backLabel = kind === 'family' ? '家族版の遊び方に戻る' : '友情版の遊び方に戻る';
+  const kindLabel = kind === 'family' ? 'FAMILY' : (kind === 'boardgame' ? 'BOARDGAME' : 'FRIEND');
+  const backLabel = kind === 'family'
+    ? '家族版の遊び方に戻る'
+    : (kind === 'boardgame' ? 'ボドゲ仲間版の遊び方に戻る' : '友情版の遊び方に戻る');
   return (
     <div data-testid={`${kind}-batch-play`} style={{
       minHeight: '100dvh', background: proto.pink, color: proto.white,
@@ -5397,6 +5586,14 @@ const GROUP_RESULT_RANKS = {
     { score: 1, name: '同じ家にいたのに初耳多め', note: '今日の答え合わせが本編' },
     { score: 0, name: '親戚の集まりで自己紹介から', note: 'まずは近況報告から始めよう' },
   ],
+  boardgame: [
+    { score: 5, name: '伝説の固定卓メンバー', note: 'ゲーム選びまでテレパシー級' },
+    { score: 4, name: 'ボドゲ棚の好みほぼ把握', note: 'あと1問で同卓マスター' },
+    { score: 3, name: 'いつもの卓で同期中', note: '好みはかなり分かってる' },
+    { score: 2, name: '次のボドゲ会で更新予定', note: 'まだ知らないジャンルあり' },
+    { score: 1, name: '同卓ログが足りません', note: 'ここから遊べば伸びる' },
+    { score: 0, name: 'まずはルール説明から', note: '次の一戦で仲間になろう' },
+  ],
 };
 
 const GROUP_RANK_COLORS = {
@@ -5429,7 +5626,9 @@ function getGroupScoreHighlight(scores, total, kind = 'friend') {
   if (bestScore === lowScore) {
     return kind === 'family'
       ? `全員${bestScore}問正解。家族の謎、まだまだ残ってます。`
-      : `全員${bestScore}問正解。友情は横並び、答え合わせで深まるやつ。`;
+      : (kind === 'boardgame'
+        ? `全員${bestScore}問正解。ボドゲの好みは、次の卓でアップデート。`
+        : `全員${bestScore}問正解。友情は横並び、答え合わせで深まるやつ。`);
   }
   if (lowScore === 0) {
     return `${bestNames}がトップ。${lowNames}は今日からアップデート開始。`;
@@ -5597,12 +5796,13 @@ function createGroupResultImageSrc(kind, answers, players) {
   const total = Math.max(1, answers.length || 5);
   const scores = getPlayerScores(answers, players);
   const isFamily = kind === 'family';
-  const title = isFamily ? '家族の絆判定' : '友達の友情判定';
-  const headline = isFamily ? '家族それぞれの結果一覧' : '友達それぞれの結果一覧';
+  const isBoardgame = kind === 'boardgame';
+  const title = isFamily ? '家族の絆判定' : (isBoardgame ? 'ボドゲ仲間の絆判定' : '友達の友情判定');
+  const headline = isFamily ? '家族それぞれの結果一覧' : (isBoardgame ? 'ボドゲ仲間それぞれの結果一覧' : '友達それぞれの結果一覧');
   const targetLabel = `${players[0] || '本人'}の理解度`;
   const ranks = GROUP_RESULT_RANKS[kind] || GROUP_RESULT_RANKS.friend;
   const highlight = getGroupScoreHighlight(scores, total, kind);
-  const shareCta = isFamily ? 'この結果、家族に伝えよう' : 'この結果、友達に伝えよう';
+  const shareCta = isFamily ? 'この結果、家族に伝えよう' : (isBoardgame ? 'この結果、ボドゲ仲間に伝えよう' : 'この結果、友達に伝えよう');
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
@@ -5627,7 +5827,7 @@ function createGroupResultImageSrc(kind, answers, players) {
   ctx.fillStyle = proto.white;
   ctx.font = '700 32px "DotGothic16", monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(isFamily ? 'FAMILY BOND RESULT' : 'FRIEND CHECK RESULT', 132, 168);
+  ctx.fillText(isFamily ? 'FAMILY BOND RESULT' : (isBoardgame ? 'BOARDGAME BOND RESULT' : 'FRIEND CHECK RESULT'), 132, 168);
 
   ctx.fillStyle = proto.cyan;
   roundRect(ctx, 730, 126, 222, 52, 26);
@@ -6126,6 +6326,15 @@ function getFamilyPlayersLabel(playerCount, names) {
   return getFamilyPlayers(playerCount, names).join(' + ');
 }
 
+function getBoardgamePlayers(playerCount, names) {
+  const source = normalizePlayerNames({ boardgame: names }).boardgame;
+  return source.slice(0, normalizeFriendPlayerCount(playerCount));
+}
+
+function getBoardgamePlayersLabel(playerCount, names) {
+  return getBoardgamePlayers(playerCount, names).join(' + ');
+}
+
 function FamilyIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange }) {
   const familyPlayers = normalizePlayerNames({ family: playerNames }).family;
   const mainPlayer = familyPlayers[0];
@@ -6202,6 +6411,89 @@ function FamilyIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange })
           </div>
           <div style={{ marginTop: 12, fontSize: 11, lineHeight: 1.6, opacity: 0.9 }}>
             ランダムに5問だけ出ます。
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BoardgameIntroScreen({ onStart, onBack, playerNames, onPlayerNameChange }) {
+  const boardgamePlayers = normalizePlayerNames({ boardgame: playerNames }).boardgame;
+  const mainPlayer = boardgamePlayers[0];
+  return (
+    <div style={{ minHeight: '100vh', background: proto.pink, paddingBottom: 40 }}>
+      <div style={{
+        background: proto.black, padding: '50px 22px 28px',
+        textAlign: 'center', position: 'relative', overflow: 'hidden',
+      }}>
+        <BackBtn onClick={onBack} top={50} dark label="トップに戻る" />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <PillLabel>BOARDGAME CHECK</PillLabel>
+          <div style={{ marginTop: 14 }}>
+            <LogoText size={26}>ボドゲ仲間の絆判定</LogoText>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '24px 22px' }}>
+        <IntroSeoCard
+          title="ボードゲーム仲間の好みを当てる絆チェック"
+          text="本人が選んだ答えをボドゲ仲間が予想して、ゲームの好みやプレイスタイルをどれだけ分かっているか判定します。選定した54問からランダムに5問を出題します。"
+          details={[
+            'スマホを順番に渡すだけで、ボドゲ会の最初やゲームの合間に2〜4人で遊べます。',
+          ]}
+          tags={['ボドゲ仲間', 'ボードゲーム', '絆判定', '2〜4人プレイ']}
+        />
+        <NameEditorPanel
+          title="名前を変える（任意）"
+          names={playerNames}
+          defaults={DEFAULT_PLAYER_NAMES.boardgame}
+          onChange={onPlayerNameChange}
+        />
+        <StepCard n="1" text="人数を選ぶ" />
+        <StepCard n="2" text={`${mainPlayer}は、ボドゲ仲間に見せずに自分が思った答えを選ぶ`} />
+        <StepCard n="3" text={`ボドゲ仲間は、${mainPlayer}が選んだ答えを予想して同じ色を選ぶ`} />
+        <StepCard n="4" text="5問後に、誰が何問当てたか発表" />
+
+        <div style={{
+          marginTop: 18, padding: '14px 16px',
+          background: proto.black,
+          borderRadius: 12,
+          color: proto.white,
+        }}>
+          <div style={{
+            fontFamily: proto.caption, fontSize: 10, color: proto.yellow,
+            letterSpacing: '0.15em', marginBottom: 4,
+          }}>★ SELECT PLAYERS ★</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+            {[2, 3, 4].map((count) => (
+              <button key={count} data-testid={`boardgame-count-${count}`} onClick={() => onStart(count)} style={{
+                minHeight: 72,
+                background: count === 2 ? proto.cyan : count === 3 ? proto.yellow : proto.white,
+                color: proto.black,
+                border: `2.5px solid ${proto.black}`,
+                borderRadius: 12,
+                boxShadow: '3px 3px 0 #000',
+                fontWeight: 900,
+                cursor: 'pointer',
+                padding: '12px 14px',
+                lineHeight: 1.25,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                textAlign: 'left',
+              }}>
+                <div style={{ fontSize: 20, whiteSpace: 'nowrap' }}>{count}人で遊ぶ</div>
+                <div style={{ fontSize: 11, fontWeight: 900, lineHeight: 1.35, textAlign: 'right' }}>
+                  {getBoardgamePlayersLabel(count, playerNames)}
+                </div>
+              </button>
+            ))}
+          </div>
+          <div style={{ marginTop: 12, fontSize: 11, lineHeight: 1.6, opacity: 0.9 }}>
+            54問からランダムに5問だけ出ます。
           </div>
         </div>
       </div>
@@ -6594,6 +6886,214 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
   );
 }
 
+function BoardgameResultScreen({ answers, cards, playerCount, playerNames, onReplay, onReplayTarget, onHome }) {
+  const totalQuestions = Math.max(1, answers.length || 5);
+  const boardgamePlayers = useMemo(
+    () => getBoardgamePlayers(playerCount, playerNames),
+    [playerCount, playerNames]
+  );
+  const targetLabel = `${boardgamePlayers[0]}の理解度`;
+  const scoreSummary = getPlayerScoreSummary(answers, boardgamePlayers, 'boardgame');
+  const [copied, setCopied] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const shareSheetShownRef = useRef(false);
+  const resultTrackedRef = useRef(false);
+  const canvasCharacterReady = useCanvasCharacterReady();
+  const canvasQrReady = useCanvasQrReady();
+  const preparedResultImageSrc = useMemo(
+    () => createGroupResultImageSrc('boardgame', answers, boardgamePlayers),
+    [answers, boardgamePlayers, canvasCharacterReady, canvasQrReady]
+  );
+  const groupScores = useMemo(
+    () => getPlayerScores(answers, boardgamePlayers),
+    [answers, boardgamePlayers]
+  );
+  const groupHighlight = getGroupScoreHighlight(groupScores, totalQuestions, 'boardgame');
+  const reviewSections = useMemo(
+    () => getGroupReviewSections(answers, cards, boardgamePlayers, 'boardgame'),
+    [answers, cards, boardgamePlayers]
+  );
+
+  useEffect(() => {
+    if (resultTrackedRef.current) return;
+    resultTrackedRef.current = true;
+    const numericScores = groupScores.map((item) => item.score);
+    trackAnalyticsEvent('game_result', {
+      game_type: 'boardgame',
+      play_mode: 'local',
+      player_count: boardgamePlayers.length,
+      question_count: totalQuestions,
+      guesser_count: Math.max(0, boardgamePlayers.length - 1),
+      score_total: numericScores.reduce((sum, value) => sum + value, 0),
+      score_max: numericScores.length ? Math.max(...numericScores) : 0,
+    });
+  }, [boardgamePlayers.length, groupScores, totalQuestions]);
+
+  const showShareSheetAfterReview = () => {
+    if (shareSheetShownRef.current) return;
+    shareSheetShownRef.current = true;
+    setShowShareSheet(true);
+  };
+
+  const shareUrl = `${location.origin}/boardgame`;
+  const shareText = `わたちゃんのボドゲ仲間の絆判定をやってみた！\n今回は「${targetLabel}」を判定。\n${scoreSummary}。\n${groupHighlight}\n\nボドゲ仲間とやると好みが分かる。\nみんなは何問当たる？👇\n#わたちゃん #ボドゲ仲間の絆判定`;
+
+  const copyShareText = () => {
+    trackResultShare('boardgame', 'copy');
+    const value = `${shareText}\n${shareUrl}`;
+    const done = () => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(value).then(done).catch(done);
+    } else {
+      done();
+    }
+  };
+
+  const openX = () => {
+    trackResultShare('boardgame', 'x');
+    openXSharePlatform(`${shareText}\n${shareUrl}`);
+  };
+
+  const openLine = () => {
+    trackResultShare('boardgame', 'line');
+    openLineShare(`${shareText}\n${shareUrl}`);
+  };
+
+  const handleShareImage = async () => {
+    setImageBusy(true);
+    try {
+      await sharePreparedImage({
+        src: preparedResultImageSrc,
+        filename: `watachan-boardgame-result-${totalQuestions}.png`,
+        title: 'わたちゃん ボドゲ仲間の絆判定ゲーム',
+        text: shareText,
+        url: shareUrl,
+      });
+      trackResultShare('boardgame', 'image');
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      alert('画像シェアに対応していない環境です。画像保存を試してみてください。');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: proto.pink,
+      position: 'relative',
+      paddingBottom: 40,
+      overflowX: 'clip',
+    }}>
+      <Decor />
+      <div style={resultHeroStyle()}>
+        <div style={{ padding: '58px 22px 6px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <PillLabel>BOARDGAME RESULT</PillLabel>
+        </div>
+        <div style={{
+          margin: '18px 18px 0',
+          background: proto.white,
+          border: `3px solid ${proto.black}`,
+          borderRadius: 16,
+          boxShadow: '6px 6px 0 #000',
+          textAlign: 'center',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            background: proto.black,
+            color: proto.white,
+            padding: '9px 14px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 10,
+            fontFamily: proto.caption,
+            fontSize: 10,
+            letterSpacing: '0.13em',
+          }}>
+            <span>BOARDGAME BOND RESULT</span>
+            <span style={{
+              background: proto.cyan,
+              color: proto.black,
+              padding: '4px 9px',
+              borderRadius: 999,
+              border: `1.5px solid ${proto.white}`,
+              fontFamily: proto.body,
+              fontSize: 9,
+              fontWeight: 900,
+              letterSpacing: 0,
+              whiteSpace: 'nowrap',
+            }}>{targetLabel}</span>
+          </div>
+          <PlayerScoreBoard
+            answers={answers}
+            players={boardgamePlayers}
+            kind="boardgame"
+            label="ボドゲ仲間の絆判定"
+          />
+        </div>
+      </div>
+
+      <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
+        <GroupResultReviewBox sections={reviewSections} title="AI総評" />
+      </div>
+
+      <div style={{ padding: '22px 18px 0', position: 'relative', zIndex: 1 }}>
+        <ResultImageActions
+          busy={imageBusy || !canvasQrReady}
+          onShare={handleShareImage}
+          onX={openX}
+          onLine={openLine}
+          onVisible={showShareSheetAfterReview}
+          shareTitle="この結果、ボドゲ仲間に伝えよう"
+        />
+        <button onClick={copyShareText} style={textOnlyBtn()}>
+          {copied ? 'シェア文をコピーしました' : '文章だけコピーする'}
+        </button>
+        {copied && (
+          <div style={{
+            marginTop: 8, padding: '6px 10px', borderRadius: 8,
+            background: proto.yellow, color: proto.black, fontSize: 11,
+            textAlign: 'center', fontWeight: 700,
+            border: `2px solid ${proto.black}`,
+          }}>
+            シェア文をコピーしました
+          </div>
+        )}
+        <ResultReplayActions
+          primaryLabel="同じ役割でもう一度"
+          onPrimary={onReplay}
+          alternateActions={boardgamePlayers.slice(1).map((name, index) => ({
+            label: `${name}を当てられる側でもう一度`,
+            onClick: () => onReplayTarget(index + 1),
+          }))}
+          secondaryLabel="トップに戻る"
+          onSecondary={onHome}
+        />
+        <AmazonProductCard />
+        <div style={{ textAlign: 'center', marginTop: 18 }}>
+          <FooterLink href="/about">About / お問い合わせ</FooterLink>
+        </div>
+      </div>
+      <ShareBottomSheet
+        open={showShareSheet}
+        busy={imageBusy || !canvasQrReady}
+        onClose={() => setShowShareSheet(false)}
+        onX={openX}
+        onLine={openLine}
+        onShare={handleShareImage}
+        shareContext="XやLINEはURLつきで送れます。Instagramはプロフィールリンクへ"
+        title="この結果、ボドゲ仲間に送る？"
+      />
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────
 // ABOUT
 // ─────────────────────────────────────────────────────
@@ -6631,7 +7131,7 @@ function AboutScreen() {
           <div style={{ fontSize: 12, lineHeight: 1.8, color: proto.text, fontWeight: 600 }}>
             ストリートボードゲームは、「彼氏の愛情判定ゲーム」をメインにしたwebで遊べるゲームサイトです。
             彼女のことを、彼氏はどれだけ分かっているか、理解度チェックで彼氏の愛情を判定します。
-            シリーズの作品として、友達の友情判定、家族の絆判定も遊べます。
+            シリーズの作品として、友達の友情判定、家族の絆判定、ボドゲ仲間の絆判定も遊べます。
             デート中・飲み会・旅行・おうち時間に、スマホ1台、無料、会員登録なしでお楽しみください。
           </div>
         </Card>
@@ -6642,6 +7142,7 @@ function AboutScreen() {
             <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="メインゲーム" active href="/love" />
             <SeriesRow emoji="👯" title="友達の友情判定" sub="シリーズ" active href="/friends" />
             <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="シリーズ" active href="/family" />
+            <SeriesRow emoji="🎲" title="ボドゲ仲間の絆判定" sub="シリーズ" active href="/boardgame" />
             <SeriesRow emoji="📣" title="YouTuber専用LIVE" sub="ライブ配信企画" active href="/live-guide" last />
           </Card>
         </nav>

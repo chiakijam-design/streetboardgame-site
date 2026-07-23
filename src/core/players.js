@@ -4,6 +4,7 @@ export const DEFAULT_PLAYER_NAMES = Object.freeze({
   love: Object.freeze(['彼女', '彼氏']),
   friend: Object.freeze(['本人', '友達A', '友達B', '友達C']),
   family: Object.freeze(['本人', '家族A', '家族B', '家族C']),
+  boardgame: Object.freeze(['本人', 'ボドゲ仲間A', 'ボドゲ仲間B', 'ボドゲ仲間C']),
 });
 
 export function sanitizePlayerName(value, fallback, allowEmpty = false) {

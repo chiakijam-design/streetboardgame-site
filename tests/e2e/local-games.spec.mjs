@@ -149,7 +149,7 @@ async function playGroupMixed(page, kind, scores) {
 
 test.beforeEach(async ({ page }) => preparePage(page));
 
-test('通常3シリーズは外部通信を遮断しても完走できる', async ({ page }) => {
+test('通常4シリーズは外部通信を遮断しても完走できる', async ({ page }) => {
   const remoteApiRequests = [];
   await page.route('**/*', async (route) => {
     const url = route.request().url();
@@ -167,6 +167,8 @@ test('通常3シリーズは外部通信を遮断しても完走できる', asyn
   await expectAmazonProductCard(page);
   await playGroup(page, 'family', 2, 3);
   await expectAmazonProductCard(page);
+  await playGroup(page, 'boardgame', 2, 3);
+  await expectAmazonProductCard(page);
 
   expect(remoteApiRequests).toHaveLength(0);
 });
@@ -179,7 +181,7 @@ test('全JSをハッシュ付きで自前配信しsource mapを公開しない',
   await expect.poll(() => page.evaluate(() => window.ReactDOM && window.ReactDOM.version)).toMatch(/^18\.3\.1(?:-|$)/);
 
   const indexBuildSources = await page.locator('script[data-build-entry]').evaluateAll((scripts) => scripts.map((script) => script.src));
-  expect(indexBuildSources).toHaveLength(8);
+  expect(indexBuildSources).toHaveLength(9);
   await page.goto('/remote');
   const remoteBuildSources = await page.locator('script[data-build-entry]').evaluateAll((scripts) => scripts.map((script) => script.src));
   expect(remoteBuildSources).toHaveLength(3);
@@ -209,6 +211,7 @@ test('About・製品版の内部移動を実URLのリンクで行う', async ({ 
   await expect(page.getByRole('link', { name: '彼氏の愛情判定を開く' })).toHaveAttribute('href', '/love');
   await expect(page.getByRole('link', { name: '友達の友情判定を開く' })).toHaveAttribute('href', '/friends');
   await expect(page.getByRole('link', { name: '家族の絆判定を開く' })).toHaveAttribute('href', '/family');
+  await expect(page.getByRole('link', { name: 'ボドゲ仲間の絆判定を開く' })).toHaveAttribute('href', '/boardgame');
   await expect(page.getByRole('link', { name: 'トップに戻る' })).toHaveAttribute('href', '/');
   await expect(page.getByRole('link', { name: 'トップページに戻る' })).toHaveAttribute('href', '/');
 
@@ -236,10 +239,12 @@ test('全カードデータ: 件数・選択肢・画像', async ({ page, reques
     love: window.ALL_CARDS,
     friend: window.FRIEND_CARDS,
     family: window.FAMILY_CARDS,
+    boardgame: window.BOARDGAME_CARDS,
   }));
   expect(data.love).toHaveLength(42);
   expect(data.friend).toHaveLength(54);
   expect(data.family).toHaveLength(54);
+  expect(data.boardgame).toHaveLength(54);
   for (const [kind, cards] of Object.entries(data)) {
     expect(new Set(cards.map((card) => card.id)).size, `${kind}のIDは重複しない`).toBe(cards.length);
     for (const card of cards) {
@@ -259,7 +264,7 @@ for (const mode of ['girlTarget', 'boyTarget']) {
   });
 }
 
-for (const kind of ['friend', 'family']) {
+for (const kind of ['friend', 'family', 'boardgame']) {
   for (const playerCount of [2, 3, 4]) {
     test(`${kind}版 ${playerCount}人: 全員0〜5点`, async ({ page }) => {
       for (let score = 0; score <= 5; score += 1) await playGroup(page, kind, playerCount, score);

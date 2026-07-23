@@ -819,16 +819,20 @@ test('安全運用上限を超える視聴者は参加APIで拒否する', async
   expect(await rejected.json()).toEqual({ error: 'participant-limit-reached' });
 });
 
-test('トップの家族ボタン直下からLIVEを開始し、紹介カードから説明ページへ移動できる', async ({ page }) => {
+test('トップの家族とLIVEの間にボドゲ仲間ボタンを置き、紹介カードから説明ページへ移動できる', async ({ page }) => {
   await page.goto('/');
   const familyButton = page.getByRole('button', { name: '家族の絆を判定する' });
+  const boardgameButton = page.getByRole('button', { name: 'ボドゲ仲間の絆を判定する' });
   const playLink = page.getByRole('link', { name: 'Youtuber専用LIVEを作って遊ぶ', exact: true });
   await expect(playLink).toHaveAttribute('href', '/live');
   const familyBox = await familyButton.boundingBox();
+  const boardgameBox = await boardgameButton.boundingBox();
   const playBox = await playLink.boundingBox();
   expect(familyBox).not.toBeNull();
+  expect(boardgameBox).not.toBeNull();
   expect(playBox).not.toBeNull();
-  expect(playBox.y).toBeGreaterThanOrEqual(familyBox.y + familyBox.height);
+  expect(boardgameBox.y).toBeGreaterThanOrEqual(familyBox.y + familyBox.height);
+  expect(playBox.y).toBeGreaterThanOrEqual(boardgameBox.y + boardgameBox.height);
 
   const guideLink = page.getByRole('link', { name: /YouTuberと視聴者の絆を判定する/ });
   await expect(guideLink).toHaveAttribute('href', '/live-guide');
