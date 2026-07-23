@@ -4028,7 +4028,7 @@ function ResultScreen({ answers, cards, players, loveMode = 'girlTarget', onRepl
       </div>
 
       {/* 詳細 */}
-      <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
+      <div data-testid="love-answer-details" style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <div style={{
           width: '100%',
           minHeight: 54,
@@ -6131,6 +6131,42 @@ function MultiPlayerAnswerCard({ answer, card, players, index, reveal = false, t
   );
 }
 
+function GroupAnswerDetails({ kind, answers, cards, players }) {
+  const safeAnswers = Array.isArray(answers) ? answers : [];
+  if (!safeAnswers.length) return null;
+
+  return (
+    <section
+      data-testid={`${kind}-answer-details`}
+      aria-labelledby={`${kind}-answer-details-title`}
+      style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}
+    >
+      <h2 id={`${kind}-answer-details-title`} style={{
+        margin: '0 0 14px',
+        color: proto.black,
+        fontFamily: proto.display,
+        fontSize: 24,
+        fontWeight: 900,
+        lineHeight: 1.3,
+      }}>
+        答え合わせ
+      </h2>
+      <div style={{ display: 'grid', gap: 12 }}>
+        {safeAnswers.map((answer, index) => (
+          <div key={`${kind}-answer-${index}`} data-testid={`${kind}-answer-card`}>
+            <MultiPlayerAnswerCard
+              answer={answer}
+              card={cards[index]}
+              players={players}
+              index={index}
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay, onReplayTarget, onHome }) {
   const totalQuestions = Math.max(1, answers.length || 5);
   const friendPlayers = useMemo(() => getFriendPlayers(playerCount, playerNames), [playerCount, playerNames]);
@@ -6293,6 +6329,13 @@ function FriendResultScreen({ answers, cards, playerCount, playerNames, onReplay
         />
       </div>
       </div>
+
+      <GroupAnswerDetails
+        kind="friend"
+        answers={answers}
+        cards={cards}
+        players={friendPlayers}
+      />
 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <GroupResultReviewBox sections={reviewSections} title="AI総評" />
@@ -6866,6 +6909,13 @@ function FamilyResultScreen({ answers, cards, playerCount, playerNames, onReplay
       </div>
       </div>
 
+      <GroupAnswerDetails
+        kind="family"
+        answers={answers}
+        cards={cards}
+        players={familyPlayers}
+      />
+
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <GroupResultReviewBox sections={reviewSections} title="AI総評" />
       </div>
@@ -7081,6 +7131,13 @@ function BoardgameResultScreen({ answers, cards, playerCount, playerNames, onRep
           />
         </div>
       </div>
+
+      <GroupAnswerDetails
+        kind="boardgame"
+        answers={answers}
+        cards={cards}
+        players={boardgamePlayers}
+      />
 
       <div style={{ padding: '20px 18px 0', position: 'relative', zIndex: 1 }}>
         <GroupResultReviewBox sections={reviewSections} title="AI総評" />

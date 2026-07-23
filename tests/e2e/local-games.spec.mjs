@@ -46,6 +46,15 @@ async function expectAnswerPickLayout(page, expectedCount) {
   expect(answerLayout.every(({ nameBeforeChoice, dotCenterOffset }) => nameBeforeChoice && dotCenterOffset <= 1)).toBe(true);
 }
 
+async function expectGroupAnswerDetails(page, kind, playerCount) {
+  const section = page.getByTestId(`${kind}-answer-details`);
+  await expect(section).toBeVisible();
+  await expect(section.getByRole('heading', { name: '答え合わせ', exact: true })).toBeVisible();
+  await expect(section.getByTestId(`${kind}-answer-card`)).toHaveCount(5);
+  await expect(section.locator('.result-answer-pick')).toHaveCount(5 * playerCount);
+  await expectAnswerPickLayout(page, 5 * playerCount);
+}
+
 async function expectRevealLayout(page, kind) {
   const [question, target, guesses] = await Promise.all([
     page.getByTestId(`${kind}-reveal-question`).boundingBox(),
@@ -89,6 +98,7 @@ async function playLove(page, mode, score) {
     await nextButton.click();
   }
   await expect(page.getByText(`${score}/5`, { exact: true }).first()).toBeVisible();
+  await expect(page.getByTestId('love-answer-details')).toBeVisible();
   await expectAnswerPickLayout(page, 10);
 }
 
@@ -134,6 +144,7 @@ async function playGroup(page, kind, playerCount, score) {
   const scores = page.getByText(`${score}/5`, { exact: true });
   await expect(scores).toHaveCount((playerCount - 1) * 2);
   await expect(scores.first()).toBeVisible();
+  await expectGroupAnswerDetails(page, kind, playerCount);
 }
 
 async function playGroupMixed(page, kind, scores) {
@@ -146,6 +157,7 @@ async function playGroupMixed(page, kind, scores) {
   for (const score of scores) {
     await expect(page.getByText(`${score}/5`, { exact: true }).first()).toBeVisible();
   }
+  await expectGroupAnswerDetails(page, kind, playerCount);
 }
 
 test.beforeEach(async ({ page }) => preparePage(page));
@@ -223,6 +235,7 @@ test('非遠隔ボドゲのLINE共有URLは別端末でも結果を復元でき�
     await expect(recipient.getByText('ちあきの理解度', { exact: true })).toBeVisible();
     await expect(recipient.getByText('ゆう', { exact: true }).first()).toBeVisible();
     await expect(recipient.getByText('3/5', { exact: true }).first()).toBeVisible();
+    await expectGroupAnswerDetails(recipient, 'boardgame', 2);
     expect(await recipient.evaluate(() => (
       JSON.parse(localStorage.getItem('watachan-player-names-v1')).boardgame[0]
     ))).toBe('受信者');
