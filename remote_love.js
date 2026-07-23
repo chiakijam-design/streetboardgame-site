@@ -14,6 +14,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
   const ROOM_SWAP_STORAGE_KEY = `watachan-remote-${INITIAL_GAME_TYPE}-role-swap-v1`;
   const ROOM_RECOVERY_STORAGE_KEY = `watachan-remote-${INITIAL_GAME_TYPE}-recovery-v1`;
   const ROOM_RECOVERY_TTL_MS = 24 * 60 * 60 * 1000;
+  const REMOTE_BOARDGAME_RESULT_SHARE_VERSION = 'result-20260724-1';
   const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
   const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
   const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
@@ -873,6 +874,7 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
     url.searchParams.set('room', roomCode);
     url.searchParams.set('role', recipientRole);
     url.searchParams.set('result', '1');
+    if (isBoardgame()) url.searchParams.set('share', REMOTE_BOARDGAME_RESULT_SHARE_VERSION);
     if (includeManage && manageToken) url.searchParams.set('manage', manageToken);
     return url.toString();
   }

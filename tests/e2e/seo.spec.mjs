@@ -128,13 +128,15 @@ test('ボドゲ遠隔版は専用のLINEプレビュー情報とOGP画像を返�
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', '遠隔でボドゲ仲間の絆判定 | わたちゃん');
   await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', /ボドゲのお題5問/);
   await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', `${ORIGIN}/remote-boardgame`);
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', `${ORIGIN}/assets/ogp-remote-boardgame.jpg?v=20260723-ogp-1`);
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', `${ORIGIN}/assets/ogp-remote-boardgame.jpg?v=20260724-ogp-2`);
   await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute('content', 'わたちゃん 遠隔でボドゲ仲間の絆判定');
 
-  const sharedUrlResponse = await request.get('/remote-boardgame?room=123456&role=target&turn=test');
+  const sharedUrlResponse = await request.get('/remote-boardgame?room=123456&role=target&turn=test&share=result-20260724-1');
   expect(sharedUrlResponse.status()).toBe(200);
   expect(sharedUrlResponse.headers()['x-robots-tag']).toContain('noindex');
-  expect(await sharedUrlResponse.text()).toContain('/assets/ogp-remote-boardgame.jpg?v=20260723-ogp-1');
+  const sharedUrlHtml = await sharedUrlResponse.text();
+  expect(sharedUrlHtml).toContain(`<meta property="og:url" content="${ORIGIN}/remote-boardgame?share=result-20260724-1" />`);
+  expect(sharedUrlHtml).toContain('/assets/ogp-remote-boardgame.jpg?v=20260724-ogp-2');
 
   const imageResponse = await request.get('/assets/ogp-remote-boardgame.jpg');
   expect(imageResponse.status()).toBe(200);
@@ -152,14 +154,16 @@ test('ボドゲ通常版は遠隔文言のない専用X・LINEプレビュー画
   await page.goto('/boardgame');
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'ボドゲ仲間の絆判定｜わたちゃん');
   await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', `${ORIGIN}/boardgame`);
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', `${ORIGIN}/assets/ogp-boardgame.jpg?v=20260724-ogp-1`);
-  await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', `${ORIGIN}/assets/ogp-boardgame.jpg?v=20260724-ogp-1`);
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', `${ORIGIN}/assets/ogp-boardgame.jpg?v=20260724-ogp-2`);
+  await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', `${ORIGIN}/assets/ogp-boardgame.jpg?v=20260724-ogp-2`);
   await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute('content', 'わたちゃん ボドゲ仲間の絆判定ゲーム');
 
-  const sharedUrlResponse = await request.get('/boardgame');
+  const sharedUrlResponse = await request.get('/boardgame?share=result-20260724-1');
   const sharedUrlHtml = await sharedUrlResponse.text();
   expect(sharedUrlResponse.status()).toBe(200);
-  expect(sharedUrlHtml).toContain('/assets/ogp-boardgame.jpg?v=20260724-ogp-1');
+  expect(sharedUrlHtml).toContain(`<link rel="canonical" href="${ORIGIN}/boardgame" />`);
+  expect(sharedUrlHtml).toContain(`<meta property="og:url" content="${ORIGIN}/boardgame?share=result-20260724-1" />`);
+  expect(sharedUrlHtml).toContain('/assets/ogp-boardgame.jpg?v=20260724-ogp-2');
   expect(sharedUrlHtml).not.toContain('/assets/ogp-remote-boardgame.jpg');
 
   const imageResponse = await request.get('/assets/ogp-boardgame.jpg');

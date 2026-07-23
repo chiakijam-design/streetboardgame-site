@@ -148,7 +148,7 @@ for (const creatorRole of ['target', 'guesser']) {
 }
 
 for (const creatorRole of ['target', 'guesser']) {
-  test(`ボドゲ仲間の遠隔版 ${creatorRole}先行: 2端末で回答・結果・再プレイ`, async ({ browser, page }) => {
+  test(`ボドゲ仲間の遠隔版 ${creatorRole}先行: 2端末で回答・結果・再プレイ`, async ({ browser, page }, testInfo) => {
     await createRemoteRoom(page, creatorRole, '/remote-boardgame');
     const questionCard = page.locator('.boardgame-question-card');
     await expect(questionCard).toBeVisible();
@@ -202,6 +202,20 @@ for (const creatorRole of ['target', 'guesser']) {
     await expect(second.locator('#resultGameTitle')).toHaveText('ボドゲ仲間の絆判定');
     await expect(second.locator('#resultTitle')).toHaveText('公認・ボドゲ仲間マスター');
     await expect(second.locator('#answerDetails .answer-row')).toHaveCount(5);
+
+    if (testInfo.project.name !== 'mobile-chrome') {
+      await second.evaluate(() => {
+        window.open = (url) => {
+          window.__boardgameXShareUrl = String(url);
+          return null;
+        };
+      });
+      await second.locator('#shareResultX').click();
+      const xShareUrl = await second.evaluate(() => window.__boardgameXShareUrl);
+      const xShareText = new URL(xShareUrl).searchParams.get('text');
+      expect(xShareText).toContain('/remote-boardgame?room=');
+      expect(xShareText).toContain('&result=1&share=result-20260724-1');
+    }
 
     await second.locator('#replaySameRoom').click();
     await expect(second.locator('#score')).toBeHidden();

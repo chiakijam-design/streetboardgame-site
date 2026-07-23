@@ -58,6 +58,7 @@ const ROUND_SIZE = 5;
 const FRIEND_ROUND_SIZE = 5;
 const FAMILY_ROUND_SIZE = 5;
 const BOARDGAME_ROUND_SIZE = 5;
+const BOARDGAME_RESULT_SHARE_VERSION = 'result-20260724-1';
 const COLOR_LABELS = ['緑', '青', '黄', '赤', '橙'];
 const RESULT_IMAGE_VERSION = 'results-20260707-2';
 const HANDOFF_DELAY_MS = 600;
@@ -7029,7 +7030,7 @@ function BoardgameResultScreen({ answers, cards, playerCount, playerNames, onRep
     }),
     [answers, cards, boardgamePlayers]
   );
-  const shareUrl = `${location.origin}/boardgame${shareHash}`;
+  const shareUrl = `${location.origin}/boardgame?share=${BOARDGAME_RESULT_SHARE_VERSION}${shareHash}`;
   const shareText = `わたちゃんのボドゲ仲間の絆判定をやってみた！\n今回は「${targetLabel}」を判定。\n${scoreSummary}。\n${groupHighlight}\n\nボドゲ仲間とやると好みが分かる。\nみんなは何問当たる？👇\n#わたちゃん #ボドゲ仲間の絆判定`;
 
   const copyShareText = () => {

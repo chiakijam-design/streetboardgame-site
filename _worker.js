@@ -24,6 +24,7 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 //   存在するファイル (HTML/画像/JS) → そのまま配信
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
+const BOARDGAME_RESULT_SHARE_VERSION = 'result-20260724-1';
 const HASHED_JS_PATH = /^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12})\.js$/i;
 const LEGAL_PAGE_FILES = Object.freeze({
   '/terms': '/terms.html',
@@ -38,7 +39,7 @@ const REMOTE_BOARDGAME_SHARE_META = Object.freeze({
   title: '遠隔でボドゲ仲間の絆判定 | わたちゃん',
   description: '離れているボドゲ仲間とLINEで遊べる2人用の絆判定ゲーム。ボドゲのお題5問にそれぞれ回答し、相手の好みをどれだけ理解しているか判定できます。',
   url: CANONICAL_ORIGIN + '/remote-boardgame',
-  image: CANONICAL_ORIGIN + '/assets/ogp-remote-boardgame.jpg?v=20260723-ogp-1',
+  image: CANONICAL_ORIGIN + '/assets/ogp-remote-boardgame.jpg?v=20260724-ogp-2',
   imageAlt: 'わたちゃん 遠隔でボドゲ仲間の絆判定',
 });
 
@@ -97,7 +98,7 @@ async function handleRequest(request, env) {
         headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       }
       const html = request.method === 'HEAD' ? null : await response.text();
-      const body = html && path === '/remote-boardgame' ? applyRemoteBoardgameShareMeta(html) : html;
+      const body = html && path === '/remote-boardgame' ? applyRemoteBoardgameShareMeta(html, url) : html;
       return new Response(body, { status: response.status, headers });
     }
 
@@ -252,8 +253,11 @@ async function handleRequest(request, env) {
         title: 'ボドゲ仲間の絆判定｜2〜4人の無料ボードゲーム',
         description: 'ボドゲ仲間の絆判定は、本人が選んだ答えを仲間が予想し、好きなゲームやプレイスタイルをどれだけ理解しているか判定する2〜4人用の無料ゲームです。',
         url: CANONICAL_ORIGIN + '/boardgame',
+        ogUrl: url.searchParams.get('share') === BOARDGAME_RESULT_SHARE_VERSION
+          ? `${CANONICAL_ORIGIN}/boardgame?share=${BOARDGAME_RESULT_SHARE_VERSION}`
+          : CANONICAL_ORIGIN + '/boardgame',
         ogTitle: 'ボドゲ仲間の絆判定｜わたちゃん',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-boardgame.jpg?v=20260724-ogp-1',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-boardgame.jpg?v=20260724-ogp-2',
         imageAlt: 'わたちゃん ボドゲ仲間の絆判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/boardgame#webpage',
         gameId: CANONICAL_ORIGIN + '/boardgame#boardgame-bond-game',
@@ -466,6 +470,7 @@ function createCspNonce() {
 
 function applySeoMeta(html, page) {
   const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2';
+  const ogUrl = page.ogUrl || page.url;
   const preloadImage = page.preloadImage || '/assets/character/girl-default.webp';
   const preloadTag = preloadImage.includes('girl-full')
     ? '<link rel="preload" as="image" href="/assets/character/girl-full-960.webp" imagesrcset="/assets/character/girl-full-480.webp 326w, /assets/character/girl-full-960.webp 653w, /assets/character/girl-full.webp 2088w" imagesizes="156px" type="image/webp" fetchpriority="high" />'
@@ -479,7 +484,7 @@ function applySeoMeta(html, page) {
     .replace(/<link rel="preload" as="image"[^>]*\/>/, preloadTag)
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${page.ogTitle}" />`)
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${page.description}" />`)
-    .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${page.url}" />`)
+    .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${ogUrl}" />`)
     .replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${ogImage}" />`)
     .replace(/<meta property="og:image:alt" content="[^"]*" \/>/, `<meta property="og:image:alt" content="${page.imageAlt || page.ogTitle}" />`)
     .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${page.ogTitle}" />`)
@@ -490,15 +495,18 @@ function applySeoMeta(html, page) {
     .replace(/<noscript>[\s\S]*?<\/noscript>/, buildNoscript(page));
 }
 
-function applyRemoteBoardgameShareMeta(html) {
+function applyRemoteBoardgameShareMeta(html, requestUrl) {
   const page = REMOTE_BOARDGAME_SHARE_META;
+  const ogUrl = requestUrl.searchParams.get('share') === BOARDGAME_RESULT_SHARE_VERSION
+    ? `${page.url}?share=${BOARDGAME_RESULT_SHARE_VERSION}`
+    : page.url;
   return html
     .replace(/<title>.*?<\/title>/, `<title>${page.title}</title>`)
     .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${page.description}" />`)
     .replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${page.url}" />`)
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${page.title}" />`)
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${page.description}" />`)
-    .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${page.url}" />`)
+    .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${ogUrl}" />`)
     .replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${page.image}" />`)
     .replace(/<meta property="og:image:alt" content="[^"]*" \/>/, `<meta property="og:image:alt" content="${page.imageAlt}" />`)
     .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${page.title}" />`)
