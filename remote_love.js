@@ -1143,6 +1143,26 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
       : 'ルーム設定を読み込み中です。';
   }
 
+  function renderBoardgameQuestionCard(card) {
+    const choices = Array.isArray(card && card.choices) ? card.choices : [];
+    return `
+      <div class="boardgame-question-card" role="group" aria-label="${escapeHtml(card && card.title ? card.title : 'ボドゲのお題')}">
+        <div class="boardgame-question-title">${escapeHtml(card && card.title ? card.title : 'お題')}</div>
+        <div class="boardgame-card-choices">
+          ${choices.map((choice, index) => {
+            const color = window.COLOR_OPTIONS && window.COLOR_OPTIONS[index] ? window.COLOR_OPTIONS[index].color : '#ccc';
+            return `
+              <div class="boardgame-card-choice">
+                <span class="boardgame-card-dot" style="background:${color}"></span>
+                <span>${escapeHtml(choice)}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   function renderPlay() {
     if (!state) return;
     const names = targetAndGuesser(state);
@@ -1186,21 +1206,19 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
           : `${names.guesser}が予想しています。LINEで届くURLを待ってね。`;
     }
     $('questionWrap').innerHTML = isBoardgame()
-      ? `<div class="boardgame-question">${escapeHtml(card.title || 'お題')}</div>`
+      ? renderBoardgameQuestionCard(card)
       : `<img class="question-img" src="${card.image}" alt="${escapeHtml(card.title || 'お題カード')}">`;
     setHidden('questionWrap', !canChoose);
     const choices = Array.isArray(card.choices) ? card.choices : [];
     const choicesEl = $('choices');
     const choicesEnabled = canChoose && !selectedChoice;
     choicesEl.classList.toggle('is-guess', isGuesserTurn);
-    choicesEl.classList.toggle('is-boardgame', isBoardgame());
     choicesEl.classList.toggle('is-waiting', !canChoose);
     choicesEl.classList.toggle('has-selection', Boolean(selectedChoice));
     choicesEl.classList.toggle('can-choose', choicesEnabled);
     setHidden('choices', !choicesEnabled);
     setHidden('handoff', !canHandOff);
     $('play').classList.toggle('has-choices', choicesEnabled);
-    $('play').classList.toggle('has-boardgame-choices', choicesEnabled && isBoardgame());
     if (canHandOff) {
       $('handoffTitle').textContent = `5問回答できました。次は${currentPlayer}の番です`;
       $('handoffLine').textContent = `LINEで${currentPlayer}に送る`;
@@ -1211,11 +1229,10 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
       const selectedClass = selected ? (selectedChoice.mode === 'waiting' ? ' is-selected is-waiting' : ' is-locked') : '';
       const disabled = choicesEnabled ? '' : 'disabled';
       const colorName = COLOR_NAMES[index] || choice || '';
-      const choiceLabel = isBoardgame() ? choice : colorName;
       return `
         <button class="choice${selectedClass}" data-choice="${index}" ${disabled} aria-pressed="${selected ? 'true' : 'false'}" aria-label="${escapeHtml(`${colorName}：${choice || ''}`)}">
           <span class="dot" style="background:${color}"></span>
-          <span>${escapeHtml(choiceLabel)}</span>
+          <span>${escapeHtml(colorName)}</span>
         </button>
       `;
     }).join('');

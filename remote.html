@@ -1139,63 +1139,84 @@
       line-height: 1.75;
     }
     .remote-point strong { color: var(--yellow); }
-    .boardgame-question {
-      padding: 16px;
-      border: 3px solid var(--black);
-      border-radius: 14px;
-      background: var(--yellow);
-      box-shadow: 4px 4px 0 var(--black);
+    .boardgame-question-card {
+      position: relative;
+      width: min(100%, clamp(218px, 34dvh, 300px));
+      aspect-ratio: 756 / 1122;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 3px solid var(--white);
+      border-radius: 16px;
+      background:
+        linear-gradient(90deg, transparent 0 18%, rgba(238, 112, 120, .42) 18% 18.7%, transparent 18.7%),
+        repeating-linear-gradient(180deg, #fff 0 9.4%, #b8dff2 9.4% 10.2%);
+      box-shadow: 0 12px 28px rgba(0,0,0,.25);
+      color: var(--black);
+      isolation: isolate;
+    }
+    .boardgame-question-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      z-index: 1;
+      height: 20px;
+      background:
+        radial-gradient(circle at 11px -2px, var(--pink) 0 7px, transparent 7.5px) 0 0 / 30px 20px repeat-x;
+    }
+    .boardgame-question-card::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      bottom: -1px;
+      z-index: 3;
+      width: 54px;
+      height: 100px;
+      background: linear-gradient(135deg, transparent 0 46%, #d7d7d7 47% 61%, #fff 62%);
+      filter: drop-shadow(-5px -2px 3px rgba(0,0,0,.16));
+      pointer-events: none;
+    }
+    .boardgame-question-title {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 80%;
+      min-height: 54px;
+      margin: 28px auto 12px;
+      padding: 8px 12px;
+      background: rgba(91, 194, 228, .72);
+      clip-path: polygon(3% 4%, 97% 0, 100% 89%, 1% 100%);
+      font-size: clamp(12px, 4vw, 17px);
       font-weight: 900;
-      line-height: 1.65;
+      line-height: 1.4;
       text-align: center;
     }
-    .choices.is-boardgame {
-      position: static;
-      width: 100%;
-      margin-top: 14px;
-      padding: 0;
-      transform: none;
-      grid-template-columns: 1fr;
-      gap: 9px;
-      border: 0;
-      background: transparent;
-      box-shadow: none;
-      backdrop-filter: none;
-    }
-    .choices.is-boardgame::before,
-    .choices.is-boardgame::after { display: none; }
-    .choices.is-boardgame .choice {
+    .boardgame-card-choices {
+      position: relative;
+      z-index: 2;
       display: grid;
-      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 4px;
+      width: 85%;
+      margin: 0 auto;
+    }
+    .boardgame-card-choice {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
       align-items: center;
-      justify-content: stretch;
       gap: 10px;
-      min-height: 54px;
-      padding: 9px 12px;
-      border: 3px solid var(--black);
-      border-radius: 12px;
-      background: var(--white);
-      box-shadow: 3px 3px 0 var(--black);
-      text-align: left;
+      min-height: 40px;
+      padding: 3px 5px;
+      font-size: clamp(10px, 3.2vw, 14px);
+      font-weight: 900;
+      line-height: 1.3;
     }
-    .choices.is-boardgame .choice.is-selected {
-      background: var(--yellow);
-      transform: translateY(-1px);
-      box-shadow: 3px 3px 0 var(--cyan);
+    .boardgame-card-dot {
+      width: 27px;
+      height: 27px;
+      border: 1px solid rgba(0,0,0,.18);
+      border-radius: 50%;
+      box-shadow: 0 3px 7px rgba(0,0,0,.2);
     }
-    .choices.is-boardgame .dot {
-      width: 30px;
-      height: 30px;
-      outline: 0;
-    }
-    .choices.is-boardgame .choice span:last-child {
-      color: var(--black);
-      font-size: 13px;
-      line-height: 1.4;
-      text-shadow: none;
-      white-space: normal;
-    }
-    #play.has-boardgame-choices { padding-bottom: 16px; }
     #play {
       scroll-margin-top: 14px;
     }
@@ -1409,6 +1430,6 @@
   <script data-build-entry="viewport_recovery" src="/dist/viewport_recovery-MXTVWKCL.js"></script>
   <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
   <script data-build-entry="prototype_boardgame_data" src="/dist/prototype_boardgame_data-TJ5XOVK3.js"></script>
-  <script data-build-entry="remote_love" src="/dist/remote_love-6LLWSMVM.js"></script>
+  <script data-build-entry="remote_love" src="/dist/remote_love-3UXE675R.js"></script>
 </body>
 </html>

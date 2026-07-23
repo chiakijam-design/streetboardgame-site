@@ -146,9 +146,26 @@ for (const creatorRole of ['target', 'guesser']) {
 for (const creatorRole of ['target', 'guesser']) {
   test(`ボドゲ仲間の遠隔版 ${creatorRole}先行: 2端末で回答・結果・再プレイ`, async ({ browser, page }) => {
     await createRemoteRoom(page, creatorRole, '/remote-boardgame');
-    await expect(page.locator('.boardgame-question')).toBeVisible();
-    await expect(page.locator('#choices')).toHaveClass(/is-boardgame/);
-    await expect(page.locator('[data-choice]').first()).not.toHaveText(/^(緑|青|黄|赤|橙)$/);
+    const questionCard = page.locator('.boardgame-question-card');
+    await expect(questionCard).toBeVisible();
+    await expect(questionCard.locator('.boardgame-question-title')).not.toBeEmpty();
+    await expect(questionCard.locator('.boardgame-card-choice')).toHaveCount(5);
+    await expect(page.locator('[data-choice]')).toHaveCount(5);
+    await expect(page.locator('[data-choice]').first()).toHaveText('緑');
+    const answerLayout = await page.evaluate(() => {
+      const card = document.querySelector('.boardgame-question-card').getBoundingClientRect();
+      return {
+        aspectRatio: card.width / card.height,
+        cardWidth: card.width,
+      };
+    });
+    expect(Math.abs(answerLayout.aspectRatio - (756 / 1122))).toBeLessThan(0.02);
+    expect(answerLayout.cardWidth).toBeLessThanOrEqual(300);
+    await expect.poll(() => page.evaluate(() => {
+      const card = document.querySelector('.boardgame-question-card').getBoundingClientRect();
+      const controls = document.querySelector('#choices').getBoundingClientRect();
+      return card.bottom <= controls.top;
+    })).toBe(true);
 
     await answerFive(page, [0, 1, 2, 3, 4]);
     const nextUrl = await copyNextUrl(page);
@@ -168,7 +185,7 @@ for (const creatorRole of ['target', 'guesser']) {
 
     await second.locator('#replaySameRoom').click();
     await expect(second.locator('#score')).toBeHidden();
-    await expect(second.locator('.boardgame-question')).toBeVisible();
+    await expect(second.locator('.boardgame-question-card')).toBeVisible();
     await secondContext.close();
   });
 }
