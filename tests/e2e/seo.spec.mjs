@@ -121,6 +121,31 @@ test('LIVE公開入口は登録可能にし、運営画面と秘密情報付きU
   expect((await request.get('/remote-boardgame')).headers()['x-robots-tag']).toBeUndefined();
 });
 
+test('ボドゲ遠隔版は専用のLINEプレビュー情報とOGP画像を返す', async ({ page, request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'OGPメタは画面幅に依存しないためPCで1回検証');
+
+  await page.goto('/remote-boardgame');
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', '遠隔でボドゲ仲間の絆判定 | わたちゃん');
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', /ボドゲのお題5問/);
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', `${ORIGIN}/remote-boardgame`);
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', `${ORIGIN}/assets/ogp-remote-boardgame.jpg?v=20260723-ogp-1`);
+  await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute('content', 'わたちゃん 遠隔でボドゲ仲間の絆判定');
+
+  const sharedUrlResponse = await request.get('/remote-boardgame?room=123456&role=target&turn=test');
+  expect(sharedUrlResponse.status()).toBe(200);
+  expect(sharedUrlResponse.headers()['x-robots-tag']).toContain('noindex');
+  expect(await sharedUrlResponse.text()).toContain('/assets/ogp-remote-boardgame.jpg?v=20260723-ogp-1');
+
+  const imageResponse = await request.get('/assets/ogp-remote-boardgame.jpg');
+  expect(imageResponse.status()).toBe(200);
+  expect(imageResponse.headers()['content-type']).toContain('image/jpeg');
+  expect((await imageResponse.body()).byteLength).toBeGreaterThan(100_000);
+
+  await page.goto('/remote');
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', `${ORIGIN}/assets/ogp-remote.png?v=20260711-ogp-1`);
+  await expect(page.locator('meta[property="og:description"]')).not.toHaveAttribute('content', /ボドゲ/);
+});
+
 test('法務ページに販売条件・分配条件・非提携表示があり相互に移動できる', async ({ page }) => {
   await page.goto('/legal');
   await expect(page.getByText('Streetboardgame運営者', { exact: true })).toBeVisible();

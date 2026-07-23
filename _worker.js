@@ -34,6 +34,13 @@ const LEGAL_PAGE_FILES = Object.freeze({
   '/content-guidelines': '/content-guidelines.html',
   '/minor-policy': '/minor-policy.html',
 });
+const REMOTE_BOARDGAME_SHARE_META = Object.freeze({
+  title: '遠隔でボドゲ仲間の絆判定 | わたちゃん',
+  description: '離れているボドゲ仲間とLINEで遊べる2人用の絆判定ゲーム。ボドゲのお題5問にそれぞれ回答し、相手の好みをどれだけ理解しているか判定できます。',
+  url: CANONICAL_ORIGIN + '/remote-boardgame',
+  image: CANONICAL_ORIGIN + '/assets/ogp-remote-boardgame.jpg?v=20260723-ogp-1',
+  imageAlt: 'わたちゃん 遠隔でボドゲ仲間の絆判定',
+});
 
 export default {
   async fetch(request, env) {
@@ -89,7 +96,9 @@ async function handleRequest(request, env) {
       if (url.searchParams.has('room') || url.searchParams.has('manage') || url.searchParams.has('turn')) {
         headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       }
-      return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
+      const html = request.method === 'HEAD' ? null : await response.text();
+      const body = html && path === '/remote-boardgame' ? applyRemoteBoardgameShareMeta(html) : html;
+      return new Response(body, { status: response.status, headers });
     }
 
     if (rawPath !== '/' && rawPath.endsWith('/') && path === '/live') {
@@ -478,6 +487,23 @@ function applySeoMeta(html, page) {
     .replace(/<meta name="twitter:image:alt" content="[^"]*" \/>/, `<meta name="twitter:image:alt" content="${page.imageAlt || page.ogTitle}" />`)
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${JSON.stringify(buildStructuredData(page))}</script>`)
     .replace(/<noscript>[\s\S]*?<\/noscript>/, buildNoscript(page));
+}
+
+function applyRemoteBoardgameShareMeta(html) {
+  const page = REMOTE_BOARDGAME_SHARE_META;
+  return html
+    .replace(/<title>.*?<\/title>/, `<title>${page.title}</title>`)
+    .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${page.description}" />`)
+    .replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${page.url}" />`)
+    .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${page.title}" />`)
+    .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${page.description}" />`)
+    .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${page.url}" />`)
+    .replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${page.image}" />`)
+    .replace(/<meta property="og:image:alt" content="[^"]*" \/>/, `<meta property="og:image:alt" content="${page.imageAlt}" />`)
+    .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${page.title}" />`)
+    .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${page.description}" />`)
+    .replace(/<meta name="twitter:image" content="[^"]*" \/>/, `<meta name="twitter:image" content="${page.image}" />`)
+    .replace(/<meta name="twitter:image:alt" content="[^"]*" \/>/, `<meta name="twitter:image:alt" content="${page.imageAlt}" />`);
 }
 
 function buildNoscript(page) {

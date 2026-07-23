@@ -56,6 +56,10 @@ for (const creatorRole of ['target', 'guesser']) {
       const creatorAnswers = creatorRole === 'target' ? [0, 0, 0, 0, 0] : guessAnswers;
       await answerFive(page, creatorAnswers);
       const nextUrl = await copyNextUrl(page);
+      if (score === 0) {
+        const normalInviteText = await page.evaluate(() => navigator.clipboard.readText());
+        expect(normalInviteText).not.toContain('ボドゲ');
+      }
 
       const secondContext = await browser.newContext();
       await secondContext.grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -173,6 +177,10 @@ for (const creatorRole of ['target', 'guesser']) {
 
     await answerFive(page, [0, 1, 2, 3, 4]);
     const nextUrl = await copyNextUrl(page);
+    const boardgameInviteText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(boardgameInviteText).toContain('ボドゲ');
+    expect(boardgameInviteText).toContain('5問');
+    expect(boardgameInviteText).toContain(creatorRole === 'target' ? 'ボドゲ仲間の絆判定' : 'ボドゲの好み');
     expect(new URL(nextUrl).pathname).toBe('/remote-boardgame');
 
     const secondContext = await browser.newContext();

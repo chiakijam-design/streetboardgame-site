@@ -826,10 +826,30 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
   function buildInviteText() {
     if (!roomCode || !state) return;
     const names = targetAndGuesser(state);
-    if (state.phase === 'guess') {
-      const gameLabel = isBoardgame() ? 'ボドゲ仲間の絆判定' : '2人の理解度判定';
+    if (isBoardgame()) {
+      if (state.phase === 'guess') {
+        return [
+          `${names.guesser}へ。${names.target}との「ボドゲ仲間の絆判定」に挑戦してね🎲`,
+          '',
+          `${names.target}は、ボドゲのお題5問に自分の答えを選び終えました。`,
+          `あなたは、${names.target}が何と答えたかを予想して5問に回答してください。`,
+          '何問当てられるかで、ボドゲ仲間としての理解度を判定します。',
+          '',
+          roomInviteUrl(),
+        ].join('\n');
+      }
       return [
-        `${names.guesser}へ。${names.target}との${gameLabel}に挑戦してね！`,
+        `${names.target}へ。${names.guesser}は、あなたがボドゲのお題に何と答えるか5問の予想を終えました。`,
+        '',
+        'URLで表示されるボドゲのお題5問に、あなた自身の答えを選んでください。',
+        `5問終わると、その場で${names.guesser}があなたのボドゲの好みをどれだけ理解しているか判定します。`,
+        '',
+        roomInviteUrl(),
+      ].join('\n');
+    }
+    if (state.phase === 'guess') {
+      return [
+        `${names.guesser}へ。${names.target}との2人の理解度判定に挑戦してね！`,
         '',
         `${names.target}は、URLで表示される5問に自分の答えを選び終えました。`,
         `あなたは、${names.target}が何と答えたかを予想して5問に回答してください。`,
