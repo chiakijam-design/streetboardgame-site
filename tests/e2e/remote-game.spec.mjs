@@ -163,12 +163,20 @@ for (const creatorRole of ['target', 'guesser']) {
         cardWidth: card.width,
         titleFont: getComputedStyle(document.querySelector('.boardgame-question-title')).fontFamily,
         choiceFont: getComputedStyle(document.querySelector('.boardgame-card-choice')).fontFamily,
+        titleWeight: getComputedStyle(document.querySelector('.boardgame-question-title')).fontWeight,
+        choiceWeight: getComputedStyle(document.querySelector('.boardgame-card-choice')).fontWeight,
+        svgViewBox: document.querySelector('.boardgame-question-card svg').getAttribute('viewBox'),
+        localFontLoaded: document.fonts.check('400 16px "HuiFontP29"'),
       };
     });
     expect(Math.abs(answerLayout.aspectRatio - (756 / 1122))).toBeLessThan(0.02);
     expect(answerLayout.cardWidth).toBeLessThanOrEqual(300);
-    expect(answerLayout.titleFont).toContain('Klee One');
-    expect(answerLayout.choiceFont).toContain('Klee One');
+    expect(answerLayout.titleFont).toContain('HuiFontP29');
+    expect(answerLayout.choiceFont).toContain('HuiFontP29');
+    expect(answerLayout.titleWeight).toBe('400');
+    expect(answerLayout.choiceWeight).toBe('400');
+    expect(answerLayout.svgViewBox).toBe('0 0 756 1122');
+    expect(answerLayout.localFontLoaded).toBe(true);
     await expect.poll(() => page.evaluate(() => {
       const card = document.querySelector('.boardgame-question-card').getBoundingClientRect();
       const controls = document.querySelector('#choices').getBoundingClientRect();

@@ -1165,20 +1165,64 @@ import { BOARD_GAME_PRODUCT } from './src/product/config.js';
 
   function renderBoardgameQuestionCard(card) {
     const choices = Array.isArray(card && card.choices) ? card.choices : [];
+    const title = String(card && card.title ? card.title : 'お題');
+    const titleLines = title.length <= 9
+      ? [title]
+      : [title.slice(0, Math.ceil(title.length / 2)), title.slice(Math.ceil(title.length / 2))];
+    const lineYs = [40, 113, 186, 260, 333, 407, 480, 553, 627, 701, 773, 848, 922, 996, 1068];
+    const choiceRows = [3, 5, 7, 9, 11];
+    const choiceYs = choiceRows.map((row) => Math.round((lineYs[row] + lineYs[row + 1]) / 2));
+    const holes = [36, 120, 204, 288, 372, 456, 540, 624, 708];
     return `
-      <div class="boardgame-question-card" role="group" aria-label="${escapeHtml(card && card.title ? card.title : 'ボドゲのお題')}">
-        <div class="boardgame-question-title">${escapeHtml(card && card.title ? card.title : 'お題')}</div>
-        <div class="boardgame-card-choices">
+      <div class="boardgame-question-card" role="group" aria-label="${escapeHtml(title)}">
+        <svg viewBox="0 0 756 1122" width="756" height="1122" role="img" aria-hidden="true">
+          <rect width="756" height="1122" fill="#FFFFFF"></rect>
+          ${holes.map((x) => `<circle cx="${x}" cy="-12" r="31" fill="#EC4F88" opacity="0.96"></circle>`).join('')}
+          <line x1="134" y1="0" x2="134" y2="1122" stroke="rgba(236,79,136,0.18)" stroke-width="2.5"></line>
+          ${lineYs.map((y) => `<line x1="0" y1="${y}" x2="756" y2="${y}" stroke="rgba(91,212,232,0.34)" stroke-width="4"></line>`).join('')}
+          <rect x="68" y="57" width="620" height="150" fill="rgba(91,212,232,0.68)"></rect>
+          <rect x="68" y="57" width="620" height="150" fill="#5BD4E8" opacity="0.34"></rect>
+          <g class="boardgame-question-title" fill="#1A1A1A" text-anchor="middle">
+            ${titleLines.map((line, index) => `
+              <text
+                x="378"
+                y="${titleLines.length === 1 ? 150 : 126 + index * 48}"
+                font-size="${titleLines.length === 1 ? 44 : 40}"
+                dominant-baseline="middle"
+              >${escapeHtml(line)}</text>
+            `).join('')}
+          </g>
           ${choices.map((choice, index) => {
             const color = window.COLOR_OPTIONS && window.COLOR_OPTIONS[index] ? window.COLOR_OPTIONS[index].color : '#ccc';
+            const text = String(choice || '');
+            const fontSize = text.length >= 12 ? 32 : text.length >= 8 ? 36 : 40;
             return `
-              <div class="boardgame-card-choice">
-                <span class="boardgame-card-dot" style="background:${color}"></span>
-                <span>${escapeHtml(choice)}</span>
-              </div>
+              <g class="boardgame-card-choice">
+                <circle cx="77" cy="${choiceYs[index]}" r="41" fill="${color}" filter="url(#remoteBoardgameDotShadow)"></circle>
+                <text
+                  x="406"
+                  y="${choiceYs[index] + 2}"
+                  font-size="${fontSize}"
+                  fill="#1A1A1A"
+                  dominant-baseline="middle"
+                  text-anchor="middle"
+                >${escapeHtml(text)}</text>
+              </g>
             `;
           }).join('')}
-        </div>
+          <defs>
+            <filter id="remoteBoardgameDotShadow" x="-35%" y="-35%" width="170%" height="170%">
+              <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity="0.24"></feDropShadow>
+            </filter>
+            <linearGradient id="remoteBoardgameCurl" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#DDDDDD"></stop>
+              <stop offset="0.45" stop-color="#FFFFFF"></stop>
+              <stop offset="1" stop-color="#CFCFCF"></stop>
+            </linearGradient>
+          </defs>
+          <path d="M690 920 C725 930 746 1004 736 1122 L652 1122 C668 1055 676 982 690 920 Z" fill="url(#remoteBoardgameCurl)" opacity="0.9"></path>
+          <path d="M680 932 C715 952 730 1014 724 1122" stroke="rgba(0,0,0,0.10)" stroke-width="4" fill="none"></path>
+        </svg>
       </div>
     `;
   }

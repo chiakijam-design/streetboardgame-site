@@ -175,8 +175,15 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Maru+Gothic:wght@500;700;900&family=RocknRoll+One&family=DotGothic16&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=RocknRoll+One&family=DotGothic16&display=swap" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: "HuiFontP29";
+      src: url("/assets/fonts/HuiFontP29.ttf") format("truetype");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
     :root {
       --pink: #ec4f88;
       --cyan: #5bd4e8;
@@ -1147,91 +1154,19 @@
       overflow: hidden;
       border: 3px solid var(--white);
       border-radius: 16px;
-      background:
-        linear-gradient(90deg, transparent 0 18%, rgba(238, 112, 120, .42) 18% 18.7%, transparent 18.7%),
-        repeating-linear-gradient(180deg, #fff 0 6.25%, #b8dff2 6.25% 6.65%);
-      background-position: 0 0, 0 -3.25%;
+      background: var(--white);
       box-shadow: 0 12px 28px rgba(0,0,0,.25);
       color: var(--black);
-      isolation: isolate;
     }
-    .boardgame-question-card::before {
-      content: "";
-      position: absolute;
-      inset: 0 0 auto;
-      z-index: 1;
-      height: 20px;
-      background:
-        radial-gradient(circle at 11px -2px, var(--pink) 0 7px, transparent 7.5px) 0 0 / 30px 20px repeat-x;
-    }
-    .boardgame-question-card::after {
-      content: "";
-      position: absolute;
-      right: -1px;
-      bottom: -1px;
-      z-index: 3;
-      width: 54px;
-      height: 100px;
-      background: linear-gradient(135deg, transparent 0 46%, #d7d7d7 47% 61%, #fff 62%);
-      filter: drop-shadow(-5px -2px 3px rgba(0,0,0,.16));
-      pointer-events: none;
-    }
-    .boardgame-question-title {
-      position: absolute;
-      top: 5%;
-      left: 9%;
-      z-index: 2;
-      display: grid;
-      place-items: center;
-      width: 82%;
-      min-height: 14%;
-      margin: 0;
-      padding: 2% 5%;
-      background: rgba(91, 194, 228, .72);
-      clip-path: polygon(3% 4%, 97% 0, 100% 89%, 1% 100%);
-      font-family: "Klee One", cursive;
-      font-size: clamp(13px, 4.45vw, 19px);
-      font-weight: 600;
-      line-height: 1.35;
-      text-align: center;
-    }
-    .boardgame-card-choices {
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-    }
-    .boardgame-card-choice {
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 12%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 13% 0 20%;
-      font-family: "Klee One", cursive;
-      font-size: clamp(12px, 3.75vw, 16px);
-      font-weight: 600;
-      line-height: 1.25;
-      text-align: center;
-    }
-    .boardgame-card-choice:nth-child(1) { top: 20.7%; }
-    .boardgame-card-choice:nth-child(2) { top: 33.9%; }
-    .boardgame-card-choice:nth-child(3) { top: 47.1%; }
-    .boardgame-card-choice:nth-child(4) { top: 60.3%; }
-    .boardgame-card-choice:nth-child(5) { top: 73.5%; }
-    .boardgame-card-choice > span:last-child {
+    .boardgame-question-card svg {
       display: block;
       width: 100%;
+      height: 100%;
     }
-    .boardgame-card-dot {
-      position: absolute;
-      left: 5%;
-      width: 10.7%;
-      aspect-ratio: 1;
-      border: 1px solid rgba(0,0,0,.18);
-      border-radius: 50%;
-      box-shadow: 0 3px 7px rgba(0,0,0,.2);
+    .boardgame-question-title,
+    .boardgame-card-choice {
+      font-family: "HuiFontP29", "HuiFontP109", "HuiFont", "ふい字", "Yomogi", "Klee One", "Zen Maru Gothic", sans-serif;
+      font-weight: 400;
     }
     #play {
       scroll-margin-top: 14px;
@@ -1446,6 +1381,6 @@
   <script data-build-entry="viewport_recovery" src="/dist/viewport_recovery-MXTVWKCL.js"></script>
   <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
   <script data-build-entry="prototype_boardgame_data" src="/dist/prototype_boardgame_data-TJ5XOVK3.js"></script>
-  <script data-build-entry="remote_love" src="/dist/remote_love-F2F3WDCK.js"></script>
+  <script data-build-entry="remote_love" src="/dist/remote_love-E4BXIPD3.js"></script>
 </body>
 </html>
