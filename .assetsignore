@@ -1,2 +1,12 @@
 _worker.js
 *.map
+**/.git
+**/.github
+**/.wrangler
+**/build
+**/ios
+**/ios-web
+**/node_modules
+**/playwright-report
+**/test-results
+*.log
