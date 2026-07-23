@@ -80,12 +80,11 @@
       "binding": "REMOTE_DB",
       "database_name": "streetboardgame-remote",
       "database_id": "3feb5dad-3465-4d1f-a12b-8859a28308f4"
+    },
+    {
+      "binding": "LIVE_PURCHASE_DB",
+      "database_name": "streetboardgame-live-purchases",
+      "database_id": "67345cc4-e122-4f0d-b799-1a9def0ec8d7"
     }
-    // 有料販売前に購入履歴専用D1を作り、REMOTE_DBとは別のdatabase_idで有効化する。
-    // ,{
-    //   "binding": "LIVE_PURCHASE_DB",
-    //   "database_name": "streetboardgame-live-purchases",
-    //   "database_id": "購入履歴専用D1のID"
-    // }
   ]
 }
