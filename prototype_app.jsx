@@ -1943,7 +1943,7 @@ function TopScreen({ onStart, onFriend, onFamily, onBoardgame, onLovePage, onFri
           <SeriesCard emoji="👯" title="友達の友情判定" status="シリーズ" href="/friends" onClick={onFriendPage} />
           <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="シリーズ" href="/family" onClick={onFamilyPage} />
           <SeriesCard emoji="🎲" title="ボドゲ仲間の絆判定" status="シリーズ" href="/boardgame" onClick={onBoardgamePage} />
-          <SeriesCard emoji="📣" title={LIVE_SERIES.name} status="NEW" href="/live-guide" onClick={() => window.location.assign('/live-guide')} />
+          <SeriesCard emoji="📣" title="Youtuberと視聴者の絆判定" status="NEW" href="/live-guide" onClick={() => window.location.assign('/live-guide')} />
         </div>
       </nav>
 
