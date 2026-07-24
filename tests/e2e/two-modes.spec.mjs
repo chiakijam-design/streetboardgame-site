@@ -34,32 +34,18 @@ async function completeLoveGame(page, mode) {
   await expect(page.getByTestId('love-answer-details')).toBeVisible();
 }
 
-async function answerChallengeQuestions(page, expectedMode) {
-  for (let index = 0; index < 10; index += 1) {
-    await expect(page.getByTestId(`${expectedMode}-question`)).toBeVisible();
+async function buildChallengeQuestions(page, startIndex = 0) {
+  for (let index = startIndex; index < 10; index += 1) {
+    await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
     await expect(page.locator('.challenge-q-number')).toHaveText(`Q${index + 1}/10`);
     if (index === 0) {
-      const paperCard = page.getByTestId('challenge-paper-card');
-      const answerPad = page.getByTestId('challenge-answer-pad');
+      const paperCard = page.locator('.challenge-builder-card');
       await expect(paperCard).toBeVisible();
-      await expect(paperCard.locator('.challenge-card-choice')).toHaveCount(5);
-      await expect(answerPad).toBeVisible();
-      await expect(answerPad.locator('[data-action="answer"]')).toHaveCount(5);
-      const design = await page.evaluate(() => {
-        const card = document.querySelector('[data-testid="challenge-paper-card"]');
-        const title = card?.querySelector('h2');
-        const pad = document.querySelector('[data-testid="challenge-answer-pad"]');
-        return {
-          cardBackground: card ? getComputedStyle(card).backgroundImage : '',
-          titleFont: title ? getComputedStyle(title).fontFamily : '',
-          padPosition: pad ? getComputedStyle(pad).position : '',
-        };
-      });
-      expect(design.cardBackground).toContain('repeating-linear-gradient');
-      expect(design.titleFont).toContain('HuiFontP29');
-      expect(design.padPosition).toBe('fixed');
+      await expect(paperCard.locator('[data-action="builder-answer"]')).toHaveCount(5);
+      await expect(page.getByRole('button', { name: /この問題をスキップ/ })).toBeVisible();
+      await expect(page.getByRole('button', { name: /問題・選択肢を編集する/ })).toBeVisible();
     }
-    await page.locator('[data-action="answer"]').first().click();
+    await page.locator('[data-action="builder-answer"]').first().click();
   }
 }
 
@@ -68,9 +54,8 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await page.getByLabel('出題者の名前（12文字まで）').fill(creatorName);
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
   await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
-  await expect(page.getByLabel(/掲載候補として運営に送る/)).not.toBeChecked();
-  await page.getByRole('button', { name: /この10問で自分の答えを登録する/ }).click();
-  await answerChallengeQuestions(page, 'creator');
+  await expect(page.getByLabel('このクイズを友達や他の人も使えるようにする')).toBeChecked();
+  await buildChallengeQuestions(page);
   await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
   const url = await page.getByRole('textbox', { name: '挑戦用URL' }).inputValue();
   expect(url).toMatch(/\/challenge\?room=[A-Z2-9]{8}$/);
@@ -144,6 +129,9 @@ test('トップで名前を入力すると通常版の10問作成画面へ直接
   await page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).click();
   await expect(page).toHaveURL('/challenge');
   await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
+  const beforeSkip = await page.locator('.challenge-builder-card h2').textContent();
+  await page.getByRole('button', { name: /この問題をスキップ/ }).click();
+  await expect(page.locator('.challenge-builder-card h2')).not.toHaveText(beforeSkip || '');
   await page.getByRole('button', { name: '名前入力に戻る' }).click();
   await expect(page.getByLabel('出題者の名前（12文字まで）')).toHaveValue('トップ通常');
 });
@@ -153,7 +141,7 @@ test('トップで名前を入力するとライブ版の10問作成画面へ直
   await page.getByLabel('あなたの名前（12文字まで）').fill('トップ配信');
   await page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).click();
   await expect(page).toHaveURL('/live-challenge');
-  await expect(page.getByRole('heading', { name: '10問を準備する' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '1問ずつクイズを作る' })).toBeVisible();
   await expect(page.getByLabel('配信者名（24文字まで）')).toHaveValue('トップ配信');
 });
 
@@ -179,14 +167,12 @@ test('旧愛情判定の42問を共通のお題として挑戦クイズに使え
   await expect(page.getByText(loveCard.title, { exact: true })).toBeVisible();
   await page.getByLabel('出題者の名前（12文字まで）').fill('愛情お題テスト');
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
-  await expect(page.locator('[data-question="0"]')).toHaveValue(loveCard.title);
-  await page.getByRole('button', { name: /この10問で自分の答えを登録する/ }).click();
-  const paperCard = page.getByTestId('challenge-paper-card');
-  await expect(paperCard.getByRole('heading', { level: 2 })).toHaveText(loveCard.title);
-  await expect(paperCard).toContainText(loveCard.firstChoice);
+  const builderCard = page.locator('.challenge-builder-card');
+  await expect(builderCard.getByRole('heading', { level: 2 })).toHaveText(loveCard.title);
+  await expect(builderCard).toContainText(loveCard.firstChoice);
 });
 
-test('自作お題は初期未同意で、チェックした場合だけ運営へ送信する', async ({ page }) => {
+test('自作お題は初期同意で、チェック状態を自分で変更して運営へ送信できる', async ({ page }) => {
   const submissions = [];
   await page.route('**/api/questions/submissions', async (route) => {
     submissions.push(route.request().postDataJSON());
@@ -199,16 +185,18 @@ test('自作お題は初期未同意で、チェックした場合だけ運営�
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill('自作テスト');
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
-  await page.locator('[data-library="0"]').selectOption('__custom__');
+  await page.getByRole('button', { name: /自分で問題を作る/ }).click();
   await page.locator('[data-question="0"]').fill('休み時間に一番したいことは？');
   for (let index = 0; index < 5; index += 1) {
     await page.locator(`[data-option="0:${index}"]`).fill(`自作選択肢${index + 1}`);
   }
-  const consent = page.getByLabel(/掲載候補として運営に送る/);
+  const consent = page.getByLabel('このクイズを友達や他の人も使えるようにする');
+  await expect(consent).toBeChecked();
+  await consent.uncheck();
   await expect(consent).not.toBeChecked();
   await consent.check();
-  await page.getByRole('button', { name: /この10問で自分の答えを登録する/ }).click();
-  await answerChallengeQuestions(page, 'creator');
+  await page.getByRole('button', { name: /この内容で問題に戻る/ }).click();
+  await buildChallengeQuestions(page);
   await expect(page.getByTestId('question-submission-status')).toContainText('掲載候補として1問を運営へ送信しました');
   expect(submissions).toHaveLength(1);
   expect(submissions[0].consent).toBe(true);
@@ -218,6 +206,29 @@ test('自作お題は初期未同意で、チェックした場合だけ運営�
     title: '休み時間に一番したいことは？',
     choices: ['自作選択肢1', '自作選択肢2', '自作選択肢3', '自作選択肢4', '自作選択肢5'],
   }]);
+});
+
+test('公開候補チェックを外した自作お題は運営へ送信しない', async ({ page }) => {
+  let submissionRequests = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/questions/submissions') {
+      submissionRequests += 1;
+    }
+  });
+  await page.goto('/challenge');
+  await page.getByLabel('出題者の名前（12文字まで）').fill('非公開テスト');
+  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /自分で問題を作る/ }).click();
+  await page.locator('[data-question="0"]').fill('自分たちだけで使いたい問題は？');
+  for (let index = 0; index < 5; index += 1) {
+    await page.locator(`[data-option="0:${index}"]`).fill(`非公開選択肢${index + 1}`);
+  }
+  await page.getByLabel('このクイズを友達や他の人も使えるようにする').uncheck();
+  await page.getByRole('button', { name: /この内容で問題に戻る/ }).click();
+  await buildChallengeQuestions(page);
+  await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
+  expect(submissionRequests).toBe(0);
+  await expect(page.getByTestId('question-submission-status')).toHaveCount(0);
 });
 
 test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わせまで完走する', async ({ browser, page }) => {
@@ -261,8 +272,7 @@ test('途中保存から再開し、人気のお題を指定してクイズ作�
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill('途中保存');
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
-  await page.getByRole('button', { name: /この10問で自分の答えを登録する/ }).click();
-  await page.locator('[data-action="answer"]').first().click();
+  await page.locator('[data-action="builder-answer"]').first().click();
   await page.reload();
   await expect(page.getByTestId('creator-resume')).toContainText('Q2/10から再開');
   await page.getByRole('button', { name: '途中から再開' }).click();
@@ -326,8 +336,7 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
   await page.getByLabel('出題者の名前（12文字まで）').fill('レイアウト確認');
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
   await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
-  await page.getByRole('button', { name: /この10問で自分の答えを登録する/ }).click();
-  await expect(page.locator('[data-action="answer"]')).toHaveCount(5);
+  await expect(page.locator('[data-action="builder-answer"]')).toHaveCount(5);
   await expect(page.locator('.challenge-progress span')).toHaveCount(10);
 });
 

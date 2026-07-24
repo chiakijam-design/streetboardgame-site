@@ -48,10 +48,12 @@ let state = {
   result: null,
   error: '',
   loading: false,
-  questionSubmissionConsent: false,
+  questionSubmissionConsent: true,
   questionSubmissionStatus: '',
   questionSubmissionCount: 0,
   questionSubmissionCandidates: [],
+  editingQuestion: false,
+  editingOriginalCard: null,
 };
 
 function initialMode() {
@@ -108,41 +110,78 @@ function render() {
 }
 
 function creatorEditView() {
+  const card = state.cards[state.questionIndex];
+  if (!card) return errorView();
+  if (state.editingQuestion) return creatorQuestionEditView(card);
+  const selected = state.answers[state.questionIndex];
   return shell(
-    'QUESTION EDITOR',
-    '出題する10問を準備する',
-    'ランダムに選ばれた問題をそのまま使うか、問題文と5つの選択肢を自由に書き換えられます。',
-    `<section class="challenge-panel" data-testid="challenge-question-editor">
-      <button class="challenge-secondary" data-action="randomize-create">🎲 10問をランダムで選び直す</button>
-      <div class="challenge-editor-list">
-        ${state.cards.map((card, index) => creatorEditorCard(card, index)).join('')}
+    'QUIZ MAKER',
+    `${state.creatorName}さんのクイズを作成`,
+    '自分の答えを1つ選ぶと、その問題がクイズに追加されて次へ進みます。',
+    `<section class="challenge-question-wrap challenge-builder" data-testid="challenge-question-editor">
+      <div class="challenge-progress" aria-label="${state.questionIndex + 1}問目、全10問">
+        ${Array.from({ length: QUESTION_COUNT }, (_, index) => `<span class="${index <= state.questionIndex ? 'is-active' : ''}"></span>`).join('')}
+      </div>
+      <article class="challenge-card challenge-builder-card">
+        <div class="challenge-q-number">Q${state.questionIndex + 1}/10</div>
+        <div class="challenge-card-title"><h2>${escapeHtml(card.title)}</h2></div>
+        <div class="challenge-builder-choices">
+          ${card.choices.map((choice, index) => `
+            <button type="button" class="challenge-choice ${selected === index ? 'is-selected' : ''}"
+              data-action="builder-answer" data-choice="${index}">
+              <i style="background:${COLORS[index]}" aria-hidden="true"></i>
+              <span>${escapeHtml(choice)}</span>
+              <small>これを選ぶ</small>
+            </button>
+          `).join('')}
+        </div>
+      </article>
+      <p class="challenge-builder-help">選択肢を押すと、この1問が完成します。</p>
+      <div class="challenge-builder-actions">
+        <button class="challenge-secondary" data-action="skip-question">↻ この問題をスキップ</button>
+        <button class="challenge-secondary" data-action="edit-question">✎ 問題・選択肢を編集する</button>
+        <button class="challenge-secondary" data-action="custom-question">＋ 自分で問題を作る</button>
       </div>
       <label class="challenge-consent">
-        <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}>
-        <span><b>自作・編集したお題を「掲載候補として運営に送る」</b><br>
-        <small>初期状態は未チェックです。チェックした場合だけ、書き換えたお題が審査用に保存されます。ゲームには同意しなくても参加できます。</small></span>
+        <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
+          aria-label="このクイズを友達や他の人も使えるようにする">
+        <span><b>このクイズを友達や他の人も使えるようにする</b><br>
+        <small>初期状態はONです。ONのままなら、自作・編集した問題を掲載候補として運営へ送ります。外してもクイズは作れます。</small></span>
       </label>
-      <button class="challenge-primary" data-action="start-answer">この10問で自分の答えを登録する <span>▶</span></button>
-      <button class="challenge-secondary" data-action="back-create">名前入力に戻る</button>
+      <div class="challenge-builder-footer">
+        ${state.questionIndex > 0 ? '<button class="challenge-secondary" data-action="previous-builder-question">← 前の問題へ戻る</button>' : ''}
+        <button class="challenge-secondary" data-action="randomize-create">🎲 10問をランダムで選び直す</button>
+        <button class="challenge-secondary" data-action="back-create">名前入力に戻る</button>
+      </div>
     </section>`,
   );
 }
 
-function creatorEditorCard(card, index) {
-  return `<article class="challenge-editor" data-editor="${index}">
-    <div class="challenge-editor-head">
-      <span class="challenge-section-label">Q${index + 1}</span>
-      <select data-library="${index}" aria-label="Q${index + 1}のお題を選ぶ">
-        <option value="__custom__" ${card.sourceId ? '' : 'selected'}>＋ 自分でお題を作る</option>
-        ${allCards.map((item) => `<option value="${escapeHtml(item.id)}" ${String(item.id) === String(card.sourceId) ? 'selected' : ''}>${escapeHtml(item.title)}</option>`).join('')}
-      </select>
-    </div>
-    <textarea data-question="${index}" maxlength="180" aria-label="Q${index + 1}の問題文">${escapeHtml(card.title)}</textarea>
-    ${card.choices.map((choice, choiceIndex) => `<label class="challenge-option-edit">
-      <b>${choiceIndex + 1}</b>
-      <input data-option="${index}:${choiceIndex}" maxlength="60" value="${escapeHtml(choice)}" aria-label="Q${index + 1} 選択肢${choiceIndex + 1}">
-    </label>`).join('')}
-  </article>`;
+function creatorQuestionEditView(card) {
+  const index = state.questionIndex;
+  return shell(
+    'EDIT QUESTION',
+    `Q${index + 1}を編集する`,
+    '問題文と5つの選択肢を編集してから、答えを選んでください。',
+    `<section class="challenge-panel challenge-single-editor" data-testid="challenge-question-edit-form">
+      <label class="challenge-label" for="builder-question">問題文</label>
+      <textarea id="builder-question" data-question="${index}" maxlength="180"
+        aria-label="Q${index + 1}の問題文">${escapeHtml(card.title)}</textarea>
+      ${card.choices.map((choice, choiceIndex) => `<label class="challenge-option-edit">
+        <b>${choiceIndex + 1}</b>
+        <input data-option="${index}:${choiceIndex}" maxlength="60" value="${escapeHtml(choice)}"
+          aria-label="Q${index + 1} 選択肢${choiceIndex + 1}">
+      </label>`).join('')}
+      <label class="challenge-consent">
+        <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
+          aria-label="このクイズを友達や他の人も使えるようにする">
+        <span><b>このクイズを友達や他の人も使えるようにする</b><br>
+        <small>ONのままなら、この自作・編集した問題を掲載候補として運営へ送ります。</small></span>
+      </label>
+      <button class="challenge-primary" data-action="save-question-edit">この内容で問題に戻る <span>▶</span></button>
+      <button class="challenge-secondary" data-action="cancel-question-edit">キャンセル</button>
+    </section>`,
+  );
 }
 
 function loadingView() {
@@ -462,26 +501,49 @@ function errorView() {
 
 function bindEvents() {
   document.querySelector('[data-action="start-create"]')?.addEventListener('click', startCreate);
-  document.querySelector('[data-action="start-answer"]')?.addEventListener('click', startCreatorAnswer);
-  document.querySelector('[data-action="back-create"]')?.addEventListener('click', () => setState({ mode: 'create', error: '', questionSubmissionConsent: false }));
+  document.querySelector('[data-action="back-create"]')?.addEventListener('click', () => setState({
+    mode: 'create',
+    error: '',
+    editingQuestion: false,
+  }));
   document.querySelector('[data-action="randomize-create"]')?.addEventListener('click', () => {
-    captureCreatorEdit();
+    captureCreatorConsent();
     setState({
       cards: pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard),
-      questionSubmissionConsent: false,
+      answers: [],
+      questionIndex: 0,
+      editingQuestion: false,
       error: '',
     });
   });
-  document.querySelectorAll('[data-library]').forEach((select) => select.addEventListener('change', () => {
-    captureCreatorEdit();
-    const index = Number(select.dataset.library);
-    const source = allCards.find((card) => String(card.id) === select.value);
+  document.querySelector('[data-action="skip-question"]')?.addEventListener('click', skipCreatorQuestion);
+  document.querySelector('[data-action="edit-question"]')?.addEventListener('click', () => {
+    captureCreatorConsent();
+    setState({
+      editingQuestion: true,
+      editingOriginalCard: structuredClone(state.cards[state.questionIndex]),
+      error: '',
+    });
+  });
+  document.querySelector('[data-action="custom-question"]')?.addEventListener('click', () => {
+    captureCreatorConsent();
     const cards = state.cards.slice();
-    cards[index] = source
-      ? toCreatorDraftCard(source)
-      : { id: `USR${Date.now()}${index}`, sourceId: '', category: '自作のお題', title: '', choices: ['', '', '', '', ''] };
-    setState({ cards, questionSubmissionConsent: false, error: '' });
-  }));
+    const original = structuredClone(cards[state.questionIndex]);
+    cards[state.questionIndex] = {
+      id: `USR${Date.now()}${state.questionIndex}`,
+      sourceId: '',
+      category: '自作のお題',
+      title: '',
+      choices: ['', '', '', '', ''],
+    };
+    setState({ cards, editingQuestion: true, editingOriginalCard: original, error: '' });
+  });
+  document.querySelector('[data-action="save-question-edit"]')?.addEventListener('click', saveCreatorQuestionEdit);
+  document.querySelector('[data-action="cancel-question-edit"]')?.addEventListener('click', cancelCreatorQuestionEdit);
+  document.querySelector('[data-action="previous-builder-question"]')?.addEventListener('click', previousBuilderQuestion);
+  document.querySelectorAll('[data-action="builder-answer"]').forEach((button) => {
+    button.addEventListener('click', () => answerQuestion(Number(button.dataset.choice)));
+  });
   document.querySelector('[data-action="resume-create"]')?.addEventListener('click', resumeCreate);
   document.querySelector('[data-action="delete-draft"]')?.addEventListener('click', deleteCreatorDraft);
   document.querySelector('[data-action="previous-question"]')?.addEventListener('click', previousQuestion);
@@ -521,14 +583,21 @@ function startCreate() {
     questionIndex: 0,
     error: '',
     mode: 'creator-edit',
-    questionSubmissionConsent: false,
+    questionSubmissionConsent: true,
+    editingQuestion: false,
+    editingOriginalCard: null,
   };
+  saveCreatorDraft(next);
   setState(next);
+}
+
+function captureCreatorConsent() {
+  state.questionSubmissionConsent = document.getElementById('question-submit-consent')?.checked === true;
 }
 
 function captureCreatorEdit() {
   if (state.mode !== 'creator-edit') return;
-  state.questionSubmissionConsent = document.getElementById('question-submit-consent')?.checked === true;
+  captureCreatorConsent();
   state.cards = state.cards.map((card, index) => ({
     ...card,
     title: document.querySelector(`[data-question="${index}"]`)?.value.trim() ?? card.title,
@@ -538,18 +607,48 @@ function captureCreatorEdit() {
   }));
 }
 
-function startCreatorAnswer() {
+function saveCreatorQuestionEdit() {
   captureCreatorEdit();
-  if (state.cards.some((card) => !card.title || card.choices.length !== 5 || card.choices.some((choice) => !choice))) {
+  const card = state.cards[state.questionIndex];
+  if (!card?.title || card.choices.length !== 5 || card.choices.some((choice) => !choice)) {
     return setState({ error: 'questions-incomplete' });
   }
-  const cards = state.cards.map((card, index) => {
-    const source = allCards.find((item) => String(item.id) === String(card.sourceId || ''));
-    const changed = !source || card.title !== source.title
-      || card.choices.some((choice, choiceIndex) => choice !== source.choices[choiceIndex]);
-    return { ...card, id: changed ? `USR${Date.now()}${index}` : source.id };
-  });
-  const next = { cards, answers: [], questionIndex: 0, error: '', mode: 'creator-answer' };
+  const next = { editingQuestion: false, editingOriginalCard: null, error: '' };
+  saveCreatorDraft({ ...state, ...next });
+  setState(next);
+}
+
+function cancelCreatorQuestionEdit() {
+  captureCreatorConsent();
+  const cards = state.cards.slice();
+  if (state.editingOriginalCard) cards[state.questionIndex] = state.editingOriginalCard;
+  const next = { cards, editingQuestion: false, editingOriginalCard: null, error: '' };
+  saveCreatorDraft({ ...state, ...next });
+  setState(next);
+}
+
+function skipCreatorQuestion() {
+  captureCreatorConsent();
+  const usedIds = new Set(state.cards.map((card, index) => (
+    index === state.questionIndex ? '' : String(card.sourceId || card.id)
+  )).filter(Boolean));
+  const pool = allCards.filter((card) => !usedIds.has(String(card.id))
+    && String(card.id) !== String(state.cards[state.questionIndex]?.sourceId || ''));
+  const replacement = pickChallengeCards(pool.length ? pool : allCards, 1)[0];
+  if (!replacement) return setState({ error: 'questions-unavailable' });
+  const cards = state.cards.slice();
+  const answers = state.answers.slice();
+  cards[state.questionIndex] = toCreatorDraftCard(replacement);
+  delete answers[state.questionIndex];
+  const next = { cards, answers, editingQuestion: false, editingOriginalCard: null, error: '' };
+  saveCreatorDraft({ ...state, ...next });
+  setState(next);
+}
+
+function previousBuilderQuestion() {
+  if (state.questionIndex <= 0) return;
+  captureCreatorConsent();
+  const next = { questionIndex: state.questionIndex - 1, editingQuestion: false, error: '' };
   saveCreatorDraft({ ...state, ...next });
   setState(next);
 }
@@ -566,11 +665,13 @@ function resumeCreate() {
   const draft = creatorDraft();
   if (!draft) return setState({ error: 'draft-not-found' });
   setState({
-    mode: 'creator-answer',
+    mode: 'creator-edit',
     creatorName: draft.creatorName,
     cards: draft.cards,
     answers: draft.answers,
     questionIndex: Math.min(Math.max(Number(draft.questionIndex) || 0, 0), QUESTION_COUNT - 1),
+    questionSubmissionConsent: draft.questionSubmissionConsent !== false,
+    editingQuestion: false,
     error: '',
   });
 }
@@ -590,48 +691,24 @@ function previousQuestion() {
 async function answerQuestion(choice) {
   const answers = state.answers.slice();
   answers[state.questionIndex] = choice;
+
+  if (state.mode === 'creator-edit') {
+    captureCreatorConsent();
+    if (state.questionIndex < QUESTION_COUNT - 1) {
+      const questionIndex = state.questionIndex + 1;
+      saveCreatorDraft({ ...state, answers, questionIndex });
+      return setState({ answers, questionIndex, error: '' });
+    }
+    if (answers.length !== QUESTION_COUNT || answers.some((answer) => !Number.isInteger(answer))) return;
+    return createChallengeRoom(answers);
+  }
+
   if (state.questionIndex < QUESTION_COUNT - 1) {
     const questionIndex = state.questionIndex + 1;
     saveCurrentProgress({ answers, questionIndex });
     return setState({ answers, questionIndex });
   }
   if (answers.length !== QUESTION_COUNT || answers.some((answer) => !Number.isInteger(answer))) return;
-
-  if (state.mode === 'creator-answer') {
-    const candidates = changedQuestionCandidates(state.cards, allCards);
-    const submissionConsent = state.questionSubmissionConsent;
-    setState({ loading: true, error: '' });
-    try {
-      const response = await fetch('/api/challenge/rooms', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ creatorName: state.creatorName, cards: state.cards, answers }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'create-failed');
-      saveManageRoom(data.code, data.manageToken, data.room.creatorName);
-      localStorage.removeItem(CREATOR_DRAFT_KEY);
-      history.replaceState(null, '', `/challenge/manage?room=${data.code}#manage=${data.manageToken}`);
-      setState({
-        loading: false,
-        roomCode: data.code,
-        room: data.room,
-        manageToken: data.manageToken,
-        participants: [],
-        mode: 'manage',
-        answers,
-        questionSubmissionStatus: submissionConsent
-          ? (candidates.length ? 'sending' : 'empty')
-          : '',
-        questionSubmissionCount: 0,
-        questionSubmissionCandidates: submissionConsent ? candidates : [],
-      });
-      if (submissionConsent && candidates.length) submitCreatorQuestionCandidates();
-    } catch (error) {
-      setState({ loading: false, mode: 'creator-answer', error: error.message });
-    }
-    return;
-  }
 
   setState({ loading: true, answers, error: '' });
   saveParticipantDraft({ answers, questionIndex: state.questionIndex });
@@ -650,6 +727,48 @@ async function answerQuestion(choice) {
     await loadResult();
   } catch (error) {
     setState({ loading: false, mode: 'participant-answer', error: error.message });
+  }
+}
+
+async function createChallengeRoom(answers) {
+  const cards = state.cards.map((card, index) => {
+    const source = allCards.find((item) => String(item.id) === String(card.sourceId || ''));
+    const changed = !source || card.title !== source.title
+      || card.choices.some((choice, choiceIndex) => choice !== source.choices[choiceIndex]);
+    return { ...card, id: changed ? `USR${Date.now()}${index}` : source.id };
+  });
+  const candidates = changedQuestionCandidates(cards, allCards);
+  const submissionConsent = state.questionSubmissionConsent;
+  setState({ loading: true, error: '' });
+  try {
+    const response = await fetch('/api/challenge/rooms', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ creatorName: state.creatorName, cards, answers }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'create-failed');
+    saveManageRoom(data.code, data.manageToken, data.room.creatorName);
+    localStorage.removeItem(CREATOR_DRAFT_KEY);
+    history.replaceState(null, '', `/challenge/manage?room=${data.code}#manage=${data.manageToken}`);
+    setState({
+      loading: false,
+      roomCode: data.code,
+      room: data.room,
+      cards,
+      manageToken: data.manageToken,
+      participants: [],
+      mode: 'manage',
+      answers,
+      questionSubmissionStatus: submissionConsent
+        ? (candidates.length ? 'sending' : 'empty')
+        : '',
+      questionSubmissionCount: 0,
+      questionSubmissionCandidates: submissionConsent ? candidates : [],
+    });
+    if (submissionConsent && candidates.length) submitCreatorQuestionCandidates();
+  } catch (error) {
+    setState({ loading: false, mode: 'creator-edit', error: error.message });
   }
 }
 
@@ -837,7 +956,7 @@ async function shareResult() {
 }
 
 function saveCurrentProgress(patch) {
-  if (state.mode === 'creator-answer') {
+  if (state.mode === 'creator-answer' || state.mode === 'creator-edit') {
     saveCreatorDraft({ ...state, ...patch });
   } else if (state.mode === 'participant-answer') {
     saveParticipantDraft({ ...state, ...patch });
@@ -850,6 +969,7 @@ function saveCreatorDraft(value) {
     cards: value.cards,
     answers: value.answers,
     questionIndex: value.questionIndex,
+    questionSubmissionConsent: value.questionSubmissionConsent !== false,
     updatedAt: Date.now(),
   });
 }

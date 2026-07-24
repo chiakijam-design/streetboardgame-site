@@ -4,6 +4,17 @@ test.beforeEach(async ({ request }) => {
   await request.post('/__test/reset');
 });
 
+async function buildLiveQuestions(page, startIndex = 0) {
+  for (let index = startIndex; index < 10; index += 1) {
+    await expect(page.getByTestId('live-question-builder')).toBeVisible();
+    await expect(page.locator('.q-badge')).toHaveText(`Q${index + 1}/10`);
+    await expect(page.locator('.live-builder-option')).toHaveCount(5);
+    await page.getByRole('button', {
+      name: index === 9 ? /この問題を使ってLIVEを作る/ : /この問題を使う/,
+    }).click();
+  }
+}
+
 test('top page exposes normal and live creator buttons with the same primary design', async ({ page }) => {
   await page.goto('/');
   const normal = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
@@ -46,6 +57,13 @@ test('top page exposes normal and live creator buttons with the same primary des
 
 test('streamer and viewer answer ten questions and viewer receives a result card', async ({ page, context }) => {
   let questionSubmissionRequests = 0;
+  await page.route('**/api/questions/submissions', async (route) => {
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ submitted: 1, submissionIds: ['33333333-3333-4333-8333-333333333333'] }),
+    });
+  });
   page.on('request', (request) => {
     if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/questions/submissions') {
       questionSubmissionRequests += 1;
@@ -54,25 +72,20 @@ test('streamer and viewer answer ten questions and viewer receives a result card
   await page.goto('/live-challenge');
   await expect(page.getByRole('heading', { name: /ライブ配信で/ })).toBeVisible();
   await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
-  await expect(page.getByLabel(/掲載候補として運営に送る/)).not.toBeChecked();
-  const loveCard = await page.evaluate(() => ({
-    id: `LOVE${window.ALL_CARDS[0].id}`,
-    title: window.ALL_CARDS[0].title,
-    firstChoice: window.ALL_CARDS[0].choices[0],
-  }));
-  const firstLibrary = page.locator('[data-library="0"]');
-  await expect(firstLibrary.locator(`option[value="${loveCard.id}"]`)).toHaveCount(1);
-  await firstLibrary.selectOption(loveCard.id);
-  await expect(page.locator('[data-question="0"]')).toHaveValue(loveCard.title);
-  await expect(page.locator('[data-option="0:0"]')).toHaveValue(loveCard.firstChoice);
+  await expect(page.getByLabel('このクイズを友達や他の人も使えるようにする')).toBeChecked();
   await page.getByLabel('配信者名（24文字まで）').fill('わたちゃん');
+  const beforeSkip = await page.getByTestId('live-question-builder').getByRole('heading', { level: 3 }).textContent();
+  await page.getByRole('button', { name: /スキップ/ }).click();
+  await expect(page.getByTestId('live-question-builder').getByRole('heading', { level: 3 })).not.toHaveText(beforeSkip || '');
+  await page.getByRole('button', { name: /編集する/ }).click();
   await page.locator('[data-question="0"]').fill('配信で一番盛り上がるのは？');
   await page.locator('[data-option="0:0"]').fill('クイズ');
-  await page.getByRole('button', { name: /この10問でLIVEを作る/ }).click();
+  await page.getByRole('button', { name: /この内容で問題に戻る/ }).click();
+  await buildLiveQuestions(page);
 
   await expect(page.getByRole('heading', { name: '視聴者を招待する' })).toBeVisible();
-  expect(questionSubmissionRequests).toBe(0);
-  await expect(page.getByTestId('question-submission-status')).toHaveCount(0);
+  expect(questionSubmissionRequests).toBe(1);
+  await expect(page.getByTestId('question-submission-status')).toContainText('掲載候補として1問を運営へ送信しました');
   const code = (await page.locator('.room-code').textContent())?.trim() || '';
   expect(code).toMatch(/^[0-9]{6}$/);
   const viewer = await context.newPage();
@@ -98,7 +111,7 @@ test('streamer and viewer answer ten questions and viewer receives a result card
   await expect(viewer.locator('.result-row')).toHaveCount(10);
 });
 
-test('ライブ版もチェックした自作お題だけ運営へ送信する', async ({ page }) => {
+test('ライブ版も初期同意で、外したくない人はそのまま自作お題を運営へ送信する', async ({ page }) => {
   const submissions = [];
   await page.route('**/api/questions/submissions', async (route) => {
     submissions.push(route.request().postDataJSON());
@@ -110,16 +123,16 @@ test('ライブ版もチェックした自作お題だけ運営へ送信する',
   });
   await page.goto('/live-challenge');
   await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
-  await page.locator('[data-library="0"]').selectOption('__custom__');
+  await page.getByLabel('配信者名（24文字まで）').fill('配信テスト');
+  await page.getByRole('button', { name: /自分で問題を作る/ }).click();
   await page.locator('[data-question="0"]').fill('ライブ中に一番盛り上がる企画は？');
   for (let index = 0; index < 5; index += 1) {
     await page.locator(`[data-option="0:${index}"]`).fill(`ライブ選択肢${index + 1}`);
   }
-  const consent = page.getByLabel(/掲載候補として運営に送る/);
-  await expect(consent).not.toBeChecked();
-  await consent.check();
-  await page.getByLabel('配信者名（24文字まで）').fill('配信テスト');
-  await page.getByRole('button', { name: /この10問でLIVEを作る/ }).click();
+  const consent = page.getByLabel('このクイズを友達や他の人も使えるようにする');
+  await expect(consent).toBeChecked();
+  await page.getByRole('button', { name: /この内容で問題に戻る/ }).click();
+  await buildLiveQuestions(page);
 
   await expect(page.getByTestId('question-submission-status')).toContainText('掲載候補として1問を運営へ送信しました');
   expect(submissions).toHaveLength(1);
@@ -132,4 +145,27 @@ test('ライブ版もチェックした自作お題だけ運営へ送信する',
       choices: ['ライブ選択肢1', 'ライブ選択肢2', 'ライブ選択肢3', 'ライブ選択肢4', 'ライブ選択肢5'],
     }],
   });
+});
+
+test('ライブ版も公開候補チェックを外した自作お題は運営へ送信しない', async ({ page }) => {
+  let submissionRequests = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/questions/submissions') {
+      submissionRequests += 1;
+    }
+  });
+  await page.goto('/live-challenge');
+  await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
+  await page.getByLabel('配信者名（24文字まで）').fill('非公開配信');
+  await page.getByRole('button', { name: /自分で問題を作る/ }).click();
+  await page.locator('[data-question="0"]').fill('配信内だけで使いたい問題は？');
+  for (let index = 0; index < 5; index += 1) {
+    await page.locator(`[data-option="0:${index}"]`).fill(`配信限定${index + 1}`);
+  }
+  await page.getByLabel('このクイズを友達や他の人も使えるようにする').uncheck();
+  await page.getByRole('button', { name: /この内容で問題に戻る/ }).click();
+  await buildLiveQuestions(page);
+  await expect(page.getByRole('heading', { name: '視聴者を招待する' })).toBeVisible();
+  expect(submissionRequests).toBe(0);
+  await expect(page.getByTestId('question-submission-status')).toHaveCount(0);
 });

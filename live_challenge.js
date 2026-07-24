@@ -55,10 +55,14 @@ let state = {
   socket: null,
   socketConnected: false,
   reconnectTimer: null,
-  questionSubmissionConsent: false,
+  questionSubmissionConsent: true,
   questionSubmissionStatus: '',
   questionSubmissionCount: 0,
   questionSubmissionCandidates: [],
+  builderIndex: 0,
+  editingQuestion: false,
+  editingOriginalQuestion: null,
+  showLiveVoteCounts: false,
 };
 
 render();
@@ -66,7 +70,7 @@ loadManagedQuestionCards(allCards, 'live').then((cards) => {
   allCards = cards;
   if (state.view === 'landing' || (quickStart && state.view === 'create')) {
     state.questions = pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion);
-    state.questionSubmissionConsent = false;
+    state.questionSubmissionConsent = true;
     state.loading = false;
     render();
   }
@@ -123,46 +127,75 @@ function landingView() {
 }
 
 function createView() {
+  const question = state.questions[state.builderIndex];
+  if (!question) return loadingView();
+  if (state.editingQuestion) return liveQuestionEditView(question);
   return `<section class="panel">
     <span class="section-pill">配信者用</span>
-    <h2 style="margin-top:10px">10問を準備する</h2>
-    <p>最初はランダムな10問が入っています。各欄のお題を選び直したあと、問題文・5択を直接編集できます。</p>
+    <h2 style="margin-top:10px">1問ずつクイズを作る</h2>
+    <p>問題を確認して「この問題を使う」を押すと、その1問が完成します。答えは配信中に視聴者と同時に選びます。</p>
     <div class="field">
       <label for="host-name">配信者名（24文字まで）</label>
       <input id="host-name" maxlength="24" autocomplete="nickname" placeholder="例：わたちゃん" value="${escapeHtml(state.hostName)}">
     </div>
     <label class="check">
-      <input id="show-counts" type="checkbox">
+      <input id="show-counts" type="checkbox" ${state.showLiveVoteCounts ? 'checked' : ''}>
       <span>配信中、視聴者にも選択肢ごとの回答人数を表示する<br><small>配信開始後もON・OFFを切り替えられます。</small></span>
     </label>
-    <button class="secondary" data-action="randomize">🎲 10問をランダムで選び直す</button>
-    <div class="editor-list">
-      ${state.questions.map((question, index) => editorView(question, index)).join('')}
-    </div>
+    ${progressView(state.builderIndex)}
+    <article class="live-builder-card" data-testid="live-question-builder">
+      <span class="q-badge">Q${state.builderIndex + 1}/10</span>
+      <h3>${escapeHtml(question.text)}</h3>
+      <div class="choices live-builder-options">
+        ${question.options.map((option, index) => `<div class="choice live-builder-option">
+          <span class="number">${index + 1}</span><span>${escapeHtml(option)}</span>
+        </div>`).join('')}
+      </div>
+      <button class="primary" data-action="use-live-question">
+        ${state.builderIndex === QUESTION_COUNT - 1 ? 'この問題を使ってLIVEを作る' : 'この問題を使う'} <span>▶</span>
+      </button>
+      <div class="button-row">
+        <button class="secondary" data-action="skip-live-question">↻ スキップ</button>
+        <button class="ghost" data-action="edit-live-question">✎ 編集する</button>
+      </div>
+      <button class="ghost" data-action="custom-live-question">＋ 自分で問題を作る</button>
+    </article>
     <label class="check">
-      <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}>
-      <span><b>自作・編集したお題を「掲載候補として運営に送る」</b><br><small>初期状態は未チェックです。チェックした場合だけ、書き換えたお題が審査用に保存されます。同意しなくてもLIVEは作れます。</small></span>
+      <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
+        aria-label="このクイズを友達や他の人も使えるようにする">
+      <span><b>このクイズを友達や他の人も使えるようにする</b><br><small>初期状態はONです。ONのままなら、自作・編集した問題を掲載候補として運営へ送ります。外してもLIVEは作れます。</small></span>
     </label>
-    <button class="primary" data-action="create-game">この10問でLIVEを作る <span>▶</span></button>
-    <button class="ghost" data-action="back-landing">戻る</button>
+    <div class="live-builder-footer">
+      ${state.builderIndex > 0 ? '<button class="ghost" data-action="previous-live-question">← 前の問題へ戻る</button>' : ''}
+      <button class="secondary" data-action="randomize">🎲 10問をランダムで選び直す</button>
+      <button class="ghost" data-action="back-landing">戻る</button>
+    </div>
   </section>`;
 }
 
-function editorView(question, index) {
-  return `<article class="editor" data-editor="${index}">
-    <div class="editor-head">
-      <span class="q-badge">Q${index + 1}</span>
-      <select data-library="${index}" aria-label="Q${index + 1}のお題をライブラリから選ぶ">
-        <option value="__custom__" ${question.sourceId ? '' : 'selected'}>＋ 自分でお題を作る</option>
-        ${allCards.map((card) => `<option value="${escapeHtml(card.id)}" ${card.id === question.sourceId ? 'selected' : ''}>${escapeHtml(card.title)}</option>`).join('')}
-      </select>
+function liveQuestionEditView(question) {
+  const index = state.builderIndex;
+  return `<section class="panel" data-testid="live-question-edit-form">
+    <span class="section-pill">Q${index + 1}を編集</span>
+    <h2 style="margin-top:10px">問題・選択肢を編集する</h2>
+    <div class="field">
+      <label for="live-builder-question">問題文</label>
+      <textarea id="live-builder-question" data-question="${index}" maxlength="180"
+        aria-label="Q${index + 1}の問題文">${escapeHtml(question.text)}</textarea>
     </div>
-    <textarea data-question="${index}" maxlength="180" aria-label="Q${index + 1}の問題文">${escapeHtml(question.text)}</textarea>
     ${question.options.map((option, optionIndex) => `<label class="option-edit">
       <b>${optionIndex + 1}</b>
-      <input data-option="${index}:${optionIndex}" maxlength="60" value="${escapeHtml(option)}" aria-label="Q${index + 1} 選択肢${optionIndex + 1}">
+      <input data-option="${index}:${optionIndex}" maxlength="60" value="${escapeHtml(option)}"
+        aria-label="Q${index + 1} 選択肢${optionIndex + 1}">
     </label>`).join('')}
-  </article>`;
+    <label class="check">
+      <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
+        aria-label="このクイズを友達や他の人も使えるようにする">
+      <span><b>このクイズを友達や他の人も使えるようにする</b><br><small>ONのままなら、この自作・編集した問題を掲載候補として運営へ送ります。</small></span>
+    </label>
+    <button class="primary" data-action="save-live-question-edit">この内容で問題に戻る <span>▶</span></button>
+    <button class="ghost" data-action="cancel-live-question-edit">キャンセル</button>
+  </section>`;
 }
 
 function joinView() {
@@ -371,20 +404,35 @@ function bindEvents() {
   document.querySelector('[data-action="randomize"]')?.addEventListener('click', () => {
     captureDraft();
     state.questions = pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion);
-    state.questionSubmissionConsent = false;
+    state.builderIndex = 0;
+    state.editingQuestion = false;
     render();
   });
-  document.querySelectorAll('[data-library]').forEach((select) => select.addEventListener('change', () => {
+  document.querySelector('[data-action="use-live-question"]')?.addEventListener('click', useLiveQuestion);
+  document.querySelector('[data-action="skip-live-question"]')?.addEventListener('click', skipLiveQuestion);
+  document.querySelector('[data-action="edit-live-question"]')?.addEventListener('click', () => {
     captureDraft();
-    const index = Number(select.dataset.library);
-    const card = allCards.find((item) => item.id === select.value);
-    state.questions[index] = card
-      ? toDraftQuestion(card)
-      : { id: `custom-${Date.now()}-${index}`, sourceId: '', text: '', options: ['', '', '', '', ''] };
-    state.questionSubmissionConsent = false;
-    render();
-  }));
-  document.querySelector('[data-action="create-game"]')?.addEventListener('click', createGame);
+    setState({
+      editingQuestion: true,
+      editingOriginalQuestion: structuredClone(state.questions[state.builderIndex]),
+      error: '',
+    });
+  });
+  document.querySelector('[data-action="custom-live-question"]')?.addEventListener('click', () => {
+    captureDraft();
+    const questions = state.questions.slice();
+    const original = structuredClone(questions[state.builderIndex]);
+    questions[state.builderIndex] = {
+      id: `custom-${Date.now()}-${state.builderIndex}`,
+      sourceId: '',
+      text: '',
+      options: ['', '', '', '', ''],
+    };
+    setState({ questions, editingQuestion: true, editingOriginalQuestion: original, error: '' });
+  });
+  document.querySelector('[data-action="save-live-question-edit"]')?.addEventListener('click', saveLiveQuestionEdit);
+  document.querySelector('[data-action="cancel-live-question-edit"]')?.addEventListener('click', cancelLiveQuestionEdit);
+  document.querySelector('[data-action="previous-live-question"]')?.addEventListener('click', previousLiveQuestion);
   document.querySelector('[data-action="join-game"]')?.addEventListener('click', joinGame);
   document.querySelector('[data-action="copy-link"]')?.addEventListener('click', copyJoinLink);
   document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
@@ -404,14 +452,65 @@ function goToCode() {
 
 function captureDraft() {
   state.hostName = document.getElementById('host-name')?.value.trim() || state.hostName;
-  state.questionSubmissionConsent = document.getElementById('question-submit-consent')?.checked === true;
+  const consent = document.getElementById('question-submit-consent');
+  if (consent) state.questionSubmissionConsent = consent.checked === true;
+  const showCounts = document.getElementById('show-counts');
+  if (showCounts) state.showLiveVoteCounts = showCounts.checked === true;
   state.questions = state.questions.map((question, index) => ({
     ...question,
-    text: document.querySelector(`[data-question="${index}"]`)?.value.trim() || question.text,
+    text: document.querySelector(`[data-question="${index}"]`)?.value.trim() ?? question.text,
     options: question.options.map((option, optionIndex) => (
-      document.querySelector(`[data-option="${index}:${optionIndex}"]`)?.value.trim() || option
+      document.querySelector(`[data-option="${index}:${optionIndex}"]`)?.value.trim() ?? option
     )),
   }));
+}
+
+function useLiveQuestion() {
+  captureDraft();
+  const question = state.questions[state.builderIndex];
+  if (!question?.text || question.options.length !== 5 || question.options.some((option) => !option)) {
+    return showError('questions-incomplete');
+  }
+  if (state.builderIndex < QUESTION_COUNT - 1) {
+    return setState({ builderIndex: state.builderIndex + 1, error: '' });
+  }
+  createGame();
+}
+
+function skipLiveQuestion() {
+  captureDraft();
+  const usedIds = new Set(state.questions.map((question, index) => (
+    index === state.builderIndex ? '' : String(question.sourceId || '')
+  )).filter(Boolean));
+  const currentSourceId = String(state.questions[state.builderIndex]?.sourceId || '');
+  const pool = allCards.filter((card) => !usedIds.has(String(card.id)) && String(card.id) !== currentSourceId);
+  const replacement = pickChallengeCards(pool.length ? pool : allCards, 1)[0];
+  if (!replacement) return showError('questions-incomplete');
+  const questions = state.questions.slice();
+  questions[state.builderIndex] = toDraftQuestion(replacement);
+  setState({ questions, editingQuestion: false, editingOriginalQuestion: null, error: '' });
+}
+
+function saveLiveQuestionEdit() {
+  captureDraft();
+  const question = state.questions[state.builderIndex];
+  if (!question?.text || question.options.length !== 5 || question.options.some((option) => !option)) {
+    return showError('questions-incomplete');
+  }
+  setState({ editingQuestion: false, editingOriginalQuestion: null, error: '' });
+}
+
+function cancelLiveQuestionEdit() {
+  captureDraft();
+  const questions = state.questions.slice();
+  if (state.editingOriginalQuestion) questions[state.builderIndex] = state.editingOriginalQuestion;
+  setState({ questions, editingQuestion: false, editingOriginalQuestion: null, error: '' });
+}
+
+function previousLiveQuestion() {
+  captureDraft();
+  if (state.builderIndex <= 0) return;
+  setState({ builderIndex: state.builderIndex - 1, editingQuestion: false, error: '' });
 }
 
 async function createGame() {
@@ -419,7 +518,7 @@ async function createGame() {
   const submissionCandidates = changedQuestionCandidates(state.questions, allCards);
   const submissionConsent = state.questionSubmissionConsent;
   const subjectName = state.hostName;
-  const showLiveVoteCounts = document.getElementById('show-counts')?.checked === true;
+  const showLiveVoteCounts = state.showLiveVoteCounts;
   if (!subjectName) return showError('stream-name-required');
   if (state.questions.some((question) => !question.text || question.options.some((option) => !option))) {
     return showError('questions-incomplete');
