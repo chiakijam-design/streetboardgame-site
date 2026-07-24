@@ -1850,6 +1850,38 @@ function TopScreen({ onStart, onLovePage }) {
         }}>
           自分が先に10問へ回答し、専用URLから最大50人に答えを予想してもらえます
         </div>
+        <a href="/live-challenge" aria-label="ライブ配信でみんなに挑戦してもらう" style={{
+          ...primaryBtn(),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: 12,
+          boxSizing: 'border-box',
+          textDecoration: 'none',
+          textAlign: 'center',
+          lineHeight: 1.35,
+        }}>
+          ライブ配信でみんなに挑戦してもらう
+          <span style={{
+            display: 'inline-block', marginLeft: 6,
+            color: proto.yellow, fontSize: 18,
+            textShadow: '1px 1px 0 #000',
+          }}>▶</span>
+        </a>
+        <div style={{
+          marginTop: 9,
+          fontSize: 11,
+          lineHeight: 1.55,
+          textAlign: 'center',
+          color: proto.white,
+          opacity: 0.88,
+          fontWeight: 700,
+          maxWidth: 420,
+          marginLeft: 'auto',
+          marginRight: 'auto',
+        }}>
+          Instagram・YouTubeライブで同時回答。10問後、視聴者ごとに結果カードが出ます
+        </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
           marginTop: 12,
           display: 'flex',
@@ -1907,6 +1939,7 @@ function TopScreen({ onStart, onLovePage }) {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <SeriesCard emoji="💕" title="彼氏の愛情判定" status="5問・2人で遊ぶ" href="/love" onClick={onLovePage} />
           <SeriesCard emoji="📣" title="みんなに挑戦してもらう" status="10問・最大50人" href="/challenge-guide" />
+          <SeriesCard emoji="🎙️" title="ライブ配信でみんなに挑戦" status="10問・最大1,000人" href="/live-challenge" />
         </div>
       </nav>
 

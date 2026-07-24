@@ -10,6 +10,7 @@ test('公開する2モードと共通ページのSEO・構造が一貫する', a
     ['/challenge-guide', 'みんなに挑戦してもらう｜10問クイズの遊び方・作り方', 'みんなに挑戦してもらう'],
     ['/challenge', 'みんなに挑戦してもらう｜私のこと、ちゃんと分かってるよね？', 'みんなに挑戦してもらう'],
     ['/challenge/library', '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？', '人気のお題ライブラリ'],
+    ['/live-challenge', 'ライブ配信でみんなに挑戦してもらう｜無料10問クイズ', 'ライブ配信で'],
     ['/about', 'About｜わたちゃん・彼氏の愛情判定ゲーム', 'About'],
     ['/product', '製品版｜私のこと、ちゃんと分かってるよね？', '製品版もあります'],
     ['/terms', '利用規約｜Streetboardgame', '利用規約'],
@@ -35,6 +36,7 @@ test('サイトマップは2モードだけを掲載し、挑戦URLはnoindexに
   expect(sitemap).toContain('<loc>https://www.streetboardgame.com/challenge-guide</loc>');
   expect(sitemap).toContain('<loc>https://www.streetboardgame.com/challenge</loc>');
   expect(sitemap).toContain('<loc>https://www.streetboardgame.com/challenge/library</loc>');
+  expect(sitemap).toContain('<loc>https://www.streetboardgame.com/live-challenge</loc>');
   for (const removed of ['/friends', '/family', '/boardgame', '/remote', '/live']) {
     expect(sitemap).not.toContain(`<loc>https://www.streetboardgame.com${removed}</loc>`);
   }

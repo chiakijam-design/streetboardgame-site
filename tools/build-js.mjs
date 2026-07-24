@@ -10,6 +10,7 @@ const DIST_ENTRIES = {
   prototype_family_data: 'prototype_family_data.js',
   prototype_boardgame_data: 'prototype_boardgame_data.js',
   challenge_game: 'challenge_game.js',
+  live_challenge: 'live_challenge.js',
   remote_love: 'remote_love.js',
   live_game: 'live_game.js',
   live_ops: 'live_ops.js',
@@ -40,6 +41,11 @@ const HTML_ENTRY_MAP = {
     'prototype_family_data',
     'challenge_game',
   ],
+  'live_challenge.html': [
+    'prototype_friend_data',
+    'prototype_family_data',
+    'live_challenge',
+  ],
   'live.html': [
     'viewport_recovery',
     'live_game',
@@ -52,7 +58,7 @@ const HTML_ENTRY_MAP = {
 await mkdir('dist', { recursive: true });
 await mkdir('assets/vendor', { recursive: true });
 
-await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_quiz_data|prototype_friend_data|prototype_family_data|prototype_boardgame_data|challenge_game|remote_love|live_game|live_ops|prototype_character|prototype_app)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
+await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_quiz_data|prototype_friend_data|prototype_family_data|prototype_boardgame_data|challenge_game|live_challenge|remote_love|live_game|live_ops|prototype_character|prototype_app)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
 await removeGeneratedFiles('assets/vendor', /^react(?:-dom)?\.production\.min(?:-[a-f0-9]+)?\.js$/i);
 
 const runtimeSources = {

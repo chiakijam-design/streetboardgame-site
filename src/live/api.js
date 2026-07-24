@@ -1,4 +1,4 @@
-import { calculateLiveResult, validateLiveDraft } from './model.js';
+import { calculateLiveResult, validateLiveDraft, validateStreamChallengeDraft } from './model.js';
 import { assertCheckoutConsent } from './checkout-consent.js';
 import {
   LIVE_FALLBACK_VIEWER_LIMIT,
@@ -238,8 +238,13 @@ export async function handleLiveApi(request, env, path) {
       await enforceLiveRateLimit(request, env, 'create', 10);
       return await createLiveGame(request, env);
     }
+    if (path === '/api/live/stream-games' && request.method === 'POST') {
+      await assertLiveServiceAvailable(env, true);
+      await enforceLiveRateLimit(request, env, 'stream-create', 10);
+      return await createStreamChallengeGame(request, env);
+    }
 
-    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|previous|next|socket|creator-image|result-preview|checkout|cancel|reschedule|rotate-links))?$/);
+    const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|previous|next|socket|creator-image|result-preview|checkout|cancel|reschedule|rotate-links|vote-counts))?$/);
     if (!route) return liveJson({ error: 'not-found' }, 404);
     const [, code, action = ''] = route;
     if (request.method === 'GET' && !action) return await getLiveGameResponse(request, env, code);
@@ -266,6 +271,10 @@ export async function handleLiveApi(request, env, path) {
     if (action === 'subject-answer') {
       await enforceLiveRateLimit(request, env, 'subject', 300);
       return await answerLiveGameAsSubject(request, env, code);
+    }
+    if (action === 'vote-counts') {
+      await enforceLiveRateLimit(request, env, 'host', 300);
+      return await updateLiveVoteCountVisibility(request, env, code);
     }
     if (['start', 'answer', 'advance', 'close', 'reveal', 'previous', 'next'].includes(action)) {
       await enforceLiveRateLimit(request, env, 'host', 300);
@@ -348,6 +357,51 @@ async function createLiveGame(request, env) {
     throw error;
   }
   return liveJson({ code, hostToken: game.hostToken, game: publicLiveGame(game, { host: true }) }, 201);
+}
+
+async function createStreamChallengeGame(request, env) {
+  const body = await readLiveJson(request);
+  const validation = validateStreamChallengeDraft(body);
+  if (!validation.valid) throw liveError(validation.errors[0] || 'invalid-game', 400);
+  const now = Date.now();
+  await cleanupExpiredLiveData(env);
+  let code = createLiveCode();
+  for (let attempt = 0; attempt < 8 && await getStoredLiveGame(env, code); attempt += 1) code = createLiveCode();
+  const game = {
+    version: 6,
+    mode: 'stream-challenge',
+    title: validation.draft.title,
+    subjectName: validation.draft.subjectName,
+    channelName: validation.draft.subjectName,
+    resultImagePrice: 0,
+    scheduledAt: now,
+    questions: validation.draft.questions,
+    hostToken: createLiveToken(24),
+    subjectToken: createLiveToken(24),
+    phase: 'lobby',
+    currentQuestionIndex: 0,
+    participants: [],
+    votes: {},
+    results: [],
+    reviewedThroughIndex: -1,
+    showVoteCount: validation.draft.showLiveVoteCounts,
+    participantCount: 0,
+    participantLimit: liveViewerLimit(env),
+    realtime: hasLiveRealtime(env),
+    createdAt: now,
+    updatedAt: now,
+    expiresAt: now + LIVE_ACTIVE_TTL_SECONDS * 1000,
+  };
+  await putStoredLiveGame(env, code, game);
+  if (hasLiveRealtime(env)) {
+    await initializeLiveRealtime(env, code);
+    await broadcastCurrentRealtimeState(env, code, game);
+  }
+  return liveJson({
+    code,
+    hostToken: game.hostToken,
+    game: publicLiveGame(game, { host: true }),
+  }, 201);
 }
 
 async function createLiveCreatorInviteAsAdmin(request, env) {
@@ -542,7 +596,11 @@ async function uploadLiveCreatorImage(request, env, code) {
 async function getLiveResultPreview(request, env, code) {
   const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
   if (!participantToken) throw liveError('participant-forbidden', 403);
-  const game = await requireLiveGame(env, code, { polling: true, participantToken });
+  const realtime = hasLiveRealtime(env);
+  const game = await requireLiveGame(env, code, realtime
+    ? { baseOnly: true }
+    : { polling: true, participantToken });
+  if (realtime) await enrichRealtimeGame(env, code, game, { participantToken });
   if (game.phase !== 'complete') throw liveError('result-not-ready', 409);
   const participantGame = publicLiveGame(game, { participantToken });
   if (!participantGame.participantName) throw liveError('participant-forbidden', 403);
@@ -1457,15 +1515,15 @@ async function joinLiveGame(request, env, code) {
   } else {
     game.participants.push(participant);
   }
+  const participantCount = realtime ? reservation.participantCount : game.participants.length;
+  game.participantCount = participantCount;
+  game.participantLimit = viewerLimit;
+  game.realtime = realtime;
   if (!realtime || !usesD1) {
     touchLiveGame(game);
     await putStoredLiveGame(env, code, game);
   }
-  const participantCount = realtime ? reservation.participantCount : game.participants.length;
   game.participants = realtime ? [participant] : game.participants;
-  game.participantCount = participantCount;
-  game.participantLimit = viewerLimit;
-  game.realtime = realtime;
   return liveJson({
     code,
     participantId: participant.id,
@@ -1543,11 +1601,27 @@ async function answerLiveGameAsSubject(request, env, code) {
   return liveJson({ code, accepted: true, game: publicLiveGame(game, { subject: true }) });
 }
 
+async function updateLiveVoteCountVisibility(request, env, code) {
+  const realtime = hasLiveRealtime(env);
+  const game = await requireLiveGame(env, code, { baseOnly: realtime });
+  await requireLiveHost(request, env, game);
+  if (game.mode !== 'stream-challenge') throw liveError('vote-count-setting-not-supported', 409);
+  const body = await readLiveJson(request);
+  game.showVoteCount = body.show === true;
+  touchLiveGame(game);
+  await putStoredLiveGame(env, code, game);
+  if (realtime) await broadcastCurrentRealtimeState(env, code, game);
+  if (realtime) await enrichRealtimeGame(env, code, game, { host: true });
+  return liveJson({ code, game: publicLiveGame(game, { host: true }) });
+}
+
 async function updateLiveGameAsHost(request, env, code, action) {
   const realtime = hasLiveRealtime(env);
   const game = await requireLiveGame(env, code, { baseOnly: realtime });
   await requireLiveHost(request, env, game);
-  const shouldAcquireActiveSlot = action === 'start' && Number(game.version) >= 4;
+  const shouldAcquireActiveSlot = action === 'start'
+    && Number(game.version) >= 4
+    && game.mode !== 'stream-challenge';
   if (shouldAcquireActiveSlot && game.phase !== 'lobby') throw liveError('game-already-started', 409);
   if (shouldAcquireActiveSlot) await acquireLiveActiveSlot(env, code, game);
   try {
@@ -1624,10 +1698,15 @@ async function updateSeparatedLiveGame(request, game, action) {
     const result = calculateLiveResult(question, game.votes[question.id] || {});
     game.results = [...game.results.filter((item) => item.questionId !== question.id), result];
     if (game.currentQuestionIndex + 1 >= game.questions.length) {
-      game.currentQuestionIndex = 0;
-      game.reviewedThroughIndex = -1;
-      game.currentVoteCounts = null;
-      game.phase = 'review-question';
+      if (game.mode === 'stream-challenge') {
+        game.currentVoteCounts = null;
+        game.phase = 'complete';
+      } else {
+        game.currentQuestionIndex = 0;
+        game.reviewedThroughIndex = -1;
+        game.currentVoteCounts = null;
+        game.phase = 'review-question';
+      }
     } else {
       game.currentQuestionIndex += 1;
     }
@@ -1750,6 +1829,7 @@ export function publicLiveGame(game, access = {}) {
     ...(access.subject ? { myAnswerIndex: Number.isInteger(question.lockedIndex) ? question.lockedIndex : null } : {}),
   } : null;
   return {
+    mode: game.mode || 'live',
     title: game.title,
     subjectName: game.subjectName,
     flowVersion,

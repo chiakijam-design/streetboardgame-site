@@ -90,6 +90,32 @@ export function validateLiveDraft(input, options = {}) {
   return { valid: errors.length === 0, errors, draft };
 }
 
+export function validateStreamChallengeDraft(input) {
+  const source = input && typeof input === 'object' ? input : {};
+  const subjectName = normalizeText(source.subjectName, 24);
+  const questions = Array.isArray(source.questions)
+    ? source.questions.slice(0, 10).map((question) => ({
+        ...normalizeLiveQuestion({ ...question, type: 'guess-person', lockedIndex: null }, 5),
+        type: 'guess-person',
+        lockedIndex: null,
+      }))
+    : [];
+  const draft = {
+    title: `${subjectName || '配信者'}さんのLIVEクイズ`,
+    subjectName,
+    showLiveVoteCounts: source.showLiveVoteCounts === true,
+    questions,
+  };
+  const errors = [];
+  if (!subjectName) errors.push('stream-name-required');
+  if (!Array.isArray(source.questions) || source.questions.length !== 10) errors.push('ten-questions-required');
+  questions.forEach((question) => {
+    if (!question.text) errors.push('question-text-required');
+    if (question.options.length !== 5) errors.push('five-options-required');
+  });
+  return { valid: errors.length === 0, errors, draft };
+}
+
 export function calculateLiveResult(question, votes) {
   const normalized = normalizeLiveQuestion(question);
   const counts = normalized.options.map(() => 0);

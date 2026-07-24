@@ -17,7 +17,7 @@
     }
   },
   // 負荷試験後に1,000→5,000→10,000と段階的に設定する。未設定時は50人。
-  // "vars": { "LIVE_OPERATIONAL_VIEWER_LIMIT": "1000" },
+  "vars": { "LIVE_OPERATIONAL_VIEWER_LIMIT": "1000" },
   "assets": {
     "directory": "./",
     "binding": "ASSETS",
@@ -30,6 +30,7 @@
       "/family", "/family/",
       "/boardgame", "/boardgame/",
       "/challenge", "/challenge/",
+      "/live-challenge", "/live-challenge/",
       "/live-guide", "/live-guide/",
       "/about", "/about/",
       "/product", "/product/",

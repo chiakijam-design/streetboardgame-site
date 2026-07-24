@@ -43,6 +43,7 @@ const CHALLENGE_PAGE_PATHS = new Set([
   '/challenge/ranking',
   '/challenge/library',
 ]);
+const LIVE_CHALLENGE_PATH = '/live-challenge';
 const LEGAL_PAGE_FILES = Object.freeze({
   '/terms': '/terms.html',
   '/privacy': '/privacy.html',
@@ -86,6 +87,7 @@ async function handleRequest(request, env) {
       '/challenge.html': '/challenge',
       '/remote.html': '/challenge',
       '/live.html': '/challenge',
+      '/live_challenge.html': LIVE_CHALLENGE_PATH,
       '/live_ops.html': '/live-ops',
     };
     if (cleanHtmlPaths[rawPath]) {
@@ -102,6 +104,25 @@ async function handleRequest(request, env) {
 
     if (path.startsWith('/api/challenge')) {
       return handleChallengeApi(request, env, path);
+    }
+
+    if (rawPath !== '/' && rawPath.endsWith('/') && path === LIVE_CHALLENGE_PATH) {
+      return Response.redirect(url.origin + path + url.search, 301);
+    }
+
+    if (path === LIVE_CHALLENGE_PATH) {
+      const pageUrl = new URL('/live_challenge.html', url.origin);
+      const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      if (url.searchParams.has('room')) headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+      return new Response(request.method === 'HEAD' ? null : await response.text(), {
+        status: response.status,
+        headers,
+      });
     }
 
     if (rawPath !== '/' && rawPath.endsWith('/') && CHALLENGE_PAGE_PATHS.has(path)) {
