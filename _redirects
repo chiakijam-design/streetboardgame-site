@@ -7,6 +7,8 @@
 #   _redirects では内部リライトしない。
 
 /index.html  /  301
+/love        /challenge  301
+/love/       /challenge  301
 
 /watachan    /  301
 /watachan/   /  301

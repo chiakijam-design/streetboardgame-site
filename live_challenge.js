@@ -1,10 +1,15 @@
 import QRCode from 'qrcode';
 import { mergeChallengeCards, pickChallengeCards, prepareLoveChallengeCards } from './src/challenge/data.js';
 import { LIVE_POLL_INTERVAL_MS } from './src/live/config.js';
+import {
+  changedQuestionCandidates,
+  loadManagedQuestionCards,
+  submitQuestionCandidates,
+} from './src/questions/catalog.js';
 
 const QUESTION_COUNT = 10;
 const app = document.getElementById('live-challenge-app');
-const allCards = mergeChallengeCards(
+let allCards = mergeChallengeCards(
   window.FRIEND_CARDS,
   window.FAMILY_CARDS,
   prepareLoveChallengeCards(window.ALL_CARDS),
@@ -31,9 +36,18 @@ let state = {
   socket: null,
   socketConnected: false,
   reconnectTimer: null,
+  questionSubmissionConsent: false,
 };
 
 render();
+loadManagedQuestionCards(allCards, 'live').then((cards) => {
+  allCards = cards;
+  if (state.view === 'landing') {
+    state.questions = pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion);
+    state.questionSubmissionConsent = false;
+    render();
+  }
+});
 if (state.view === 'host' || state.view === 'viewer') {
   loadRoom().then(startLiveUpdates).catch(showError);
 }
@@ -59,7 +73,7 @@ function landingView() {
       <div class="icon">🎙️</div>
       <span class="section-pill">配信者</span>
       <h2>10問LIVEを作る</h2>
-      <p>彼氏の愛情判定・友達・家族向けのお題から10問を選び、問題文と5択を自由に編集できます。</p>
+      <p>友達・家族・共通のお題から10問を選び、問題文と5択を自由に編集できます。</p>
       <ul class="steps">
         <li><b>1</b><span>10問を選ぶ・ランダム選択</span></li>
         <li><b>2</b><span>URL・QR・6桁コードを配信で案内</span></li>
@@ -102,6 +116,10 @@ function createView() {
     <div class="editor-list">
       ${state.questions.map((question, index) => editorView(question, index)).join('')}
     </div>
+    <label class="check">
+      <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}>
+      <span><b>自作・編集したお題を「掲載候補として運営に送る」</b><br><small>初期状態は未チェックです。チェックした場合だけ、書き換えたお題が審査用に保存されます。同意しなくてもLIVEは作れます。</small></span>
+    </label>
     <button class="primary" data-action="create-game">この10問でLIVEを作る <span>▶</span></button>
     <button class="ghost" data-action="back-landing">戻る</button>
   </section>`;
@@ -112,6 +130,7 @@ function editorView(question, index) {
     <div class="editor-head">
       <span class="q-badge">Q${index + 1}</span>
       <select data-library="${index}" aria-label="Q${index + 1}のお題をライブラリから選ぶ">
+        <option value="__custom__" ${question.sourceId ? '' : 'selected'}>＋ 自分でお題を作る</option>
         ${allCards.map((card) => `<option value="${escapeHtml(card.id)}" ${card.id === question.sourceId ? 'selected' : ''}>${escapeHtml(card.title)}</option>`).join('')}
       </select>
     </div>
@@ -311,13 +330,17 @@ function bindEvents() {
   });
   document.querySelector('[data-action="randomize"]')?.addEventListener('click', () => {
     state.questions = pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion);
+    state.questionSubmissionConsent = false;
     render();
   });
   document.querySelectorAll('[data-library]').forEach((select) => select.addEventListener('change', () => {
     captureDraft();
     const index = Number(select.dataset.library);
     const card = allCards.find((item) => item.id === select.value);
-    if (card) state.questions[index] = toDraftQuestion(card);
+    state.questions[index] = card
+      ? toDraftQuestion(card)
+      : { id: `custom-${Date.now()}-${index}`, sourceId: '', text: '', options: ['', '', '', '', ''] };
+    state.questionSubmissionConsent = false;
     render();
   }));
   document.querySelector('[data-action="create-game"]')?.addEventListener('click', createGame);
@@ -338,6 +361,7 @@ function goToCode() {
 }
 
 function captureDraft() {
+  state.questionSubmissionConsent = document.getElementById('question-submit-consent')?.checked === true;
   state.questions = state.questions.map((question, index) => ({
     ...question,
     text: document.querySelector(`[data-question="${index}"]`)?.value.trim() || question.text,
@@ -349,6 +373,8 @@ function captureDraft() {
 
 async function createGame() {
   captureDraft();
+  const submissionCandidates = changedQuestionCandidates(state.questions, allCards);
+  const submissionConsent = state.questionSubmissionConsent;
   const subjectName = document.getElementById('host-name')?.value.trim() || '';
   const showLiveVoteCounts = document.getElementById('show-counts')?.checked === true;
   if (!subjectName) return showError('stream-name-required');
@@ -376,6 +402,11 @@ async function createGame() {
     state.game = response.game;
     history.replaceState(null, '', `/live-challenge?room=${state.code}#host=${state.hostToken}`);
     setState({ view: 'host', loading: false });
+    submitQuestionCandidates({
+      consent: submissionConsent,
+      sourceMode: 'live-challenge',
+      questions: submissionCandidates,
+    }).catch(() => {});
     startLiveUpdates();
   } catch (error) {
     setState({ loading: false, error: error.message });

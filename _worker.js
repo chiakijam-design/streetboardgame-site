@@ -1,5 +1,6 @@
 import { handleLiveApi } from './src/live/api.js';
 import { handleChallengeApi } from './src/challenge/api.js';
+import { handleQuestionApi } from './src/questions/api.js';
 import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
@@ -9,7 +10,7 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 // 動作:
 //   /watachan         → / にリダイレクト
 //   /watachan/        → / にリダイレクト
-//   /love             → 彼氏の愛情判定紹介ページ（彼女版も対応）として専用SEOメタ付きHTMLを返す
+//   /love             → 廃止済みのため /challenge へ恒久転送
 //   /challenge-guide  → みんなに挑戦してもらう紹介ページとして専用SEOメタ付きHTMLを返す
 //   /friends          → 友達の友情判定紹介ページとして専用SEOメタ付きHTMLを返す
 //   /friends/         → /friends にリダイレクト
@@ -29,6 +30,7 @@ const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
 const BOARDGAME_RESULT_SHARE_VERSION = 'result-20260724-1';
 const HASHED_JS_PATH = /^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12})\.js$/i;
 const LEGACY_GAME_PATHS = new Set([
+  '/love',
   '/friends',
   '/family',
   '/boardgame',
@@ -89,6 +91,7 @@ async function handleRequest(request, env) {
       '/live.html': '/challenge',
       '/live_challenge.html': LIVE_CHALLENGE_PATH,
       '/live_ops.html': '/live-ops',
+      '/question_ops.html': '/question-ops',
     };
     if (cleanHtmlPaths[rawPath]) {
       return Response.redirect(url.origin + cleanHtmlPaths[rawPath] + url.search, 301);
@@ -104,6 +107,10 @@ async function handleRequest(request, env) {
 
     if (path.startsWith('/api/challenge')) {
       return handleChallengeApi(request, env, path);
+    }
+
+    if (path.startsWith('/api/questions')) {
+      return handleQuestionApi(request, env, path);
     }
 
     if (rawPath !== '/' && rawPath.endsWith('/') && path === LIVE_CHALLENGE_PATH) {
@@ -204,6 +211,23 @@ async function handleRequest(request, env) {
       return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
     }
 
+    if (rawPath !== '/' && rawPath.endsWith('/') && path === '/question-ops') {
+      return Response.redirect(url.origin + path, 301);
+    }
+
+    if (path === '/question-ops') {
+      const opsUrl = new URL('/question_ops.html', url.origin);
+      const response = await env.ASSETS.fetch(new Request(opsUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+      headers.set('cache-control', 'no-store');
+      return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
+    }
+
     const cleanLegalPath = Object.entries(LEGAL_PAGE_FILES)
       .find(([, file]) => rawPath === file)?.[0];
     if (cleanLegalPath) {
@@ -229,36 +253,6 @@ async function handleRequest(request, env) {
     }
 
     const pageMap = {
-      '/love': {
-        title: '彼氏の愛情判定｜彼女版も遊べる無料カップル診断ゲーム',
-        description: 'メインは彼氏の彼女理解度を測定する彼氏の愛情判定ゲーム。彼女版は同じゲーム内で切り替えでき、大学生カップルのデート、飲み会、旅行、おうち時間にスマホ1台で遊べます。',
-        url: CANONICAL_ORIGIN + '/love',
-        ogTitle: '彼氏の愛情判定｜わたちゃん',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-love.png?v=20260711-ogp-2',
-        imageAlt: 'わたちゃん 彼氏の愛情判定ゲーム',
-        pageId: CANONICAL_ORIGIN + '/love#webpage',
-        gameId: CANONICAL_ORIGIN + '/love#love-game',
-        gameName: 'わたちゃん 彼氏の愛情判定ゲーム',
-        headline: '彼氏の彼女理解度を測定できる無料カップル診断ゲーム',
-        genre: ['カップルゲーム', '恋愛診断', '愛情判定', '診断ゲーム', 'ボードゲーム'],
-        keywords: '彼氏の愛情判定, 彼女の愛情判定, カップル診断, 恋愛診断, 大学生カップル, デートゲーム, 飲み会ゲーム, カップルゲーム, 無料ゲーム, わたちゃん',
-        noscriptTitle: '彼氏の愛情判定｜わたちゃん無料カップル診断ゲーム',
-        noscriptBody: 'メインは彼氏の彼女理解度を測定する彼氏の愛情判定ゲームです。彼女版は同じゲーム内で切り替えでき、スマホ1台で5問後にふたりの理解度を確認できます。',
-        faq: [
-          {
-            question: '彼氏の愛情判定と彼女の愛情判定は何が違う？',
-            answer: 'どちらの答えを相手が当てるかを選べます。彼女の答えを彼氏が当てる遊び方も、彼氏の答えを彼女が当てる遊び方もできます。',
-          },
-          {
-            question: '無料で遊べますか？',
-            answer: '無料で遊べます。スマホ1台で5問だけ出題され、結果画像やシェア文も作れます。',
-          },
-          {
-            question: 'どんな場面で遊びやすいですか？',
-            answer: '大学生カップルのデート中、飲み会、旅行、おうち時間など、短時間で相手の好みや考え方を知りたい場面に向いています。',
-          },
-        ],
-      },
       '/challenge-guide': {
         title: 'みんなに挑戦してもらう｜10問クイズの遊び方・作り方',
         description: '自分が先に答えた10問を友達や家族に予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせとランキングを楽しめます。',
@@ -433,14 +427,14 @@ async function handleRequest(request, env) {
         ],
       },
       '/about': {
-        title: 'About｜わたちゃん・彼氏の愛情判定ゲーム',
-        description: 'わたちゃんは、彼氏と彼女を入れ替えて遊べる愛情判定と、自分の答えを最大50人に予想してもらう挑戦モードを公開する無料ゲームサイトです。',
+        title: 'About｜わたちゃん・みんなに挑戦してもらうクイズ',
+        description: 'わたちゃんは、自分の10問を最大50人に予想してもらう通常版と、視聴者と同時回答するライブ配信版を公開する無料ゲームサイトです。',
         url: CANONICAL_ORIGIN + '/about',
         ogTitle: 'About｜わたちゃん',
-        imageAlt: 'わたちゃん 彼氏の愛情判定ゲーム',
+        imageAlt: 'わたちゃん みんなに挑戦してもらう',
         pageId: CANONICAL_ORIGIN + '/about#webpage',
         noscriptTitle: 'About｜わたちゃん',
-        noscriptBody: 'わたちゃんは、彼氏と彼女を入れ替えて遊べる「彼氏の愛情判定ゲーム」と、自分の10問の答えを最大50人に予想してもらう挑戦モードを公開しています。',
+        noscriptBody: 'わたちゃんは、クイズを作って参加URLを送る通常版と、視聴者と同時回答するライブ配信版を公開しています。',
       },
       '/product': {
         title: '製品版｜私のこと、ちゃんと分かってるよね？',
@@ -647,7 +641,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏・彼女の愛情を判定する</a> / <a href="/love">愛情判定の遊び方を見る</a> / <a href="/challenge">みんなに挑戦してもらう</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/challenge">みんなに挑戦してもらうクイズを作る</a> / <a href="/live-challenge">ライブ配信用クイズを作る</a> / <a href="/challenge-guide">遊び方を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -655,7 +649,7 @@ function buildNoscript(page) {
 function buildStructuredData(page) {
   const organizationId = 'https://www.streetboardgame.com/#organization';
   const websiteId = 'https://www.streetboardgame.com/#website';
-  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2';
+  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge.png?v=20260725-ogp-1';
 
   const webPage = {
     '@type': 'WebPage',
@@ -692,19 +686,16 @@ function buildStructuredData(page) {
       url: 'https://www.streetboardgame.com/',
       name: 'streetboardgame.com',
       inLanguage: 'ja',
-      description: '彼氏と彼女を入れ替えて遊べる愛情判定と、自分の答えを最大50人に予想してもらう挑戦モードを公開するオリジナルゲームサイトです。',
+      description: '自分の10問を最大50人へ出題する通常版と、視聴者と同時回答するライブ配信版を公開する無料クイズサイトです。',
       publisher: {
         '@id': organizationId,
       },
       hasPart: [
         {
-          '@id': 'https://www.streetboardgame.com/#couple-game',
-        },
-        {
-          '@id': 'https://www.streetboardgame.com/love#love-game',
-        },
-        {
           '@id': 'https://www.streetboardgame.com/challenge#challenge-game',
+        },
+        {
+          '@id': 'https://www.streetboardgame.com/live-challenge#game',
         },
       ],
     },
@@ -712,15 +703,13 @@ function buildStructuredData(page) {
       '@type': 'SiteNavigationElement',
       '@id': 'https://www.streetboardgame.com/#site-navigation',
       name: [
-        '彼氏の愛情判定',
         'みんなに挑戦してもらう',
-        '製品版',
+        'ライブ配信でみんなに挑戦してもらう',
         'About',
       ],
       url: [
-        'https://www.streetboardgame.com/',
         'https://www.streetboardgame.com/challenge',
-        'https://www.streetboardgame.com/product',
+        'https://www.streetboardgame.com/live-challenge',
         'https://www.streetboardgame.com/about',
       ],
     },

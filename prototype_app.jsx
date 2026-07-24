@@ -1059,9 +1059,9 @@ function App() {
   const urlScreen = (typeof window !== 'undefined' && window.__INITIAL_SCREEN) || null;
   const recoveredViewportState = loadViewportRecoveryState();
   const recoveredScreen = String(recoveredViewportState?.screen || '');
-  const activeRecoveredState = /^(friend|family|boardgame)/.test(recoveredScreen) || recoveredScreen === 'livePage'
-    ? null
-    : recoveredViewportState;
+  const activeRecoveredState = ['top', 'challengePage', 'about', 'product'].includes(recoveredScreen)
+    ? recoveredViewportState
+    : null;
   const initial = activeRecoveredState || (urlScreen
     ? { screen: urlScreen, qIdx: 0, answers: [], cards: [] }
     : { screen: 'top', qIdx: 0, answers: [], cards: [] });
@@ -1381,12 +1381,7 @@ function App() {
         boxShadow: '0 0 60px rgba(0,0,0,0.15)',
         position: 'relative', overflowX: 'clip',
       }}>
-        {screen === 'top' && (
-          <TopScreen
-            onStart={() => setScreen('intro')}
-            onLovePage={() => setScreen('lovePage')}
-          />
-        )}
+        {screen === 'top' && <TopScreen />}
         {screen === 'lovePage' && (
           <GameIntroPage
             kind="love"
@@ -1729,7 +1724,7 @@ function App() {
 // ・中央に巨大な白+シアン縁取りロゴ
 // ・右下に黄色注意書きシール
 // ─────────────────────────────────────────────────────
-function TopScreen({ onStart, onLovePage }) {
+function TopScreen() {
   return (
     <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
@@ -1742,14 +1737,14 @@ function TopScreen({ onStart, onLovePage }) {
       {/* 背景ノイズ感 (薄いハート散らし) */}
       <Decor />
       <h1 id="site-title" style={srOnlyStyle()}>
-        わたちゃん 彼氏の愛情判定ゲーム・みんなに挑戦してもらう
+        わたちゃん｜自分のクイズを作ってみんなに挑戦してもらう
       </h1>
       <p style={srOnlyStyle()}>
-        彼氏と彼女を入れ替えて遊べる無料カップル診断ゲームと、自分の答えを最大50人に予想してもらう10問の挑戦モードを公開しています。
+        あなたが10問のクイズを作り、LINEなどで参加URLを送って、友達や視聴者に自分の答えを当ててもらう無料ゲームです。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        <PillLabel>2つのゲームを無料で遊べる</PillLabel>
+        <PillLabel>クイズを作る人向け</PillLabel>
 
         <div style={{ marginTop: 28, marginBottom: 8 }}>
           <LogoText size={42}>私のこと、</LogoText>
@@ -1789,7 +1784,7 @@ function TopScreen({ onStart, onLovePage }) {
             height={320}
             loading="eager"
             fetchPriority="high"
-            alt="わたちゃん 彼氏の愛情判定ゲームのメインキャラクター"
+            alt="わたちゃん クイズ作成ゲームのメインキャラクター"
           />
         </div>
         {/* カードスタック (右側) */}
@@ -1802,25 +1797,6 @@ function TopScreen({ onStart, onLovePage }) {
 
       {/* CTA */}
       <div style={{ padding: '0 24px', position: 'relative', zIndex: 1 }}>
-        <button aria-label="彼氏の愛情を判定する" onClick={onStart} style={primaryBtn()}>
-          彼氏の愛情を判定する
-          <span style={{
-            display: 'inline-block', marginLeft: 6,
-            color: proto.yellow, fontSize: 18,
-            textShadow: '1px 1px 0 #000',
-          }}>▶</span>
-        </button>
-        <div style={{
-          marginTop: 8,
-          textAlign: 'center',
-          fontSize: 11,
-          lineHeight: 1.5,
-          color: proto.white,
-          opacity: 0.88,
-          fontWeight: 700,
-        }}>
-          彼氏と彼女を入れ替えて、どちらの愛情も判定できます
-        </div>
         <a href="/challenge" aria-label="みんなに挑戦してもらう" style={{
           ...primaryBtn(),
           display: 'flex',
@@ -1850,7 +1826,7 @@ function TopScreen({ onStart, onLovePage }) {
           marginLeft: 'auto',
           marginRight: 'auto',
         }}>
-          自分が先に10問へ回答し、専用URLから最大50人に答えを予想してもらえます
+          10問を選ぶ・自作する → 自分の正解を登録 → LINEなどで参加URLを送る
         </div>
         <a href="/live-challenge" aria-label="ライブ配信でみんなに挑戦してもらう" style={{
           ...primaryBtn(),
@@ -1882,7 +1858,7 @@ function TopScreen({ onStart, onLovePage }) {
           marginLeft: 'auto',
           marginRight: 'auto',
         }}>
-          Instagram・YouTubeライブで同時回答。10問後、視聴者ごとに結果カードが出ます
+          10問を選ぶ・自作する → 配信でURL・QR・6桁コードを案内 → 視聴者と同時回答
         </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
           marginTop: 12,
@@ -1891,7 +1867,7 @@ function TopScreen({ onStart, onLovePage }) {
           gap: 7,
           flexWrap: 'wrap',
         }}>
-          {['大学生カップル', 'デート中', '飲み会', '旅行', 'おうち時間'].map((scene) => (
+          {['休み時間', '放課後', 'LINE', '友達グループ', 'ライブ配信'].map((scene) => (
             <span key={scene} style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -1913,18 +1889,18 @@ function TopScreen({ onStart, onLovePage }) {
         </div>
       </div>
 
-      {/* 注意書きシール */}
+      {/* 作成者向けの注意書き */}
       <div style={{
         marginTop: 22, display: 'flex', justifyContent: 'center',
         position: 'relative', zIndex: 1,
       }}>
         <StickyNote rotate={-4} size={150}>
           <div style={{ fontSize: 11, lineHeight: 1.55, whiteSpace: 'nowrap' }}>
-            このゲームを<br/>
-            キッカケに<br/>
-            別れても<br/>
-            一切責任は<br/>
-            <span style={{ color: proto.pinkDeep, fontWeight: 800 }}>負いません</span>
+            回答する人には<br/>
+            <span style={{ color: proto.pinkDeep, fontWeight: 800 }}>参加用URL</span>だけを<br/>
+            送ってね<br/>
+            主催者用URLは<br/>
+            ひみつです
           </div>
         </StickyNote>
       </div>
@@ -1939,7 +1915,6 @@ function TopScreen({ onStart, onLovePage }) {
           textShadow: '1px 1px 0 rgba(0,0,0,0.25)',
         }}>まずはどんなゲームか知りたい</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <SeriesCard emoji="💕" title="彼氏の愛情判定" status="5問・2人で遊ぶ" href="/love" onClick={onLovePage} />
           <SeriesCard emoji="📣" title="みんなに挑戦してもらう" status="10問・最大50人" href="/challenge-guide" />
           <SeriesCard emoji="🎙️" title="ライブ配信でみんなに挑戦" status="10問・最大1,000人" href="/live-challenge" />
         </div>
@@ -2546,10 +2521,10 @@ function CardStack() {
 
 function CommonRulesCard() {
   const steps = [
-    '「主役」を決めて、お題を選ぶ',
-    '主役が、自分の答えを選ぶ',
-    '相手やみんなも、同じお題に答える',
-    '答えが合った数を、結果でチェック',
+    'あなたが、出題する10問を選ぶ・作る',
+    '通常版は、自分の正解を先に登録する',
+    'LINE・URL・QR・コードで参加者を招待',
+    '10問後、何問一致したか結果を確認する',
   ];
   const stepColors = [proto.cyan, proto.pink, proto.yellow, proto.white];
   return (
@@ -2581,14 +2556,14 @@ function CommonRulesCard() {
           fontSize: 10,
           fontWeight: 900,
           letterSpacing: '0.08em',
-        }}>全シリーズ共通の遊び方</span>
+        }}>クイズを作る人の基本の流れ</span>
         <h2 id="top-common-rules-title" style={{
           margin: '12px 0 7px',
           fontFamily: proto.body,
           fontSize: 18,
           lineHeight: 1.5,
         }}>
-          答えを合わせて、<br/>どれだけ分かり合えているかチェック！
+          あなたのクイズを作って、<br/>みんなに挑戦してもらおう！
         </h2>
         <p style={{
           margin: 0,
@@ -2596,7 +2571,7 @@ function CommonRulesCard() {
           lineHeight: 1.7,
           fontWeight: 700,
         }}>
-          誰かの答えと、相手・みんなの答えが<br/>何問合うかを楽しむゲームです。
+          このトップページは出題者・配信者向けです。<br/>回答する人は、届いた参加URLから直接遊びます。
         </p>
       </div>
       <ol style={{
@@ -2651,8 +2626,8 @@ function CommonRulesCard() {
         textAlign: 'center',
         fontWeight: 800,
       }}>
-        シリーズによって「先に答える／同時に答える」<br/>
-        「予想する／自分の答えを選ぶ」が変わります。
+        通常版はあなたの答えを予想。ライブ版は<br/>
+        配信者と視聴者が同じ問題へ同時に答えます。
       </p>
     </section>
   );
@@ -7381,18 +7356,18 @@ function AboutScreen() {
         <SectionTitle>♡ コンセプト</SectionTitle>
         <Card>
           <div style={{ fontSize: 12, lineHeight: 1.8, color: proto.text, fontWeight: 600 }}>
-            ストリートボードゲームは、「彼氏の愛情判定ゲーム」をメインにしたwebで遊べるゲームサイトです。
-            彼氏と彼女を入れ替えて、どちらの答えを相手が当てるか選べます。
-            もう一つの「みんなに挑戦してもらう」では、自分が答えた10問を最大50人に予想してもらえます。
-            デート中・飲み会・旅行・おうち時間に、無料でお楽しみください。
+            ストリートボードゲームは、自分のクイズを作ってみんなに挑戦してもらう無料ゲームサイトです。
+            通常版では、自分が先に答えた10問を最大50人に予想してもらえます。
+            ライブ配信版では、配信者と視聴者が同じ10問へ同時に回答します。
+            出題者・配信者がゲームを作り、回答する人へ参加URLを送って遊びます。
           </div>
         </Card>
 
         <SectionTitle style={{ marginTop: 22 }}>♡ 2つの遊び方</SectionTitle>
         <nav aria-label="ゲームの遊び方">
           <Card>
-            <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="メインゲーム" active href="/love" />
-            <SeriesRow emoji="📣" title="みんなに挑戦してもらう" sub="最大50人・10問" active href="/challenge" last />
+            <SeriesRow emoji="📣" title="みんなに挑戦してもらう" sub="最大50人・10問" active href="/challenge" />
+            <SeriesRow emoji="🎙️" title="ライブ配信でみんなに挑戦" sub="最大1,000人・10問" active href="/live-challenge" last />
           </Card>
         </nav>
 
@@ -7647,7 +7622,7 @@ function ProductScreen() {
                 background: proto.white, color: proto.pinkDeep,
                 fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap',
                 fontFamily: proto.body, zIndex: 3,
-              }}>彼氏の愛情判定ゲーム</div>
+              }}>私のこと、ちゃんと分かってるよね？</div>
 
               <div style={{
                 position: 'absolute',

@@ -14,6 +14,7 @@ const DIST_ENTRIES = {
   remote_love: 'remote_love.js',
   live_game: 'live_game.js',
   live_ops: 'live_ops.js',
+  question_ops: 'question_ops.js',
   prototype_character: 'prototype_character.jsx',
   prototype_app: 'prototype_app.jsx',
 };
@@ -53,12 +54,18 @@ const HTML_ENTRY_MAP = {
   'live_ops.html': [
     'live_ops',
   ],
+  'question_ops.html': [
+    'prototype_quiz_data',
+    'prototype_friend_data',
+    'prototype_family_data',
+    'question_ops',
+  ],
 };
 
 await mkdir('dist', { recursive: true });
 await mkdir('assets/vendor', { recursive: true });
 
-await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_quiz_data|prototype_friend_data|prototype_family_data|prototype_boardgame_data|challenge_game|live_challenge|remote_love|live_game|live_ops|prototype_character|prototype_app)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
+await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_quiz_data|prototype_friend_data|prototype_family_data|prototype_boardgame_data|challenge_game|live_challenge|remote_love|live_game|live_ops|question_ops|prototype_character|prototype_app)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
 await removeGeneratedFiles('assets/vendor', /^react(?:-dom)?\.production\.min(?:-[a-f0-9]+)?\.js$/i);
 
 const runtimeSources = {

@@ -94,6 +94,7 @@ function staticPath(urlPath) {
   if (urlPath === '/remote' || urlPath === '/remote-boardgame') return 'remote.html';
   if (urlPath === '/live') return 'live.html';
   if (urlPath === '/live-ops') return 'live_ops.html';
+  if (urlPath === '/question-ops') return 'question_ops.html';
   return urlPath.replace(/^\/+/, '');
 }
 

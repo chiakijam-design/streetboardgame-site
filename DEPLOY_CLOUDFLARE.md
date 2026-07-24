@@ -29,6 +29,13 @@ YouTube Data API v3、チャンネル所有確認、字幕由来の内輪問題�
 
 LIVE運営コンソール、障害告知、Stripe Checkout・Webhook・返金・70%月次分配、WebSocket切断率監視、招待・手動審査・収益分配規約同意は、[`docs/LIVE_OPERATIONS_RUNBOOK.md`](docs/LIVE_OPERATIONS_RUNBOOK.md)と[`docs/LIVE_ABUSE_PREVENTION.md`](docs/LIVE_ABUSE_PREVENTION.md)に従い、ゲーム用D1へ`0009_live_youtube_caption_sources.sql`まで、購入用D1へ`migrations-purchases/0005_live_checkout_consent.sql`まで適用し、`LIVE_ADMIN_TOKEN`、`LIVE_OPS_ALERT_WEBHOOK_URL`、`STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`、`LIVE_PURCHASE_ACCESS_SECRET`を設定する。本番ではE2E専用の`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定してはならない。
 
+## Question Catalog and Moderation
+
+- Apply `migrations/0012_question_catalog_moderation.sql` to `REMOTE_DB` before deployment.
+- `/question-ops` reuses the existing LIVE operations token and TOTP authentication.
+- Do not expose `LIVE_ADMIN_TOKEN` or the TOTP secret in static assets or browser code.
+- Public submissions are stored only when the creator explicitly checks the review-consent checkbox.
+
 ## Manual GitHub Flow
 
 1. Commit changes in this folder.

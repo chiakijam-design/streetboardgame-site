@@ -1,5 +1,10 @@
 import QRCode from 'qrcode';
 import { mergeChallengeCards, pickChallengeCards, prepareLoveChallengeCards } from './src/challenge/data.js';
+import {
+  changedQuestionCandidates,
+  loadManagedQuestionCards,
+  submitQuestionCandidates,
+} from './src/questions/catalog.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -7,7 +12,7 @@ const QUESTION_COUNT = 10;
 const CREATOR_DRAFT_KEY = 'watachan-challenge-creator-draft:v1';
 const MANAGE_HISTORY_KEY = 'watachan-challenge-manage-history:v1';
 const app = document.getElementById('challenge-app');
-const allCards = mergeChallengeCards(
+let allCards = mergeChallengeCards(
   window.FRIEND_CARDS,
   window.FAMILY_CARDS,
   prepareLoveChallengeCards(window.ALL_CARDS),
@@ -42,6 +47,7 @@ let state = {
   result: null,
   error: '',
   loading: false,
+  questionSubmissionConsent: false,
 };
 
 function initialMode() {
@@ -68,7 +74,8 @@ function render() {
   const body = state.loading
     ? loadingView()
     : state.mode === 'create' ? createStartView()
-      : state.mode === 'creator-answer' ? questionView(true)
+      : state.mode === 'creator-edit' ? creatorEditView()
+        : state.mode === 'creator-answer' ? questionView(true)
         : state.mode === 'manage' ? manageView()
           : state.mode === 'join' ? joinView()
             : state.mode === 'participant-answer' ? questionView(false)
@@ -78,6 +85,44 @@ function render() {
                     : errorView();
   app.innerHTML = body;
   bindEvents();
+}
+
+function creatorEditView() {
+  return shell(
+    'QUESTION EDITOR',
+    '出題する10問を準備する',
+    'ランダムに選ばれた問題をそのまま使うか、問題文と5つの選択肢を自由に書き換えられます。',
+    `<section class="challenge-panel" data-testid="challenge-question-editor">
+      <button class="challenge-secondary" data-action="randomize-create">🎲 10問をランダムで選び直す</button>
+      <div class="challenge-editor-list">
+        ${state.cards.map((card, index) => creatorEditorCard(card, index)).join('')}
+      </div>
+      <label class="challenge-consent">
+        <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}>
+        <span><b>自作・編集したお題を「掲載候補として運営に送る」</b><br>
+        <small>初期状態は未チェックです。チェックした場合だけ、書き換えたお題が審査用に保存されます。ゲームには同意しなくても参加できます。</small></span>
+      </label>
+      <button class="challenge-primary" data-action="start-answer">この10問で自分の答えを登録する <span>▶</span></button>
+      <button class="challenge-secondary" data-action="back-create">名前入力に戻る</button>
+    </section>`,
+  );
+}
+
+function creatorEditorCard(card, index) {
+  return `<article class="challenge-editor" data-editor="${index}">
+    <div class="challenge-editor-head">
+      <span class="challenge-section-label">Q${index + 1}</span>
+      <select data-library="${index}" aria-label="Q${index + 1}のお題を選ぶ">
+        <option value="__custom__" ${card.sourceId ? '' : 'selected'}>＋ 自分でお題を作る</option>
+        ${allCards.map((item) => `<option value="${escapeHtml(item.id)}" ${String(item.id) === String(card.sourceId) ? 'selected' : ''}>${escapeHtml(item.title)}</option>`).join('')}
+      </select>
+    </div>
+    <textarea data-question="${index}" maxlength="180" aria-label="Q${index + 1}の問題文">${escapeHtml(card.title)}</textarea>
+    ${card.choices.map((choice, choiceIndex) => `<label class="challenge-option-edit">
+      <b>${choiceIndex + 1}</b>
+      <input data-option="${index}:${choiceIndex}" maxlength="60" value="${escapeHtml(choice)}" aria-label="Q${index + 1} 選択肢${choiceIndex + 1}">
+    </label>`).join('')}
+  </article>`;
 }
 
 function loadingView() {
@@ -132,7 +177,7 @@ function createStartView() {
       <input id="creator-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ちあき" value="${escapeHtml(state.creatorName)}">
       <button class="challenge-primary" data-action="start-create">10問に答えてクイズを作る <span>▶</span></button>
-      <p class="challenge-note">彼氏の愛情判定・友達版・家族版のお題から出題します。回答途中はこの端末へ自動保存されます。</p>
+      <p class="challenge-note">友達・家族・共通のお題から出題します。回答途中はこの端末へ自動保存されます。</p>
     </section>`,
   );
 }
@@ -380,6 +425,26 @@ function errorView() {
 
 function bindEvents() {
   document.querySelector('[data-action="start-create"]')?.addEventListener('click', startCreate);
+  document.querySelector('[data-action="start-answer"]')?.addEventListener('click', startCreatorAnswer);
+  document.querySelector('[data-action="back-create"]')?.addEventListener('click', () => setState({ mode: 'create', error: '', questionSubmissionConsent: false }));
+  document.querySelector('[data-action="randomize-create"]')?.addEventListener('click', () => {
+    captureCreatorEdit();
+    setState({
+      cards: pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard),
+      questionSubmissionConsent: false,
+      error: '',
+    });
+  });
+  document.querySelectorAll('[data-library]').forEach((select) => select.addEventListener('change', () => {
+    captureCreatorEdit();
+    const index = Number(select.dataset.library);
+    const source = allCards.find((card) => String(card.id) === select.value);
+    const cards = state.cards.slice();
+    cards[index] = source
+      ? toCreatorDraftCard(source)
+      : { id: `USR${Date.now()}${index}`, sourceId: '', category: '自作のお題', title: '', choices: ['', '', '', '', ''] };
+    setState({ cards, questionSubmissionConsent: false, error: '' });
+  }));
   document.querySelector('[data-action="resume-create"]')?.addEventListener('click', resumeCreate);
   document.querySelector('[data-action="delete-draft"]')?.addEventListener('click', deleteCreatorDraft);
   document.querySelector('[data-action="previous-question"]')?.addEventListener('click', previousQuestion);
@@ -408,19 +473,55 @@ function startCreate() {
   if (allCards.length < QUESTION_COUNT) return setState({ error: 'questions-unavailable' });
   const preferredCard = allCards.find((card) => card.id === preferredCardId);
   const pool = preferredCard ? allCards.filter((card) => card.id !== preferredCard.id) : allCards;
-  const cards = preferredCard
+  const cards = (preferredCard
     ? [preferredCard, ...pickChallengeCards(pool, QUESTION_COUNT - 1)]
-    : pickChallengeCards(pool, QUESTION_COUNT);
+    : pickChallengeCards(pool, QUESTION_COUNT)).map(toCreatorDraftCard);
   const next = {
     creatorName: name,
     cards,
     answers: [],
     questionIndex: 0,
     error: '',
-    mode: 'creator-answer',
+    mode: 'creator-edit',
+    questionSubmissionConsent: false,
   };
-  saveCreatorDraft(next);
   setState(next);
+}
+
+function captureCreatorEdit() {
+  if (state.mode !== 'creator-edit') return;
+  state.questionSubmissionConsent = document.getElementById('question-submit-consent')?.checked === true;
+  state.cards = state.cards.map((card, index) => ({
+    ...card,
+    title: document.querySelector(`[data-question="${index}"]`)?.value.trim() ?? card.title,
+    choices: card.choices.map((choice, choiceIndex) => (
+      document.querySelector(`[data-option="${index}:${choiceIndex}"]`)?.value.trim() ?? choice
+    )),
+  }));
+}
+
+function startCreatorAnswer() {
+  captureCreatorEdit();
+  if (state.cards.some((card) => !card.title || card.choices.length !== 5 || card.choices.some((choice) => !choice))) {
+    return setState({ error: 'questions-incomplete' });
+  }
+  const cards = state.cards.map((card, index) => {
+    const source = allCards.find((item) => String(item.id) === String(card.sourceId || ''));
+    const changed = !source || card.title !== source.title
+      || card.choices.some((choice, choiceIndex) => choice !== source.choices[choiceIndex]);
+    return { ...card, id: changed ? `USR${Date.now()}${index}` : source.id };
+  });
+  const next = { cards, answers: [], questionIndex: 0, error: '', mode: 'creator-answer' };
+  saveCreatorDraft({ ...state, ...next });
+  setState(next);
+}
+
+function toCreatorDraftCard(card) {
+  return {
+    ...card,
+    sourceId: card.id,
+    choices: card.choices.slice(0, 5),
+  };
 }
 
 function resumeCreate() {
@@ -480,6 +581,12 @@ async function answerQuestion(choice) {
         mode: 'manage',
         answers,
       });
+      const candidates = changedQuestionCandidates(state.cards, allCards);
+      submitQuestionCandidates({
+        consent: state.questionSubmissionConsent,
+        sourceMode: 'challenge',
+        questions: candidates,
+      }).catch(() => {});
     } catch (error) {
       setState({ loading: false, mode: 'creator-answer', error: error.message });
     }
@@ -776,6 +883,7 @@ function errorMessage(code) {
     'room-full': 'このクイズは上限の50人に達しました。',
     'room-not-found': 'クイズが見つからないか、有効期限が切れています。',
     'questions-unavailable': '問題データを読み込めませんでした。',
+    'questions-incomplete': '10問すべての問題文と5つの選択肢を入力してください。',
     'participant-forbidden': '参加情報を確認できません。もう一度URLを開いてください。',
     'answers-already-submitted': 'この参加者の回答はすでに確定しています。',
     'manage-forbidden': '主催者用URLを確認できません。',
@@ -786,17 +894,22 @@ function errorMessage(code) {
   })[code] || '通信に失敗しました。時間をおいてもう一度お試しください。';
 }
 
-if (state.mode === 'library') {
+async function bootChallenge() {
+  allCards = await loadManagedQuestionCards(allCards, 'challenge');
+  if (state.mode === 'library') {
   document.title = '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？';
   loadLibrary();
-} else if (state.mode === 'ranking') {
+  } else if (state.mode === 'ranking') {
   document.title = 'フレンドランキング｜私のこと、ちゃんと分かってるよね？';
   loadRanking();
-} else if (state.mode === 'manage') {
+  } else if (state.mode === 'manage') {
   document.title = '主催者用回答管理｜私のこと、ちゃんと分かってるよね？';
   loadManageRoom();
-} else if (state.mode === 'join') {
+  } else if (state.mode === 'join') {
   loadRoom();
-} else {
+  } else {
   render();
+  }
 }
+
+bootChallenge();

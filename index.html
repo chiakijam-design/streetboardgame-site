@@ -7,8 +7,8 @@
 <!-- =========================
   Basic SEO
 ========================= -->
-<title>わたちゃん｜彼氏の愛情判定ゲーム・無料カップル診断</title>
-<meta name="description" content="『わたちゃん』は、彼氏の彼女理解度を測定できる無料カップル診断。彼氏の愛情判定ゲームをメインに、彼女版・友達版・家族版も遊べます。" />
+<title>わたちゃん｜自分のクイズを作ってみんなに挑戦してもらう</title>
+<meta name="description" content="あなたが10問のクイズを作り、LINEなどで参加URLを送って友達に答えを予想してもらう通常版と、配信者・視聴者が同時回答するライブ配信版を無料で遊べます。" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <meta name="application-name" content="私のこと、ちゃんと分かってるよね？" />
 <meta name="apple-mobile-web-app-title" content="わたちゃん" />
@@ -35,22 +35,22 @@
 ========================= -->
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="streetboardgame.com" />
-<meta property="og:title" content="わたちゃん｜彼氏の愛情判定ゲーム" />
-<meta property="og:description" content="メインは彼氏の彼女理解度を測定する愛情判定ゲーム。彼女版は同じゲーム内で切り替え、友達版・家族版はシリーズとして遊べます。" />
+<meta property="og:title" content="わたちゃん｜みんなに挑戦してもらうクイズを作ろう" />
+<meta property="og:description" content="10問を作って参加URLを送る通常版と、配信で視聴者と同時回答するライブ版。クイズを作る人向けの無料ゲームです。" />
 <meta property="og:url" content="https://www.streetboardgame.com/" />
-<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2" />
-<meta property="og:image:alt" content="わたちゃん 彼氏の愛情判定ゲーム" />
+<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp-challenge.png?v=20260725-ogp-1" />
+<meta property="og:image:alt" content="わたちゃん みんなに挑戦してもらう" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:locale" content="ja_JP" />
 
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="わたちゃん｜彼氏の愛情判定ゲーム" />
-<meta name="twitter:description" content="彼氏の彼女理解度を測定できる無料カップル診断ゲーム。彼女版は同じゲーム内で切り替え、友達版・家族版も遊べます。" />
-<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2" />
-<meta name="twitter:image:alt" content="わたちゃん 彼氏の愛情判定ゲーム" />
+<meta name="twitter:title" content="わたちゃん｜みんなに挑戦してもらうクイズを作ろう" />
+<meta name="twitter:description" content="10問を作ってURLを送る通常版と、配信で視聴者と同時回答するライブ版。" />
+<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp-challenge.png?v=20260725-ogp-1" />
+<meta name="twitter:image:alt" content="わたちゃん みんなに挑戦してもらう" />
 
-<script type="application/ld+json">
+<script type="application/json" id="retired-love-schema">
 {
   "@context": "https://schema.org",
   "@graph": [
@@ -228,6 +228,81 @@
   ]
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://www.streetboardgame.com/#organization",
+      "name": "streetboardgame.com",
+      "url": "https://www.streetboardgame.com/",
+      "logo": "https://www.streetboardgame.com/assets/favicon-girl.png"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.streetboardgame.com/#website",
+      "url": "https://www.streetboardgame.com/",
+      "name": "わたちゃん",
+      "inLanguage": "ja",
+      "description": "クイズを作る人向けに、参加URLで最大50人へ出題する通常版と、視聴者と同時回答するライブ配信版を提供する無料ゲームサイトです。",
+      "publisher": {"@id": "https://www.streetboardgame.com/#organization"},
+      "hasPart": [
+        {"@id": "https://www.streetboardgame.com/challenge#challenge-game"},
+        {"@id": "https://www.streetboardgame.com/live-challenge#game"}
+      ]
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://www.streetboardgame.com/#webpage",
+      "url": "https://www.streetboardgame.com/",
+      "name": "わたちゃん｜自分のクイズを作ってみんなに挑戦してもらう",
+      "description": "あなたが10問を作り、LINEなどで参加URLを送る通常版と、配信で視聴者と同時回答するライブ版の作成者向けトップページです。",
+      "inLanguage": "ja",
+      "isPartOf": {"@id": "https://www.streetboardgame.com/#website"},
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://www.streetboardgame.com/assets/ogp-challenge.png?v=20260725-ogp-1",
+        "width": 1731,
+        "height": 909
+      },
+      "mainEntity": {"@id": "https://www.streetboardgame.com/challenge#challenge-game"}
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "@id": "https://www.streetboardgame.com/#site-navigation",
+      "name": ["みんなに挑戦してもらう", "ライブ配信でみんなに挑戦してもらう", "遊び方"],
+      "url": [
+        "https://www.streetboardgame.com/challenge",
+        "https://www.streetboardgame.com/live-challenge",
+        "https://www.streetboardgame.com/challenge-guide"
+      ]
+    },
+    {
+      "@type": ["WebApplication", "Game"],
+      "@id": "https://www.streetboardgame.com/challenge#challenge-game",
+      "url": "https://www.streetboardgame.com/challenge",
+      "name": "みんなに挑戦してもらう",
+      "description": "自分で選択・作成した10問へ先に回答し、参加URLを受け取った最大50人に自分の答えを予想してもらう無料クイズです。",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Any",
+      "isAccessibleForFree": true,
+      "inLanguage": "ja"
+    },
+    {
+      "@type": ["WebApplication", "Game"],
+      "@id": "https://www.streetboardgame.com/live-challenge#game",
+      "url": "https://www.streetboardgame.com/live-challenge",
+      "name": "ライブ配信でみんなに挑戦してもらう",
+      "description": "配信者が10問を作り、参加URL・QR・6桁コードで招待した視聴者と同時回答する無料ライブクイズです。",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Any",
+      "isAccessibleForFree": true,
+      "inLanguage": "ja"
+    }
+  ]
+}
+</script>
 
 <!-- =========================
   Google Analytics 4
@@ -257,7 +332,7 @@
   マッピング:
     /          → トップ画面
     /watachan  → 遊び方(How to play)画面
-    /love      → 彼氏の愛情判定紹介ページ（彼女版も対応）
+    /love      → 廃止済み。Workerで /challenge へ恒久転送
     /challenge-guide → みんなに挑戦してもらう紹介ページ
     /friends   → 友達の友情判定紹介ページ
     /family    → 家族の絆判定紹介ページ
@@ -270,10 +345,10 @@
 ========================= -->
 <script>
   (function() {
-    // テスト用: ?screen=lovePage|challengePage|intro|about|product|top で強制的に初期画面を指定可能
+    // テスト用: ?screen=challengePage|about|product|top で強制的に初期画面を指定可能
     var query = new URLSearchParams(location.search);
     var forceScreen = query.get('screen');
-    if (forceScreen && ['top','lovePage','challengePage','intro','about','product'].indexOf(forceScreen) >= 0) {
+    if (forceScreen && ['top','challengePage','about','product'].indexOf(forceScreen) >= 0) {
       window.__INITIAL_SCREEN = forceScreen;
       if (forceScreen === 'about' && query.get('to') === 'contact') {
         window.__SCROLL_TO_CONTACT = true;
@@ -292,8 +367,7 @@
     var routes = {
       '': 'top',
       'index.html': 'top',
-      'watachan': 'intro',
-      'love': 'lovePage',
+      'watachan': 'top',
       'challenge-guide': 'challengePage',
       'about': 'about',
       'product': 'product',
@@ -375,10 +449,10 @@
 <body>
 <noscript>
   <main style="max-width: 720px; margin: 32px auto; padding: 24px; font-family: sans-serif; line-height: 1.8; color: #1A1A1A; background: #FFFFFF;">
-    <h1>わたちゃん｜彼氏の愛情判定ゲーム</h1>
-    <p>スマホ1台で無料で遊べるカップル診断ゲームです。メインは彼氏の彼女理解度を測定する「彼氏の愛情判定」。彼女版は同じゲーム内で切り替えて遊べます。</p>
-    <p>大学生カップルのデート中、飲み会、旅行、おうち時間にも遊びやすい理解度チェックです。もう一つのモードでは、自分の10問の答えを最大50人に予想してもらえます。JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏・彼女の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/challenge">みんなに挑戦してもらう</a> / <a href="/product">製品版を見る</a> / <a href="/about">About</a></p>
+    <h1>わたちゃん｜みんなに挑戦してもらうクイズを作ろう</h1>
+    <p>このページはクイズを作る人向けです。あなたが10問を選ぶ・自作し、先に自分の答えを登録して、LINEなどで参加URLを送れます。</p>
+    <p>ライブ配信版では、参加URL・QR・6桁コードで視聴者を招待し、配信者と視聴者が同じ10問へ同時に答えます。回答する人は、作成者から届いた参加URLを直接開いてください。</p>
+    <p><a href="/challenge">みんなに挑戦してもらうクイズを作る</a> / <a href="/live-challenge">ライブ配信用クイズを作る</a> / <a href="/challenge-guide">遊び方を見る</a> / <a href="/about">About</a></p>
     <p><a href="/terms">利用規約</a> / <a href="/legal">特定商取引法に基づく表記</a></p>
   </main>
 </noscript>
@@ -390,6 +464,6 @@
 <script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
 <script data-build-entry="prototype_boardgame_data" src="/dist/prototype_boardgame_data-7RDJ3MR3.js"></script>
 <script data-build-entry="prototype_character" defer src="/dist/prototype_character-D4RIZ5YT.js"></script>
-<script data-build-entry="prototype_app" defer src="/dist/prototype_app-ALQFWH7P.js"></script>
+<script data-build-entry="prototype_app" defer src="/dist/prototype_app-643KUXP7.js"></script>
 </body>
 </html>

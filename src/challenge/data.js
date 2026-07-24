@@ -6,7 +6,7 @@ export function prepareLoveChallengeCards(cards) {
   return (cards || []).map((card) => ({
     ...card,
     id: `LOVE${String(card && card.id || '')}`,
-    category: '彼氏の愛情判定',
+    category: '共通のお題',
   }));
 }
 

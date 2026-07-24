@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#172033">
+  <title>お題審査・シリーズ管理 | Streetboardgame</title>
+  <style>
+    :root{--ink:#172033;--paper:#f7f8fc;--pink:#ec4f88;--cyan:#5bd4e8;--yellow:#ffe26b;--red:#c5294c;--green:#16805d;--muted:#667085}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.shell{width:min(1180px,100%);margin:auto;padding:18px 14px 70px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.top a{color:var(--ink);font-weight:800}.hero{margin-top:14px;padding:22px;border:3px solid var(--ink);border-radius:18px;background:var(--ink);color:#fff;box-shadow:6px 6px 0 var(--cyan)}h1{margin:0 0 6px;font-size:clamp(25px,6vw,42px)}h2{margin:0 0 12px;font-size:20px}.hero p,.help{margin:4px 0;color:#d9deea;font-size:13px;line-height:1.65}.help{color:var(--muted)}.panel{margin-top:18px;padding:18px;border:2px solid var(--ink);border-radius:16px;background:#fff;box-shadow:4px 4px 0 var(--ink)}.grid{display:grid;gap:14px}.grid.two{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.field{display:grid;gap:5px;margin-top:10px}.field label{font-size:12px;font-weight:800}input,select,textarea{width:100%;min-height:44px;padding:9px 11px;border:2px solid var(--ink);border-radius:9px;background:#fff}textarea{min-height:76px;resize:vertical}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.button{min-height:42px;padding:8px 12px;border:2px solid var(--ink);border-radius:9px;background:var(--yellow);color:var(--ink);font-weight:900;box-shadow:2px 2px 0 var(--ink)}.button.secondary{background:#fff}.button.danger{background:#ffe4e9;color:#8c1732}.button.good{background:#dff8ef;color:#0a6446}.status{padding:10px;border:2px solid var(--ink);border-radius:10px;background:#eefcff;font-size:13px;white-space:pre-wrap}.status.error{background:#ffe4e9;color:#8c1732}.cards{display:grid;gap:12px}.card{padding:14px;border:2px solid #ccd2df;border-radius:11px;background:#fff}.card.pending{border-color:#d39a00;background:#fffdf4}.meta{margin:4px 0 9px;color:var(--muted);font-size:12px;line-height:1.55}.pill{display:inline-flex;margin:0 5px 4px 0;padding:3px 8px;border-radius:999px;background:#e9edf5;font-size:11px;font-weight:800}.pill.warning{background:#fff1bd}.pill.info{background:#dff8ef}.choices-edit{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px;margin-top:8px}.checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.check{display:flex;align-items:center;gap:5px;padding:7px 9px;border:1px solid #aeb7ca;border-radius:8px;background:#f8f9fc;font-size:12px;font-weight:800}.check input{width:18px;min-height:18px;padding:0}.toolbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,220px);gap:9px}.count{font-weight:900}.empty{padding:18px;border:2px dashed #b8c0d1;border-radius:10px;color:var(--muted);text-align:center}@media(max-width:620px){.panel{padding:14px}.toolbar{grid-template-columns:1fr}.button{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="top"><strong>Streetboardgame Operations</strong><a href="/">サイトへ</a></div>
+    <section class="hero">
+      <h1>お題審査・シリーズ管理</h1>
+      <p>利用者が明示的に掲載同意したお題だけを審査し、全問題の掲載先を管理します。このページは検索結果・サイト内導線には公開しません。</p>
+    </section>
+    <section class="panel">
+      <h2>管理者二要素認証</h2>
+      <p class="help">LIVE運営コンソールと同じ管理トークン・認証アプリを使います。認証後はこのタブだけで15分間有効です。</p>
+      <div class="grid two">
+        <div class="field"><label for="adminToken">管理トークン</label><input id="adminToken" type="password" autocomplete="current-password" spellcheck="false"></div>
+        <div class="field"><label for="adminOtp">認証アプリの6桁コード</label><input id="adminOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"></div>
+      </div>
+      <div class="actions"><button class="button" id="loadQuestions">二要素認証して読み込む</button><button class="button secondary" id="forgetSession">認証情報をこのタブから消す</button></div>
+      <div id="authStatus" class="status" hidden></div>
+    </section>
+    <div id="dashboard" hidden>
+      <section class="panel">
+        <h2>掲載候補のお題審査</h2>
+        <p class="help">承認前に問題文・5択を編集できます。「友達向け」「家族向け」は両方選べます。却下したお題は公開ライブラリへ入りません。</p>
+        <div id="pendingSubmissions" class="cards"></div>
+      </section>
+      <section class="panel">
+        <h2>全問題の一覧・掲載先</h2>
+        <p class="help">既存のお題と承認済みのお題をまとめて表示します。チェックを外して保存すると、そのシリーズの次回の新規ゲーム作成から除外されます。</p>
+        <div class="toolbar">
+          <input id="questionSearch" type="search" placeholder="問題文・ID・カテゴリで検索">
+          <select id="questionFilter">
+            <option value="all">すべて</option>
+            <option value="challenge">みんなに挑戦</option>
+            <option value="live">ライブ配信</option>
+            <option value="friend">友達向け</option>
+            <option value="family">家族向け</option>
+            <option value="custom">承認済み自作</option>
+          </select>
+        </div>
+        <p id="questionCount" class="count"></p>
+        <div id="allQuestions" class="cards"></div>
+      </section>
+    </div>
+  </main>
+  <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
+  <script data-build-entry="prototype_friend_data" src="/dist/prototype_friend_data-3YOIQLSI.js"></script>
+  <script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
+  <script data-build-entry="question_ops" src="/dist/question_ops-6EOE7R63.js"></script>
+</body>
+</html>

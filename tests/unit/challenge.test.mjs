@@ -34,7 +34,7 @@ function api(env, path, options = {}) {
   return handleChallengeApi(new Request(`https://example.com${path}`, options), env, path);
 }
 
-test('愛情判定・友達・家族データは題名を正規化して重複を除ける', () => {
+test('共通・友達・家族データは題名を正規化して重複を除ける', () => {
   const loveCards = prepareLoveChallengeCards([
     { id: 1, title: '愛情判定の問題', choices: ['A', 'B', 'C', 'D', 'E'], image: 'card.png' },
   ]);
@@ -46,7 +46,7 @@ test('愛情判定・友達・家族データは題名を正規化して重複�
   assert.deepEqual(merged.map((card) => card.title), ['同じ 問題', '友達問題', '家族問題', '愛情判定の問題']);
   assert.deepEqual(loveCards[0], {
     id: 'LOVE1',
-    category: '彼氏の愛情判定',
+    category: '共通のお題',
     title: '愛情判定の問題',
     choices: ['A', 'B', 'C', 'D', 'E'],
     image: 'card.png',

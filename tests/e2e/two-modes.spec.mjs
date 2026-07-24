@@ -67,6 +67,9 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill(creatorName);
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
+  await expect(page.getByLabel(/掲載候補として運営に送る/)).not.toBeChecked();
+  await page.getByRole('button', { name: /この10問で自分の答えを登録する/ }).click();
   await answerChallengeQuestions(page, 'creator');
   await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
   const url = await page.getByRole('textbox', { name: '挑戦用URL' }).inputValue();
@@ -79,27 +82,14 @@ test.beforeEach(async ({ page, request }) => {
   await preparePage(page);
 });
 
-test('トップは彼氏・彼女の愛情判定と挑戦モードの2本だけを案内する', async ({ page }) => {
+test('トップは作成者向けに通常版とライブ配信版の2本だけを案内する', async ({ page }) => {
   await page.goto('/');
-  const loveButton = page.getByRole('button', { name: '彼氏の愛情を判定する' });
   const challengeButton = page.getByRole('link', { name: 'みんなに挑戦してもらう', exact: true }).first();
-  await expect(loveButton).toBeVisible();
+  const liveButton = page.getByRole('link', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
   await expect(challengeButton).toHaveAttribute('href', '/challenge');
-  const [loveStyle, challengeStyle] = await Promise.all([
-    loveButton.evaluate((element) => {
-      const style = getComputedStyle(element);
-      return {
-        backgroundColor: style.backgroundColor,
-        border: style.border,
-        borderRadius: style.borderRadius,
-        boxShadow: style.boxShadow,
-        color: style.color,
-        fontFamily: style.fontFamily,
-        fontSize: style.fontSize,
-        fontWeight: style.fontWeight,
-        minHeight: style.minHeight,
-      };
-    }),
+  await expect(liveButton).toHaveAttribute('href', '/live-challenge');
+  await expect(page.getByText('このトップページは出題者・配信者向けです。')).toBeVisible();
+  const [challengeStyle, liveStyle] = await Promise.all([
     challengeButton.evaluate((element) => {
       const style = getComputedStyle(element);
       return {
@@ -114,11 +104,28 @@ test('トップは彼氏・彼女の愛情判定と挑戦モードの2本だけ�
         minHeight: style.minHeight,
       };
     }),
+    liveButton.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        backgroundColor: style.backgroundColor,
+        border: style.border,
+        borderRadius: style.borderRadius,
+        boxShadow: style.boxShadow,
+        color: style.color,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        minHeight: style.minHeight,
+      };
+    }),
   ]);
-  expect(challengeStyle).toEqual(loveStyle);
+  expect(liveStyle).toEqual(challengeStyle);
+  await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
+  await expect(page.locator('a[href="/love"]')).toHaveCount(0);
   await expect(page.getByText('メイン', { exact: true })).toHaveCount(0);
   await expect(page.getByText('NEW', { exact: true })).toHaveCount(0);
   for (const removedLabel of [
+    '彼氏の愛情判定',
     '友達の友情を判定する',
     '家族の絆を判定する',
     'ボドゲ仲間の絆を判定する',
@@ -140,7 +147,7 @@ test('トップ下部から挑戦モードの説明を読み、10問クイズ作
   await expect(page.getByRole('link', { name: '10問クイズを作る' })).toHaveAttribute('href', '/challenge');
 });
 
-test('彼氏の愛情判定のお題を指定して挑戦クイズを作れる', async ({ page }) => {
+test('旧愛情判定の42問を共通のお題として挑戦クイズに使える', async ({ page }) => {
   await page.goto('/challenge');
   const loveCard = await page.evaluate(() => ({
     id: `LOVE${window.ALL_CARDS[0].id}`,
@@ -151,14 +158,11 @@ test('彼氏の愛情判定のお題を指定して挑戦クイズを作れる',
   await expect(page.getByText(loveCard.title, { exact: true })).toBeVisible();
   await page.getByLabel('出題者の名前（12文字まで）').fill('愛情お題テスト');
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await expect(page.locator('[data-question="0"]')).toHaveValue(loveCard.title);
+  await page.getByRole('button', { name: /この10問で自分の答えを登録する/ }).click();
   const paperCard = page.getByTestId('challenge-paper-card');
   await expect(paperCard.getByRole('heading', { level: 2 })).toHaveText(loveCard.title);
   await expect(paperCard).toContainText(loveCard.firstChoice);
-});
-
-test('彼氏と彼女を入れ替えた両モードが従来どおり5問で完走する', async ({ page }) => {
-  await completeLoveGame(page, 'girlTarget');
-  await completeLoveGame(page, 'boyTarget');
 });
 
 test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わせまで完走する', async ({ browser, page }) => {
@@ -202,6 +206,7 @@ test('途中保存から再開し、人気のお題を指定してクイズ作�
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill('途中保存');
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /この10問で自分の答えを登録する/ }).click();
   await page.locator('[data-action="answer"]').first().click();
   await page.reload();
   await expect(page.getByTestId('creator-resume')).toContainText('Q2/10から再開');
@@ -265,18 +270,22 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.innerWidth);
   await page.getByLabel('出題者の名前（12文字まで）').fill('レイアウト確認');
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
+  await page.getByRole('button', { name: /この10問で自分の答えを登録する/ }).click();
   await expect(page.locator('[data-action="answer"]')).toHaveCount(5);
   await expect(page.locator('.challenge-progress span')).toHaveCount(10);
 });
 
 test('廃止した公開URLは挑戦モードへ恒久転送し、旧screen指定も開かない', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'リダイレクトは画面幅に依存しないためPCで1回実行');
-  for (const path of ['/friends', '/family', '/boardgame', '/remote', '/remote-boardgame', '/live', '/live-guide']) {
+  for (const path of ['/love', '/friends', '/family', '/boardgame', '/remote', '/remote-boardgame', '/live', '/live-guide']) {
     const response = await request.get(path, { maxRedirects: 0 });
     expect(response.status(), path).toBe(301);
     expect(new URL(response.headers().location).pathname, path).toBe('/challenge');
   }
   await page.goto('/?screen=friendIntro');
-  await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'みんなに挑戦してもらう', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
   await expect(page.getByText('友達の友情判定ゲーム', { exact: true })).toHaveCount(0);
 });

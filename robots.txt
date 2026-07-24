@@ -2,5 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /*?screen=
 Disallow: /api/
+Disallow: /live-ops
+Disallow: /question-ops
 
 Sitemap: https://www.streetboardgame.com/sitemap.xml
