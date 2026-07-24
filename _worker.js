@@ -521,7 +521,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/boardgame">ボドゲ仲間の絆判定を見る</a> / <a href="/live-guide">YouTube企画・視聴者参加型LIVEを見る</a> / <a href="/live">Youtuber専用LIVEを作って遊ぶ</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/boardgame">ボドゲ仲間の絆判定を見る</a> / <a href="/live-guide">YouTube企画・視聴者参加型LIVEを見る</a> / <a href="/live">Youtuberと視聴者の絆を判定する</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }

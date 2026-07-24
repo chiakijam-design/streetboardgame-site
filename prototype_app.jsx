@@ -1908,7 +1908,7 @@ function TopScreen({ onStart, onFriend, onFamily, onBoardgame, onLovePage, onFri
           textDecoration: 'none',
           textAlign: 'center',
         }}>
-          Youtuber専用LIVEを作って遊ぶ
+          Youtuberと視聴者の絆を判定する
         </a>
         <div style={{
           marginTop: 9,
@@ -2217,7 +2217,7 @@ const GAME_INTRO_CONTENT = {
         a: '企画作成時に、各選択肢の現在票数を視聴者画面へ表示するか選べます。設定は全問題で共通になり、配信中は変更できません。',
       },
     ],
-    cta: 'Youtuber専用LIVEを作って遊ぶ',
+    cta: 'Youtuberと視聴者の絆を判定する',
     ctaHref: '/live',
     related: [
       { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },
