@@ -8,6 +8,7 @@ test('公開する2モードと共通ページのSEO・構造が一貫する', a
     ['/', 'わたちゃん｜彼氏の愛情判定ゲーム・無料カップル診断', 'わたちゃん 彼氏の愛情判定ゲーム'],
     ['/love', '彼氏の愛情判定｜彼女版も遊べる無料カップル診断ゲーム', '彼氏の愛情判定ゲーム'],
     ['/challenge', 'みんなに挑戦してもらう｜私のこと、ちゃんと分かってるよね？', 'みんなに挑戦してもらう'],
+    ['/challenge/library', '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？', '人気のお題ライブラリ'],
     ['/about', 'About｜わたちゃん・彼氏の愛情判定ゲーム', 'About'],
     ['/product', '製品版｜私のこと、ちゃんと分かってるよね？', '製品版もあります'],
     ['/terms', '利用規約｜Streetboardgame', '利用規約'],
@@ -31,11 +32,16 @@ test('サイトマップは2モードだけを掲載し、挑戦URLはnoindexに
   const sitemap = await (await request.get('/sitemap.xml')).text();
   expect(sitemap).toContain('<loc>https://www.streetboardgame.com/love</loc>');
   expect(sitemap).toContain('<loc>https://www.streetboardgame.com/challenge</loc>');
+  expect(sitemap).toContain('<loc>https://www.streetboardgame.com/challenge/library</loc>');
   for (const removed of ['/friends', '/family', '/boardgame', '/remote', '/live']) {
     expect(sitemap).not.toContain(`<loc>https://www.streetboardgame.com${removed}</loc>`);
   }
   const roomPage = await request.get('/challenge?room=ABCDEFGH');
   expect(roomPage.headers()['x-robots-tag']).toContain('noindex');
+  const rankingPage = await request.get('/challenge/ranking?room=ABCDEFGH');
+  expect(rankingPage.headers()['x-robots-tag']).toContain('noindex');
+  const managePage = await request.get('/challenge/manage?room=ABCDEFGH');
+  expect(managePage.headers()['x-robots-tag']).toContain('noindex');
 });
 
 test('トップの内部リンクと構造化データに廃止モードを残さない', async ({ page }, testInfo) => {

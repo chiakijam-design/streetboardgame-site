@@ -10,7 +10,7 @@ import { CHECKOUT_TERMS } from '../../src/live/checkout-terms-config.js';
 
 test('視聴者決済の規約バージョンとSHA-256を実際の利用規約全文へ固定する', async () => {
   const document = (await readFileAsync(new URL('../../terms.html', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-  assert.equal(CHECKOUT_TERMS.version, '1.2');
+  assert.equal(CHECKOUT_TERMS.version, '1.3');
   assert.equal(createHash('sha256').update(document).digest('hex'), CHECKOUT_TERMS.documentSha256);
 });
 

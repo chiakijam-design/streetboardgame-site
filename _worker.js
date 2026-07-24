@@ -36,6 +36,12 @@ const LEGACY_GAME_PATHS = new Set([
   '/live',
   '/live-guide',
 ]);
+const CHALLENGE_PAGE_PATHS = new Set([
+  '/challenge',
+  '/challenge/manage',
+  '/challenge/ranking',
+  '/challenge/library',
+]);
 const LEGAL_PAGE_FILES = Object.freeze({
   '/terms': '/terms.html',
   '/privacy': '/privacy.html',
@@ -97,11 +103,11 @@ async function handleRequest(request, env) {
       return handleChallengeApi(request, env, path);
     }
 
-    if (rawPath !== '/' && rawPath.endsWith('/') && path === '/challenge') {
+    if (rawPath !== '/' && rawPath.endsWith('/') && CHALLENGE_PAGE_PATHS.has(path)) {
       return Response.redirect(url.origin + path + url.search, 301);
     }
 
-    if (path === '/challenge') {
+    if (CHALLENGE_PAGE_PATHS.has(path)) {
       const challengeUrl = new URL('/challenge.html', url.origin);
       const response = await env.ASSETS.fetch(new Request(challengeUrl.toString(), {
         method: 'GET',
@@ -109,10 +115,12 @@ async function handleRequest(request, env) {
       }));
       const headers = new Headers(response.headers);
       headers.set('content-type', 'text/html; charset=UTF-8');
-      if (url.searchParams.has('room')) {
+      if (url.searchParams.has('room') || path === '/challenge/manage' || path === '/challenge/ranking') {
         headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       }
-      return new Response(request.method === 'HEAD' ? null : await response.text(), {
+      const html = request.method === 'HEAD' ? null : await response.text();
+      const body = html && path === '/challenge/library' ? applyChallengeLibraryMeta(html) : html;
+      return new Response(body, {
         status: response.status,
         headers,
       });
@@ -462,7 +470,7 @@ async function withSecurityHeaders(response, request) {
   const isHtml = /text\/html/i.test(headers.get('content-type') || '');
   const nonce = isHtml ? createCspNonce() : '';
   const requestPath = request ? new URL(request.url).pathname : '';
-  const sensitivePath = /^\/(?:live(?:-ops)?|remote(?:-boardgame)?|api(?:\/|$))/.test(requestPath);
+  const sensitivePath = /^\/(?:challenge(?:\/|$)|live(?:-ops)?|remote(?:-boardgame)?|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
     "default-src 'none'",
     "base-uri 'self'",
@@ -533,6 +541,31 @@ function applySeoMeta(html, page) {
     .replace(/<meta name="twitter:image:alt" content="[^"]*" \/>/, `<meta name="twitter:image:alt" content="${page.imageAlt || page.ogTitle}" />`)
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${JSON.stringify(buildStructuredData(page))}</script>`)
     .replace(/<noscript>[\s\S]*?<\/noscript>/, buildNoscript(page));
+}
+
+function applyChallengeLibraryMeta(html) {
+  const title = '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？';
+  const description = '友達や家族が実際に遊んだ回数から、人気の質問と5つの選択肢を探せる無料のお題ライブラリです。気になるお題を入れて10問クイズを作れます。';
+  const url = CANONICAL_ORIGIN + '/challenge/library';
+  return html
+    .replace(/<title>.*?<\/title>/, `<title>${title}</title>`)
+    .replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${description}">`)
+    .replace(/<link rel="canonical" href="[^"]*">/, `<link rel="canonical" href="${url}">`)
+    .replace(/<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${title}">`)
+    .replace(/<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${description}">`)
+    .replace(/<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${url}">`)
+    .replace(
+      /<script type="application\/ld\+json">[\s\S]*?<\/script>/,
+      `<script type="application/ld+json">${JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: '人気のお題ライブラリ',
+        url,
+        description,
+        inLanguage: 'ja',
+        isPartOf: { '@type': 'WebSite', url: CANONICAL_ORIGIN + '/' },
+      })}</script>`,
+    );
 }
 
 function applyRemoteBoardgameShareMeta(html, requestUrl) {

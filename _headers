@@ -18,6 +18,8 @@
   Referrer-Policy: no-referrer
 /remote
   Referrer-Policy: no-referrer
+/challenge*
+  Referrer-Policy: no-referrer
 /api/*
   Referrer-Policy: no-referrer
 

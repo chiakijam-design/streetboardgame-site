@@ -17,6 +17,10 @@ export async function handleChallengeApi(request, env, path) {
       return await createRoom(request, env);
     }
 
+    if (path === '/api/challenge/library' && request.method === 'GET') {
+      return await getQuestionLibrary(env);
+    }
+
     const roomMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})$/);
     if (roomMatch && request.method === 'GET') {
       return await getPublicRoom(env, roomMatch[1]);
@@ -25,6 +29,11 @@ export async function handleChallengeApi(request, env, path) {
     const manageMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/manage$/);
     if (manageMatch && request.method === 'GET') {
       return await getManageRoom(request, env, manageMatch[1]);
+    }
+
+    const rankingMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/ranking$/);
+    if (rankingMatch && request.method === 'GET') {
+      return await getRanking(env, rankingMatch[1]);
     }
 
     const joinMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/join$/);
@@ -98,7 +107,33 @@ async function getManageRoom(request, env, code) {
     return jsonResponse({ error: 'manage-forbidden' }, 403);
   }
   const counts = await participantCounts(env, code, record);
-  return jsonResponse({ room: publicRoom(code, record, counts.total, counts.completed) });
+  const participants = await managedParticipants(env, code, record);
+  return jsonResponse({
+    room: publicRoom(code, record, counts.total, counts.completed),
+    participants,
+  });
+}
+
+async function getRanking(env, code) {
+  const record = await readRoom(env, code);
+  if (!record) return jsonResponse({ error: 'room-not-found' }, 404);
+  const counts = await participantCounts(env, code, record);
+  const participants = await rankedParticipants(env, code, record);
+  return jsonResponse({
+    room: {
+      code,
+      creatorName: record.creatorName,
+      completedParticipants: counts.completed,
+      maxParticipants: CHALLENGE_MAX_PARTICIPANTS,
+      expiresAt: record.expiresAt,
+    },
+    participants,
+  });
+}
+
+async function getQuestionLibrary(env) {
+  const questions = await popularQuestions(env);
+  return jsonResponse({ questions });
 }
 
 async function joinRoom(request, env, code) {
@@ -119,6 +154,9 @@ async function joinRoom(request, env, code) {
   const body = await readJson(request);
   const name = sanitizeName(body.name, '');
   if (!name) return jsonResponse({ error: 'name-required' }, 400);
+  if (body.rankingConsent !== true) {
+    return jsonResponse({ error: 'ranking-consent-required' }, 400);
+  }
   const participantToken = createToken();
   const participant = {
     id: createToken().slice(0, 24),
@@ -128,6 +166,7 @@ async function joinRoom(request, env, code) {
     score: null,
     createdAt: Date.now(),
     completedAt: null,
+    rankingConsentAt: Date.now(),
   };
   const inserted = await insertParticipant(env, code, participant, room);
   if (!inserted) return jsonResponse({ error: 'room-full', maxParticipants: CHALLENGE_MAX_PARTICIPANTS }, 409);
@@ -159,6 +198,7 @@ async function submitAnswers(request, env, code) {
   const completedAt = Date.now();
   const saved = await saveParticipantAnswers(env, code, token, participant, answers, score, completedAt, room);
   if (!saved) return jsonResponse({ error: 'answers-already-submitted' }, 409);
+  await recordQuestionPlays(env, room.cards, completedAt).catch(() => {});
   return jsonResponse({ score });
 }
 
@@ -300,8 +340,8 @@ async function insertParticipant(env, code, participant, room) {
   if (await ensureD1(env)) {
     const result = await env.REMOTE_DB.prepare(`
       INSERT INTO challenge_participants
-        (room_code, participant_id, participant_token_hash, name, created_at)
-      SELECT ?, ?, ?, ?, ?
+        (room_code, participant_id, participant_token_hash, name, created_at, ranking_consent_at)
+      SELECT ?, ?, ?, ?, ?, ?
       WHERE (
         SELECT COUNT(*) FROM challenge_participants WHERE room_code = ?
       ) < ?
@@ -311,6 +351,7 @@ async function insertParticipant(env, code, participant, room) {
       await hashToken(participant.token),
       participant.name,
       participant.createdAt,
+      participant.rankingConsentAt,
       code,
       CHALLENGE_MAX_PARTICIPANTS,
     ).run();
@@ -327,7 +368,7 @@ async function readParticipant(env, code, token, room) {
   if (!TOKEN_PATTERN.test(token)) return null;
   if (await ensureD1(env)) {
     const row = await env.REMOTE_DB.prepare(`
-      SELECT participant_id, name, answers_json, score, created_at, completed_at
+      SELECT participant_id, name, answers_json, score, created_at, completed_at, ranking_consent_at
       FROM challenge_participants
       WHERE room_code = ? AND participant_token_hash = ?
     `).bind(code, await hashToken(token)).first();
@@ -339,6 +380,7 @@ async function readParticipant(env, code, token, room) {
       score: row.score == null ? null : Number(row.score),
       createdAt: Number(row.created_at),
       completedAt: row.completed_at == null ? null : Number(row.completed_at),
+      rankingConsentAt: row.ranking_consent_at == null ? null : Number(row.ranking_consent_at),
     };
   }
   return (room.participants || []).find((participant) => participant.token === token) || null;
@@ -388,6 +430,145 @@ async function participantRank(env, code, score, room) {
   return (room.participants || []).filter((participant) => (
     participant.completedAt != null && Number(participant.score) > score
   )).length + 1;
+}
+
+async function rankedParticipants(env, code, room) {
+  if (await ensureD1(env)) {
+    const result = await env.REMOTE_DB.prepare(`
+      SELECT name, score, completed_at
+      FROM challenge_participants
+      WHERE room_code = ? AND completed_at IS NOT NULL AND ranking_consent_at IS NOT NULL
+      ORDER BY score DESC, completed_at ASC
+      LIMIT ?
+    `).bind(code, CHALLENGE_MAX_PARTICIPANTS).all();
+    return addRanks((result?.results || []).map((row) => ({
+      name: row.name,
+      score: Number(row.score),
+      completedAt: Number(row.completed_at),
+    })));
+  }
+  return addRanks((room.participants || [])
+    .filter((participant) => participant.completedAt != null && participant.rankingConsentAt != null)
+    .sort((left, right) => Number(right.score) - Number(left.score)
+      || Number(left.completedAt) - Number(right.completedAt))
+    .map((participant) => ({
+      name: participant.name,
+      score: Number(participant.score),
+      completedAt: Number(participant.completedAt),
+    })));
+}
+
+async function managedParticipants(env, code, room) {
+  let participants;
+  if (await ensureD1(env)) {
+    const result = await env.REMOTE_DB.prepare(`
+      SELECT participant_id, name, answers_json, score, created_at, completed_at
+      FROM challenge_participants
+      WHERE room_code = ? AND ranking_consent_at IS NOT NULL
+      ORDER BY completed_at IS NULL, score DESC, completed_at ASC, created_at ASC
+      LIMIT ?
+    `).bind(code, CHALLENGE_MAX_PARTICIPANTS).all();
+    participants = (result?.results || []).map((row) => ({
+      id: row.participant_id,
+      name: row.name,
+      answers: row.answers_json ? JSON.parse(row.answers_json) : null,
+      score: row.score == null ? null : Number(row.score),
+      createdAt: Number(row.created_at),
+      completedAt: row.completed_at == null ? null : Number(row.completed_at),
+    }));
+  } else {
+    participants = (room.participants || [])
+      .filter((participant) => participant.rankingConsentAt != null)
+      .slice()
+      .sort((left, right) => {
+        if (left.completedAt == null && right.completedAt != null) return 1;
+        if (left.completedAt != null && right.completedAt == null) return -1;
+        return Number(right.score || 0) - Number(left.score || 0)
+          || Number(left.completedAt || left.createdAt) - Number(right.completedAt || right.createdAt);
+      });
+  }
+  return participants.map((participant) => ({
+    id: participant.id,
+    name: participant.name,
+    submitted: Array.isArray(participant.answers),
+    score: Number.isInteger(participant.score) ? participant.score : null,
+    completedAt: participant.completedAt,
+    answers: Array.isArray(participant.answers)
+      ? room.cards.map((card, index) => ({
+        cardId: card.id,
+        selected: participant.answers[index],
+        correct: room.answerKey[index],
+        match: participant.answers[index] === room.answerKey[index],
+      }))
+      : [],
+  }));
+}
+
+function addRanks(participants) {
+  let previousScore = null;
+  let previousRank = 0;
+  return participants.map((participant, index) => {
+    const rank = participant.score === previousScore ? previousRank : index + 1;
+    previousScore = participant.score;
+    previousRank = rank;
+    return { ...participant, rank };
+  });
+}
+
+async function recordQuestionPlays(env, cards, playedAt) {
+  if (await ensureD1(env)) {
+    const statements = cards.map((card) => env.REMOTE_DB.prepare(`
+      INSERT INTO challenge_question_stats
+        (question_id, title, category, choices_json, play_count, last_played_at)
+      VALUES (?, ?, ?, ?, 1, ?)
+      ON CONFLICT(question_id) DO UPDATE SET
+        title = excluded.title,
+        category = excluded.category,
+        choices_json = excluded.choices_json,
+        play_count = challenge_question_stats.play_count + 1,
+        last_played_at = excluded.last_played_at
+    `).bind(card.id, card.title, card.category, JSON.stringify(card.choices), playedAt));
+    await env.REMOTE_DB.batch(statements);
+    return;
+  }
+  const key = 'challenge:question-stats';
+  const current = await env.REMOTE_KV.get(key, { type: 'json' }) || {};
+  for (const card of cards) {
+    const previous = current[card.id] || {};
+    current[card.id] = {
+      id: card.id,
+      title: card.title,
+      category: card.category,
+      choices: card.choices,
+      playCount: Number(previous.playCount || 0) + 1,
+      lastPlayedAt: playedAt,
+    };
+  }
+  await env.REMOTE_KV.put(key, JSON.stringify(current));
+}
+
+async function popularQuestions(env) {
+  if (await ensureD1(env)) {
+    const result = await env.REMOTE_DB.prepare(`
+      SELECT question_id, title, category, choices_json, play_count, last_played_at
+      FROM challenge_question_stats
+      ORDER BY play_count DESC, last_played_at DESC
+      LIMIT 50
+    `).all();
+    return (result?.results || []).map((row) => ({
+      id: row.question_id,
+      title: row.title,
+      category: row.category,
+      choices: JSON.parse(row.choices_json),
+      playCount: Number(row.play_count),
+      lastPlayedAt: Number(row.last_played_at),
+    }));
+  }
+  const current = await env.REMOTE_KV.get('challenge:question-stats', { type: 'json' }) || {};
+  return Object.values(current)
+    .sort((left, right) => Number(right.playCount) - Number(left.playCount)
+      || Number(right.lastPlayedAt) - Number(left.lastPlayedAt))
+    .slice(0, 50);
 }
 
 async function putKvRoom(env, code, room) {

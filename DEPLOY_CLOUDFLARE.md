@@ -21,7 +21,7 @@ This site is designed to deploy as static assets with Cloudflare Workers routing
 
 Do not ignore `wrangler.jsonc`; it contains the `ASSETS` binding and Worker entry point.
 
-「みんなに挑戦してもらう」はゲーム用D1の`REMOTE_DB`を使用する。デプロイ前に`migrations/0010_challenge_rooms.sql`を本番D1へ適用する。挑戦者上限は画面表示だけでなくD1への条件付きINSERTでも50人に固定され、クイズと参加情報は作成から30日後にCronで削除される。
+「みんなに挑戦してもらう」はゲーム用D1の`REMOTE_DB`を使用する。デプロイ前に`migrations/0010_challenge_rooms.sql`と`migrations/0011_challenge_ranking_library.sql`を本番D1へ順番に適用する。挑戦者上限は画面表示だけでなくD1への条件付きINSERTでも50人に固定され、クイズと参加情報は作成から30日後にCronで削除される。0011はランキング公開同意日時と、匿名のお題別プレイ回数を追加する。
 
 旧LIVEのリアルタイム基盤は既存購入・運用記録の保全用としてコードを残している。新規の公開入口は閉じ、旧ゲームURLは`/challenge`へ恒久転送する。
 
