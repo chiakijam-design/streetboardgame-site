@@ -60,8 +60,43 @@ test.beforeEach(async ({ page, request }) => {
 
 test('トップは彼氏・彼女の愛情判定と挑戦モードの2本だけを案内する', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'みんなに挑戦してもらう', exact: true }).first()).toHaveAttribute('href', '/challenge');
+  const loveButton = page.getByRole('button', { name: '彼氏の愛情を判定する' });
+  const challengeButton = page.getByRole('link', { name: 'みんなに挑戦してもらう', exact: true }).first();
+  await expect(loveButton).toBeVisible();
+  await expect(challengeButton).toHaveAttribute('href', '/challenge');
+  const [loveStyle, challengeStyle] = await Promise.all([
+    loveButton.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        backgroundColor: style.backgroundColor,
+        border: style.border,
+        borderRadius: style.borderRadius,
+        boxShadow: style.boxShadow,
+        color: style.color,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        minHeight: style.minHeight,
+      };
+    }),
+    challengeButton.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        backgroundColor: style.backgroundColor,
+        border: style.border,
+        borderRadius: style.borderRadius,
+        boxShadow: style.boxShadow,
+        color: style.color,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        minHeight: style.minHeight,
+      };
+    }),
+  ]);
+  expect(challengeStyle).toEqual(loveStyle);
+  await expect(page.getByText('メイン', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('NEW', { exact: true })).toHaveCount(0);
   for (const removedLabel of [
     '友達の友情を判定する',
     '家族の絆を判定する',

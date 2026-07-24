@@ -1735,14 +1735,14 @@ function TopScreen({ onStart, onLovePage }) {
       {/* 背景ノイズ感 (薄いハート散らし) */}
       <Decor />
       <h1 id="site-title" style={srOnlyStyle()}>
-        わたちゃん 彼氏の愛情判定ゲーム
+        わたちゃん 彼氏の愛情判定ゲーム・みんなに挑戦してもらう
       </h1>
       <p style={srOnlyStyle()}>
         彼氏と彼女を入れ替えて遊べる無料カップル診断ゲームと、自分の答えを最大50人に予想してもらう10問の挑戦モードを公開しています。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        <PillLabel>彼氏の愛情判定ゲーム</PillLabel>
+        <PillLabel>2つのゲームを無料で遊べる</PillLabel>
 
         <div style={{ marginTop: 28, marginBottom: 8 }}>
           <LogoText size={42}>私のこと、</LogoText>
@@ -1793,7 +1793,7 @@ function TopScreen({ onStart, onLovePage }) {
 
       {/* CTA */}
       <div style={{ padding: '0 24px', position: 'relative', zIndex: 1 }}>
-        <button onClick={onStart} style={primaryBtn()}>
+        <button aria-label="彼氏の愛情を判定する" onClick={onStart} style={primaryBtn()}>
           彼氏の愛情を判定する
           <span style={{
             display: 'inline-block', marginLeft: 6,
@@ -1804,33 +1804,30 @@ function TopScreen({ onStart, onLovePage }) {
         <div style={{
           marginTop: 8,
           textAlign: 'center',
-          fontSize: 10,
+          fontSize: 11,
           lineHeight: 1.5,
           color: proto.white,
-          opacity: 0.82,
-          fontWeight: 800,
+          opacity: 0.88,
+          fontWeight: 700,
         }}>
           彼氏と彼女を入れ替えて、どちらの愛情も判定できます
         </div>
-        <a href="/challenge" style={{
+        <a href="/challenge" aria-label="みんなに挑戦してもらう" style={{
+          ...primaryBtn(),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: 54,
           marginTop: 12,
-          padding: '10px 14px',
-          borderRadius: 10,
-          border: `3px solid ${proto.black}`,
-          background: 'rgba(255,255,255,0.2)',
-          color: proto.white,
-          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
+          boxSizing: 'border-box',
           textDecoration: 'none',
           textAlign: 'center',
-          fontWeight: 900,
-          fontSize: 16,
-          lineHeight: 1.45,
         }}>
           みんなに挑戦してもらう
+          <span style={{
+            display: 'inline-block', marginLeft: 6,
+            color: proto.yellow, fontSize: 18,
+            textShadow: '1px 1px 0 #000',
+          }}>▶</span>
         </a>
         <div style={{
           marginTop: 9,
@@ -1901,8 +1898,8 @@ function TopScreen({ onStart, onLovePage }) {
           textShadow: '1px 1px 0 rgba(0,0,0,0.25)',
         }}>まずはどんなゲームか知りたい</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <SeriesCard emoji="💕" title="彼氏の愛情判定" status="メイン" href="/love" onClick={onLovePage} />
-          <SeriesCard emoji="📣" title="みんなに挑戦してもらう" status="NEW" href="/challenge" />
+          <SeriesCard emoji="💕" title="彼氏の愛情判定" status="5問・2人で遊ぶ" href="/love" onClick={onLovePage} />
+          <SeriesCard emoji="📣" title="みんなに挑戦してもらう" status="10問・最大50人" href="/challenge" />
         </div>
       </nav>
 
@@ -2472,7 +2469,7 @@ function CardStack() {
 }
 
 function SeriesCard({ emoji, title, status = 'COMING SOON', href = '#', onClick }) {
-  const active = Boolean(onClick);
+  const active = href !== '#';
   const inner = (
     <>
       <div style={{ fontSize: 28, marginBottom: 4 }}>{emoji}</div>
@@ -2509,8 +2506,10 @@ function SeriesCard({ emoji, title, status = 'COMING SOON', href = '#', onClick 
   if (active) {
     return (
       <a href={href} onClick={(event) => {
-        event.preventDefault();
-        onClick();
+        if (onClick) {
+          event.preventDefault();
+          onClick();
+        }
       }} style={{
         ...style,
         fontFamily: proto.body,
