@@ -2,6 +2,13 @@
 
 This folder is the Codex-managed copy of the Genspark-built `streetboardgame.com` site.
 
+## Current public game scope
+
+- `/` and `/love`: boyfriend/girlfriend love check; both roles remain switchable.
+- `/challenge`: ten-question reusable challenge link for up to 50 participants.
+- Friend, family, boardgame, remote, remote-boardgame and YouTuber LIVE public routes redirect to `/challenge`.
+- Legacy LIVE backend and purchase records remain for existing operational and legal obligations.
+
 ## Current Site
 
 - Domain: `streetboardgame.com`

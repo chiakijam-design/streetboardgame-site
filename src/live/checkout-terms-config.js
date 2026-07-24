@@ -1,6 +1,6 @@
 export const CHECKOUT_TERMS = Object.freeze({
   version: '1.2',
-  effectiveDate: '2026-07-23',
+  effectiveDate: '2026-07-24',
   url: 'https://www.streetboardgame.com/terms',
-  documentSha256: 'd67a994b84aac6591c50a74a3a87bf6b4b50907df984a94419dfd469067f065c',
+  documentSha256: 'a03df41139fb9e129023f88a335e142a4b72201fe9e5a371d365bf93213a0288',
 });

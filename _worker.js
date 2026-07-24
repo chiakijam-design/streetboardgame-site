@@ -1,4 +1,5 @@
 import { handleLiveApi } from './src/live/api.js';
+import { handleChallengeApi } from './src/challenge/api.js';
 import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
@@ -26,6 +27,15 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
 const BOARDGAME_RESULT_SHARE_VERSION = 'result-20260724-1';
 const HASHED_JS_PATH = /^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12})\.js$/i;
+const LEGACY_GAME_PATHS = new Set([
+  '/friends',
+  '/family',
+  '/boardgame',
+  '/remote',
+  '/remote-boardgame',
+  '/live',
+  '/live-guide',
+]);
 const LEGAL_PAGE_FILES = Object.freeze({
   '/terms': '/terms.html',
   '/privacy': '/privacy.html',
@@ -66,8 +76,9 @@ async function handleRequest(request, env) {
 
     const cleanHtmlPaths = {
       '/index.html': '/',
-      '/remote.html': '/remote',
-      '/live.html': '/live',
+      '/challenge.html': '/challenge',
+      '/remote.html': '/challenge',
+      '/live.html': '/challenge',
       '/live_ops.html': '/live-ops',
     };
     if (cleanHtmlPaths[rawPath]) {
@@ -80,6 +91,35 @@ async function handleRequest(request, env) {
 
     if (path.startsWith('/api/remote')) {
       return handleRemoteApi(request, env, path);
+    }
+
+    if (path.startsWith('/api/challenge')) {
+      return handleChallengeApi(request, env, path);
+    }
+
+    if (rawPath !== '/' && rawPath.endsWith('/') && path === '/challenge') {
+      return Response.redirect(url.origin + path + url.search, 301);
+    }
+
+    if (path === '/challenge') {
+      const challengeUrl = new URL('/challenge.html', url.origin);
+      const response = await env.ASSETS.fetch(new Request(challengeUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      if (url.searchParams.has('room')) {
+        headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+      }
+      return new Response(request.method === 'HEAD' ? null : await response.text(), {
+        status: response.status,
+        headers,
+      });
+    }
+
+    if (LEGACY_GAME_PATHS.has(path)) {
+      return Response.redirect(url.origin + '/challenge', 301);
     }
 
     if (rawPath !== '/' && rawPath.endsWith('/') && (path === '/remote' || path === '/remote-boardgame')) {
@@ -337,13 +377,13 @@ async function handleRequest(request, env) {
       },
       '/about': {
         title: 'About｜わたちゃん・彼氏の愛情判定ゲーム',
-        description: 'わたちゃんは、彼氏の愛情判定ゲームをメインに、同じゲーム内で遊べる彼女版、友達の友情判定、家族の絆判定へ広がるスマホ向け無料ゲームサイトです。',
+        description: 'わたちゃんは、彼氏と彼女を入れ替えて遊べる愛情判定と、自分の答えを最大50人に予想してもらう挑戦モードを公開する無料ゲームサイトです。',
         url: CANONICAL_ORIGIN + '/about',
         ogTitle: 'About｜わたちゃん',
         imageAlt: 'わたちゃん 彼氏の愛情判定ゲーム',
         pageId: CANONICAL_ORIGIN + '/about#webpage',
         noscriptTitle: 'About｜わたちゃん',
-        noscriptBody: 'わたちゃんは、彼氏の彼女理解度を測定する「彼氏の愛情判定ゲーム」をメインにしたスマホ向け無料ゲームサイトです。彼女版は同じゲーム内で切り替えでき、友達の友情判定、家族の絆判定も公開しています。',
+        noscriptBody: 'わたちゃんは、彼氏と彼女を入れ替えて遊べる「彼氏の愛情判定ゲーム」と、自分の10問の答えを最大50人に予想してもらう挑戦モードを公開しています。',
       },
       '/product': {
         title: '製品版｜私のこと、ちゃんと分かってるよね？',
@@ -521,7 +561,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/">彼氏の愛情を判定する</a> / <a href="/love">彼氏の愛情判定の遊び方を見る</a> / <a href="/friends">友達の友情判定を見る</a> / <a href="/family">家族の絆判定を見る</a> / <a href="/boardgame">ボドゲ仲間の絆判定を見る</a> / <a href="/live-guide">YouTube企画・視聴者参加型LIVEを見る</a> / <a href="/live">Youtuberと視聴者の絆を判定する</a> / <a href="/product">製品版を見る</a></p>
+    <p><a href="/">彼氏・彼女の愛情を判定する</a> / <a href="/love">愛情判定の遊び方を見る</a> / <a href="/challenge">みんなに挑戦してもらう</a> / <a href="/product">製品版を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -566,7 +606,7 @@ function buildStructuredData(page) {
       url: 'https://www.streetboardgame.com/',
       name: 'streetboardgame.com',
       inLanguage: 'ja',
-      description: '彼氏の愛情判定ゲームをメインに、友達の友情判定や家族の絆判定などのシリーズを展開するオリジナルゲームサイトです。',
+      description: '彼氏と彼女を入れ替えて遊べる愛情判定と、自分の答えを最大50人に予想してもらう挑戦モードを公開するオリジナルゲームサイトです。',
       publisher: {
         '@id': organizationId,
       },
@@ -578,16 +618,7 @@ function buildStructuredData(page) {
           '@id': 'https://www.streetboardgame.com/love#love-game',
         },
         {
-          '@id': 'https://www.streetboardgame.com/friends#friend-game',
-        },
-        {
-          '@id': 'https://www.streetboardgame.com/family#family-game',
-        },
-        {
-          '@id': 'https://www.streetboardgame.com/boardgame#boardgame-bond-game',
-        },
-        {
-          '@id': 'https://www.streetboardgame.com/live-guide#live-game',
+          '@id': 'https://www.streetboardgame.com/challenge#challenge-game',
         },
       ],
     },
@@ -596,19 +627,13 @@ function buildStructuredData(page) {
       '@id': 'https://www.streetboardgame.com/#site-navigation',
       name: [
         '彼氏の愛情判定',
-        '友達の友情判定',
-        '家族の絆判定',
-        'ボドゲ仲間の絆判定',
-        'YouTuberと視聴者の絆を判定する、私のことちゃんとわかってるよね?Youtubeライブver.',
+        'みんなに挑戦してもらう',
         '製品版',
         'About',
       ],
       url: [
         'https://www.streetboardgame.com/',
-        'https://www.streetboardgame.com/friends',
-        'https://www.streetboardgame.com/family',
-        'https://www.streetboardgame.com/boardgame',
-        'https://www.streetboardgame.com/live-guide',
+        'https://www.streetboardgame.com/challenge',
         'https://www.streetboardgame.com/product',
         'https://www.streetboardgame.com/about',
       ],

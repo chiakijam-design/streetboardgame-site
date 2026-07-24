@@ -2,6 +2,7 @@ import { ensureLivePurchaseD1, getLivePurchaseDb } from '../live/purchases.js';
 
 export const PRIVACY_RETENTION = Object.freeze({
   remoteGameHours: 24,
+  challengeGameDays: 30,
   liveGameHoursAfterEnd: 24,
   paidAssetDays: 30,
   youtubeCaptionDays: 30,
@@ -18,6 +19,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export async function runPrivacyCleanup(env, now = Date.now()) {
   const summary = {
     expiredGames: 0,
+    expiredChallengeRooms: 0,
     deletedCreatorAssets: 0,
     expiredPurchaseAssets: 0,
     anonymizedPurchases: 0,
@@ -55,6 +57,22 @@ async function cleanupGameDatabase(env, now, summary) {
   }
 
   await safeRun(env.REMOTE_DB, 'DELETE FROM remote_rooms WHERE expires_at < ?', [now]);
+  const expiredChallenges = await safeRows(
+    env.REMOTE_DB,
+    'SELECT code FROM challenge_rooms WHERE expires_at < ? LIMIT 500',
+    [now],
+  );
+  if (expiredChallenges.length) {
+    const codes = expiredChallenges.map((row) => String(row.code));
+    const placeholders = codes.map(() => '?').join(',');
+    await safeRun(env.REMOTE_DB, `DELETE FROM challenge_participants WHERE room_code IN (${placeholders})`, codes);
+    const deletedRooms = await safeRun(
+      env.REMOTE_DB,
+      `DELETE FROM challenge_rooms WHERE code IN (${placeholders}) AND expires_at < ?`,
+      [...codes, now],
+    );
+    summary.expiredChallengeRooms = changes(deletedRooms);
+  }
   await safeRun(env.REMOTE_DB, 'DELETE FROM remote_rate_limits WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_rate_limits WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_reservations WHERE expires_at < ?', [now]);

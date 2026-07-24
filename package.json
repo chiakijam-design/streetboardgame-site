@@ -17,5 +17,8 @@
     "esbuild": "0.25.6",
     "react": "18.3.1",
     "react-dom": "18.3.1"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4"
   }
 }

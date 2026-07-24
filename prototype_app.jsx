@@ -1058,23 +1058,11 @@ function App() {
   // URL からのリクエスト (旧Wix URLリダイレクト): window.__INITIAL_SCREEN
   const urlScreen = (typeof window !== 'undefined' && window.__INITIAL_SCREEN) || null;
   const recoveredViewportState = loadViewportRecoveryState();
-  const sharedBoardgameResult = useMemo(() => (
-    typeof window !== 'undefined'
-      ? parseBoardgameResultShareHash(window.location.hash, window.BOARDGAME_CARDS)
-      : null
-  ), []);
-  const sharedBoardgameInitial = sharedBoardgameResult
-    ? {
-      screen: 'boardgameResult',
-      qIdx: 0,
-      answers: sharedBoardgameResult.answers,
-      cards: sharedBoardgameResult.cards,
-      playerCount: sharedBoardgameResult.playerCount,
-      playerNames: normalizePlayerNames({ boardgame: sharedBoardgameResult.players }),
-      boardgameTargetIndex: 0,
-    }
-    : null;
-  const initial = sharedBoardgameInitial || recoveredViewportState || (urlScreen
+  const recoveredScreen = String(recoveredViewportState?.screen || '');
+  const activeRecoveredState = /^(friend|family|boardgame)/.test(recoveredScreen) || recoveredScreen === 'livePage'
+    ? null
+    : recoveredViewportState;
+  const initial = activeRecoveredState || (urlScreen
     ? { screen: urlScreen, qIdx: 0, answers: [], cards: [] }
     : { screen: 'top', qIdx: 0, answers: [], cards: [] });
   // 使ったら消す (リロード時に二重発動しないように)
@@ -1139,8 +1127,8 @@ function App() {
 
   useEffect(() => {
     preloadCanvasCharacterImage();
-    if (!sharedBoardgameResult) savePlayerNames(playerNames);
-  }, [playerNames, sharedBoardgameResult]);
+    savePlayerNames(playerNames);
+  }, [playerNames]);
 
   useEffect(() => {
     if (screen === 'about' && window.__SCROLL_TO_CONTACT) return;
@@ -1396,13 +1384,7 @@ function App() {
         {screen === 'top' && (
           <TopScreen
             onStart={() => setScreen('intro')}
-            onFriend={() => setScreen('friendIntro')}
-            onFamily={() => setScreen('familyIntro')}
-            onBoardgame={() => setScreen('boardgameIntro')}
             onLovePage={() => setScreen('lovePage')}
-            onFriendPage={() => setScreen('friendPage')}
-            onFamilyPage={() => setScreen('familyPage')}
-            onBoardgamePage={() => setScreen('boardgamePage')}
           />
         )}
         {screen === 'lovePage' && (
@@ -1740,7 +1722,7 @@ function App() {
 // ・中央に巨大な白+シアン縁取りロゴ
 // ・右下に黄色注意書きシール
 // ─────────────────────────────────────────────────────
-function TopScreen({ onStart, onFriend, onFamily, onBoardgame, onLovePage, onFriendPage, onFamilyPage, onBoardgamePage }) {
+function TopScreen({ onStart, onLovePage }) {
   return (
     <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
@@ -1756,7 +1738,7 @@ function TopScreen({ onStart, onFriend, onFamily, onBoardgame, onLovePage, onFri
         わたちゃん 彼氏の愛情判定ゲーム
       </h1>
       <p style={srOnlyStyle()}>
-        彼氏の彼女理解度を測定できる無料カップル診断ゲームです。大学生カップルのデート、飲み会、旅行、おうち時間にもスマホ1台で遊べます。彼氏の愛情判定をメインに、同じゲーム内で遊べる彼女版、友達の友情判定、家族の絆判定、ボドゲ仲間の絆判定も公開中です。
+        彼氏と彼女を入れ替えて遊べる無料カップル診断ゲームと、自分の答えを最大50人に予想してもらう10問の挑戦モードを公開しています。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -1828,9 +1810,9 @@ function TopScreen({ onStart, onFriend, onFamily, onBoardgame, onLovePage, onFri
           opacity: 0.82,
           fontWeight: 800,
         }}>
-          メイン作品、彼氏の愛情判定ゲーム
+          彼氏と彼女を入れ替えて、どちらの愛情も判定できます
         </div>
-        <a href="/remote" style={{
+        <a href="/challenge" style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -1839,76 +1821,16 @@ function TopScreen({ onStart, onFriend, onFamily, onBoardgame, onLovePage, onFri
           padding: '10px 14px',
           borderRadius: 10,
           border: `3px solid ${proto.black}`,
-          background: proto.white,
-          color: proto.black,
-          boxShadow: `4px 4px 0 ${proto.black}`,
+          background: 'rgba(255,255,255,0.2)',
+          color: proto.white,
+          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
           textDecoration: 'none',
           textAlign: 'center',
           fontWeight: 900,
-          fontSize: 14,
+          fontSize: 16,
           lineHeight: 1.45,
         }}>
-          遠隔で、恋人や友達と二人の理解度チェック
-        </a>
-        <button onClick={onFriend} style={{
-          ...secondaryBtn(),
-          marginTop: 12,
-          background: 'rgba(255,255,255,0.2)',
-          color: proto.white,
-          border: '2.5px solid rgba(255,255,255,0.94)',
-          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
-        }}>
-          友達の友情を判定する
-        </button>
-        <button onClick={onFamily} style={{
-          ...secondaryBtn(),
-          marginTop: 10,
-          background: 'rgba(255,255,255,0.2)',
-          color: proto.white,
-          border: '2.5px solid rgba(255,255,255,0.94)',
-          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
-        }}>
-          家族の絆を判定する
-        </button>
-        <button onClick={onBoardgame} style={{
-          ...secondaryBtn(),
-          marginTop: 10,
-          background: 'rgba(255,255,255,0.2)',
-          color: proto.white,
-          border: '2.5px solid rgba(255,255,255,0.94)',
-          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
-        }}>
-          ボドゲ仲間の絆を判定する
-        </button>
-        <a href="/remote-boardgame" style={{
-          ...secondaryBtn(),
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: 10,
-          background: 'rgba(255,255,255,0.2)',
-          color: proto.white,
-          border: '2.5px solid rgba(255,255,255,0.94)',
-          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
-          textDecoration: 'none',
-          textAlign: 'center',
-        }}>
-          遠隔で、ボドゲ仲間と二人の理解度チェック
-        </a>
-        <a href="/live" style={{
-          ...secondaryBtn(),
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: 10,
-          background: 'rgba(255,255,255,0.2)',
-          color: proto.white,
-          border: '2.5px solid rgba(255,255,255,0.94)',
-          boxShadow: '0 3px 0 rgba(0,0,0,0.42), 0 6px 12px rgba(0,0,0,0.12)',
-          textDecoration: 'none',
-          textAlign: 'center',
-        }}>
-          Youtuberと視聴者の絆を判定する
+          みんなに挑戦してもらう
         </a>
         <div style={{
           marginTop: 9,
@@ -1922,7 +1844,7 @@ function TopScreen({ onStart, onFriend, onFamily, onBoardgame, onLovePage, onFri
           marginLeft: 'auto',
           marginRight: 'auto',
         }}>
-          シリーズ作品の友情判定版・家族の絆判定版・ボドゲ仲間の絆判定版・Youtuber専用LIVEもお楽しみください
+          自分が先に10問へ回答し、専用URLから最大50人に答えを予想してもらえます
         </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
           marginTop: 12,
@@ -1980,10 +1902,7 @@ function TopScreen({ onStart, onFriend, onFamily, onBoardgame, onLovePage, onFri
         }}>まずはどんなゲームか知りたい</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <SeriesCard emoji="💕" title="彼氏の愛情判定" status="メイン" href="/love" onClick={onLovePage} />
-          <SeriesCard emoji="👯" title="友達の友情判定" status="シリーズ" href="/friends" onClick={onFriendPage} />
-          <SeriesCard emoji="👨‍👩‍👧" title="家族の絆判定" status="シリーズ" href="/family" onClick={onFamilyPage} />
-          <SeriesCard emoji="🎲" title="ボドゲ仲間の絆判定" status="シリーズ" href="/boardgame" onClick={onBoardgamePage} />
-          <SeriesCard emoji="📣" title="Youtuberと視聴者の絆判定" status="NEW" href="/live-guide" onClick={() => window.location.assign('/live-guide')} />
+          <SeriesCard emoji="📣" title="みんなに挑戦してもらう" status="NEW" href="/challenge" />
         </div>
       </nav>
 
@@ -2035,8 +1954,7 @@ const GAME_INTRO_CONTENT = {
     ],
     cta: '愛情判定をはじめる',
     related: [
-      { label: '友達の友情判定を見る', href: '/friends', action: 'friend' },
-      { label: '家族の絆判定を見る', href: '/family', action: 'family' },
+      { label: 'みんなに挑戦してもらう', href: '/challenge' },
     ],
   },
   friend: {
@@ -7275,20 +7193,17 @@ function AboutScreen() {
         <Card>
           <div style={{ fontSize: 12, lineHeight: 1.8, color: proto.text, fontWeight: 600 }}>
             ストリートボードゲームは、「彼氏の愛情判定ゲーム」をメインにしたwebで遊べるゲームサイトです。
-            彼女のことを、彼氏はどれだけ分かっているか、理解度チェックで彼氏の愛情を判定します。
-            シリーズの作品として、友達の友情判定、家族の絆判定、ボドゲ仲間の絆判定も遊べます。
-            デート中・飲み会・旅行・おうち時間に、スマホ1台、無料、会員登録なしでお楽しみください。
+            彼氏と彼女を入れ替えて、どちらの答えを相手が当てるか選べます。
+            もう一つの「みんなに挑戦してもらう」では、自分が答えた10問を最大50人に予想してもらえます。
+            デート中・飲み会・旅行・おうち時間に、無料でお楽しみください。
           </div>
         </Card>
 
-        <SectionTitle style={{ marginTop: 22 }}>♡ シリーズ展開</SectionTitle>
-        <nav aria-label="ゲームシリーズ">
+        <SectionTitle style={{ marginTop: 22 }}>♡ 2つの遊び方</SectionTitle>
+        <nav aria-label="ゲームの遊び方">
           <Card>
             <SeriesRow emoji="💕" title="彼氏の愛情判定" sub="メインゲーム" active href="/love" />
-            <SeriesRow emoji="👯" title="友達の友情判定" sub="シリーズ" active href="/friends" />
-            <SeriesRow emoji="👨‍👩‍👧" title="家族の絆判定" sub="シリーズ" active href="/family" />
-            <SeriesRow emoji="🎲" title="ボドゲ仲間の絆判定" sub="シリーズ" active href="/boardgame" />
-            <SeriesRow emoji="📣" title="YouTuber専用LIVE" sub="ライブ配信企画" active href="/live-guide" last />
+            <SeriesRow emoji="📣" title="みんなに挑戦してもらう" sub="最大50人・10問" active href="/challenge" last />
           </Card>
         </nav>
 

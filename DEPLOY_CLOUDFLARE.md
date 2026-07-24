@@ -21,7 +21,9 @@ This site is designed to deploy as static assets with Cloudflare Workers routing
 
 Do not ignore `wrangler.jsonc`; it contains the `ASSETS` binding and Worker entry point.
 
-LIVEのリアルタイム投票は`wrangler.jsonc`に定義した2種類のDurable Objectsと、SQLiteストレージを指定した`exports`を使用する。これらのバインディングがない環境、または`LIVE_OPERATIONAL_VIEWER_LIMIT`が未設定の環境では安全のため視聴者上限は50人になる。デプロイ後は契約環境でWebSocket接続と段階負荷試験を確認し、環境変数を1,000、5,000、10,000と引き上げてから1万人枠を本番企画へ案内する。
+「みんなに挑戦してもらう」はゲーム用D1の`REMOTE_DB`を使用する。デプロイ前に`migrations/0010_challenge_rooms.sql`を本番D1へ適用する。挑戦者上限は画面表示だけでなくD1への条件付きINSERTでも50人に固定され、クイズと参加情報は作成から30日後にCronで削除される。
+
+旧LIVEのリアルタイム基盤は既存購入・運用記録の保全用としてコードを残している。新規の公開入口は閉じ、旧ゲームURLは`/challenge`へ恒久転送する。
 
 YouTube Data API v3、チャンネル所有確認、字幕由来の内輪問題生成、非公開R2、Cloudflare Images、有料画像権限を有効化する場合は、先に[`docs/LIVE_EXTERNAL_SERVICES.md`](docs/LIVE_EXTERNAL_SERVICES.md)の資格情報・OAuth審査・バインディングと、ゲーム用D1の`0009_live_youtube_caption_sources.sql`までの適用を完了する。R2バケット作成前に`wrangler.jsonc`の`LIVE_MEDIA`コメントを外すとデプロイが失敗するため、作成と契約を先に行う。
 
