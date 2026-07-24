@@ -60,6 +60,7 @@ function escapeHtml(value) {
 
 function render() {
   if (!app) return;
+  document.documentElement.dataset.challengeMode = state.mode;
   const body = state.loading
     ? loadingView()
     : state.mode === 'create' ? createStartView()
@@ -142,23 +143,43 @@ function questionView(isCreator) {
     isCreator
       ? '選んだ答えは、挑戦者が10問すべて回答するまで公開されません。'
       : '出題者が選んだ答えを予想してください。',
-    `<section class="challenge-question-wrap" data-testid="${isCreator ? 'creator-question' : 'participant-question'}">
+    `<section class="challenge-question-wrap challenge-answer-screen ${isCreator ? 'is-creator' : 'is-participant'}" data-testid="${isCreator ? 'creator-question' : 'participant-question'}">
       <div class="challenge-progress" aria-label="${state.questionIndex + 1}問目、全10問">
         ${Array.from({ length: QUESTION_COUNT }, (_, index) => `<span class="${index <= state.questionIndex ? 'is-active' : ''}"></span>`).join('')}
       </div>
-      <article class="challenge-card">
+      <article class="challenge-card" data-testid="challenge-paper-card">
         <div class="challenge-q-number">Q${state.questionIndex + 1}/10</div>
-        <h2>${escapeHtml(card.title)}</h2>
-        <div class="challenge-choices">
+        <div class="challenge-card-title"><h2>${escapeHtml(card.title)}</h2></div>
+        <div class="challenge-card-choices">
           ${card.choices.map((choice, index) => `
-            <button data-action="answer" data-choice="${index}" class="challenge-choice ${selected === index ? 'is-selected' : ''}">
+            <div class="challenge-card-choice">
               <i style="background:${COLORS[index]}" aria-hidden="true"></i>
               <span>${escapeHtml(choice)}</span>
-              <small>${selected === index ? '選択中' : COLOR_NAMES[index]}</small>
-            </button>
+            </div>
           `).join('')}
         </div>
       </article>
+      <div class="challenge-answer-pad" data-testid="challenge-answer-pad">
+        <div class="challenge-answer-pad-heading">
+          <span>${isCreator ? '本人の番' : '予想する番'}</span>
+          <small>タップで決定</small>
+        </div>
+        <div class="challenge-color-choices">
+          ${card.choices.map((choice, index) => `
+            <button
+              type="button"
+              data-action="answer"
+              data-choice="${index}"
+              class="challenge-color-choice ${selected === index ? 'is-selected' : ''}"
+              aria-label="${escapeHtml(choice)}を選ぶ"
+            >
+              <i style="background:${COLORS[index]}" aria-hidden="true"></i>
+              <span>${COLOR_NAMES[index]}</span>
+            </button>
+          `).join('')}
+        </div>
+        <p>ドットの色は、お題カード左側の5色と対応しています</p>
+      </div>
       ${state.questionIndex > 0 ? '<button class="challenge-secondary" data-action="previous-question">前の問題へ戻る</button>' : ''}
       <p class="challenge-note challenge-centered">ここまでの回答はこの端末へ自動保存されています。</p>
     </section>`,

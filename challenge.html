@@ -19,6 +19,7 @@
   <meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp-challenge.png?v=20260725-ogp-1">
   <link rel="icon" href="/favicon.ico">
   <style>
+    @font-face{font-family:"HuiFontP29";src:url("/assets/fonts/HuiFontP29.ttf") format("truetype");font-display:swap}
     :root{--pink:#ec4683;--pink2:#f06e9f;--black:#191919;--white:#fff;--yellow:#ffe36f;--cyan:#55c9dd;--shadow:5px 7px 0 var(--black)}
     *{box-sizing:border-box}
     body{margin:0;background:var(--pink);color:var(--black);font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;font-weight:700}
@@ -60,6 +61,45 @@
     .challenge-centered{text-align:center}.challenge-loader{width:38px;height:38px;margin:8px auto 16px;border:5px solid #eee;border-top-color:var(--pink);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
     @media(min-width:640px){.challenge-page{padding:28px 20px 60px}.challenge-panel,.challenge-question-wrap{padding:28px}.challenge-choices{grid-template-columns:1fr 1fr}.challenge-choice:last-child{grid-column:1/-1}.challenge-library{grid-template-columns:1fr 1fr}.challenge-library-card:last-child:nth-child(odd){grid-column:1/-1}}
     @media(max-width:420px){.challenge-feature-nav,.challenge-button-row{grid-template-columns:1fr}.challenge-share-row{grid-template-columns:1fr}.challenge-ranking-list li{grid-template-columns:56px 1fr auto}.challenge-top b{max-width:210px}}
+    html[data-challenge-mode$="-answer"] .challenge-page{width:min(100%,480px);padding-bottom:calc(158px + env(safe-area-inset-bottom))}
+    html[data-challenge-mode$="-answer"] .challenge-top{margin-bottom:10px}
+    html[data-challenge-mode$="-answer"] .challenge-top b{max-width:260px;font-family:"HuiFontP29","ふい字",sans-serif;font-size:15px}
+    html[data-challenge-mode$="-answer"] .challenge-hero{padding:11px 14px;background:var(--yellow);color:var(--black);border:3px solid var(--black);border-radius:16px;box-shadow:4px 5px 0 var(--black)}
+    html[data-challenge-mode="participant-answer"] .challenge-hero{background:var(--cyan)}
+    html[data-challenge-mode$="-answer"] .challenge-pill{padding:3px 9px;background:var(--black);color:#fff;font-size:9px}
+    html[data-challenge-mode$="-answer"] .challenge-hero h1{margin:6px 0 3px;font-family:"HuiFontP29","ふい字",sans-serif;font-size:clamp(19px,5.4vw,25px);line-height:1.25;text-shadow:none}
+    html[data-challenge-mode$="-answer"] .challenge-hero p{font-size:11px;line-height:1.5}
+    .challenge-answer-screen{margin-top:14px;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none}
+    .challenge-answer-screen .challenge-progress{margin:0 0 10px}
+    .challenge-answer-screen .challenge-progress span{width:12px;height:12px;background:rgba(255,255,255,.9)}
+    .challenge-answer-screen .challenge-progress .is-active{width:26px;background:var(--yellow)}
+    .challenge-answer-screen.is-participant .challenge-progress .is-active{background:var(--cyan)}
+    .challenge-answer-screen .challenge-card{position:relative;min-height:528px;overflow:hidden;padding:49px 18px 23px 63px;background:repeating-linear-gradient(to bottom,#fff 0,#fff 47px,#a8d4e8 48px,#a8d4e8 50px);border:3px solid #fff;border-radius:18px;box-shadow:0 14px 30px rgba(69,16,40,.34)}
+    .challenge-answer-screen .challenge-card::before{content:"";position:absolute;top:0;bottom:0;left:47px;width:2px;background:rgba(238,132,140,.58)}
+    .challenge-answer-screen .challenge-card::after{content:"";position:absolute;right:-25px;bottom:-28px;width:74px;height:126px;background:linear-gradient(132deg,transparent 0 47%,rgba(205,205,205,.9) 49%,#fff 72%);filter:drop-shadow(-5px -3px 4px rgba(0,0,0,.18));transform:rotate(5deg);pointer-events:none}
+    .challenge-answer-screen .challenge-q-number{position:absolute;top:11px;left:12px;z-index:2;padding:5px 10px;font-family:"HuiFontP29","ふい字",sans-serif;font-size:14px;line-height:1}
+    .challenge-card-title{position:relative;z-index:1;margin:0 0 8px;padding:10px 7px;background:#75c7e6;transform:rotate(-.5deg)}
+    .challenge-card-title::before{content:"";position:absolute;left:-2px;right:-2px;top:-11px;height:13px;background:radial-gradient(circle at 7px 13px,var(--pink) 0 6px,transparent 6.5px) 0 0/28px 13px repeat-x;opacity:.68}
+    .challenge-answer-screen .challenge-card h2{margin:0;font-family:"HuiFontP29","ふい字",sans-serif;font-size:clamp(22px,6.6vw,30px);font-weight:400;line-height:1.25;text-align:center}
+    .challenge-card-choices{position:relative;z-index:1;display:grid}
+    .challenge-card-choice{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:13px;min-height:68px;font-family:"HuiFontP29","ふい字",sans-serif;font-size:clamp(21px,5.8vw,27px);font-weight:400;line-height:1.15}
+    .challenge-card-choice i{display:block;width:31px;height:31px;border:1px solid rgba(0,0,0,.15);border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,.2),inset 0 2px 2px rgba(255,255,255,.35)}
+    .challenge-answer-pad{position:fixed;left:50%;bottom:calc(3px + env(safe-area-inset-bottom));z-index:120;width:min(456px,calc(100vw - 24px));max-width:calc(100vw - 24px);transform:translateX(-50%);padding:8px 10px 7px;background:rgba(240,113,125,.96);border:3px solid var(--yellow);border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.22),inset 0 0 0 1px var(--yellow);backdrop-filter:blur(8px)}
+    .challenge-answer-screen.is-participant .challenge-answer-pad{background:rgba(71,177,197,.95);border-color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.22),inset 0 0 0 1px #fff}
+    .challenge-answer-pad-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;color:#fff}
+    .challenge-answer-pad-heading span{display:inline-flex;align-items:center;min-height:22px;padding:2px 9px;background:var(--yellow);color:var(--black);border:2px solid var(--black);border-radius:999px;box-shadow:2px 2px 0 rgba(0,0,0,.55);font-size:11px;font-weight:900}
+    .challenge-answer-screen.is-participant .challenge-answer-pad-heading span{background:#fff}
+    .challenge-answer-pad-heading small{font-size:10px;font-weight:900}
+    .challenge-color-choices{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+    .challenge-color-choice{display:flex;min-width:0;min-height:55px;align-items:center;justify-content:center;flex-direction:column;padding:0;background:transparent;border:0;color:#fff;font:inherit;cursor:pointer;touch-action:manipulation}
+    .challenge-color-choice i{display:block;width:38px;height:38px;border:0;border-radius:50%;box-shadow:0 4px 10px rgba(0,0,0,.28),inset 0 -3px 6px rgba(0,0,0,.15),inset 0 2px 3px rgba(255,255,255,.4);transition:transform .14s,box-shadow .14s}
+    .challenge-color-choice span{margin-top:3px;font-size:9px;font-weight:900;line-height:1;text-shadow:1px 1px 0 rgba(0,0,0,.35)}
+    .challenge-color-choice:active i,.challenge-color-choice.is-selected i{transform:translateY(-4px) scale(1.1);box-shadow:0 0 0 3px #fff,0 0 0 6px var(--yellow),0 7px 14px rgba(0,0,0,.3)}
+    .challenge-answer-screen.is-participant .challenge-color-choice:active i,.challenge-answer-screen.is-participant .challenge-color-choice.is-selected i{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--cyan),0 7px 14px rgba(0,0,0,.3)}
+    .challenge-answer-pad>p{margin:2px 0 0;color:#fff;font-size:8px;line-height:1.35;text-align:center;text-shadow:1px 1px 0 rgba(0,0,0,.35)}
+    .challenge-answer-screen>.challenge-secondary{margin-top:16px}
+    @media(min-width:640px){.challenge-answer-screen{padding:0}.challenge-answer-screen .challenge-card{padding-left:67px}.challenge-answer-pad{bottom:10px}}
+    @media(max-width:380px){.challenge-answer-screen .challenge-card{min-height:500px;padding-left:58px}.challenge-card-choice{min-height:63px}.challenge-color-choice i{width:34px;height:34px}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.challenge-loader{animation:none}}
   </style>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":["WebApplication","Game"],"name":"みんなに挑戦してもらう","url":"https://www.streetboardgame.com/challenge","image":"https://www.streetboardgame.com/assets/ogp-challenge.png?v=20260725-ogp-1","applicationCategory":"GameApplication","operatingSystem":"Any","isAccessibleForFree":true,"inLanguage":"ja","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"}}</script>
@@ -72,6 +112,6 @@
   <noscript><section class="challenge-panel"><h1>みんなに挑戦してもらう</h1><p>このゲームにはJavaScriptが必要です。</p><a href="/">トップへ戻る</a></section></noscript>
   <script data-build-entry="prototype_friend_data" src="/dist/prototype_friend_data-3YOIQLSI.js"></script>
   <script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
-  <script data-build-entry="challenge_game" src="/dist/challenge_game-7TKJUQJE.js"></script>
+  <script data-build-entry="challenge_game" src="/dist/challenge_game-X54TYNXM.js"></script>
 </body>
 </html>

@@ -38,6 +38,27 @@ async function answerChallengeQuestions(page, expectedMode) {
   for (let index = 0; index < 10; index += 1) {
     await expect(page.getByTestId(`${expectedMode}-question`)).toBeVisible();
     await expect(page.locator('.challenge-q-number')).toHaveText(`Q${index + 1}/10`);
+    if (index === 0) {
+      const paperCard = page.getByTestId('challenge-paper-card');
+      const answerPad = page.getByTestId('challenge-answer-pad');
+      await expect(paperCard).toBeVisible();
+      await expect(paperCard.locator('.challenge-card-choice')).toHaveCount(5);
+      await expect(answerPad).toBeVisible();
+      await expect(answerPad.locator('[data-action="answer"]')).toHaveCount(5);
+      const design = await page.evaluate(() => {
+        const card = document.querySelector('[data-testid="challenge-paper-card"]');
+        const title = card?.querySelector('h2');
+        const pad = document.querySelector('[data-testid="challenge-answer-pad"]');
+        return {
+          cardBackground: card ? getComputedStyle(card).backgroundImage : '',
+          titleFont: title ? getComputedStyle(title).fontFamily : '',
+          padPosition: pad ? getComputedStyle(pad).position : '',
+        };
+      });
+      expect(design.cardBackground).toContain('repeating-linear-gradient');
+      expect(design.titleFont).toContain('HuiFontP29');
+      expect(design.padPosition).toBe('fixed');
+    }
     await page.locator('[data-action="answer"]').first().click();
   }
 }
