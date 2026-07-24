@@ -8,8 +8,21 @@ test('top page exposes the third live challenge button with the primary design',
   await page.goto('/');
   const love = page.getByRole('button', { name: '彼氏の愛情を判定する' });
   const live = page.getByRole('link', { name: 'ライブ配信でみんなに挑戦してもらう' }).first();
+  const visual = page.getByTestId('top-character-visual');
+  const rules = page.getByTestId('top-common-rules');
+  await expect(rules).toBeVisible();
+  await expect(rules).toContainText('全シリーズ共通の遊び方');
+  await expect(rules).toContainText('どれだけ分かり合えているかチェック！');
+  await expect(page.getByTestId('top-common-rule-step')).toHaveCount(4);
   await expect(live).toBeVisible();
   await expect(live).toHaveAttribute('href', '/live-challenge');
+  const [visualBox, rulesBox, loveBox] = await Promise.all([
+    visual.boundingBox(),
+    rules.boundingBox(),
+    love.boundingBox(),
+  ]);
+  expect(visualBox?.y + visualBox?.height).toBeLessThanOrEqual(rulesBox?.y);
+  expect(rulesBox?.y + rulesBox?.height).toBeLessThanOrEqual(loveBox?.y);
   const styles = await Promise.all([love, live].map((locator) => locator.evaluate((element) => {
     const style = getComputedStyle(element);
     return {

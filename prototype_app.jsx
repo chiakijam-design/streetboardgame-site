@@ -1771,7 +1771,7 @@ function TopScreen({ onStart, onLovePage }) {
       </div>
 
       {/* ヒーローブロック: 全身の女の子 + カード3枚 */}
-      <div style={{
+      <div data-testid="top-character-visual" style={{
         padding: '12px 12px 24px',
         position: 'relative', zIndex: 1,
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
@@ -1797,6 +1797,8 @@ function TopScreen({ onStart, onLovePage }) {
           <CardStack />
         </div>
       </div>
+
+      <CommonRulesCard />
 
       {/* CTA */}
       <div style={{ padding: '0 24px', position: 'relative', zIndex: 1 }}>
@@ -2539,6 +2541,120 @@ function CardStack() {
         }
       `}</style>
     </div>
+  );
+}
+
+function CommonRulesCard() {
+  const steps = [
+    '「主役」を決めて、お題を選ぶ',
+    '主役が、自分の答えを選ぶ',
+    '相手やみんなも、同じお題に答える',
+    '答えが合った数を、結果でチェック',
+  ];
+  const stepColors = [proto.cyan, proto.pink, proto.yellow, proto.white];
+  return (
+    <section
+      data-testid="top-common-rules"
+      aria-labelledby="top-common-rules-title"
+      style={{
+        margin: '0 24px 22px',
+        padding: '18px 16px 16px',
+        position: 'relative',
+        zIndex: 1,
+        background: '#FFF1C7',
+        color: proto.black,
+        border: `3px solid ${proto.black}`,
+        borderRadius: 18,
+        boxShadow: '5px 5px 0 #000',
+      }}
+    >
+      <div style={{ textAlign: 'center' }}>
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          minHeight: 26,
+          padding: '5px 10px',
+          border: `2px solid ${proto.black}`,
+          borderRadius: 999,
+          background: proto.white,
+          fontFamily: proto.caption,
+          fontSize: 10,
+          fontWeight: 900,
+          letterSpacing: '0.08em',
+        }}>全シリーズ共通の遊び方</span>
+        <h2 id="top-common-rules-title" style={{
+          margin: '12px 0 7px',
+          fontFamily: proto.body,
+          fontSize: 18,
+          lineHeight: 1.5,
+        }}>
+          答えを合わせて、<br/>どれだけ分かり合えているかチェック！
+        </h2>
+        <p style={{
+          margin: 0,
+          fontSize: 11,
+          lineHeight: 1.7,
+          fontWeight: 700,
+        }}>
+          誰かの答えと、相手・みんなの答えが<br/>何問合うかを楽しむゲームです。
+        </p>
+      </div>
+      <ol style={{
+        display: 'grid',
+        gap: 8,
+        margin: '14px 0 0',
+        padding: 0,
+        listStyle: 'none',
+      }}>
+        {steps.map((step, index) => (
+          <li
+            key={step}
+            data-testid="top-common-rule-step"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '34px minmax(0, 1fr)',
+              gap: 10,
+              alignItems: 'center',
+              minHeight: 46,
+              padding: '7px 10px 7px 8px',
+              border: `2px solid ${proto.black}`,
+              borderRadius: 12,
+              background: proto.white,
+              boxShadow: '2px 2px 0 #000',
+              fontSize: 12,
+              lineHeight: 1.55,
+              fontWeight: 900,
+            }}
+          >
+            <b style={{
+              display: 'grid',
+              placeItems: 'center',
+              width: 32,
+              height: 32,
+              border: `2px solid ${proto.black}`,
+              borderRadius: '50%',
+              background: stepColors[index],
+              color: index === 1 ? proto.white : proto.black,
+              fontFamily: proto.caption,
+              fontSize: 12,
+            }}>{index + 1}</b>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+      <p style={{
+        margin: '13px 0 0',
+        paddingTop: 11,
+        borderTop: `2px dashed ${proto.black}`,
+        fontSize: 10,
+        lineHeight: 1.65,
+        textAlign: 'center',
+        fontWeight: 800,
+      }}>
+        シリーズによって「先に答える／同時に答える」<br/>
+        「予想する／自分の答えを選ぶ」が変わります。
+      </p>
+    </section>
   );
 }
 
