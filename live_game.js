@@ -1904,7 +1904,7 @@ function setPage(content, withTopbar = true) {
   const statusBanner = status.mode !== 'normal'
     ? `<section class="system-status ${status.mode}" role="status"><strong>${escapeHtml(status.title || 'LIVEサービスからのお知らせ')}</strong><span>${escapeHtml(status.message || '')}</span></section>`
     : '';
-  root.innerHTML = `<div class="shell">${withTopbar ? `<header class="topbar"><a class="brand" href="/live">${escapeHtml(LIVE_SERIES.name)}</a><a class="back" href="/">トップへ</a></header>` : ''}${statusBanner}${content}</div>`;
+  root.innerHTML = `<div class="shell">${withTopbar ? '<header class="topbar"><a class="back" href="/">トップへ</a></header>' : ''}${statusBanner}${content}</div>`;
 }
 
 function terminatedLiveHtml(game) {
