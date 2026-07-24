@@ -53,6 +53,7 @@ const proto = {
 };
 
 const { useState, useEffect, useMemo, useRef } = React;
+const CREATOR_QUICK_START_KEY = 'watachan:creator-quick-start:v1';
 
 const ROUND_SIZE = 5;
 const FRIEND_ROUND_SIZE = 5;
@@ -1725,6 +1726,26 @@ function App() {
 // ・右下に黄色注意書きシール
 // ─────────────────────────────────────────────────────
 function TopScreen() {
+  const [creatorName, setCreatorName] = useState('');
+  const [nameError, setNameError] = useState('');
+  const startCreatorMode = (mode) => {
+    const name = creatorName.trim();
+    if (!name) {
+      setNameError('名前を入力してください。');
+      return;
+    }
+    try {
+      window.sessionStorage.setItem(CREATOR_QUICK_START_KEY, JSON.stringify({
+        mode,
+        name,
+        createdAt: Date.now(),
+      }));
+    } catch (error) {
+      setNameError('ブラウザの一時保存を利用できません。設定を確認してください。');
+      return;
+    }
+    window.location.assign(mode === 'live' ? '/live-challenge' : '/challenge');
+  };
   return (
     <main aria-labelledby="site-title" style={{
       minHeight: '100vh',
@@ -1793,75 +1814,20 @@ function TopScreen() {
         </div>
       </div>
 
-      <CommonRulesCard />
+      <CommonRulesCard
+        creatorName={creatorName}
+        nameError={nameError}
+        onCreatorNameChange={(value) => {
+          setCreatorName(value.slice(0, 12));
+          if (nameError) setNameError('');
+        }}
+        onStart={startCreatorMode}
+      />
 
-      {/* CTA */}
+      {/* おすすめの遊ぶ場面 */}
       <div style={{ padding: '0 24px', position: 'relative', zIndex: 1 }}>
-        <a href="/challenge" aria-label="みんなに挑戦してもらう" style={{
-          ...primaryBtn(),
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: 12,
-          boxSizing: 'border-box',
-          textDecoration: 'none',
-          textAlign: 'center',
-        }}>
-          みんなに挑戦してもらう
-          <span style={{
-            display: 'inline-block', marginLeft: 6,
-            color: proto.yellow, fontSize: 18,
-            textShadow: '1px 1px 0 #000',
-          }}>▶</span>
-        </a>
-        <div style={{
-          marginTop: 9,
-          fontSize: 11,
-          lineHeight: 1.55,
-          textAlign: 'center',
-          color: proto.white,
-          opacity: 0.88,
-          fontWeight: 700,
-          maxWidth: 420,
-          marginLeft: 'auto',
-          marginRight: 'auto',
-        }}>
-          10問を選ぶ・自作する → 自分の正解を登録 → LINEなどで参加URLを送る
-        </div>
-        <a href="/live-challenge" aria-label="ライブ配信でみんなに挑戦してもらう" style={{
-          ...primaryBtn(),
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: 12,
-          boxSizing: 'border-box',
-          textDecoration: 'none',
-          textAlign: 'center',
-          lineHeight: 1.35,
-        }}>
-          ライブ配信でみんなに挑戦してもらう
-          <span style={{
-            display: 'inline-block', marginLeft: 6,
-            color: proto.yellow, fontSize: 18,
-            textShadow: '1px 1px 0 #000',
-          }}>▶</span>
-        </a>
-        <div style={{
-          marginTop: 9,
-          fontSize: 11,
-          lineHeight: 1.55,
-          textAlign: 'center',
-          color: proto.white,
-          opacity: 0.88,
-          fontWeight: 700,
-          maxWidth: 420,
-          marginLeft: 'auto',
-          marginRight: 'auto',
-        }}>
-          10問を選ぶ・自作する → 配信でURL・QR・6桁コードを案内 → 視聴者と同時回答
-        </div>
         <div aria-label="おすすめの遊ぶ場面" style={{
-          marginTop: 12,
+          marginTop: 0,
           display: 'flex',
           justifyContent: 'center',
           gap: 7,
@@ -2519,7 +2485,7 @@ function CardStack() {
   );
 }
 
-function CommonRulesCard() {
+function CommonRulesCard({ creatorName, nameError, onCreatorNameChange, onStart }) {
   const steps = [
     'あなたが、出題する10問を選ぶ・作る',
     '通常版は、自分の正解を先に登録する',
@@ -2617,10 +2583,102 @@ function CommonRulesCard() {
           </li>
         ))}
       </ol>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          onStart('challenge');
+        }}
+        style={{
+          display: 'grid',
+          gap: 10,
+          marginTop: 16,
+          paddingTop: 14,
+          borderTop: `2px dashed ${proto.black}`,
+        }}
+      >
+        <label htmlFor="top-creator-name" style={{
+          display: 'block',
+          fontSize: 12,
+          lineHeight: 1.5,
+          fontWeight: 900,
+        }}>
+          あなたの名前（12文字まで）
+        </label>
+        <input
+          id="top-creator-name"
+          data-testid="top-creator-name"
+          value={creatorName}
+          maxLength={12}
+          autoComplete="nickname"
+          placeholder="例：ちあき"
+          aria-invalid={nameError ? 'true' : 'false'}
+          aria-describedby={nameError ? 'top-creator-name-error' : undefined}
+          onChange={(event) => onCreatorNameChange(event.target.value)}
+          style={{
+            width: '100%',
+            minHeight: 50,
+            padding: '11px 14px',
+            boxSizing: 'border-box',
+            border: `2.5px solid ${proto.black}`,
+            borderRadius: 12,
+            background: proto.white,
+            color: proto.black,
+            fontFamily: proto.body,
+            fontSize: 16,
+            fontWeight: 800,
+            boxShadow: '2px 2px 0 #000',
+            outline: 'none',
+          }}
+        />
+        {nameError && (
+          <p id="top-creator-name-error" role="alert" style={{
+            margin: '-2px 0 0',
+            color: '#B81745',
+            fontSize: 11,
+            lineHeight: 1.5,
+            fontWeight: 900,
+          }}>{nameError}</p>
+        )}
+        <button
+          type="submit"
+          aria-label="みんなに挑戦してもらう"
+          style={{
+            ...primaryBtn(),
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 2,
+            textAlign: 'center',
+          }}
+        >
+          みんなに挑戦してもらう
+          <span style={{ marginLeft: 6, color: proto.yellow, fontSize: 18 }}>▶</span>
+        </button>
+        <p style={{ margin: '-2px 0 1px', fontSize: 10, lineHeight: 1.55, textAlign: 'center', fontWeight: 800 }}>
+          10問を作る → 自分の正解を登録 → 参加URLを送る
+        </p>
+        <button
+          type="button"
+          aria-label="ライブ配信でみんなに挑戦してもらう"
+          onClick={() => onStart('live')}
+          style={{
+            ...primaryBtn(),
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 2,
+            textAlign: 'center',
+          }}
+        >
+          ライブ配信でみんなに挑戦してもらう
+          <span style={{ marginLeft: 6, color: proto.yellow, fontSize: 18 }}>▶</span>
+        </button>
+        <p style={{ margin: '-2px 0 0', fontSize: 10, lineHeight: 1.55, textAlign: 'center', fontWeight: 800 }}>
+          10問を作る → 配信で参加方法を案内 → 視聴者と同時回答
+        </p>
+      </form>
       <p style={{
         margin: '13px 0 0',
-        paddingTop: 11,
-        borderTop: `2px dashed ${proto.black}`,
         fontSize: 10,
         lineHeight: 1.65,
         textAlign: 'center',

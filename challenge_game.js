@@ -21,6 +21,7 @@ const currentUrl = new URL(location.href);
 const pagePath = currentUrl.pathname.replace(/\/+$/, '') || '/challenge';
 const roomCode = currentUrl.searchParams.get('room')?.trim().toUpperCase() || '';
 const preferredCardId = currentUrl.searchParams.get('question')?.trim() || '';
+const quickStart = readCreatorQuickStart('challenge');
 const hashManageToken = new URLSearchParams(location.hash.slice(1)).get('manage') || '';
 const savedManageToken = roomCode ? manageHistory().find((item) => item.code === roomCode)?.token || '' : '';
 const initialManageToken = hashManageToken || savedManageToken;
@@ -34,10 +35,10 @@ let state = {
   mode: initialMode(),
   roomCode,
   room: null,
-  cards: [],
+  cards: quickStart ? pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard) : [],
   answers: [],
   questionIndex: 0,
-  creatorName: '',
+  creatorName: quickStart?.name || '',
   participantName: '',
   participantToken: roomCode ? participantToken(roomCode) : '',
   manageToken: initialManageToken,
@@ -57,7 +58,23 @@ function initialMode() {
   if (pagePath === '/challenge/library') return 'library';
   if (pagePath === '/challenge/ranking') return 'ranking';
   if (pagePath === '/challenge/manage') return 'manage';
+  if (pagePath === '/challenge' && !roomCode && quickStart) return 'creator-edit';
   return roomCode ? (initialManageToken ? 'manage' : 'join') : 'create';
+}
+
+function readCreatorQuickStart(expectedMode) {
+  try {
+    const raw = sessionStorage.getItem('watachan:creator-quick-start:v1');
+    if (!raw) return null;
+    sessionStorage.removeItem('watachan:creator-quick-start:v1');
+    const value = JSON.parse(raw);
+    const name = String(value?.name || '').trim().slice(0, 12);
+    const age = Date.now() - Number(value?.createdAt || 0);
+    if (value?.mode !== expectedMode || !name || age < 0 || age > 10 * 60 * 1000) return null;
+    return { name };
+  } catch (error) {
+    return null;
+  }
 }
 
 function setState(patch) {
@@ -938,6 +955,9 @@ function errorMessage(code) {
 
 async function bootChallenge() {
   allCards = await loadManagedQuestionCards(allCards, 'challenge');
+  if (quickStart && state.mode === 'creator-edit') {
+    state.cards = pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard);
+  }
   if (state.mode === 'library') {
   document.title = '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？';
   loadLibrary();

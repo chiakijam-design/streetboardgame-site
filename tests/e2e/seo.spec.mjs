@@ -52,7 +52,8 @@ test('トップの内部リンクと構造化データに廃止モードを残�
   await page.goto('/');
   await expect(page.locator('a[href="/love"]')).toHaveCount(0);
   await expect(page.locator('a[href="/challenge-guide"]').first()).toBeAttached();
-  await expect(page.locator('a[href="/challenge"]').first()).toBeAttached();
+  await expect(page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true })).toBeAttached();
+  await expect(page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toBeAttached();
   for (const path of ['/friends', '/family', '/boardgame', '/remote', '/remote-boardgame', '/live', '/live-guide']) {
     await expect(page.locator(`a[href="${path}"]`)).toHaveCount(0);
   }

@@ -6,23 +6,29 @@ test.beforeEach(async ({ request }) => {
 
 test('top page exposes normal and live creator buttons with the same primary design', async ({ page }) => {
   await page.goto('/');
-  const normal = page.getByRole('link', { name: 'みんなに挑戦してもらう', exact: true }).first();
-  const live = page.getByRole('link', { name: 'ライブ配信でみんなに挑戦してもらう' }).first();
+  const normal = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
+  const live = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
+  const nameInput = page.getByLabel('あなたの名前（12文字まで）');
   const visual = page.getByTestId('top-character-visual');
   const rules = page.getByTestId('top-common-rules');
   await expect(rules).toBeVisible();
   await expect(rules).toContainText('クイズを作る人の基本の流れ');
   await expect(rules).toContainText('あなたのクイズを作って');
   await expect(page.getByTestId('top-common-rule-step')).toHaveCount(4);
+  await expect(nameInput).toBeVisible();
   await expect(live).toBeVisible();
-  await expect(live).toHaveAttribute('href', '/live-challenge');
-  const [visualBox, rulesBox, normalBox] = await Promise.all([
+  const [visualBox, rulesBox, nameBox, normalBox, liveBox] = await Promise.all([
     visual.boundingBox(),
     rules.boundingBox(),
+    nameInput.boundingBox(),
     normal.boundingBox(),
+    live.boundingBox(),
   ]);
   expect(visualBox?.y + visualBox?.height).toBeLessThanOrEqual(rulesBox?.y);
-  expect(rulesBox?.y + rulesBox?.height).toBeLessThanOrEqual(normalBox?.y);
+  expect(nameBox?.y).toBeGreaterThan(rulesBox?.y);
+  expect(nameBox?.y + nameBox?.height).toBeLessThanOrEqual(normalBox?.y);
+  expect(normalBox?.y + normalBox?.height).toBeLessThanOrEqual(liveBox?.y);
+  expect(liveBox?.y + liveBox?.height).toBeLessThanOrEqual(rulesBox?.y + rulesBox?.height);
   const styles = await Promise.all([normal, live].map((locator) => locator.evaluate((element) => {
     const style = getComputedStyle(element);
     return {

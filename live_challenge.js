@@ -18,20 +18,39 @@ const url = new URL(location.href);
 const initialCode = (url.searchParams.get('room') || '').replace(/\D/g, '').slice(0, 6);
 const initialHostToken = new URLSearchParams(location.hash.slice(1)).get('host') || '';
 const savedParticipant = initialCode ? readSession(`live-challenge:${initialCode}`) : null;
+const quickStart = readCreatorQuickStart('live');
+
+function readCreatorQuickStart(expectedMode) {
+  try {
+    const raw = sessionStorage.getItem('watachan:creator-quick-start:v1');
+    if (!raw) return null;
+    sessionStorage.removeItem('watachan:creator-quick-start:v1');
+    const value = JSON.parse(raw);
+    const name = String(value?.name || '').trim().slice(0, 24);
+    const age = Date.now() - Number(value?.createdAt || 0);
+    if (value?.mode !== expectedMode || !name || age < 0 || age > 10 * 60 * 1000) return null;
+    return { name };
+  } catch (error) {
+    return null;
+  }
+}
 
 let state = {
-  view: initialHostToken ? 'host' : initialCode ? (savedParticipant?.token ? 'viewer' : 'join') : 'landing',
+  view: initialHostToken ? 'host' : initialCode
+    ? (savedParticipant?.token ? 'viewer' : 'join')
+    : quickStart ? 'create' : 'landing',
   code: initialCode,
   hostToken: initialHostToken,
   subjectToken: '',
   participantToken: savedParticipant?.token || '',
   participantName: savedParticipant?.name || '',
+  hostName: quickStart?.name || '',
   questions: pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion),
   game: null,
   hostAnswers: {},
   participantAnswers: readSession(`live-challenge:answers:${initialCode}`) || {},
   error: '',
-  loading: false,
+  loading: Boolean(quickStart),
   pollTimer: null,
   socket: null,
   socketConnected: false,
@@ -45,9 +64,10 @@ let state = {
 render();
 loadManagedQuestionCards(allCards, 'live').then((cards) => {
   allCards = cards;
-  if (state.view === 'landing') {
+  if (state.view === 'landing' || (quickStart && state.view === 'create')) {
     state.questions = pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion);
     state.questionSubmissionConsent = false;
+    state.loading = false;
     render();
   }
 });
@@ -109,7 +129,7 @@ function createView() {
     <p>最初はランダムな10問が入っています。各欄のお題を選び直したあと、問題文・5択を直接編集できます。</p>
     <div class="field">
       <label for="host-name">配信者名（24文字まで）</label>
-      <input id="host-name" maxlength="24" autocomplete="nickname" placeholder="例：わたちゃん">
+      <input id="host-name" maxlength="24" autocomplete="nickname" placeholder="例：わたちゃん" value="${escapeHtml(state.hostName)}">
     </div>
     <label class="check">
       <input id="show-counts" type="checkbox">
@@ -349,6 +369,7 @@ function bindEvents() {
     if (event.key === 'Enter') goToCode();
   });
   document.querySelector('[data-action="randomize"]')?.addEventListener('click', () => {
+    captureDraft();
     state.questions = pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion);
     state.questionSubmissionConsent = false;
     render();
@@ -382,6 +403,7 @@ function goToCode() {
 }
 
 function captureDraft() {
+  state.hostName = document.getElementById('host-name')?.value.trim() || state.hostName;
   state.questionSubmissionConsent = document.getElementById('question-submit-consent')?.checked === true;
   state.questions = state.questions.map((question, index) => ({
     ...question,
@@ -396,7 +418,7 @@ async function createGame() {
   captureDraft();
   const submissionCandidates = changedQuestionCandidates(state.questions, allCards);
   const submissionConsent = state.questionSubmissionConsent;
-  const subjectName = document.getElementById('host-name')?.value.trim() || '';
+  const subjectName = state.hostName;
   const showLiveVoteCounts = document.getElementById('show-counts')?.checked === true;
   if (!subjectName) return showError('stream-name-required');
   if (state.questions.some((question) => !question.text || question.options.some((option) => !option))) {

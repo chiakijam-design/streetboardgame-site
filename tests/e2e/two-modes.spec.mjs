@@ -84,10 +84,9 @@ test.beforeEach(async ({ page, request }) => {
 
 test('トップは作成者向けに通常版とライブ配信版の2本だけを案内する', async ({ page }) => {
   await page.goto('/');
-  const challengeButton = page.getByRole('link', { name: 'みんなに挑戦してもらう', exact: true }).first();
-  const liveButton = page.getByRole('link', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
-  await expect(challengeButton).toHaveAttribute('href', '/challenge');
-  await expect(liveButton).toHaveAttribute('href', '/live-challenge');
+  const challengeButton = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
+  const liveButton = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
+  await expect(page.getByLabel('あなたの名前（12文字まで）')).toBeVisible();
   await expect(page.getByText('このトップページは出題者・配信者向けです。')).toBeVisible();
   const [challengeStyle, liveStyle] = await Promise.all([
     challengeButton.evaluate((element) => {
@@ -134,6 +133,28 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   ]) {
     await expect(page.getByText(removedLabel, { exact: true })).toHaveCount(0);
   }
+  await challengeButton.click();
+  await expect(page.getByRole('alert')).toHaveText('名前を入力してください。');
+  await expect(page).toHaveURL('/');
+});
+
+test('トップで名前を入力すると通常版の10問作成画面へ直接進む', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('あなたの名前（12文字まで）').fill('トップ通常');
+  await page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).click();
+  await expect(page).toHaveURL('/challenge');
+  await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
+  await page.getByRole('button', { name: '名前入力に戻る' }).click();
+  await expect(page.getByLabel('出題者の名前（12文字まで）')).toHaveValue('トップ通常');
+});
+
+test('トップで名前を入力するとライブ版の10問作成画面へ直接進む', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('あなたの名前（12文字まで）').fill('トップ配信');
+  await page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).click();
+  await expect(page).toHaveURL('/live-challenge');
+  await expect(page.getByRole('heading', { name: '10問を準備する' })).toBeVisible();
+  await expect(page.getByLabel('配信者名（24文字まで）')).toHaveValue('トップ配信');
 });
 
 test('トップ下部から挑戦モードの説明を読み、10問クイズ作成へ進める', async ({ page }) => {
@@ -318,8 +339,8 @@ test('廃止した公開URLは挑戦モードへ恒久転送し、旧screen指�
     expect(new URL(response.headers().location).pathname, path).toBe('/challenge');
   }
   await page.goto('/?screen=friendIntro');
-  await expect(page.getByRole('link', { name: 'みんなに挑戦してもらう', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
   await expect(page.getByText('友達の友情判定ゲーム', { exact: true })).toHaveCount(0);
 });
