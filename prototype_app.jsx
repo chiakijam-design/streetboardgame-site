@@ -1396,6 +1396,13 @@ function App() {
             onFamily={() => setScreen('familyPage')}
           />
         )}
+        {screen === 'challengePage' && (
+          <GameIntroPage
+            kind="challenge"
+            onBack={() => setScreen('top')}
+            onLove={() => setScreen('lovePage')}
+          />
+        )}
         {screen === 'friendPage' && (
           <GameIntroPage
             kind="friend"
@@ -1899,7 +1906,7 @@ function TopScreen({ onStart, onLovePage }) {
         }}>まずはどんなゲームか知りたい</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <SeriesCard emoji="💕" title="彼氏の愛情判定" status="5問・2人で遊ぶ" href="/love" onClick={onLovePage} />
-          <SeriesCard emoji="📣" title="みんなに挑戦してもらう" status="10問・最大50人" href="/challenge" />
+          <SeriesCard emoji="📣" title="みんなに挑戦してもらう" status="10問・最大50人" href="/challenge-guide" />
         </div>
       </nav>
 
@@ -1951,7 +1958,41 @@ const GAME_INTRO_CONTENT = {
     ],
     cta: '愛情判定をはじめる',
     related: [
-      { label: 'みんなに挑戦してもらう', href: '/challenge' },
+      { label: 'みんなに挑戦してもらうを見る', href: '/challenge-guide' },
+    ],
+  },
+  challenge: {
+    pill: 'CHALLENGE',
+    title: 'みんなに挑戦してもらう',
+    heading: 'あなたの答えを、最大50人が予想します',
+    lead: '「みんなに挑戦してもらう」は、自分が先に10問へ答え、その答えを友達や家族に予想してもらう無料クイズです。クイズを作ると専用URLが発行され、受け取った人はあなたが選んだ答えを予想して10問に挑戦します。',
+    body: '挑戦者は自分のスマホから参加でき、最大50人まで回答できます。答え合わせでは各問題の正解を確認でき、公開に同意した挑戦者は得点順のランキングにも表示されます。',
+    recommendTitle: 'こんな人におすすめ',
+    recommend: [
+      '友達や家族が自分のことをどれだけ分かっているか試したい',
+      '飲み会や旅行、学校の集まりで会話のきっかけがほしい',
+      'SNSやLINEで専用URLを送り、離れた相手にも挑戦してほしい',
+      'みんなの得点をランキングで比べて盛り上がりたい',
+    ],
+    scenes: ['友達の集まり', '家族・親戚', '飲み会', '旅行', 'SNS・LINE'],
+    faq: [
+      {
+        q: 'どうやってクイズを作りますか？',
+        a: '出題者名を入力して10問へ回答すると、挑戦者へ送る専用URLが発行されます。そのURLをLINEやSNSなどで共有してください。',
+      },
+      {
+        q: '何人まで挑戦できますか？',
+        a: '1つのクイズに最大50人まで挑戦できます。挑戦者は自分のスマホから10問へ回答します。',
+      },
+      {
+        q: '無料で遊べますか？',
+        a: '無料で遊べます。クイズ作成、専用URLの共有、10問の答え合わせ、ランキングまで利用できます。',
+      },
+    ],
+    cta: '10問クイズを作る',
+    ctaHref: '/challenge',
+    related: [
+      { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },
     ],
   },
   friend: {

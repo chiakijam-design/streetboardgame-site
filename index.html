@@ -258,6 +258,7 @@
     /          → トップ画面
     /watachan  → 遊び方(How to play)画面
     /love      → 彼氏の愛情判定紹介ページ（彼女版も対応）
+    /challenge-guide → みんなに挑戦してもらう紹介ページ
     /friends   → 友達の友情判定紹介ページ
     /family    → 家族の絆判定紹介ページ
     /boardgame → ボドゲ仲間の絆判定紹介ページ
@@ -269,10 +270,10 @@
 ========================= -->
 <script>
   (function() {
-    // テスト用: ?screen=lovePage|intro|about|product|top で強制的に初期画面を指定可能
+    // テスト用: ?screen=lovePage|challengePage|intro|about|product|top で強制的に初期画面を指定可能
     var query = new URLSearchParams(location.search);
     var forceScreen = query.get('screen');
-    if (forceScreen && ['top','lovePage','intro','about','product'].indexOf(forceScreen) >= 0) {
+    if (forceScreen && ['top','lovePage','challengePage','intro','about','product'].indexOf(forceScreen) >= 0) {
       window.__INITIAL_SCREEN = forceScreen;
       if (forceScreen === 'about' && query.get('to') === 'contact') {
         window.__SCROLL_TO_CONTACT = true;
@@ -293,6 +294,7 @@
       'index.html': 'top',
       'watachan': 'intro',
       'love': 'lovePage',
+      'challenge-guide': 'challengePage',
       'about': 'about',
       'product': 'product',
       'contact': 'about',
@@ -388,6 +390,6 @@
 <script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
 <script data-build-entry="prototype_boardgame_data" src="/dist/prototype_boardgame_data-7RDJ3MR3.js"></script>
 <script data-build-entry="prototype_character" defer src="/dist/prototype_character-D4RIZ5YT.js"></script>
-<script data-build-entry="prototype_app" defer src="/dist/prototype_app-XOFOBC2P.js"></script>
+<script data-build-entry="prototype_app" defer src="/dist/prototype_app-TIJPPXLJ.js"></script>
 </body>
 </html>

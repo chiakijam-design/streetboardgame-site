@@ -108,6 +108,17 @@ test('トップは彼氏・彼女の愛情判定と挑戦モードの2本だけ�
   }
 });
 
+test('トップ下部から挑戦モードの説明を読み、10問クイズ作成へ進める', async ({ page }) => {
+  await page.goto('/');
+  const guideLink = page.locator('nav[aria-label="ゲームシリーズの紹介ページ"] a[href="/challenge-guide"]');
+  await expect(guideLink).toHaveCount(1);
+  await guideLink.click();
+  await expect(page).toHaveURL('/challenge-guide');
+  await expect(page.getByRole('heading', { level: 1, name: 'みんなに挑戦してもらう' })).toBeVisible();
+  await expect(page.getByText('あなたの答えを、最大50人が予想します', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: '10問クイズを作る' })).toHaveAttribute('href', '/challenge');
+});
+
 test('彼氏と彼女を入れ替えた両モードが従来どおり5問で完走する', async ({ page }) => {
   await completeLoveGame(page, 'girlTarget');
   await completeLoveGame(page, 'boyTarget');

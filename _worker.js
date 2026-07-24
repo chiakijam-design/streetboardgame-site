@@ -10,6 +10,7 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 //   /watachan         → / にリダイレクト
 //   /watachan/        → / にリダイレクト
 //   /love             → 彼氏の愛情判定紹介ページ（彼女版も対応）として専用SEOメタ付きHTMLを返す
+//   /challenge-guide  → みんなに挑戦してもらう紹介ページとして専用SEOメタ付きHTMLを返す
 //   /friends          → 友達の友情判定紹介ページとして専用SEOメタ付きHTMLを返す
 //   /friends/         → /friends にリダイレクト
 //   /family           → 家族の絆判定紹介ページとして専用SEOメタ付きHTMLを返す
@@ -234,6 +235,31 @@ async function handleRequest(request, env) {
           {
             question: 'どんな場面で遊びやすいですか？',
             answer: '大学生カップルのデート中、飲み会、旅行、おうち時間など、短時間で相手の好みや考え方を知りたい場面に向いています。',
+          },
+        ],
+      },
+      '/challenge-guide': {
+        title: 'みんなに挑戦してもらう｜10問クイズの遊び方・作り方',
+        description: '自分が先に答えた10問を友達や家族に予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせとランキングを楽しめます。',
+        url: CANONICAL_ORIGIN + '/challenge-guide',
+        ogTitle: 'みんなに挑戦してもらう｜わたちゃん',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-love.png?v=20260711-ogp-2',
+        imageAlt: 'わたちゃん みんなに挑戦してもらう',
+        pageId: CANONICAL_ORIGIN + '/challenge-guide#webpage',
+        noscriptTitle: 'みんなに挑戦してもらう｜10問クイズの遊び方',
+        noscriptBody: '自分が先に10問へ回答し、発行された専用URLを友達や家族へ送ると、最大50人があなたの答えを予想できます。',
+        faq: [
+          {
+            question: 'どうやってクイズを作りますか？',
+            answer: '出題者名を入力して10問へ回答すると、挑戦者へ送る専用URLが発行されます。',
+          },
+          {
+            question: '何人まで挑戦できますか？',
+            answer: '1つのクイズに最大50人まで挑戦できます。',
+          },
+          {
+            question: '無料で遊べますか？',
+            answer: '無料で遊べます。クイズ作成、専用URLの共有、答え合わせ、ランキングまで利用できます。',
           },
         ],
       },

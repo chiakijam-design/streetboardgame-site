@@ -7,6 +7,7 @@ test('公開する2モードと共通ページのSEO・構造が一貫する', a
   const routes = [
     ['/', 'わたちゃん｜彼氏の愛情判定ゲーム・無料カップル診断', 'わたちゃん 彼氏の愛情判定ゲーム'],
     ['/love', '彼氏の愛情判定｜彼女版も遊べる無料カップル診断ゲーム', '彼氏の愛情判定ゲーム'],
+    ['/challenge-guide', 'みんなに挑戦してもらう｜10問クイズの遊び方・作り方', 'みんなに挑戦してもらう'],
     ['/challenge', 'みんなに挑戦してもらう｜私のこと、ちゃんと分かってるよね？', 'みんなに挑戦してもらう'],
     ['/challenge/library', '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？', '人気のお題ライブラリ'],
     ['/about', 'About｜わたちゃん・彼氏の愛情判定ゲーム', 'About'],
@@ -31,6 +32,7 @@ test('公開する2モードと共通ページのSEO・構造が一貫する', a
 test('サイトマップは2モードだけを掲載し、挑戦URLはnoindexになる', async ({ request }) => {
   const sitemap = await (await request.get('/sitemap.xml')).text();
   expect(sitemap).toContain('<loc>https://www.streetboardgame.com/love</loc>');
+  expect(sitemap).toContain('<loc>https://www.streetboardgame.com/challenge-guide</loc>');
   expect(sitemap).toContain('<loc>https://www.streetboardgame.com/challenge</loc>');
   expect(sitemap).toContain('<loc>https://www.streetboardgame.com/challenge/library</loc>');
   for (const removed of ['/friends', '/family', '/boardgame', '/remote', '/live']) {
@@ -48,6 +50,7 @@ test('トップの内部リンクと構造化データに廃止モードを残�
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTML構造は画面幅に依存しないためPCで1回検証');
   await page.goto('/');
   await expect(page.locator('a[href="/love"]').first()).toBeAttached();
+  await expect(page.locator('a[href="/challenge-guide"]').first()).toBeAttached();
   await expect(page.locator('a[href="/challenge"]').first()).toBeAttached();
   for (const path of ['/friends', '/family', '/boardgame', '/remote', '/remote-boardgame', '/live', '/live-guide']) {
     await expect(page.locator(`a[href="${path}"]`)).toHaveCount(0);
@@ -62,7 +65,7 @@ test('トップの内部リンクと構造化データに廃止モードを残�
 
 test('CSP・主要セキュリティヘッダーと404を維持する', async ({ request, page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPヘッダーは画面幅に依存しないためPCで1回検証');
-  for (const path of ['/', '/love', '/challenge', '/privacy']) {
+  for (const path of ['/', '/love', '/challenge-guide', '/challenge', '/privacy']) {
     const response = await request.get(path);
     expect(response.headers()['content-security-policy'], path).toContain("default-src 'none'");
     expect(response.headers()['x-content-type-options'], path).toBe('nosniff');
