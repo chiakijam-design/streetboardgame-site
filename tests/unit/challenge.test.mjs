@@ -7,7 +7,11 @@ import {
   CHALLENGE_QUESTION_COUNT,
   handleChallengeApi,
 } from '../../src/challenge/api.js';
-import { mergeChallengeCards, pickChallengeCards } from '../../src/challenge/data.js';
+import {
+  mergeChallengeCards,
+  pickChallengeCards,
+  prepareLoveChallengeCards,
+} from '../../src/challenge/data.js';
 
 class MemoryKV {
   constructor() { this.values = new Map(); }
@@ -30,12 +34,23 @@ function api(env, path, options = {}) {
   return handleChallengeApi(new Request(`https://example.com${path}`, options), env, path);
 }
 
-test('友達・家族データは題名を正規化して重複を除ける', () => {
+test('愛情判定・友達・家族データは題名を正規化して重複を除ける', () => {
+  const loveCards = prepareLoveChallengeCards([
+    { id: 1, title: '愛情判定の問題', choices: ['A', 'B', 'C', 'D', 'E'], image: 'card.png' },
+  ]);
   const merged = mergeChallengeCards(
     [{ title: '同じ 問題', choices: ['1', '2', '3', '4', '5'] }, { title: '友達問題', choices: ['1', '2', '3', '4', '5'] }],
     [{ title: '同じ問題', choices: ['a', 'b', 'c', 'd', 'e'] }, { title: '家族問題', choices: ['1', '2', '3', '4', '5'] }],
+    loveCards,
   );
-  assert.deepEqual(merged.map((card) => card.title), ['同じ 問題', '友達問題', '家族問題']);
+  assert.deepEqual(merged.map((card) => card.title), ['同じ 問題', '友達問題', '家族問題', '愛情判定の問題']);
+  assert.deepEqual(loveCards[0], {
+    id: 'LOVE1',
+    category: '彼氏の愛情判定',
+    title: '愛情判定の問題',
+    choices: ['A', 'B', 'C', 'D', 'E'],
+    image: 'card.png',
+  });
   assert.equal(pickChallengeCards(merged, 2, () => 0).length, 2);
 });
 

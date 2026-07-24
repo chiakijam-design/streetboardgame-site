@@ -42,6 +42,16 @@ test('streamer and viewer answer ten questions and viewer receives a result card
   await page.goto('/live-challenge');
   await expect(page.getByRole('heading', { name: /ライブ配信で/ })).toBeVisible();
   await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
+  const loveCard = await page.evaluate(() => ({
+    id: `LOVE${window.ALL_CARDS[0].id}`,
+    title: window.ALL_CARDS[0].title,
+    firstChoice: window.ALL_CARDS[0].choices[0],
+  }));
+  const firstLibrary = page.locator('[data-library="0"]');
+  await expect(firstLibrary.locator(`option[value="${loveCard.id}"]`)).toHaveCount(1);
+  await firstLibrary.selectOption(loveCard.id);
+  await expect(page.locator('[data-question="0"]')).toHaveValue(loveCard.title);
+  await expect(page.locator('[data-option="0:0"]')).toHaveValue(loveCard.firstChoice);
   await page.getByLabel('配信者名（24文字まで）').fill('わたちゃん');
   await page.locator('[data-question="0"]').fill('配信で一番盛り上がるのは？');
   await page.locator('[data-option="0:0"]').fill('クイズ');

@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
+import { mergeChallengeCards, pickChallengeCards, prepareLoveChallengeCards } from './src/challenge/data.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -7,7 +7,11 @@ const QUESTION_COUNT = 10;
 const CREATOR_DRAFT_KEY = 'watachan-challenge-creator-draft:v1';
 const MANAGE_HISTORY_KEY = 'watachan-challenge-manage-history:v1';
 const app = document.getElementById('challenge-app');
-const allCards = mergeChallengeCards(window.FRIEND_CARDS, window.FAMILY_CARDS);
+const allCards = mergeChallengeCards(
+  window.FRIEND_CARDS,
+  window.FAMILY_CARDS,
+  prepareLoveChallengeCards(window.ALL_CARDS),
+);
 const currentUrl = new URL(location.href);
 const pagePath = currentUrl.pathname.replace(/\/+$/, '') || '/challenge';
 const roomCode = currentUrl.searchParams.get('room')?.trim().toUpperCase() || '';
@@ -128,7 +132,7 @@ function createStartView() {
       <input id="creator-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ちあき" value="${escapeHtml(state.creatorName)}">
       <button class="challenge-primary" data-action="start-create">10問に答えてクイズを作る <span>▶</span></button>
-      <p class="challenge-note">友達版と家族版を統合した94問から出題します。回答途中はこの端末へ自動保存されます。</p>
+      <p class="challenge-note">彼氏の愛情判定・友達版・家族版のお題から出題します。回答途中はこの端末へ自動保存されます。</p>
     </section>`,
   );
 }

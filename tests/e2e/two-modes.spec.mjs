@@ -140,6 +140,22 @@ test('トップ下部から挑戦モードの説明を読み、10問クイズ作
   await expect(page.getByRole('link', { name: '10問クイズを作る' })).toHaveAttribute('href', '/challenge');
 });
 
+test('彼氏の愛情判定のお題を指定して挑戦クイズを作れる', async ({ page }) => {
+  await page.goto('/challenge');
+  const loveCard = await page.evaluate(() => ({
+    id: `LOVE${window.ALL_CARDS[0].id}`,
+    title: window.ALL_CARDS[0].title,
+    firstChoice: window.ALL_CARDS[0].choices[0],
+  }));
+  await page.goto(`/challenge?question=${encodeURIComponent(loveCard.id)}`);
+  await expect(page.getByText(loveCard.title, { exact: true })).toBeVisible();
+  await page.getByLabel('出題者の名前（12文字まで）').fill('愛情お題テスト');
+  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  const paperCard = page.getByTestId('challenge-paper-card');
+  await expect(paperCard.getByRole('heading', { level: 2 })).toHaveText(loveCard.title);
+  await expect(paperCard).toContainText(loveCard.firstChoice);
+});
+
 test('彼氏と彼女を入れ替えた両モードが従来どおり5問で完走する', async ({ page }) => {
   await completeLoveGame(page, 'girlTarget');
   await completeLoveGame(page, 'boyTarget');

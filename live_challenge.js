@@ -1,10 +1,14 @@
 import QRCode from 'qrcode';
-import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
+import { mergeChallengeCards, pickChallengeCards, prepareLoveChallengeCards } from './src/challenge/data.js';
 import { LIVE_POLL_INTERVAL_MS } from './src/live/config.js';
 
 const QUESTION_COUNT = 10;
 const app = document.getElementById('live-challenge-app');
-const allCards = mergeChallengeCards(window.FRIEND_CARDS, window.FAMILY_CARDS);
+const allCards = mergeChallengeCards(
+  window.FRIEND_CARDS,
+  window.FAMILY_CARDS,
+  prepareLoveChallengeCards(window.ALL_CARDS),
+);
 const url = new URL(location.href);
 const initialCode = (url.searchParams.get('room') || '').replace(/\D/g, '').slice(0, 6);
 const initialHostToken = new URLSearchParams(location.hash.slice(1)).get('host') || '';
@@ -55,7 +59,7 @@ function landingView() {
       <div class="icon">🎙️</div>
       <span class="section-pill">配信者</span>
       <h2>10問LIVEを作る</h2>
-      <p>友達・家族向けのお題から10問を選び、問題文と5択を自由に編集できます。</p>
+      <p>彼氏の愛情判定・友達・家族向けのお題から10問を選び、問題文と5択を自由に編集できます。</p>
       <ul class="steps">
         <li><b>1</b><span>10問を選ぶ・ランダム選択</span></li>
         <li><b>2</b><span>URL・QR・6桁コードを配信で案内</span></li>

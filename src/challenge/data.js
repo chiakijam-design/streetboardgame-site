@@ -2,9 +2,17 @@ export function normalizeChallengeTitle(value) {
   return String(value || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
 }
 
-export function mergeChallengeCards(friendCards, familyCards) {
+export function prepareLoveChallengeCards(cards) {
+  return (cards || []).map((card) => ({
+    ...card,
+    id: `LOVE${String(card && card.id || '')}`,
+    category: '彼氏の愛情判定',
+  }));
+}
+
+export function mergeChallengeCards(...cardGroups) {
   const seen = new Set();
-  return [...(friendCards || []), ...(familyCards || [])].filter((card) => {
+  return cardGroups.flatMap((cards) => cards || []).filter((card) => {
     const key = normalizeChallengeTitle(card && card.title);
     if (!key || seen.has(key)) return false;
     seen.add(key);
