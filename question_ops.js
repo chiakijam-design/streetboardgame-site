@@ -230,6 +230,7 @@ function humanError(error) {
     'admin-otp-invalid': '6桁の認証コードが違うか、有効時間を過ぎています。',
     'admin-session-required': '管理者認証を行ってください。',
     'admin-session-expired': '15分の管理セッションが切れました。もう一度認証してください。',
+    'admin-2fa-not-configured': '本番の管理者二要素認証が未設定です。CloudflareへLIVE_ADMIN_TOKEN・LIVE_ADMIN_TOTP_SECRET・LIVE_ADMIN_SESSION_SECRETを設定してください。',
     'question-invalid': '問題文と5つの選択肢をすべて入力してください。',
     'submission-already-reviewed': 'このお題はすでに審査済みです。',
   };

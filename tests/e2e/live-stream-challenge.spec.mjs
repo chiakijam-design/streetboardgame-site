@@ -39,6 +39,12 @@ test('top page exposes normal and live creator buttons with the same primary des
 });
 
 test('streamer and viewer answer ten questions and viewer receives a result card', async ({ page, context }) => {
+  let questionSubmissionRequests = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/questions/submissions') {
+      questionSubmissionRequests += 1;
+    }
+  });
   await page.goto('/live-challenge');
   await expect(page.getByRole('heading', { name: /ライブ配信で/ })).toBeVisible();
   await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
@@ -59,6 +65,8 @@ test('streamer and viewer answer ten questions and viewer receives a result card
   await page.getByRole('button', { name: /この10問でLIVEを作る/ }).click();
 
   await expect(page.getByRole('heading', { name: '視聴者を招待する' })).toBeVisible();
+  expect(questionSubmissionRequests).toBe(0);
+  await expect(page.getByTestId('question-submission-status')).toHaveCount(0);
   const code = (await page.locator('.room-code').textContent())?.trim() || '';
   expect(code).toMatch(/^[0-9]{6}$/);
   const viewer = await context.newPage();
@@ -82,4 +90,40 @@ test('streamer and viewer answer ten questions and viewer receives a result card
   await expect(viewer.getByTestId('live-result-card')).toBeVisible();
   await expect(viewer.getByText('10/10', { exact: true })).toBeVisible();
   await expect(viewer.locator('.result-row')).toHaveCount(10);
+});
+
+test('ライブ版もチェックした自作お題だけ運営へ送信する', async ({ page }) => {
+  const submissions = [];
+  await page.route('**/api/questions/submissions', async (route) => {
+    submissions.push(route.request().postDataJSON());
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ submitted: 1, submissionIds: ['22222222-2222-4222-8222-222222222222'] }),
+    });
+  });
+  await page.goto('/live-challenge');
+  await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
+  await page.locator('[data-library="0"]').selectOption('__custom__');
+  await page.locator('[data-question="0"]').fill('ライブ中に一番盛り上がる企画は？');
+  for (let index = 0; index < 5; index += 1) {
+    await page.locator(`[data-option="0:${index}"]`).fill(`ライブ選択肢${index + 1}`);
+  }
+  const consent = page.getByLabel(/掲載候補として運営に送る/);
+  await expect(consent).not.toBeChecked();
+  await consent.check();
+  await page.getByLabel('配信者名（24文字まで）').fill('配信テスト');
+  await page.getByRole('button', { name: /この10問でLIVEを作る/ }).click();
+
+  await expect(page.getByTestId('question-submission-status')).toContainText('掲載候補として1問を運営へ送信しました');
+  expect(submissions).toHaveLength(1);
+  expect(submissions[0]).toMatchObject({
+    consent: true,
+    sourceMode: 'live-challenge',
+    questions: [{
+      sourceQuestionId: null,
+      title: 'ライブ中に一番盛り上がる企画は？',
+      choices: ['ライブ選択肢1', 'ライブ選択肢2', 'ライブ選択肢3', 'ライブ選択肢4', 'ライブ選択肢5'],
+    }],
+  });
 });

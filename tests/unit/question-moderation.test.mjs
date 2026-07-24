@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import { createLiveAdminSession, generateLiveAdminTotp } from '../../src/live/admin-auth.js';
 import { handleQuestionApi } from '../../src/questions/api.js';
+import { applyManagedQuestionCards } from '../../src/questions/catalog.js';
 
 test('未チェックでは保存せず、明示同意したお題だけ審査・承認・掲載先変更できる', async () => {
   const sqlite = new DatabaseSync(':memory:');
@@ -37,6 +38,18 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   const submitted = await submittedResponse.json();
   assert.equal(submitted.submitted, 1);
 
+  const rejectedCandidateResponse = await handleQuestionApi(jsonRequest('/api/questions/submissions', {
+    consent: true,
+    sourceMode: 'live-challenge',
+    questions: [{
+      sourceQuestionId: null,
+      title: '却下する候補はどれ？',
+      choices: ['候補1', '候補2', '候補3', '候補4', '候補5'],
+    }],
+  }), env, '/api/questions/submissions');
+  assert.equal(rejectedCandidateResponse.status, 201);
+  const rejectedCandidate = await rejectedCandidateResponse.json();
+
   const forbidden = await handleQuestionApi(new Request('https://example.com/api/questions/admin/overview'), env, '/api/questions/admin/overview');
   assert.equal(forbidden.status, 401);
 
@@ -54,7 +67,7 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   }), env, '/api/questions/admin/overview');
   assert.equal(overviewResponse.status, 200);
   const overview = await overviewResponse.json();
-  assert.equal(overview.submissions.length, 1);
+  assert.equal(overview.submissions.length, 2);
   assert.equal(overview.submissions[0].status, 'pending');
 
   const submissionId = submitted.submissionIds[0];
@@ -74,6 +87,16 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   assert.equal(approvedResponse.status, 200);
   const approved = await approvedResponse.json();
   assert.match(approved.catalogId, /^CUS[A-F0-9]{20}$/);
+
+  const rejectedResponse = await handleQuestionApi(jsonRequest(
+    `/api/questions/admin/submissions/${rejectedCandidate.submissionIds[0]}/review`,
+    { decision: 'rejected', reviewNote: '既存のお題と重複' },
+    adminHeaders,
+  ), env, `/api/questions/admin/submissions/${rejectedCandidate.submissionIds[0]}/review`);
+  assert.equal(rejectedResponse.status, 200);
+  const rejected = await rejectedResponse.json();
+  assert.equal(rejected.status, 'rejected');
+  assert.equal(rejected.catalogId, null);
 
   const publicResponse = await handleQuestionApi(new Request('https://example.com/api/questions/catalog'), env, '/api/questions/catalog');
   const publicData = await publicResponse.json();
@@ -104,6 +127,40 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   const updated = await updateResponse.json();
   assert.equal(updated.question.useLive, false);
   assert.equal(updated.question.targetFamily, true);
+
+  const disabledStaticResponse = await handleQuestionApi(jsonRequest(
+    '/api/questions/admin/catalog/FQ001',
+    {
+      ...question,
+      sourceKind: 'static',
+      sourceRef: 'FQ001',
+      status: 'disabled',
+      useChallenge: true,
+      useLive: true,
+      targetFriend: true,
+      targetFamily: false,
+    },
+    adminHeaders,
+    'PUT',
+  ), env, '/api/questions/admin/catalog/FQ001');
+  assert.equal(disabledStaticResponse.status, 200);
+
+  const catalogWithDisabledResponse = await handleQuestionApi(
+    new Request('https://example.com/api/questions/catalog'),
+    env,
+    '/api/questions/catalog',
+  );
+  const catalogWithDisabled = await catalogWithDisabledResponse.json();
+  const disabledStatic = catalogWithDisabled.questions.find((item) => item.id === 'FQ001');
+  assert.equal(disabledStatic.status, 'disabled');
+  const cardsAfterDisable = applyManagedQuestionCards([{
+    id: 'FQ001',
+    title: question.title,
+    category: '友達向け',
+    choices: question.choices,
+  }], catalogWithDisabled.questions, 'challenge');
+  assert.equal(cardsAfterDisable.some((item) => item.id === 'FQ001'), false);
+  assert.equal(cardsAfterDisable.some((item) => item.id === approved.catalogId), true);
 });
 
 function jsonRequest(path, body, headers = {}, method = 'POST') {

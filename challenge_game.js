@@ -48,6 +48,9 @@ let state = {
   error: '',
   loading: false,
   questionSubmissionConsent: false,
+  questionSubmissionStatus: '',
+  questionSubmissionCount: 0,
+  questionSubmissionCandidates: [],
 };
 
 function initialMode() {
@@ -245,6 +248,7 @@ function manageView() {
     '主催者用回答管理',
     `${room.creatorName}さんのクイズを共有し、参加状況と一人ずつの回答を確認できます。`,
     `<section class="challenge-panel">
+      ${questionSubmissionNotice()}
       <div class="challenge-count" data-testid="participant-count">
         <b>${room.completedParticipants}</b>人回答済み ／ <b>${room.participantCount}</b>人参加 ／ 上限${room.maxParticipants}人
       </div>
@@ -274,6 +278,22 @@ function manageView() {
       ` : '<p class="challenge-empty">まだ参加者はいません。挑戦用URLを送って待ちましょう。</p>'}
     </section>`,
   );
+}
+
+function questionSubmissionNotice() {
+  if (!state.questionSubmissionStatus) return '';
+  const messages = {
+    sending: '掲載候補のお題を運営へ送信しています。',
+    sent: `掲載候補として${state.questionSubmissionCount}問を運営へ送信しました。承認されるまで公開ライブラリには追加されません。`,
+    empty: '掲載候補の送信に同意しましたが、自作・編集したお題がないため送信対象はありませんでした。',
+    failed: 'クイズは作成できましたが、掲載候補のお題は通信エラーで送信できませんでした。',
+  };
+  const retry = state.questionSubmissionStatus === 'failed'
+    ? '<button class="challenge-secondary" data-action="retry-question-submit">お題候補の送信を再試行</button>'
+    : '';
+  return `<div class="challenge-note" role="status" data-testid="question-submission-status">
+    ${escapeHtml(messages[state.questionSubmissionStatus] || '')}${retry}
+  </div>`;
 }
 
 function participantDetail(participant, cards) {
@@ -455,6 +475,7 @@ function bindEvents() {
     button.addEventListener('click', () => copyValue(button));
   });
   document.querySelector('[data-action="refresh-manage"]')?.addEventListener('click', loadManageRoom);
+  document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
   document.querySelector('[data-action="refresh-ranking"]')?.addEventListener('click', loadRanking);
   document.querySelector('[data-action="join"]')?.addEventListener('click', joinRoom);
   document.querySelector('[data-action="share-result"]')?.addEventListener('click', shareResult);
@@ -560,6 +581,8 @@ async function answerQuestion(choice) {
   if (answers.length !== QUESTION_COUNT || answers.some((answer) => !Number.isInteger(answer))) return;
 
   if (state.mode === 'creator-answer') {
+    const candidates = changedQuestionCandidates(state.cards, allCards);
+    const submissionConsent = state.questionSubmissionConsent;
     setState({ loading: true, error: '' });
     try {
       const response = await fetch('/api/challenge/rooms', {
@@ -580,13 +603,13 @@ async function answerQuestion(choice) {
         participants: [],
         mode: 'manage',
         answers,
+        questionSubmissionStatus: submissionConsent
+          ? (candidates.length ? 'sending' : 'empty')
+          : '',
+        questionSubmissionCount: 0,
+        questionSubmissionCandidates: submissionConsent ? candidates : [],
       });
-      const candidates = changedQuestionCandidates(state.cards, allCards);
-      submitQuestionCandidates({
-        consent: state.questionSubmissionConsent,
-        sourceMode: 'challenge',
-        questions: candidates,
-      }).catch(() => {});
+      if (submissionConsent && candidates.length) submitCreatorQuestionCandidates();
     } catch (error) {
       setState({ loading: false, mode: 'creator-answer', error: error.message });
     }
@@ -610,6 +633,25 @@ async function answerQuestion(choice) {
     await loadResult();
   } catch (error) {
     setState({ loading: false, mode: 'participant-answer', error: error.message });
+  }
+}
+
+async function submitCreatorQuestionCandidates() {
+  if (!state.questionSubmissionCandidates.length) return;
+  setState({ questionSubmissionStatus: 'sending' });
+  try {
+    const result = await submitQuestionCandidates({
+      consent: true,
+      sourceMode: 'challenge',
+      questions: state.questionSubmissionCandidates,
+    });
+    setState({
+      questionSubmissionStatus: 'sent',
+      questionSubmissionCount: Number(result.submitted || 0),
+      questionSubmissionCandidates: [],
+    });
+  } catch (error) {
+    setState({ questionSubmissionStatus: 'failed' });
   }
 }
 

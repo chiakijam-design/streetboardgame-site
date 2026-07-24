@@ -20,7 +20,7 @@ export function applyManagedQuestionCards(baseCards, managedQuestions, series) {
 
   for (const base of baseCards || []) {
     const row = byId.get(String(base.id));
-    if (row && row[enabledKey] !== true) continue;
+    if (row && (row.status !== 'approved' || row[enabledKey] !== true)) continue;
     cards.push(row ? {
       ...base,
       title: row.title,
@@ -31,7 +31,8 @@ export function applyManagedQuestionCards(baseCards, managedQuestions, series) {
 
   const baseIds = new Set((baseCards || []).map((card) => String(card.id)));
   for (const row of rows) {
-    if (row.sourceKind !== 'custom' || row[enabledKey] !== true || baseIds.has(String(row.id))) continue;
+    if (row.sourceKind !== 'custom' || row.status !== 'approved'
+      || row[enabledKey] !== true || baseIds.has(String(row.id))) continue;
     if (!row.title || !Array.isArray(row.choices) || row.choices.length !== 5) continue;
     cards.push({
       id: row.id,

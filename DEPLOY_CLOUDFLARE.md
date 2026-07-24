@@ -35,6 +35,12 @@ LIVE運営コンソール、障害告知、Stripe Checkout・Webhook・返金・
 - `/question-ops` reuses the existing LIVE operations token and TOTP authentication.
 - Do not expose `LIVE_ADMIN_TOKEN` or the TOTP secret in static assets or browser code.
 - Public submissions are stored only when the creator explicitly checks the review-consent checkbox.
+- Configure all three Worker secrets before using the moderation page: `LIVE_ADMIN_TOKEN`,
+  `LIVE_ADMIN_TOTP_SECRET`, and `LIVE_ADMIN_SESSION_SECRET`. Each secret must meet the
+  validation in `src/live/admin-auth.js`; production fails closed with HTTP 503 when they are absent.
+- `/question-ops` is intentionally unlinked, `noindex`, and `no-store`, but the URL itself is not
+  treated as a security boundary. The signed 15-minute two-factor session protects every read and
+  write API. Cloudflare Access can be added as a second outer gate for operator email accounts.
 
 ## Manual GitHub Flow
 

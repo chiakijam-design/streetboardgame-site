@@ -37,6 +37,9 @@ let state = {
   socketConnected: false,
   reconnectTimer: null,
   questionSubmissionConsent: false,
+  questionSubmissionStatus: '',
+  questionSubmissionCount: 0,
+  questionSubmissionCandidates: [],
 };
 
 render();
@@ -169,6 +172,7 @@ function hostLobbyView() {
   return `<section class="panel">
     <span class="section-pill">配信者画面</span>
     <h2 style="margin-top:10px">視聴者を招待する</h2>
+    ${questionSubmissionNotice()}
     <div class="room-code">${escapeHtml(state.code)}</div>
     <div class="share-grid">
       <div class="qr"><canvas id="live-challenge-qr" width="188" height="188" aria-label="参加URLのQRコード"></canvas></div>
@@ -190,6 +194,22 @@ function hostLobbyView() {
     <button class="primary" data-action="start-game">10問をスタート <span>▶</span></button>
     <p class="notice">配信者はこの画面から離れないでください。視聴者がそろったら開始できます。</p>
   </section>`;
+}
+
+function questionSubmissionNotice() {
+  if (!state.questionSubmissionStatus) return '';
+  const messages = {
+    sending: '掲載候補のお題を運営へ送信しています。',
+    sent: `掲載候補として${state.questionSubmissionCount}問を運営へ送信しました。承認されるまで公開ライブラリには追加されません。`,
+    empty: '掲載候補の送信に同意しましたが、自作・編集したお題がないため送信対象はありませんでした。',
+    failed: 'LIVEは作成できましたが、掲載候補のお題は通信エラーで送信できませんでした。',
+  };
+  const retry = state.questionSubmissionStatus === 'failed'
+    ? '<button class="secondary" data-action="retry-question-submit">お題候補の送信を再試行</button>'
+    : '';
+  return `<div class="notice" role="status" data-testid="question-submission-status">
+    ${escapeHtml(messages[state.questionSubmissionStatus] || '')}${retry}
+  </div>`;
 }
 
 function hostQuestionView() {
@@ -346,6 +366,7 @@ function bindEvents() {
   document.querySelector('[data-action="create-game"]')?.addEventListener('click', createGame);
   document.querySelector('[data-action="join-game"]')?.addEventListener('click', joinGame);
   document.querySelector('[data-action="copy-link"]')?.addEventListener('click', copyJoinLink);
+  document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
   document.querySelector('[data-action="start-game"]')?.addEventListener('click', () => hostAction('start'));
   document.querySelectorAll('[data-action="host-answer"]').forEach((button) => button.addEventListener('click', () => hostAnswer(Number(button.dataset.index))));
   document.querySelectorAll('[data-action="viewer-answer"]').forEach((button) => button.addEventListener('click', () => viewerAnswer(Number(button.dataset.index))));
@@ -401,15 +422,38 @@ async function createGame() {
     state.subjectToken = response.game.subjectToken || '';
     state.game = response.game;
     history.replaceState(null, '', `/live-challenge?room=${state.code}#host=${state.hostToken}`);
-    setState({ view: 'host', loading: false });
-    submitQuestionCandidates({
-      consent: submissionConsent,
-      sourceMode: 'live-challenge',
-      questions: submissionCandidates,
-    }).catch(() => {});
+    setState({
+      view: 'host',
+      loading: false,
+      questionSubmissionStatus: submissionConsent
+        ? (submissionCandidates.length ? 'sending' : 'empty')
+        : '',
+      questionSubmissionCount: 0,
+      questionSubmissionCandidates: submissionConsent ? submissionCandidates : [],
+    });
+    if (submissionConsent && submissionCandidates.length) submitCreatorQuestionCandidates();
     startLiveUpdates();
   } catch (error) {
     setState({ loading: false, error: error.message });
+  }
+}
+
+async function submitCreatorQuestionCandidates() {
+  if (!state.questionSubmissionCandidates.length) return;
+  setState({ questionSubmissionStatus: 'sending' });
+  try {
+    const result = await submitQuestionCandidates({
+      consent: true,
+      sourceMode: 'live-challenge',
+      questions: state.questionSubmissionCandidates,
+    });
+    setState({
+      questionSubmissionStatus: 'sent',
+      questionSubmissionCount: Number(result.submitted || 0),
+      questionSubmissionCandidates: [],
+    });
+  } catch (error) {
+    setState({ questionSubmissionStatus: 'failed' });
   }
 }
 

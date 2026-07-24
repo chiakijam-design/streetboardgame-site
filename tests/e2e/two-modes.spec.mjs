@@ -165,6 +165,40 @@ test('旧愛情判定の42問を共通のお題として挑戦クイズに使え
   await expect(paperCard).toContainText(loveCard.firstChoice);
 });
 
+test('自作お題は初期未同意で、チェックした場合だけ運営へ送信する', async ({ page }) => {
+  const submissions = [];
+  await page.route('**/api/questions/submissions', async (route) => {
+    submissions.push(route.request().postDataJSON());
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ submitted: 1, submissionIds: ['11111111-1111-4111-8111-111111111111'] }),
+    });
+  });
+  await page.goto('/challenge');
+  await page.getByLabel('出題者の名前（12文字まで）').fill('自作テスト');
+  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.locator('[data-library="0"]').selectOption('__custom__');
+  await page.locator('[data-question="0"]').fill('休み時間に一番したいことは？');
+  for (let index = 0; index < 5; index += 1) {
+    await page.locator(`[data-option="0:${index}"]`).fill(`自作選択肢${index + 1}`);
+  }
+  const consent = page.getByLabel(/掲載候補として運営に送る/);
+  await expect(consent).not.toBeChecked();
+  await consent.check();
+  await page.getByRole('button', { name: /この10問で自分の答えを登録する/ }).click();
+  await answerChallengeQuestions(page, 'creator');
+  await expect(page.getByTestId('question-submission-status')).toContainText('掲載候補として1問を運営へ送信しました');
+  expect(submissions).toHaveLength(1);
+  expect(submissions[0].consent).toBe(true);
+  expect(submissions[0].sourceMode).toBe('challenge');
+  expect(submissions[0].questions).toEqual([{
+    sourceQuestionId: null,
+    title: '休み時間に一番したいことは？',
+    choices: ['自作選択肢1', '自作選択肢2', '自作選択肢3', '自作選択肢4', '自作選択肢5'],
+  }]);
+});
+
 test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わせまで完走する', async ({ browser, page }) => {
   const challengeUrl = await createChallenge(page);
   await expect(page.getByTestId('participant-count')).toContainText('0人回答済み');

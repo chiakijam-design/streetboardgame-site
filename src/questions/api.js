@@ -76,9 +76,9 @@ async function createSubmissions(request, env) {
 async function publicCatalog(env) {
   const result = await env.REMOTE_DB.prepare(`
     SELECT question_id, source_kind, source_ref, title, category, choices_json,
-      use_challenge, use_live, target_friend, target_family, updated_at
+      status, use_challenge, use_live, target_friend, target_family, updated_at
     FROM question_catalog
-    WHERE status = 'approved'
+    WHERE status = 'approved' OR source_kind = 'static'
     ORDER BY updated_at DESC
   `).all();
   return (result?.results || []).map(mapCatalogRow);
