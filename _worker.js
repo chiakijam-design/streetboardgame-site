@@ -243,7 +243,9 @@ async function handleRequest(request, env) {
         description: '自分が先に答えた10問を友達や家族に予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせとランキングを楽しめます。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
         ogTitle: 'みんなに挑戦してもらう｜わたちゃん',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-love.png?v=20260711-ogp-2',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge.png?v=20260725-ogp-1',
+        imageWidth: 1731,
+        imageHeight: 909,
         imageAlt: 'わたちゃん みんなに挑戦してもらう',
         pageId: CANONICAL_ORIGIN + '/challenge-guide#webpage',
         noscriptTitle: 'みんなに挑戦してもらう｜10問クイズの遊び方',
@@ -544,6 +546,8 @@ function createCspNonce() {
 
 function applySeoMeta(html, page) {
   const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2';
+  const imageWidth = Number(page.imageWidth || 1200);
+  const imageHeight = Number(page.imageHeight || 630);
   const ogUrl = page.ogUrl || page.url;
   const preloadImage = page.preloadImage || '/assets/character/girl-default.webp';
   const preloadTag = preloadImage.includes('girl-full')
@@ -561,6 +565,8 @@ function applySeoMeta(html, page) {
     .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${ogUrl}" />`)
     .replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${ogImage}" />`)
     .replace(/<meta property="og:image:alt" content="[^"]*" \/>/, `<meta property="og:image:alt" content="${page.imageAlt || page.ogTitle}" />`)
+    .replace(/<meta property="og:image:width" content="[^"]*" \/>/, `<meta property="og:image:width" content="${imageWidth}" />`)
+    .replace(/<meta property="og:image:height" content="[^"]*" \/>/, `<meta property="og:image:height" content="${imageHeight}" />`)
     .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${page.ogTitle}" />`)
     .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${page.description}" />`)
     .replace(/<meta name="twitter:image" content="[^"]*" \/>/, `<meta name="twitter:image" content="${ogImage}" />`)
@@ -646,8 +652,8 @@ function buildStructuredData(page) {
     primaryImageOfPage: {
       '@type': 'ImageObject',
       url: pageImage,
-      width: 1200,
-      height: 630,
+      width: Number(page.imageWidth || 1200),
+      height: Number(page.imageHeight || 630),
     },
   };
 
