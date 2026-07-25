@@ -1,11 +1,11 @@
 # 個人情報漏えい・漏えい疑い対応手順
 
-最終更新: 2026-07-22
+最終更新: 2026-07-25
 
 ## 1. 連絡体制
 
 - 対応責任者: Streetboardgame運営者 平川智章
-- 緊急連絡: 090-4707-5225
+- 緊急連絡: 公開リポジトリには記載せず、運営者の非公開連絡先を使用する
 - 利用者窓口: `https://www.streetboardgame.com/contact`
 - 技術確認先: Cloudflare Workers / D1 / R2、Stripe、Google / YouTube、Formspree、GA4の各管理画面とサポート
 

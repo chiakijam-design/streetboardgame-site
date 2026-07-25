@@ -28,6 +28,16 @@ test('利用規約は現在の対象年齢・ランキング・投稿審査・�
   ]) assert.equal(document.includes(requiredText), true, requiredText);
 });
 
+test('特商法表記は個人の電話番号を公開せず、請求時の開示方法を案内する', async () => {
+  const document = await readFileAsync(new URL('../../legal.html', import.meta.url), 'utf8');
+  const incidentDocument = await readFileAsync(new URL('../../docs/PRIVACY_INCIDENT_RESPONSE.md', import.meta.url), 'utf8');
+  assert.equal(/0\d{1,4}-\d{1,4}-\d{3,4}/.test(document), false);
+  assert.equal(document.includes('href="tel:'), false);
+  assert.equal(/0\d{1,4}-\d{1,4}-\d{3,4}/.test(incidentDocument), false);
+  assert.equal(document.includes('申込みの意思決定に先立って遅滞なく電子メール等で提供します'), true);
+  assert.equal(document.includes('<a href="/contact">お問い合わせフォーム</a>'), true);
+});
+
 test('チェック済みの現行利用規約だけを決済同意として受け付ける', () => {
   assert.deepEqual(assertCheckoutConsent({
     termsAccepted: true,
