@@ -1,3 +1,5 @@
+import { recordLiveImageTransformUsage } from './ops.js';
+
 const CREATOR_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 const CREATOR_IMAGE_MAX_DIMENSION = 12_000;
 const CREATOR_IMAGE_MAX_PIXELS = 100_000_000;
@@ -28,39 +30,60 @@ export async function storePrivateCreatorImage(source, env, code, previous = nul
   const originalKey = `${prefix}/original`;
   const previewKey = `${prefix}/preview.webp`;
   const paidKey = `${prefix}/paid.webp`;
-  let previewBytes;
-  let paidBytes;
-  try {
-    [previewBytes, paidBytes] = await Promise.all([
-      transformImage(env, bytes, 384, 384, 76),
-      transformImage(env, bytes, 1200, 1200, 88),
-    ]);
-  } catch (error) {
+  const transformations = await Promise.allSettled([
+    transformImage(env, bytes, 384, 384, 76),
+    transformImage(env, bytes, 1200, 1200, 88),
+  ]);
+  const successfulTransformations = transformations.filter((result) => result.status === 'fulfilled').length;
+  const transformErrors = transformations.filter((result) => result.status === 'rejected').map((result) => result.reason);
+  const limitFallback = transformErrors.some(isImagesTransformLimitError);
+  await recordLiveImageTransformUsage(env, {
+    code,
+    sourceImages: 1,
+    successfulTransformations,
+    limitFallbacks: limitFallback ? 1 : 0,
+  }).catch(() => {});
+  if (transformErrors.length && !limitFallback) {
     throw mediaError('creator-image-transform-failed', 502);
   }
+  const previewBytes = limitFallback ? bytes : transformations[0].value;
+  const paidBytes = limitFallback ? bytes : transformations[1].value;
+  const storedPreviewKey = limitFallback ? originalKey : previewKey;
+  const storedPaidKey = limitFallback ? originalKey : paidKey;
   try {
-    await Promise.all([
+    const writes = [
       putPrivateObject(env.LIVE_MEDIA, originalKey, bytes, contentType, {
         assetType: 'creator-original', gameCode: code,
       }),
+    ];
+    if (!limitFallback) writes.push(
       putPrivateObject(env.LIVE_MEDIA, previewKey, previewBytes, 'image/webp', {
         assetType: 'creator-preview', gameCode: code,
       }),
       putPrivateObject(env.LIVE_MEDIA, paidKey, paidBytes, 'image/webp', {
         assetType: 'creator-paid', gameCode: code,
       }),
-    ]);
+    );
+    await Promise.all(writes);
   } catch (error) {
     await env.LIVE_MEDIA.delete([originalKey, previewKey, paidKey]).catch(() => {});
     throw mediaError('creator-image-storage-failed', 502);
   }
   await deleteCreatorImage(env, previous);
-  return { assetId, originalKey, previewKey, paidKey, uploadedAt: Date.now(), moderationStatus: 'pending' };
+  return {
+    assetId,
+    originalKey,
+    previewKey: storedPreviewKey,
+    paidKey: storedPaidKey,
+    uploadedAt: Date.now(),
+    moderationStatus: 'pending',
+    processingFallback: limitFallback ? 'original' : 'none',
+  };
 }
 
 export async function deleteCreatorImage(env, image) {
   if (!env.LIVE_MEDIA || !image) return;
-  const keys = [image.originalKey, image.previewKey, image.paidKey].filter(isCreatorImageKey);
+  const keys = [...new Set([image.originalKey, image.previewKey, image.paidKey].filter(isCreatorImageKey))];
   if (keys.length) await env.LIVE_MEDIA.delete(keys).catch(() => {});
 }
 
@@ -158,7 +181,11 @@ async function loadPortrait(request, env, game, paid) {
     if (!env.LIVE_MEDIA) throw mediaError('live-media-not-configured', 503);
     if (!isCreatorImageKey(key)) throw mediaError('invalid-private-media-key', 500);
     const object = await env.LIVE_MEDIA.get(key);
-    if (object) return toEmbeddedImage(await object.arrayBuffer(), 'image/webp');
+    if (object) {
+      const headers = new Headers();
+      object.writeHttpMetadata?.(headers);
+      return toEmbeddedImage(await object.arrayBuffer(), headers.get('content-type') || 'image/webp');
+    }
   }
   const assetUrl = new URL('/assets/character/girl-default.webp', request.url);
   const response = await env.ASSETS.fetch(new Request(assetUrl));
@@ -210,14 +237,23 @@ function buildResultSvg(input) {
 }
 
 async function transformImage(env, bytes, width, height, quality) {
-  const output = await env.IMAGES.input(bytesToStream(bytes))
-    .transform({ width, height, fit: 'cover', gravity: 'center' })
-    .output({ format: 'image/webp', quality, anim: false });
-  const response = output?.response?.();
-  if (!response?.ok) throw mediaError('creator-image-transform-failed', 502);
-  const transformed = new Uint8Array(await response.arrayBuffer());
-  if (!transformed.byteLength) throw mediaError('creator-image-transform-failed', 502);
-  return transformed;
+  try {
+    const output = await env.IMAGES.input(bytesToStream(bytes))
+      .transform({ width, height, fit: 'cover', gravity: 'center' })
+      .output({ format: 'image/webp', quality, anim: false });
+    const response = output?.response?.();
+    if (!response?.ok) {
+      const details = response ? await response.clone().text().catch(() => '') : '';
+      if (response?.status === 9422 || /\b9422\b/.test(details)) throw imagesLimitError();
+      throw mediaError('creator-image-transform-failed', 502);
+    }
+    const transformed = new Uint8Array(await response.arrayBuffer());
+    if (!transformed.byteLength) throw mediaError('creator-image-transform-failed', 502);
+    return transformed;
+  } catch (error) {
+    if (isImagesTransformLimitError(error)) throw imagesLimitError();
+    throw error;
+  }
 }
 
 function requireMediaBindings(env) {
@@ -324,4 +360,16 @@ function mediaError(message, status) {
   const error = new Error(message);
   error.status = status;
   return error;
+}
+
+function imagesLimitError() {
+  const error = mediaError('images-transform-limit-reached', 503);
+  error.cloudflareCode = 9422;
+  return error;
+}
+
+function isImagesTransformLimitError(error) {
+  return Number(error?.cloudflareCode) === 9422
+    || Number(error?.code) === 9422
+    || /\b9422\b/.test(String(error?.message || ''));
 }

@@ -357,7 +357,12 @@ async function createLiveGame(request, env) {
     await releaseLiveReservation(env, code);
     throw error;
   }
-  return liveJson({ code, hostToken: game.hostToken, game: publicLiveGame(game, { host: true }) }, 201);
+  return liveJson({
+    code,
+    hostToken: game.hostToken,
+    game: publicLiveGame(game, { host: true }),
+    notice: game.creatorImage?.processingFallback === 'original' ? 'image-processing-busy' : '',
+  }, 201);
 }
 
 async function createStreamChallengeGame(request, env) {
@@ -613,7 +618,12 @@ async function uploadLiveCreatorImage(request, env, code) {
   touchLiveGame(game);
   await putStoredLiveGame(env, code, game);
   if (hasLiveRealtime(env)) await broadcastCurrentRealtimeState(env, code, game);
-  return liveJson({ code, uploaded: true, game: publicLiveGame(game, { host: true }) });
+  return liveJson({
+    code,
+    uploaded: true,
+    game: publicLiveGame(game, { host: true }),
+    notice: creatorImage.processingFallback === 'original' ? 'image-processing-busy' : '',
+  });
 }
 
 async function getLiveResultPreview(request, env, code) {

@@ -14,7 +14,7 @@ function pngBytes() {
   return new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
 }
 
-function mediaEnv({ width = 1200, height = 1200 } = {}) {
+function mediaEnv({ width = 1200, height = 1200, transformLimit = false } = {}) {
   const objects = new Map();
   const deleted = [];
   return {
@@ -27,6 +27,9 @@ function mediaEnv({ width = 1200, height = 1200 } = {}) {
           return {
             transform() { return this; },
             async output() {
+              if (transformLimit) {
+                return { response: () => new Response('ERROR 9422: transformation usage limit reached', { status: 429 }) };
+              }
               return { response: () => new Response(new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50])) };
             },
           };
@@ -34,7 +37,18 @@ function mediaEnv({ width = 1200, height = 1200 } = {}) {
       },
       LIVE_MEDIA: {
         async put(key, value, options) { objects.set(key, { value: new Uint8Array(value), options }); },
-        async get(key) { return objects.get(key)?.object || null; },
+        async get(key) {
+          const stored = objects.get(key);
+          if (!stored) return null;
+          return {
+            async arrayBuffer() {
+              return stored.value.buffer.slice(stored.value.byteOffset, stored.value.byteOffset + stored.value.byteLength);
+            },
+            writeHttpMetadata(headers) {
+              headers.set('content-type', stored.options.httpMetadata.contentType);
+            },
+          };
+        },
         async delete(keys) {
           for (const key of Array.isArray(keys) ? keys : [keys]) {
             deleted.push(key);
@@ -155,4 +169,34 @@ test('購入画像の署名URLは期限と改ざんを検証する', async () =>
     url.searchParams.get('expires'),
     url.searchParams.get('signature'),
   ), false);
+});
+
+test('Cloudflare Images 9422では元画像へ切り替え、購入用画像生成を継続できる', async () => {
+  const state = mediaEnv({ transformLimit: true });
+  const stored = await storePrivateCreatorImage(
+    new Blob([pngBytes()], { type: 'image/png' }),
+    state.env,
+    '123456',
+  );
+
+  assert.equal(stored.processingFallback, 'original');
+  assert.equal(stored.previewKey, stored.originalKey);
+  assert.equal(stored.paidKey, stored.originalKey);
+  assert.equal(state.objects.size, 1);
+  assert.equal(state.objects.get(stored.originalKey).options.httpMetadata.contentType, 'image/png');
+
+  const assetKey = await createPaidResultAsset(
+    new Request('https://example.com/api/live/checkout'),
+    state.env,
+    {
+      channelName: 'テストチャンネル',
+      scheduledAt: Date.UTC(2026, 6, 25),
+      creatorImage: { ...stored, moderationStatus: 'approved' },
+    },
+    { participantName: '参加者', questionCount: 1, results: [{ type: 'guess-person', myIsCorrect: true }] },
+    'purchase_fallback_123',
+    '参加者',
+  );
+  const svg = new TextDecoder().decode(state.objects.get(assetKey).value);
+  assert.match(svg, /data:image\/png;base64,/);
 });

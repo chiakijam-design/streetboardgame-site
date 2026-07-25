@@ -1094,6 +1094,9 @@ async function createGame() {
     state.roomCode = response.code;
     state.hostToken = response.hostToken;
     state.game = response.game;
+    state.managementMessage = response.notice === 'image-processing-busy'
+      ? '画像処理が混み合っています。元画像を安全に保存して企画作成を続行しました。購入処理には影響ありません。'
+      : '';
     if (state.creatorImagePreviewUrl) URL.revokeObjectURL(state.creatorImagePreviewUrl);
     state.creatorImageFile = null;
     state.creatorImagePreviewUrl = '';

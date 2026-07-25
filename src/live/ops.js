@@ -5,6 +5,9 @@ import { listChannelVerifications } from './ownership.js';
 import { getLiveRevenueOverview } from './revenue-ledger.js';
 
 let opsReadyPromise = null;
+const IMAGES_FREE_TRANSFORM_LIMIT = 5_000;
+const IMAGES_WARNING_TRANSFORMS = 4_000;
+const IMAGES_CRITICAL_TRANSFORMS = 4_800;
 
 export async function ensureLiveOpsD1(env) {
   if (!env?.REMOTE_DB) return false;
@@ -22,6 +25,13 @@ export async function ensureLiveOpsD1(env) {
         CREATE TABLE IF NOT EXISTS live_system_status (
           status_key TEXT PRIMARY KEY, mode TEXT NOT NULL DEFAULT 'normal', title TEXT NOT NULL DEFAULT '',
           message TEXT NOT NULL DEFAULT '', updated_at INTEGER NOT NULL, updated_by TEXT NOT NULL DEFAULT ''
+        )
+      `).run(),
+      env.REMOTE_DB.prepare(`
+        CREATE TABLE IF NOT EXISTS live_image_transform_usage (
+          usage_month TEXT PRIMARY KEY, source_images INTEGER NOT NULL DEFAULT 0,
+          successful_transformations INTEGER NOT NULL DEFAULT 0,
+          limit_fallbacks INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL
         )
       `).run(),
     ]).then(() => Promise.all([
@@ -119,11 +129,11 @@ export async function recordLiveOpsEvent(env, input) {
   const category = normalizeText(input?.category, 40, 'application');
   const eventType = normalizeText(input?.eventType, 80, 'unknown');
   const externalId = normalizeText(input?.externalId, 160);
-  if (category === 'stripe' && externalId) {
+  if (['stripe', 'images'].includes(category) && externalId) {
     const existing = await env.REMOTE_DB.prepare(`
       SELECT event_id, created_at FROM live_ops_events
-      WHERE category = 'stripe' AND event_type = ? AND external_id = ? LIMIT 1
-    `).bind(eventType, externalId).first();
+      WHERE category = ? AND event_type = ? AND external_id = ? LIMIT 1
+    `).bind(category, eventType, externalId).first();
     if (existing) return { eventId: existing.event_id, createdAt: Number(existing.created_at), deduplicated: true };
   }
   const event = {
@@ -148,6 +158,87 @@ export async function recordLiveOpsEvent(env, input) {
     await notifyLiveOpsWebhook(env, event).catch(() => {});
   }
   return event;
+}
+
+export async function recordLiveImageTransformUsage(env, input = {}) {
+  if (!await ensureLiveOpsD1(env)) return null;
+  const usageMonth = currentUsageMonth(input.now);
+  const sourceImages = Math.max(0, Math.floor(Number(input.sourceImages) || 0));
+  const successfulTransformations = Math.max(0, Math.floor(Number(input.successfulTransformations) || 0));
+  const limitFallbacks = Math.max(0, Math.floor(Number(input.limitFallbacks) || 0));
+  const now = Number(input.now) || Date.now();
+  await env.REMOTE_DB.prepare(`
+    INSERT INTO live_image_transform_usage
+      (usage_month, source_images, successful_transformations, limit_fallbacks, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(usage_month) DO UPDATE SET
+      source_images = source_images + excluded.source_images,
+      successful_transformations = successful_transformations + excluded.successful_transformations,
+      limit_fallbacks = limit_fallbacks + excluded.limit_fallbacks,
+      updated_at = excluded.updated_at
+  `).bind(usageMonth, sourceImages, successfulTransformations, limitFallbacks, now).run();
+  const usage = await getLiveImageTransformUsage(env, now);
+  if (limitFallbacks > 0) {
+    await recordLiveOpsEvent(env, {
+      category: 'images',
+      severity: 'critical',
+      eventType: 'images-transform-limit-reached',
+      externalId: `${usageMonth}:9422`,
+      code: input.code,
+      message: 'Cloudflare Imagesの変換上限に到達しました。元画像へ切り替えて処理を継続しています。',
+      metadata: { usageMonth, successfulTransformations: usage.successfulTransformations, limitFallbacks: usage.limitFallbacks },
+    });
+  } else if (usage.status === 'red') {
+    await recordLiveOpsEvent(env, {
+      category: 'images',
+      severity: 'critical',
+      eventType: 'images-transform-usage-critical',
+      externalId: `${usageMonth}:${IMAGES_CRITICAL_TRANSFORMS}`,
+      code: input.code,
+      message: `Cloudflare Imagesの月間変換数が${IMAGES_CRITICAL_TRANSFORMS.toLocaleString('ja-JP')}回に達しました。`,
+      metadata: { usageMonth, successfulTransformations: usage.successfulTransformations },
+    });
+  } else if (usage.status === 'yellow') {
+    await recordLiveOpsEvent(env, {
+      category: 'images',
+      severity: 'warning',
+      eventType: 'images-transform-usage-warning',
+      externalId: `${usageMonth}:${IMAGES_WARNING_TRANSFORMS}`,
+      code: input.code,
+      message: `Cloudflare Imagesの月間変換数が${IMAGES_WARNING_TRANSFORMS.toLocaleString('ja-JP')}回に達しました。`,
+      metadata: { usageMonth, successfulTransformations: usage.successfulTransformations },
+    });
+  }
+  return usage;
+}
+
+export async function getLiveImageTransformUsage(env, now = Date.now()) {
+  const usageMonth = currentUsageMonth(now);
+  if (!await ensureLiveOpsD1(env)) return classifyLiveImageTransformUsage({ usageMonth });
+  const row = await env.REMOTE_DB.prepare(`
+    SELECT usage_month, source_images, successful_transformations, limit_fallbacks, updated_at
+    FROM live_image_transform_usage WHERE usage_month = ? LIMIT 1
+  `).bind(usageMonth).first();
+  return classifyLiveImageTransformUsage(row || { usage_month: usageMonth });
+}
+
+export function classifyLiveImageTransformUsage(row = {}) {
+  const successfulTransformations = Math.max(0, Number(row.successful_transformations ?? row.successfulTransformations) || 0);
+  const limitFallbacks = Math.max(0, Number(row.limit_fallbacks ?? row.limitFallbacks) || 0);
+  const status = limitFallbacks > 0 || successfulTransformations >= IMAGES_CRITICAL_TRANSFORMS
+    ? 'red'
+    : successfulTransformations >= IMAGES_WARNING_TRANSFORMS ? 'yellow' : 'normal';
+  return {
+    usageMonth: String(row.usage_month || row.usageMonth || currentUsageMonth()),
+    sourceImages: Math.max(0, Number(row.source_images ?? row.sourceImages) || 0),
+    successfulTransformations,
+    limitFallbacks,
+    updatedAt: Math.max(0, Number(row.updated_at ?? row.updatedAt) || 0),
+    warningAt: IMAGES_WARNING_TRANSFORMS,
+    criticalAt: IMAGES_CRITICAL_TRANSFORMS,
+    freeLimit: IMAGES_FREE_TRANSFORM_LIMIT,
+    status,
+  };
 }
 
 export async function acknowledgeLiveOpsEvent(env, eventId, operator = 'admin') {
@@ -186,7 +277,7 @@ export async function getLiveOpsOverview(env) {
   const revenuePromise = purchaseDb
     ? ensureLivePurchaseD1(env).then(() => getLiveRevenueOverview(purchaseDb, now))
     : Promise.resolve({ policy: {}, balances: [], ledger: [], batches: [] });
-  const [reservations, activeSessions, entitlements, checkouts, revenue, events, recentCounts, status, creatorInvites, channelVerifications] = await Promise.all([
+  const [reservations, activeSessions, entitlements, checkouts, revenue, events, recentCounts, status, creatorInvites, channelVerifications, imageTransforms] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT r.code, r.scheduled_at, r.blocked_from, r.blocked_until, r.expires_at, g.payload
       FROM live_reservations r LEFT JOIN live_games g ON g.code = r.code
@@ -212,6 +303,7 @@ export async function getLiveOpsOverview(env) {
     getLiveSystemStatus(env),
     listLiveCreatorInvites(env),
     listChannelVerifications(env),
+    getLiveImageTransformUsage(env, now),
   ]);
   const active = (activeSessions.results || []).map(parseGameRow);
   const realtime = [];
@@ -241,6 +333,7 @@ export async function getLiveOpsOverview(env) {
     realtime,
     creatorInvites,
     channelVerifications,
+    imageTransforms,
     infrastructure: {
       d1Configured: Boolean(env.REMOTE_DB),
       purchaseD1Configured: Boolean(purchaseDb),
@@ -289,6 +382,11 @@ function parseGameRow(row) {
 
 function normalizeMode(value) {
   return ['normal', 'degraded', 'maintenance'].includes(value) ? value : 'normal';
+}
+
+function currentUsageMonth(value = Date.now()) {
+  const date = new Date(Number(value) || Date.now());
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
 function normalizeText(value, maxLength, fallback = '') {

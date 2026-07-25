@@ -114,7 +114,23 @@ function renderMetrics() {
   const disconnected = ws.reduce((n, x) => n + Number(x.disconnected || 0), 0);
   const wsRate = disconnected ? Math.round(unexpected / disconnected * 1000) / 10 : 0;
   const infra = overview.infrastructure || {};
+  const images = overview.imageTransforms || {};
+  const imageTone = images.status === 'red' ? 'critical' : images.status === 'yellow' ? 'warning' : '';
+  const imageAlert = document.getElementById('imageUsageAlert');
+  if (imageTone) {
+    const heading = imageTone === 'critical' ? 'Cloudflare Images：赤色警告' : 'Cloudflare Images：黄色警告';
+    const fallback = Number(images.limitFallbacks || 0)
+      ? ` 9422発生後の元画像フォールバック：${Number(images.limitFallbacks).toLocaleString('ja-JP')}件。`
+      : '';
+    imageAlert.className = `status ${imageTone}`;
+    imageAlert.innerHTML = `<strong>${heading}</strong><br>今月は${Number(images.successfulTransformations || 0).toLocaleString('ja-JP')} / ${Number(images.freeLimit || 5000).toLocaleString('ja-JP')}変換です。${fallback}`;
+    imageAlert.hidden = false;
+  } else {
+    imageAlert.hidden = true;
+    imageAlert.textContent = '';
+  }
   document.getElementById('metrics').innerHTML = [
+    metric('Images月次変換', `${Number(images.successfulTransformations || 0).toLocaleString('ja-JP')} / ${Number(images.freeLimit || 5000).toLocaleString('ja-JP')}`, `${images.usageMonth || '今月'}・新規画像${Number(images.sourceImages || 0).toLocaleString('ja-JP')}枚`, imageTone),
     metric('重大APIエラー', critical, '直近15分'), metric('Stripe関連イベント', stripe, '直近15分'),
     metric('WebSocket予期せぬ切断率', `${wsRate}%`, `${unexpected}/${disconnected}切断`),
     metric('監視設定', [infra.d1Configured && 'ゲームD1', infra.purchaseD1Configured && '購入D1', infra.durableObjectsConfigured && 'DO', infra.privateR2Configured && '非公開R2', infra.imagesBindingConfigured && 'Images', infra.alertWebhookConfigured && '通知Webhook', infra.stripeCheckoutConfigured && 'Stripe Checkout', infra.stripeWebhookConfigured && 'Stripe Webhook'].filter(Boolean).join(' / ') || '未設定', 'コードから確認できる範囲'),
@@ -281,7 +297,7 @@ async function reissueEntitlement(purchaseId) {
 
 async function acknowledgeEvent(eventId) { try { await adminApi(`/api/live/admin/ops-events/${eventId}/acknowledge`, { method: 'POST', body: '{}' }); await loadOverview(); } catch (error) { alert(humanError(error)); } }
 async function adminApi(path, options = {}) { const response = await fetch(path, { ...options, headers: { 'content-type': 'application/json', 'x-live-admin-session': sessionStorage.getItem('live:admin-session') || '', ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (!response.ok) { const error = new Error(data.error || 'request-failed'); error.status = response.status; throw error; } return data; }
-function metric(label, value, note) { return `<div class="metric"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b><small>${escapeHtml(note)}</small></div>`; }
+function metric(label, value, note, tone = '') { return `<div class="metric ${escapeAttr(tone)}"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b><small>${escapeHtml(note)}</small></div>`; }
 function empty(text) { return `<div class="empty">${escapeHtml(text)}</div>`; }
 function formatDate(value) { if (value === null || value === undefined || value === '' || Number(value) <= 0) return '未設定'; const date = new Date(Number(value)); return Number.isNaN(date.getTime()) ? '未設定' : date.toLocaleString('ja-JP'); }
 function yen(value) { return `${Number(value || 0).toLocaleString('ja-JP')}円`; }

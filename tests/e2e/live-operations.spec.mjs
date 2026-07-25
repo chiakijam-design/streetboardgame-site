@@ -34,6 +34,10 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
     },
     events: [{ event_id: '11111111-1111-4111-8111-111111111111', category: 'stripe', severity: 'critical', event_type: 'payment_intent.payment_failed', code: '123456', purchase_id: '', external_id: 'pi_test_01', message: 'カード決済失敗', metadata: {}, created_at: Date.now(), acknowledged_at: null, acknowledged_by: '' }],
     recentEventCounts: [{ category: 'stripe', severity: 'critical', event_count: 1 }],
+    imageTransforms: {
+      usageMonth: '2026-07', sourceImages: 2_000, successfulTransformations: 4_000,
+      limitFallbacks: 0, warningAt: 4_000, criticalAt: 4_800, freeLimit: 5_000, status: 'yellow',
+    },
     realtime: [],
     creatorInvites: [{ invite_id: '11111111-2222-4333-8444-555555555555', channel_id: 'UC1234567890', channel_name: '審査済みチャンネル', status: 'active', expires_at: Date.now() + 86_400_000, last_used_at: null }],
     channelVerifications: [{ verificationId: 'a'.repeat(32), channelId: 'UC1234567890', channelName: '所有確認チャンネル', channelUrl: 'https://www.youtube.com/channel/UC1234567890', ownershipStatus: 'manual_pending', ownershipMethod: 'manual', stripeAccountId: '', stripeIdentityVerified: false, stripeRelationshipStatus: 'pending', creatorAgreementAccepted: false, canSellPaid: false, updatedAt: Date.now() }],
@@ -114,6 +118,9 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
   await expect(page.locator('#channelVerifications')).toContainText('所有確認チャンネル');
   await expect(page.locator('[data-review-field="stripeAccountId"]')).toHaveAttribute('placeholder', 'acct_...');
   await expect(page.getByRole('button', { name: '画像を承認' })).toBeVisible();
+  await expect(page.locator('#metrics')).toContainText('4,000 / 5,000');
+  await expect(page.locator('#imageUsageAlert')).toBeVisible();
+  await expect(page.locator('#imageUsageAlert')).toContainText('黄色警告');
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,nofollow,noarchive');
 });
 
