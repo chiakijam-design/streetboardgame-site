@@ -59,6 +59,7 @@ let state = {
   editingQuestion: false,
   editingOriginalCard: null,
 };
+let lastQuestionViewportKey = '';
 
 function initialMode() {
   if (pagePath === '/challenge/library') return 'library';
@@ -97,6 +98,10 @@ function escapeHtml(value) {
 function render() {
   if (!app) return;
   document.documentElement.dataset.challengeMode = state.mode;
+  const questionViewportKey = !state.editingQuestion
+    && ['creator-edit', 'creator-answer', 'participant-answer'].includes(state.mode)
+    ? `${state.mode}:${state.questionIndex}`
+    : '';
   const body = state.loading
     ? loadingView()
     : state.mode === 'create' ? createStartView()
@@ -111,6 +116,10 @@ function render() {
                     : errorView();
   app.innerHTML = body;
   bindEvents();
+  if (questionViewportKey && questionViewportKey !== lastQuestionViewportKey) {
+    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
+  }
+  lastQuestionViewportKey = questionViewportKey;
 }
 
 function creatorEditView() {
@@ -134,7 +143,7 @@ function creatorEditView() {
       <div class="challenge-answer-pad challenge-builder-answer-pad" data-testid="challenge-builder-answer-pad">
         <div class="challenge-answer-pad-heading">
           <span>自分の正解</span>
-          <small>タップで決定</small>
+          <small>タップでドットの色を選択</small>
         </div>
         <div class="challenge-color-choices">
           ${card.choices.map((choice, index) => `
@@ -303,7 +312,7 @@ function questionView(isCreator) {
       <div class="challenge-answer-pad" data-testid="challenge-answer-pad">
         <div class="challenge-answer-pad-heading">
           <span>${isCreator ? '本人の番' : '予想する番'}</span>
-          <small>タップで決定</small>
+          <small>タップでドットの色を選択</small>
         </div>
         <div class="challenge-color-choices">
           ${card.choices.map((choice, index) => `

@@ -449,12 +449,19 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
   const builderCard = page.getByTestId('challenge-builder-paper-card');
   const builderPad = page.getByTestId('challenge-builder-answer-pad');
   const builderButtons = builderPad.locator('[data-action="builder-answer"]');
+  const skipButton = page.getByRole('button', { name: 'この問題をスキップ', exact: true });
+  const editButton = page.getByRole('button', { name: '✎ 問題・選択肢を編集する', exact: true });
+  const customButton = page.getByRole('button', { name: '＋ 自分で問題を作る', exact: true });
   await expect(builderCard.locator('.notebook-question-card-visual')).toHaveCount(1);
   await expect(builderButtons).toHaveCount(5);
+  await expect(builderPad).toContainText('タップでドットの色を選択');
   await expect(page.locator('.challenge-progress span')).toHaveCount(10);
-  const [cardBox, padBox, buttonBoxes, cardGeometry] = await Promise.all([
+  const [cardBox, padBox, skipBox, editBox, customBox, buttonBoxes, cardGeometry, viewport] = await Promise.all([
     builderCard.boundingBox(),
     builderPad.boundingBox(),
+    skipButton.boundingBox(),
+    editButton.boundingBox(),
+    customButton.boundingBox(),
     builderButtons.evaluateAll((buttons) => buttons.map((button) => {
       const rect = button.getBoundingClientRect();
       return { width: rect.width, height: rect.height };
@@ -471,8 +478,14 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
         visualTop: visualRect.top - paperRect.top,
       };
     }),
+    page.evaluate(() => ({ innerHeight, scrollY })),
   ]);
   expect(cardBox?.y + cardBox?.height).toBeLessThanOrEqual(padBox?.y);
+  expect(viewport.scrollY).toBe(0);
+  for (const box of [cardBox, padBox, skipBox, editBox, customBox]) {
+    expect(box?.y).toBeGreaterThanOrEqual(0);
+    expect(box?.y + box?.height).toBeLessThanOrEqual(viewport.innerHeight);
+  }
   expect(cardGeometry.width).toBeLessThanOrEqual(506);
   expect(cardGeometry.height / cardGeometry.width).toBeGreaterThan(1.47);
   expect(cardGeometry.height / cardGeometry.width).toBeLessThan(1.50);
@@ -489,6 +502,36 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
     scrollWidth: document.documentElement.scrollWidth,
   }));
   expect(builderDimensions.scrollWidth).toBeLessThanOrEqual(builderDimensions.innerWidth);
+
+  const participantCards = await page.evaluate(() => window.FRIEND_CARDS.slice(0, 10));
+  const roomResponse = await page.request.post('/api/challenge/rooms', {
+    data: {
+      creatorName: '表示確認',
+      cards: participantCards,
+      answers: Array(10).fill(0),
+    },
+  });
+  expect(roomResponse.status()).toBe(201);
+  const room = await roomResponse.json();
+  await page.goto(`/challenge?room=${room.code}`);
+  await page.getByLabel('表示名（12文字まで）').fill('回答確認');
+  await page.getByRole('button', { name: /10問の答え当てに挑戦する/ }).click();
+  const participantScreen = page.getByTestId('participant-question');
+  await expect(participantScreen).toBeVisible();
+  await expect(page.locator('.challenge-hero')).toBeHidden();
+  const participantCard = page.getByTestId('challenge-paper-card');
+  const participantPad = page.getByTestId('challenge-answer-pad');
+  await expect(participantPad).toContainText('タップでドットの色を選択');
+  const [participantCardBox, participantPadBox, participantViewport] = await Promise.all([
+    participantCard.boundingBox(),
+    participantPad.boundingBox(),
+    page.evaluate(() => ({ innerHeight, scrollY })),
+  ]);
+  expect(participantViewport.scrollY).toBe(0);
+  for (const box of [participantCardBox, participantPadBox]) {
+    expect(box?.y).toBeGreaterThanOrEqual(0);
+    expect(box?.y + box?.height).toBeLessThanOrEqual(participantViewport.innerHeight);
+  }
 });
 
 test('廃止した公開URLは挑戦モードへ恒久転送し、旧screen指定も開かない', async ({ page, request }, testInfo) => {

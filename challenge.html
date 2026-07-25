@@ -109,6 +109,25 @@
     .challenge-answer-pad>p{margin:2px 0 0;color:#fff;font-size:8px;line-height:1.35;text-align:center;text-shadow:1px 1px 0 rgba(0,0,0,.35)}
     .challenge-answer-pad.challenge-builder-answer-pad{position:relative;left:auto;bottom:auto;z-index:1;width:100%;max-width:none;margin:16px 0 0;transform:none}
     .challenge-answer-screen>.challenge-secondary{margin-top:16px}
+    html[data-challenge-mode="creator-edit"] .challenge-top,
+    html[data-challenge-mode="creator-edit"] .challenge-hero,
+    html[data-challenge-mode$="-answer"] .challenge-top,
+    html[data-challenge-mode$="-answer"] .challenge-hero{display:none}
+    html[data-challenge-mode="creator-edit"] .challenge-page{width:min(100%,560px);padding:max(6px,env(safe-area-inset-top)) 8px calc(10px + env(safe-area-inset-bottom))}
+    html[data-challenge-mode="creator-edit"] .challenge-question-wrap{margin-top:0;padding:8px;border-radius:14px;box-shadow:3px 4px 0 var(--black)}
+    html[data-challenge-mode="creator-edit"] .challenge-progress{margin:0 0 6px;gap:6px}
+    html[data-challenge-mode="creator-edit"] .challenge-progress span{width:11px;height:11px}
+    html[data-challenge-mode="creator-edit"] .challenge-progress .is-active{width:24px}
+    html[data-challenge-mode="creator-edit"] .notebook-question-card{width:min(100%,clamp(196px,32dvh,270px))!important}
+    html[data-challenge-mode="creator-edit"] .challenge-builder-answer-pad{margin-top:7px;padding:6px 8px 5px}
+    html[data-challenge-mode="creator-edit"] .challenge-answer-pad-heading{margin-bottom:2px}
+    html[data-challenge-mode="creator-edit"] .challenge-builder-help{margin:4px 0 0}
+    html[data-challenge-mode="creator-edit"] .challenge-builder-actions{grid-template-columns:1fr 1fr;gap:7px}
+    html[data-challenge-mode="creator-edit"] .challenge-builder-actions .challenge-secondary{min-height:44px!important;margin-top:7px;padding:7px 8px}
+    html[data-challenge-mode="creator-edit"] .challenge-builder-actions .challenge-secondary:last-child{grid-column:1/-1}
+    html[data-challenge-mode$="-answer"] .challenge-page{padding-top:max(6px,env(safe-area-inset-top))}
+    html[data-challenge-mode$="-answer"] .challenge-answer-screen{margin-top:0}
+    html[data-challenge-mode$="-answer"] .challenge-answer-screen .challenge-card{min-height:clamp(480px,calc(100dvh - 150px),528px)}
     @media(min-width:640px){.challenge-answer-screen{padding:0}.challenge-answer-screen .challenge-card{padding-left:67px}.challenge-answer-pad{bottom:10px}}
     @media(max-width:380px){.challenge-answer-screen .challenge-card{min-height:500px;padding-left:58px}.challenge-builder-card{padding-inline:14px}.challenge-builder-card .challenge-card-title{margin-inline:22px}.challenge-builder-card .challenge-card-choice{grid-template-columns:66px minmax(0,1fr);padding-right:20px}.challenge-card-choice{min-height:63px}.challenge-color-choice i{width:34px;height:34px}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.challenge-loader{animation:none}}
@@ -126,6 +145,6 @@
   <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
   <script data-build-entry="prototype_friend_data" src="/dist/prototype_friend_data-3YOIQLSI.js"></script>
   <script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
-  <script data-build-entry="challenge_game" src="/dist/challenge_game-D3RSGM2Q.js"></script>
+  <script data-build-entry="challenge_game" src="/dist/challenge_game-DDA5Z4JY.js"></script>
 </body>
 </html>
