@@ -12,6 +12,10 @@ test('応援金Checkoutは購入D1とStripeだけで有効になり、画像販�
     STRIPE_SECRET_KEY: 'sk_test_checkout_config',
   };
   assert.equal(liveSupportCheckoutConfigured(supportEnv), true);
+  assert.equal(liveSupportCheckoutConfigured({
+    ...supportEnv,
+    STRIPE_SECRET_KEY: 'rk_live_checkout_config',
+  }), true);
   assert.equal(liveResultImageCheckoutConfigured(supportEnv), false);
 
   const resultImageEnv = {

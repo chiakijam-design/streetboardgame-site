@@ -18,6 +18,7 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
     captured = { url, options, params: new URLSearchParams(options.body) };
     return Response.json({ id: 'cs_test_checkout01', url: 'https://checkout.stripe.com/c/pay/test', expires_at: 1_800_001_800 });
   });
+  env.STRIPE_SECRET_KEY = 'rk_test_123456789';
   const session = await createLiveCheckoutSession(env, {
     requestUrl: 'https://www.streetboardgame.com/api/live/games/123456/checkout',
     orderId: 'ord_test01', productType: 'result_image', code: '123456', amount: 980,
@@ -27,6 +28,7 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
   }, 1_800_000_000_000);
   assert.equal(session.id, 'cs_test_checkout01');
   assert.equal(captured.url, 'https://api.stripe.com/v1/checkout/sessions');
+  assert.equal(captured.options.headers.authorization, 'Bearer rk_test_123456789');
   assert.equal(captured.options.headers['idempotency-key'], 'checkout-ord_test01');
   assert.equal(captured.params.get('payment_method_types[0]'), 'card');
   assert.equal(captured.params.get('line_items[0][price_data][currency]'), 'jpy');

@@ -91,7 +91,7 @@ export async function createLiveCreatorTransfer(env, input) {
 
 async function stripeRequest(env, path, params, idempotencyKey) {
   const secret = String(env.STRIPE_SECRET_KEY || '');
-  if (!/^sk_(test|live)_[A-Za-z0-9_]+$/.test(secret)) throw stripeError('stripe-secret-key-not-configured', 503);
+  if (!/^(?:sk|rk)_(?:test|live)_[A-Za-z0-9_]+$/.test(secret)) throw stripeError('stripe-secret-key-not-configured', 503);
   const fetcher = typeof env.STRIPE_FETCH === 'function' ? env.STRIPE_FETCH : fetch;
   const headers = {
     authorization: `Bearer ${secret}`,
@@ -111,7 +111,7 @@ async function stripeRequest(env, path, params, idempotencyKey) {
 
 async function stripeGet(env, path) {
   const secret = String(env.STRIPE_SECRET_KEY || '');
-  if (!/^sk_(test|live)_[A-Za-z0-9_]+$/.test(secret)) throw stripeError('stripe-secret-key-not-configured', 503);
+  if (!/^(?:sk|rk)_(?:test|live)_[A-Za-z0-9_]+$/.test(secret)) throw stripeError('stripe-secret-key-not-configured', 503);
   const fetcher = typeof env.STRIPE_FETCH === 'function' ? env.STRIPE_FETCH : fetch;
   const headers = { authorization: `Bearer ${secret}` };
   if (env.STRIPE_API_VERSION) headers['stripe-version'] = String(env.STRIPE_API_VERSION);

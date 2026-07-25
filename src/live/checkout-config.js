@@ -1,7 +1,7 @@
 export function liveSupportCheckoutConfigured(env) {
   return Boolean(
     env.LIVE_PURCHASE_DB
-    && /^sk_(test|live)_[A-Za-z0-9_]+$/.test(String(env.STRIPE_SECRET_KEY || '')),
+    && /^(?:sk|rk)_(?:test|live)_[A-Za-z0-9_]+$/.test(String(env.STRIPE_SECRET_KEY || '')),
   );
 }
 

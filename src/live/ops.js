@@ -249,7 +249,7 @@ export async function getLiveOpsOverview(env) {
       imagesBindingConfigured: Boolean(env.IMAGES),
       alertWebhookConfigured: Boolean(env.LIVE_OPS_ALERT_WEBHOOK_URL),
       stripeWebhookConfigured: Boolean(env.STRIPE_WEBHOOK_SECRET),
-      stripeCheckoutConfigured: /^sk_(test|live)_[A-Za-z0-9_]+$/.test(String(env.STRIPE_SECRET_KEY || '')),
+      stripeCheckoutConfigured: /^(?:sk|rk)_(?:test|live)_[A-Za-z0-9_]+$/.test(String(env.STRIPE_SECRET_KEY || '')),
     },
   };
 }
