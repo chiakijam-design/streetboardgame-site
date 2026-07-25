@@ -5,6 +5,7 @@ import {
   loadManagedQuestionCards,
   submitQuestionCandidates,
 } from './src/questions/catalog.js';
+import { copyText, openLineShare, openXShare } from './src/platform/share.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -321,23 +322,43 @@ function manageView() {
     'HOST DASHBOARD',
     '主催者用回答管理',
     `${room.creatorName}さんのクイズを共有し、参加状況と一人ずつの回答を確認できます。`,
-    `<section class="challenge-panel">
-      ${questionSubmissionNotice()}
+    `<section class="challenge-panel challenge-share-screen" data-testid="challenge-share-screen">
+      <div class="challenge-created-heading">
+        <span aria-hidden="true">🏆</span>
+        <h2>${escapeHtml(room.creatorName)}さんの理解度診断ができました！</h2>
+        <span aria-hidden="true">🏆</span>
+      </div>
+      <p class="challenge-share-lead">参加URLを友達に送りましょう！</p>
+      <div class="challenge-share-card">
+        <label class="challenge-label" for="share-url">挑戦用URL</label>
+        <input id="share-url" class="challenge-input challenge-share-url" readonly value="${escapeHtml(shareUrl)}">
+        <button class="challenge-primary challenge-copy-link" data-action="copy-url" data-copy-value="${escapeHtml(shareUrl)}">リンクをコピーする</button>
+        <div class="challenge-social-row" role="group" aria-label="参加URLをシェア">
+          <button type="button" class="challenge-social-button instagram" data-action="share-instagram" aria-label="Instagramでシェア">
+            <span class="challenge-social-mark" aria-hidden="true"><i></i></span>
+            <span>Instagram</span>
+          </button>
+          <button type="button" class="challenge-social-button x" data-action="share-x" aria-label="Xでシェア">
+            <span class="challenge-social-mark" aria-hidden="true">X</span>
+            <span>X</span>
+          </button>
+          <button type="button" class="challenge-social-button line" data-action="share-line" aria-label="LINEで送る">
+            <span class="challenge-social-mark" aria-hidden="true">LINE</span>
+            <span>LINE</span>
+          </button>
+        </div>
+        <p class="challenge-instagram-note">Instagramはリンクをコピーして、ストーリーズなどに貼り付けてください。</p>
+      </div>
+      <details class="challenge-qr-details">
+        <summary>QRコードで送る</summary>
+        <div class="challenge-qr"><canvas id="challenge-qr" width="180" height="180" aria-label="挑戦用URLのQRコード"></canvas></div>
+      </details>
       <div class="challenge-count" data-testid="participant-count">
         <b>${room.completedParticipants}</b>人回答済み ／ <b>${room.participantCount}</b>人参加 ／ 上限${room.maxParticipants}人
       </div>
-      <label class="challenge-label" for="share-url">挑戦用URL</label>
-      <input id="share-url" class="challenge-input" readonly value="${escapeHtml(shareUrl)}">
-      <button class="challenge-primary" data-action="copy-url" data-copy-value="${escapeHtml(shareUrl)}">挑戦用URLをコピー</button>
-      <div class="challenge-share-row">
-        <a class="challenge-share line" target="_blank" rel="noopener"
-          href="https://line.me/R/msg/text/?${encodeURIComponent(shareText(room, shareUrl))}">LINEで送る</a>
-        <a class="challenge-share x" target="_blank" rel="noopener"
-          href="https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText(room, shareUrl))}">Xでシェア</a>
-      </div>
-      <div class="challenge-qr"><canvas id="challenge-qr" width="180" height="180" aria-label="挑戦用URLのQRコード"></canvas></div>
+      ${questionSubmissionNotice()}
       <div class="challenge-button-row">
-        <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">フレンドランキング</a>
+        <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">フレンドランキングを見る</a>
         <button class="challenge-secondary" data-action="copy-ranking" data-copy-value="${escapeHtml(rankingUrl)}">ランキングURLをコピー</button>
       </div>
       <button class="challenge-secondary" data-action="refresh-manage">回答状況を更新</button>
@@ -560,6 +581,17 @@ function bindEvents() {
   });
   document.querySelectorAll('[data-action="copy-url"], [data-action="copy-ranking"]').forEach((button) => {
     button.addEventListener('click', () => copyValue(button));
+  });
+  document.querySelector('[data-action="share-instagram"]')?.addEventListener('click', shareToInstagram);
+  document.querySelector('[data-action="share-line"]')?.addEventListener('click', () => {
+    if (!state.room) return;
+    const url = challengeUrl(state.room.code);
+    openLineShare(shareText(state.room, url));
+  });
+  document.querySelector('[data-action="share-x"]')?.addEventListener('click', () => {
+    if (!state.room) return;
+    const url = challengeUrl(state.room.code);
+    openXShare(shareText(state.room, url));
   });
   document.querySelector('[data-action="refresh-manage"]')?.addEventListener('click', loadManageRoom);
   document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
@@ -801,14 +833,21 @@ async function submitCreatorQuestionCandidates() {
 
 async function copyValue(button) {
   const value = button.dataset.copyValue || document.getElementById('share-url')?.value || '';
-  try {
-    await navigator.clipboard.writeText(value);
+  const copied = await copyText(value);
+  if (copied) {
     button.textContent = 'コピーしました';
-  } catch (error) {
-    const input = document.getElementById('share-url');
-    input?.select();
-    setState({ error: 'copy-failed' });
+    return;
   }
+  const input = document.getElementById('share-url');
+  input?.select();
+  setState({ error: 'copy-failed' });
+}
+
+async function shareToInstagram() {
+  if (!state.room) return;
+  const copied = await copyText(challengeUrl(state.room.code));
+  if (!copied) return setState({ error: 'copy-failed' });
+  window.alert('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
 }
 
 async function joinRoom() {
@@ -1061,7 +1100,7 @@ function manageUrl(code, token) {
 }
 
 function shareText(room, url) {
-  return `${room.creatorName}さんから「私のこと、ちゃんと分かってるよね？」の挑戦！\n10問の答えを予想してね👇\n${url}`;
+  return `${room.creatorName}さんの「理解度診断」に挑戦！\n10問の答えを予想してね👇\n${url}`;
 }
 
 function errorMessage(code) {

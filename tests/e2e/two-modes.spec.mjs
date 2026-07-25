@@ -60,6 +60,11 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await expect(page.getByLabel('このクイズを友達や他の人も使えるようにする')).toBeChecked();
   await buildChallengeQuestions(page);
   await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
+  await expect(page.getByTestId('challenge-share-screen')).toContainText(`${creatorName}さんの理解度診断ができました！`);
+  await expect(page.getByRole('button', { name: 'リンクをコピーする' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Instagramでシェア' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Xでシェア' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'LINEで送る' })).toBeVisible();
   const url = await page.getByRole('textbox', { name: '挑戦用URL' }).inputValue();
   expect(url).toMatch(/\/challenge\?room=[A-Z2-9]{8}$/);
   return url;
@@ -243,7 +248,23 @@ test('公開候補チェックを外した自作お題は運営へ送信しな�
 test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わせまで完走する', async ({ browser, page }) => {
   const challengeUrl = await createChallenge(page);
   await expect(page.getByTestId('participant-count')).toContainText('0人回答済み');
+  await expect(page.locator('#challenge-qr')).toBeHidden();
+  await page.getByText('QRコードで送る', { exact: true }).click();
   await expect(page.locator('#challenge-qr')).toBeVisible();
+
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async (text) => { window.__instagramCopiedUrl = text; } },
+    });
+  });
+  const dialogPromise = page.waitForEvent('dialog');
+  const instagramClick = page.getByRole('button', { name: 'Instagramでシェア' }).click();
+  const dialog = await dialogPromise;
+  expect(dialog.message()).toBe('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
+  await dialog.accept();
+  await instagramClick;
+  await expect.poll(() => page.evaluate(() => window.__instagramCopiedUrl)).toBe(challengeUrl);
 
   const participantContext = await browser.newContext();
   const participant = await participantContext.newPage();
