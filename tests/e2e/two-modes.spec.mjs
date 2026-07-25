@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test.mjs';
 
 async function preparePage(page) {
   await page.addInitScript(() => {

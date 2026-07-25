@@ -158,21 +158,8 @@
     ]
   }
   </script>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-X07PVDQWYX"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    var analyticsEnabled = location.hostname !== 'localhost' && !location.hostname.endsWith('.local');
-    gtag('js', new Date());
-    gtag('config', 'G-X07PVDQWYX', {
-      page_location: location.origin + location.pathname,
-      page_path: location.pathname,
-      send_page_view: analyticsEnabled
-    });
-    window.trackEvent = function(name, params) {
-      if (analyticsEnabled && typeof gtag === 'function') gtag('event', name, params || {});
-    };
-  </script>
+  <!-- GA4は本番ドメインかつ、このブラウザが計測除外でない場合だけ読み込む -->
+  <script src="/analytics.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=RocknRoll+One&family=DotGothic16&display=swap" rel="stylesheet">

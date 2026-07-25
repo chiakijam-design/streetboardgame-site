@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test.mjs';
 
 const publicRoutes = ['/', '/challenge', '/live-challenge', '/live', '/remote', '/404.html'];
 const legalRoutes = [

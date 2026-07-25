@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.mjs';
 import { CHECKOUT_TERMS } from '../../src/live/checkout-terms-config.js';
 
 async function mockAdminLogin(page) {

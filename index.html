@@ -28,8 +28,6 @@
 <link rel="preload" as="image" href="/assets/character/girl-full-960.webp" imagesrcset="/assets/character/girl-full-480.webp 326w, /assets/character/girl-full-960.webp 653w, /assets/character/girl-full.webp 2088w" imagesizes="218px" type="image/webp" fetchpriority="high" />
 <link data-build-preload="react" rel="preload" href="/assets/vendor/react.production.min-d949f1c3687a.js" as="script" />
 <link data-build-preload="react_dom" rel="preload" href="/assets/vendor/react-dom.production.min-35f4f974f4b2.js" as="script" />
-<link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
 
 <!-- =========================
   OGP (SNSシェア用)
@@ -305,25 +303,8 @@
 }
 </script>
 
-<!-- =========================
-  Google Analytics 4
-  計測ID: G-X07PVDQWYX (GA4 - streetboardgame.com)
-========================= -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-X07PVDQWYX"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  var analyticsEnabled = location.hostname !== 'localhost' && !location.hostname.endsWith('.local');
-  gtag('js', new Date());
-  gtag('config', 'G-X07PVDQWYX', {
-    // localhostなどでは送信しない
-    send_page_view: analyticsEnabled
-  });
-  // 結果画面到達などのカスタムイベントを発火するためのヘルパー
-  window.trackEvent = function(name, params) {
-    if (analyticsEnabled && typeof gtag === 'function') gtag('event', name, params || {});
-  };
-</script>
+<!-- GA4は本番ドメインかつ、このブラウザが計測除外でない場合だけ読み込む -->
+<script src="/analytics.js"></script>
 
 <!-- =========================
   旧Wix URL からのルーティング

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test.mjs';
 
 test('運営だけが二要素認証後にお題を審査し、全問題の掲載先を変更できる', async ({ page }) => {
   const reviewBodies = [];
