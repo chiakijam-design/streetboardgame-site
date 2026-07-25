@@ -53,7 +53,7 @@ test('top page exposes normal and live creator buttons with the same primary des
   const rules = page.getByTestId('top-common-rules');
   const liveAgeNotice = page.getByTestId('live-age-notice');
   await expect(rules).toBeVisible();
-  await expect(rules).toContainText('あなたの理解度診断の作り方');
+  await expect(rules).not.toContainText('あなたの理解度診断の作り方');
   await expect(rules).toContainText('あなたの理解度診断を作って、みんなに挑戦してもらおう');
   await expect(rules).toHaveCSS(
     'background-image',

@@ -2511,21 +2511,8 @@ function CommonRulesCard({ creatorName, nameError, onCreatorNameChange, onStart 
       }}
     >
       <div style={{ textAlign: 'center' }}>
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          minHeight: 26,
-          padding: '5px 10px',
-          border: `2px solid ${proto.black}`,
-          borderRadius: 999,
-          background: proto.white,
-          fontFamily: proto.caption,
-          fontSize: 10,
-          fontWeight: 900,
-          letterSpacing: '0.08em',
-        }}>あなたの理解度診断の作り方</span>
         <h2 id="top-common-rules-title" style={{
-          margin: '12px 0 7px',
+          margin: '0 0 7px',
           fontFamily: proto.body,
           fontSize: 18,
           lineHeight: 1.5,
