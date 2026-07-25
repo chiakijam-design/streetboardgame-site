@@ -335,6 +335,23 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
     await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toBeVisible();
     await expect(participant.locator('.challenge-result')).toHaveCount(10);
     await expect(participant.getByText('ランキング参加者の中で 1位')).toBeVisible();
+    const resultImage = participant.getByTestId('challenge-result-image');
+    await expect(resultImage).toBeVisible();
+    await expect(resultImage).toHaveAttribute('alt', /ゆうさんのちあきさん理解度、10\/10問正解、称号は公認・理解王/);
+    await expect.poll(() => resultImage.evaluate((image) => ({
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+    }))).toEqual({ width: 1080, height: 1350 });
+    await expect(participant.getByRole('button', { name: 'この結果画像を保存' })).toBeEnabled();
+    const aiReview = participant.getByTestId('challenge-ai-review');
+    await expect(aiReview).toContainText('AI総評');
+    await expect(aiReview).toContainText('公認・理解王');
+    expect(await participant.evaluate(() => {
+      const answers = document.querySelector('.challenge-results');
+      const review = document.querySelector('[data-testid="challenge-ai-review"]');
+      return Boolean(answers && review
+        && (answers.compareDocumentPosition(review) & Node.DOCUMENT_POSITION_FOLLOWING));
+    })).toBe(true);
     await expect(participant.getByRole('link', { name: '自分も作る' })).toHaveAttribute('href', '/challenge');
     await participant.getByRole('link', { name: 'フレンドランキングを見る' }).click();
     await expect(participant.getByTestId('friend-ranking')).toContainText('ゆう');

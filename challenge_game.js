@@ -8,7 +8,9 @@ import {
 } from './src/questions/catalog.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { copyText, openLineShare, openXShare } from './src/platform/share.js';
+import { dataUrlToBlob, saveImageBlob } from './src/platform/imageSave.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
+import { getChallengeResultTier, getChallengeReviewLines } from './src/challenge/result.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -16,6 +18,8 @@ const QUESTION_COUNT = 10;
 const CHALLENGE_SHARE_VERSION = 'challenge-20260725-2';
 const CREATOR_DRAFT_KEY = 'watachan-challenge-creator-draft:v1';
 const MANAGE_HISTORY_KEY = 'watachan-challenge-manage-history:v1';
+const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
+const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
 const app = document.getElementById('challenge-app');
 let allCards = mergeChallengeCards(
   window.FRIEND_CARDS,
@@ -51,6 +55,9 @@ let state = {
   ranking: [],
   library: [],
   result: null,
+  resultImageUrl: '',
+  resultImageBusy: false,
+  resultImageError: '',
   error: '',
   loading: false,
   questionSubmissionConsent: true,
@@ -117,6 +124,10 @@ function render() {
                     : errorView();
   app.innerHTML = body;
   bindEvents();
+  if (state.mode === 'result' && state.result && !state.resultImageUrl
+    && !state.resultImageBusy && !state.resultImageError) {
+    prepareResultImage();
+  }
   if (questionViewportKey && questionViewportKey !== lastQuestionViewportKey) {
     requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
   }
@@ -462,6 +473,8 @@ function joinView() {
 function resultView() {
   const result = state.result;
   if (!result) return errorView();
+  const tier = getChallengeResultTier(result.score);
+  const reviewLines = getChallengeReviewLines(result);
   const rankingSummary = result.rank == null
     ? `${result.participant.name}さんはランキングに参加していません。`
     : `${result.participant.name}さんは、ランキング参加者の中で ${result.rank}位です。`;
@@ -470,6 +483,22 @@ function resultView() {
     `${result.score}/10問 正解`,
     rankingSummary,
     `<section class="challenge-panel">
+      <section class="challenge-result-image-section" aria-labelledby="challenge-result-image-title">
+        <span class="challenge-section-label">RESULT CARD</span>
+        <h2 id="challenge-result-image-title">${escapeHtml(result.participant.name)}さんの結果画像</h2>
+        <p class="challenge-result-title"><small>今日の称号</small><strong>${escapeHtml(tier.title)}</strong></p>
+        ${state.resultImageUrl
+          ? `<img class="challenge-result-image" data-testid="challenge-result-image"
+              src="${state.resultImageUrl}" width="1080" height="1350"
+              alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${result.score}/10問正解、称号は${escapeHtml(tier.title)}">`
+          : `<div class="challenge-result-image-loading" role="status">
+              ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
+            </div>`}
+        <button class="challenge-primary" data-action="save-result-image" ${state.resultImageUrl ? '' : 'disabled'}>
+          ${state.resultImageUrl ? 'この結果画像を保存' : '画像を準備中…'}
+        </button>
+        <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
+      </section>
       <h2>答え合わせ</h2>
       <div class="challenge-results">
         ${result.answers.map((answer, index) => `
@@ -480,6 +509,14 @@ function resultView() {
           </article>
         `).join('')}
       </div>
+      <section class="challenge-ai-review" data-testid="challenge-ai-review" aria-labelledby="challenge-ai-review-title">
+        <span class="challenge-section-label">REVIEW</span>
+        <h2 id="challenge-ai-review-title">AI総評</h2>
+        <div>
+          ${reviewLines.map((line) => `<p>${escapeHtml(line)}</p>`).join('')}
+        </div>
+        <small>回答内容をもとに用意された文章から総評を作成しています。</small>
+      </section>
       <a class="challenge-primary" href="/challenge">自分も作る</a>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">フレンドランキングを見る</a>
       <button class="challenge-secondary" data-action="share-result">結果をシェア</button>
@@ -621,6 +658,7 @@ function bindEvents() {
   document.querySelector('[data-action="refresh-ranking"]')?.addEventListener('click', loadRanking);
   document.querySelector('[data-action="join"]')?.addEventListener('click', joinRoom);
   document.querySelector('[data-action="share-result"]')?.addEventListener('click', shareResult);
+  document.querySelector('[data-action="save-result-image"]')?.addEventListener('click', saveChallengeResultImage);
   if (document.getElementById('challenge-qr') && state.room) {
     QRCode.toCanvas(
       document.getElementById('challenge-qr'),
@@ -1029,17 +1067,256 @@ async function loadResult(token = state.participantToken) {
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'result-failed');
-  setState({ loading: false, result: data, mode: 'result' });
+  setState({
+    loading: false,
+    result: data,
+    resultImageUrl: '',
+    resultImageBusy: false,
+    resultImageError: '',
+    mode: 'result',
+  });
+}
+
+function loadResultImage(src) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+}
+
+function resultRoundRect(context, x, y, width, height, radius) {
+  const safeRadius = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + safeRadius, y);
+  context.arcTo(x + width, y, x + width, y + height, safeRadius);
+  context.arcTo(x + width, y + height, x, y + height, safeRadius);
+  context.arcTo(x, y + height, x, y, safeRadius);
+  context.arcTo(x, y, x + width, y, safeRadius);
+  context.closePath();
+}
+
+function splitResultText(text, maxLength = 18, maxLines = 3) {
+  const value = String(text || '');
+  if (!value) return [];
+  const lines = [];
+  value.split('\n').forEach((paragraph) => {
+    for (let index = 0; index < paragraph.length; index += maxLength) {
+      lines.push(paragraph.slice(index, index + maxLength));
+    }
+  });
+  return lines.slice(0, maxLines);
+}
+
+function drawResultLines(context, lines, x, y, lineHeight) {
+  lines.forEach((line, index) => context.fillText(line, x, y + index * lineHeight));
+}
+
+async function createChallengeResultCanvas(result) {
+  await document.fonts?.ready?.catch(() => {});
+  const [girlImage, qrImage] = await Promise.all([
+    loadResultImage(RESULT_GIRL_IMAGE_SRC),
+    loadResultImage(RESULT_QR_IMAGE_SRC),
+  ]);
+  const tier = getChallengeResultTier(result.score);
+  const participantName = String(result.participant?.name || '回答者');
+  const creatorName = String(result.creatorName || '出題者');
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const context = canvas.getContext('2d');
+
+  context.fillStyle = '#ec4683';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  context.fillStyle = '#191919';
+  resultRoundRect(context, 68, 50, 944, 1250, 42);
+  context.fill();
+
+  context.fillStyle = '#ffffff';
+  resultRoundRect(context, 88, 70, 904, 1210, 34);
+  context.fill();
+
+  context.fillStyle = '#191919';
+  resultRoundRect(context, 88, 70, 904, 132, 34);
+  context.fill();
+  context.fillStyle = '#ffffff';
+  context.font = '700 31px "HuiFontP29", "Yu Gothic", sans-serif';
+  context.textAlign = 'left';
+  context.fillText(`${creatorName}さん理解度診断`, 132, 152);
+
+  context.fillStyle = tier.tagBg;
+  resultRoundRect(context, 742, 108, 194, 56, 28);
+  context.fill();
+  context.strokeStyle = '#ffffff';
+  context.lineWidth = 4;
+  resultRoundRect(context, 742, 108, 194, 56, 28);
+  context.stroke();
+  context.fillStyle = tier.tagColor;
+  context.font = '900 23px "Yu Gothic", sans-serif';
+  context.textAlign = 'center';
+  context.fillText(tier.tag, 839, 145);
+
+  context.fillStyle = '#fff8f1';
+  resultRoundRect(context, 140, 248, 800, 344, 30);
+  context.fill();
+  context.strokeStyle = '#ec4683';
+  context.setLineDash([18, 16]);
+  context.lineWidth = 6;
+  resultRoundRect(context, 140, 248, 800, 344, 30);
+  context.stroke();
+  context.setLineDash([]);
+
+  context.fillStyle = '#ec4683';
+  context.font = '700 31px "HuiFontP29", "Yu Gothic", sans-serif';
+  context.textAlign = 'left';
+  const scoreLabelLines = splitResultText(`${participantName}さんの\n${creatorName}さん理解度`, 13, 2);
+  drawResultLines(context, scoreLabelLines, 202, 326, 42);
+
+  context.font = '900 116px "Arial Black", "Yu Gothic", sans-serif';
+  context.shadowColor = '#191919';
+  context.shadowOffsetX = 8;
+  context.shadowOffsetY = 8;
+  context.fillText(`${result.score}/10`, 202, 500);
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
+
+  context.fillStyle = '#ffe36f';
+  resultRoundRect(context, 210, 514, 148, 50, 25);
+  context.fill();
+  context.strokeStyle = '#191919';
+  context.lineWidth = 4;
+  resultRoundRect(context, 210, 514, 148, 50, 25);
+  context.stroke();
+  context.fillStyle = '#191919';
+  context.font = '900 24px "Yu Gothic", sans-serif';
+  context.textAlign = 'center';
+  context.fillText('問正解', 284, 547);
+
+  context.fillStyle = '#55c9dd';
+  context.globalAlpha = 0.18;
+  context.beginPath();
+  context.arc(764, 418, 128, 0, Math.PI * 2);
+  context.fill();
+  context.globalAlpha = 1;
+  if (girlImage) {
+    context.save();
+    context.shadowColor = 'rgba(0,0,0,.18)';
+    context.shadowBlur = 18;
+    context.shadowOffsetY = 10;
+    context.drawImage(girlImage, 642, 286, 238, 284);
+    context.restore();
+  } else {
+    context.fillStyle = '#ec4683';
+    context.font = '900 86px sans-serif';
+    context.textAlign = 'center';
+    context.fillText('★', 764, 454);
+  }
+
+  context.fillStyle = '#191919';
+  resultRoundRect(context, 408, 628, 264, 46, 23);
+  context.fill();
+  context.fillStyle = '#ffe36f';
+  context.font = '900 25px "Yu Gothic", sans-serif';
+  context.textAlign = 'center';
+  context.fillText('今日の称号', 540, 660);
+
+  context.fillStyle = '#ec4683';
+  const titleLines = splitResultText(tier.title, 11, 2);
+  context.font = `900 ${titleLines.length > 1 ? 46 : 54}px "HuiFontP29", "Yu Gothic", sans-serif`;
+  drawResultLines(context, titleLines, 540, 740, 58);
+
+  context.fillStyle = '#ffffff';
+  resultRoundRect(context, 150, 816, 780, 248, 26);
+  context.fill();
+  context.strokeStyle = '#191919';
+  context.lineWidth = 6;
+  resultRoundRect(context, 150, 816, 780, 248, 26);
+  context.stroke();
+  context.fillStyle = '#191919';
+  context.font = '900 31px "HuiFontP29", "Yu Gothic", sans-serif';
+  const messageLines = splitResultText(tier.message, 20, 4);
+  drawResultLines(context, messageLines, 540, 878, 47);
+
+  context.fillStyle = '#ffe36f';
+  resultRoundRect(context, 156, 1094, 768, 132, 26);
+  context.fill();
+  context.strokeStyle = '#191919';
+  context.lineWidth = 5;
+  resultRoundRect(context, 156, 1094, 768, 132, 26);
+  context.stroke();
+  context.fillStyle = '#191919';
+  context.font = '900 28px "Yu Gothic", sans-serif';
+  context.fillText('この結果、友達に伝えよう', 448, 1134);
+  context.fillStyle = '#d63a75';
+  context.font = '900 22px "Yu Gothic", sans-serif';
+  context.fillText('あなたなら何問当てられる？', 448, 1168);
+  context.fillStyle = '#191919';
+  context.font = '700 22px monospace';
+  context.fillText('streetboardgame.com  /  #わたちゃん', 448, 1202);
+  if (qrImage) {
+    context.fillStyle = '#ffffff';
+    resultRoundRect(context, 776, 1106, 108, 108, 18);
+    context.fill();
+    context.drawImage(qrImage, 784, 1114, 92, 92);
+  }
+
+  return canvas;
+}
+
+async function prepareResultImage() {
+  if (!state.result || state.resultImageBusy || state.resultImageUrl) return;
+  state.resultImageBusy = true;
+  try {
+    const canvas = await createChallengeResultCanvas(state.result);
+    setState({
+      resultImageUrl: canvas.toDataURL('image/png'),
+      resultImageBusy: false,
+      resultImageError: '',
+    });
+  } catch (error) {
+    setState({
+      resultImageBusy: false,
+      resultImageError: '結果画像を作成できませんでした。ページを再読み込みしてください。',
+    });
+  }
+}
+
+async function saveChallengeResultImage() {
+  if (!state.resultImageUrl || !state.result) return;
+  const button = document.querySelector('[data-action="save-result-image"]');
+  const previousText = button?.textContent || '';
+  if (button) {
+    button.disabled = true;
+    button.textContent = '画像を保存しています…';
+  }
+  try {
+    const blob = dataUrlToBlob(state.resultImageUrl);
+    await saveImageBlob(
+      blob,
+      `watachan-challenge-result-${state.result.score}-of-10.png`,
+      'わたちゃん 理解度診断の結果画像',
+    );
+  } catch (error) {
+    if (error?.name !== 'AbortError') alert('画像を保存できませんでした。もう一度お試しください。');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = previousText;
+    }
+  }
 }
 
 async function shareResult() {
+  const tier = getChallengeResultTier(state.result.score);
   const rankingText = state.result.rank == null
     ? 'ランキング不参加'
     : `ランキング参加者の中で${state.result.rank}位`;
   const shareUrl = state.result.rank == null
     ? `${location.origin}/challenge?room=${state.result.code}`
     : `${location.origin}/challenge/ranking?room=${state.result.code}`;
-  const text = `${state.result.creatorName}さんの答え当てに挑戦して${state.result.score}/10問正解、${rankingText}！\n#わたちゃん\n${shareUrl}`;
+  const text = `${state.result.creatorName}さんの答え当てに挑戦して${state.result.score}/10問正解、${rankingText}！\n称号は「${tier.title}」\n#わたちゃん\n${shareUrl}`;
   if (navigator.share) {
     try {
       await navigator.share({ title: 'みんなに挑戦してもらう', text });
