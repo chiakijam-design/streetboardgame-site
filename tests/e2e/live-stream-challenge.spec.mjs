@@ -9,6 +9,30 @@ async function buildLiveQuestions(page, startIndex = 0) {
     await expect(page.getByTestId('live-question-builder')).toBeVisible();
     await expect(page.locator('.q-badge')).toHaveText(`Q${index + 1}/10`);
     await expect(page.locator('.live-builder-option')).toHaveCount(5);
+    if (index === 0) {
+      const paperCard = page.getByTestId('live-builder-paper-card');
+      const colorPad = page.getByTestId('live-builder-color-pad');
+      const colorChoices = colorPad.locator('.live-builder-color-choice');
+      await expect(colorChoices).toHaveCount(5);
+      const [paperBox, padBox, choiceBoxes] = await Promise.all([
+        paperCard.boundingBox(),
+        colorPad.boundingBox(),
+        colorChoices.evaluateAll((choices) => choices.map((choice) => {
+          const rect = choice.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        })),
+      ]);
+      expect(paperBox?.y + paperBox?.height).toBeLessThanOrEqual(padBox?.y);
+      choiceBoxes.forEach(({ width, height }) => {
+        expect(width).toBeGreaterThanOrEqual(44);
+        expect(height).toBeGreaterThanOrEqual(44);
+      });
+      const dimensions = await page.evaluate(() => ({
+        innerWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.innerWidth);
+    }
     await page.getByRole('button', {
       name: index === 9 ? /この問題を使ってLIVEを作る/ : /この問題を使う/,
     }).click();

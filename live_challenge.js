@@ -8,6 +8,8 @@ import {
 } from './src/questions/catalog.js';
 
 const QUESTION_COUNT = 10;
+const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
+const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
 const app = document.getElementById('live-challenge-app');
 let allCards = mergeChallengeCards(
   window.FRIEND_CARDS,
@@ -144,12 +146,28 @@ function createView() {
     </label>
     ${progressView(state.builderIndex)}
     <article class="live-builder-card" data-testid="live-question-builder">
-      <span class="q-badge">Q${state.builderIndex + 1}/10</span>
-      <h3>${escapeHtml(question.text)}</h3>
-      <div class="choices live-builder-options">
-        ${question.options.map((option, index) => `<div class="choice live-builder-option">
-          <span class="number">${index + 1}</span><span>${escapeHtml(option)}</span>
-        </div>`).join('')}
+      <div class="live-builder-paper" data-testid="live-builder-paper-card">
+        <span class="q-badge">Q${state.builderIndex + 1}/10</span>
+        <div class="live-builder-title"><h3>${escapeHtml(question.text)}</h3></div>
+        <div class="live-builder-options">
+          ${question.options.map((option, index) => `<div class="live-builder-option">
+            <i style="background:${COLORS[index]}" aria-hidden="true"></i>
+            <span>${escapeHtml(option)}</span>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="live-builder-color-pad" data-testid="live-builder-color-pad">
+        <div class="live-builder-color-heading">
+          <span>選択肢の色</span>
+          <small>答えは配信中に選択</small>
+        </div>
+        <div class="live-builder-color-choices" role="list" aria-label="5つの選択肢の色">
+          ${question.options.map((option, index) => `<div class="live-builder-color-choice" role="listitem" aria-label="${COLOR_NAMES[index]}：${escapeHtml(option)}">
+            <i style="background:${COLORS[index]}" aria-hidden="true"></i>
+            <span>${COLOR_NAMES[index]}</span>
+          </div>`).join('')}
+        </div>
+        <p>ドットの色は、お題カード左側の5色と対応しています</p>
       </div>
       <button class="primary" data-action="use-live-question">
         ${state.builderIndex === QUESTION_COUNT - 1 ? 'この問題を使ってLIVEを作る' : 'この問題を使う'} <span>▶</span>

@@ -76,13 +76,13 @@
     .challenge-answer-screen .challenge-progress span{width:12px;height:12px;background:rgba(255,255,255,.9)}
     .challenge-answer-screen .challenge-progress .is-active{width:26px;background:var(--yellow)}
     .challenge-answer-screen.is-participant .challenge-progress .is-active{background:var(--cyan)}
-    .challenge-answer-screen .challenge-card{position:relative;min-height:528px;overflow:hidden;padding:49px 18px 23px 63px;background:repeating-linear-gradient(to bottom,#fff 0,#fff 47px,#a8d4e8 48px,#a8d4e8 50px);border:3px solid #fff;border-radius:18px;box-shadow:0 14px 30px rgba(69,16,40,.34)}
-    .challenge-answer-screen .challenge-card::before{content:"";position:absolute;top:0;bottom:0;left:47px;width:2px;background:rgba(238,132,140,.58)}
-    .challenge-answer-screen .challenge-card::after{content:"";position:absolute;right:-25px;bottom:-28px;width:74px;height:126px;background:linear-gradient(132deg,transparent 0 47%,rgba(205,205,205,.9) 49%,#fff 72%);filter:drop-shadow(-5px -3px 4px rgba(0,0,0,.18));transform:rotate(5deg);pointer-events:none}
-    .challenge-answer-screen .challenge-q-number{position:absolute;top:11px;left:12px;z-index:2;padding:5px 10px;font-family:"HuiFontP29","ふい字",sans-serif;font-size:14px;line-height:1}
+    .challenge-answer-screen .challenge-card,.challenge-builder-card{position:relative;min-height:528px;overflow:hidden;padding:49px 18px 23px 63px;background:repeating-linear-gradient(to bottom,#fff 0,#fff 47px,#a8d4e8 48px,#a8d4e8 50px);border:3px solid #fff;border-radius:18px;box-shadow:0 14px 30px rgba(69,16,40,.34)}
+    .challenge-answer-screen .challenge-card::before,.challenge-builder-card::before{content:"";position:absolute;top:0;bottom:0;left:47px;width:2px;background:rgba(238,132,140,.58)}
+    .challenge-answer-screen .challenge-card::after,.challenge-builder-card::after{content:"";position:absolute;right:-25px;bottom:-28px;width:74px;height:126px;background:linear-gradient(132deg,transparent 0 47%,rgba(205,205,205,.9) 49%,#fff 72%);filter:drop-shadow(-5px -3px 4px rgba(0,0,0,.18));transform:rotate(5deg);pointer-events:none}
+    .challenge-answer-screen .challenge-q-number,.challenge-builder-card .challenge-q-number{position:absolute;top:11px;left:12px;z-index:2;padding:5px 10px;font-family:"HuiFontP29","ふい字",sans-serif;font-size:14px;line-height:1}
     .challenge-card-title{position:relative;z-index:1;margin:0 0 8px;padding:10px 7px;background:#75c7e6;transform:rotate(-.5deg)}
     .challenge-card-title::before{content:"";position:absolute;left:-2px;right:-2px;top:-11px;height:13px;background:radial-gradient(circle at 7px 13px,var(--pink) 0 6px,transparent 6.5px) 0 0/28px 13px repeat-x;opacity:.68}
-    .challenge-answer-screen .challenge-card h2{margin:0;font-family:"HuiFontP29","ふい字",sans-serif;font-size:clamp(22px,6.6vw,30px);font-weight:400;line-height:1.25;text-align:center}
+    .challenge-answer-screen .challenge-card h2,.challenge-builder-card h2{margin:0;font-family:"HuiFontP29","ふい字",sans-serif;font-size:clamp(22px,6.6vw,30px);font-weight:400;line-height:1.25;text-align:center}
     .challenge-card-choices{position:relative;z-index:1;display:grid}
     .challenge-card-choice{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:13px;min-height:68px;font-family:"HuiFontP29","ふい字",sans-serif;font-size:clamp(21px,5.8vw,27px);font-weight:400;line-height:1.15}
     .challenge-card-choice i{display:block;width:31px;height:31px;border:1px solid rgba(0,0,0,.15);border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,.2),inset 0 2px 2px rgba(255,255,255,.35)}
@@ -99,9 +99,10 @@
     .challenge-color-choice:active i,.challenge-color-choice.is-selected i{transform:translateY(-4px) scale(1.1);box-shadow:0 0 0 3px #fff,0 0 0 6px var(--yellow),0 7px 14px rgba(0,0,0,.3)}
     .challenge-answer-screen.is-participant .challenge-color-choice:active i,.challenge-answer-screen.is-participant .challenge-color-choice.is-selected i{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--cyan),0 7px 14px rgba(0,0,0,.3)}
     .challenge-answer-pad>p{margin:2px 0 0;color:#fff;font-size:8px;line-height:1.35;text-align:center;text-shadow:1px 1px 0 rgba(0,0,0,.35)}
+    .challenge-answer-pad.challenge-builder-answer-pad{position:relative;left:auto;bottom:auto;z-index:1;width:100%;max-width:none;margin:16px 0 0;transform:none}
     .challenge-answer-screen>.challenge-secondary{margin-top:16px}
-    @media(min-width:640px){.challenge-answer-screen{padding:0}.challenge-answer-screen .challenge-card{padding-left:67px}.challenge-answer-pad{bottom:10px}}
-    @media(max-width:380px){.challenge-answer-screen .challenge-card{min-height:500px;padding-left:58px}.challenge-card-choice{min-height:63px}.challenge-color-choice i{width:34px;height:34px}}
+    @media(min-width:640px){.challenge-answer-screen{padding:0}.challenge-answer-screen .challenge-card,.challenge-builder-card{padding-left:67px}.challenge-answer-pad{bottom:10px}}
+    @media(max-width:380px){.challenge-answer-screen .challenge-card,.challenge-builder-card{min-height:500px;padding-left:58px}.challenge-card-choice{min-height:63px}.challenge-color-choice i{width:34px;height:34px}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.challenge-loader{animation:none}}
   </style>
   <link rel="stylesheet" href="/accessibility.css?v=20260725-1" />
@@ -116,6 +117,6 @@
   <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
   <script data-build-entry="prototype_friend_data" src="/dist/prototype_friend_data-3YOIQLSI.js"></script>
   <script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
-  <script data-build-entry="challenge_game" src="/dist/challenge_game-HEUIID34.js"></script>
+  <script data-build-entry="challenge_game" src="/dist/challenge_game-PRYNPABY.js"></script>
 </body>
 </html>

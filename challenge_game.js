@@ -122,21 +122,40 @@ function creatorEditView() {
       <div class="challenge-progress" aria-label="${state.questionIndex + 1}問目、全10問">
         ${Array.from({ length: QUESTION_COUNT }, (_, index) => `<span class="${index <= state.questionIndex ? 'is-active' : ''}"></span>`).join('')}
       </div>
-      <article class="challenge-card challenge-builder-card">
+      <article class="challenge-card challenge-builder-card" data-testid="challenge-builder-paper-card">
         <div class="challenge-q-number">Q${state.questionIndex + 1}/10</div>
         <div class="challenge-card-title"><h2>${escapeHtml(card.title)}</h2></div>
-        <div class="challenge-builder-choices">
+        <div class="challenge-card-choices">
           ${card.choices.map((choice, index) => `
-            <button type="button" class="challenge-choice ${selected === index ? 'is-selected' : ''}"
-              data-action="builder-answer" data-choice="${index}">
+            <div class="challenge-card-choice">
               <i style="background:${COLORS[index]}" aria-hidden="true"></i>
               <span>${escapeHtml(choice)}</span>
-              <small>これを選ぶ</small>
-            </button>
+            </div>
           `).join('')}
         </div>
       </article>
-      <p class="challenge-builder-help">選択肢を押すと、この1問が完成します。</p>
+      <div class="challenge-answer-pad challenge-builder-answer-pad" data-testid="challenge-builder-answer-pad">
+        <div class="challenge-answer-pad-heading">
+          <span>自分の正解</span>
+          <small>タップで決定</small>
+        </div>
+        <div class="challenge-color-choices">
+          ${card.choices.map((choice, index) => `
+            <button
+              type="button"
+              data-action="builder-answer"
+              data-choice="${index}"
+              class="challenge-color-choice ${selected === index ? 'is-selected' : ''}"
+              aria-label="${escapeHtml(choice)}を正解に選ぶ"
+            >
+              <i style="background:${COLORS[index]}" aria-hidden="true"></i>
+              <span>${COLOR_NAMES[index]}</span>
+            </button>
+          `).join('')}
+        </div>
+        <p>ドットの色は、お題カード左側の5色と対応しています</p>
+      </div>
+      <p class="challenge-builder-help">色ボタンを押すと、この1問が完成します。</p>
       <div class="challenge-builder-actions">
         <button class="challenge-secondary" data-action="skip-question">↻ この問題をスキップ</button>
         <button class="challenge-secondary" data-action="edit-question">✎ 問題・選択肢を編集する</button>

@@ -40,8 +40,10 @@ async function buildChallengeQuestions(page, startIndex = 0) {
     await expect(page.locator('.challenge-q-number')).toHaveText(`Q${index + 1}/10`);
     if (index === 0) {
       const paperCard = page.locator('.challenge-builder-card');
+      const answerPad = page.getByTestId('challenge-builder-answer-pad');
       await expect(paperCard).toBeVisible();
-      await expect(paperCard.locator('[data-action="builder-answer"]')).toHaveCount(5);
+      await expect(paperCard.locator('.challenge-card-choice')).toHaveCount(5);
+      await expect(answerPad.locator('[data-action="builder-answer"]')).toHaveCount(5);
       await expect(page.getByRole('button', { name: /この問題をスキップ/ })).toBeVisible();
       await expect(page.getByRole('button', { name: /問題・選択肢を編集する/ })).toBeVisible();
     }
@@ -338,8 +340,30 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
   await page.getByLabel('出題者の名前（12文字まで）').fill('レイアウト確認');
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
   await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
-  await expect(page.locator('[data-action="builder-answer"]')).toHaveCount(5);
+  const builderCard = page.getByTestId('challenge-builder-paper-card');
+  const builderPad = page.getByTestId('challenge-builder-answer-pad');
+  const builderButtons = builderPad.locator('[data-action="builder-answer"]');
+  await expect(builderCard.locator('.challenge-card-choice')).toHaveCount(5);
+  await expect(builderButtons).toHaveCount(5);
   await expect(page.locator('.challenge-progress span')).toHaveCount(10);
+  const [cardBox, padBox, buttonBoxes] = await Promise.all([
+    builderCard.boundingBox(),
+    builderPad.boundingBox(),
+    builderButtons.evaluateAll((buttons) => buttons.map((button) => {
+      const rect = button.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    })),
+  ]);
+  expect(cardBox?.y + cardBox?.height).toBeLessThanOrEqual(padBox?.y);
+  buttonBoxes.forEach(({ width, height }) => {
+    expect(width).toBeGreaterThanOrEqual(44);
+    expect(height).toBeGreaterThanOrEqual(44);
+  });
+  const builderDimensions = await page.evaluate(() => ({
+    innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(builderDimensions.scrollWidth).toBeLessThanOrEqual(builderDimensions.innerWidth);
 });
 
 test('廃止した公開URLは挑戦モードへ恒久転送し、旧screen指定も開かない', async ({ page, request }, testInfo) => {
