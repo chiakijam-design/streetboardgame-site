@@ -109,6 +109,8 @@ if (state.view === 'host' || state.view === 'viewer') {
 
 function render() {
   if (!app) return;
+  document.documentElement.dataset.liveChallengeView = state.view;
+  document.documentElement.dataset.liveChallengePhase = state.game?.phase || '';
   const content = state.loading
     ? loadingView()
     : state.view === 'landing' ? landingView()
@@ -355,7 +357,7 @@ function hostQuestionView() {
   const question = game.question;
   const answer = state.hostAnswers[question.id];
   const answered = question.subjectAnswered;
-  return `<article class="question-card">
+  return `<article class="question-card live-active-question" data-testid="live-host-question">
     ${progressView(game.currentQuestionIndex)}
     <span class="q-label">配信者の秘密回答 ・ Q${game.currentQuestionIndex + 1}/10</span>
     <h2>${escapeHtml(question.text)}</h2>
@@ -417,7 +419,7 @@ function viewerQuestionView() {
   const answer = Object.prototype.hasOwnProperty.call(state.participantAnswers, question.id)
     ? Number(state.participantAnswers[question.id])
     : Number.isInteger(game.myVoteIndex) ? game.myVoteIndex : null;
-  return `<article class="question-card">
+  return `<article class="question-card live-active-question" data-testid="live-viewer-question">
     ${progressView(game.currentQuestionIndex)}
     <span class="q-label">${escapeHtml(game.subjectName)}さんと同じ答えなら1点 ・ Q${game.currentQuestionIndex + 1}/10</span>
     <h2>${escapeHtml(question.text)}</h2>

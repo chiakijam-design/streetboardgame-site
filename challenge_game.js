@@ -298,17 +298,10 @@ function questionView(isCreator) {
       <div class="challenge-progress" aria-label="${state.questionIndex + 1}問目、全10問">
         ${Array.from({ length: QUESTION_COUNT }, (_, index) => `<span class="${index <= state.questionIndex ? 'is-active' : ''}"></span>`).join('')}
       </div>
-      <article class="challenge-card" data-testid="challenge-paper-card">
-        <div class="challenge-q-number">Q${state.questionIndex + 1}/10</div>
-        <div class="challenge-card-title"><h2>${escapeHtml(card.title)}</h2></div>
-        <div class="challenge-card-choices">
-          ${card.choices.map((choice, index) => `
-            <div class="challenge-card-choice">
-              <i style="background:${COLORS[index]}" aria-hidden="true"></i>
-              <span>${escapeHtml(choice)}</span>
-            </div>
-          `).join('')}
-        </div>
+      <article class="challenge-card notebook-question-card" data-testid="challenge-paper-card">
+        <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/10</div>
+        <h2 class="notebook-card-accessible-title">${escapeHtml(card.title)}</h2>
+        ${renderNotebookQuestionCard(card)}
       </article>
       <div class="challenge-answer-pad" data-testid="challenge-answer-pad">
         <div class="challenge-answer-pad-heading">

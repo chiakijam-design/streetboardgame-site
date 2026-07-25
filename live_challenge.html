@@ -153,6 +153,23 @@
       .editor:last-child:nth-child(odd){grid-column:1/-1}
     }
     @media(max-width:380px){.question-report{grid-template-columns:1fr}.question-report label,.question-report small{grid-column:1}.live-builder-paper{padding-inline:14px}.live-builder-title{margin-inline:22px}.live-builder-option{grid-template-columns:66px minmax(0,1fr);padding-right:20px}}
+    html[data-live-challenge-phase="voting"] .shell{width:min(100%,640px);padding:max(6px,env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom))}
+    html[data-live-challenge-phase="voting"] .topbar,
+    html[data-live-challenge-phase="voting"] .hero,
+    html[data-live-challenge-phase="voting"] .footer{display:none}
+    html[data-live-challenge-phase="voting"] .app{margin-top:0}
+    html[data-live-challenge-phase="voting"] .live-active-question{min-height:calc(100dvh - 14px - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding:10px 11px;border-radius:14px}
+    html[data-live-challenge-phase="voting"] .live-active-question .progress{margin-bottom:7px}
+    html[data-live-challenge-phase="voting"] .live-active-question h2{margin:4px 0;font-size:clamp(18px,5vw,23px);line-height:1.25}
+    html[data-live-challenge-phase="voting"] .live-active-question .help{margin-top:3px;font-size:12px;line-height:1.45}
+    html[data-live-challenge-phase="voting"] .live-active-question .choices{gap:6px;margin-top:7px}
+    html[data-live-challenge-phase="voting"] .live-active-question .choice{min-height:48px;padding:6px 8px}
+    html[data-live-challenge-phase="voting"] .live-active-question .stats{margin-top:7px}
+    html[data-live-challenge-phase="voting"] .live-active-question .stat{padding:7px}
+    html[data-live-challenge-phase="voting"] .live-active-question .stat b{font-size:18px}
+    html[data-live-challenge-phase="voting"] .live-active-question .check{margin-top:7px;padding:7px}
+    html[data-live-challenge-phase="voting"] .live-active-question .primary{min-height:48px;margin-top:7px;padding:7px 10px}
+    html[data-live-challenge-phase="voting"] .live-active-question .notice{margin-top:7px;padding:7px}
   </style>
   <link rel="stylesheet" href="/question-card.css?v=20260725-1" />
   <link rel="stylesheet" href="/accessibility.css?v=20260725-1" />
@@ -175,6 +192,6 @@
   <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
   <script data-build-entry="prototype_friend_data" src="/dist/prototype_friend_data-3YOIQLSI.js"></script>
   <script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
-  <script data-build-entry="live_challenge" src="/dist/live_challenge-ND7TRKO3.js"></script>
+  <script data-build-entry="live_challenge" src="/dist/live_challenge-IAMSLN2A.js"></script>
 </body>
 </html>

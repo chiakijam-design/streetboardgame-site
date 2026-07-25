@@ -277,7 +277,11 @@ test('公開LIVEの結果画面に有料結果画像と4段階の応援金額を
   ]);
 });
 
-test('streamer and viewer answer ten questions and viewer receives a result card', async ({ page, context }) => {
+test('streamer and viewer answer ten questions and viewer receives a result card', async ({ page, context }, testInfo) => {
+  const activeViewport = testInfo.project.name.includes('mobile')
+    ? { width: 375, height: 667 }
+    : { width: 1280, height: 720 };
+  await page.setViewportSize(activeViewport);
   let questionSubmissionRequests = 0;
   await page.route('**/api/questions/submissions', async (route) => {
     await route.fulfill({
@@ -311,6 +315,7 @@ test('streamer and viewer answer ten questions and viewer receives a result card
   const code = (await page.locator('.room-code').textContent())?.trim() || '';
   expect(code).toMatch(/^[0-9]{6}$/);
   const viewer = await context.newPage();
+  await viewer.setViewportSize(activeViewport);
   await viewer.goto(`/live-challenge?room=${code}`);
   await viewer.getByLabel('あなたの名前（24文字まで）').fill('視聴者A');
   await viewer.getByRole('button', { name: /^参加する/ }).click();
@@ -320,8 +325,30 @@ test('streamer and viewer answer ten questions and viewer receives a result card
   await page.getByRole('button', { name: /10問をスタート/ }).click();
   for (let index = 0; index < 10; index += 1) {
     await expect(page.getByText(`Q${index + 1}/10`, { exact: false }).first()).toBeVisible();
+    if (index === 0) {
+      const hostQuestion = page.getByTestId('live-host-question');
+      await expect(hostQuestion.locator('[data-action="host-answer"]')).toHaveCount(5);
+      const [box, viewport] = await Promise.all([
+        hostQuestion.boundingBox(),
+        page.evaluate(() => ({ innerHeight, scrollY })),
+      ]);
+      expect(viewport.scrollY).toBe(0);
+      expect(box?.y).toBeGreaterThanOrEqual(0);
+      expect(box?.y + box?.height).toBeLessThanOrEqual(viewport.innerHeight);
+    }
     await page.locator('[data-action="host-answer"]').first().click();
     await expect(viewer.getByText(`Q${index + 1}/10`, { exact: false }).first()).toBeVisible();
+    if (index === 0) {
+      const viewerQuestion = viewer.getByTestId('live-viewer-question');
+      await expect(viewerQuestion.locator('[data-action="viewer-answer"]')).toHaveCount(5);
+      const [box, viewport] = await Promise.all([
+        viewerQuestion.boundingBox(),
+        viewer.evaluate(() => ({ innerHeight, scrollY })),
+      ]);
+      expect(viewport.scrollY).toBe(0);
+      expect(box?.y).toBeGreaterThanOrEqual(0);
+      expect(box?.y + box?.height).toBeLessThanOrEqual(viewport.innerHeight);
+    }
     await viewer.locator('[data-action="viewer-answer"]').first().click();
     await expect(viewer.getByText('回答済みです。')).toBeVisible();
     await page.locator('[data-action="advance"]').click();

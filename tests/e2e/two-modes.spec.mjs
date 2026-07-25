@@ -436,7 +436,10 @@ test('正解は回答前の公開レスポンスへ出さず、51人目をサー
   expect(await rejected.json()).toMatchObject({ error: 'room-full', maxParticipants: 50 });
 });
 
-test('PC・スマホとも横スクロールせず10問モードを操作できる', async ({ page }) => {
+test('PC・スマホとも横スクロールせず10問モードを操作できる', async ({ page }, testInfo) => {
+  await page.setViewportSize(testInfo.project.name.includes('mobile')
+    ? { width: 375, height: 667 }
+    : { width: 1280, height: 720 });
   await page.goto('/challenge');
   const dimensions = await page.evaluate(() => ({
     innerWidth,
@@ -522,9 +525,14 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
   const participantCard = page.getByTestId('challenge-paper-card');
   const participantPad = page.getByTestId('challenge-answer-pad');
   await expect(participantPad).toContainText('タップでドットの色を選択');
-  const [participantCardBox, participantPadBox, participantViewport] = await Promise.all([
+  await expect(participantCard.locator('.notebook-question-card-visual')).toHaveCount(1);
+  const [participantCardBox, participantPadBox, participantCardGeometry, participantViewport] = await Promise.all([
     participantCard.boundingBox(),
     participantPad.boundingBox(),
+    participantCard.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    }),
     page.evaluate(() => ({ innerHeight, scrollY })),
   ]);
   expect(participantViewport.scrollY).toBe(0);
@@ -532,6 +540,9 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
     expect(box?.y).toBeGreaterThanOrEqual(0);
     expect(box?.y + box?.height).toBeLessThanOrEqual(participantViewport.innerHeight);
   }
+  expect(participantCardBox?.y + participantCardBox?.height).toBeLessThanOrEqual(participantPadBox?.y - 4);
+  expect(participantCardGeometry.height / participantCardGeometry.width).toBeGreaterThan(1.47);
+  expect(participantCardGeometry.height / participantCardGeometry.width).toBeLessThan(1.50);
 });
 
 test('廃止した公開URLは挑戦モードへ恒久転送し、旧screen指定も開かない', async ({ page, request }, testInfo) => {
