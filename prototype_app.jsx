@@ -2671,16 +2671,6 @@ function CommonRulesCard({ creatorName, nameError, onCreatorNameChange, onStart 
           10問を作る → 配信で参加方法を案内 → 視聴者と同時回答
         </p>
       </form>
-      <p style={{
-        margin: '13px 0 0',
-        fontSize: 10,
-        lineHeight: 1.65,
-        textAlign: 'center',
-        fontWeight: 800,
-      }}>
-        通常版はあなたの答えを予想。ライブ版は<br/>
-        配信者と視聴者が同じ問題へ同時に答えます。
-      </p>
     </section>
   );
 }

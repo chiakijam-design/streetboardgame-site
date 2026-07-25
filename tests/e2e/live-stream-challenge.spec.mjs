@@ -55,6 +55,7 @@ test('top page exposes normal and live creator buttons with the same primary des
   await expect(rules).toBeVisible();
   await expect(rules).not.toContainText('あなたの理解度診断の作り方');
   await expect(rules).toContainText('あなたの理解度診断を作って、みんなに挑戦してもらおう');
+  await expect(rules).not.toContainText('通常版はあなたの答えを予想');
   await expect(rules).toHaveCSS(
     'background-image',
     'linear-gradient(160deg, rgb(255, 214, 229) 0%, rgb(255, 234, 241) 100%)',
