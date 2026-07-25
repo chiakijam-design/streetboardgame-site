@@ -340,10 +340,10 @@ async function handleRequest(request, env) {
         description: '自分が先に答えた10問を友達や家族に予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせとランキングを楽しめます。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
         ogTitle: 'みんなに挑戦してもらう｜わたちゃん',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge.png?v=20260725-ogp-2',
-        imageWidth: 1731,
-        imageHeight: 909,
-        imageAlt: 'わたちゃん みんなに挑戦してもらう',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge-v2.png?v=20260726-ogp-1',
+        imageWidth: 1200,
+        imageHeight: 630,
+        imageAlt: 'わたし理解度診断｜再挑戦OK・結果公開は任意・AI答え合わせレポート付き',
         pageId: CANONICAL_ORIGIN + '/challenge-guide#webpage',
         noscriptTitle: 'みんなに挑戦してもらう｜10問クイズの遊び方',
         noscriptBody: '自分が先に10問へ回答し、発行された専用URLを友達や家族へ送ると、最大50人があなたの答えを予想できます。',
@@ -876,7 +876,7 @@ function buildNoscript(page) {
 function buildStructuredData(page) {
   const organizationId = 'https://www.streetboardgame.com/#organization';
   const websiteId = 'https://www.streetboardgame.com/#website';
-  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge.png?v=20260725-ogp-2';
+  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge-v2.png?v=20260726-ogp-1';
 
   const webPage = {
     '@type': 'WebPage',

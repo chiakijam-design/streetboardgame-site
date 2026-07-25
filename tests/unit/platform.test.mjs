@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createStorageAdapter, readExpiringMap } from '../../src/platform/storage.js';
-import { openLineShare, openXShare } from '../../src/platform/share.js';
+import {
+  buildChallengeInviteText,
+  openLineShare,
+  openXShare,
+} from '../../src/platform/share.js';
 import { fetchImageBlob, sharePreparedImage } from '../../src/platform/imageSave.js';
 import { createRemoteClient } from '../../src/api/remoteClient.js';
 
@@ -32,6 +36,20 @@ test('LINE共有は端末に応じたURLを返す', () => {
   });
   assert.match(href, /^line:\/\/msg\/text\//);
   assert.equal(mobileWindow.location.href, href);
+});
+
+test('わたし理解度診断の招待文は再挑戦と任意公開を明記する', () => {
+  const text = buildChallengeInviteText({
+    creatorName: 'ちあき',
+    url: 'https://www.streetboardgame.com/challenge?room=ABCDEFGH',
+  });
+  assert.equal(
+    text,
+    'ちあきの「わたし理解度診断」📒\n'
+      + '結果を公開するかは自分で選べて、再挑戦もOK。\n'
+      + '10問やってみて👇\n'
+      + 'https://www.streetboardgame.com/challenge?room=ABCDEFGH',
+  );
 });
 
 test('X共有はPCで投稿画面を別タブに開く', () => {

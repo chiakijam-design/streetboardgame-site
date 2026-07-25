@@ -7,7 +7,12 @@ import {
   submitQuestionCandidates,
 } from './src/questions/catalog.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
-import { copyText, openLineShare, openXShare } from './src/platform/share.js';
+import {
+  buildChallengeInviteText,
+  copyText,
+  openLineShare,
+  openXShare,
+} from './src/platform/share.js';
 import { dataUrlToBlob, saveImageBlob } from './src/platform/imageSave.js';
 import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
@@ -22,7 +27,7 @@ import { isEnglish, localizeDom } from './src/i18n/runtime.js';
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
 const QUESTION_COUNT = 10;
-const CHALLENGE_SHARE_VERSION = 'challenge-20260725-2';
+const CHALLENGE_SHARE_VERSION = 'challenge-20260726-1';
 const CREATOR_DRAFT_KEY = 'watachan-challenge-creator-draft:v1';
 const MANAGE_HISTORY_KEY = 'watachan-challenge-manage-history:v1';
 const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
@@ -399,6 +404,10 @@ function manageView() {
             <span class="challenge-social-mark" aria-hidden="true">LINE</span>
             <span>LINE</span>
           </button>
+          <button type="button" class="challenge-social-button sms" data-action="share-native" aria-label="SMS・その他で送る">
+            <span class="challenge-social-mark" aria-hidden="true">SMS</span>
+            <span>SMS・その他</span>
+          </button>
         </div>
         <p class="challenge-instagram-note">Instagramはリンクをコピーして、ストーリーズなどに貼り付けてください。</p>
       </div>
@@ -748,8 +757,11 @@ function bindEvents() {
   document.querySelector('[data-action="share-x"]')?.addEventListener('click', () => {
     if (!state.room) return;
     const url = challengeUrl(state.room.code);
-    openXShare(shareText(state.room, url));
+    openXShare(isEnglish
+      ? shareText(state.room, url)
+      : `${state.room.creatorName}さんの「理解度診断」に挑戦！\n10問の答えを予想してね👇\n${url}`);
   });
+  document.querySelector('[data-action="share-native"]')?.addEventListener('click', shareParticipation);
   document.querySelector('[data-action="refresh-manage"]')?.addEventListener('click', loadManageRoom);
   document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
   document.querySelector('[data-action="report-question"]')?.addEventListener('click', (event) => reportQuestion(event.currentTarget));
@@ -1055,6 +1067,33 @@ async function shareToInstagram() {
   const copied = await copyText(challengeUrl(state.room.code));
   if (!copied) return setState({ error: 'copy-failed' });
   window.alert('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
+}
+
+async function shareParticipation() {
+  if (!state.room) return;
+  const url = challengeUrl(state.room.code);
+  const text = shareText(state.room, url);
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: isEnglish
+          ? `${state.room.creatorName}’s “Know Me” quiz`
+          : `${state.room.creatorName}の「わたし理解度診断」`,
+        text,
+      });
+      return;
+    } catch (error) {
+      if (error?.name === 'AbortError') return;
+    }
+  }
+  const copied = await copyText(text);
+  if (copied) {
+    window.alert(isEnglish
+      ? 'The invitation text was copied.'
+      : 'SMSなどで送れる共有文をコピーしました。');
+    return;
+  }
+  setState({ error: 'copy-failed' });
 }
 
 async function joinRoom() {
@@ -1614,9 +1653,11 @@ function manageUrl(code, token) {
 }
 
 function shareText(room, url) {
-  return isEnglish
-    ? `How well do you know ${room.creatorName}? Guess all 10 answers 👇\n${url}`
-    : `${room.creatorName}さんの「理解度診断」に挑戦！\n10問の答えを予想してね👇\n${url}`;
+  return buildChallengeInviteText({
+    creatorName: room.creatorName,
+    url,
+    isEnglish,
+  });
 }
 
 function errorMessage(code) {

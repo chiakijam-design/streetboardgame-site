@@ -48,6 +48,13 @@ export function openXShare(message, { windowRef = globalThis.window, navigatorRe
   return webUrl;
 }
 
+export function buildChallengeInviteText({ creatorName, url, isEnglish = false }) {
+  if (isEnglish) {
+    return `How well do you know ${creatorName}? Guess all 10 answers 👇\n${url}`;
+  }
+  return `${creatorName}の「わたし理解度診断」📒\n結果を公開するかは自分で選べて、再挑戦もOK。\n10問やってみて👇\n${url}`;
+}
+
 export async function copyText(text, { navigatorRef = globalThis.navigator, documentRef = globalThis.document } = {}) {
   if (navigatorRef?.clipboard?.writeText) {
     try {

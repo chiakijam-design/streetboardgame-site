@@ -66,14 +66,35 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await expect(page.getByRole('button', { name: 'Instagramでシェア' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Xでシェア' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'LINEで送る' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'SMS・その他で送る' })).toBeVisible();
   const url = await page.getByRole('textbox', { name: '挑戦用URL' }).inputValue();
-  expect(url).toMatch(/\/challenge\?room=[A-Z2-9]{8}&share=challenge-20260725-2$/);
+  expect(url).toMatch(/\/challenge\?room=[A-Z2-9]{8}&share=challenge-20260726-1$/);
   return url;
 }
 
 test.beforeEach(async ({ page, request }) => {
   await request.post('/__test/reset');
   await preparePage(page);
+});
+
+test('SMS・その他は再挑戦と任意公開を明記した招待文を共有する', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async (payload) => {
+        sessionStorage.setItem('captured-participation-share', JSON.stringify(payload));
+      },
+    });
+  });
+  const url = await createChallenge(page, 'ちあき');
+  await page.getByRole('button', { name: 'SMS・その他で送る' }).click();
+  const shared = await page.evaluate(() => JSON.parse(
+    sessionStorage.getItem('captured-participation-share') || 'null',
+  ));
+  expect(shared).toEqual({
+    title: 'ちあきの「わたし理解度診断」',
+    text: `ちあきの「わたし理解度診断」📒\n結果を公開するかは自分で選べて、再挑戦もOK。\n10問やってみて👇\n${url}`,
+  });
 });
 
 test('トップは作成者向けに通常版とライブ配信版の2本だけを案内する', async ({ page }) => {
