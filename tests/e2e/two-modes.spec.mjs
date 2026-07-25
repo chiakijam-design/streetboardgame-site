@@ -42,7 +42,8 @@ async function buildChallengeQuestions(page, startIndex = 0) {
       const paperCard = page.locator('.challenge-builder-card');
       const answerPad = page.getByTestId('challenge-builder-answer-pad');
       await expect(paperCard).toBeVisible();
-      await expect(paperCard.locator('.challenge-card-choice')).toHaveCount(5);
+      await expect(paperCard.locator('.notebook-question-card-visual')).toHaveCount(1);
+      await expect(paperCard.locator('.notebook-card-accessible-choices li')).toHaveCount(5);
       await expect(answerPad.locator('[data-action="builder-answer"]')).toHaveCount(5);
       await expect(page.getByRole('button', { name: /この問題をスキップ/ })).toBeVisible();
       await expect(page.getByRole('button', { name: /問題・選択肢を編集する/ })).toBeVisible();
