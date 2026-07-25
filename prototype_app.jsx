@@ -1765,7 +1765,7 @@ function TopScreen() {
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        <PillLabel>クイズを作る人向け</PillLabel>
+        <PillLabel>みんなの理解度診断</PillLabel>
 
         <div style={{ marginTop: 28, marginBottom: 8 }}>
           <LogoText size={42}>私のこと、</LogoText>

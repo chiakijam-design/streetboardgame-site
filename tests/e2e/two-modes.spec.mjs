@@ -71,6 +71,8 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   await page.goto('/');
   const challengeButton = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
   const liveButton = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
+  await expect(page.getByText('みんなの理解度診断', { exact: true })).toBeVisible();
+  await expect(page.getByText('クイズを作る人向け', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('あなたの名前（12文字まで）')).toBeVisible();
   await expect(page.getByText('このトップページは出題者・配信者向けです。')).toBeVisible();
   const [challengeStyle, liveStyle] = await Promise.all([
