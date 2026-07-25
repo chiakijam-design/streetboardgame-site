@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  originalQuestionCardImage,
   renderNotebookQuestionCard,
 } from '../../src/challenge/question-card.js';
 
@@ -13,37 +12,27 @@ const sourceCard = {
   choices: ['楽', '幸', '金', '無', '苦'],
 };
 
-test.beforeEach(() => {
-  globalThis.window = { ALL_CARDS: [sourceCard] };
-});
-
-test.afterEach(() => {
-  delete globalThis.window;
-});
-
-test('元の42問は完成済みWebPカードをそのまま使う', () => {
+test('元の42問も完成済み画像を使わず共通SVGで描画する', () => {
   const card = {
     ...sourceCard,
     id: 'LOVE37',
     sourceId: 'LOVE37',
   };
-  assert.equal(originalQuestionCardImage(card), '/assets/cards/37.webp');
   const markup = renderNotebookQuestionCard(card);
-  assert.match(markup, /<picture class="notebook-question-card-picture">/);
-  assert.match(markup, /src="\/assets\/cards\/37\.png"/);
+  assert.match(markup, /<svg[\s\S]+viewBox="0 0 756 1122"/);
+  assert.doesNotMatch(markup, /<picture|assets\/cards\/37/);
 });
 
-test('編集した問題は古い完成画像を使わず共通SVGへ切り替える', () => {
+test('編集した問題も同じ共通SVGで描画する', () => {
   const edited = {
     ...sourceCard,
     id: 'LOVE37',
     sourceId: 'LOVE37',
     title: '編集した問題',
   };
-  assert.equal(originalQuestionCardImage(edited), '');
   const markup = renderNotebookQuestionCard(edited);
   assert.match(markup, /<svg[\s\S]+viewBox="0 0 756 1122"/);
-  assert.doesNotMatch(markup, /assets\/cards\/37/);
+  assert.doesNotMatch(markup, /<picture|assets\/cards\/37/);
 });
 
 test('友達・家族・自作問題も同じ縦横比のノートカードで描画する', () => {

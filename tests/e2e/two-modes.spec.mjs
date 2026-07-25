@@ -185,8 +185,8 @@ test('旧愛情判定の42問を共通のお題として挑戦クイズに使え
   const builderCard = page.locator('.challenge-builder-card');
   await expect(builderCard.getByRole('heading', { level: 2 })).toHaveText(loveCard.title);
   await expect(builderCard).toContainText(loveCard.firstChoice);
-  await expect(builderCard.locator('.notebook-question-card-picture img'))
-    .toHaveAttribute('src', '/assets/cards/1.png');
+  await expect(builderCard.locator('svg.notebook-question-card-visual')).toHaveCount(1);
+  await expect(builderCard.locator('.notebook-question-card-picture')).toHaveCount(0);
 });
 
 test('自作お題は初期同意で、チェック状態を自分で変更して運営へ送信できる', async ({ page }) => {

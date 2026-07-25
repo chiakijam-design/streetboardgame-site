@@ -30,23 +30,6 @@ function splitLine(value, limit) {
   return [text.slice(0, preferredBreak), text.slice(preferredBreak)];
 }
 
-function sameQuestion(card, source) {
-  const choices = normalizedChoices(card);
-  return cardTitle(card) === String(source?.title || '')
-    && choices.length === 5
-    && choices.every((choice, index) => choice === String(source?.choices?.[index] || ''));
-}
-
-export function originalQuestionCardImage(card) {
-  const sourceId = String(card?.sourceId || card?.id || '');
-  const match = /^LOVE(\d+)$/.exec(sourceId);
-  if (!match || !Array.isArray(window.ALL_CARDS)) return '';
-  const source = window.ALL_CARDS.find((candidate) => String(candidate.id) === match[1]);
-  if (!source?.image || !sameQuestion(card, source)) return '';
-  const path = String(source.image).replace(/\\/g, '/');
-  return `/${path.replace(/^\/+/, '').replace(/\.png$/i, '.webp')}`;
-}
-
 function textElement(lines, { x, y, size, lineGap = 44, className = '' }) {
   const startY = y - ((lines.length - 1) * lineGap) / 2;
   return `<text class="${className}" x="${x}" y="${startY}" font-size="${size}" text-anchor="middle" dominant-baseline="middle">
@@ -106,22 +89,8 @@ function dynamicQuestionCardSvg(card) {
 }
 
 export function renderNotebookQuestionCard(card) {
-  const image = originalQuestionCardImage(card);
-  const title = cardTitle(card);
-  const visual = image ? `<picture class="notebook-question-card-picture">
-    <source srcset="${escapeMarkup(image)}" type="image/webp">
-    <img
-      class="notebook-question-card-visual"
-      src="${escapeMarkup(image.replace(/\.webp$/i, '.png'))}"
-      alt="${escapeMarkup(title)}"
-      width="${CARD_WIDTH}"
-      height="${CARD_HEIGHT}"
-      loading="eager"
-      decoding="async"
-    >
-  </picture>` : dynamicQuestionCardSvg(card);
   const accessibleChoices = normalizedChoices(card)
     .map((choice) => `<li>${escapeMarkup(choice)}</li>`)
     .join('');
-  return `${visual}<ol class="notebook-card-accessible-choices">${accessibleChoices}</ol>`;
+  return `${dynamicQuestionCardSvg(card)}<ol class="notebook-card-accessible-choices">${accessibleChoices}</ol>`;
 }
