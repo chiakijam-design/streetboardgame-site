@@ -1,15 +1,15 @@
-const LIVE_SERIES_NAME = 'YouTuberと視聴者の絆を判定する、私のことちゃんとわかってるよね?Youtubeライブver.';
+const LIVE_SERIES_NAME = 'わたし理解度診断｜私のこと、ちゃんと分かってるよね？ LIVE版';
 const LIVE_SERIES_HERO_LINES = Object.freeze([
-  'YouTuberと視聴者の絆を判定する、',
-  '私のことちゃんとわかってるよね？',
-  'Youtubeライブver.',
+  'わたし理解度診断',
+  '私のこと、ちゃんと分かってるよね？',
+  '当てるより、話すための10問。',
 ]);
 
 export const LIVE_SERIES = Object.freeze({
   name: LIVE_SERIES_NAME,
   heroLines: LIVE_SERIES_HERO_LINES,
-  shortName: 'LIVE',
-  entryLead: 'スタッフがYouTubeチャンネルから企画を作り、配信中に本人と視聴者が回答するライブゲーム',
+  shortName: 'LIVE版',
+  entryLead: '当てるより、話すための10問。配信中に配信者と視聴者が同時回答するライブゲーム',
   youtubeEntry: 'YouTubeチャンネルから問題を作る',
   defaultGameTitle: LIVE_SERIES_NAME,
   youtubePersonGenerateLabel: 'YouTuberの答えを視聴者が予想する（30問生成し、採用する問題を選ぶ）',

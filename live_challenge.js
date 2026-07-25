@@ -496,7 +496,11 @@ function viewerResultView() {
   const results = Array.isArray(state.game.results) ? state.game.results : [];
   const correct = results.filter((result) => result.myIsCorrect === true).length;
   return `<section class="result-card" data-testid="live-result-card">
-    <div class="result-top">LIVE CHALLENGE RESULT</div>
+    <div class="result-top">
+      <small>${isEnglish ? 'KNOW ME QUIZ · LIVE' : 'わたし理解度診断｜LIVE版'}</small>
+      <strong>${isEnglish ? 'How well do you know me?' : '私のこと、ちゃんと分かってるよね？'}</strong>
+      <span>${isEnglish ? '10 questions made for conversation.' : '当てるより、話すための10問。'}</span>
+    </div>
     <div class="score">
       <small>${escapeHtml(state.participantName)}さんの結果</small>
       <strong>${correct}/10</strong>
@@ -1102,7 +1106,15 @@ function saveResultCard() {
   roundedRect(context, 75, 75, 930, 1200, 34, '#FFF8F1');
   context.fillStyle = '#191919';
   context.fillRect(75, 75, 930, 180);
-  centerText(context, 'LIVE CHALLENGE RESULT', 165, '900 48px sans-serif', '#FFFFFF');
+  if (isEnglish) {
+    centerText(context, 'KNOW ME QUIZ · LIVE', 135, '900 38px sans-serif', '#FFE26B');
+    centerText(context, 'How well do you know me?', 185, '900 34px sans-serif', '#FFFFFF');
+    centerText(context, '10 questions made for conversation.', 225, '800 24px sans-serif', '#FFFFFF');
+  } else {
+    centerText(context, 'わたし理解度診断｜LIVE版', 130, '900 34px sans-serif', '#FFE26B');
+    centerText(context, '私のこと、ちゃんと分かってるよね？', 180, '900 34px sans-serif', '#FFFFFF');
+    centerText(context, '当てるより、話すための10問。', 225, '800 26px sans-serif', '#FFFFFF');
+  }
   centerText(context, isEnglish ? `${state.participantName}’s result` : `${state.participantName}さんの結果`, 345, '900 44px sans-serif', '#191919');
   centerText(context, `${correct}/10`, 560, '900 164px sans-serif', '#EC4F88');
   centerText(context, resultMessage(correct), 680, '900 42px sans-serif', '#191919');

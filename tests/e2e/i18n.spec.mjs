@@ -30,8 +30,8 @@ test('英語の主要ページは専用SEO・hreflangを持ち、言語切替は
   test.skip(testInfo.project.name === 'mobile-chrome', 'メタ情報は画面幅に依存しないためPCで1回検証');
   const routes = [
     ['/en/', 'Watachan | Make a quiz and challenge your friends', 'How well do you know me?'],
-    ['/en/challenge', 'Challenge Your Friends | How well do they know you?', 'Challenge your friends'],
-    ['/en/live-challenge', 'Livestream Challenge | Play with Instagram or YouTube viewers', 'Challenge your livestream viewers'],
+    ['/en/challenge', 'Challenge Your Friends | How well do they know you?', 'How well do you know me?'],
+    ['/en/live-challenge', 'Livestream Challenge | Play with Instagram or YouTube viewers', 'How well do you know me?'],
     ['/en/terms', 'Terms of Service | Streetboardgame', 'Terms of Service'],
     ['/en/privacy', 'Privacy Policy | Streetboardgame', 'Privacy Policy'],
   ];

@@ -288,9 +288,9 @@ function createStartView() {
   const preferredCard = allCards.find((card) => card.id === preferredCardId);
   const historyItems = manageHistory();
   return shell(
-    'NEW MODE',
-    'みんなに挑戦してもらう',
-    '先に自分が10問に回答。できたURLを送ると、最大50人があなたの答え当てに挑戦できます。',
+    'わたし理解度診断｜通常版',
+    '私のこと、ちゃんと分かってるよね？',
+    '当てるより、話すための10問。先に自分が回答し、できたURLを送ると最大50人が挑戦できます。',
     `<nav class="challenge-feature-nav" aria-label="挑戦モードのメニュー">
       <a href="/challenge/library">人気のお題ライブラリ</a>
       ${historyItems[0] ? `<a href="${manageUrl(historyItems[0].code, historyItems[0].token)}">主催者用回答管理</a>` : ''}
@@ -383,7 +383,7 @@ function manageView() {
     `<section class="challenge-panel challenge-share-screen" data-testid="challenge-share-screen">
       <div class="challenge-created-heading">
         <span aria-hidden="true">🏆</span>
-        <h2>${escapeHtml(room.creatorName)}さんの理解度診断ができました！</h2>
+        <h2>${escapeHtml(room.creatorName)}の「わたし理解度診断」ができました！</h2>
         <span aria-hidden="true">🏆</span>
       </div>
       <p class="challenge-share-lead">参加URLを友達に送りましょう！</p>
@@ -757,9 +757,7 @@ function bindEvents() {
   document.querySelector('[data-action="share-x"]')?.addEventListener('click', () => {
     if (!state.room) return;
     const url = challengeUrl(state.room.code);
-    openXShare(isEnglish
-      ? shareText(state.room, url)
-      : `${state.room.creatorName}さんの「理解度診断」に挑戦！\n10問の答えを予想してね👇\n${url}`);
+    openXShare(shareText(state.room, url));
   });
   document.querySelector('[data-action="share-native"]')?.addEventListener('click', shareParticipation);
   document.querySelector('[data-action="refresh-manage"]')?.addEventListener('click', loadManageRoom);
@@ -1363,21 +1361,26 @@ async function createChallengeResultCanvas(result) {
   resultRoundRect(context, 88, 70, 904, 132, 34);
   context.fill();
   context.fillStyle = '#ffffff';
-  context.font = '700 31px "HuiFontP29", "Yu Gothic", sans-serif';
+  context.font = '900 22px "Yu Gothic", sans-serif';
   context.textAlign = 'left';
-  context.fillText(isEnglish ? `How well do you know ${creatorName}?` : `${creatorName}さん理解度診断`, 132, 152);
+  context.fillText(isEnglish ? 'KNOW ME QUIZ' : 'わたし理解度診断', 132, 112);
+  context.font = '700 25px "HuiFontP29", "Yu Gothic", sans-serif';
+  context.fillText(isEnglish ? `How well do you know ${creatorName}?` : '私のこと、ちゃんと分かってるよね？', 132, 151);
+  context.font = '700 19px "Yu Gothic", sans-serif';
+  context.fillStyle = '#ffe26b';
+  context.fillText(isEnglish ? '10 questions made for conversation.' : '当てるより、話すための10問。', 132, 184);
 
   context.fillStyle = tier.tagBg;
-  resultRoundRect(context, 742, 108, 194, 56, 28);
+  resultRoundRect(context, 760, 92, 176, 50, 25);
   context.fill();
   context.strokeStyle = '#ffffff';
   context.lineWidth = 4;
-  resultRoundRect(context, 742, 108, 194, 56, 28);
+  resultRoundRect(context, 760, 92, 176, 50, 25);
   context.stroke();
   context.fillStyle = tier.tagColor;
-  context.font = '900 23px "Yu Gothic", sans-serif';
+  context.font = '900 21px "Yu Gothic", sans-serif';
   context.textAlign = 'center';
-  context.fillText(tier.tag, 839, 145);
+  context.fillText(tier.tag, 848, 125);
 
   context.fillStyle = '#fff8f1';
   resultRoundRect(context, 140, 248, 800, 344, 30);
@@ -1521,7 +1524,7 @@ async function saveChallengeResultImage() {
     await saveImageBlob(
       blob,
       `watachan-challenge-result-${state.result.score}-of-10.png`,
-      'わたちゃん 理解度診断の結果画像',
+      'わたし理解度診断｜私のこと、ちゃんと分かってるよね？ 結果画像',
     );
   } catch (error) {
     if (error?.name !== 'AbortError') alert('画像を保存できませんでした。もう一度お試しください。');
@@ -1543,10 +1546,10 @@ async function shareResult() {
     : `${location.origin}${languagePrefix}/challenge/ranking?room=${state.result.code}`;
   const text = isEnglish
     ? `I scored ${state.result.score}/10 on ${state.result.creatorName}’s quiz and ${rankingText}!\nMy title: “${tier.title}”\n#Watachan\n${shareUrl}`
-    : `${state.result.creatorName}さんの答え当てに挑戦して${state.result.score}/10問正解、${rankingText}！\n称号は「${tier.title}」\n#わたちゃん\n${shareUrl}`;
+    : `${state.result.creatorName}の「わたし理解度診断」結果：${state.result.score}/10問正解、${rankingText}！\n私のこと、ちゃんと分かってるよね？\n当てるより、話すための10問。\n称号は「${tier.title}」\n#わたちゃん\n${shareUrl}`;
   if (navigator.share) {
     try {
-      await navigator.share({ title: isEnglish ? 'Challenge your friends' : 'みんなに挑戦してもらう', text });
+      await navigator.share({ title: isEnglish ? 'Challenge your friends' : 'わたし理解度診断', text });
       return;
     } catch (error) {
       if (error?.name === 'AbortError') return;
@@ -1688,13 +1691,13 @@ async function bootChallenge() {
     state.cards = pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard);
   }
   if (state.mode === 'library') {
-  document.title = isEnglish ? 'Popular questions | How well do you know me?' : '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？';
+  document.title = isEnglish ? 'Popular questions | How well do you know me?' : '人気のお題ライブラリ｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   loadLibrary();
   } else if (state.mode === 'ranking') {
-  document.title = isEnglish ? 'Leaderboard | How well do you know me?' : 'フレンドランキング｜私のこと、ちゃんと分かってるよね？';
+  document.title = isEnglish ? 'Leaderboard | How well do you know me?' : 'フレンドランキング｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   loadRanking();
   } else if (state.mode === 'manage') {
-  document.title = isEnglish ? 'Manage responses | How well do you know me?' : '主催者用回答管理｜私のこと、ちゃんと分かってるよね？';
+  document.title = isEnglish ? 'Manage responses | How well do you know me?' : '主催者用回答管理｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   loadManageRoom();
   } else if (state.mode === 'join') {
   loadRoom();

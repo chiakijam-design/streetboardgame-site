@@ -46,6 +46,8 @@ test('わたし理解度診断の招待文は再挑戦と任意公開を明記�
   assert.equal(
     text,
     'ちあきの「わたし理解度診断」📒\n'
+      + '私のこと、ちゃんと分かってるよね？\n'
+      + '当てるより、話すための10問。\n'
       + '結果を公開するかは自分で選べて、再挑戦もOK。\n'
       + '10問やってみて👇\n'
       + 'https://www.streetboardgame.com/challenge?room=ABCDEFGH',

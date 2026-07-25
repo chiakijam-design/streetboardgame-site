@@ -5,11 +5,11 @@ const ORIGIN = 'https://www.streetboardgame.com';
 test('公開する2モードと共通ページのSEO・構造が一貫する', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'SEOメタは画面幅に依存しないためPCで1回検証');
   const routes = [
-    ['/', 'わたちゃん｜自分のクイズを作ってみんなに挑戦してもらう', 'わたちゃん｜自分のクイズを作ってみんなに挑戦してもらう'],
+    ['/', 'わたし理解度診断｜私のこと、ちゃんと分かってるよね？', 'わたし理解度診断｜私のこと、ちゃんと分かってるよね？'],
     ['/challenge-guide', 'みんなに挑戦してもらう｜10問クイズの遊び方・作り方', 'みんなに挑戦してもらう'],
-    ['/challenge', 'みんなに挑戦してもらう｜私のこと、ちゃんと分かってるよね？', 'みんなに挑戦してもらう'],
-    ['/challenge/library', '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？', '人気のお題ライブラリ'],
-    ['/live-challenge', 'ライブ配信でみんなに挑戦してもらう｜無料10問クイズ', 'ライブ配信で'],
+    ['/challenge', '通常版｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？', '私のこと、ちゃんと分かってるよね？'],
+    ['/challenge/library', '人気のお題ライブラリ｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？', '人気のお題ライブラリ'],
+    ['/live-challenge', 'LIVE版｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？', '私のこと、ちゃんと'],
     ['/about', 'About｜わたちゃん・みんなに挑戦してもらうクイズ', 'About'],
     ['/product', '製品版｜私のこと、ちゃんと分かってるよね？', '製品版もあります'],
     ['/terms', '利用規約｜Streetboardgame', '利用規約'],
@@ -141,7 +141,7 @@ test('トップの自己ホストスクリプトをCSPで拒否せず、不要�
 
 test('挑戦モードと説明ページは専用OGP画像を配信する', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'OGPメタと画像配信は画面幅に依存しないためPCで1回検証');
-  const imageUrl = `${ORIGIN}/assets/ogp-challenge-v2.png?v=20260726-ogp-1`;
+  const imageUrl = `${ORIGIN}/assets/ogp-challenge-v3.png?v=20260726-ogp-2`;
   for (const path of ['/challenge', '/challenge-guide']) {
     await page.goto(path);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', imageUrl);
@@ -152,7 +152,7 @@ test('挑戦モードと説明ページは専用OGP画像を配信する', async
   await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', shareUrl);
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
   await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', imageUrl);
-  const imageResponse = await request.get('/assets/ogp-challenge-v2.png');
+  const imageResponse = await request.get('/assets/ogp-challenge-v3.png');
   expect(imageResponse.status()).toBe(200);
   expect(imageResponse.headers()['content-type']).toBe('image/png');
   expect((await imageResponse.body()).byteLength).toBeGreaterThan(100_000);

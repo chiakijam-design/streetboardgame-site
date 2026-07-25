@@ -1759,14 +1759,14 @@ function TopScreen() {
       {/* 背景ノイズ感 (薄いハート散らし) */}
       <Decor />
       <h1 id="site-title" style={srOnlyStyle()}>
-        わたちゃん｜自分のクイズを作ってみんなに挑戦してもらう
+        わたし理解度診断｜私のこと、ちゃんと分かってるよね？
       </h1>
       <p style={srOnlyStyle()}>
-        あなたが10問のクイズを作り、LINEなどで参加URLを送って、友達や視聴者に自分の答えを当ててもらう無料ゲームです。
+        当てるより、話すための10問。通常版とLIVE版で、友達や視聴者に自分の答えを当ててもらう無料ゲームです。
       </p>
 
       <div style={{ padding: '50px 24px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        <PillLabel>みんなの理解度診断</PillLabel>
+        <PillLabel>わたし理解度診断</PillLabel>
 
         <div style={{ marginTop: 28, marginBottom: 8 }}>
           <LogoText size={42}>私のこと、</LogoText>
@@ -1780,6 +1780,15 @@ function TopScreen() {
 
         <div style={{
           marginTop: 14,
+          fontSize: 16,
+          lineHeight: 1.5,
+          fontWeight: 900,
+          color: proto.white,
+          letterSpacing: '0.03em',
+        }}>当てるより、話すための10問。</div>
+
+        <div style={{
+          marginTop: 8,
           fontFamily: proto.caption,
           fontSize: 10, color: proto.white, opacity: 0.85,
           letterSpacing: '0.25em',
@@ -2521,7 +2530,7 @@ function CommonRulesCard({ creatorName, nameError, onCreatorNameChange, onStart 
           fontSize: 18,
           lineHeight: 1.5,
         }}>
-          あなたの理解度診断を作って、<br/>みんなに挑戦してもらおう
+          あなたの「わたし理解度診断」を作って、<br/>みんなに挑戦してもらおう
         </h2>
       </div>
       <ol style={{

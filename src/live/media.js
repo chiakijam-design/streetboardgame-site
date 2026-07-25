@@ -218,8 +218,10 @@ function buildResultSvg(input) {
   <rect x="${s(28)}" y="${s(28)}" width="${s(484)}" height="${s(619)}" rx="${s(22)}" fill="#1A1A1A"/>
   <rect x="${s(38)}" y="${s(38)}" width="${s(464)}" height="${s(599)}" rx="${s(18)}" fill="${isPerfect ? '#FFF6D6' : '#FFF8F1'}"/>
   <path d="M${s(38)} ${s(56)}a${s(18)} ${s(18)} 0 0 1 ${s(18)} -${s(18)}h${s(428)}a${s(18)} ${s(18)} 0 0 1 ${s(18)} ${s(18)}v${s(70)}H${s(38)}z" fill="#1A1A1A"/>
-  <text x="${s(58)}" y="${s(76)}" fill="#fff" font-size="${s(16)}" font-weight="900" font-family="sans-serif">${escapeXml(channelName)}</text>
-  <text x="${s(58)}" y="${s(104)}" fill="${isPerfect ? '#FFE26B' : '#5BD4E8'}" font-size="${s(12)}" font-weight="900" font-family="monospace">${isPerfect ? 'PERFECT RESULT' : 'LIVE RESULT'}</text>
+  <text x="${s(58)}" y="${s(59)}" fill="${isPerfect ? '#FFE26B' : '#5BD4E8'}" font-size="${s(9)}" font-weight="900" font-family="sans-serif">わたし理解度診断｜LIVE版</text>
+  <text x="${s(58)}" y="${s(78)}" fill="#fff" font-size="${s(12)}" font-weight="900" font-family="sans-serif">私のこと、ちゃんと分かってるよね？</text>
+  <text x="${s(58)}" y="${s(96)}" fill="#fff" font-size="${s(9)}" font-weight="800" font-family="sans-serif">当てるより、話すための10問。</text>
+  <text x="${s(58)}" y="${s(114)}" fill="${isPerfect ? '#FFE26B' : '#5BD4E8'}" font-size="${s(9)}" font-weight="900" font-family="sans-serif">${escapeXml(channelName)} · ${isPerfect ? 'PERFECT RESULT' : 'LIVE RESULT'}</text>
   ${perfectDecor}
   <defs><clipPath id="portrait"><circle cx="${s(270)}" cy="${s(235)}" r="${s(92)}"/></clipPath></defs>
   <image href="${input.portrait}" x="${s(178)}" y="${s(143)}" width="${s(184)}" height="${s(184)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#portrait)"/>

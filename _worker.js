@@ -340,10 +340,10 @@ async function handleRequest(request, env) {
         description: '自分が先に答えた10問を友達や家族に予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせとランキングを楽しめます。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
         ogTitle: 'みんなに挑戦してもらう｜わたちゃん',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge-v2.png?v=20260726-ogp-1',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge-v3.png?v=20260726-ogp-2',
         imageWidth: 1200,
         imageHeight: 630,
-        imageAlt: 'わたし理解度診断｜再挑戦OK・結果公開は任意・AI答え合わせレポート付き',
+        imageAlt: 'わたし理解度診断｜私のこと、ちゃんと分かってるよね？｜当てるより、話すための10問。',
         pageId: CANONICAL_ORIGIN + '/challenge-guide#webpage',
         noscriptTitle: 'みんなに挑戦してもらう｜10問クイズの遊び方',
         noscriptBody: '自分が先に10問へ回答し、発行された専用URLを友達や家族へ送ると、最大50人があなたの答えを予想できます。',
@@ -677,7 +677,7 @@ function applySeoMeta(html, page) {
 }
 
 function applyChallengeLibraryMeta(html) {
-  const title = '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？';
+  const title = '人気のお題ライブラリ｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   const description = '友達や家族が実際に遊んだ回数から、人気の質問と5つの選択肢を探せる無料のお題ライブラリです。気になるお題を入れて10問クイズを作れます。';
   const url = CANONICAL_ORIGIN + '/challenge/library';
   const breadcrumbId = url + '#breadcrumb';
@@ -815,7 +815,11 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
   }
   localized = localized
     .replace('<meta property="og:locale" content="en_US">', '<meta property="og:locale" content="en_US">\n  <meta property="og:locale:alternate" content="ja_JP">')
+    .replace('わたし理解度診断｜LIVE版', 'Know Me Quiz | Live')
+    .replace('<h1>私のこと、ちゃんと<br>分かってるよね？</h1>', '<h1>How well do you<br>know me?</h1>')
     .replace('私のこと、ちゃんと分かってるよね？', 'How well do you know me?')
+    .replace('<strong>当てるより、話すための10問。</strong>', '<strong>10 questions made for conversation.</strong>')
+    .replace('配信者と視聴者が同時回答し、答えが一致するたび1点。最後に一人ずつ結果カードが出ます。', 'The streamer and viewers answer together. Earn one point for every match and get a personal result card.')
     .replace('← トップへ', '← Home')
     .replace('トップへ', 'Home')
     .replace('最大1,000人', 'Up to 1,000 players')
@@ -876,7 +880,7 @@ function buildNoscript(page) {
 function buildStructuredData(page) {
   const organizationId = 'https://www.streetboardgame.com/#organization';
   const websiteId = 'https://www.streetboardgame.com/#website';
-  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge-v2.png?v=20260726-ogp-1';
+  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=20260726-ogp-2';
 
   const webPage = {
     '@type': 'WebPage',

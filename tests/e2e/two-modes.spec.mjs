@@ -61,7 +61,7 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await expect(page.getByLabel('このクイズを友達や他の人も使えるようにする')).toBeChecked();
   await buildChallengeQuestions(page);
   await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
-  await expect(page.getByTestId('challenge-share-screen')).toContainText(`${creatorName}さんの理解度診断ができました！`);
+  await expect(page.getByTestId('challenge-share-screen')).toContainText(`${creatorName}の「わたし理解度診断」ができました！`);
   await expect(page.getByRole('button', { name: 'リンクをコピーする' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Instagramでシェア' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Xでシェア' })).toBeVisible();
@@ -93,7 +93,7 @@ test('SMS・その他は再挑戦と任意公開を明記した招待文を共�
   ));
   expect(shared).toEqual({
     title: 'ちあきの「わたし理解度診断」',
-    text: `ちあきの「わたし理解度診断」📒\n結果を公開するかは自分で選べて、再挑戦もOK。\n10問やってみて👇\n${url}`,
+    text: `ちあきの「わたし理解度診断」📒\n私のこと、ちゃんと分かってるよね？\n当てるより、話すための10問。\n結果を公開するかは自分で選べて、再挑戦もOK。\n10問やってみて👇\n${url}`,
   });
 });
 
@@ -101,7 +101,7 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   await page.goto('/');
   const challengeButton = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
   const liveButton = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
-  await expect(page.getByText('みんなの理解度診断', { exact: true })).toBeVisible();
+  await expect(page.getByText('わたし理解度診断', { exact: true })).toBeVisible();
   await expect(page.getByText('クイズを作る人向け', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('あなたの名前（12文字まで）')).toBeVisible();
   await expect(page.getByText('この説明は出題者向けです。')).toHaveCount(0);

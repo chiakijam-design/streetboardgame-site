@@ -3,6 +3,8 @@ export const isEnglish = /^\/en(?:\/|$)/.test(window.location.pathname);
 
 const UI_TEXT = new Map(Object.entries({
   '私のこと、ちゃんと分かってるよね？': 'How well do you know me?',
+  'わたし理解度診断｜通常版': 'Know Me Quiz | Standard',
+  '当てるより、話すための10問。先に自分が回答し、できたURLを送ると最大50人が挑戦できます。': '10 questions made for conversation. Answer first, then share the link so up to 50 friends can play.',
   'トップへ': 'Home',
   'トップへ戻る': 'Back to home',
   '戻る': 'Back',
@@ -315,6 +317,8 @@ function translatePattern(text) {
   match = text.match(/^(.+)さんのクイズを共有し、参加状況と一人ずつの回答を確認できます。$/);
   if (match) return `Share ${match[1]}’s quiz and review participation and individual responses.`;
   match = text.match(/^(.+)さんの理解度診断ができました！$/);
+  if (match) return `${match[1]}’s “Know Me” quiz is ready!`;
+  match = text.match(/^(.+)の「わたし理解度診断」ができました！$/);
   if (match) return `${match[1]}’s “Know Me” quiz is ready!`;
   match = text.match(/^(.+)さんからの挑戦$/);
   if (match) return `${match[1]} challenged you`;

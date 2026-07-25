@@ -54,7 +54,7 @@ test('top page exposes normal and live creator buttons with the same primary des
   const liveAgeNotice = page.getByTestId('live-age-notice');
   await expect(rules).toBeVisible();
   await expect(rules).not.toContainText('あなたの理解度診断の作り方');
-  await expect(rules).toContainText('あなたの理解度診断を作って、みんなに挑戦してもらおう');
+  await expect(rules).toContainText('あなたの「わたし理解度診断」を作って、みんなに挑戦してもらおう');
   await expect(rules).not.toContainText('通常版はあなたの答えを予想');
   await expect(rules).toHaveCSS(
     'background-image',
@@ -297,7 +297,7 @@ test('streamer and viewer answer ten questions and viewer receives a result card
     }
   });
   await page.goto('/live-challenge');
-  await expect(page.getByRole('heading', { name: /ライブ配信で/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /私のこと、ちゃんと/ })).toBeVisible();
   await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
   await expect(page.getByLabel('このクイズを友達や他の人も使えるようにする')).toBeChecked();
   await page.getByLabel('配信者名（24文字まで）').fill('わたちゃん');
