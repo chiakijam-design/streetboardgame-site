@@ -160,6 +160,8 @@ test('トップ下部から挑戦モードの説明を読み、10問クイズ作
   await expect(page.getByRole('heading', { level: 1, name: 'みんなに挑戦してもらう' })).toBeVisible();
   await expect(page.getByText('あなたの答えを、最大50人が予想します', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: '10問クイズを作る' })).toHaveAttribute('href', '/challenge');
+  await expect(page.getByRole('link', { name: '彼氏の愛情判定を見る' })).toHaveCount(0);
+  await expect(page.locator('a[href="/love"]')).toHaveCount(0);
 });
 
 test('旧愛情判定の42問を共通のお題として挑戦クイズに使える', async ({ page }) => {

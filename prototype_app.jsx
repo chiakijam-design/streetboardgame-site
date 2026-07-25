@@ -1967,9 +1967,7 @@ const GAME_INTRO_CONTENT = {
     ],
     cta: '10問クイズを作る',
     ctaHref: '/challenge',
-    related: [
-      { label: '彼氏の愛情判定を見る', href: '/love', action: 'love' },
-    ],
+    related: [],
   },
   friend: {
     pill: 'FRIEND CHECK',
@@ -2345,32 +2343,34 @@ function GameIntroPage({ kind, onBack, onStart, onLove, onFriend, onFamily }) {
           </button>
         )}
 
-        <nav aria-label="関連ゲーム" style={{ display: 'grid', gap: 10, marginTop: 14 }}>
-          {content.related.map((item) => {
-            const action = actionMap[item.action];
-            return (
-              <a key={item.href} href={item.href} onClick={(event) => {
-                if (!action) return;
-                event.preventDefault();
-                action();
-              }} style={{
-                display: 'block',
-                textAlign: 'center',
-                background: proto.white,
-                color: proto.black,
-                border: `2.5px solid ${proto.black}`,
-                borderRadius: 12,
-                boxShadow: '3px 3px 0 #000',
-                padding: '13px 12px',
-                fontSize: 13,
-                fontWeight: 900,
-                textDecoration: 'none',
-              }}>
-                {item.label}
-              </a>
-            );
-          })}
-        </nav>
+        {content.related.length > 0 && (
+          <nav aria-label="関連ゲーム" style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+            {content.related.map((item) => {
+              const action = actionMap[item.action];
+              return (
+                <a key={item.href} href={item.href} onClick={(event) => {
+                  if (!action) return;
+                  event.preventDefault();
+                  action();
+                }} style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  background: proto.white,
+                  color: proto.black,
+                  border: `2.5px solid ${proto.black}`,
+                  borderRadius: 12,
+                  boxShadow: '3px 3px 0 #000',
+                  padding: '13px 12px',
+                  fontSize: 13,
+                  fontWeight: 900,
+                  textDecoration: 'none',
+                }}>
+                  {item.label}
+                </a>
+              );
+            })}
+          </nav>
+        )}
 
         <section style={{
           marginTop: 16,
