@@ -14,6 +14,7 @@ import {
 } from './src/platform/imageSave.js';
 import { getBrowserStorage } from './src/platform/storage.js';
 import { triggerHaptic } from './src/platform/haptics.js';
+import { LIVE_AGE_NOTICE } from './src/live/age-notice.js';
 import { LIVE_SERIES } from './src/live/config.js';
 import { BOARD_GAME_PRODUCT } from './src/product/config.js';
 import {
@@ -2673,6 +2674,20 @@ function CommonRulesCard({ creatorName, nameError, onCreatorNameChange, onStart 
           ライブ配信でみんなに挑戦してもらう
           <span style={{ marginLeft: 6, color: proto.yellow, fontSize: 18 }}>▶</span>
         </button>
+        <p data-testid="live-age-notice" style={{
+          margin: '8px 0 1px',
+          padding: '9px 10px',
+          border: `2px solid ${proto.black}`,
+          borderRadius: 10,
+          background: '#FFF9D7',
+          color: proto.black,
+          fontSize: 12,
+          lineHeight: 1.6,
+          textAlign: 'left',
+          fontWeight: 900,
+        }}>
+          ⚠️ {LIVE_AGE_NOTICE}
+        </p>
         <p style={{ margin: '-2px 0 0', fontSize: 10, lineHeight: 1.55, textAlign: 'center', fontWeight: 800 }}>
           10問を作る → 配信で参加方法を案内 → 視聴者と同時回答
         </p>

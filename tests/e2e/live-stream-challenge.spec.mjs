@@ -47,6 +47,7 @@ test('top page exposes normal and live creator buttons with the same primary des
   const nameInput = page.getByLabel('あなたの名前（12文字まで）');
   const visual = page.getByTestId('top-character-visual');
   const rules = page.getByTestId('top-common-rules');
+  const liveAgeNotice = page.getByTestId('live-age-notice');
   await expect(rules).toBeVisible();
   await expect(rules).toContainText('あなたの理解度診断の作り方');
   await expect(rules).toContainText('あなたの理解度診断を作って、みんなに挑戦してもらおう');
@@ -64,19 +65,22 @@ test('top page exposes normal and live creator buttons with the same primary des
   ]);
   await expect(nameInput).toBeVisible();
   await expect(live).toBeVisible();
+  await expect(liveAgeNotice).toHaveText('⚠️ 配信サービスごとの年齢・保護者同意ルールを確認してください。YouTubeで配信を開始できるのは原則16歳以上です。');
   await expect(page.getByRole('navigation', { name: 'ゲームシリーズの紹介ページ' })
     .getByRole('link', { name: /ライブ配信でみんなに挑戦してもらう/ })).toBeVisible();
-  const [visualBox, rulesBox, nameBox, normalBox, liveBox] = await Promise.all([
+  const [visualBox, rulesBox, nameBox, normalBox, liveBox, liveAgeNoticeBox] = await Promise.all([
     visual.boundingBox(),
     rules.boundingBox(),
     nameInput.boundingBox(),
     normal.boundingBox(),
     live.boundingBox(),
+    liveAgeNotice.boundingBox(),
   ]);
   expect(visualBox?.y + visualBox?.height).toBeLessThanOrEqual(rulesBox?.y);
   expect(nameBox?.y).toBeGreaterThan(rulesBox?.y);
   expect(nameBox?.y + nameBox?.height).toBeLessThanOrEqual(normalBox?.y);
   expect(normalBox?.y + normalBox?.height).toBeLessThanOrEqual(liveBox?.y);
+  expect(liveBox?.y + liveBox?.height).toBeLessThanOrEqual(liveAgeNoticeBox?.y);
   expect(liveBox?.y + liveBox?.height).toBeLessThanOrEqual(rulesBox?.y + rulesBox?.height);
   const styles = await Promise.all([normal, live].map((locator) => locator.evaluate((element) => {
     const style = getComputedStyle(element);
@@ -95,7 +99,16 @@ test('top page exposes normal and live creator buttons with the same primary des
 
 test('LIVE問題作成カードは縦長で整列し、前の問題と最初へ戻れる', async ({ page }) => {
   await page.goto('/live-challenge');
-  await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
+  const liveCreateButton = page.getByRole('button', { name: /LIVEクイズを作る/ });
+  const liveAgeNotice = page.getByTestId('live-age-notice');
+  await expect(liveAgeNotice).toHaveText('⚠️ 配信サービスごとの年齢・保護者同意ルールを確認してください。YouTubeで配信を開始できるのは原則16歳以上です。');
+  const [liveCreateButtonBox, liveAgeNoticeBox] = await Promise.all([
+    liveCreateButton.boundingBox(),
+    liveAgeNotice.boundingBox(),
+  ]);
+  expect(liveCreateButtonBox?.y + liveCreateButtonBox?.height).toBeLessThanOrEqual(liveAgeNoticeBox?.y);
+  expect(Number.parseFloat(await liveAgeNotice.evaluate((element) => getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(12);
+  await liveCreateButton.click();
 
   const paper = page.getByTestId('live-builder-paper-card');
   const skip = page.getByRole('button', { name: 'この問題をスキップ', exact: true });

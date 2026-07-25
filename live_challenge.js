@@ -1,5 +1,6 @@
 import QRCode from 'qrcode';
 import { mergeChallengeCards, pickChallengeCards, prepareLoveChallengeCards } from './src/challenge/data.js';
+import { LIVE_AGE_NOTICE } from './src/live/age-notice.js';
 import { LIVE_POLL_INTERVAL_MS } from './src/live/config.js';
 import {
   changedQuestionCandidates,
@@ -109,6 +110,7 @@ function landingView() {
         <li><b>3</b><span>視聴者と同時回答して進行</span></li>
       </ul>
       <button class="primary" data-action="open-create">LIVEクイズを作る <span>▶</span></button>
+      <p class="live-age-notice" data-testid="live-age-notice">⚠️ ${LIVE_AGE_NOTICE}</p>
     </section>
     <section class="panel entry-card">
       <div class="icon">📱</div>
