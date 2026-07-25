@@ -504,7 +504,7 @@ test('正解は回答前の公開レスポンスへ出さず、51人目をサー
     });
     return { count: unique.length, cards: unique.slice(0, 10) };
   });
-  expect(mergedPool.count).toBe(94);
+  expect(mergedPool.count).toBe(102);
   const cards = mergedPool.cards;
   const createdResponse = await request.post('/api/challenge/rooms', {
     data: { creatorName: '出題者', cards, answers: Array(10).fill(0) },
