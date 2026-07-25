@@ -16,6 +16,16 @@ test('日本語トップを維持し、英語端末には初回だけ英語版�
     .toContain('Howwelldoyouknowme?');
 });
 
+test('言語切替はページ上部にだけ表示し、スクロールへ追従しない', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('watachan:language:v1', 'ja'));
+  await page.goto('/');
+  const switcher = page.locator('.site-language-switch');
+  await expect(switcher).toBeVisible();
+  await expect(switcher).toHaveCSS('position', 'absolute');
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await expect.poll(async () => (await switcher.boundingBox())?.y ?? 0).toBeLessThan(0);
+});
+
 test('英語の主要ページは専用SEO・hreflang・常設切替を持つ', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'メタ情報は画面幅に依存しないためPCで1回検証');
   const routes = [

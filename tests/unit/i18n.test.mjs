@@ -79,6 +79,8 @@ test('英語ルート・hreflang・専用OGP・初回言語案内を静的構成
   assert.match(switchSource, /navigator\.languages/);
   assert.match(switchSource, /watachan:language:v1/);
   assert.match(switchSource, /English version available/);
+  assert.match(switchSource, /\.site-language-switch\{position:absolute/);
+  assert.doesNotMatch(switchSource, /\.site-language-switch\{position:fixed/);
   for (const page of ['en/index.html', 'en/terms.html', 'en/privacy.html']) {
     const html = text(page);
     assert.match(html, /<html lang="en">/);
