@@ -35,6 +35,14 @@ export async function handleChallengeApi(request, env, path) {
     if (rankingMatch && request.method === 'GET') {
       return await getRanking(env, rankingMatch[1]);
     }
+    if (rankingMatch && request.method === 'POST') {
+      return await registerRankingScore(request, env, rankingMatch[1]);
+    }
+
+    const retryMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/retry$/);
+    if (retryMatch && request.method === 'POST') {
+      return await retryChallenge(request, env, retryMatch[1]);
+    }
 
     const joinMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/join$/);
     if (joinMatch && request.method === 'POST') {
@@ -159,7 +167,6 @@ async function joinRoom(request, env, code) {
   const body = await readJson(request);
   const name = sanitizeName(body.name, '');
   if (!name) return jsonResponse({ error: 'name-required' }, 400);
-  const rankingConsent = body.rankingConsent === true;
   const participantToken = createToken();
   const participant = {
     id: createToken().slice(0, 24),
@@ -169,7 +176,7 @@ async function joinRoom(request, env, code) {
     score: null,
     createdAt: Date.now(),
     completedAt: null,
-    rankingConsentAt: rankingConsent ? Date.now() : null,
+    rankingConsentAt: null,
   };
   const inserted = await insertParticipant(env, code, participant, room);
   if (!inserted) return jsonResponse({ error: 'room-full', maxParticipants: CHALLENGE_MAX_PARTICIPANTS }, 409);
@@ -177,6 +184,51 @@ async function joinRoom(request, env, code) {
     participantToken,
     participant: publicParticipant(participant),
   }, 201);
+}
+
+async function registerRankingScore(request, env, code) {
+  const room = await readRoom(env, code);
+  if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
+  const token = headerToken(request, 'x-challenge-participant-token');
+  if (!token) return jsonResponse({ error: 'participant-forbidden' }, 403);
+  const participant = await readParticipant(env, code, token, room);
+  if (!participant) return jsonResponse({ error: 'participant-forbidden' }, 403);
+  if (participant.completedAt == null || !Number.isInteger(participant.score)) {
+    return jsonResponse({ error: 'answers-not-submitted' }, 409);
+  }
+
+  const registeredAt = participant.rankingConsentAt || Date.now();
+  const saved = participant.rankingConsentAt != null
+    || await saveRankingRegistration(env, code, token, registeredAt, room);
+  if (!saved) return jsonResponse({ error: 'ranking-registration-failed' }, 409);
+  return jsonResponse({
+    participant: publicParticipant({ ...participant, rankingConsentAt: registeredAt }),
+    rank: await participantRank(env, code, participant.score, room),
+  });
+}
+
+async function retryChallenge(request, env, code) {
+  const room = await readRoom(env, code);
+  if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
+  const token = headerToken(request, 'x-challenge-participant-token');
+  if (!token) return jsonResponse({ error: 'participant-forbidden' }, 403);
+  const participant = await readParticipant(env, code, token, room);
+  if (!participant) return jsonResponse({ error: 'participant-forbidden' }, 403);
+  if (participant.completedAt == null) {
+    return jsonResponse({ error: 'answers-not-submitted' }, 409);
+  }
+
+  const saved = await resetParticipantAttempt(env, code, token, room);
+  if (!saved) return jsonResponse({ error: 'retry-failed' }, 409);
+  return jsonResponse({
+    participant: publicParticipant({
+      ...participant,
+      answers: null,
+      score: null,
+      completedAt: null,
+      rankingConsentAt: null,
+    }),
+  });
 }
 
 async function submitAnswer(request, env, code) {
@@ -533,6 +585,50 @@ async function saveParticipantProgress(
   }
   const nextParticipants = participants.slice();
   nextParticipants[index] = { ...current, answers, score, completedAt };
+  await putKvRoom(env, code, { ...room, participants: nextParticipants });
+  return true;
+}
+
+async function saveRankingRegistration(env, code, token, registeredAt, room) {
+  if (await ensureD1(env)) {
+    const result = await env.REMOTE_DB.prepare(`
+      UPDATE challenge_participants
+      SET ranking_consent_at = COALESCE(ranking_consent_at, ?)
+      WHERE room_code = ? AND participant_token_hash = ? AND completed_at IS NOT NULL
+    `).bind(registeredAt, code, await hashToken(token)).run();
+    return Number(result?.meta?.changes || 0) === 1;
+  }
+
+  const participants = Array.isArray(room.participants) ? room.participants : [];
+  const index = participants.findIndex((item) => item.token === token && item.completedAt != null);
+  if (index < 0) return false;
+  const nextParticipants = participants.slice();
+  nextParticipants[index] = { ...participants[index], rankingConsentAt: registeredAt };
+  await putKvRoom(env, code, { ...room, participants: nextParticipants });
+  return true;
+}
+
+async function resetParticipantAttempt(env, code, token, room) {
+  if (await ensureD1(env)) {
+    const result = await env.REMOTE_DB.prepare(`
+      UPDATE challenge_participants
+      SET answers_json = NULL, score = NULL, completed_at = NULL, ranking_consent_at = NULL
+      WHERE room_code = ? AND participant_token_hash = ? AND completed_at IS NOT NULL
+    `).bind(code, await hashToken(token)).run();
+    return Number(result?.meta?.changes || 0) === 1;
+  }
+
+  const participants = Array.isArray(room.participants) ? room.participants : [];
+  const index = participants.findIndex((item) => item.token === token && item.completedAt != null);
+  if (index < 0) return false;
+  const nextParticipants = participants.slice();
+  nextParticipants[index] = {
+    ...participants[index],
+    answers: null,
+    score: null,
+    completedAt: null,
+    rankingConsentAt: null,
+  };
   await putKvRoom(env, code, { ...room, participants: nextParticipants });
   return true;
 }

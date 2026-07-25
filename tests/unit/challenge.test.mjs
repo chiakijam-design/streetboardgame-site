@@ -136,6 +136,17 @@ test('挑戦者の得点・同率順位・10問の答え合わせを本人だけ
     body: JSON.stringify({ answers: Array(CHALLENGE_QUESTION_COUNT).fill(0) }),
   });
   assert.equal(submitted.status, 200);
+  const unpublishedResult = await (await api(env, `/api/challenge/rooms/${created.code}/result`, {
+    headers: { 'x-challenge-participant-token': joined.participantToken },
+  })).json();
+  assert.equal(unpublishedResult.rank, null);
+  assert.equal(unpublishedResult.participant.rankingParticipating, false);
+  const registered = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
+    method: 'POST',
+    headers: tokenHeader,
+  });
+  assert.equal(registered.status, 200);
+  assert.equal((await registered.json()).rank, 1);
   const resubmitted = await api(env, `/api/challenge/rooms/${created.code}/submit`, {
     method: 'POST',
     headers: tokenHeader,
@@ -273,44 +284,86 @@ test('選択した1問だけを順番に確定し、正解を漏らさず正誤�
   sqlite.close();
 });
 
-test('ランキング不参加でも回答でき、公開ランキングからだけ除外する', async () => {
-  const env = { REMOTE_KV: new MemoryKV() };
-  const created = await (await api(env, '/api/challenge/rooms', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ creatorName: '出題者', cards, answers: Array(CHALLENGE_QUESTION_COUNT).fill(0) }),
-  })).json();
-  const joined = await (await api(env, `/api/challenge/rooms/${created.code}/join`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ name: '未同意' }),
-  })).json();
-  assert.equal(joined.participant.rankingParticipating, false);
+test('結果確認後だけ点数を登録でき、同じ参加枠で再挑戦して上書きできる', async () => {
+  const sqlite = new DatabaseSync(':memory:');
+  sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
+  const environments = [
+    { REMOTE_KV: new MemoryKV() },
+    { REMOTE_DB: d1Adapter(sqlite) },
+  ];
 
-  const tokenHeader = { 'content-type': 'application/json', 'x-challenge-participant-token': joined.participantToken };
-  const submitted = await api(env, `/api/challenge/rooms/${created.code}/submit`, {
-    method: 'POST',
-    headers: tokenHeader,
-    body: JSON.stringify({ answers: Array(CHALLENGE_QUESTION_COUNT).fill(0) }),
-  });
-  assert.equal(submitted.status, 200);
+  for (const env of environments) {
+    const created = await (await api(env, '/api/challenge/rooms', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ creatorName: '出題者', cards, answers: Array(CHALLENGE_QUESTION_COUNT).fill(0) }),
+    })).json();
+    const joined = await (await api(env, `/api/challenge/rooms/${created.code}/join`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: '再挑戦者', rankingConsent: true }),
+    })).json();
+    assert.equal(joined.participant.rankingParticipating, false);
 
-  const result = await (await api(env, `/api/challenge/rooms/${created.code}/result`, {
-    headers: { 'x-challenge-participant-token': joined.participantToken },
-  })).json();
-  assert.equal(result.score, 10);
-  assert.equal(result.rank, null);
-  assert.equal(result.participant.rankingParticipating, false);
+    const tokenHeader = {
+      'content-type': 'application/json',
+      'x-challenge-participant-token': joined.participantToken,
+    };
+    const firstAttempt = await api(env, `/api/challenge/rooms/${created.code}/submit`, {
+      method: 'POST',
+      headers: tokenHeader,
+      body: JSON.stringify({ answers: Array(CHALLENGE_QUESTION_COUNT).fill(1) }),
+    });
+    assert.equal(firstAttempt.status, 200);
 
-  const ranking = await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json();
-  assert.deepEqual(ranking.participants, []);
+    const firstResult = await (await api(env, `/api/challenge/rooms/${created.code}/result`, {
+      headers: tokenHeader,
+    })).json();
+    assert.equal(firstResult.score, 0);
+    assert.equal(firstResult.rank, null);
+    assert.equal(firstResult.participant.rankingParticipating, false);
+    assert.deepEqual((await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json()).participants, []);
 
-  const managed = await (await api(env, `/api/challenge/rooms/${created.code}/manage`, {
-    headers: { 'x-challenge-manage-token': created.manageToken },
-  })).json();
-  assert.equal(managed.participants.length, 1);
-  assert.equal(managed.participants[0].rankingParticipating, false);
-  assert.equal(managed.participants[0].answers.length, 10);
+    const retried = await api(env, `/api/challenge/rooms/${created.code}/retry`, {
+      method: 'POST',
+      headers: tokenHeader,
+    });
+    assert.equal(retried.status, 200);
+    assert.equal((await retried.json()).participant.submitted, false);
+    assert.equal((await api(env, `/api/challenge/rooms/${created.code}/result`, {
+      headers: tokenHeader,
+    })).status, 409);
+
+    const secondAttempt = await api(env, `/api/challenge/rooms/${created.code}/submit`, {
+      method: 'POST',
+      headers: tokenHeader,
+      body: JSON.stringify({ answers: Array(CHALLENGE_QUESTION_COUNT).fill(0) }),
+    });
+    assert.equal(secondAttempt.status, 200);
+    const beforeRegistration = await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json();
+    assert.deepEqual(beforeRegistration.participants, []);
+
+    const registered = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
+      method: 'POST',
+      headers: tokenHeader,
+    });
+    assert.equal(registered.status, 200);
+    assert.equal((await registered.json()).rank, 1);
+    const finalRanking = await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json();
+    assert.deepEqual(finalRanking.participants.map(({ name, score, rank }) => ({ name, score, rank })), [
+      { name: '再挑戦者', score: 10, rank: 1 },
+    ]);
+
+    const managed = await (await api(env, `/api/challenge/rooms/${created.code}/manage`, {
+      headers: { 'x-challenge-manage-token': created.manageToken },
+    })).json();
+    assert.equal(managed.participants.length, 1);
+    assert.equal(managed.participants[0].rankingParticipating, true);
+    assert.equal(managed.participants[0].answers.length, 10);
+  }
+
+  sqlite.close();
 });
 
 test('挑戦モードのD1移行はランキング同意と人気お題集計を追加する', () => {

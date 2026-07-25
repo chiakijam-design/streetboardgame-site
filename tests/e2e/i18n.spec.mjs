@@ -133,6 +133,9 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
     await page.getByRole('button', { name: /^Guess One$/ }).click();
   }
   await expect(page.getByRole('heading', { name: '10/10 correct' })).toBeVisible();
+  await expect(page.getByText('This score has not been added to the leaderboard.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Try the same 10 questions again' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add this score to the leaderboard' })).toBeVisible();
   await expect(page.getByText('Certified Mind Reader', { exact: true })).toBeVisible();
   await expect(page.getByTestId('challenge-ai-review')).toContainText('AI-style review');
   await expect(page.getByTestId('challenge-ai-review')).toContainText('Alex scored 10/10');

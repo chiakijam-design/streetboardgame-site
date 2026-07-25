@@ -149,10 +149,16 @@ const UI_TEXT = new Map(Object.entries({
   '10問に答えて、出題者のことをどれだけ分かっているか確かめよう。': 'Answer 10 questions and see how well you know the quiz creator.',
   '表示名（12文字まで）': 'Display name (up to 12 characters)',
   '例：ゆう（本名は避けてください）': 'e.g. Alex (do not use your full name)',
-  'フレンドランキングに参加する（任意）': 'Join the leaderboard (optional)',
-  'チェックした場合だけ、表示名・得点・順位を公開します。チェックしなくても遊べます。': 'Only your display name, score, and rank are public if you opt in. You can play without joining.',
   '10問の答え当てに挑戦する': 'Start the 10-question challenge',
+  '点数は回答後すぐにはランキングへ登録されません。結果を見てから、登録するか、同じ10問へもう一度挑戦するかを選べます。': 'Your score is not added to the leaderboard automatically. After seeing your result, choose whether to publish it or try the same 10 questions again.',
   '回答内容は答え合わせと主催者の回答確認に使用されます。本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。': 'Your answers are used for scoring and can be reviewed by the host. Do not enter your full name, school, or other identifying information. Progress is saved on this device.',
+  '今回の点数はまだフレンドランキングに登録されていません。': 'This score has not been added to the leaderboard.',
+  'この点数をどうする？': 'What would you like to do with this score?',
+  '今は登録しなくても大丈夫です。何度でも挑戦して、登録したい点数だけ公開できます。': 'You do not have to publish this score. Try again as often as you like and publish only the score you want to share.',
+  'もう一度同じ10問にチャレンジ': 'Try the same 10 questions again',
+  'この点数をフレンドランキングに登録': 'Add this score to the leaderboard',
+  '再挑戦すると今回の回答は上書きされます。登録済みの場合は、現在のランキング登録もいったん取り消されます。': 'Trying again replaces this attempt. If this score is already published, its leaderboard entry will be removed until you publish a new score.',
+  '再挑戦すると、現在のランキング登録はいったん取り消されます。続けますか？': 'Trying again will remove your current leaderboard entry. Continue?',
   '掲載候補のお題を運営へ送信しています。': 'Sending eligible questions to the team for review.',
   '掲載候補の送信に同意しましたが、自作・編集したお題がないため送信対象はありませんでした。': 'You agreed to submit questions, but there were no new or edited questions to review.',
   'クイズは作成できましたが、掲載候補のお題は通信エラーで送信できませんでした。': 'Your quiz was created, but the candidate questions could not be submitted because of a network error.',
@@ -234,6 +240,9 @@ const UI_TEXT = new Map(Object.entries({
   '10問すべての問題文と5つの選択肢を入力してください。': 'Complete all 10 questions and all five choices.',
   '参加情報を確認できません。もう一度URLを開いてください。': 'Your join information could not be verified. Open the join link again.',
   'この参加者の回答はすでに確定しています。': 'This player has already submitted their answers.',
+  '10問の回答が完了していません。': 'Complete all 10 answers first.',
+  '点数をランキングへ登録できませんでした。': 'This score could not be added to the leaderboard.',
+  '再挑戦を開始できませんでした。': 'The retry could not be started.',
   '主催者用URLを確認できません。': 'The host management link could not be verified.',
   '途中保存データが見つかりません。': 'No saved draft was found.',
   '自動コピーできませんでした。URL欄を長押ししてコピーしてください。': 'Automatic copy failed. Press and hold the URL to copy it.',
@@ -315,6 +324,8 @@ function translatePattern(text) {
   if (match) return `${match[1]} did not join the leaderboard.`;
   match = text.match(/^(.+)さんは、ランキング参加者の中で (\d+)位です。$/);
   if (match) return `${match[1]} ranks #${match[2]} among leaderboard players.`;
+  match = text.match(/^この点数をフレンドランキングに登録しました。現在(\d+)位です。$/);
+  if (match) return `This score is now on the leaderboard at #${match[1]}.`;
   match = text.match(/^(.+)さんの結果画像$/);
   if (match) return `${match[1]}’s result image`;
   match = text.match(/^(.+)さんの(.+)さん理解度、(\d+)\/10問正解、称号は(.+)$/);

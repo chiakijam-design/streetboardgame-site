@@ -483,13 +483,9 @@ function joinView() {
       <label class="challenge-label" for="participant-name">表示名（12文字まで）</label>
       <input id="participant-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ゆう（本名は避けてください）" value="${escapeHtml(state.participantName)}">
-      <label class="challenge-consent">
-        <input id="ranking-consent" type="checkbox">
-        <span><b>フレンドランキングに参加する（任意）</b><br>
-        <small>チェックした場合だけ、表示名・得点・順位を公開します。チェックしなくても遊べます。</small></span>
-      </label>
       <button class="challenge-primary" data-action="join">10問の答え当てに挑戦する <span>▶</span></button>
       <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">フレンドランキングを見る</a>
+      <p class="challenge-note">点数は回答後すぐにはランキングへ登録されません。結果を見てから、登録するか、同じ10問へもう一度挑戦するかを選べます。</p>
       <p class="challenge-note">回答内容は答え合わせと主催者の回答確認に使用されます。本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。</p>
     </section>`,
   );
@@ -500,14 +496,27 @@ function resultView() {
   if (!result) return errorView();
   const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
   const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(result) : getChallengeReviewLines(result);
-  const rankingSummary = result.rank == null
-    ? `${result.participant.name}さんはランキングに参加していません。`
+  const rankingRegistered = result.participant.rankingParticipating === true;
+  const rankingSummary = !rankingRegistered
+    ? '今回の点数はまだフレンドランキングに登録されていません。'
     : `${result.participant.name}さんは、ランキング参加者の中で ${result.rank}位です。`;
   return shell(
     'RESULT',
     `${result.score}/10問 正解`,
     rankingSummary,
     `<section class="challenge-panel">
+      <section class="challenge-score-actions" data-testid="challenge-score-actions">
+        <span class="challenge-section-label">SCORE</span>
+        <h2>この点数をどうする？</h2>
+        ${rankingRegistered
+          ? `<p class="challenge-ranking-registered">この点数をフレンドランキングに登録しました。現在${result.rank}位です。</p>`
+          : '<p>今は登録しなくても大丈夫です。何度でも挑戦して、登録したい点数だけ公開できます。</p>'}
+        <button class="challenge-primary" data-action="retry-challenge">もう一度同じ10問にチャレンジ</button>
+        ${rankingRegistered
+          ? ''
+          : '<button class="challenge-secondary" data-action="register-ranking">この点数をフレンドランキングに登録</button>'}
+        <small>再挑戦すると今回の回答は上書きされます。登録済みの場合は、現在のランキング登録もいったん取り消されます。</small>
+      </section>
       <section class="challenge-result-image-section" aria-labelledby="challenge-result-image-title">
         <span class="challenge-section-label">RESULT CARD</span>
         <h2 id="challenge-result-image-title">${escapeHtml(result.participant.name)}さんの結果画像</h2>
@@ -746,6 +755,8 @@ function bindEvents() {
   document.querySelector('[data-action="report-question"]')?.addEventListener('click', (event) => reportQuestion(event.currentTarget));
   document.querySelector('[data-action="refresh-ranking"]')?.addEventListener('click', loadRanking);
   document.querySelector('[data-action="join"]')?.addEventListener('click', joinRoom);
+  document.querySelector('[data-action="register-ranking"]')?.addEventListener('click', registerRankingScore);
+  document.querySelector('[data-action="retry-challenge"]')?.addEventListener('click', retryChallenge);
   document.querySelector('[data-action="share-result"]')?.addEventListener('click', shareResult);
   document.querySelector('[data-action="save-result-image"]')?.addEventListener('click', saveChallengeResultImage);
   if (document.getElementById('challenge-qr') && state.room) {
@@ -1050,7 +1061,6 @@ async function joinRoom() {
   quizFeedbackSoundPlayer.prime();
   const name = document.getElementById('participant-name')?.value.trim().slice(0, 12) || '';
   if (!name) return setState({ error: 'name-required' });
-  const rankingConsent = document.getElementById('ranking-consent')?.checked === true;
   setState({ loading: true, participantName: name, error: '' });
   try {
     const headers = { 'content-type': 'application/json' };
@@ -1058,7 +1068,7 @@ async function joinRoom() {
     const response = await fetch(`/api/challenge/rooms/${state.roomCode}/join`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ name, rankingConsent }),
+      body: JSON.stringify({ name }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'join-failed');
@@ -1082,6 +1092,56 @@ async function joinRoom() {
     saveParticipantDraft(next);
   } catch (error) {
     setState({ loading: false, mode: 'join', error: error.message });
+  }
+}
+
+async function registerRankingScore() {
+  if (!state.result || !state.participantToken) return;
+  setState({ loading: true, error: '' });
+  try {
+    const response = await fetch(`/api/challenge/rooms/${state.roomCode}/ranking`, {
+      method: 'POST',
+      headers: { 'x-challenge-participant-token': state.participantToken },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'ranking-registration-failed');
+    await loadResult();
+  } catch (error) {
+    setState({ loading: false, mode: 'result', error: error.message });
+  }
+}
+
+async function retryChallenge() {
+  if (!state.result || !state.participantToken) return;
+  if (state.result.participant?.rankingParticipating
+    && !confirm('再挑戦すると、現在のランキング登録はいったん取り消されます。続けますか？')) return;
+  setState({ loading: true, error: '' });
+  try {
+    const response = await fetch(`/api/challenge/rooms/${state.roomCode}/retry`, {
+      method: 'POST',
+      headers: { 'x-challenge-participant-token': state.participantToken },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'retry-failed');
+    localStorage.removeItem(participantDraftKey(state.roomCode));
+    const next = {
+      loading: false,
+      answerPending: false,
+      participantName: data.participant.name,
+      cards: state.room.cards,
+      answers: [],
+      questionIndex: 0,
+      result: null,
+      resultImageUrl: '',
+      resultImageBusy: false,
+      resultImageError: '',
+      mode: 'participant-answer',
+      error: '',
+    };
+    saveParticipantDraft(next);
+    setState(next);
+  } catch (error) {
+    setState({ loading: false, mode: 'result', error: error.message });
   }
 }
 
@@ -1182,6 +1242,7 @@ async function loadLibrary() {
 }
 
 async function loadResult(token = state.participantToken) {
+  stopResultFeedbackSequence();
   const response = await fetch(`/api/challenge/rooms/${state.roomCode}/result`, {
     headers: { 'x-challenge-participant-token': token },
   });
@@ -1567,6 +1628,9 @@ function errorMessage(code) {
     'questions-incomplete': '10問すべての問題文と5つの選択肢を入力してください。',
     'participant-forbidden': '参加情報を確認できません。もう一度URLを開いてください。',
     'answers-already-submitted': 'この参加者の回答はすでに確定しています。',
+    'answers-not-submitted': '10問の回答が完了していません。',
+    'ranking-registration-failed': '点数をランキングへ登録できませんでした。',
+    'retry-failed': '再挑戦を開始できませんでした。',
     'manage-forbidden': '主催者用URLを確認できません。',
     'draft-not-found': '途中保存データが見つかりません。',
     'copy-failed': '自動コピーできませんでした。URL欄を長押ししてコピーしてください。',
