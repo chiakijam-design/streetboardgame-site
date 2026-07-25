@@ -185,7 +185,7 @@ async function reviewSubmission(request, env, submissionId) {
   const decision = body.decision === 'approved' ? 'approved' : body.decision === 'rejected' ? 'rejected' : '';
   if (!decision) throw apiError('review-decision-invalid', 400);
   const current = await env.REMOTE_DB.prepare(`
-    SELECT submission_id, source_question_id, title, choices_json, status
+    SELECT submission_id, source_mode, source_question_id, title, choices_json, status
     FROM question_submissions WHERE submission_id = ?
   `).bind(submissionId).first();
   if (!current) throw apiError('submission-not-found', 404);
@@ -200,7 +200,8 @@ async function reviewSubmission(request, env, submissionId) {
       choices: body.choices || JSON.parse(current.choices_json),
       sourceQuestionId: current.source_question_id,
     });
-    catalogId = `CUS${crypto.randomUUID().replace(/-/g, '').slice(0, 20).toUpperCase()}`;
+    const isEnglishSubmission = String(current.source_mode || '').endsWith('-en');
+    catalogId = `${isEnglishSubmission ? 'CUSEN' : 'CUS'}${crypto.randomUUID().replace(/-/g, '').slice(0, 20).toUpperCase()}`;
     const settings = sanitizeSettings(body);
     await env.REMOTE_DB.prepare(`
       INSERT INTO question_catalog
@@ -211,7 +212,7 @@ async function reviewSubmission(request, env, submissionId) {
       catalogId,
       question.sourceQuestionId,
       question.title,
-      sanitizeShortText(body.category, 60) || 'みんなのお題',
+      sanitizeShortText(body.category, 60) || (isEnglishSubmission ? 'Community questions' : 'みんなのお題'),
       JSON.stringify(question.choices),
       boolInt(settings.useChallenge),
       boolInt(settings.useLive),
@@ -324,7 +325,8 @@ function sanitizeSettings(value) {
 }
 
 function normalizeSourceMode(value) {
-  if (value === 'challenge' || value === 'live-challenge') return value;
+  if (value === 'challenge' || value === 'live-challenge'
+    || value === 'challenge-en' || value === 'live-challenge-en') return value;
   throw apiError('question-source-mode-invalid', 400);
 }
 
@@ -349,6 +351,7 @@ function mapCatalogRow(row) {
     updatedAt: Number(row.updated_at || 0),
     reportCount: Number(row.report_count || 0),
     lastReportedAt: row.last_reported_at == null ? null : Number(row.last_reported_at),
+    language: String(row.question_id || '').startsWith('CUSEN') ? 'en' : 'ja',
   };
 }
 
@@ -356,6 +359,7 @@ function mapSubmissionRow(row) {
   return {
     id: row.submission_id,
     sourceMode: row.source_mode,
+    language: String(row.source_mode || '').endsWith('-en') ? 'en' : 'ja',
     sourceQuestionId: row.source_question_id || null,
     title: row.title,
     choices: parseChoices(row.choices_json),

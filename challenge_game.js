@@ -11,7 +11,13 @@ import { copyText, openLineShare, openXShare } from './src/platform/share.js';
 import { dataUrlToBlob, saveImageBlob } from './src/platform/imageSave.js';
 import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
-import { getChallengeResultTier, getChallengeReviewLines } from './src/challenge/result.js';
+import {
+  getChallengeResultTier,
+  getChallengeResultTierEnglish,
+  getChallengeReviewLines,
+  getChallengeReviewLinesEnglish,
+} from './src/challenge/result.js';
+import { isEnglish, localizeDom } from './src/i18n/runtime.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -24,13 +30,16 @@ const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
 const quizFeedbackSoundPlayer = createQuizFeedbackSoundPlayer();
 window.addEventListener('pointerdown', () => quizFeedbackSoundPlayer.prime(), { once: true, passive: true });
 const app = document.getElementById('challenge-app');
-let allCards = mergeChallengeCards(
-  window.FRIEND_CARDS,
-  window.FAMILY_CARDS,
-  prepareLoveChallengeCards(window.ALL_CARDS),
-);
+let allCards = isEnglish
+  ? mergeChallengeCards(window.ENGLISH_FRIEND_CARDS, window.ENGLISH_FAMILY_CARDS)
+  : mergeChallengeCards(
+    window.FRIEND_CARDS,
+    window.FAMILY_CARDS,
+    prepareLoveChallengeCards(window.ALL_CARDS),
+  );
 const currentUrl = new URL(location.href);
-const pagePath = currentUrl.pathname.replace(/\/+$/, '') || '/challenge';
+const pagePath = currentUrl.pathname.replace(/^\/en(?=\/|$)/, '').replace(/\/+$/, '') || '/challenge';
+const languagePrefix = isEnglish ? '/en' : '';
 const roomCode = currentUrl.searchParams.get('room')?.trim().toUpperCase() || '';
 const preferredCardId = currentUrl.searchParams.get('question')?.trim() || '';
 const quickStart = readCreatorQuickStart('challenge');
@@ -40,7 +49,7 @@ const initialManageToken = hashManageToken || savedManageToken;
 document.documentElement.dataset.challengePage = pagePath.split('/').pop() || 'challenge';
 
 if (pagePath === '/challenge' && roomCode && hashManageToken) {
-  history.replaceState(null, '', `/challenge/manage?room=${roomCode}#manage=${hashManageToken}`);
+  history.replaceState(null, '', `${languagePrefix}/challenge/manage?room=${roomCode}#manage=${hashManageToken}`);
 }
 
 let state = {
@@ -131,6 +140,7 @@ function render() {
                   : state.mode === 'library' ? libraryView()
                     : errorView();
   app.innerHTML = body;
+  localizeDom(app);
   bindEvents();
   if (state.mode === 'result' && state.result && !state.resultImageUrl
     && !state.resultImageBusy && !state.resultImageError) {
@@ -358,7 +368,7 @@ function manageView() {
   const room = state.room;
   if (!room) return errorView();
   const shareUrl = challengeUrl(room.code);
-  const rankingUrl = `${location.origin}/challenge/ranking?room=${room.code}`;
+  const rankingUrl = `${location.origin}${languagePrefix}/challenge/ranking?room=${room.code}`;
   return shell(
     'HOST DASHBOARD',
     '主催者用回答管理',
@@ -486,8 +496,8 @@ function joinView() {
 function resultView() {
   const result = state.result;
   if (!result) return errorView();
-  const tier = getChallengeResultTier(result.score);
-  const reviewLines = getChallengeReviewLines(result);
+  const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
+  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(result) : getChallengeReviewLines(result);
   const rankingSummary = result.rank == null
     ? `${result.participant.name}さんはランキングに参加していません。`
     : `${result.participant.name}さんは、ランキング参加者の中で ${result.rank}位です。`;
@@ -931,7 +941,7 @@ async function createChallengeRoom(answers) {
     if (!response.ok) throw new Error(data.error || 'create-failed');
     saveManageRoom(data.code, data.manageToken, data.room.creatorName);
     localStorage.removeItem(CREATOR_DRAFT_KEY);
-    history.replaceState(null, '', `/challenge/manage?room=${data.code}#manage=${data.manageToken}`);
+    history.replaceState(null, '', `${languagePrefix}/challenge/manage?room=${data.code}#manage=${data.manageToken}`);
     setState({
       loading: false,
       roomCode: data.code,
@@ -959,7 +969,7 @@ async function submitCreatorQuestionCandidates() {
   try {
     const result = await submitQuestionCandidates({
       consent: true,
-      sourceMode: 'challenge',
+      sourceMode: isEnglish ? 'challenge-en' : 'challenge',
       questions: state.questionSubmissionCandidates,
     });
     setState({
@@ -1200,9 +1210,9 @@ async function createChallengeResultCanvas(result) {
     loadResultImage(RESULT_GIRL_IMAGE_SRC),
     loadResultImage(RESULT_QR_IMAGE_SRC),
   ]);
-  const tier = getChallengeResultTier(result.score);
-  const participantName = String(result.participant?.name || '回答者');
-  const creatorName = String(result.creatorName || '出題者');
+  const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
+  const participantName = String(result.participant?.name || (isEnglish ? 'Player' : '回答者'));
+  const creatorName = String(result.creatorName || (isEnglish ? 'Creator' : '出題者'));
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
@@ -1225,7 +1235,7 @@ async function createChallengeResultCanvas(result) {
   context.fillStyle = '#ffffff';
   context.font = '700 31px "HuiFontP29", "Yu Gothic", sans-serif';
   context.textAlign = 'left';
-  context.fillText(`${creatorName}さん理解度診断`, 132, 152);
+  context.fillText(isEnglish ? `How well do you know ${creatorName}?` : `${creatorName}さん理解度診断`, 132, 152);
 
   context.fillStyle = tier.tagBg;
   resultRoundRect(context, 742, 108, 194, 56, 28);
@@ -1252,7 +1262,11 @@ async function createChallengeResultCanvas(result) {
   context.fillStyle = '#ec4683';
   context.font = '700 31px "HuiFontP29", "Yu Gothic", sans-serif';
   context.textAlign = 'left';
-  const scoreLabelLines = splitResultText(`${participantName}さんの\n${creatorName}さん理解度`, 13, 2);
+  const scoreLabelLines = splitResultText(
+    isEnglish ? `${participantName}’s score on\n${creatorName}’s quiz` : `${participantName}さんの\n${creatorName}さん理解度`,
+    isEnglish ? 24 : 13,
+    2,
+  );
   drawResultLines(context, scoreLabelLines, 202, 326, 42);
 
   context.font = '900 116px "Arial Black", "Yu Gothic", sans-serif';
@@ -1273,7 +1287,7 @@ async function createChallengeResultCanvas(result) {
   context.fillStyle = '#191919';
   context.font = '900 24px "Yu Gothic", sans-serif';
   context.textAlign = 'center';
-  context.fillText('問正解', 284, 547);
+  context.fillText(isEnglish ? 'CORRECT' : '問正解', 284, 547);
 
   context.fillStyle = '#55c9dd';
   context.globalAlpha = 0.18;
@@ -1301,7 +1315,7 @@ async function createChallengeResultCanvas(result) {
   context.fillStyle = '#ffe36f';
   context.font = '900 25px "Yu Gothic", sans-serif';
   context.textAlign = 'center';
-  context.fillText('今日の称号', 540, 660);
+  context.fillText(isEnglish ? 'YOUR TITLE' : '今日の称号', 540, 660);
 
   context.fillStyle = '#ec4683';
   const titleLines = splitResultText(tier.title, 11, 2);
@@ -1329,13 +1343,13 @@ async function createChallengeResultCanvas(result) {
   context.stroke();
   context.fillStyle = '#191919';
   context.font = '900 28px "Yu Gothic", sans-serif';
-  context.fillText('この結果、友達に伝えよう', 448, 1134);
+  context.fillText(isEnglish ? 'Share this result with your friends' : 'この結果、友達に伝えよう', 448, 1134);
   context.fillStyle = '#d63a75';
   context.font = '900 22px "Yu Gothic", sans-serif';
-  context.fillText('あなたなら何問当てられる？', 448, 1168);
+  context.fillText(isEnglish ? 'How many could they get right?' : 'あなたなら何問当てられる？', 448, 1168);
   context.fillStyle = '#191919';
   context.font = '700 22px monospace';
-  context.fillText('streetboardgame.com  /  #わたちゃん', 448, 1202);
+  context.fillText(isEnglish ? 'streetboardgame.com  /  #Watachan' : 'streetboardgame.com  /  #わたちゃん', 448, 1202);
   if (qrImage) {
     context.fillStyle = '#ffffff';
     resultRoundRect(context, 776, 1106, 108, 108, 18);
@@ -1390,17 +1404,19 @@ async function saveChallengeResultImage() {
 }
 
 async function shareResult() {
-  const tier = getChallengeResultTier(state.result.score);
-  const rankingText = state.result.rank == null
-    ? 'ランキング不参加'
-    : `ランキング参加者の中で${state.result.rank}位`;
+  const tier = isEnglish ? getChallengeResultTierEnglish(state.result.score) : getChallengeResultTier(state.result.score);
+  const rankingText = isEnglish
+    ? (state.result.rank == null ? 'not on the leaderboard' : `ranked #${state.result.rank}`)
+    : (state.result.rank == null ? 'ランキング不参加' : `ランキング参加者の中で${state.result.rank}位`);
   const shareUrl = state.result.rank == null
-    ? `${location.origin}/challenge?room=${state.result.code}`
-    : `${location.origin}/challenge/ranking?room=${state.result.code}`;
-  const text = `${state.result.creatorName}さんの答え当てに挑戦して${state.result.score}/10問正解、${rankingText}！\n称号は「${tier.title}」\n#わたちゃん\n${shareUrl}`;
+    ? `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`
+    : `${location.origin}${languagePrefix}/challenge/ranking?room=${state.result.code}`;
+  const text = isEnglish
+    ? `I scored ${state.result.score}/10 on ${state.result.creatorName}’s quiz and ${rankingText}!\nMy title: “${tier.title}”\n#Watachan\n${shareUrl}`
+    : `${state.result.creatorName}さんの答え当てに挑戦して${state.result.score}/10問正解、${rankingText}！\n称号は「${tier.title}」\n#わたちゃん\n${shareUrl}`;
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'みんなに挑戦してもらう', text });
+      await navigator.share({ title: isEnglish ? 'Challenge your friends' : 'みんなに挑戦してもらう', text });
       return;
     } catch (error) {
       if (error?.name === 'AbortError') return;
@@ -1499,15 +1515,17 @@ function writeStorage(key, value) {
 }
 
 function challengeUrl(code) {
-  return `${location.origin}/challenge?room=${code}&share=${CHALLENGE_SHARE_VERSION}`;
+  return `${location.origin}${languagePrefix}/challenge?room=${code}&share=${CHALLENGE_SHARE_VERSION}`;
 }
 
 function manageUrl(code, token) {
-  return `/challenge/manage?room=${code}#manage=${token}`;
+  return `${languagePrefix}/challenge/manage?room=${code}#manage=${token}`;
 }
 
 function shareText(room, url) {
-  return `${room.creatorName}さんの「理解度診断」に挑戦！\n10問の答えを予想してね👇\n${url}`;
+  return isEnglish
+    ? `How well do you know ${room.creatorName}? Guess all 10 answers 👇\n${url}`
+    : `${room.creatorName}さんの「理解度診断」に挑戦！\n10問の答えを予想してね👇\n${url}`;
 }
 
 function errorMessage(code) {
@@ -1530,18 +1548,18 @@ function errorMessage(code) {
 }
 
 async function bootChallenge() {
-  allCards = await loadManagedQuestionCards(allCards, 'challenge');
+  allCards = await loadManagedQuestionCards(allCards, 'challenge', isEnglish ? 'en' : 'ja');
   if (quickStart && state.mode === 'creator-edit') {
     state.cards = pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard);
   }
   if (state.mode === 'library') {
-  document.title = '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？';
+  document.title = isEnglish ? 'Popular questions | How well do you know me?' : '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？';
   loadLibrary();
   } else if (state.mode === 'ranking') {
-  document.title = 'フレンドランキング｜私のこと、ちゃんと分かってるよね？';
+  document.title = isEnglish ? 'Leaderboard | How well do you know me?' : 'フレンドランキング｜私のこと、ちゃんと分かってるよね？';
   loadRanking();
   } else if (state.mode === 'manage') {
-  document.title = '主催者用回答管理｜私のこと、ちゃんと分かってるよね？';
+  document.title = isEnglish ? 'Manage responses | How well do you know me?' : '主催者用回答管理｜私のこと、ちゃんと分かってるよね？';
   loadManageRoom();
   } else if (state.mode === 'join') {
   loadRoom();
@@ -1550,4 +1568,5 @@ async function bootChallenge() {
   }
 }
 
+localizeDom(document);
 bootChallenge();

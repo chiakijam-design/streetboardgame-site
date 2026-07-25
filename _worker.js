@@ -46,6 +46,12 @@ const CHALLENGE_PAGE_PATHS = new Set([
   '/challenge/library',
 ]);
 const LIVE_CHALLENGE_PATH = '/live-challenge';
+const ENGLISH_CHALLENGE_PAGE_PATHS = new Set([
+  '/en/challenge',
+  '/en/challenge/manage',
+  '/en/challenge/ranking',
+  '/en/challenge/library',
+]);
 const LEGAL_PAGE_FILES = Object.freeze({
   '/terms': '/terms.html',
   '/privacy': '/privacy.html',
@@ -86,6 +92,9 @@ async function handleRequest(request, env) {
 
     const cleanHtmlPaths = {
       '/index.html': '/',
+      '/en/index.html': '/en/',
+      '/en/terms.html': '/en/terms',
+      '/en/privacy.html': '/en/privacy',
       '/challenge.html': '/challenge',
       '/remote.html': '/challenge',
       '/live.html': '/challenge',
@@ -111,6 +120,77 @@ async function handleRequest(request, env) {
 
     if (path.startsWith('/api/questions')) {
       return handleQuestionApi(request, env, path);
+    }
+
+    if (path === '/en') {
+      const pageUrl = new URL('/en/index.html', url.origin);
+      const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      return new Response(request.method === 'HEAD' ? null : await response.text(), {
+        status: response.status,
+        headers,
+      });
+    }
+
+    if (rawPath !== '/en/' && rawPath.endsWith('/') && (
+      path === '/en/live-challenge'
+      || ENGLISH_CHALLENGE_PAGE_PATHS.has(path)
+      || path === '/en/terms'
+      || path === '/en/privacy'
+    )) {
+      return Response.redirect(url.origin + path + url.search, 301);
+    }
+
+    if (path === '/en/live-challenge') {
+      const pageUrl = new URL('/live_challenge.html', url.origin);
+      const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      if (url.searchParams.has('room')) headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+      const html = request.method === 'HEAD' ? null : await response.text();
+      return new Response(html ? applyEnglishGameMeta(html, 'live', url) : null, {
+        status: response.status,
+        headers,
+      });
+    }
+
+    if (ENGLISH_CHALLENGE_PAGE_PATHS.has(path)) {
+      const pageUrl = new URL('/challenge.html', url.origin);
+      const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      if (url.searchParams.has('room') || path.endsWith('/manage') || path.endsWith('/ranking')) {
+        headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+      }
+      const html = request.method === 'HEAD' ? null : await response.text();
+      return new Response(html ? applyEnglishGameMeta(html, 'challenge', url) : null, {
+        status: response.status,
+        headers,
+      });
+    }
+
+    if (path === '/en/terms' || path === '/en/privacy') {
+      const pageUrl = new URL(path === '/en/terms' ? '/en/terms.html' : '/en/privacy.html', url.origin);
+      const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
+        method: 'GET',
+        headers: request.headers,
+      }));
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
+      return new Response(request.method === 'HEAD' ? null : await response.text(), {
+        status: response.status,
+        headers,
+      });
     }
 
     if (rawPath !== '/' && rawPath.endsWith('/') && path === LIVE_CHALLENGE_PATH) {
@@ -517,7 +597,7 @@ async function withSecurityHeaders(response, request) {
   const isHtml = /text\/html/i.test(headers.get('content-type') || '');
   const nonce = isHtml ? createCspNonce() : '';
   const requestPath = request ? new URL(request.url).pathname : '';
-  const sensitivePath = /^\/(?:challenge(?:\/|$)|live(?:-ops)?|remote(?:-boardgame)?|api(?:\/|$))/.test(requestPath);
+  const sensitivePath = /^\/(?:en\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|remote(?:-boardgame)?|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
     "default-src 'none'",
     "base-uri 'self'",
@@ -617,6 +697,67 @@ function applyChallengeLibraryMeta(html) {
         isPartOf: { '@type': 'WebSite', url: CANONICAL_ORIGIN + '/' },
       })}</script>`,
     );
+}
+
+function applyEnglishGameMeta(html, kind, requestUrl) {
+  const isLive = kind === 'live';
+  const canonicalPath = isLive ? '/en/live-challenge' : '/en/challenge';
+  const title = isLive
+    ? 'Livestream Challenge | Play with Instagram or YouTube viewers'
+    : 'Challenge Your Friends | How well do they know you?';
+  const description = isLive
+    ? 'Answer the same 10 questions with your livestream viewers. Earn one point for every match and give each viewer a personal result card.'
+    : 'Create a free 10-question quiz, share one link, and see how well up to 50 friends know your answers.';
+  const ogTitle = isLive ? 'Challenge your livestream viewers | Watachan' : 'How well do you know me? | Watachan';
+  const shareUrl = new URL(canonicalPath, CANONICAL_ORIGIN);
+  const room = String(requestUrl.searchParams.get('room') || '').trim();
+  if (room) shareUrl.searchParams.set('room', room);
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': ['WebApplication', 'Game'],
+    name: ogTitle,
+    url: CANONICAL_ORIGIN + canonicalPath,
+    description,
+    image: CANONICAL_ORIGIN + '/assets/ogp-challenge-en.png?v=20260725-en-1',
+    applicationCategory: 'GameApplication',
+    operatingSystem: 'Any',
+    isAccessibleForFree: true,
+    inLanguage: 'en',
+  };
+  let localized = html
+    .replace(/<html lang="[^"]*">/i, '<html lang="en">')
+    .replace(/<title>.*?<\/title>/i, `<title>${title}</title>`)
+    .replace(/<meta name="description" content="[^"]*"\s*\/?>/i, `<meta name="description" content="${description}">`)
+    .replace(/<link rel="canonical" href="[^"]*"\s*\/?>/i, `<link rel="canonical" href="${CANONICAL_ORIGIN + canonicalPath}">`)
+    .replace(/<meta property="og:title" content="[^"]*"\s*\/?>/i, `<meta property="og:title" content="${ogTitle}">`)
+    .replace(/<meta property="og:description" content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${description}">`)
+    .replace(/<meta property="og:url" content="[^"]*"\s*\/?>/i, `<meta property="og:url" content="${shareUrl.toString()}">`)
+    .replace(/<meta property="og:image" content="[^"]*"\s*\/?>/i, '<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en.png?v=20260725-en-1">')
+    .replace(/<meta property="og:image:width" content="[^"]*"\s*\/?>/i, '<meta property="og:image:width" content="1729">')
+    .replace(/<meta property="og:image:height" content="[^"]*"\s*\/?>/i, '<meta property="og:image:height" content="910">')
+    .replace(/<meta name="twitter:title" content="[^"]*"\s*\/?>/i, `<meta name="twitter:title" content="${ogTitle}">`)
+    .replace(/<meta name="twitter:description" content="[^"]*"\s*\/?>/i, `<meta name="twitter:description" content="${description}">`)
+    .replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/i, '<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en.png?v=20260725-en-1">')
+    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/i, `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>`);
+  if (/<meta property="og:locale" content="[^"]*"\s*\/?>/i.test(localized)) {
+    localized = localized.replace(/<meta property="og:locale" content="[^"]*"\s*\/?>/i, '<meta property="og:locale" content="en_US">');
+  } else {
+    localized = localized.replace('<meta property="og:type" content="website">', '<meta property="og:type" content="website">\n  <meta property="og:locale" content="en_US">');
+  }
+  localized = localized
+    .replace('<meta property="og:locale" content="en_US">', '<meta property="og:locale" content="en_US">\n  <meta property="og:locale:alternate" content="ja_JP">')
+    .replace('私のこと、ちゃんと分かってるよね？', 'How well do you know me?')
+    .replace('← トップへ', '← Home')
+    .replace('トップへ', 'Home')
+    .replace('最大1,000人', 'Up to 1,000 players')
+    .replace('ライブ配信で<br>みんなに挑戦してもらう', 'Challenge your<br>livestream viewers')
+    .replace('配信者と視聴者が同じ10問に同時回答。答えが一致するたび1点、最後に一人ずつ結果カードが出ます。', 'The streamer and viewers answer the same 10 questions together. Earn one point for every match and get a personal result card.')
+    .replace('Instagramライブ', 'Instagram Live')
+    .replace('YouTubeライブ', 'YouTube Live')
+    .replace('無料・連携不要', 'Free · no account link')
+    .replace('利用規約', 'Terms')
+    .replace('プライバシー', 'Privacy');
+  return localized;
 }
 
 function applyChallengeShareMeta(html, requestUrl) {

@@ -16,14 +16,18 @@ import {
 } from './src/questions/catalog.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
+import { isEnglish, localizeDom } from './src/i18n/runtime.js';
 
 const QUESTION_COUNT = 10;
 const app = document.getElementById('live-challenge-app');
-let allCards = mergeChallengeCards(
-  window.FRIEND_CARDS,
-  window.FAMILY_CARDS,
-  prepareLoveChallengeCards(window.ALL_CARDS),
-);
+let allCards = isEnglish
+  ? mergeChallengeCards(window.ENGLISH_FRIEND_CARDS, window.ENGLISH_FAMILY_CARDS)
+  : mergeChallengeCards(
+    window.FRIEND_CARDS,
+    window.FAMILY_CARDS,
+    prepareLoveChallengeCards(window.ALL_CARDS),
+  );
+const languagePrefix = isEnglish ? '/en' : '';
 const url = new URL(location.href);
 const initialCode = (url.searchParams.get('room') || '').replace(/\D/g, '').slice(0, 6);
 const initialCheckoutResult = String(url.searchParams.get('checkout') || '');
@@ -94,7 +98,7 @@ let state = {
 
 render();
 if (state.view === 'create') loadPaidCreatorProfiles();
-loadManagedQuestionCards(allCards, 'live').then((cards) => {
+loadManagedQuestionCards(allCards, 'live', isEnglish ? 'en' : 'ja').then((cards) => {
   allCards = cards;
   if (state.view === 'landing' || (quickStart && state.view === 'create')) {
     state.questions = pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion);
@@ -119,6 +123,7 @@ function render() {
           : state.view === 'host' ? hostView()
             : viewerView();
   app.innerHTML = `${state.error ? `<div class="error" role="alert">${escapeHtml(errorText(state.error))}</div>` : ''}${content}`;
+  localizeDom(app);
   bindEvents();
   const qr = document.getElementById('live-challenge-qr');
   if (qr) QRCode.toCanvas(qr, joinUrl(), { width: 188, margin: 1, errorCorrectionLevel: 'M' }).catch(() => {});
@@ -847,7 +852,7 @@ async function submitCreatorQuestionCandidates() {
   try {
     const result = await submitQuestionCandidates({
       consent: true,
-      sourceMode: 'live-challenge',
+      sourceMode: isEnglish ? 'live-challenge-en' : 'live-challenge',
       questions: state.questionSubmissionCandidates,
     });
     setState({
@@ -1098,12 +1103,12 @@ function saveResultCard() {
   context.fillStyle = '#191919';
   context.fillRect(75, 75, 930, 180);
   centerText(context, 'LIVE CHALLENGE RESULT', 165, '900 48px sans-serif', '#FFFFFF');
-  centerText(context, `${state.participantName}さんの結果`, 345, '900 44px sans-serif', '#191919');
+  centerText(context, isEnglish ? `${state.participantName}’s result` : `${state.participantName}さんの結果`, 345, '900 44px sans-serif', '#191919');
   centerText(context, `${correct}/10`, 560, '900 164px sans-serif', '#EC4F88');
   centerText(context, resultMessage(correct), 680, '900 42px sans-serif', '#191919');
   roundedRect(context, 145, 760, 790, 270, 30, '#FFE26B');
-  centerText(context, '配信者と同じ答えなら1点', 850, '900 40px sans-serif', '#191919');
-  centerText(context, `10問中 ${correct}問 一致！`, 940, '900 58px sans-serif', '#191919');
+  centerText(context, isEnglish ? '1 point for each streamer match' : '配信者と同じ答えなら1点', 850, '900 40px sans-serif', '#191919');
+  centerText(context, isEnglish ? `${correct} of 10 answers matched!` : `10問中 ${correct}問 一致！`, 940, '900 58px sans-serif', '#191919');
   centerText(context, 'Instagram LIVE / YouTube LIVE', 1125, '800 30px sans-serif', '#6F6267');
   centerText(context, 'streetboardgame.com', 1200, '900 30px sans-serif', '#191919');
   const link = document.createElement('a');
@@ -1238,10 +1243,16 @@ function toDraftQuestion(card) {
 }
 
 function joinUrl() {
-  return `${location.origin}/live-challenge?room=${state.code}`;
+  return `${location.origin}${languagePrefix}/live-challenge?room=${state.code}`;
 }
 
 function resultMessage(score) {
+  if (isEnglish) {
+    if (score === 10) return 'Perfect match!';
+    if (score >= 8) return 'You are seriously in sync';
+    if (score >= 5) return 'More than half matched';
+    return 'Different answers make great conversation!';
+  }
   if (score === 10) return '全問一致！最高のシンクロ率';
   if (score >= 8) return 'かなり気が合っています';
   if (score >= 5) return '半分以上一致しました';
@@ -1290,8 +1301,10 @@ function escapeHtml(value) {
   }[character]));
 }
 
+localizeDom(document);
+
 function number(value) {
-  return Math.max(0, Number(value) || 0).toLocaleString('ja-JP');
+  return Math.max(0, Number(value) || 0).toLocaleString(isEnglish ? 'en-US' : 'ja-JP');
 }
 
 function readSession(key) {

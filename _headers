@@ -20,6 +20,10 @@
   Referrer-Policy: no-referrer
 /challenge*
   Referrer-Policy: no-referrer
+/en/challenge*
+  Referrer-Policy: no-referrer
+/en/live-challenge*
+  Referrer-Policy: no-referrer
 /api/*
   Referrer-Policy: no-referrer
 
@@ -67,6 +71,8 @@
 /assets/ogp.jpg
   Cache-Control: public, max-age=300, must-revalidate
 /assets/ogp-love.png
+  Cache-Control: public, max-age=300, must-revalidate
+/assets/ogp-challenge-en.png
   Cache-Control: public, max-age=300, must-revalidate
 /assets/ogp-friends.png
   Cache-Control: public, max-age=300, must-revalidate

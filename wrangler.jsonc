@@ -24,6 +24,12 @@
     // HTMLだけWorkerを先に通し、nonce付きCSPを適用する。JS・CSS・画像はAssetsの直配信を維持する。
     "run_worker_first": [
       "/",
+      "/en", "/en/",
+      "/en/challenge", "/en/challenge/",
+      "/en/challenge/*",
+      "/en/live-challenge", "/en/live-challenge/",
+      "/en/terms", "/en/terms/",
+      "/en/privacy", "/en/privacy/",
       "/*.html",
       "/love", "/love/",
       "/friends", "/friends/",

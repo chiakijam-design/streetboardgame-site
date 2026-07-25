@@ -1,4 +1,4 @@
-export async function loadManagedQuestionCards(baseCards, series) {
+export async function loadManagedQuestionCards(baseCards, series, language = 'ja') {
   try {
     const response = await fetch('/api/questions/catalog', {
       headers: { accept: 'application/json' },
@@ -6,13 +6,13 @@ export async function loadManagedQuestionCards(baseCards, series) {
     });
     if (!response.ok) return baseCards;
     const data = await response.json();
-    return applyManagedQuestionCards(baseCards, data.questions, series);
+    return applyManagedQuestionCards(baseCards, data.questions, series, language);
   } catch (error) {
     return baseCards;
   }
 }
 
-export function applyManagedQuestionCards(baseCards, managedQuestions, series) {
+export function applyManagedQuestionCards(baseCards, managedQuestions, series, language = 'ja') {
   const enabledKey = series === 'live' ? 'useLive' : 'useChallenge';
   const rows = Array.isArray(managedQuestions) ? managedQuestions : [];
   const byId = new Map(rows.map((row) => [String(row.id), row]));
@@ -34,7 +34,8 @@ export function applyManagedQuestionCards(baseCards, managedQuestions, series) {
   const baseIds = new Set((baseCards || []).map((card) => String(card.id)));
   for (const row of rows) {
     if (row.sourceKind !== 'custom' || row.status !== 'approved'
-      || row[enabledKey] !== true || baseIds.has(String(row.id))) continue;
+      || row[enabledKey] !== true || (row.language || 'ja') !== language
+      || baseIds.has(String(row.id))) continue;
     if (!row.title || !Array.isArray(row.choices) || row.choices.length !== 5) continue;
     cards.push({
       id: row.id,
