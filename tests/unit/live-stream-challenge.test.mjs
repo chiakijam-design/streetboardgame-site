@@ -114,11 +114,47 @@ test('streamer and viewer complete ten simultaneous answers with a personalized 
       body: JSON.stringify({ questionId: question.id, optionIndex }),
     }), env, `/api/live/games/${created.code}/vote`);
     assert.equal(voteResponse.status, 200);
+
+    const beforeRevealResponse = await handleLiveApi(new Request(`https://example.com/api/live/games/${created.code}`, {
+      headers: { 'x-live-participant-token': joined.participantToken },
+    }), env, `/api/live/games/${created.code}`);
+    const beforeReveal = await beforeRevealResponse.json();
+    assert.equal(beforeReveal.game.phase, 'voting');
+    assert.equal(beforeReveal.game.question.result, null);
+
     const advanceResponse = await handleLiveApi(new Request(`https://example.com/api/live/games/${created.code}/advance`, {
       method: 'POST', headers: hostHeaders, body: '{}',
     }), env, `/api/live/games/${created.code}/advance`);
     assert.equal(advanceResponse.status, 200);
     hostState = await advanceResponse.json();
+
+    assert.equal(hostState.game.phase, 'reveal');
+    assert.equal(hostState.game.currentQuestionIndex, index);
+    const revealResponse = await handleLiveApi(new Request(`https://example.com/api/live/games/${created.code}`, {
+      headers: { 'x-live-participant-token': joined.participantToken },
+    }), env, `/api/live/games/${created.code}`);
+    const reveal = await revealResponse.json();
+    assert.equal(reveal.game.phase, 'reveal');
+    assert.equal(reveal.game.question.result.subjectAnswerIndex, optionIndex);
+    assert.equal(reveal.game.question.result.myVoteIndex, optionIndex);
+    assert.equal(reveal.game.question.result.myIsCorrect, true);
+
+    if (index === 0) {
+      const lateVoteResponse = await handleLiveApi(new Request(`https://example.com/api/live/games/${created.code}/vote`, {
+        method: 'POST',
+        headers: participantHeaders,
+        body: JSON.stringify({ questionId: question.id, optionIndex: 1 }),
+      }), env, `/api/live/games/${created.code}/vote`);
+      assert.equal(lateVoteResponse.status, 409);
+    }
+
+    const nextResponse = await handleLiveApi(new Request(`https://example.com/api/live/games/${created.code}/next`, {
+      method: 'POST', headers: hostHeaders, body: '{}',
+    }), env, `/api/live/games/${created.code}/next`);
+    assert.equal(nextResponse.status, 200);
+    hostState = await nextResponse.json();
+    assert.equal(hostState.game.phase, index === 9 ? 'complete' : 'voting');
+    assert.equal(hostState.game.currentQuestionIndex, index === 9 ? 9 : index + 1);
   }
 
   assert.equal(hostState.game.phase, 'complete');

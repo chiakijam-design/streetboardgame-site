@@ -303,6 +303,7 @@ function hostView() {
   if (state.game.phase === 'lobby') return hostLobbyView();
   if (state.game.phase === 'complete') return hostCompleteView();
   if (state.game.phase === 'voting') return hostQuestionView();
+  if (state.game.phase === 'reveal') return hostRevealView();
   return `<section class="panel"><h2>ゲームを更新しています</h2><p>少し待ってください。</p></section>`;
 }
 
@@ -361,7 +362,7 @@ function hostQuestionView() {
     ${progressView(game.currentQuestionIndex)}
     <span class="q-label">配信者の秘密回答 ・ Q${game.currentQuestionIndex + 1}/10</span>
     <h2>${escapeHtml(question.text)}</h2>
-    <p class="help">${answered ? '回答を確定しました。視聴者の回答を待ってから次へ進んでください。' : '視聴者と同じタイミングで、あなたの答えを1つ選んでください。'}</p>
+    <p class="help">${answered ? '回答を確定しました。視聴者の回答を待ち、そろったら締め切ってください。' : '視聴者と同じタイミングで、あなたの答えを1つ選んでください。'}</p>
     <div class="choices">
       ${question.options.map((option, index) => choiceButton(option, index, {
         selected: answer === index,
@@ -379,7 +380,30 @@ function hostQuestionView() {
       <span>視聴者にも選択肢ごとの人数を表示</span>
     </label>
     <button class="primary" data-action="advance" ${answered ? '' : 'disabled'}>
-      ${game.currentQuestionIndex === 9 ? '回答を締め切って結果へ' : `回答を締め切ってQ${game.currentQuestionIndex + 2}へ`} <span>▶</span>
+      視聴者の回答を締め切る <span>▶</span>
+    </button>
+  </article>`;
+}
+
+function hostRevealView() {
+  const game = state.game;
+  const question = game.question;
+  const result = question.result || {};
+  const hostAnswer = Number.isInteger(result.subjectAnswerIndex) ? result.subjectAnswerIndex : null;
+  return `<article class="question-card live-active-question live-reveal-question" data-testid="live-host-reveal">
+    ${progressView(game.currentQuestionIndex)}
+    <span class="q-label">回答公開中 ・ Q${game.currentQuestionIndex + 1}/10</span>
+    <h2>${escapeHtml(question.text)}</h2>
+    <p class="help">視聴者の回答を締め切り、配信者の回答を公開しました。</p>
+    <div class="choices">
+      ${question.options.map((option, index) => revealChoice(option, index, {
+        hostAnswer: hostAnswer === index,
+        count: question.voteCounts?.[index],
+      })).join('')}
+    </div>
+    <p class="notice reveal-notice">この答え合わせを配信で確認してから、次の問題へ進んでください。</p>
+    <button class="primary" data-action="next">
+      ${game.currentQuestionIndex === 9 ? '10問の結果を見る' : `Q${game.currentQuestionIndex + 2}へ進む`} <span>▶</span>
     </button>
   </article>`;
 }
@@ -410,6 +434,7 @@ function viewerView() {
   }
   if (state.game.phase === 'complete') return viewerResultView();
   if (state.game.phase === 'voting') return viewerQuestionView();
+  if (state.game.phase === 'reveal') return viewerRevealView();
   return `<section class="panel waiting"><div class="pulse"></div><h2>次の問題を待っています</h2></section>`;
 }
 
@@ -423,7 +448,7 @@ function viewerQuestionView() {
     ${progressView(game.currentQuestionIndex)}
     <span class="q-label">${escapeHtml(game.subjectName)}さんと同じ答えなら1点 ・ Q${game.currentQuestionIndex + 1}/10</span>
     <h2>${escapeHtml(question.text)}</h2>
-    <p class="help">${answer === null ? '配信者の答えを予想するのではなく、あなた自身の答えを選んでください。' : '回答を送信しました。配信者が次へ進むまで待ってください。'}</p>
+    <p class="help">${answer === null ? '配信者の答えを予想するのではなく、あなた自身の答えを選んでください。' : '回答を送信しました。配信者が回答を締め切るまで待ってください。'}</p>
     <div class="choices">
       ${question.options.map((option, index) => choiceButton(option, index, {
         selected: answer === index,
@@ -432,7 +457,33 @@ function viewerQuestionView() {
         action: 'viewer-answer',
       })).join('')}
     </div>
-    ${answer !== null ? '<p class="notice">回答済みです。配信画面を見ながら次の問題を待ってください。</p>' : ''}
+    ${answer !== null ? '<p class="notice">回答済みです。締め切られると、この画面に配信者の回答が表示されます。</p>' : ''}
+  </article>`;
+}
+
+function viewerRevealView() {
+  const game = state.game;
+  const question = game.question;
+  const result = question.result || {};
+  const hostAnswer = Number.isInteger(result.subjectAnswerIndex) ? result.subjectAnswerIndex : null;
+  const viewerAnswer = Number.isInteger(result.myVoteIndex) ? result.myVoteIndex : null;
+  const isCorrect = result.myIsCorrect === true;
+  return `<article class="question-card live-active-question live-reveal-question" data-testid="live-viewer-reveal">
+    ${progressView(game.currentQuestionIndex)}
+    <span class="q-label">答え合わせ ・ Q${game.currentQuestionIndex + 1}/10</span>
+    <h2>${escapeHtml(question.text)}</h2>
+    <div class="reveal-judgement ${isCorrect ? 'ok' : 'ng'}" role="status">
+      <strong>${isCorrect ? '○ 一致！ 1点' : '× 不一致'}</strong>
+      <span>配信者の回答を公開しました</span>
+    </div>
+    <div class="choices">
+      ${question.options.map((option, index) => revealChoice(option, index, {
+        hostAnswer: hostAnswer === index,
+        viewerAnswer: viewerAnswer === index,
+        count: question.voteCounts?.[index],
+      })).join('')}
+    </div>
+    <p class="notice reveal-notice">配信者が次の問題へ進むまで待ってください。</p>
   </article>`;
 }
 
@@ -512,6 +563,25 @@ function choiceButton(option, index, config) {
   </button>`;
 }
 
+function revealChoice(option, index, config) {
+  const badges = [
+    config.hostAnswer ? '<b class="reveal-badge host">配信者の回答</b>' : '',
+    config.viewerAnswer ? '<b class="reveal-badge viewer">あなたの回答</b>' : '',
+  ].join('');
+  const count = Number.isFinite(Number(config.count)) ? `<span class="count">${number(config.count)}人</span>` : '';
+  const classes = [
+    'choice',
+    'reveal-choice',
+    config.hostAnswer ? 'host-answer' : '',
+    config.viewerAnswer ? 'viewer-answer' : '',
+  ].filter(Boolean).join(' ');
+  return `<div class="${classes}">
+    <span class="number">${index + 1}</span>
+    <span>${escapeHtml(option)}</span>
+    <span class="reveal-choice-meta">${badges}${count}</span>
+  </div>`;
+}
+
 function loadingView() {
   return '<section class="panel waiting"><div class="pulse"></div><h2>読み込み中</h2><p>少し待ってください。</p></section>';
 }
@@ -569,6 +639,7 @@ function bindEvents() {
   document.querySelectorAll('[data-action="host-answer"]').forEach((button) => button.addEventListener('click', () => hostAnswer(Number(button.dataset.index))));
   document.querySelectorAll('[data-action="viewer-answer"]').forEach((button) => button.addEventListener('click', () => viewerAnswer(Number(button.dataset.index))));
   document.querySelector('[data-action="advance"]')?.addEventListener('click', () => hostAction('advance'));
+  document.querySelector('[data-action="next"]')?.addEventListener('click', () => hostAction('next'));
   document.querySelectorAll('[data-action="toggle-counts"]').forEach((input) => input.addEventListener('change', () => toggleCounts(input.checked)));
   document.querySelector('[data-action="save-result"]')?.addEventListener('click', saveResultCard);
   document.getElementById('enable-paid-sales')?.addEventListener('change', (event) => {

@@ -1721,16 +1721,13 @@ async function updateSeparatedLiveGame(request, game, action) {
     if (!question || !Number.isInteger(question.lockedIndex)) throw liveError('answer-required', 409);
     const result = calculateLiveResult(question, game.votes[question.id] || {});
     game.results = [...game.results.filter((item) => item.questionId !== question.id), result];
-    if (game.currentQuestionIndex + 1 >= game.questions.length) {
-      if (game.mode === 'stream-challenge') {
-        game.currentVoteCounts = null;
-        game.phase = 'complete';
-      } else {
-        game.currentQuestionIndex = 0;
-        game.reviewedThroughIndex = -1;
-        game.currentVoteCounts = null;
-        game.phase = 'review-question';
-      }
+    if (game.mode === 'stream-challenge') {
+      game.phase = 'reveal';
+    } else if (game.currentQuestionIndex + 1 >= game.questions.length) {
+      game.currentQuestionIndex = 0;
+      game.reviewedThroughIndex = -1;
+      game.currentVoteCounts = null;
+      game.phase = 'review-question';
     } else {
       game.currentQuestionIndex += 1;
     }
@@ -1739,7 +1736,18 @@ async function updateSeparatedLiveGame(request, game, action) {
   } else if (action === 'previous') {
     moveToPreviousLiveReview(game);
   } else if (action === 'next') {
-    moveToNextLiveReview(game);
+    if (game.mode === 'stream-challenge') {
+      if (game.phase !== 'reveal') throw liveError('result-not-open', 409);
+      game.currentVoteCounts = null;
+      if (game.currentQuestionIndex + 1 >= game.questions.length) {
+        game.phase = 'complete';
+      } else {
+        game.currentQuestionIndex += 1;
+        game.phase = 'voting';
+      }
+    } else {
+      moveToNextLiveReview(game);
+    }
   } else {
     throw liveError('invalid-host-action', 409);
   }

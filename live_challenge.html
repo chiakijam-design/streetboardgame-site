@@ -126,6 +126,18 @@
     .choice.selected{background:var(--yellow)}
     .choice.correct{background:#dff4d8}
     .choice .count{padding:5px 8px;border:2px solid #000;border-radius:999px;background:var(--cyan);font-size:10px;white-space:nowrap}
+    .reveal-choice{cursor:default}
+    .reveal-choice.host-answer{background:#dff4d8;box-shadow:3px 3px 0 #18733a}
+    .reveal-choice.viewer-answer:not(.host-answer){background:#fff3aa}
+    .reveal-choice-meta{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+    .reveal-badge{padding:4px 7px;border:2px solid #000;border-radius:999px;font-size:10px;line-height:1.2;white-space:nowrap}
+    .reveal-badge.host{background:#bde7ae}
+    .reveal-badge.viewer{background:var(--yellow)}
+    .reveal-judgement{display:grid;gap:2px;margin-top:10px;padding:10px;border:3px solid #000;border-radius:12px;text-align:center}
+    .reveal-judgement.ok{background:#dff4d8}
+    .reveal-judgement.ng{background:#ffe1e8}
+    .reveal-judgement strong{font-size:21px}
+    .reveal-judgement span{font-size:12px;font-weight:800}
     .live-builder-card{margin-top:14px}.live-builder-paper{position:relative;width:min(100%,500px);aspect-ratio:2/3;margin-inline:auto;overflow:hidden;padding:54px 20px 24px;background:repeating-linear-gradient(to bottom,#fff 0,#fff 47px,#a8d4e8 48px,#a8d4e8 50px);border:3px solid #fff;border-radius:18px;box-shadow:0 14px 30px rgba(69,16,40,.34)}.live-builder-paper::before{content:"";position:absolute;top:0;bottom:0;left:19%;width:2px;background:rgba(238,132,140,.58)}.live-builder-paper::after{content:"";position:absolute;right:-25px;bottom:-28px;width:74px;height:126px;background:linear-gradient(132deg,transparent 0 47%,rgba(205,205,205,.9) 49%,#fff 72%);filter:drop-shadow(-5px -3px 4px rgba(0,0,0,.18));transform:rotate(5deg);pointer-events:none}.live-builder-paper .q-badge{position:absolute;top:11px;left:12px;z-index:2;background:#191919;color:#fff;font-family:"HuiFontP29","ふい字",sans-serif;font-size:14px;line-height:1}.live-builder-title{position:relative;z-index:1;margin:5px 30px 12px;padding:14px 10px;background:#75c7e6;transform:rotate(-.5deg)}.live-builder-title::before{content:"";position:absolute;left:-2px;right:-2px;top:-11px;height:13px;background:radial-gradient(circle at 7px 13px,var(--pink) 0 6px,transparent 6.5px) 0 0/28px 13px repeat-x;opacity:.68}.live-builder-paper h3{margin:0;font-family:"HuiFontP29","ふい字",sans-serif;font-size:clamp(22px,6.6vw,30px);font-weight:400;line-height:1.25;text-align:center}.live-builder-options{position:relative;z-index:1;display:grid}.live-builder-option{display:grid;grid-template-columns:74px minmax(0,1fr);align-items:center;min-height:clamp(54px,11vw,88px);padding-right:30px;font-family:"HuiFontP29","ふい字",sans-serif;font-size:clamp(21px,5.8vw,27px);font-weight:400;line-height:1.15}.live-builder-option i{display:block;justify-self:center;width:31px;height:31px;border:1px solid rgba(0,0,0,.15);border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,.2),inset 0 2px 2px rgba(255,255,255,.35)}.live-builder-option span{text-align:center}.live-builder-footer{display:grid;grid-template-columns:1fr 1fr;gap:10px}.live-builder-footer .ghost,.live-builder-footer .secondary{min-width:0;margin-top:10px}
     .waiting{text-align:center}
     .pulse{width:52px;height:52px;margin:2px auto 13px;border:5px solid rgba(236,79,136,.25);border-top-color:var(--pink);border-radius:50%;animation:spin .9s linear infinite}
@@ -153,23 +165,29 @@
       .editor:last-child:nth-child(odd){grid-column:1/-1}
     }
     @media(max-width:380px){.question-report{grid-template-columns:1fr}.question-report label,.question-report small{grid-column:1}.live-builder-paper{padding-inline:14px}.live-builder-title{margin-inline:22px}.live-builder-option{grid-template-columns:66px minmax(0,1fr);padding-right:20px}}
-    html[data-live-challenge-phase="voting"] .shell{width:min(100%,640px);padding:max(6px,env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom))}
-    html[data-live-challenge-phase="voting"] .topbar,
-    html[data-live-challenge-phase="voting"] .hero,
-    html[data-live-challenge-phase="voting"] .footer{display:none}
-    html[data-live-challenge-phase="voting"] .app{margin-top:0}
-    html[data-live-challenge-phase="voting"] .live-active-question{min-height:calc(100dvh - 14px - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding:10px 11px;border-radius:14px}
-    html[data-live-challenge-phase="voting"] .live-active-question .progress{margin-bottom:7px}
-    html[data-live-challenge-phase="voting"] .live-active-question h2{margin:4px 0;font-size:clamp(18px,5vw,23px);line-height:1.25}
-    html[data-live-challenge-phase="voting"] .live-active-question .help{margin-top:3px;font-size:12px;line-height:1.45}
-    html[data-live-challenge-phase="voting"] .live-active-question .choices{gap:6px;margin-top:7px}
-    html[data-live-challenge-phase="voting"] .live-active-question .choice{min-height:48px;padding:6px 8px}
-    html[data-live-challenge-phase="voting"] .live-active-question .stats{margin-top:7px}
-    html[data-live-challenge-phase="voting"] .live-active-question .stat{padding:7px}
-    html[data-live-challenge-phase="voting"] .live-active-question .stat b{font-size:18px}
-    html[data-live-challenge-phase="voting"] .live-active-question .check{margin-top:7px;padding:7px}
-    html[data-live-challenge-phase="voting"] .live-active-question .primary{min-height:48px;margin-top:7px;padding:7px 10px}
-    html[data-live-challenge-phase="voting"] .live-active-question .notice{margin-top:7px;padding:7px}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .shell{width:min(100%,640px);padding:max(6px,env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom))}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .topbar,
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .hero,
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .footer{display:none}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .app{margin-top:0}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question{min-height:calc(100dvh - 14px - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding:10px 11px;border-radius:14px}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question .progress{margin-bottom:7px}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question h2{margin:4px 0;font-size:clamp(18px,5vw,23px);line-height:1.25}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question .help{margin-top:3px;font-size:12px;line-height:1.45}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question .choices{gap:6px;margin-top:7px}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question .choice{min-height:48px;padding:6px 8px}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question .stats{margin-top:7px}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question .stat{padding:7px}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question .stat b{font-size:18px}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question .check{margin-top:7px;padding:7px}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question .primary{min-height:48px;margin-top:7px;padding:7px 10px}
+    html:is([data-live-challenge-phase="voting"],[data-live-challenge-phase="reveal"]) .live-active-question .notice{margin-top:7px;padding:7px}
+    html[data-live-challenge-phase="reveal"] .live-active-question .reveal-judgement{margin-top:7px;padding:7px}
+    html[data-live-challenge-phase="reveal"] .live-active-question .reveal-judgement strong{font-size:18px}
+    @media(max-width:460px){
+      .reveal-choice{grid-template-columns:34px minmax(0,1fr)}
+      .reveal-choice-meta{grid-column:1/-1;justify-content:flex-start;padding-left:43px}
+    }
   </style>
   <link rel="stylesheet" href="/question-card.css?v=20260725-1" />
   <link rel="stylesheet" href="/accessibility.css?v=20260725-1" />
@@ -192,6 +210,6 @@
   <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
   <script data-build-entry="prototype_friend_data" src="/dist/prototype_friend_data-3YOIQLSI.js"></script>
   <script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
-  <script data-build-entry="live_challenge" src="/dist/live_challenge-IAMSLN2A.js"></script>
+  <script data-build-entry="live_challenge" src="/dist/live_challenge-IHWXDDGI.js"></script>
 </body>
 </html>

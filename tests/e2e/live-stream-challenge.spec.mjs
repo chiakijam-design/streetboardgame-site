@@ -350,14 +350,22 @@ test('streamer and viewer answer ten questions and viewer receives a result card
       expect(box?.y).toBeGreaterThanOrEqual(0);
       expect(box?.y + box?.height).toBeLessThanOrEqual(viewport.innerHeight);
     }
-    await viewer.locator('[data-action="viewer-answer"]').first().click();
+    await viewer.locator('[data-action="viewer-answer"]').nth(index === 1 ? 1 : 0).click();
     await expect(viewer.getByText('回答済みです。')).toBeVisible();
+    await expect(viewer.getByText('配信者の回答', { exact: true })).toHaveCount(0);
     await page.locator('[data-action="advance"]').click();
+    await expect(page.getByTestId('live-host-reveal')).toBeVisible();
+    await expect(page.getByText('配信者の回答', { exact: true })).toBeVisible();
+    await expect(viewer.getByTestId('live-viewer-reveal')).toBeVisible();
+    await expect(viewer.getByText(index === 1 ? '× 不一致' : '○ 一致！ 1点', { exact: true })).toBeVisible();
+    await expect(viewer.getByText('配信者の回答', { exact: true })).toBeVisible();
+    await expect(viewer.getByText('あなたの回答', { exact: true })).toBeVisible();
+    await page.locator('[data-action="next"]').click();
   }
 
   await expect(page.getByRole('heading', { name: 'LIVEクイズ終了！' })).toBeVisible();
   await expect(viewer.getByTestId('live-result-card')).toBeVisible();
-  await expect(viewer.getByText('10/10', { exact: true })).toBeVisible();
+  await expect(viewer.getByText('9/10', { exact: true })).toBeVisible();
   await expect(viewer.locator('.result-row')).toHaveCount(10);
 });
 
