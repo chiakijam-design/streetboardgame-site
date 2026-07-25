@@ -76,7 +76,9 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   await expect(page.getByText('みんなの理解度診断', { exact: true })).toBeVisible();
   await expect(page.getByText('クイズを作る人向け', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('あなたの名前（12文字まで）')).toBeVisible();
-  await expect(page.getByText('このトップページは出題者・配信者向けです。')).toBeVisible();
+  await expect(page.getByText('この説明は出題者向けです。')).toBeVisible();
+  await expect(page.getByText('回答する人は、届いた参加URLから直接遊びます。')).toBeVisible();
+  await expect(page.getByText('このトップページは出題者・配信者向けです。')).toHaveCount(0);
   const [challengeStyle, liveStyle] = await Promise.all([
     challengeButton.evaluate((element) => {
       const style = getComputedStyle(element);

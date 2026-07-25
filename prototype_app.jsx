@@ -2537,7 +2537,7 @@ function CommonRulesCard({ creatorName, nameError, onCreatorNameChange, onStart 
           lineHeight: 1.7,
           fontWeight: 700,
         }}>
-          このトップページは出題者・配信者向けです。<br/>回答する人は、届いた参加URLから直接遊びます。
+          この説明は出題者向けです。<br/>回答する人は、届いた参加URLから直接遊びます。
         </p>
       </div>
       <ol style={{
