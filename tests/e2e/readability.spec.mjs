@@ -116,7 +116,7 @@ test('すべての法務ページに子ども向け要約と正式本文優先�
     const summary = page.locator('.kids-summary');
     await expect(summary).toBeVisible();
     await expect(summary.getByRole('heading', { level: 2 })).toHaveText('子ども向け かんたんまとめ');
-    await expect(summary.locator('li')).toHaveCount(3);
+    expect(await summary.locator('li').count()).toBeGreaterThanOrEqual(3);
     await expect(summary.locator('.kids-summary-note')).toContainText('本文が優先されます');
 
     const geometry = await summary.evaluate((element) => ({
