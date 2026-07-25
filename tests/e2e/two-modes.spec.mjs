@@ -634,14 +634,27 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
 
 test('廃止した公開URLは挑戦モードへ恒久転送し、旧screen指定も開かない', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'リダイレクトは画面幅に依存しないためPCで1回実行');
-  for (const path of ['/love', '/friends', '/family', '/boardgame', '/remote', '/remote-boardgame', '/live', '/live-guide']) {
+  for (const path of ['/love', '/friends', '/family', '/boardgame', '/live', '/live-guide']) {
     const response = await request.get(path, { maxRedirects: 0 });
     expect(response.status(), path).toBe(301);
     expect(new URL(response.headers().location).pathname, path).toBe('/challenge');
+  }
+  for (const path of ['/remote', '/remote-boardgame']) {
+    const response = await request.get(`${path}?room=123456`, { maxRedirects: 0 });
+    expect(response.status(), path).toBe(200);
+    expect(await response.text(), path).toContain('data-build-entry="remote_love"');
   }
   await page.goto('/?screen=friendIntro');
   await expect(page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
   await expect(page.getByText('友達の友情判定ゲーム', { exact: true })).toHaveCount(0);
+});
+
+test('既存のリモートURLはルーム情報を保ったままPC・スマホで開ける', async ({ page }) => {
+  await page.goto('/remote?room=123456');
+  expect(new URL(page.url()).pathname).toBe('/remote');
+  expect(new URL(page.url()).searchParams.get('room')).toBe('123456');
+  await expect(page.locator('#remoteHeroTitle')).toBeVisible();
+  await expect(page.locator('html')).not.toHaveClass(/has-horizontal-overflow/);
 });

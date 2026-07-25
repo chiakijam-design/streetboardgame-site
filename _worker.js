@@ -34,8 +34,6 @@ const LEGACY_GAME_PATHS = new Set([
   '/friends',
   '/family',
   '/boardgame',
-  '/remote',
-  '/remote-boardgame',
   '/live',
   '/live-guide',
 ]);
@@ -96,7 +94,7 @@ async function handleRequest(request, env) {
       '/en/terms.html': '/en/terms',
       '/en/privacy.html': '/en/privacy',
       '/challenge.html': '/challenge',
-      '/remote.html': '/challenge',
+      '/remote.html': '/remote',
       '/live.html': '/challenge',
       '/live_challenge.html': LIVE_CHALLENGE_PATH,
       '/live_ops.html': '/live-ops',
