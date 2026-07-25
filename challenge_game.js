@@ -13,6 +13,7 @@ import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
 const QUESTION_COUNT = 10;
+const CHALLENGE_SHARE_VERSION = 'challenge-20260725-2';
 const CREATOR_DRAFT_KEY = 'watachan-challenge-creator-draft:v1';
 const MANAGE_HISTORY_KEY = 'watachan-challenge-manage-history:v1';
 const app = document.getElementById('challenge-app');
@@ -1147,7 +1148,7 @@ function writeStorage(key, value) {
 }
 
 function challengeUrl(code) {
-  return `${location.origin}/challenge?room=${code}`;
+  return `${location.origin}/challenge?room=${code}&share=${CHALLENGE_SHARE_VERSION}`;
 }
 
 function manageUrl(code, token) {

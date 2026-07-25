@@ -148,7 +148,11 @@ async function handleRequest(request, env) {
         headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       }
       const html = request.method === 'HEAD' ? null : await response.text();
-      const body = html && path === '/challenge/library' ? applyChallengeLibraryMeta(html) : html;
+      const body = html && path === '/challenge/library'
+        ? applyChallengeLibraryMeta(html)
+        : html && path === '/challenge'
+          ? applyChallengeShareMeta(html, url)
+          : html;
       return new Response(body, {
         status: response.status,
         headers,
@@ -258,7 +262,7 @@ async function handleRequest(request, env) {
         description: '自分が先に答えた10問を友達や家族に予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせとランキングを楽しめます。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
         ogTitle: 'みんなに挑戦してもらう｜わたちゃん',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge.png?v=20260725-ogp-1',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge.png?v=20260725-ogp-2',
         imageWidth: 1731,
         imageHeight: 909,
         imageAlt: 'わたちゃん みんなに挑戦してもらう',
@@ -615,6 +619,19 @@ function applyChallengeLibraryMeta(html) {
     );
 }
 
+function applyChallengeShareMeta(html, requestUrl) {
+  const room = String(requestUrl.searchParams.get('room') || '').trim().toUpperCase();
+  if (!/^[A-Z2-9]{8}$/.test(room)) return html;
+  const shareUrl = new URL('/challenge', CANONICAL_ORIGIN);
+  shareUrl.searchParams.set('room', room);
+  const shareVersion = String(requestUrl.searchParams.get('share') || '').trim();
+  if (/^[a-z0-9-]{1,40}$/i.test(shareVersion)) shareUrl.searchParams.set('share', shareVersion);
+  return html.replace(
+    /<meta property="og:url" content="[^"]*">/,
+    `<meta property="og:url" content="${shareUrl.toString()}">`,
+  );
+}
+
 function applyRemoteBoardgameShareMeta(html, requestUrl) {
   const page = REMOTE_BOARDGAME_SHARE_META;
   const ogUrl = requestUrl.searchParams.get('share') === BOARDGAME_RESULT_SHARE_VERSION
@@ -649,7 +666,7 @@ function buildNoscript(page) {
 function buildStructuredData(page) {
   const organizationId = 'https://www.streetboardgame.com/#organization';
   const websiteId = 'https://www.streetboardgame.com/#website';
-  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge.png?v=20260725-ogp-1';
+  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge.png?v=20260725-ogp-2';
 
   const webPage = {
     '@type': 'WebPage',

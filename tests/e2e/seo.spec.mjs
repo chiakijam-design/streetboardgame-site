@@ -69,11 +69,17 @@ test('トップの内部リンクと構造化データに廃止モードを残�
 
 test('挑戦モードと説明ページは専用OGP画像を配信する', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'OGPメタと画像配信は画面幅に依存しないためPCで1回検証');
-  const imageUrl = `${ORIGIN}/assets/ogp-challenge.png?v=20260725-ogp-1`;
+  const imageUrl = `${ORIGIN}/assets/ogp-challenge.png?v=20260725-ogp-2`;
   for (const path of ['/challenge', '/challenge-guide']) {
     await page.goto(path);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', imageUrl);
   }
+  const sharePath = '/challenge?room=ABCDEFGH&share=challenge-20260725-2';
+  const shareUrl = `${ORIGIN}${sharePath}`;
+  await page.goto(sharePath);
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', shareUrl);
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+  await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', imageUrl);
   const imageResponse = await request.get('/assets/ogp-challenge.png');
   expect(imageResponse.status()).toBe(200);
   expect(imageResponse.headers()['content-type']).toBe('image/png');

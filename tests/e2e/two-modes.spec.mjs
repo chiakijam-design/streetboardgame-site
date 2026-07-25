@@ -67,7 +67,7 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await expect(page.getByRole('button', { name: 'Xでシェア' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'LINEで送る' })).toBeVisible();
   const url = await page.getByRole('textbox', { name: '挑戦用URL' }).inputValue();
-  expect(url).toMatch(/\/challenge\?room=[A-Z2-9]{8}$/);
+  expect(url).toMatch(/\/challenge\?room=[A-Z2-9]{8}&share=challenge-20260725-2$/);
   return url;
 }
 
