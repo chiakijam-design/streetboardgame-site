@@ -1894,9 +1894,13 @@ function TopScreen() {
       }}>
         <FooterLink href="/about">About</FooterLink>
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
+        <FooterLink href="/challenge/library">人気のお題</FooterLink>
+        <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
         <FooterLink href="/product">製品版</FooterLink>
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
         <FooterLink href="/terms">利用規約</FooterLink>
+        <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
+        <FooterLink href="/privacy">プライバシー</FooterLink>
         <span style={{ color: proto.white, opacity: 0.4 }}>·</span>
         <FooterLink href="/legal">特商法表記</FooterLink>
       </footer>

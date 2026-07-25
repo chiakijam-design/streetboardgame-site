@@ -678,10 +678,14 @@ function applyChallengeLibraryMeta(html) {
   const title = '人気のお題ライブラリ｜私のこと、ちゃんと分かってるよね？';
   const description = '友達や家族が実際に遊んだ回数から、人気の質問と5つの選択肢を探せる無料のお題ライブラリです。気になるお題を入れて10問クイズを作れます。';
   const url = CANONICAL_ORIGIN + '/challenge/library';
+  const breadcrumbId = url + '#breadcrumb';
   return html
     .replace(/<title>.*?<\/title>/, `<title>${title}</title>`)
     .replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${description}">`)
     .replace(/<link rel="canonical" href="[^"]*">/, `<link rel="canonical" href="${url}">`)
+    .replace(/<link rel="alternate" hreflang="ja" href="[^"]*">/, `<link rel="alternate" hreflang="ja" href="${url}">`)
+    .replace(/\s*<link rel="alternate" hreflang="en" href="[^"]*">/, '')
+    .replace(/<link rel="alternate" hreflang="x-default" href="[^"]*">/, `<link rel="alternate" hreflang="x-default" href="${url}">`)
     .replace(/<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${title}">`)
     .replace(/<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${description}">`)
     .replace(/<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${url}">`)
@@ -689,12 +693,36 @@ function applyChallengeLibraryMeta(html) {
       /<script type="application\/ld\+json">[\s\S]*?<\/script>/,
       `<script type="application/ld+json">${JSON.stringify({
         '@context': 'https://schema.org',
-        '@type': 'CollectionPage',
-        name: '人気のお題ライブラリ',
-        url,
-        description,
-        inLanguage: 'ja',
-        isPartOf: { '@type': 'WebSite', url: CANONICAL_ORIGIN + '/' },
+        '@graph': [
+          {
+            '@type': 'CollectionPage',
+            '@id': url + '#webpage',
+            name: '人気のお題ライブラリ',
+            url,
+            description,
+            inLanguage: 'ja',
+            isPartOf: { '@type': 'WebSite', url: CANONICAL_ORIGIN + '/' },
+            breadcrumb: { '@id': breadcrumbId },
+          },
+          {
+            '@type': 'BreadcrumbList',
+            '@id': breadcrumbId,
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'わたちゃん',
+                item: CANONICAL_ORIGIN + '/',
+              },
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: '人気のお題ライブラリ',
+                item: url,
+              },
+            ],
+          },
+        ],
       })}</script>`,
     );
 }
@@ -712,17 +740,53 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
   const shareUrl = new URL(canonicalPath, CANONICAL_ORIGIN);
   const room = String(requestUrl.searchParams.get('room') || '').trim();
   if (room) shareUrl.searchParams.set('room', room);
+  const canonicalUrl = CANONICAL_ORIGIN + canonicalPath;
+  const gameId = canonicalUrl + '#game';
+  const breadcrumbId = canonicalUrl + '#breadcrumb';
   const structuredData = {
     '@context': 'https://schema.org',
-    '@type': ['WebApplication', 'Game'],
-    name: ogTitle,
-    url: CANONICAL_ORIGIN + canonicalPath,
-    description,
-    image: CANONICAL_ORIGIN + '/assets/ogp-challenge-en.png?v=20260725-en-1',
-    applicationCategory: 'GameApplication',
-    operatingSystem: 'Any',
-    isAccessibleForFree: true,
-    inLanguage: 'en',
+    '@graph': [
+      {
+        '@type': 'WebPage',
+        '@id': canonicalUrl + '#webpage',
+        name: title,
+        url: canonicalUrl,
+        description,
+        inLanguage: 'en',
+        breadcrumb: { '@id': breadcrumbId },
+        mainEntity: { '@id': gameId },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        '@id': breadcrumbId,
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Watachan',
+            item: CANONICAL_ORIGIN + '/en/',
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: ogTitle,
+            item: canonicalUrl,
+          },
+        ],
+      },
+      {
+        '@type': ['WebApplication', 'Game'],
+        '@id': gameId,
+        name: ogTitle,
+        url: canonicalUrl,
+        description,
+        image: CANONICAL_ORIGIN + '/assets/ogp-challenge-en.png?v=20260725-en-1',
+        applicationCategory: 'GameApplication',
+        operatingSystem: 'Any',
+        isAccessibleForFree: true,
+        inLanguage: 'en',
+      },
+    ],
   };
   let localized = html
     .replace(/<html lang="[^"]*">/i, '<html lang="en">')
@@ -733,11 +797,14 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
     .replace(/<meta property="og:description" content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${description}">`)
     .replace(/<meta property="og:url" content="[^"]*"\s*\/?>/i, `<meta property="og:url" content="${shareUrl.toString()}">`)
     .replace(/<meta property="og:image" content="[^"]*"\s*\/?>/i, '<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en.png?v=20260725-en-1">')
+    .replace(/<meta property="og:image:secure_url" content="[^"]*"\s*\/?>/i, '<meta property="og:image:secure_url" content="https://www.streetboardgame.com/assets/ogp-challenge-en.png?v=20260725-en-1">')
     .replace(/<meta property="og:image:width" content="[^"]*"\s*\/?>/i, '<meta property="og:image:width" content="1729">')
     .replace(/<meta property="og:image:height" content="[^"]*"\s*\/?>/i, '<meta property="og:image:height" content="910">')
+    .replace(/<meta property="og:image:alt" content="[^"]*"\s*\/?>/i, `<meta property="og:image:alt" content="${ogTitle}">`)
     .replace(/<meta name="twitter:title" content="[^"]*"\s*\/?>/i, `<meta name="twitter:title" content="${ogTitle}">`)
     .replace(/<meta name="twitter:description" content="[^"]*"\s*\/?>/i, `<meta name="twitter:description" content="${description}">`)
     .replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/i, '<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en.png?v=20260725-en-1">')
+    .replace(/<meta name="twitter:image:alt" content="[^"]*"\s*\/?>/i, `<meta name="twitter:image:alt" content="${ogTitle}">`)
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/i, `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>`);
   if (/<meta property="og:locale" content="[^"]*"\s*\/?>/i.test(localized)) {
     localized = localized.replace(/<meta property="og:locale" content="[^"]*"\s*\/?>/i, '<meta property="og:locale" content="en_US">');

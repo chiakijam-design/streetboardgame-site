@@ -47,6 +47,27 @@ test('サイトマップは2モードだけを掲載し、挑戦URLはnoindexに
   expect(managePage.headers()['x-robots-tag']).toContain('noindex');
 });
 
+test('サイトマップ掲載URLは200・自己canonical・index可能で統一する', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPメタ情報は画面幅に依存しないためPCで1回検証');
+  const sitemap = await (await request.get('/sitemap.xml')).text();
+  const urls = [...sitemap.matchAll(/<loc>(https:\/\/www\.streetboardgame\.com\/[^<]*)<\/loc>/g)]
+    .map((match) => match[1]);
+  expect(urls.length).toBeGreaterThan(10);
+  expect(new Set(urls).size).toBe(urls.length);
+
+  for (const url of urls) {
+    const response = await request.get(new URL(url).pathname);
+    expect(response.status(), url).toBe(200);
+    const html = await response.text();
+    expect(html, url).toContain(`<link rel="canonical" href="${url}"`);
+    const robots = html.match(/<meta name="robots" content="([^"]*)"/i)?.[1] || '';
+    expect(robots, url).not.toContain('noindex');
+  }
+
+  const robots = await (await request.get('/robots.txt')).text();
+  expect(robots).toContain(`Sitemap: ${ORIGIN}/sitemap.xml`);
+});
+
 test('トップの内部リンクと構造化データに廃止モードを残さない', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTML構造は画面幅に依存しないためPCで1回検証');
   await page.goto('/');
@@ -54,6 +75,9 @@ test('トップの内部リンクと構造化データに廃止モードを残�
   await expect(page.locator('a[href="/challenge-guide"]').first()).toBeAttached();
   await expect(page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true })).toBeAttached();
   await expect(page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toBeAttached();
+  await expect(page.locator('a[href="/challenge/library"]').first()).toContainText('人気のお題');
+  await expect(page.locator('a[href="/privacy"]').first()).toBeAttached();
+  await expect(page.locator('#retired-love-schema')).toHaveCount(0);
   for (const path of ['/friends', '/family', '/boardgame', '/remote', '/remote-boardgame', '/live', '/live-guide']) {
     await expect(page.locator(`a[href="${path}"]`)).toHaveCount(0);
   }
@@ -65,6 +89,35 @@ test('トップの内部リンクと構造化データに廃止モードを残�
   expect(jsonLd).not.toContain('/family#');
   expect(jsonLd).not.toContain('/boardgame#');
   expect(jsonLd).not.toContain('/live-guide#');
+});
+
+test('ゲームページはパンくず構造化データ、専用canonical、画像プレビュー設定を持つ', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'SEOメタは画面幅に依存しないためPCで1回検証');
+  for (const path of ['/challenge', '/challenge/library', '/live-challenge', '/en/challenge', '/en/live-challenge']) {
+    await page.goto(path);
+    const jsonLd = (await page.locator('script[type="application/ld+json"]').first().textContent()) || '';
+    expect(jsonLd, path).toContain('BreadcrumbList');
+    const canonical = path === '/challenge/library' ? `${ORIGIN}/challenge/library` : `${ORIGIN}${path}`;
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', canonical);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /max-image-preview:large/);
+  }
+  await page.goto('/challenge/library');
+  await expect(page.locator('link[rel="alternate"][hreflang="ja"]')).toHaveAttribute('href', `${ORIGIN}/challenge/library`);
+  await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveCount(0);
+});
+
+test('英語トップのLCP画像は初期HTMLから適切な候補を高優先で取得する', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'HTML属性は画面幅に依存しないためPCで1回検証');
+  await page.goto('/en/');
+  const preload = page.locator('link[rel="preload"][as="image"][href="/assets/character/girl-full-480.webp"]');
+  await expect(preload).toHaveAttribute('imagesrcset', /girl-full-960\.webp/);
+  await expect(preload).toHaveAttribute('fetchpriority', 'high');
+  const hero = page.locator('img.girl');
+  await expect(hero).toHaveAttribute('srcset', /girl-full-960\.webp/);
+  await expect(hero).toHaveAttribute('sizes', /\(max-width: 460px\) 135px, 190px/);
+  await expect(hero).toHaveAttribute('fetchpriority', 'high');
+  await expect(hero).toHaveAttribute('width', '326');
+  await expect(hero).toHaveAttribute('height', '480');
 });
 
 test('挑戦モードと説明ページは専用OGP画像を配信する', async ({ page, request }, testInfo) => {
