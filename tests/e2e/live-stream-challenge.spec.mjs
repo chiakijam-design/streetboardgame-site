@@ -31,6 +31,12 @@ test('top page exposes normal and live creator buttons with the same primary des
   );
   await expect(rules).toHaveCSS('box-shadow', 'rgb(214, 58, 117) 5px 5px 0px 0px');
   await expect(page.getByTestId('top-common-rule-step')).toHaveCount(4);
+  await expect(page.getByTestId('top-common-rule-step').locator('span')).toHaveText([
+    'あなたが、出題する10問を選ぶ・作る',
+    '自分の正解を選ぶ',
+    'URL・QRコードで友達に問題を送信',
+    '何問正解かでみんなの理解度を診断',
+  ]);
   await expect(nameInput).toBeVisible();
   await expect(live).toBeVisible();
   const [visualBox, rulesBox, nameBox, normalBox, liveBox] = await Promise.all([

@@ -2488,9 +2488,9 @@ function CardStack() {
 function CommonRulesCard({ creatorName, nameError, onCreatorNameChange, onStart }) {
   const steps = [
     'あなたが、出題する10問を選ぶ・作る',
-    '通常版は、自分の正解を先に登録する',
-    'LINE・URL・QR・コードで参加者を招待',
-    '10問後、何問一致したか結果を確認する',
+    '自分の正解を選ぶ',
+    'URL・QRコードで友達に問題を送信',
+    '何問正解かでみんなの理解度を診断',
   ];
   const stepColors = [proto.cyan, proto.pink, proto.yellow, proto.white];
   return (
