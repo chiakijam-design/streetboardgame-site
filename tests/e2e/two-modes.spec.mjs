@@ -46,6 +46,7 @@ async function buildChallengeQuestions(page, startIndex = 0) {
       await expect(answerPad.locator('[data-action="builder-answer"]')).toHaveCount(5);
       await expect(page.getByRole('button', { name: /この問題をスキップ/ })).toBeVisible();
       await expect(page.getByRole('button', { name: /問題・選択肢を編集する/ })).toBeVisible();
+      await expect(page.getByRole('button', { name: /10問をランダムで選び直す/ })).toHaveCount(0);
     }
     await page.locator('[data-action="builder-answer"]').first().click();
   }

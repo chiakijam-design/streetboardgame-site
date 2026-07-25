@@ -169,7 +169,6 @@ function creatorEditView() {
       </label>
       <div class="challenge-builder-footer">
         ${state.questionIndex > 0 ? '<button class="challenge-secondary" data-action="previous-builder-question">← 前の問題へ戻る</button>' : ''}
-        <button class="challenge-secondary" data-action="randomize-create">🎲 10問をランダムで選び直す</button>
         <button class="challenge-secondary" data-action="back-create">名前入力に戻る</button>
       </div>
     </section>`,
@@ -525,16 +524,6 @@ function bindEvents() {
     error: '',
     editingQuestion: false,
   }));
-  document.querySelector('[data-action="randomize-create"]')?.addEventListener('click', () => {
-    captureCreatorConsent();
-    setState({
-      cards: pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard),
-      answers: [],
-      questionIndex: 0,
-      editingQuestion: false,
-      error: '',
-    });
-  });
   document.querySelector('[data-action="skip-question"]')?.addEventListener('click', skipCreatorQuestion);
   document.querySelector('[data-action="edit-question"]')?.addEventListener('click', () => {
     captureCreatorConsent();

@@ -32,6 +32,7 @@ async function buildLiveQuestions(page, startIndex = 0) {
         scrollWidth: document.documentElement.scrollWidth,
       }));
       expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.innerWidth);
+      await expect(page.getByRole('button', { name: /10問をランダムで選び直す/ })).toHaveCount(0);
     }
     await page.getByRole('button', {
       name: index === 9 ? /この問題を使ってLIVEを作る/ : /この問題を使う/,

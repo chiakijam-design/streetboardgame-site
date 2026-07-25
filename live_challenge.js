@@ -185,7 +185,6 @@ function createView() {
     </label>
     <div class="live-builder-footer">
       ${state.builderIndex > 0 ? '<button class="ghost" data-action="previous-live-question">← 前の問題へ戻る</button>' : ''}
-      <button class="secondary" data-action="randomize">🎲 10問をランダムで選び直す</button>
       <button class="ghost" data-action="back-landing">戻る</button>
     </div>
   </section>`;
@@ -418,13 +417,6 @@ function bindEvents() {
   document.querySelector('[data-action="go-code"]')?.addEventListener('click', goToCode);
   document.getElementById('entry-code')?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') goToCode();
-  });
-  document.querySelector('[data-action="randomize"]')?.addEventListener('click', () => {
-    captureDraft();
-    state.questions = pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion);
-    state.builderIndex = 0;
-    state.editingQuestion = false;
-    render();
   });
   document.querySelector('[data-action="use-live-question"]')?.addEventListener('click', useLiveQuestion);
   document.querySelector('[data-action="skip-live-question"]')?.addEventListener('click', skipLiveQuestion);
