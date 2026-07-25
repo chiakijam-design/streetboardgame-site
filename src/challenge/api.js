@@ -41,6 +41,11 @@ export async function handleChallengeApi(request, env, path) {
       return await joinRoom(request, env, joinMatch[1]);
     }
 
+    const answerMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/answer$/);
+    if (answerMatch && request.method === 'POST') {
+      return await submitAnswer(request, env, answerMatch[1]);
+    }
+
     const submitMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/submit$/);
     if (submitMatch && request.method === 'POST') {
       return await submitAnswers(request, env, submitMatch[1]);
@@ -174,6 +179,83 @@ async function joinRoom(request, env, code) {
   }, 201);
 }
 
+async function submitAnswer(request, env, code) {
+  const room = await readRoom(env, code);
+  if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
+  const token = headerToken(request, 'x-challenge-participant-token');
+  if (!token) return jsonResponse({ error: 'participant-forbidden' }, 403);
+  const participant = await readParticipant(env, code, token, room);
+  if (!participant) return jsonResponse({ error: 'participant-forbidden' }, 403);
+
+  const body = await readJson(request);
+  const questionIndex = Number(body.questionIndex);
+  const choice = Number(body.choice);
+  if (!Number.isInteger(questionIndex) || questionIndex < 0 || questionIndex >= CHALLENGE_QUESTION_COUNT) {
+    return jsonResponse({ error: 'invalid-question-index' }, 400);
+  }
+  if (!Number.isInteger(choice) || choice < 0 || choice >= 5) {
+    return jsonResponse({ error: 'invalid-answer' }, 400);
+  }
+
+  const previousAnswers = Array.isArray(participant.answers) ? participant.answers.slice() : [];
+  if (questionIndex < previousAnswers.length) {
+    if (previousAnswers[questionIndex] !== choice) {
+      return jsonResponse({ error: 'answer-already-submitted' }, 409);
+    }
+    return jsonResponse(answerProgress(room, participant, questionIndex));
+  }
+  if (participant.completedAt != null) {
+    return jsonResponse({ error: 'answers-already-submitted' }, 409);
+  }
+  if (questionIndex !== previousAnswers.length) {
+    return jsonResponse({ error: 'answer-out-of-order' }, 409);
+  }
+
+  const answers = [...previousAnswers, choice];
+  const score = answers.reduce((total, answer, index) => (
+    total + (answer === room.answerKey[index] ? 1 : 0)
+  ), 0);
+  const completedAt = answers.length === CHALLENGE_QUESTION_COUNT ? Date.now() : null;
+  const saved = await saveParticipantProgress(
+    env,
+    code,
+    token,
+    previousAnswers,
+    answers,
+    score,
+    completedAt,
+    room,
+  );
+  if (!saved) {
+    const currentRoom = await readRoom(env, code);
+    const current = currentRoom
+      ? await readParticipant(env, code, token, currentRoom)
+      : null;
+    if (current && Array.isArray(current.answers) && current.answers[questionIndex] === choice) {
+      return jsonResponse(answerProgress(room, current, questionIndex));
+    }
+    return jsonResponse({ error: 'answer-already-submitted' }, 409);
+  }
+
+  const updatedParticipant = { ...participant, answers, score, completedAt };
+  if (completedAt != null) {
+    await recordQuestionPlays(env, room.cards, completedAt).catch(() => {});
+  }
+  return jsonResponse(answerProgress(room, updatedParticipant, questionIndex));
+}
+
+function answerProgress(room, participant, questionIndex) {
+  const answers = Array.isArray(participant.answers) ? participant.answers : [];
+  const completed = participant.completedAt != null && answers.length === CHALLENGE_QUESTION_COUNT;
+  return {
+    questionIndex,
+    match: answers[questionIndex] === room.answerKey[questionIndex],
+    completed,
+    score: Number.isInteger(participant.score) ? participant.score : null,
+    nextQuestionIndex: completed ? null : answers.length,
+  };
+}
+
 async function submitAnswers(request, env, code) {
   const room = await readRoom(env, code);
   if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
@@ -181,8 +263,11 @@ async function submitAnswers(request, env, code) {
   if (!token) return jsonResponse({ error: 'participant-forbidden' }, 403);
   const participant = await readParticipant(env, code, token, room);
   if (!participant) return jsonResponse({ error: 'participant-forbidden' }, 403);
-  if (Array.isArray(participant.answers)) {
+  if (participant.completedAt != null) {
     return jsonResponse({ error: 'answers-already-submitted' }, 409);
+  }
+  if (Array.isArray(participant.answers) && participant.answers.length > 0) {
+    return jsonResponse({ error: 'answers-already-started' }, 409);
   }
 
   const body = await readJson(request);
@@ -207,7 +292,10 @@ async function getResult(request, env, code) {
   if (!token) return jsonResponse({ error: 'participant-forbidden' }, 403);
   const participant = await readParticipant(env, code, token, room);
   if (!participant) return jsonResponse({ error: 'participant-forbidden' }, 403);
-  if (!Array.isArray(participant.answers) || !Number.isInteger(participant.score)) {
+  if (participant.completedAt == null
+    || !Array.isArray(participant.answers)
+    || participant.answers.length !== CHALLENGE_QUESTION_COUNT
+    || !Number.isInteger(participant.score)) {
     return jsonResponse({ error: 'answers-not-submitted' }, 409);
   }
 
@@ -279,10 +367,12 @@ function publicRoom(code, room, total, completed) {
 }
 
 function publicParticipant(participant) {
+  const submitted = participant.completedAt != null;
   return {
     name: participant.name,
-    submitted: Array.isArray(participant.answers),
-    score: Number.isInteger(participant.score) ? participant.score : null,
+    submitted,
+    answerCount: Array.isArray(participant.answers) ? participant.answers.length : 0,
+    score: submitted && Number.isInteger(participant.score) ? participant.score : null,
     rankingParticipating: participant.rankingConsentAt != null,
   };
 }
@@ -392,7 +482,8 @@ async function saveParticipantAnswers(env, code, token, participant, answers, sc
     const result = await env.REMOTE_DB.prepare(`
       UPDATE challenge_participants
       SET answers_json = ?, score = ?, completed_at = ?
-      WHERE room_code = ? AND participant_token_hash = ? AND answers_json IS NULL
+      WHERE room_code = ? AND participant_token_hash = ?
+        AND completed_at IS NULL AND answers_json IS NULL
     `).bind(JSON.stringify(answers), score, completedAt, code, await hashToken(token)).run();
     return Number(result?.meta?.changes || 0) === 1;
   }
@@ -400,6 +491,49 @@ async function saveParticipantAnswers(env, code, token, participant, answers, sc
     item.token === token ? { ...item, answers, score, completedAt } : item
   )) };
   await putKvRoom(env, code, next);
+  return true;
+}
+
+async function saveParticipantProgress(
+  env,
+  code,
+  token,
+  previousAnswers,
+  answers,
+  score,
+  completedAt,
+  room,
+) {
+  if (await ensureD1(env)) {
+    const previousJson = previousAnswers.length > 0 ? JSON.stringify(previousAnswers) : null;
+    const result = await env.REMOTE_DB.prepare(`
+      UPDATE challenge_participants
+      SET answers_json = ?, score = ?, completed_at = ?
+      WHERE room_code = ? AND participant_token_hash = ? AND completed_at IS NULL
+        AND ((answers_json IS NULL AND ? IS NULL) OR answers_json = ?)
+    `).bind(
+      JSON.stringify(answers),
+      score,
+      completedAt,
+      code,
+      await hashToken(token),
+      previousJson,
+      previousJson,
+    ).run();
+    return Number(result?.meta?.changes || 0) === 1;
+  }
+
+  const participants = Array.isArray(room.participants) ? room.participants : [];
+  const index = participants.findIndex((item) => item.token === token);
+  if (index < 0) return false;
+  const current = participants[index];
+  const currentAnswers = Array.isArray(current.answers) ? current.answers : [];
+  if (current.completedAt != null || JSON.stringify(currentAnswers) !== JSON.stringify(previousAnswers)) {
+    return false;
+  }
+  const nextParticipants = participants.slice();
+  nextParticipants[index] = { ...current, answers, score, completedAt };
+  await putKvRoom(env, code, { ...room, participants: nextParticipants });
   return true;
 }
 
@@ -494,8 +628,11 @@ async function managedParticipants(env, code, room) {
   return participants.map((participant) => ({
     id: participant.id,
     name: participant.name,
-    submitted: Array.isArray(participant.answers),
-    score: Number.isInteger(participant.score) ? participant.score : null,
+    submitted: participant.completedAt != null,
+    answerCount: Array.isArray(participant.answers) ? participant.answers.length : 0,
+    score: participant.completedAt != null && Number.isInteger(participant.score)
+      ? participant.score
+      : null,
     rankingParticipating: participant.rankingConsentAt != null,
     completedAt: participant.completedAt,
     answers: Array.isArray(participant.answers)

@@ -364,32 +364,46 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
     await participant.getByRole('checkbox', { name: /フレンドランキングに参加する/ }).check();
     await participant.getByRole('button', { name: /10問の答え当てに挑戦する/ }).click();
     await participant.locator('[data-action="answer"]').first().click();
+    await expect(participant.locator('.challenge-q-number')).toHaveText('Q2/10');
+    await expect.poll(() => participant.evaluate(
+      () => window.__quizFeedbackFrequencies.slice(0, 2),
+    )).toEqual([659.25, 783.99]);
     await participant.reload();
     await expect(participant.getByTestId('participant-question')).toBeVisible();
     await expect(participant.locator('.challenge-q-number')).toHaveText('Q2/10');
-    for (let index = 1; index < 10; index += 1) {
+    await participant.locator('[data-action="answer"]').nth(1).click();
+    await expect(participant.locator('.challenge-q-number')).toHaveText('Q3/10');
+    await expect.poll(() => participant.evaluate(
+      () => window.__quizFeedbackFrequencies.slice(0, 2),
+    )).toEqual([174.61, 146.83]);
+    for (let index = 2; index < 9; index += 1) {
       await participant.locator('[data-action="answer"]').first().click();
+      await expect(participant.locator('.challenge-q-number')).toHaveText(`Q${index + 2}/10`);
     }
-    await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toBeVisible();
+    await participant.locator('[data-action="answer"]').first().click();
+    await expect(participant.getByRole('heading', { name: '9/10問 正解' })).toBeVisible();
     await expect(participant.locator('.challenge-result')).toHaveCount(10);
     await expect(participant.getByText('ランキング参加者の中で 1位')).toBeVisible();
     const resultImage = participant.getByTestId('challenge-result-image');
     await expect(resultImage).toBeVisible();
-    await expect(resultImage).toHaveAttribute('alt', /ゆうさんのちあきさん理解度、10\/10問正解、称号は公認・理解王/);
+    await expect(resultImage).toHaveAttribute('alt', /ゆうさんのちあきさん理解度、9\/10問正解、称号は/);
     await expect.poll(() => resultImage.evaluate((image) => ({
       width: image.naturalWidth,
       height: image.naturalHeight,
     }))).toEqual({ width: 1080, height: 1350 });
     await expect(participant.getByRole('button', { name: 'この結果画像を保存' })).toBeEnabled();
+    const feedbackToneCount = await participant.evaluate(
+      () => window.__quizFeedbackFrequencies.length,
+    );
+    expect(feedbackToneCount).toBe(18);
     const firstAnswer = participant.locator('[data-result-answer="0"]');
     await firstAnswer.scrollIntoViewIfNeeded();
     await expect(firstAnswer).toHaveClass(/is-feedback-revealed/);
-    await expect.poll(() => participant.evaluate(
-      () => window.__quizFeedbackFrequencies.slice(0, 2),
-    )).toEqual([659.25, 783.99]);
+    await participant.waitForTimeout(700);
+    expect(await participant.evaluate(() => window.__quizFeedbackFrequencies.length))
+      .toBe(feedbackToneCount);
     const aiReview = participant.getByTestId('challenge-ai-review');
     await expect(aiReview).toContainText('AI総評');
-    await expect(aiReview).toContainText('公認・理解王');
     expect(await participant.evaluate(() => {
       const answers = document.querySelector('.challenge-results');
       const review = document.querySelector('[data-testid="challenge-ai-review"]');
@@ -399,7 +413,7 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
     await expect(participant.getByRole('link', { name: '自分も作る' })).toHaveAttribute('href', '/challenge');
     await participant.getByRole('link', { name: 'フレンドランキングを見る' }).click();
     await expect(participant.getByTestId('friend-ranking')).toContainText('ゆう');
-    await expect(participant.getByTestId('friend-ranking')).toContainText('10/10');
+    await expect(participant.getByTestId('friend-ranking')).toContainText('9/10');
   } finally {
     await participantContext.close();
   }
@@ -407,7 +421,7 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
   await page.getByRole('button', { name: '回答状況を更新' }).click();
   await expect(page.getByTestId('participant-count')).toContainText('1人回答済み');
   await expect(page.getByTestId('host-answer-management')).toContainText('ゆう');
-  await expect(page.getByTestId('host-answer-management')).toContainText('10/10問');
+  await expect(page.getByTestId('host-answer-management')).toContainText('9/10問');
 });
 
 test('ランキングを選ばなくても10問と結果まで遊べ、公開ランキングからだけ除外される', async ({ browser, page }) => {

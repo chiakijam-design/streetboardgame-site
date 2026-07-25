@@ -34,6 +34,36 @@ function api(env, path, options = {}) {
   return handleChallengeApi(new Request(`https://example.com${path}`, options), env, path);
 }
 
+function d1Adapter(sqlite) {
+  return {
+    prepare(sql) {
+      const statement = sqlite.prepare(sql);
+      return {
+        bindings: [],
+        bind(...bindings) {
+          this.bindings = bindings;
+          return this;
+        },
+        async first() {
+          return statement.get(...this.bindings) || null;
+        },
+        async all() {
+          return { results: statement.all(...this.bindings) };
+        },
+        async run() {
+          const result = statement.run(...this.bindings);
+          return { meta: { changes: Number(result.changes) } };
+        },
+      };
+    },
+    async batch(statements) {
+      const results = [];
+      for (const statement of statements) results.push(await statement.run());
+      return results;
+    },
+  };
+}
+
 test('共通・友達・家族データは題名を正規化して重複を除ける', () => {
   const loveCards = prepareLoveChallengeCards([
     { id: 1, title: '愛情判定の問題', choices: ['A', 'B', 'C', 'D', 'E'], image: 'card.png' },
@@ -137,6 +167,110 @@ test('挑戦者の得点・同率順位・10問の答え合わせを本人だけ
   const library = await (await api(env, '/api/challenge/library')).json();
   assert.equal(library.questions.length, 10);
   assert.equal(library.questions.every((question) => question.playCount === 1), true);
+});
+
+test('選択した1問だけを順番に確定し、正解を漏らさず正誤を即時返す', async () => {
+  const sqlite = new DatabaseSync(':memory:');
+  sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
+  const environments = [
+    { REMOTE_KV: new MemoryKV() },
+    { REMOTE_DB: d1Adapter(sqlite) },
+  ];
+
+  for (const env of environments) {
+    const created = await (await api(env, '/api/challenge/rooms', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        creatorName: '出題者',
+        cards,
+        answers: Array(CHALLENGE_QUESTION_COUNT).fill(0),
+      }),
+    })).json();
+    const joined = await (await api(env, `/api/challenge/rooms/${created.code}/join`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: '即時判定', rankingConsent: true }),
+    })).json();
+    const headers = {
+      'content-type': 'application/json',
+      'x-challenge-participant-token': joined.participantToken,
+    };
+
+    const beforeCompletion = await api(env, `/api/challenge/rooms/${created.code}/result`, {
+      headers: { 'x-challenge-participant-token': joined.participantToken },
+    });
+    assert.equal(beforeCompletion.status, 409);
+
+    const first = await api(env, `/api/challenge/rooms/${created.code}/answer`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ questionIndex: 0, choice: 0 }),
+    });
+    assert.equal(first.status, 200);
+    assert.deepEqual(await first.json(), {
+      questionIndex: 0,
+      match: true,
+      completed: false,
+      score: 1,
+      nextQuestionIndex: 1,
+    });
+
+    const repeated = await api(env, `/api/challenge/rooms/${created.code}/answer`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ questionIndex: 0, choice: 0 }),
+    });
+    assert.equal(repeated.status, 200);
+    const changed = await api(env, `/api/challenge/rooms/${created.code}/answer`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ questionIndex: 0, choice: 1 }),
+    });
+    assert.equal(changed.status, 409);
+
+    const resumed = await (await api(env, `/api/challenge/rooms/${created.code}/join`, {
+      method: 'POST',
+      headers,
+      body: '{}',
+    })).json();
+    assert.equal(resumed.participant.submitted, false);
+    assert.equal(resumed.participant.answerCount, 1);
+    assert.equal(resumed.participant.score, null);
+
+    const wrong = await api(env, `/api/challenge/rooms/${created.code}/answer`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ questionIndex: 1, choice: 1 }),
+    });
+    assert.equal(wrong.status, 200);
+    assert.equal((await wrong.json()).match, false);
+
+    for (let questionIndex = 2; questionIndex < CHALLENGE_QUESTION_COUNT; questionIndex += 1) {
+      const response = await api(env, `/api/challenge/rooms/${created.code}/answer`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ questionIndex, choice: 0 }),
+      });
+      assert.equal(response.status, 200);
+      if (questionIndex === CHALLENGE_QUESTION_COUNT - 1) {
+        const final = await response.json();
+        assert.equal(final.completed, true);
+        assert.equal(final.score, 9);
+        assert.equal(final.nextQuestionIndex, null);
+      }
+    }
+
+    const result = await (await api(env, `/api/challenge/rooms/${created.code}/result`, {
+      headers: { 'x-challenge-participant-token': joined.participantToken },
+    })).json();
+    assert.equal(result.score, 9);
+    assert.equal(result.answers[0].match, true);
+    assert.equal(result.answers[1].match, false);
+  }
+
+  sqlite.close();
 });
 
 test('ランキング不参加でも回答でき、公開ランキングからだけ除外する', async () => {

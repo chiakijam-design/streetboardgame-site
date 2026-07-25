@@ -72,6 +72,7 @@ let state = {
   resultImageError: '',
   error: '',
   loading: false,
+  answerPending: false,
   questionSubmissionConsent: true,
   questionSubmissionStatus: '',
   questionSubmissionCount: 0,
@@ -349,6 +350,7 @@ function questionView(isCreator) {
               data-action="answer"
               data-choice="${index}"
               class="challenge-color-choice ${selected === index ? 'is-selected' : ''}"
+              ${!isCreator && state.answerPending ? 'disabled aria-busy="true"' : ''}
               aria-label="${escapeHtml(choice)}を選ぶ"
             >
               <i style="background:${COLORS[index]}" aria-hidden="true"></i>
@@ -358,7 +360,7 @@ function questionView(isCreator) {
         </div>
         <p>ドットの色は、お題カード左側の5色と対応しています</p>
       </div>
-      ${state.questionIndex > 0 ? '<button class="challenge-secondary" data-action="previous-question">前の問題へ戻る</button>' : ''}
+      ${isCreator && state.questionIndex > 0 ? '<button class="challenge-secondary" data-action="previous-question">前の問題へ戻る</button>' : ''}
       <p class="challenge-note challenge-centered">ここまでの回答はこの端末へ自動保存されています。</p>
     </section>`,
   );
@@ -571,9 +573,7 @@ function revealNextResultFeedback() {
   if (resultFeedbackBusy || !resultFeedbackQueue.length) return;
   resultFeedbackBusy = true;
   const card = resultFeedbackQueue.shift();
-  const isCorrect = card?.dataset.resultFeedback === 'correct';
   card?.classList.add('is-feedback-revealed');
-  quizFeedbackSoundPlayer.play(isCorrect);
   resultFeedbackTimer = window.setTimeout(() => {
     resultFeedbackBusy = false;
     resultFeedbackTimer = 0;
@@ -879,7 +879,10 @@ function previousQuestion() {
 }
 
 async function answerQuestion(choice) {
-  if (state.mode === 'participant-answer') quizFeedbackSoundPlayer.prime();
+  if (state.mode === 'participant-answer') {
+    return answerParticipantQuestion(choice);
+  }
+
   const answers = state.answers.slice();
   answers[state.questionIndex] = choice;
 
@@ -893,31 +896,51 @@ async function answerQuestion(choice) {
     if (answers.length !== QUESTION_COUNT || answers.some((answer) => !Number.isInteger(answer))) return;
     return createChallengeRoom(answers);
   }
+}
 
-  if (state.questionIndex < QUESTION_COUNT - 1) {
-    const questionIndex = state.questionIndex + 1;
-    saveCurrentProgress({ answers, questionIndex });
-    return setState({ answers, questionIndex });
-  }
-  if (answers.length !== QUESTION_COUNT || answers.some((answer) => !Number.isInteger(answer))) return;
-
-  setState({ loading: true, answers, error: '' });
-  saveParticipantDraft({ answers, questionIndex: state.questionIndex });
+async function answerParticipantQuestion(choice) {
+  if (state.answerPending) return;
+  const questionIndex = state.questionIndex;
+  const answers = state.answers.slice();
+  answers[questionIndex] = choice;
+  quizFeedbackSoundPlayer.prime();
+  setState({ answerPending: true, error: '' });
   try {
-    const response = await fetch(`/api/challenge/rooms/${state.roomCode}/submit`, {
+    const response = await fetch(`/api/challenge/rooms/${state.roomCode}/answer`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
         'x-challenge-participant-token': state.participantToken,
       },
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify({ questionIndex, choice }),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'submit-failed');
-    localStorage.removeItem(participantDraftKey(state.roomCode));
-    await loadResult();
+    if (!response.ok) throw new Error(data.error || 'answer-failed');
+    await quizFeedbackSoundPlayer.play(data.match === true);
+
+    if (data.completed) {
+      localStorage.removeItem(participantDraftKey(state.roomCode));
+      await loadResult();
+      return;
+    }
+
+    const nextQuestionIndex = Number.isInteger(data.nextQuestionIndex)
+      ? data.nextQuestionIndex
+      : questionIndex + 1;
+    const next = {
+      answers,
+      questionIndex: Math.min(nextQuestionIndex, QUESTION_COUNT - 1),
+      answerPending: false,
+      error: '',
+    };
+    saveParticipantDraft(next);
+    setState(next);
   } catch (error) {
-    setState({ loading: false, mode: 'participant-answer', error: error.message });
+    setState({
+      answerPending: false,
+      mode: 'participant-answer',
+      error: error.message,
+    });
   }
 }
 
@@ -1047,11 +1070,12 @@ async function joinRoom() {
     }
     const next = {
       loading: false,
+      answerPending: false,
       participantToken: data.participantToken,
       participantName: data.participant.name,
       cards: state.room.cards,
       answers: [],
-      questionIndex: 0,
+      questionIndex: Math.min(Number(data.participant.answerCount) || 0, QUESTION_COUNT - 1),
       mode: 'participant-answer',
     };
     setState(next);
@@ -1087,10 +1111,15 @@ async function loadRoom() {
     if (!resumeResponse.ok) return;
     const resumeData = await resumeResponse.json();
     const draft = participantDraft(roomCode);
+    const answerCount = Math.min(
+      Math.max(Number(resumeData.participant.answerCount) || 0, 0),
+      QUESTION_COUNT - 1,
+    );
     setState({
       participantName: resumeData.participant.name,
       answers: draft?.answers || [],
-      questionIndex: Math.min(Math.max(Number(draft?.questionIndex) || 0, 0), QUESTION_COUNT - 1),
+      questionIndex: answerCount,
+      answerPending: false,
       mode: 'participant-answer',
     });
   } catch (error) {
@@ -1160,6 +1189,7 @@ async function loadResult(token = state.participantToken) {
   if (!response.ok) throw new Error(data.error || 'result-failed');
   setState({
     loading: false,
+    answerPending: false,
     result: data,
     resultImageUrl: '',
     resultImageBusy: false,
