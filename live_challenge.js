@@ -1,7 +1,13 @@
 import QRCode from 'qrcode';
 import { mergeChallengeCards, pickChallengeCards, prepareLoveChallengeCards } from './src/challenge/data.js';
 import { LIVE_AGE_NOTICE } from './src/live/age-notice.js';
-import { LIVE_POLL_INTERVAL_MS } from './src/live/config.js';
+import {
+  LIVE_POLL_INTERVAL_MS,
+  LIVE_RESULT_IMAGE_PRICES,
+  LIVE_RESULT_IMAGE_SERVICE,
+  LIVE_SUPPORT_AMOUNTS,
+} from './src/live/config.js';
+import { CHECKOUT_TERMS } from './src/live/checkout-terms-config.js';
 import {
   changedQuestionCandidates,
   loadManagedQuestionCards,
@@ -21,6 +27,8 @@ let allCards = mergeChallengeCards(
 );
 const url = new URL(location.href);
 const initialCode = (url.searchParams.get('room') || '').replace(/\D/g, '').slice(0, 6);
+const initialCheckoutResult = String(url.searchParams.get('checkout') || '');
+const initialCheckoutSessionId = String(url.searchParams.get('session_id') || '');
 const initialHostToken = new URLSearchParams(location.hash.slice(1)).get('host') || '';
 const savedParticipant = initialCode ? readSession(`live-challenge:${initialCode}`) : null;
 const quickStart = readCreatorQuickStart('live');
@@ -68,9 +76,25 @@ let state = {
   editingQuestion: false,
   editingOriginalQuestion: null,
   showLiveVoteCounts: false,
+  paidSalesEnabled: false,
+  paidCreatorProfiles: [],
+  paidCreatorProfilesLoaded: false,
+  paidCreatorProfilesLoading: false,
+  paidCreatorVerificationId: '',
+  resultImagePrice: LIVE_RESULT_IMAGE_PRICES[0],
+  checkoutBusy: false,
+  checkoutTermsAccepted: false,
+  checkoutResult: initialCheckoutResult,
+  checkoutSessionId: initialCheckoutSessionId,
+  checkoutStatus: null,
+  checkoutStatusBusy: false,
+  checkoutStatusAttempts: 0,
+  checkoutEntitlementUrl: '',
+  supportPanelOpen: false,
 };
 
 render();
+if (state.view === 'create') loadPaidCreatorProfiles();
 loadManagedQuestionCards(allCards, 'live').then((cards) => {
   allCards = cards;
   if (state.view === 'landing' || (quickStart && state.view === 'create')) {
@@ -112,6 +136,7 @@ function landingView() {
         <li><b>3</b><span>視聴者と同時回答して進行</span></li>
       </ul>
       <button class="primary" data-action="open-create">LIVEクイズを作る <span>▶</span></button>
+      <p class="notice">審査済みの配信者は、結果画像の販売と応援受付を任意で追加できます。無料LIVEは登録なしで作れます。</p>
       <p class="live-age-notice" data-testid="live-age-notice">⚠️ ${LIVE_AGE_NOTICE}</p>
     </section>
     <section class="panel entry-card">
@@ -148,6 +173,7 @@ function createView() {
       <input id="show-counts" type="checkbox" ${state.showLiveVoteCounts ? 'checked' : ''}>
       <span>配信中、視聴者にも選択肢ごとの回答人数を表示する<br><small>配信開始後もON・OFFを切り替えられます。</small></span>
     </label>
+    ${paidSalesSettingsView()}
     ${progressView(state.builderIndex)}
     <article class="live-builder-card" data-testid="live-question-builder">
       <div class="live-builder-paper" data-testid="live-builder-paper-card">
@@ -192,6 +218,42 @@ function createView() {
       <button class="ghost" data-action="previous-live-question" ${state.builderIndex === 0 ? 'disabled aria-disabled="true"' : ''}>前の問題に戻る</button>
       <button class="ghost" data-action="back-landing">最初に戻る</button>
     </div>
+  </section>`;
+}
+
+function paidSalesSettingsView() {
+  const profiles = state.paidCreatorProfiles;
+  const selected = profiles.find((profile) => profile.verificationId === state.paidCreatorVerificationId)
+    || profiles[0];
+  const loading = state.paidCreatorProfilesLoading
+    ? '<div class="notice" role="status">この端末の販売登録を確認しています。</div>'
+    : '';
+  const unavailable = state.paidCreatorProfilesLoaded && !profiles.length
+    ? `<div class="notice">この端末に販売可能な配信者登録がありません。無料LIVEはそのまま作れます。販売にはYouTubeチャンネルの所有確認、収益分配契約、Stripe審査が必要です。</div>
+      <a class="ghost" href="/live" target="_blank" rel="noopener noreferrer">販売登録・本人確認を確認する</a>`
+    : '';
+  const settings = profiles.length ? `<div class="sales-fields" ${state.paidSalesEnabled ? '' : 'hidden'}>
+      <div class="field">
+        <label for="paid-creator-profile">売上を受け取る配信者</label>
+        <select id="paid-creator-profile">
+          ${profiles.map((profile) => `<option value="${escapeHtml(profile.verificationId)}" ${profile.verificationId === selected?.verificationId ? 'selected' : ''}>${escapeHtml(profile.channelName)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label for="result-image-price">${LIVE_RESULT_IMAGE_SERVICE.name}</label>
+        <select id="result-image-price">
+          ${LIVE_RESULT_IMAGE_PRICES.map((price) => `<option value="${price}" ${state.resultImagePrice === price ? 'selected' : ''}>${number(price)}円（税込）</option>`).join('')}
+        </select>
+      </div>
+      <p class="help">視聴者は10問終了後に高画質結果画像を購入できます。応援は${LIVE_SUPPORT_AMOUNTS.map((amount) => `${number(amount)}円`).join('・')}（すべて税込）から選べます。売上の70%を配信者分配残高へ記録します。</p>
+    </div>` : '';
+  return `<section class="sales-settings" data-testid="live-sales-settings">
+    <div class="sales-heading"><span>販売機能</span><small>任意</small></div>
+    <label class="check">
+      <input id="enable-paid-sales" type="checkbox" ${state.paidSalesEnabled ? 'checked' : ''} ${profiles.length ? '' : 'disabled'}>
+      <span><b>結果画像の販売・応援を受け付ける</b><br><small>無料結果カードは全員に表示されます。販売を使う場合だけ、審査済みの配信者登録を選びます。</small></span>
+    </label>
+    ${loading}${unavailable}${settings}
   </section>`;
 }
 
@@ -265,6 +327,7 @@ function hostLobbyView() {
     <span class="section-pill">配信者画面</span>
     <h2 style="margin-top:10px">視聴者を招待する</h2>
     ${questionSubmissionNotice()}
+    ${state.game.resultImagePrice ? `<div class="notice"><strong>販売機能：ON</strong><br>結果画像 ${number(state.game.resultImagePrice)}円（税込）・応援 ${LIVE_SUPPORT_AMOUNTS.map((amount) => `${number(amount)}円`).join('／')}（税込）を、10問終了後に表示します。</div>` : ''}
     <div class="room-code">${escapeHtml(state.code)}</div>
     <div class="share-grid">
       <div class="qr"><canvas id="live-challenge-qr" width="188" height="188" aria-label="参加URLのQRコード"></canvas></div>
@@ -411,8 +474,46 @@ function viewerResultView() {
     </div>
     <div class="result-actions">
       <button class="primary" data-action="save-result">結果カードを画像で保存 <span>↓</span></button>
+      ${liveCheckoutView()}
       <a class="ghost" href="/live-challenge" style="text-decoration:none">トップへ戻る</a>
     </div>
+  </section>`;
+}
+
+function liveCheckoutView() {
+  const game = state.game || {};
+  const supportEnabled = game.supportPaymentsEnabled === true;
+  const resultEnabled = game.resultImageSalesEnabled === true;
+  const status = state.checkoutStatus;
+  let returnMessage = '';
+  if (state.checkoutResult === 'cancelled') {
+    returnMessage = '<div class="notice">決済はキャンセルされました。請求は確定していません。</div>';
+  } else if (state.checkoutResult === 'success' && !status) {
+    returnMessage = '<div class="notice">決済結果を確認しています。この画面を閉じずにお待ちください。</div>';
+  }
+  if (status?.status === 'paid') {
+    returnMessage = status.productType === 'result_image'
+      ? `<div class="notice"><strong>高画質結果画像を生成しました。</strong><br>決済日から${LIVE_RESULT_IMAGE_SERVICE.downloadDays}日間ダウンロードできます。</div><button class="secondary" data-action="download-paid-result">高画質結果画像をダウンロード</button>`
+      : '<div class="notice"><strong>応援ありがとうございます。</strong><br>決済が完了しました。</div>';
+  } else if (status && ['payment_failed', 'checkout_failed'].includes(status.status)) {
+    returnMessage = '<div class="error">決済を完了できませんでした。カード情報を確認して、もう一度お試しください。</div>';
+  } else if (status && ['refunded', 'refund_pending', 'refund_processing', 'fraud_review'].includes(status.status)) {
+    returnMessage = '<div class="notice">この決済は返金・確認処理中または返金済みです。</div>';
+  }
+  if (!supportEnabled && !resultEnabled && !returnMessage) return '';
+  if (!supportEnabled && !resultEnabled) return `<div class="live-checkout-panel">${returnMessage}</div>`;
+  const price = Number(game.resultImagePrice) || 0;
+  return `<section class="live-checkout-panel" data-testid="live-checkout-panel">
+    <h3>配信者の販売・応援メニュー</h3>
+    ${returnMessage}
+    <label class="checkout-consent">
+      <input id="checkout-terms-consent" type="checkbox" ${state.checkoutTermsAccepted ? 'checked' : ''}>
+      <span><a href="/terms" target="_blank" rel="noopener noreferrer">利用規約</a>に同意し、<a href="/legal" target="_blank" rel="noopener noreferrer">特定商取引法に基づく表記</a>、<a href="/refund-policy" target="_blank" rel="noopener noreferrer">返金・キャンセルポリシー</a>、<a href="/privacy" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>を確認しました。未成年の場合は保護者の同意を得ています。</span>
+    </label>
+    ${resultEnabled ? `<div class="notice"><strong>${LIVE_RESULT_IMAGE_SERVICE.name}</strong><br>${LIVE_RESULT_IMAGE_SERVICE.resolution}の高画質画像を生成し、決済日から${LIVE_RESULT_IMAGE_SERVICE.downloadDays}日間ダウンロードできます。</div>
+      <button class="primary" data-action="buy-result-image" ${state.checkoutBusy || !state.checkoutTermsAccepted || !price ? 'disabled' : ''}>${state.checkoutBusy ? 'Stripeへ接続中…' : `${number(price)}円（税込）で申し込む`}</button>` : ''}
+    ${supportEnabled ? `<button class="secondary" data-action="toggle-support" aria-expanded="${state.supportPanelOpen}">♡ 配信者を応援する</button>
+      ${state.supportPanelOpen ? `<div class="support-amounts" role="group" aria-label="応援金額を選ぶ">${(game.supportAmounts || LIVE_SUPPORT_AMOUNTS).map((amount) => `<button class="ghost" data-support-amount="${amount}" ${state.checkoutBusy || !state.checkoutTermsAccepted ? 'disabled' : ''}>${number(amount)}円（税込）</button>`).join('')}<p class="help">決済はStreetboardgame運営者が受け付け、売上の70%を配信者へ分配します。</p></div>` : ''}` : ''}
   </section>`;
 }
 
@@ -432,7 +533,10 @@ function loadingView() {
 }
 
 function bindEvents() {
-  document.querySelector('[data-action="open-create"]')?.addEventListener('click', () => setState({ view: 'create' }));
+  document.querySelector('[data-action="open-create"]')?.addEventListener('click', () => {
+    setState({ view: 'create' });
+    loadPaidCreatorProfiles();
+  });
   document.querySelectorAll('[data-action="back-landing"]').forEach((button) => button.addEventListener('click', () => {
     history.replaceState(null, '', '/live-challenge');
     setState({
@@ -483,6 +587,32 @@ function bindEvents() {
   document.querySelector('[data-action="advance"]')?.addEventListener('click', () => hostAction('advance'));
   document.querySelectorAll('[data-action="toggle-counts"]').forEach((input) => input.addEventListener('change', () => toggleCounts(input.checked)));
   document.querySelector('[data-action="save-result"]')?.addEventListener('click', saveResultCard);
+  document.getElementById('enable-paid-sales')?.addEventListener('change', (event) => {
+    captureDraft();
+    setState({ paidSalesEnabled: event.target.checked === true, error: '' });
+  });
+  document.getElementById('paid-creator-profile')?.addEventListener('change', (event) => {
+    state.paidCreatorVerificationId = event.target.value;
+  });
+  document.getElementById('result-image-price')?.addEventListener('change', (event) => {
+    state.resultImagePrice = Number(event.target.value);
+  });
+  document.getElementById('checkout-terms-consent')?.addEventListener('change', (event) => {
+    state.checkoutTermsAccepted = event.target.checked === true;
+    render();
+  });
+  document.querySelector('[data-action="buy-result-image"]')?.addEventListener('click', () => startLiveCheckout('result_image'));
+  document.querySelector('[data-action="toggle-support"]')?.addEventListener('click', () => {
+    setState({ supportPanelOpen: !state.supportPanelOpen });
+  });
+  document.querySelectorAll('[data-support-amount]').forEach((button) => button.addEventListener('click', () => {
+    startLiveCheckout('support', Number(button.dataset.supportAmount));
+  }));
+  document.querySelector('[data-action="download-paid-result"]')?.addEventListener('click', downloadPaidResult);
+  if (state.game?.phase === 'complete' && state.checkoutResult === 'success' && state.checkoutSessionId
+    && !state.checkoutStatusBusy && state.checkoutStatusAttempts === 0) {
+    refreshLiveCheckoutStatus();
+  }
 }
 
 function goToCode() {
@@ -497,6 +627,12 @@ function captureDraft() {
   if (consent) state.questionSubmissionConsent = consent.checked === true;
   const showCounts = document.getElementById('show-counts');
   if (showCounts) state.showLiveVoteCounts = showCounts.checked === true;
+  const paidSales = document.getElementById('enable-paid-sales');
+  if (paidSales) state.paidSalesEnabled = paidSales.checked === true;
+  const paidProfile = document.getElementById('paid-creator-profile');
+  if (paidProfile) state.paidCreatorVerificationId = paidProfile.value;
+  const resultPrice = document.getElementById('result-image-price');
+  if (resultPrice) state.resultImagePrice = Number(resultPrice.value);
   state.questions = state.questions.map((question, index) => ({
     ...question,
     text: document.querySelector(`[data-question="${index}"]`)?.value.trim() ?? question.text,
@@ -560,7 +696,11 @@ async function createGame() {
   const submissionConsent = state.questionSubmissionConsent;
   const subjectName = state.hostName;
   const showLiveVoteCounts = state.showLiveVoteCounts;
+  const paidProfile = state.paidCreatorProfiles.find(
+    (profile) => profile.verificationId === state.paidCreatorVerificationId,
+  );
   if (!subjectName) return showError('stream-name-required');
+  if (state.paidSalesEnabled && !paidProfile) return showError('paid-channel-verification-required');
   if (state.questions.some((question) => !question.text || question.options.some((option) => !option))) {
     return showError('questions-incomplete');
   }
@@ -568,9 +708,17 @@ async function createGame() {
   try {
     const response = await api('/api/live/stream-games', {
       method: 'POST',
+      headers: state.paidSalesEnabled
+        ? { 'x-live-verification-token': paidProfile.accessToken }
+        : {},
       body: JSON.stringify({
         subjectName,
         showLiveVoteCounts,
+        paidSalesRequested: state.paidSalesEnabled,
+        channelName: state.paidSalesEnabled ? paidProfile.channelName : '',
+        channelId: state.paidSalesEnabled ? paidProfile.channelId : '',
+        channelVerificationId: state.paidSalesEnabled ? paidProfile.verificationId : '',
+        resultImagePrice: state.paidSalesEnabled ? state.resultImagePrice : 0,
         questions: state.questions.map((question) => ({
           id: question.id,
           type: 'guess-person',
@@ -598,6 +746,44 @@ async function createGame() {
   } catch (error) {
     setState({ loading: false, error: error.message });
   }
+}
+
+async function loadPaidCreatorProfiles() {
+  if (state.paidCreatorProfilesLoading || state.paidCreatorProfilesLoaded) return;
+  state.paidCreatorProfilesLoading = true;
+  render();
+  const saved = [];
+  try {
+    for (let index = 0; index < sessionStorage.length; index += 1) {
+      const key = sessionStorage.key(index) || '';
+      if (!key.startsWith('live:verification-channel:')) continue;
+      const value = JSON.parse(sessionStorage.getItem(key) || '{}');
+      if (/^[a-f0-9]{32}$/i.test(value.verificationId)
+        && /^[a-f0-9]{48}$/i.test(value.accessToken)) {
+        saved.push(value);
+      }
+    }
+  } catch (error) {
+    // Storage may be unavailable. Free LIVE remains usable.
+  }
+  const loaded = await Promise.all(saved.map(async (entry) => {
+    try {
+      const verification = await api(`/api/live/channel-verifications/${entry.verificationId}`, {
+        headers: { 'x-live-verification-token': entry.accessToken },
+      });
+      return verification.canSellPaid ? { ...verification, accessToken: entry.accessToken } : null;
+    } catch (error) {
+      return null;
+    }
+  }));
+  const profiles = loaded.filter(Boolean);
+  state.paidCreatorProfiles = profiles;
+  state.paidCreatorProfilesLoaded = true;
+  state.paidCreatorProfilesLoading = false;
+  if (!profiles.some((profile) => profile.verificationId === state.paidCreatorVerificationId)) {
+    state.paidCreatorVerificationId = profiles[0]?.verificationId || '';
+  }
+  render();
 }
 
 async function submitCreatorQuestionCandidates() {
@@ -871,6 +1057,80 @@ function saveResultCard() {
   link.click();
 }
 
+async function startLiveCheckout(productType, amount = null) {
+  if (state.checkoutBusy || !state.game || !state.checkoutTermsAccepted) return;
+  state.checkoutBusy = true;
+  state.error = '';
+  render();
+  try {
+    const response = await api(`/api/live/games/${state.code}/checkout`, {
+      method: 'POST',
+      headers: {
+        'x-live-participant-token': state.participantToken,
+        'x-live-checkout-request': randomCheckoutRequestId(),
+      },
+      body: JSON.stringify({
+        productType,
+        amount,
+        viewerName: state.participantName || state.game.participantName || '視聴者',
+        termsAccepted: true,
+        termsVersion: CHECKOUT_TERMS.version,
+        termsDocumentSha256: CHECKOUT_TERMS.documentSha256,
+      }),
+    });
+    if (!/^https:\/\/checkout\.stripe\.com\//.test(response.checkoutUrl || '')) {
+      throw new Error('stripe-checkout-response-invalid');
+    }
+    location.assign(response.checkoutUrl);
+  } catch (error) {
+    state.checkoutBusy = false;
+    showError(error);
+  }
+}
+
+async function refreshLiveCheckoutStatus() {
+  if (state.checkoutStatusBusy || !state.checkoutSessionId) return;
+  state.checkoutStatusBusy = true;
+  try {
+    const response = await api(`/api/live/checkouts/${encodeURIComponent(state.checkoutSessionId)}`, {
+      headers: { 'x-live-participant-token': state.participantToken },
+    });
+    state.checkoutStatus = response;
+    state.checkoutEntitlementUrl = response.entitlementUrl || '';
+    state.checkoutStatusAttempts += 1;
+    state.checkoutStatusBusy = false;
+    render();
+    if (!['paid', 'refunded', 'payment_failed', 'refund_failed'].includes(response.status)
+      && state.checkoutStatusAttempts < 10) {
+      setTimeout(refreshLiveCheckoutStatus, 1500);
+    }
+  } catch (error) {
+    state.checkoutStatusBusy = false;
+    state.checkoutStatusAttempts += 1;
+    if (error.status === 404 && state.checkoutStatusAttempts < 10) {
+      setTimeout(refreshLiveCheckoutStatus, 1500);
+      return;
+    }
+    showError(error);
+  }
+}
+
+async function downloadPaidResult() {
+  if (!state.checkoutEntitlementUrl) return;
+  try {
+    const entitlement = await api(state.checkoutEntitlementUrl);
+    location.assign(entitlement.downloadUrl);
+  } catch (error) {
+    showError(error);
+  }
+}
+
+function randomCheckoutRequestId() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 function roundedRect(context, x, y, width, height, radius, fill) {
   context.beginPath();
   context.roundRect(x, y, width, height, radius);
@@ -891,7 +1151,11 @@ async function api(path, options = {}) {
   if (options.body) headers.set('content-type', 'application/json');
   const response = await fetch(path, { ...options, headers });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'request-failed');
+  if (!response.ok) {
+    const error = new Error(data.error || 'request-failed');
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 
@@ -950,6 +1214,15 @@ function errorText(code) {
     'question-report-not-available': 'このお題は通報対象ではないか、すでに非公開です。',
     'question-report-failed': '通報を送信できませんでした。時間をおいてもう一度お試しください。',
     'rate-limit-exceeded': '操作が集中しています。少し待ってから試してください。',
+    'paid-channel-verification-required': '販売には、本人確認・収益分配契約・Stripe審査が完了した配信者登録が必要です。',
+    'invalid-result-image-price': '結果画像の販売価格を選び直してください。',
+    'result-image-not-for-sale': 'このLIVEでは結果画像を販売していません。',
+    'invalid-support-amount': '応援金額を選び直してください。',
+    'checkout-terms-acceptance-required': '利用規約と決済条件への同意が必要です。',
+    'live-support-checkout-not-configured': '応援決済の本番設定が完了していません。',
+    'live-result-checkout-not-configured': '結果画像決済の本番設定が完了していません。',
+    'stripe-checkout-response-invalid': 'Stripe決済画面を開けませんでした。もう一度お試しください。',
+    'checkout-not-found': '決済情報を確認できませんでした。少し待ってから更新してください。',
     'request-failed': '通信に失敗しました。接続を確認してください。',
   };
   return messages[code] || '通信に失敗しました。少し待ってから試してください。';

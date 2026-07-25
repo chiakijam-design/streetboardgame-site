@@ -161,6 +161,127 @@ test('LIVE問題作成カードは縦長で整列し、前の問題と最初へ�
   await expect(page.locator('.q-badge')).toHaveText('Q1/10');
 });
 
+test('審査済み配信者は公開LIVEで結果画像価格と応援販売を設定できる', async ({ page }) => {
+  const verificationId = 'a'.repeat(32);
+  const verificationToken = 'b'.repeat(48);
+  let createRequest = null;
+  await page.addInitScript(({ id, token }) => {
+    sessionStorage.setItem('live:verification-channel:UC1234567890', JSON.stringify({
+      verificationId: id,
+      accessToken: token,
+    }));
+  }, { id: verificationId, token: verificationToken });
+  await page.route(`**/api/live/channel-verifications/${verificationId}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        verificationId,
+        channelId: 'UC1234567890',
+        channelName: '審査済み配信者',
+        canSellPaid: true,
+      }),
+    });
+  });
+  await page.route('**/api/live/stream-games', async (route) => {
+    createRequest = {
+      body: route.request().postDataJSON(),
+      verificationToken: route.request().headers()['x-live-verification-token'],
+    };
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: '123456',
+        hostToken: 'c'.repeat(48),
+        game: {
+          mode: 'stream-challenge',
+          phase: 'lobby',
+          subjectToken: 'd'.repeat(48),
+          participantCount: 0,
+          participantLimit: 1000,
+          showVoteCount: false,
+          resultImagePrice: 980,
+        },
+      }),
+    });
+  });
+  await page.goto('/live-challenge');
+  await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
+  await expect(page.getByTestId('live-sales-settings')).toContainText('審査済み配信者');
+  const sales = page.getByLabel('結果画像の販売・応援を受け付ける');
+  await expect(sales).toBeEnabled();
+  await sales.check();
+  await page.getByLabel('オリジナル結果画像生成・ダウンロードサービス利用料').selectOption('980');
+  await page.getByLabel('配信者名（24文字まで）').fill('公開配信者');
+  await buildLiveQuestions(page);
+
+  expect(createRequest).toMatchObject({
+    verificationToken,
+    body: {
+      subjectName: '公開配信者',
+      paidSalesRequested: true,
+      channelName: '審査済み配信者',
+      channelId: 'UC1234567890',
+      channelVerificationId: verificationId,
+      resultImagePrice: 980,
+    },
+  });
+  await expect(page.getByRole('heading', { name: '視聴者を招待する' })).toBeVisible();
+});
+
+test('公開LIVEの結果画面に有料結果画像と4段階の応援金額を表示する', async ({ page }) => {
+  const participantToken = 'e'.repeat(48);
+  await page.addInitScript(({ token }) => {
+    sessionStorage.setItem('live-challenge:123456', JSON.stringify({ token, name: '視聴者A' }));
+  }, { token: participantToken });
+  await page.route('**/api/live/games/123456', async (route) => {
+    const results = Array.from({ length: 10 }, (_, index) => ({
+      questionId: `result-${index}`,
+      type: 'guess-person',
+      options: [{ text: '緑' }, { text: '青' }, { text: '黄' }, { text: '赤' }, { text: '橙' }],
+      subjectAnswerIndex: 0,
+      myVoteIndex: 0,
+      myIsCorrect: true,
+    }));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: '123456',
+        game: {
+          mode: 'stream-challenge',
+          phase: 'complete',
+          subjectName: '配信者',
+          participantName: '視聴者A',
+          questionCount: 10,
+          results,
+          resultImagePrice: 2980,
+          resultImageSalesEnabled: true,
+          supportPaymentsEnabled: true,
+          supportAmounts: [180, 480, 980, 2980],
+        },
+      }),
+    });
+  });
+  await page.goto('/live-challenge?room=123456');
+  const checkoutPanel = page.getByTestId('live-checkout-panel');
+  await expect(checkoutPanel).toBeVisible();
+  const buy = page.getByRole('button', { name: '2,980円（税込）で申し込む' });
+  await expect(buy).toBeDisabled();
+  await page.getByLabel(/利用規約/).check();
+  await expect(buy).toBeEnabled();
+  await page.getByRole('button', { name: '♡ 配信者を応援する' }).click();
+  const supportButtons = page.locator('[data-support-amount]');
+  await expect(supportButtons).toHaveCount(4);
+  await expect(supportButtons).toHaveText([
+    '180円（税込）',
+    '480円（税込）',
+    '980円（税込）',
+    '2,980円（税込）',
+  ]);
+});
+
 test('streamer and viewer answer ten questions and viewer receives a result card', async ({ page, context }) => {
   let questionSubmissionRequests = 0;
   await page.route('**/api/questions/submissions', async (route) => {

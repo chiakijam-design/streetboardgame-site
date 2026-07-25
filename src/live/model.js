@@ -93,6 +93,16 @@ export function validateLiveDraft(input, options = {}) {
 export function validateStreamChallengeDraft(input) {
   const source = input && typeof input === 'object' ? input : {};
   const subjectName = normalizeText(source.subjectName, 24);
+  const paidSalesRequested = source.paidSalesRequested === true;
+  const channelId = /^UC[A-Za-z0-9_-]{10,}$/.test(String(source.channelId || ''))
+    ? String(source.channelId)
+    : '';
+  const channelVerificationId = /^[a-f0-9]{24,64}$/i.test(String(source.channelVerificationId || ''))
+    ? String(source.channelVerificationId)
+    : '';
+  const resultImagePrice = LIVE_RESULT_IMAGE_PRICES.includes(Number(source.resultImagePrice))
+    ? Number(source.resultImagePrice)
+    : 0;
   const questions = Array.isArray(source.questions)
     ? source.questions.slice(0, 10).map((question) => ({
         ...normalizeLiveQuestion({ ...question, type: 'guess-person', lockedIndex: null }, 5),
@@ -103,11 +113,18 @@ export function validateStreamChallengeDraft(input) {
   const draft = {
     title: `${subjectName || '配信者'}さんのLIVEクイズ`,
     subjectName,
+    channelName: normalizeText(source.channelName, 80) || subjectName,
+    channelId,
+    channelVerificationId,
+    paidSalesRequested,
+    resultImagePrice,
     showLiveVoteCounts: source.showLiveVoteCounts === true,
     questions,
   };
   const errors = [];
   if (!subjectName) errors.push('stream-name-required');
+  if (paidSalesRequested && (!channelId || !channelVerificationId)) errors.push('paid-channel-verification-required');
+  if (paidSalesRequested && !resultImagePrice) errors.push('invalid-result-image-price');
   if (!Array.isArray(source.questions) || source.questions.length !== 10) errors.push('ten-questions-required');
   questions.forEach((question) => {
     if (!question.text) errors.push('question-text-required');

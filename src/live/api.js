@@ -38,6 +38,7 @@ import {
   createChannelVerification,
   getChannelVerification,
   requestManualReview,
+  requireChannelVerification,
   reviewChannelVerification,
   startYouTubeOAuth,
   verifyChannelDescription,
@@ -363,6 +364,22 @@ async function createStreamChallengeGame(request, env) {
   const body = await readLiveJson(request);
   const validation = validateStreamChallengeDraft(body);
   if (!validation.valid) throw liveError(validation.errors[0] || 'invalid-game', 400);
+  let paidVerification = null;
+  if (validation.draft.paidSalesRequested) {
+    paidVerification = await requireChannelVerification(
+      request,
+      env,
+      validation.draft.channelVerificationId,
+    );
+    if (paidVerification.channel_id !== validation.draft.channelId) {
+      throw liveError('paid-channel-verification-required', 403);
+    }
+    await assertPaidChannelApproved(
+      env,
+      validation.draft.channelVerificationId,
+      validation.draft.channelId,
+    );
+  }
   const now = Date.now();
   await cleanupExpiredLiveData(env);
   let code = createLiveCode();
@@ -372,8 +389,14 @@ async function createStreamChallengeGame(request, env) {
     mode: 'stream-challenge',
     title: validation.draft.title,
     subjectName: validation.draft.subjectName,
-    channelName: validation.draft.subjectName,
-    resultImagePrice: 0,
+    channelName: paidVerification?.channel_name || validation.draft.subjectName,
+    channelId: validation.draft.paidSalesRequested ? validation.draft.channelId : '',
+    channelVerificationId: validation.draft.paidSalesRequested
+      ? validation.draft.channelVerificationId
+      : '',
+    resultImagePrice: validation.draft.paidSalesRequested
+      ? validation.draft.resultImagePrice
+      : 0,
     scheduledAt: now,
     questions: validation.draft.questions,
     hostToken: createLiveToken(24),
@@ -677,6 +700,7 @@ async function createLiveCheckout(request, env, code) {
   try {
     const session = await createLiveCheckoutSession(env, {
       requestUrl: request.url, orderId, productType, code, amount, productName,
+      returnPath: game.mode === 'stream-challenge' ? '/live-challenge' : '/live',
       termsVersion: checkoutConsent.termsVersion,
       termsDocumentSha256: checkoutConsent.termsDocumentSha256,
       termsAcceptedAt: now,

@@ -3,11 +3,12 @@ const CHECKOUT_TTL_SECONDS = 35 * 60;
 
 export async function createLiveCheckoutSession(env, input, now = Date.now()) {
   const origin = new URL(input.requestUrl).origin;
-  const successUrl = new URL('/live', origin);
+  const returnPath = input.returnPath === '/live-challenge' ? '/live-challenge' : '/live';
+  const successUrl = new URL(returnPath, origin);
   successUrl.searchParams.set('room', input.code);
   successUrl.searchParams.set('checkout', 'success');
   successUrl.searchParams.set('session_id', '{CHECKOUT_SESSION_ID}');
-  const cancelUrl = new URL('/live', origin);
+  const cancelUrl = new URL(returnPath, origin);
   cancelUrl.searchParams.set('room', input.code);
   cancelUrl.searchParams.set('checkout', 'cancelled');
   const params = new URLSearchParams({

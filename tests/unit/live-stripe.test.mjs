@@ -66,6 +66,24 @@ test('応援金Checkoutは選択金額と応援商品名をStripeへ送り、画
   assert.equal(captured.params.has('payment_intent_data[description]'), false);
 });
 
+test('公開LIVEのCheckoutは公開LIVEの結果画面へ戻す', async () => {
+  let captured;
+  const env = stripeEnv(async (url, options) => {
+    captured = { url, options, params: new URLSearchParams(options.body) };
+    return Response.json({ id: 'cs_test_stream01', url: 'https://checkout.stripe.com/c/pay/stream', expires_at: 1_800_001_800 });
+  });
+  await createLiveCheckoutSession(env, {
+    requestUrl: 'https://www.streetboardgame.com/api/live/games/123456/checkout',
+    returnPath: '/live-challenge',
+    orderId: 'ord_stream01', productType: 'support', code: '123456', amount: 480,
+    productName: '公開配信 LIVE応援',
+    termsVersion: CHECKOUT_TERMS.version, termsDocumentSha256: CHECKOUT_TERMS.documentSha256,
+    termsAcceptedAt: 1_800_000_000_000,
+  }, 1_800_000_000_000);
+  assert.match(captured.params.get('success_url'), /\/live-challenge\?room=123456&checkout=success/);
+  assert.match(captured.params.get('cancel_url'), /\/live-challenge\?room=123456&checkout=cancelled/);
+});
+
 test('返金はPaymentIntent全額・理由・注文単位の冪等キーでStripeへ送る', async () => {
   let captured;
   const env = stripeEnv(async (url, options) => {

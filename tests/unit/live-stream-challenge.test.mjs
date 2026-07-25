@@ -20,11 +20,48 @@ test('stream challenge requires exactly ten five-option questions', () => {
   assert.equal(valid.draft.questions.every((question) => question.type === 'guess-person'), true);
   assert.equal(valid.draft.questions.every((question) => question.lockedIndex === null), true);
   assert.equal(valid.draft.showLiveVoteCounts, true);
+  assert.equal(valid.draft.paidSalesRequested, false);
+  assert.equal(valid.draft.resultImagePrice, 0);
   assert.equal(validateStreamChallengeDraft({ subjectName: 'Streamer', questions: questions.slice(0, 9) }).valid, false);
   assert.equal(validateStreamChallengeDraft({ subjectName: 'Streamer', questions: [...questions, questions[0]] }).valid, false);
   assert.equal(validateStreamChallengeDraft({
     subjectName: 'Streamer',
     questions: questions.map((question, index) => index === 0 ? { ...question, options: ['A', 'B'] } : question),
+  }).valid, false);
+});
+
+test('stream challenge accepts only approved-price paid sales metadata', () => {
+  const questions = Array.from({ length: 10 }, (_, index) => ({
+    id: `paid-stream-${index}`,
+    text: `Question ${index + 1}`,
+    options: ['A', 'B', 'C', 'D', 'E'],
+  }));
+  const paid = validateStreamChallengeDraft({
+    subjectName: 'Streamer',
+    paidSalesRequested: true,
+    channelName: 'Verified channel',
+    channelId: 'UC1234567890',
+    channelVerificationId: 'a'.repeat(32),
+    resultImagePrice: 980,
+    questions,
+  });
+  assert.equal(paid.valid, true);
+  assert.equal(paid.draft.paidSalesRequested, true);
+  assert.equal(paid.draft.channelName, 'Verified channel');
+  assert.equal(paid.draft.resultImagePrice, 980);
+  assert.equal(validateStreamChallengeDraft({
+    subjectName: 'Streamer',
+    paidSalesRequested: true,
+    channelId: 'UC1234567890',
+    channelVerificationId: 'a'.repeat(32),
+    resultImagePrice: 1000,
+    questions,
+  }).valid, false);
+  assert.equal(validateStreamChallengeDraft({
+    subjectName: 'Streamer',
+    paidSalesRequested: true,
+    resultImagePrice: 480,
+    questions,
   }).valid, false);
 });
 
