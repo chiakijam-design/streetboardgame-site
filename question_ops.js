@@ -1,3 +1,5 @@
+import { safetyFlagLabels } from './src/questions/safety.js';
+
 const tokenInput = document.getElementById('adminToken');
 const otpInput = document.getElementById('adminOtp');
 const dashboard = document.getElementById('dashboard');
@@ -57,6 +59,7 @@ function renderPending() {
   target.innerHTML = pending.length ? pending.map((item) => `
     <article class="card pending" data-submission="${attr(item.id)}">
       <span class="pill warning">審査待ち</span><span class="pill">${item.sourceMode === 'live-challenge' ? 'ライブ配信から' : 'みんなに挑戦から'}</span>
+      ${(item.safetyFlags || []).length ? `<span class="pill critical">重点審査：${html(safetyFlagLabels(item.safetyFlags).join('・'))}</span>` : ''}
       <div class="meta">送信：${formatDate(item.submittedAt)}${item.sourceQuestionId ? ` / 編集元：${html(item.sourceQuestionId)}` : ' / 完全な自作'}</div>
       ${questionFields(item)}
       <div class="checks">
@@ -93,6 +96,7 @@ function renderAllQuestions() {
     <article class="card" data-catalog="${attr(item.id)}">
       <span class="pill ${item.sourceKind === 'custom' ? 'info' : ''}">${item.sourceKind === 'custom' ? '承認済み自作' : html(item.sourceLabel)}</span>
       <span class="pill">${html(item.id)}</span>
+      ${item.reportCount ? `<span class="pill critical">通報${item.reportCount}件・即時非公開</span>` : ''}
       ${questionFields(item)}
       <div class="field"><label>カテゴリ</label><input data-field="category" maxlength="60" value="${attr(item.category)}"></div>
       <div class="checks">
@@ -232,6 +236,7 @@ function humanError(error) {
     'admin-session-expired': '15分の管理セッションが切れました。もう一度認証してください。',
     'admin-2fa-not-configured': '本番の管理者二要素認証が未設定です。CloudflareへLIVE_ADMIN_TOKEN・LIVE_ADMIN_TOTP_SECRET・LIVE_ADMIN_SESSION_SECRETを設定してください。',
     'question-invalid': '問題文と5つの選択肢をすべて入力してください。',
+    'question-personal-information-detected': '本名・学校名・SNS ID・電話番号・住所らしい内容が含まれています。',
     'submission-already-reviewed': 'このお題はすでに審査済みです。',
   };
   return messages[error?.message] || '処理に失敗しました。入力と通信状態を確認してください。';

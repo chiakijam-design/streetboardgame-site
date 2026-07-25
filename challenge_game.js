@@ -3,8 +3,10 @@ import { mergeChallengeCards, pickChallengeCards, prepareLoveChallengeCards } fr
 import {
   changedQuestionCandidates,
   loadManagedQuestionCards,
+  reportManagedQuestion,
   submitQuestionCandidates,
 } from './src/questions/catalog.js';
+import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { copyText, openLineShare, openXShare } from './src/platform/share.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
@@ -162,11 +164,12 @@ function creatorEditView() {
         <button class="challenge-secondary" data-action="edit-question">✎ 問題・選択肢を編集する</button>
         <button class="challenge-secondary" data-action="custom-question">＋ 自分で問題を作る</button>
       </div>
+      ${questionReportControls(card)}
       <label class="challenge-consent">
         <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
           aria-label="このクイズを友達や他の人も使えるようにする">
         <span><b>このクイズを友達や他の人も使えるようにする</b><br>
-        <small>初期状態はONです。ONのままなら、自作・編集した問題を掲載候補として運営へ送ります。外してもクイズは作れます。</small></span>
+        <small>初期状態はONです。ONのままなら、自作・編集した問題を掲載候補として運営へ送ります。外してもクイズは作れます。<br>${QUESTION_PUBLICATION_NOTICE}<br>${QUESTION_REVIEW_CRITERIA}</small></span>
       </label>
       <div class="challenge-builder-footer">
         ${state.questionIndex > 0 ? '<button class="challenge-secondary" data-action="previous-builder-question">← 前の問題へ戻る</button>' : ''}
@@ -195,12 +198,29 @@ function creatorQuestionEditView(card) {
         <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
           aria-label="このクイズを友達や他の人も使えるようにする">
         <span><b>このクイズを友達や他の人も使えるようにする</b><br>
-        <small>ONのままなら、この自作・編集した問題を掲載候補として運営へ送ります。</small></span>
+        <small>ONのままなら、この自作・編集した問題を掲載候補として運営へ送ります。<br>${QUESTION_PUBLICATION_NOTICE}<br>${QUESTION_REVIEW_CRITERIA}</small></span>
       </label>
       <button class="challenge-primary" data-action="save-question-edit">この内容で問題に戻る <span>▶</span></button>
       <button class="challenge-secondary" data-action="cancel-question-edit">キャンセル</button>
     </section>`,
   );
+}
+
+function questionReportControls(card) {
+  if (!card?.reportable || !card.managedQuestionId) return '';
+  return `<div class="challenge-question-report" data-report-box>
+    <label for="challenge-report-reason">不適切なお題を通報</label>
+    <select id="challenge-report-reason" data-report-reason>
+      <option value="personal-information">個人情報</option>
+      <option value="sexual-content">性的内容</option>
+      <option value="bullying">いじめ</option>
+      <option value="appearance-attack">容姿攻撃</option>
+      <option value="discrimination">差別表現</option>
+      <option value="other">その他</option>
+    </select>
+    <button class="challenge-secondary" data-action="report-question" data-question-id="${escapeHtml(card.managedQuestionId)}">このお題を通報する</button>
+    <small>通報すると、このお題は確認が終わるまで公開ライブラリから非公開になります。</small>
+  </div>`;
 }
 
 function loadingView() {
@@ -382,6 +402,7 @@ function questionSubmissionNotice() {
     sent: `掲載候補として${state.questionSubmissionCount}問を運営へ送信しました。承認されるまで公開ライブラリには追加されません。`,
     empty: '掲載候補の送信に同意しましたが、自作・編集したお題がないため送信対象はありませんでした。',
     failed: 'クイズは作成できましたが、掲載候補のお題は通信エラーで送信できませんでした。',
+    blocked: 'クイズは作成できましたが、掲載候補に個人情報らしい内容を検知したため運営へ送信しませんでした。',
   };
   const retry = state.questionSubmissionStatus === 'failed'
     ? '<button class="challenge-secondary" data-action="retry-question-submit">お題候補の送信を再試行</button>'
@@ -599,6 +620,7 @@ function bindEvents() {
   });
   document.querySelector('[data-action="refresh-manage"]')?.addEventListener('click', loadManageRoom);
   document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
+  document.querySelector('[data-action="report-question"]')?.addEventListener('click', (event) => reportQuestion(event.currentTarget));
   document.querySelector('[data-action="refresh-ranking"]')?.addEventListener('click', loadRanking);
   document.querySelector('[data-action="join"]')?.addEventListener('click', joinRoom);
   document.querySelector('[data-action="share-result"]')?.addEventListener('click', shareResult);
@@ -831,7 +853,29 @@ async function submitCreatorQuestionCandidates() {
       questionSubmissionCandidates: [],
     });
   } catch (error) {
-    setState({ questionSubmissionStatus: 'failed' });
+    const blocked = error.message === 'question-personal-information-detected';
+    setState({
+      questionSubmissionStatus: blocked ? 'blocked' : 'failed',
+      questionSubmissionCandidates: blocked ? [] : state.questionSubmissionCandidates,
+    });
+  }
+}
+
+async function reportQuestion(button) {
+  const questionId = button?.dataset.questionId || '';
+  const box = button?.closest('[data-report-box]');
+  const reason = box?.querySelector('[data-report-reason]')?.value || '';
+  if (!questionId || !reason) return;
+  if (!confirm('このお題を通報し、確認が終わるまで公開ライブラリから非公開にしますか？')) return;
+  button.disabled = true;
+  try {
+    await reportManagedQuestion(questionId, reason);
+    allCards = allCards.filter((card) => String(card.managedQuestionId || card.id) !== questionId);
+    alert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
+    skipCreatorQuestion();
+  } catch (error) {
+    button.disabled = false;
+    setState({ error: error.message || 'question-report-failed' });
   }
 }
 
@@ -1124,6 +1168,9 @@ function errorMessage(code) {
     'draft-not-found': '途中保存データが見つかりません。',
     'copy-failed': '自動コピーできませんでした。URL欄を長押ししてコピーしてください。',
     'library-failed': '人気のお題を読み込めませんでした。',
+    'question-report-reason-required': '通報理由を選んでください。',
+    'question-report-not-available': 'このお題は通報対象ではないか、すでに非公開です。',
+    'question-report-failed': '通報を送信できませんでした。時間をおいてもう一度お試しください。',
   })[code] || '通信に失敗しました。時間をおいてもう一度お試しください。';
 }
 

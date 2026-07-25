@@ -5,8 +5,10 @@ import { LIVE_POLL_INTERVAL_MS } from './src/live/config.js';
 import {
   changedQuestionCandidates,
   loadManagedQuestionCards,
+  reportManagedQuestion,
   submitQuestionCandidates,
 } from './src/questions/catalog.js';
+import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 
 const QUESTION_COUNT = 10;
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
@@ -179,11 +181,12 @@ function createView() {
         <button class="ghost" data-action="edit-live-question">✎ 編集する</button>
       </div>
       <button class="ghost" data-action="custom-live-question">＋ 自分で問題を作る</button>
+      ${questionReportControls(question)}
     </article>
     <label class="check">
       <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
         aria-label="このクイズを友達や他の人も使えるようにする">
-      <span><b>このクイズを友達や他の人も使えるようにする</b><br><small>初期状態はONです。ONのままなら、自作・編集した問題を掲載候補として運営へ送ります。外してもLIVEは作れます。</small></span>
+      <span><b>このクイズを友達や他の人も使えるようにする</b><br><small>初期状態はONです。ONのままなら、自作・編集した問題を掲載候補として運営へ送ります。外してもLIVEは作れます。<br>${QUESTION_PUBLICATION_NOTICE}<br>${QUESTION_REVIEW_CRITERIA}</small></span>
     </label>
     <div class="live-builder-footer">
       <button class="ghost" data-action="previous-live-question" ${state.builderIndex === 0 ? 'disabled aria-disabled="true"' : ''}>前の問題に戻る</button>
@@ -210,11 +213,28 @@ function liveQuestionEditView(question) {
     <label class="check">
       <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
         aria-label="このクイズを友達や他の人も使えるようにする">
-      <span><b>このクイズを友達や他の人も使えるようにする</b><br><small>ONのままなら、この自作・編集した問題を掲載候補として運営へ送ります。</small></span>
+      <span><b>このクイズを友達や他の人も使えるようにする</b><br><small>ONのままなら、この自作・編集した問題を掲載候補として運営へ送ります。<br>${QUESTION_PUBLICATION_NOTICE}<br>${QUESTION_REVIEW_CRITERIA}</small></span>
     </label>
     <button class="primary" data-action="save-live-question-edit">この内容で問題に戻る <span>▶</span></button>
     <button class="ghost" data-action="cancel-live-question-edit">キャンセル</button>
   </section>`;
+}
+
+function questionReportControls(question) {
+  if (!question?.reportable || !question.managedQuestionId) return '';
+  return `<div class="question-report" data-report-box>
+    <label for="live-report-reason">不適切なお題を通報</label>
+    <select id="live-report-reason" data-report-reason>
+      <option value="personal-information">個人情報</option>
+      <option value="sexual-content">性的内容</option>
+      <option value="bullying">いじめ</option>
+      <option value="appearance-attack">容姿攻撃</option>
+      <option value="discrimination">差別表現</option>
+      <option value="other">その他</option>
+    </select>
+    <button class="ghost" data-action="report-question" data-question-id="${escapeHtml(question.managedQuestionId)}">このお題を通報する</button>
+    <small>通報すると、このお題は確認が終わるまで公開ライブラリから非公開になります。</small>
+  </div>`;
 }
 
 function joinView() {
@@ -275,6 +295,7 @@ function questionSubmissionNotice() {
     sent: `掲載候補として${state.questionSubmissionCount}問を運営へ送信しました。承認されるまで公開ライブラリには追加されません。`,
     empty: '掲載候補の送信に同意しましたが、自作・編集したお題がないため送信対象はありませんでした。',
     failed: 'LIVEは作成できましたが、掲載候補のお題は通信エラーで送信できませんでした。',
+    blocked: 'LIVEは作成できましたが、掲載候補に個人情報らしい内容を検知したため運営へ送信しませんでした。',
   };
   const retry = state.questionSubmissionStatus === 'failed'
     ? '<button class="secondary" data-action="retry-question-submit">お題候補の送信を再試行</button>'
@@ -455,6 +476,7 @@ function bindEvents() {
   document.querySelector('[data-action="join-game"]')?.addEventListener('click', joinGame);
   document.querySelector('[data-action="copy-link"]')?.addEventListener('click', copyJoinLink);
   document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
+  document.querySelector('[data-action="report-question"]')?.addEventListener('click', (event) => reportQuestion(event.currentTarget));
   document.querySelector('[data-action="start-game"]')?.addEventListener('click', () => hostAction('start'));
   document.querySelectorAll('[data-action="host-answer"]').forEach((button) => button.addEventListener('click', () => hostAnswer(Number(button.dataset.index))));
   document.querySelectorAll('[data-action="viewer-answer"]').forEach((button) => button.addEventListener('click', () => viewerAnswer(Number(button.dataset.index))));
@@ -593,7 +615,29 @@ async function submitCreatorQuestionCandidates() {
       questionSubmissionCandidates: [],
     });
   } catch (error) {
-    setState({ questionSubmissionStatus: 'failed' });
+    const blocked = error.message === 'question-personal-information-detected';
+    setState({
+      questionSubmissionStatus: blocked ? 'blocked' : 'failed',
+      questionSubmissionCandidates: blocked ? [] : state.questionSubmissionCandidates,
+    });
+  }
+}
+
+async function reportQuestion(button) {
+  const questionId = button?.dataset.questionId || '';
+  const box = button?.closest('[data-report-box]');
+  const reason = box?.querySelector('[data-report-reason]')?.value || '';
+  if (!questionId || !reason) return;
+  if (!confirm('このお題を通報し、確認が終わるまで公開ライブラリから非公開にしますか？')) return;
+  button.disabled = true;
+  try {
+    await reportManagedQuestion(questionId, reason);
+    allCards = allCards.filter((card) => String(card.managedQuestionId || card.id) !== questionId);
+    alert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
+    skipLiveQuestion();
+  } catch (error) {
+    button.disabled = false;
+    showError(error);
   }
 }
 
@@ -868,6 +912,8 @@ function toDraftQuestion(card) {
     sourceId: card.id,
     text: card.title,
     options: card.choices.slice(0, 5),
+    managedQuestionId: card.managedQuestionId || null,
+    reportable: card.reportable === true,
   };
 }
 
@@ -900,6 +946,9 @@ function errorText(code) {
     'live-storage-not-configured': 'LIVE機能の保存先が設定されていません。',
     'live-realtime-unavailable': 'リアルタイム接続を利用できません。',
     'copy-failed': 'コピーできませんでした。参加URLを長押ししてコピーしてください。',
+    'question-report-reason-required': '通報理由を選んでください。',
+    'question-report-not-available': 'このお題は通報対象ではないか、すでに非公開です。',
+    'question-report-failed': '通報を送信できませんでした。時間をおいてもう一度お試しください。',
     'rate-limit-exceeded': '操作が集中しています。少し待ってから試してください。',
     'request-failed': '通信に失敗しました。接続を確認してください。',
   };

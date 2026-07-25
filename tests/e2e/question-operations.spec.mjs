@@ -5,7 +5,21 @@ test('運営だけが二要素認証後にお題を審査し、全問題の掲�
   const saveBodies = [];
   const pendingId = '11111111-1111-4111-8111-111111111111';
   const overview = {
-    catalog: [],
+    catalog: [{
+      id: 'CUSREPORTED123',
+      sourceKind: 'custom',
+      sourceRef: null,
+      title: '通報されたお題',
+      category: 'みんなのお題',
+      choices: ['1', '2', '3', '4', '5'],
+      status: 'disabled',
+      useChallenge: false,
+      useLive: false,
+      targetFriend: true,
+      targetFamily: false,
+      reportCount: 1,
+      lastReportedAt: Date.now(),
+    }],
     submissions: [{
       id: pendingId,
       sourceMode: 'challenge',
@@ -17,6 +31,7 @@ test('運営だけが二要素認証後にお題を審査し、全問題の掲�
       reviewedAt: null,
       reviewNote: '',
       catalogId: null,
+      safetyFlags: ['bullying', 'appearance-attack'],
     }],
   };
 
@@ -62,6 +77,9 @@ test('運営だけが二要素認証後にお題を審査し、全問題の掲�
   await expect(page.locator('#adminToken')).toHaveValue('');
   expect(await page.evaluate(() => sessionStorage.getItem('live:admin-session'))).toBe('question-admin-session');
   await expect(page.locator('#pendingSubmissions')).toContainText('放課後にみんなでしたいことは？');
+  await expect(page.locator('#pendingSubmissions')).toContainText('重点審査：いじめ・容姿攻撃');
+  await expect(page.getByText(/性的内容、いじめ、容姿攻撃、差別表現は必ず審査対象/)).toBeVisible();
+  await expect(page.locator('#allQuestions')).toContainText('通報1件・即時非公開');
   const totalText = await page.locator('#questionCount').textContent();
   const total = Number(totalText?.match(/全(\d+)問/)?.[1] || 0);
   expect(total).toBeGreaterThan(100);

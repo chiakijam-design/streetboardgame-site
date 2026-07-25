@@ -206,6 +206,8 @@ test('自作お題は初期同意で、チェック状態を自分で変更し�
   }
   const consent = page.getByLabel('このクイズを友達や他の人も使えるようにする');
   await expect(consent).toBeChecked();
+  await expect(page.getByText('送信した内容は運営が編集し、他の利用者へ公開する可能性があります。')).toBeVisible();
+  await expect(page.getByText('性的内容、いじめ、容姿攻撃、差別表現は審査対象です。')).toBeVisible();
   await consent.uncheck();
   await expect(consent).not.toBeChecked();
   await consent.check();
@@ -220,6 +222,52 @@ test('自作お題は初期同意で、チェック状態を自分で変更し�
     title: '休み時間に一番したいことは？',
     choices: ['自作選択肢1', '自作選択肢2', '自作選択肢3', '自作選択肢4', '自作選択肢5'],
   }]);
+});
+
+test('承認済み自作お題を理由付きで通報すると、即時非公開APIへ送って別のお題へ移る', async ({ page }) => {
+  const questionId = 'CUSREPORTABLE1234567890';
+  const reportBodies = [];
+  await page.route('**/api/questions/catalog', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        questions: [{
+          id: questionId,
+          sourceKind: 'custom',
+          sourceRef: null,
+          title: '通報テストのお題',
+          category: 'みんなのお題',
+          choices: ['選択肢1', '選択肢2', '選択肢3', '選択肢4', '選択肢5'],
+          status: 'approved',
+          useChallenge: true,
+          useLive: true,
+          targetFriend: true,
+          targetFamily: true,
+        }],
+      }),
+    });
+  });
+  await page.route(`**/api/questions/catalog/${questionId}/report`, async (route) => {
+    reportBodies.push(route.request().postDataJSON());
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ questionId, hidden: true }),
+    });
+  });
+
+  await page.goto(`/challenge?question=${questionId}`);
+  await page.getByLabel('出題者の名前（12文字まで）').fill('通報確認');
+  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await expect(page.locator('.challenge-builder-card h2')).toHaveText('通報テストのお題');
+  await page.locator('[data-report-reason]').selectOption('discrimination');
+  page.on('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'このお題を通報する' }).click();
+
+  await expect.poll(() => reportBodies.length).toBe(1);
+  expect(reportBodies[0]).toEqual({ reason: 'discrimination', detail: '' });
+  await expect(page.locator('.challenge-builder-card h2')).not.toHaveText('通報テストのお題');
 });
 
 test('公開候補チェックを外した自作お題は運営へ送信しない', async ({ page }) => {

@@ -237,6 +237,8 @@ test('ライブ版も初期同意で、外したくない人はそのまま自�
   }
   const consent = page.getByLabel('このクイズを友達や他の人も使えるようにする');
   await expect(consent).toBeChecked();
+  await expect(page.getByText('送信した内容は運営が編集し、他の利用者へ公開する可能性があります。')).toBeVisible();
+  await expect(page.getByText('性的内容、いじめ、容姿攻撃、差別表現は審査対象です。')).toBeVisible();
   await page.getByRole('button', { name: /この内容で問題に戻る/ }).click();
   await buildLiveQuestions(page);
 

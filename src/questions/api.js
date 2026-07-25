@@ -1,7 +1,16 @@
 import { requireLiveAdminSession } from '../live/admin-auth.js';
+import { scanQuestionSafety } from './safety.js';
 
 const DAILY_QUESTION_LIMIT = 20;
 const MAX_BATCH_SIZE = 10;
+const REPORT_REASONS = new Set([
+  'personal-information',
+  'sexual-content',
+  'bullying',
+  'appearance-attack',
+  'discrimination',
+  'other',
+]);
 let schemaReadyPromise = null;
 
 export async function handleQuestionApi(request, env, path) {
@@ -17,6 +26,11 @@ export async function handleQuestionApi(request, env, path) {
 
     if (path === '/api/questions/submissions' && request.method === 'POST') {
       return await createSubmissions(request, env);
+    }
+
+    const reportRoute = path.match(/^\/api\/questions\/catalog\/([A-Za-z0-9_-]{2,80})\/report$/);
+    if (reportRoute && request.method === 'POST') {
+      return await reportCatalogQuestion(request, env, reportRoute[1]);
     }
 
     if (path.startsWith('/api/questions/admin/')) {
@@ -39,7 +53,10 @@ export async function handleQuestionApi(request, env, path) {
 
     return json({ error: 'not-found' }, 404);
   } catch (error) {
-    return json({ error: error?.message || 'question-api-error' }, Number(error?.status) || 500);
+    return json({
+      error: error?.message || 'question-api-error',
+      ...(error?.details || {}),
+    }, Number(error?.status) || 500);
   }
 }
 
@@ -49,6 +66,11 @@ async function createSubmissions(request, env) {
   const sourceMode = normalizeSourceMode(body.sourceMode);
   const questions = Array.isArray(body.questions) ? body.questions.slice(0, MAX_BATCH_SIZE).map(sanitizeQuestion) : [];
   if (!questions.length) throw apiError('question-submission-empty', 400);
+  const safetyResults = questions.map(scanQuestionSafety);
+  const personalInfoFlags = [...new Set(safetyResults.flatMap((result) => result.personalInfoFlags))];
+  if (personalInfoFlags.length) {
+    throw apiError('question-personal-information-detected', 400, { flags: personalInfoFlags });
+  }
 
   const ipHash = await requestIpHash(request);
   await consumeDailyLimit(env, ipHash, questions.length);
@@ -57,19 +79,30 @@ async function createSubmissions(request, env) {
     submissionId: crypto.randomUUID(),
     ...question,
   }));
-  await env.REMOTE_DB.batch(submissions.map((submission) => env.REMOTE_DB.prepare(`
-    INSERT INTO question_submissions
-      (submission_id, source_mode, source_question_id, title, choices_json, status, submitted_at, ip_hash)
-    VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)
-  `).bind(
-    submission.submissionId,
-    sourceMode,
-    submission.sourceQuestionId,
-    submission.title,
-    JSON.stringify(submission.choices),
-    now,
-    ipHash,
-  )));
+  const statements = [];
+  submissions.forEach((submission, index) => {
+    statements.push(env.REMOTE_DB.prepare(`
+      INSERT INTO question_submissions
+        (submission_id, source_mode, source_question_id, title, choices_json, status, submitted_at, ip_hash)
+      VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)
+    `).bind(
+      submission.submissionId,
+      sourceMode,
+      submission.sourceQuestionId,
+      submission.title,
+      JSON.stringify(submission.choices),
+      now,
+      ipHash,
+    ));
+    const flags = safetyResults[index].moderationFlags;
+    if (flags.length) {
+      statements.push(env.REMOTE_DB.prepare(`
+        INSERT INTO question_submission_flags (submission_id, flags_json, created_at)
+        VALUES (?, ?, ?)
+      `).bind(submission.submissionId, JSON.stringify(flags), now));
+    }
+  });
+  await env.REMOTE_DB.batch(statements);
   return json({ submitted: submissions.length, submissionIds: submissions.map((item) => item.submissionId) }, 201);
 }
 
@@ -87,17 +120,20 @@ async function publicCatalog(env) {
 async function adminOverview(env) {
   const [catalogResult, submissionResult] = await Promise.all([
     env.REMOTE_DB.prepare(`
-      SELECT question_id, source_kind, source_ref, title, category, choices_json, status,
-        use_challenge, use_live, target_friend, target_family, created_at, updated_at
-      FROM question_catalog
-      ORDER BY updated_at DESC
+      SELECT q.question_id, q.source_kind, q.source_ref, q.title, q.category, q.choices_json, q.status,
+        q.use_challenge, q.use_live, q.target_friend, q.target_family, q.created_at, q.updated_at,
+        (SELECT COUNT(*) FROM question_reports r WHERE r.question_id = q.question_id) AS report_count,
+        (SELECT MAX(reported_at) FROM question_reports r WHERE r.question_id = q.question_id) AS last_reported_at
+      FROM question_catalog q
+      ORDER BY q.updated_at DESC
       LIMIT 1000
     `).all(),
     env.REMOTE_DB.prepare(`
-      SELECT submission_id, source_mode, source_question_id, title, choices_json, status,
-        submitted_at, reviewed_at, review_note, catalog_id
-      FROM question_submissions
-      ORDER BY CASE status WHEN 'pending' THEN 0 ELSE 1 END, submitted_at DESC
+      SELECT s.submission_id, s.source_mode, s.source_question_id, s.title, s.choices_json, s.status,
+        s.submitted_at, s.reviewed_at, s.review_note, s.catalog_id, f.flags_json
+      FROM question_submissions s
+      LEFT JOIN question_submission_flags f ON f.submission_id = s.submission_id
+      ORDER BY CASE s.status WHEN 'pending' THEN 0 ELSE 1 END, s.submitted_at DESC
       LIMIT 500
     `).all(),
   ]);
@@ -105,6 +141,43 @@ async function adminOverview(env) {
     catalog: (catalogResult?.results || []).map(mapCatalogRow),
     submissions: (submissionResult?.results || []).map(mapSubmissionRow),
   };
+}
+
+async function reportCatalogQuestion(request, env, questionId) {
+  const body = await readJson(request);
+  const reason = REPORT_REASONS.has(body.reason) ? body.reason : '';
+  if (!reason) throw apiError('question-report-reason-required', 400);
+  const current = await env.REMOTE_DB.prepare(`
+    SELECT question_id, source_kind, status
+    FROM question_catalog
+    WHERE question_id = ?
+  `).bind(questionId).first();
+  if (!current || current.source_kind !== 'custom') {
+    throw apiError('question-report-not-available', 404);
+  }
+
+  const now = Date.now();
+  const ipHash = await requestIpHash(request);
+  await env.REMOTE_DB.batch([
+    env.REMOTE_DB.prepare(`
+      INSERT OR IGNORE INTO question_reports
+        (report_id, question_id, reason, detail, reported_at, ip_hash)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(
+      crypto.randomUUID(),
+      questionId,
+      reason,
+      sanitizeShortText(body.detail, 300),
+      now,
+      ipHash,
+    ),
+    env.REMOTE_DB.prepare(`
+      UPDATE question_catalog
+      SET status = 'disabled', use_challenge = 0, use_live = 0, updated_at = ?
+      WHERE question_id = ? AND source_kind = 'custom'
+    `).bind(now, questionId),
+  ]);
+  return json({ questionId, hidden: true });
 }
 
 async function reviewSubmission(request, env, submissionId) {
@@ -274,6 +347,8 @@ function mapCatalogRow(row) {
     targetFamily: Boolean(row.target_family),
     createdAt: row.created_at == null ? null : Number(row.created_at),
     updatedAt: Number(row.updated_at || 0),
+    reportCount: Number(row.report_count || 0),
+    lastReportedAt: row.last_reported_at == null ? null : Number(row.last_reported_at),
   };
 }
 
@@ -289,6 +364,7 @@ function mapSubmissionRow(row) {
     reviewedAt: row.reviewed_at == null ? null : Number(row.reviewed_at),
     reviewNote: row.review_note || '',
     catalogId: row.catalog_id || null,
+    safetyFlags: parseStringArray(row.flags_json),
   };
 }
 
@@ -296,6 +372,15 @@ function parseChoices(value) {
   try {
     const choices = JSON.parse(value);
     return Array.isArray(choices) ? choices : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function parseStringArray(value) {
+  try {
+    const values = JSON.parse(value || '[]');
+    return Array.isArray(values) ? values.filter((item) => typeof item === 'string') : [];
   } catch (error) {
     return [];
   }
@@ -328,6 +413,16 @@ async function ensureQuestionSchema(env) {
       env.REMOTE_DB.prepare(`CREATE TABLE IF NOT EXISTS question_submission_limits (
         rate_key TEXT PRIMARY KEY, question_count INTEGER NOT NULL, expires_at INTEGER NOT NULL
       )`),
+      env.REMOTE_DB.prepare(`CREATE TABLE IF NOT EXISTS question_submission_flags (
+        submission_id TEXT PRIMARY KEY, flags_json TEXT NOT NULL, created_at INTEGER NOT NULL
+      )`),
+      env.REMOTE_DB.prepare(`CREATE TABLE IF NOT EXISTS question_reports (
+        report_id TEXT PRIMARY KEY, question_id TEXT NOT NULL, reason TEXT NOT NULL,
+        detail TEXT NOT NULL DEFAULT '', reported_at INTEGER NOT NULL, ip_hash TEXT NOT NULL,
+        UNIQUE (question_id, ip_hash)
+      )`),
+      env.REMOTE_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_question_reports_question
+        ON question_reports (question_id, reported_at)`),
     ]).catch((error) => {
       schemaReadyPromise = null;
       throw error;
@@ -348,9 +443,10 @@ function boolInt(value) {
   return value ? 1 : 0;
 }
 
-function apiError(message, status) {
+function apiError(message, status, details = null) {
   const error = new Error(message);
   error.status = status;
+  error.details = details;
   return error;
 }
 

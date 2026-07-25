@@ -5,10 +5,37 @@ import test from 'node:test';
 import { createLiveAdminSession, generateLiveAdminTotp } from '../../src/live/admin-auth.js';
 import { handleQuestionApi } from '../../src/questions/api.js';
 import { applyManagedQuestionCards } from '../../src/questions/catalog.js';
+import { scanQuestionSafety } from '../../src/questions/safety.js';
+
+test('個人情報らしい文字列と重点審査4分類を自動検知する', () => {
+  const personal = scanQuestionSafety({
+    title: '氏名：山田 太郎の連絡先は？',
+    choices: ['前橋第一中学校', '@school_friend', '090-1234-5678', '群馬県前橋市本町1丁目2番3号', '非公開'],
+  });
+  assert.deepEqual(personal.personalInfoFlags.sort(), [
+    'address',
+    'phone-number',
+    'real-name',
+    'school-name',
+    'sns-id',
+  ]);
+
+  const moderation = scanQuestionSafety({
+    title: 'いじめや容姿差別につながる質問',
+    choices: ['性的な内容', '仲間外れ', 'ブス', '人種差別', '安全な選択肢'],
+  });
+  assert.deepEqual(moderation.moderationFlags.sort(), [
+    'appearance-attack',
+    'bullying',
+    'discrimination',
+    'sexual-content',
+  ]);
+});
 
 test('未チェックでは保存せず、明示同意したお題だけ審査・承認・掲載先変更できる', async () => {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(await readFile(new URL('../../migrations/0012_question_catalog_moderation.sql', import.meta.url), 'utf8'));
+  sqlite.exec(await readFile(new URL('../../migrations/0013_question_safety_reports.sql', import.meta.url), 'utf8'));
   const env = {
     REMOTE_DB: d1(sqlite),
     LIVE_ADMIN_TOKEN: 'admin-token-which-is-longer-than-thirty-two-characters',
@@ -29,6 +56,19 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   assert.equal(withoutConsent.status, 400);
   assert.equal(sqlite.prepare('SELECT COUNT(*) AS count FROM question_submissions').get().count, 0);
 
+  const personalInfoResponse = await handleQuestionApi(jsonRequest('/api/questions/submissions', {
+    consent: true,
+    sourceMode: 'challenge',
+    questions: [{
+      sourceQuestionId: null,
+      title: '連絡先はどれ？',
+      choices: ['090-1234-5678', '@school_friend', 'その3', 'その4', 'その5'],
+    }],
+  }), env, '/api/questions/submissions');
+  assert.equal(personalInfoResponse.status, 400);
+  assert.deepEqual((await personalInfoResponse.json()).flags.sort(), ['phone-number', 'sns-id']);
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS count FROM question_submissions').get().count, 0);
+
   const submittedResponse = await handleQuestionApi(jsonRequest('/api/questions/submissions', {
     consent: true,
     sourceMode: 'challenge',
@@ -43,7 +83,7 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
     sourceMode: 'live-challenge',
     questions: [{
       sourceQuestionId: null,
-      title: '却下する候補はどれ？',
+      title: 'クラスでいじめるなら誰？',
       choices: ['候補1', '候補2', '候補3', '候補4', '候補5'],
     }],
   }), env, '/api/questions/submissions');
@@ -69,6 +109,7 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   const overview = await overviewResponse.json();
   assert.equal(overview.submissions.length, 2);
   assert.equal(overview.submissions[0].status, 'pending');
+  assert.deepEqual(overview.submissions[0].safetyFlags, ['bullying']);
 
   const submissionId = submitted.submissionIds[0];
   const approvedResponse = await handleQuestionApi(jsonRequest(
@@ -161,6 +202,36 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   }], catalogWithDisabled.questions, 'challenge');
   assert.equal(cardsAfterDisable.some((item) => item.id === 'FQ001'), false);
   assert.equal(cardsAfterDisable.some((item) => item.id === approved.catalogId), true);
+  assert.equal(cardsAfterDisable.find((item) => item.id === approved.catalogId).reportable, true);
+  assert.equal(cardsAfterDisable.find((item) => item.id === approved.catalogId).managedQuestionId, approved.catalogId);
+
+  const reportResponse = await handleQuestionApi(jsonRequest(
+    `/api/questions/catalog/${approved.catalogId}/report`,
+    { reason: 'bullying', detail: '人を傷つける内容です' },
+  ), env, `/api/questions/catalog/${approved.catalogId}/report`);
+  assert.equal(reportResponse.status, 200);
+  assert.equal((await reportResponse.json()).hidden, true);
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS count FROM question_reports').get().count, 1);
+  const hiddenCatalog = sqlite.prepare(`
+    SELECT status, use_challenge, use_live
+    FROM question_catalog WHERE question_id = ?
+  `).get(approved.catalogId);
+  assert.equal(hiddenCatalog.status, 'disabled');
+  assert.equal(hiddenCatalog.use_challenge, 0);
+  assert.equal(hiddenCatalog.use_live, 0);
+
+  const publicAfterReport = await (await handleQuestionApi(
+    new Request('https://example.com/api/questions/catalog'),
+    env,
+    '/api/questions/catalog',
+  )).json();
+  assert.equal(publicAfterReport.questions.some((item) => item.id === approved.catalogId), false);
+
+  const overviewAfterReport = await (await handleQuestionApi(new Request(
+    'https://example.com/api/questions/admin/overview',
+    { headers: adminHeaders },
+  ), env, '/api/questions/admin/overview')).json();
+  assert.equal(overviewAfterReport.catalog.find((item) => item.id === approved.catalogId).reportCount, 1);
 });
 
 function jsonRequest(path, body, headers = {}, method = 'POST') {

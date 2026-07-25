@@ -26,6 +26,8 @@ export function applyManagedQuestionCards(baseCards, managedQuestions, series) {
       title: row.title,
       category: row.category || base.category,
       choices: row.choices.slice(0, 5),
+      managedQuestionId: row.id,
+      reportable: row.sourceKind === 'custom',
     } : base);
   }
 
@@ -39,6 +41,9 @@ export function applyManagedQuestionCards(baseCards, managedQuestions, series) {
       category: row.category || 'みんなのお題',
       title: row.title,
       choices: row.choices.slice(0, 5),
+      sourceKind: 'custom',
+      managedQuestionId: row.id,
+      reportable: true,
     });
   }
   return cards;
@@ -72,6 +77,21 @@ export async function submitQuestionCandidates({ consent, sourceMode, questions 
     body: JSON.stringify({ consent: true, sourceMode, questions }),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'question-submission-failed');
+  if (!response.ok) {
+    const error = new Error(data.error || 'question-submission-failed');
+    error.flags = Array.isArray(data.flags) ? data.flags : [];
+    throw error;
+  }
+  return data;
+}
+
+export async function reportManagedQuestion(questionId, reason, detail = '') {
+  const response = await fetch(`/api/questions/catalog/${encodeURIComponent(questionId)}/report`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ reason, detail }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'question-report-failed');
   return data;
 }
