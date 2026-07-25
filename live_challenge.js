@@ -18,8 +18,6 @@ import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/que
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 
 const QUESTION_COUNT = 10;
-const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
-const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
 const app = document.getElementById('live-challenge-app');
 let allCards = mergeChallengeCards(
   window.FRIEND_CARDS,
@@ -182,21 +180,9 @@ function createView() {
         <h3 class="notebook-card-accessible-title">${escapeHtml(question.text)}</h3>
         ${renderNotebookQuestionCard(question)}
       </div>
-      <div class="live-builder-color-pad" data-testid="live-builder-color-pad">
-        <div class="live-builder-color-heading">
-          <span>選択肢の色</span>
-          <small>答えは配信中に選択</small>
-        </div>
-        <div class="live-builder-color-choices" role="list" aria-label="5つの選択肢の色">
-          ${question.options.map((option, index) => `<div class="live-builder-color-choice" role="listitem" aria-label="${COLOR_NAMES[index]}：${escapeHtml(option)}">
-            <i style="background:${COLORS[index]}" aria-hidden="true"></i>
-            <span>${COLOR_NAMES[index]}</span>
-          </div>`).join('')}
-        </div>
-        <p>ドットの色は、お題カード左側の5色と対応しています</p>
-      </div>
-      <button class="primary" data-action="use-live-question">
-        ${state.builderIndex === QUESTION_COUNT - 1 ? 'この問題を使ってLIVEを作る' : 'この問題を使う'} <span>▶</span>
+      <button class="primary live-use-question" data-action="use-live-question">
+        <span>この問題を使う<small>（答えは配信中に選択）</small></span>
+        <b aria-hidden="true">▶</b>
       </button>
       <div class="button-row">
         <button class="secondary" data-action="skip-live-question">この問題をスキップ</button>

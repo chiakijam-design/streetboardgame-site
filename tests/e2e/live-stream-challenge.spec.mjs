@@ -11,22 +11,26 @@ async function buildLiveQuestions(page, startIndex = 0) {
     await expect(page.locator('.notebook-question-card-visual')).toHaveCount(1);
     if (index === 0) {
       const paperCard = page.getByTestId('live-builder-paper-card');
-      const colorPad = page.getByTestId('live-builder-color-pad');
-      const colorChoices = colorPad.locator('.live-builder-color-choice');
-      await expect(colorChoices).toHaveCount(5);
-      const [paperBox, padBox, choiceBoxes] = await Promise.all([
+      const useButton = page.getByRole('button', { name: /この問題を使う.*答えは配信中に選択/ });
+      await expect(page.getByTestId('live-builder-color-pad')).toHaveCount(0);
+      await expect(useButton).toBeVisible();
+      const [paperBox, buttonBox, buttonStyle] = await Promise.all([
         paperCard.boundingBox(),
-        colorPad.boundingBox(),
-        colorChoices.evaluateAll((choices) => choices.map((choice) => {
-          const rect = choice.getBoundingClientRect();
-          return { width: rect.width, height: rect.height };
-        })),
+        useButton.boundingBox(),
+        useButton.evaluate((button) => {
+          const style = getComputedStyle(button);
+          return {
+            backgroundColor: style.backgroundColor,
+            fontSize: Number.parseFloat(style.fontSize),
+            minHeight: style.minHeight,
+          };
+        }),
       ]);
-      expect(paperBox?.y + paperBox?.height).toBeLessThanOrEqual(padBox?.y);
-      choiceBoxes.forEach(({ width, height }) => {
-        expect(width).toBeGreaterThanOrEqual(44);
-        expect(height).toBeGreaterThanOrEqual(44);
-      });
+      expect(paperBox?.y + paperBox?.height).toBeLessThanOrEqual(buttonBox?.y);
+      expect(buttonBox?.height).toBeGreaterThanOrEqual(64);
+      expect(buttonStyle.backgroundColor).toBe('rgb(255, 226, 107)');
+      expect(buttonStyle.fontSize).toBeGreaterThanOrEqual(18);
+      expect(buttonStyle.minHeight).toBe('74px');
       const dimensions = await page.evaluate(() => ({
         innerWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -35,7 +39,7 @@ async function buildLiveQuestions(page, startIndex = 0) {
       await expect(page.getByRole('button', { name: /10問をランダムで選び直す/ })).toHaveCount(0);
     }
     await page.getByRole('button', {
-      name: index === 9 ? /この問題を使ってLIVEを作る/ : /この問題を使う/,
+      name: /この問題を使う.*答えは配信中に選択/,
     }).click();
   }
 }
