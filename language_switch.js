@@ -1,6 +1,8 @@
 (function languageSwitch() {
   const KEY = 'watachan:language:v1';
   const path = window.location.pathname;
+  const topPage = path === '/' || path === '/en' || path === '/en/';
+  if (!topPage) return;
   const english = /^\/en(?:\/|$)/.test(path);
   const stripEnglish = (value) => value.replace(/^\/en(?=\/|$)/, '') || '/';
   const japanesePath = stripEnglish(path);

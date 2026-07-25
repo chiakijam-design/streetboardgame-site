@@ -26,7 +26,7 @@ test('言語切替はページ上部にだけ表示し、スクロールへ追�
   await expect.poll(async () => (await switcher.boundingBox())?.y ?? 0).toBeLessThan(0);
 });
 
-test('英語の主要ページは専用SEO・hreflang・常設切替を持つ', async ({ page, request }, testInfo) => {
+test('英語の主要ページは専用SEO・hreflangを持ち、言語切替はトップだけに表示する', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'メタ情報は画面幅に依存しないためPCで1回検証');
   const routes = [
     ['/en/', 'Watachan | Make a quiz and challenge your friends', 'How well do you know me?'],
@@ -42,7 +42,11 @@ test('英語の主要ページは専用SEO・hreflang・常設切替を持つ', 
     await expect(page).toHaveTitle(title);
     expect(((await page.locator('h1').textContent()) || '').replace(/\s+/g, ''), path)
       .toContain(h1.replace(/\s+/g, ''));
-    await expect(page.getByRole('navigation', { name: 'Language' })).toBeVisible();
+    if (path === '/en/') {
+      await expect(page.getByRole('navigation', { name: 'Language' })).toBeVisible();
+    } else {
+      await expect(page.locator('.site-language-switch'), path).toHaveCount(0);
+    }
     await expect(page.locator('link[rel="alternate"][hreflang="ja"]')).toHaveCount(1);
     await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveCount(1);
   }
@@ -86,13 +90,23 @@ test('英語トップは小さなスマホ幅でも横にはみ出さない', as
   }
 });
 
-test('英語版がない日本語ページは存在しないURLを案内しない', async ({ page, request }, testInfo) => {
+test('日本語と英語の下層ページに言語切替を表示しない', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'リンク先は画面幅に依存しないためPCで1回検証');
-  for (const path of ['/challenge-guide', '/about', '/product']) {
+  for (const path of [
+    '/challenge',
+    '/live-challenge',
+    '/terms',
+    '/privacy',
+    '/challenge-guide',
+    '/about',
+    '/product',
+    '/en/challenge',
+    '/en/live-challenge',
+    '/en/terms',
+    '/en/privacy',
+  ]) {
     await page.goto(path);
-    const englishLink = page.locator('[data-site-language="en"]');
-    await expect(englishLink, path).toHaveAttribute('href', '/en/');
-    await expect(page.locator('link[rel="alternate"][hreflang="en"]'), path).toHaveCount(0);
+    await expect(page.locator('.site-language-switch'), path).toHaveCount(0);
   }
   for (const removedPath of ['/en/challenge-guide', '/en/about', '/en/product']) {
     const response = await request.get(removedPath);

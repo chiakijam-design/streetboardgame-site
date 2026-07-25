@@ -79,6 +79,7 @@ test('英語ルート・hreflang・専用OGP・初回言語案内を静的構成
   assert.match(switchSource, /navigator\.languages/);
   assert.match(switchSource, /watachan:language:v1/);
   assert.match(switchSource, /English version available/);
+  assert.match(switchSource, /if \(!topPage\) return/);
   assert.match(switchSource, /\.site-language-switch\{position:absolute/);
   assert.doesNotMatch(switchSource, /\.site-language-switch\{position:fixed/);
   for (const page of ['en/index.html', 'en/terms.html', 'en/privacy.html']) {
@@ -86,6 +87,19 @@ test('英語ルート・hreflang・専用OGP・初回言語案内を静的構成
     assert.match(html, /<html lang="en">/);
     assert.match(html, /hreflang="ja"/);
     assert.match(html, /hreflang="en"/);
+  }
+  for (const page of ['index.html', 'en/index.html']) {
+    assert.match(text(page), /<script src="\/language_switch\.js/);
+  }
+  for (const page of [
+    'challenge.html',
+    'live_challenge.html',
+    'terms.html',
+    'privacy.html',
+    'en/terms.html',
+    'en/privacy.html',
+  ]) {
+    assert.doesNotMatch(text(page), /language_switch\.js/, page);
   }
   assert.ok(statSync(new URL('assets/ogp-challenge-en.png', rootUrl)).size > 100_000);
 });
