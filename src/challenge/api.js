@@ -154,9 +154,7 @@ async function joinRoom(request, env, code) {
   const body = await readJson(request);
   const name = sanitizeName(body.name, '');
   if (!name) return jsonResponse({ error: 'name-required' }, 400);
-  if (body.rankingConsent !== true) {
-    return jsonResponse({ error: 'ranking-consent-required' }, 400);
-  }
+  const rankingConsent = body.rankingConsent === true;
   const participantToken = createToken();
   const participant = {
     id: createToken().slice(0, 24),
@@ -166,7 +164,7 @@ async function joinRoom(request, env, code) {
     score: null,
     createdAt: Date.now(),
     completedAt: null,
-    rankingConsentAt: Date.now(),
+    rankingConsentAt: rankingConsent ? Date.now() : null,
   };
   const inserted = await insertParticipant(env, code, participant, room);
   if (!inserted) return jsonResponse({ error: 'room-full', maxParticipants: CHALLENGE_MAX_PARTICIPANTS }, 409);
@@ -213,7 +211,9 @@ async function getResult(request, env, code) {
     return jsonResponse({ error: 'answers-not-submitted' }, 409);
   }
 
-  const rank = await participantRank(env, code, participant.score, room);
+  const rank = participant.rankingConsentAt != null
+    ? await participantRank(env, code, participant.score, room)
+    : null;
   const counts = await participantCounts(env, code, room);
   return jsonResponse({
     code,
@@ -283,6 +283,7 @@ function publicParticipant(participant) {
     name: participant.name,
     submitted: Array.isArray(participant.answers),
     score: Number.isInteger(participant.score) ? participant.score : null,
+    rankingParticipating: participant.rankingConsentAt != null,
   };
 }
 
@@ -423,12 +424,15 @@ async function participantRank(env, code, score, room) {
     const row = await env.REMOTE_DB.prepare(`
       SELECT COUNT(*) AS higher
       FROM challenge_participants
-      WHERE room_code = ? AND completed_at IS NOT NULL AND score > ?
+      WHERE room_code = ? AND completed_at IS NOT NULL
+        AND ranking_consent_at IS NOT NULL AND score > ?
     `).bind(code, score).first();
     return Number(row?.higher || 0) + 1;
   }
   return (room.participants || []).filter((participant) => (
-    participant.completedAt != null && Number(participant.score) > score
+    participant.completedAt != null
+    && participant.rankingConsentAt != null
+    && Number(participant.score) > score
   )).length + 1;
 }
 
@@ -462,9 +466,9 @@ async function managedParticipants(env, code, room) {
   let participants;
   if (await ensureD1(env)) {
     const result = await env.REMOTE_DB.prepare(`
-      SELECT participant_id, name, answers_json, score, created_at, completed_at
+      SELECT participant_id, name, answers_json, score, created_at, completed_at, ranking_consent_at
       FROM challenge_participants
-      WHERE room_code = ? AND ranking_consent_at IS NOT NULL
+      WHERE room_code = ?
       ORDER BY completed_at IS NULL, score DESC, completed_at ASC, created_at ASC
       LIMIT ?
     `).bind(code, CHALLENGE_MAX_PARTICIPANTS).all();
@@ -475,10 +479,10 @@ async function managedParticipants(env, code, room) {
       score: row.score == null ? null : Number(row.score),
       createdAt: Number(row.created_at),
       completedAt: row.completed_at == null ? null : Number(row.completed_at),
+      rankingConsentAt: row.ranking_consent_at == null ? null : Number(row.ranking_consent_at),
     }));
   } else {
     participants = (room.participants || [])
-      .filter((participant) => participant.rankingConsentAt != null)
       .slice()
       .sort((left, right) => {
         if (left.completedAt == null && right.completedAt != null) return 1;
@@ -492,6 +496,7 @@ async function managedParticipants(env, code, room) {
     name: participant.name,
     submitted: Array.isArray(participant.answers),
     score: Number.isInteger(participant.score) ? participant.score : null,
+    rankingParticipating: participant.rankingConsentAt != null,
     completedAt: participant.completedAt,
     answers: Array.isArray(participant.answers)
       ? room.cards.map((card, index) => ({

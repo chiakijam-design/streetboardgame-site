@@ -139,20 +139,44 @@ test('挑戦者の得点・同率順位・10問の答え合わせを本人だけ
   assert.equal(library.questions.every((question) => question.playCount === 1), true);
 });
 
-test('ランキング公開への明示同意がない参加は拒否する', async () => {
+test('ランキング不参加でも回答でき、公開ランキングからだけ除外する', async () => {
   const env = { REMOTE_KV: new MemoryKV() };
   const created = await (await api(env, '/api/challenge/rooms', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ creatorName: '出題者', cards, answers: Array(CHALLENGE_QUESTION_COUNT).fill(0) }),
   })).json();
-  const response = await api(env, `/api/challenge/rooms/${created.code}/join`, {
+  const joined = await (await api(env, `/api/challenge/rooms/${created.code}/join`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name: '未同意' }),
+  })).json();
+  assert.equal(joined.participant.rankingParticipating, false);
+
+  const tokenHeader = { 'content-type': 'application/json', 'x-challenge-participant-token': joined.participantToken };
+  const submitted = await api(env, `/api/challenge/rooms/${created.code}/submit`, {
+    method: 'POST',
+    headers: tokenHeader,
+    body: JSON.stringify({ answers: Array(CHALLENGE_QUESTION_COUNT).fill(0) }),
   });
-  assert.equal(response.status, 400);
-  assert.deepEqual(await response.json(), { error: 'ranking-consent-required' });
+  assert.equal(submitted.status, 200);
+
+  const result = await (await api(env, `/api/challenge/rooms/${created.code}/result`, {
+    headers: { 'x-challenge-participant-token': joined.participantToken },
+  })).json();
+  assert.equal(result.score, 10);
+  assert.equal(result.rank, null);
+  assert.equal(result.participant.rankingParticipating, false);
+
+  const ranking = await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json();
+  assert.deepEqual(ranking.participants, []);
+
+  const managed = await (await api(env, `/api/challenge/rooms/${created.code}/manage`, {
+    headers: { 'x-challenge-manage-token': created.manageToken },
+  })).json();
+  assert.equal(managed.participants.length, 1);
+  assert.equal(managed.participants[0].rankingParticipating, false);
+  assert.equal(managed.participants[0].answers.length, 10);
 });
 
 test('挑戦モードのD1移行はランキング同意と人気お題集計を追加する', () => {

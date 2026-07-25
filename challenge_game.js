@@ -245,7 +245,7 @@ function createStartView() {
       <ol class="challenge-steps">
         <li><b>あなた</b>が10問に回答</li>
         <li>専用URL・QRコードを共有</li>
-        <li>フレンドランキングと回答詳細を確認</li>
+        <li>回答詳細を確認。希望者だけランキング公開</li>
       </ol>
       ${preferredCard ? `<div class="challenge-selected-question">
         <b>選んだお題を必ず入れます</b>
@@ -394,7 +394,7 @@ function questionSubmissionNotice() {
 function participantDetail(participant, cards) {
   return `<details class="challenge-participant">
     <summary>
-      <span>${escapeHtml(participant.name)}</span>
+      <span>${escapeHtml(participant.name)}<small>${participant.rankingParticipating ? 'ランキング参加' : 'ランキング不参加'}</small></span>
       <b>${participant.submitted ? `${participant.score}/10問` : '回答中'}</b>
     </summary>
     ${participant.submitted ? `<ol>
@@ -426,16 +426,17 @@ function joinView() {
     '10問に答えて、出題者のことをどれだけ分かっているか確かめよう。',
     `<section class="challenge-panel">
       <div class="challenge-count"><b>${room.completedParticipants}</b>人が回答済み ／ 上限${room.maxParticipants}人</div>
-      <label class="challenge-label" for="participant-name">ランキング表示名（12文字まで）</label>
+      <label class="challenge-label" for="participant-name">表示名（12文字まで）</label>
       <input id="participant-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ゆう（本名は避けてください）" value="${escapeHtml(state.participantName)}">
       <label class="challenge-consent">
         <input id="ranking-consent" type="checkbox">
-        <span>表示名・得点・順位がフレンドランキングに公開され、回答内容が主催者に表示されることに同意します</span>
+        <span><b>フレンドランキングに参加する（任意）</b><br>
+        <small>チェックした場合だけ、表示名・得点・順位を公開します。チェックしなくても遊べます。</small></span>
       </label>
       <button class="challenge-primary" data-action="join">10問の答え当てに挑戦する <span>▶</span></button>
       <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">フレンドランキングを見る</a>
-      <p class="challenge-note">本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。</p>
+      <p class="challenge-note">回答内容は答え合わせと主催者の回答確認に使用されます。本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。</p>
     </section>`,
   );
 }
@@ -443,10 +444,13 @@ function joinView() {
 function resultView() {
   const result = state.result;
   if (!result) return errorView();
+  const rankingSummary = result.rank == null
+    ? `${result.participant.name}さんはランキングに参加していません。`
+    : `${result.participant.name}さんは、ランキング参加者の中で ${result.rank}位です。`;
   return shell(
     'RESULT',
     `${result.score}/10問 正解`,
-    `${result.participant.name}さんは、回答済み${result.completedParticipants}人中 ${result.rank}位です。`,
+    rankingSummary,
     `<section class="challenge-panel">
       <h2>答え合わせ</h2>
       <div class="challenge-results">
@@ -483,7 +487,7 @@ function rankingView() {
             <strong>${participant.score}/10</strong>
           </li>
         `).join('')}
-      </ol>` : '<p class="challenge-empty">まだ回答済みの参加者はいません。</p>'}
+      </ol>` : '<p class="challenge-empty">ランキングに参加した回答者はまだいません。</p>'}
       <button class="challenge-primary" data-action="refresh-ranking">ランキングを更新</button>
       <a class="challenge-secondary" href="/challenge?room=${room.code}">このクイズに挑戦する</a>
       <button class="challenge-secondary" data-action="copy-url" data-copy-value="${escapeHtml(challengeUrl(room.code))}">挑戦用URLをコピー</button>
@@ -853,9 +857,7 @@ async function shareToInstagram() {
 async function joinRoom() {
   const name = document.getElementById('participant-name')?.value.trim().slice(0, 12) || '';
   if (!name) return setState({ error: 'name-required' });
-  if (!document.getElementById('ranking-consent')?.checked) {
-    return setState({ error: 'ranking-consent-required', participantName: name });
-  }
+  const rankingConsent = document.getElementById('ranking-consent')?.checked === true;
   setState({ loading: true, participantName: name, error: '' });
   try {
     const headers = { 'content-type': 'application/json' };
@@ -863,7 +865,7 @@ async function joinRoom() {
     const response = await fetch(`/api/challenge/rooms/${state.roomCode}/join`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ name, rankingConsent: true }),
+      body: JSON.stringify({ name, rankingConsent }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'join-failed');
@@ -990,7 +992,13 @@ async function loadResult(token = state.participantToken) {
 }
 
 async function shareResult() {
-  const text = `${state.result.creatorName}さんの答え当てに挑戦して${state.result.score}/10問正解、${state.result.completedParticipants}人中${state.result.rank}位！\n#わたちゃん\n${location.origin}/challenge/ranking?room=${state.result.code}`;
+  const rankingText = state.result.rank == null
+    ? 'ランキング不参加'
+    : `ランキング参加者の中で${state.result.rank}位`;
+  const shareUrl = state.result.rank == null
+    ? `${location.origin}/challenge?room=${state.result.code}`
+    : `${location.origin}/challenge/ranking?room=${state.result.code}`;
+  const text = `${state.result.creatorName}さんの答え当てに挑戦して${state.result.score}/10問正解、${rankingText}！\n#わたちゃん\n${shareUrl}`;
   if (navigator.share) {
     try {
       await navigator.share({ title: 'みんなに挑戦してもらう', text });
@@ -1113,7 +1121,6 @@ function errorMessage(code) {
     'participant-forbidden': '参加情報を確認できません。もう一度URLを開いてください。',
     'answers-already-submitted': 'この参加者の回答はすでに確定しています。',
     'manage-forbidden': '主催者用URLを確認できません。',
-    'ranking-consent-required': 'ランキングと主催者への表示内容を確認し、同意欄にチェックしてください。',
     'draft-not-found': '途中保存データが見つかりません。',
     'copy-failed': '自動コピーできませんでした。URL欄を長押ししてコピーしてください。',
     'library-failed': '人気のお題を読み込めませんでした。',

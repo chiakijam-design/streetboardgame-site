@@ -271,8 +271,8 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
   try {
     await participant.goto(challengeUrl);
     await expect(participant.getByRole('heading', { name: 'ちあきさんからの挑戦' })).toBeVisible();
-    await participant.getByLabel('ランキング表示名（12文字まで）').fill('ゆう');
-    await participant.getByRole('checkbox').check();
+    await participant.getByLabel('表示名（12文字まで）').fill('ゆう');
+    await participant.getByRole('checkbox', { name: /フレンドランキングに参加する/ }).check();
     await participant.getByRole('button', { name: /10問の答え当てに挑戦する/ }).click();
     await participant.locator('[data-action="answer"]').first().click();
     await participant.reload();
@@ -283,7 +283,7 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
     }
     await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toBeVisible();
     await expect(participant.locator('.challenge-result')).toHaveCount(10);
-    await expect(participant.getByText('回答済み1人中 1位')).toBeVisible();
+    await expect(participant.getByText('ランキング参加者の中で 1位')).toBeVisible();
     await expect(participant.getByRole('link', { name: '自分も作る' })).toHaveAttribute('href', '/challenge');
     await participant.getByRole('link', { name: 'フレンドランキングを見る' }).click();
     await expect(participant.getByTestId('friend-ranking')).toContainText('ゆう');
@@ -295,6 +295,35 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
   await page.getByRole('button', { name: '回答状況を更新' }).click();
   await expect(page.getByTestId('participant-count')).toContainText('1人回答済み');
   await expect(page.getByTestId('host-answer-management')).toContainText('ゆう');
+  await expect(page.getByTestId('host-answer-management')).toContainText('10/10問');
+});
+
+test('ランキングを選ばなくても10問と結果まで遊べ、公開ランキングからだけ除外される', async ({ browser, page }) => {
+  const challengeUrl = await createChallenge(page);
+  const participantContext = await browser.newContext();
+  const participant = await participantContext.newPage();
+  try {
+    await participant.goto(challengeUrl);
+    await participant.getByLabel('表示名（12文字まで）').fill('非公開');
+    const rankingConsent = participant.getByRole('checkbox', { name: /フレンドランキングに参加する/ });
+    await expect(rankingConsent).not.toBeChecked();
+    await expect(participant.getByText('チェックしなくても遊べます。')).toBeVisible();
+    await participant.getByRole('button', { name: /10問の答え当てに挑戦する/ }).click();
+    for (let index = 0; index < 10; index += 1) {
+      await participant.locator('[data-action="answer"]').first().click();
+    }
+    await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toBeVisible();
+    await expect(participant.getByText('非公開さんはランキングに参加していません。')).toBeVisible();
+    await participant.getByRole('link', { name: 'フレンドランキングを見る' }).click();
+    await expect(participant.getByTestId('friend-ranking')).not.toContainText('非公開');
+    await expect(participant.getByText('ランキングに参加した回答者はまだいません。')).toBeVisible();
+  } finally {
+    await participantContext.close();
+  }
+
+  await page.getByRole('button', { name: '回答状況を更新' }).click();
+  await expect(page.getByTestId('host-answer-management')).toContainText('非公開');
+  await expect(page.getByTestId('host-answer-management')).toContainText('ランキング不参加');
   await expect(page.getByTestId('host-answer-management')).toContainText('10/10問');
 });
 
