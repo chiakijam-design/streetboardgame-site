@@ -320,6 +320,44 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
   const participantContext = await browser.newContext();
   const participant = await participantContext.newPage();
   try {
+    await participant.addInitScript(() => {
+      window.__quizFeedbackFrequencies = [];
+      window.AudioContext = class {
+        constructor() {
+          this.state = 'running';
+          this.currentTime = 1;
+          this.destination = {};
+        }
+
+        async resume() {
+          this.state = 'running';
+        }
+
+        createOscillator() {
+          return {
+            type: 'sine',
+            frequency: {
+              setValueAtTime(value) {
+                window.__quizFeedbackFrequencies.push(value);
+              },
+            },
+            connect() {},
+            start() {},
+            stop() {},
+          };
+        }
+
+        createGain() {
+          return {
+            gain: {
+              setValueAtTime() {},
+              exponentialRampToValueAtTime() {},
+            },
+            connect() {},
+          };
+        }
+      };
+    });
     await participant.goto(challengeUrl);
     await expect(participant.getByRole('heading', { name: 'ちあきさんからの挑戦' })).toBeVisible();
     await participant.getByLabel('表示名（12文字まで）').fill('ゆう');
@@ -343,6 +381,12 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
       height: image.naturalHeight,
     }))).toEqual({ width: 1080, height: 1350 });
     await expect(participant.getByRole('button', { name: 'この結果画像を保存' })).toBeEnabled();
+    const firstAnswer = participant.locator('[data-result-answer="0"]');
+    await firstAnswer.scrollIntoViewIfNeeded();
+    await expect(firstAnswer).toHaveClass(/is-feedback-revealed/);
+    await expect.poll(() => participant.evaluate(
+      () => window.__quizFeedbackFrequencies.slice(0, 2),
+    )).toEqual([659.25, 783.99]);
     const aiReview = participant.getByTestId('challenge-ai-review');
     await expect(aiReview).toContainText('AI総評');
     await expect(aiReview).toContainText('公認・理解王');

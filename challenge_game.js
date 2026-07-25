@@ -9,6 +9,7 @@ import {
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { copyText, openLineShare, openXShare } from './src/platform/share.js';
 import { dataUrlToBlob, saveImageBlob } from './src/platform/imageSave.js';
+import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 import { getChallengeResultTier, getChallengeReviewLines } from './src/challenge/result.js';
 
@@ -20,6 +21,8 @@ const CREATOR_DRAFT_KEY = 'watachan-challenge-creator-draft:v1';
 const MANAGE_HISTORY_KEY = 'watachan-challenge-manage-history:v1';
 const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
 const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
+const quizFeedbackSoundPlayer = createQuizFeedbackSoundPlayer();
+window.addEventListener('pointerdown', () => quizFeedbackSoundPlayer.prime(), { once: true, passive: true });
 const app = document.getElementById('challenge-app');
 let allCards = mergeChallengeCards(
   window.FRIEND_CARDS,
@@ -68,6 +71,11 @@ let state = {
   editingOriginalCard: null,
 };
 let lastQuestionViewportKey = '';
+let resultFeedbackKey = '';
+let resultFeedbackObserver = null;
+let resultFeedbackTimer = 0;
+let resultFeedbackQueue = [];
+let resultFeedbackBusy = false;
 
 function initialMode() {
   if (pagePath === '/challenge/library') return 'library';
@@ -127,6 +135,11 @@ function render() {
   if (state.mode === 'result' && state.result && !state.resultImageUrl
     && !state.resultImageBusy && !state.resultImageError) {
     prepareResultImage();
+  }
+  if (state.mode === 'result' && state.result && (state.resultImageUrl || state.resultImageError)) {
+    requestAnimationFrame(startResultFeedbackSequence);
+  } else if (state.mode !== 'result') {
+    stopResultFeedbackSequence();
   }
   if (questionViewportKey && questionViewportKey !== lastQuestionViewportKey) {
     requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
@@ -500,9 +513,10 @@ function resultView() {
         <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
       </section>
       <h2>答え合わせ</h2>
-      <div class="challenge-results">
+      <div class="challenge-results" data-result-feedback-sequence>
         ${result.answers.map((answer, index) => `
-          <article class="challenge-result ${answer.match ? 'is-correct' : ''}">
+          <article class="challenge-result ${answer.match ? 'is-correct' : ''}"
+            data-result-answer="${index}" data-result-feedback="${answer.match ? 'correct' : 'incorrect'}">
             <header><b>Q${index + 1} ${escapeHtml(answer.card.title)}</b><span>${answer.match ? '当たり' : 'ハズレ'}</span></header>
             <p>あなた：<i style="background:${COLORS[answer.selected]}"></i>${escapeHtml(answer.card.choices[answer.selected])}</p>
             <p>正解：<i style="background:${COLORS[answer.correct]}"></i>${escapeHtml(answer.card.choices[answer.correct])}</p>
@@ -523,6 +537,71 @@ function resultView() {
       <a class="challenge-secondary" href="/">トップへ戻る</a>
     </section>`,
   );
+}
+
+function resultFeedbackSequenceKey() {
+  if (!state.result) return '';
+  const answerKey = state.result.answers
+    .map((answer) => `${answer.selected}:${answer.correct}`)
+    .join(',');
+  return `${state.result.code}:${state.result.participant?.name || ''}:${answerKey}`;
+}
+
+function stopResultFeedbackSequence() {
+  resultFeedbackObserver?.disconnect();
+  resultFeedbackObserver = null;
+  if (resultFeedbackTimer) window.clearTimeout(resultFeedbackTimer);
+  resultFeedbackTimer = 0;
+  resultFeedbackQueue = [];
+  resultFeedbackBusy = false;
+  resultFeedbackKey = '';
+}
+
+function revealNextResultFeedback() {
+  if (resultFeedbackBusy || !resultFeedbackQueue.length) return;
+  resultFeedbackBusy = true;
+  const card = resultFeedbackQueue.shift();
+  const isCorrect = card?.dataset.resultFeedback === 'correct';
+  card?.classList.add('is-feedback-revealed');
+  quizFeedbackSoundPlayer.play(isCorrect);
+  resultFeedbackTimer = window.setTimeout(() => {
+    resultFeedbackBusy = false;
+    resultFeedbackTimer = 0;
+    revealNextResultFeedback();
+  }, 560);
+}
+
+function queueResultFeedbackCard(card) {
+  if (!card || card.classList.contains('is-feedback-revealed')
+    || resultFeedbackQueue.includes(card)) return;
+  resultFeedbackObserver?.unobserve(card);
+  resultFeedbackQueue.push(card);
+  revealNextResultFeedback();
+}
+
+function startResultFeedbackSequence() {
+  const key = resultFeedbackSequenceKey();
+  if (!key || key === resultFeedbackKey) return;
+  const cards = Array.from(app.querySelectorAll('[data-result-answer]'));
+  if (!cards.length) return;
+
+  stopResultFeedbackSequence();
+  resultFeedbackKey = key;
+  cards.forEach((card) => card.classList.add('is-feedback-awaiting'));
+
+  if (typeof IntersectionObserver !== 'function') {
+    cards.forEach((card) => queueResultFeedbackCard(card));
+    return;
+  }
+
+  resultFeedbackObserver = new IntersectionObserver((entries) => {
+    entries
+      .filter((entry) => entry.isIntersecting)
+      .sort((left, right) => Number(left.target.dataset.resultAnswer)
+        - Number(right.target.dataset.resultAnswer))
+      .forEach((entry) => queueResultFeedbackCard(entry.target));
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.25 });
+  cards.forEach((card) => resultFeedbackObserver.observe(card));
 }
 
 function rankingView() {
@@ -790,6 +869,7 @@ function previousQuestion() {
 }
 
 async function answerQuestion(choice) {
+  if (state.mode === 'participant-answer') quizFeedbackSoundPlayer.prime();
   const answers = state.answers.slice();
   answers[state.questionIndex] = choice;
 
@@ -934,6 +1014,7 @@ async function shareToInstagram() {
 }
 
 async function joinRoom() {
+  quizFeedbackSoundPlayer.prime();
   const name = document.getElementById('participant-name')?.value.trim().slice(0, 12) || '';
   if (!name) return setState({ error: 'name-required' });
   const rankingConsent = document.getElementById('ranking-consent')?.checked === true;
