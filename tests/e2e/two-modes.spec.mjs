@@ -404,6 +404,18 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
       .toBe(feedbackToneCount);
     const aiReview = participant.getByTestId('challenge-ai-review');
     await expect(aiReview).toContainText('AI総評');
+    await expect(aiReview.locator(':scope > div > p')).toHaveCount(4);
+    expect(await aiReview.evaluate((review) => {
+      const body = review.querySelector(':scope > div');
+      const paragraphs = Array.from(review.querySelectorAll(':scope > div > p'));
+      return {
+        bodyBorder: getComputedStyle(body).borderTopWidth,
+        paragraphBorders: paragraphs.map((paragraph) => getComputedStyle(paragraph).borderTopWidth),
+      };
+    })).toEqual({
+      bodyBorder: '2px',
+      paragraphBorders: ['0px', '0px', '0px', '0px'],
+    });
     expect(await participant.evaluate(() => {
       const answers = document.querySelector('.challenge-results');
       const review = document.querySelector('[data-testid="challenge-ai-review"]');
