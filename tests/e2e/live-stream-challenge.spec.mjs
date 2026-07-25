@@ -64,6 +64,8 @@ test('top page exposes normal and live creator buttons with the same primary des
   ]);
   await expect(nameInput).toBeVisible();
   await expect(live).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'ゲームシリーズの紹介ページ' })
+    .getByRole('link', { name: /ライブ配信でみんなに挑戦してもらう/ })).toBeVisible();
   const [visualBox, rulesBox, nameBox, normalBox, liveBox] = await Promise.all([
     visual.boundingBox(),
     rules.boundingBox(),

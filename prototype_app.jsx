@@ -1882,7 +1882,7 @@ function TopScreen() {
         }}>まずはどんなゲームか知りたい</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <SeriesCard emoji="📣" title="みんなに挑戦してもらう" status="10問・最大50人" href="/challenge-guide" />
-          <SeriesCard emoji="🎙️" title="ライブ配信でみんなに挑戦" status="10問・最大1,000人" href="/live-challenge" />
+          <SeriesCard emoji="🎙️" title="ライブ配信でみんなに挑戦してもらう" status="10問・最大1,000人" href="/live-challenge" />
         </div>
       </nav>
 
