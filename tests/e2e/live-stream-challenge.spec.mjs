@@ -25,6 +25,11 @@ test('top page exposes normal and live creator buttons with the same primary des
   await expect(rules).toBeVisible();
   await expect(rules).toContainText('クイズを作る人の基本の流れ');
   await expect(rules).toContainText('あなたのクイズを作って');
+  await expect(rules).toHaveCSS(
+    'background-image',
+    'linear-gradient(160deg, rgb(255, 214, 229) 0%, rgb(255, 234, 241) 100%)',
+  );
+  await expect(rules).toHaveCSS('box-shadow', 'rgb(214, 58, 117) 5px 5px 0px 0px');
   await expect(page.getByTestId('top-common-rule-step')).toHaveCount(4);
   await expect(nameInput).toBeVisible();
   await expect(live).toBeVisible();

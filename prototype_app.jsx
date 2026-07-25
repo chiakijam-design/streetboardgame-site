@@ -2502,11 +2502,11 @@ function CommonRulesCard({ creatorName, nameError, onCreatorNameChange, onStart 
         padding: '18px 16px 16px',
         position: 'relative',
         zIndex: 1,
-        background: '#FFF1C7',
+        background: 'linear-gradient(160deg, #FFD6E5 0%, #FFEAF1 100%)',
         color: proto.black,
         border: `3px solid ${proto.black}`,
         borderRadius: 18,
-        boxShadow: '5px 5px 0 #000',
+        boxShadow: `5px 5px 0 ${proto.pinkDeep}`,
       }}
     >
       <div style={{ textAlign: 'center' }}>
