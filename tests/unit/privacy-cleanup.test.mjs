@@ -1,6 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { PRIVACY_RETENTION, runPrivacyCleanup } from '../../src/privacy/cleanup.js';
+
+test('プライバシーポリシーは現在の公開範囲・子ども・第三者提供・統計情報を明記する', async () => {
+  const document = await readFile(new URL('../../privacy.html', import.meta.url), 'utf8');
+  for (const requiredText of [
+    'ポリシーバージョン：1.5',
+    'ランキングへの参加は自分で選べます',
+    '掲載候補として送信しない問題は、この目的では公開しません',
+    '個人情報または統計情報を広告事業者、データ販売事業者、AI開発事業者へ販売しません',
+    '10歳から12歳までの利用者',
+    '国外で保存または処理される場合があります',
+  ]) assert.equal(document.includes(requiredText), true, requiredText);
+});
 
 test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2削除を同時に行う', async () => {
   assert.deepEqual(PRIVACY_RETENTION, {
