@@ -158,7 +158,7 @@ function creatorEditView() {
       </div>
       <p class="challenge-builder-help">色ボタンを押すと、この1問が完成します。</p>
       <div class="challenge-builder-actions">
-        <button class="challenge-secondary" data-action="skip-question">↻ この問題をスキップ</button>
+        <button class="challenge-secondary" data-action="skip-question">この問題をスキップ</button>
         <button class="challenge-secondary" data-action="edit-question">✎ 問題・選択肢を編集する</button>
         <button class="challenge-secondary" data-action="custom-question">＋ 自分で問題を作る</button>
       </div>

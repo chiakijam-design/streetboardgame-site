@@ -44,7 +44,7 @@ Minimum version required to store current data is: `+a+`.
       </div>
       <p class="challenge-builder-help">\u8272\u30DC\u30BF\u30F3\u3092\u62BC\u3059\u3068\u3001\u3053\u306E1\u554F\u304C\u5B8C\u6210\u3057\u307E\u3059\u3002</p>
       <div class="challenge-builder-actions">
-        <button class="challenge-secondary" data-action="skip-question">\u21BB \u3053\u306E\u554F\u984C\u3092\u30B9\u30AD\u30C3\u30D7</button>
+        <button class="challenge-secondary" data-action="skip-question">\u3053\u306E\u554F\u984C\u3092\u30B9\u30AD\u30C3\u30D7</button>
         <button class="challenge-secondary" data-action="edit-question">\u270E \u554F\u984C\u30FB\u9078\u629E\u80A2\u3092\u7DE8\u96C6\u3059\u308B</button>
         <button class="challenge-secondary" data-action="custom-question">\uFF0B \u81EA\u5206\u3067\u554F\u984C\u3092\u4F5C\u308B</button>
       </div>

@@ -173,7 +173,7 @@ function createView() {
         ${state.builderIndex === QUESTION_COUNT - 1 ? 'この問題を使ってLIVEを作る' : 'この問題を使う'} <span>▶</span>
       </button>
       <div class="button-row">
-        <button class="secondary" data-action="skip-live-question">↻ スキップ</button>
+        <button class="secondary" data-action="skip-live-question">この問題をスキップ</button>
         <button class="ghost" data-action="edit-live-question">✎ 編集する</button>
       </div>
       <button class="ghost" data-action="custom-live-question">＋ 自分で問題を作る</button>
@@ -184,8 +184,8 @@ function createView() {
       <span><b>このクイズを友達や他の人も使えるようにする</b><br><small>初期状態はONです。ONのままなら、自作・編集した問題を掲載候補として運営へ送ります。外してもLIVEは作れます。</small></span>
     </label>
     <div class="live-builder-footer">
-      ${state.builderIndex > 0 ? '<button class="ghost" data-action="previous-live-question">← 前の問題へ戻る</button>' : ''}
-      <button class="ghost" data-action="back-landing">戻る</button>
+      <button class="ghost" data-action="previous-live-question" ${state.builderIndex === 0 ? 'disabled aria-disabled="true"' : ''}>前の問題に戻る</button>
+      <button class="ghost" data-action="back-landing">最初に戻る</button>
     </div>
   </section>`;
 }
@@ -412,7 +412,14 @@ function bindEvents() {
   document.querySelector('[data-action="open-create"]')?.addEventListener('click', () => setState({ view: 'create' }));
   document.querySelectorAll('[data-action="back-landing"]').forEach((button) => button.addEventListener('click', () => {
     history.replaceState(null, '', '/live-challenge');
-    setState({ view: 'landing', code: '', error: '' });
+    setState({
+      view: 'landing',
+      code: '',
+      builderIndex: 0,
+      editingQuestion: false,
+      editingOriginalQuestion: null,
+      error: '',
+    });
   }));
   document.querySelector('[data-action="go-code"]')?.addEventListener('click', goToCode);
   document.getElementById('entry-code')?.addEventListener('keydown', (event) => {

@@ -91,6 +91,7 @@
     .challenge-card-choices{position:relative;z-index:1;display:grid}
     .challenge-card-choice{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:13px;min-height:68px;font-family:"HuiFontP29","ふい字",sans-serif;font-size:clamp(21px,5.8vw,27px);font-weight:400;line-height:1.15}
     .challenge-card-choice i{display:block;width:31px;height:31px;border:1px solid rgba(0,0,0,.15);border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,.2),inset 0 2px 2px rgba(255,255,255,.35)}
+    .challenge-builder-card{width:min(100%,500px);min-height:0;aspect-ratio:2/3;margin-inline:auto;padding:54px 20px 24px}.challenge-builder-card::before{left:19%}.challenge-builder-card .challenge-card-title{margin:5px 30px 12px;padding:14px 10px}.challenge-builder-card .challenge-card-choice{grid-template-columns:74px minmax(0,1fr);gap:0;min-height:clamp(54px,11vw,88px);padding-right:30px}.challenge-builder-card .challenge-card-choice i{justify-self:center}.challenge-builder-card .challenge-card-choice span{text-align:center}
     .challenge-answer-pad{position:fixed;left:50%;bottom:calc(3px + env(safe-area-inset-bottom));z-index:120;width:min(456px,calc(100vw - 24px));max-width:calc(100vw - 24px);transform:translateX(-50%);padding:8px 10px 7px;background:rgba(240,113,125,.96);border:3px solid var(--yellow);border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.22),inset 0 0 0 1px var(--yellow);backdrop-filter:blur(8px)}
     .challenge-answer-screen.is-participant .challenge-answer-pad{background:rgba(71,177,197,.95);border-color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.22),inset 0 0 0 1px #fff}
     .challenge-answer-pad-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;color:#fff}
@@ -106,8 +107,8 @@
     .challenge-answer-pad>p{margin:2px 0 0;color:#fff;font-size:8px;line-height:1.35;text-align:center;text-shadow:1px 1px 0 rgba(0,0,0,.35)}
     .challenge-answer-pad.challenge-builder-answer-pad{position:relative;left:auto;bottom:auto;z-index:1;width:100%;max-width:none;margin:16px 0 0;transform:none}
     .challenge-answer-screen>.challenge-secondary{margin-top:16px}
-    @media(min-width:640px){.challenge-answer-screen{padding:0}.challenge-answer-screen .challenge-card,.challenge-builder-card{padding-left:67px}.challenge-answer-pad{bottom:10px}}
-    @media(max-width:380px){.challenge-answer-screen .challenge-card,.challenge-builder-card{min-height:500px;padding-left:58px}.challenge-card-choice{min-height:63px}.challenge-color-choice i{width:34px;height:34px}}
+    @media(min-width:640px){.challenge-answer-screen{padding:0}.challenge-answer-screen .challenge-card{padding-left:67px}.challenge-answer-pad{bottom:10px}}
+    @media(max-width:380px){.challenge-answer-screen .challenge-card{min-height:500px;padding-left:58px}.challenge-builder-card{padding-inline:14px}.challenge-builder-card .challenge-card-title{margin-inline:22px}.challenge-builder-card .challenge-card-choice{grid-template-columns:66px minmax(0,1fr);padding-right:20px}.challenge-card-choice{min-height:63px}.challenge-color-choice i{width:34px;height:34px}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.challenge-loader{animation:none}}
   </style>
   <link rel="stylesheet" href="/accessibility.css?v=20260725-1" />
@@ -122,6 +123,6 @@
   <script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
   <script data-build-entry="prototype_friend_data" src="/dist/prototype_friend_data-3YOIQLSI.js"></script>
   <script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
-  <script data-build-entry="challenge_game" src="/dist/challenge_game-TQW6PH76.js"></script>
+  <script data-build-entry="challenge_game" src="/dist/challenge_game-KO3IWHE6.js"></script>
 </body>
 </html>

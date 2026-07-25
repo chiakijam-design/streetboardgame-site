@@ -91,6 +91,61 @@ test('top page exposes normal and live creator buttons with the same primary des
   expect(styles[1]).toEqual(styles[0]);
 });
 
+test('LIVE問題作成カードは縦長で整列し、前の問題と最初へ戻れる', async ({ page }) => {
+  await page.goto('/live-challenge');
+  await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
+
+  const paper = page.getByTestId('live-builder-paper-card');
+  const skip = page.getByRole('button', { name: 'この問題をスキップ', exact: true });
+  const previous = page.getByRole('button', { name: '前の問題に戻る', exact: true });
+  const restart = page.getByRole('button', { name: '最初に戻る', exact: true });
+  await expect(skip).toBeVisible();
+  await expect(previous).toBeDisabled();
+  await expect(restart).toBeVisible();
+
+  const geometry = await paper.evaluate((element) => {
+    const paperRect = element.getBoundingClientRect();
+    const titleRect = element.querySelector('.live-builder-title').getBoundingClientRect();
+    const dots = [...element.querySelectorAll('.live-builder-option i')].map((dot) => {
+      const rect = dot.getBoundingClientRect();
+      return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    });
+    const labels = [...element.querySelectorAll('.live-builder-option span')].map((label) => {
+      const rect = label.getBoundingClientRect();
+      return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    });
+    return {
+      width: paperRect.width,
+      height: paperRect.height,
+      titleLeft: titleRect.left - paperRect.left,
+      titleRight: paperRect.right - titleRect.right,
+      dotXs: dots.map((dot) => dot.x),
+      labelXs: labels.map((label) => label.x),
+      rowOffsets: dots.map((dot, index) => Math.abs(dot.y - labels[index].y)),
+    };
+  });
+  expect(geometry.width).toBeLessThanOrEqual(506);
+  expect(geometry.height / geometry.width).toBeGreaterThan(1.45);
+  expect(geometry.height / geometry.width).toBeLessThan(1.56);
+  expect(Math.abs(geometry.titleLeft - geometry.titleRight)).toBeLessThanOrEqual(3);
+  expect(Math.max(...geometry.dotXs) - Math.min(...geometry.dotXs)).toBeLessThanOrEqual(1);
+  expect(Math.max(...geometry.labelXs) - Math.min(...geometry.labelXs)).toBeLessThanOrEqual(1);
+  geometry.rowOffsets.forEach((offset) => expect(offset).toBeLessThanOrEqual(1));
+
+  await page.getByRole('button', { name: /この問題を使う/ }).click();
+  await expect(page.locator('.q-badge')).toHaveText('Q2/10');
+  await expect(previous).toBeEnabled();
+  await previous.click();
+  await expect(page.locator('.q-badge')).toHaveText('Q1/10');
+  await page.getByRole('button', { name: /この問題を使う/ }).click();
+  await expect(page.locator('.q-badge')).toHaveText('Q2/10');
+  await restart.click();
+  const openBuilder = page.getByRole('button', { name: /LIVEクイズを作る/ });
+  await expect(openBuilder).toBeVisible();
+  await openBuilder.click();
+  await expect(page.locator('.q-badge')).toHaveText('Q1/10');
+});
+
 test('streamer and viewer answer ten questions and viewer receives a result card', async ({ page, context }) => {
   let questionSubmissionRequests = 0;
   await page.route('**/api/questions/submissions', async (route) => {
@@ -111,7 +166,7 @@ test('streamer and viewer answer ten questions and viewer receives a result card
   await expect(page.getByLabel('このクイズを友達や他の人も使えるようにする')).toBeChecked();
   await page.getByLabel('配信者名（24文字まで）').fill('わたちゃん');
   const beforeSkip = await page.getByTestId('live-question-builder').getByRole('heading', { level: 3 }).textContent();
-  await page.getByRole('button', { name: /スキップ/ }).click();
+  await page.getByRole('button', { name: 'この問題をスキップ', exact: true }).click();
   await expect(page.getByTestId('live-question-builder').getByRole('heading', { level: 3 })).not.toHaveText(beforeSkip || '');
   await page.getByRole('button', { name: /編集する/ }).click();
   await page.locator('[data-question="0"]').fill('配信で一番盛り上がるのは？');

@@ -372,15 +372,43 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
   await expect(builderCard.locator('.challenge-card-choice')).toHaveCount(5);
   await expect(builderButtons).toHaveCount(5);
   await expect(page.locator('.challenge-progress span')).toHaveCount(10);
-  const [cardBox, padBox, buttonBoxes] = await Promise.all([
+  const [cardBox, padBox, buttonBoxes, cardGeometry] = await Promise.all([
     builderCard.boundingBox(),
     builderPad.boundingBox(),
     builderButtons.evaluateAll((buttons) => buttons.map((button) => {
       const rect = button.getBoundingClientRect();
       return { width: rect.width, height: rect.height };
     })),
+    builderCard.evaluate((element) => {
+      const paperRect = element.getBoundingClientRect();
+      const titleRect = element.querySelector('.challenge-card-title').getBoundingClientRect();
+      const dots = [...element.querySelectorAll('.challenge-card-choice i')].map((dot) => {
+        const rect = dot.getBoundingClientRect();
+        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+      });
+      const labels = [...element.querySelectorAll('.challenge-card-choice span')].map((label) => {
+        const rect = label.getBoundingClientRect();
+        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+      });
+      return {
+        width: paperRect.width,
+        height: paperRect.height,
+        titleLeft: titleRect.left - paperRect.left,
+        titleRight: paperRect.right - titleRect.right,
+        dotXs: dots.map((dot) => dot.x),
+        labelXs: labels.map((label) => label.x),
+        rowOffsets: dots.map((dot, index) => Math.abs(dot.y - labels[index].y)),
+      };
+    }),
   ]);
   expect(cardBox?.y + cardBox?.height).toBeLessThanOrEqual(padBox?.y);
+  expect(cardGeometry.width).toBeLessThanOrEqual(506);
+  expect(cardGeometry.height / cardGeometry.width).toBeGreaterThan(1.45);
+  expect(cardGeometry.height / cardGeometry.width).toBeLessThan(1.56);
+  expect(Math.abs(cardGeometry.titleLeft - cardGeometry.titleRight)).toBeLessThanOrEqual(3);
+  expect(Math.max(...cardGeometry.dotXs) - Math.min(...cardGeometry.dotXs)).toBeLessThanOrEqual(1);
+  expect(Math.max(...cardGeometry.labelXs) - Math.min(...cardGeometry.labelXs)).toBeLessThanOrEqual(1);
+  cardGeometry.rowOffsets.forEach((offset) => expect(offset).toBeLessThanOrEqual(1));
   buttonBoxes.forEach(({ width, height }) => {
     expect(width).toBeGreaterThanOrEqual(44);
     expect(height).toBeGreaterThanOrEqual(44);
