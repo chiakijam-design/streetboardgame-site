@@ -20,6 +20,7 @@ body {
     radial-gradient(circle at 95% 18%, rgba(91, 212, 232, .34), transparent 24rem),
     #fff1f6;
   font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  font-size: 14px;
   line-height: 1.85;
 }
 
@@ -60,14 +61,14 @@ a:focus-visible {
 .home-link {
   display: inline-flex;
   align-items: center;
-  min-height: 42px;
+  min-height: 44px;
   padding: 7px 14px;
   border: 2px solid var(--ink);
   border-radius: 999px;
   background: #fff;
   color: var(--ink);
   box-shadow: 2px 2px 0 var(--ink);
-  font-size: .84rem;
+  font-size: 1rem;
   font-weight: 900;
   text-decoration: none;
 }
@@ -92,7 +93,7 @@ a:focus-visible {
   border: 2px solid var(--ink);
   border-radius: 999px;
   background: var(--yellow);
-  font-size: .75rem;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: .08em;
 }
@@ -105,7 +106,7 @@ h1 {
 
 .lead { margin: 14px 0 0; color: var(--muted); font-weight: 700; }
 
-.meta { margin: 12px 0 0; color: var(--muted); font-size: .82rem; }
+.meta { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
 
 .legal-nav {
   margin-top: 20px;
@@ -127,13 +128,13 @@ h1 {
 .legal-nav a {
   display: inline-flex;
   align-items: center;
-  min-height: 38px;
+  min-height: 44px;
   padding: 5px 10px;
   border: 2px solid var(--ink);
   border-radius: 10px;
   background: #fff8d8;
   color: var(--ink);
-  font-size: .78rem;
+  font-size: 14px;
   font-weight: 800;
   text-decoration: none;
 }
@@ -141,6 +142,37 @@ h1 {
 .legal-nav a[aria-current="page"] { background: var(--cyan); }
 
 .legal-card { margin-top: 20px; padding: 22px 20px; }
+
+.kids-summary {
+  margin-top: 20px;
+  padding: 20px;
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  background: #e8fafd;
+  box-shadow: 5px 5px 0 var(--cyan);
+}
+
+.kids-summary h2 {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+.kids-summary ul {
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.kids-summary li + li { margin-top: 6px; }
+
+.kids-summary-note {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 2px dashed var(--ink);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
 
 .legal-card h2 {
   margin: 28px 0 10px;
@@ -175,7 +207,7 @@ h1 {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: .92rem;
+  font-size: 14px;
 }
 
 .data-table th,
@@ -200,7 +232,7 @@ h1 {
 
 .site-footer a { color: var(--yellow); }
 
-.site-footer .disclaimer { font-size: .76rem; line-height: 1.65; opacity: .88; }
+.site-footer .disclaimer { font-size: 12px; line-height: 1.65; opacity: .88; }
 
 @media (max-width: 620px) {
   .header-inner,
@@ -208,10 +240,11 @@ h1 {
 
   .header-inner { min-height: 64px; }
   .brand { font-size: .9rem; }
-  .home-link { padding-inline: 11px; font-size: .76rem; }
+  .home-link { padding-inline: 11px; font-size: 1rem; }
   .page-shell { padding-top: 16px; }
   .hero,
-  .legal-card { padding: 18px 15px; }
+  .legal-card,
+  .kids-summary { padding: 18px 15px; }
   .legal-nav { padding: 13px; }
   .legal-nav ul { display: grid; grid-template-columns: 1fr 1fr; }
   .legal-nav a { width: 100%; line-height: 1.35; }
@@ -223,4 +256,3 @@ h1 {
   .data-table tr + tr { margin-top: 10px; }
   .data-table td { border-top: 0; }
 }
-
