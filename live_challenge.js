@@ -15,6 +15,7 @@ import {
   submitQuestionCandidates,
 } from './src/questions/catalog.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
+import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 
 const QUESTION_COUNT = 10;
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
@@ -176,15 +177,10 @@ function createView() {
     ${paidSalesSettingsView()}
     ${progressView(state.builderIndex)}
     <article class="live-builder-card" data-testid="live-question-builder">
-      <div class="live-builder-paper" data-testid="live-builder-paper-card">
-        <span class="q-badge">Q${state.builderIndex + 1}/10</span>
-        <div class="live-builder-title"><h3>${escapeHtml(question.text)}</h3></div>
-        <div class="live-builder-options">
-          ${question.options.map((option, index) => `<div class="live-builder-option">
-            <i style="background:${COLORS[index]}" aria-hidden="true"></i>
-            <span>${escapeHtml(option)}</span>
-          </div>`).join('')}
-        </div>
+      <div class="live-builder-paper notebook-question-card" data-testid="live-builder-paper-card">
+        <span class="q-badge notebook-card-counter">Q${state.builderIndex + 1}/10</span>
+        <h3 class="notebook-card-accessible-title">${escapeHtml(question.text)}</h3>
+        ${renderNotebookQuestionCard(question)}
       </div>
       <div class="live-builder-color-pad" data-testid="live-builder-color-pad">
         <div class="live-builder-color-heading">
@@ -1176,6 +1172,7 @@ function toDraftQuestion(card) {
     sourceId: card.id,
     text: card.title,
     options: card.choices.slice(0, 5),
+    image: card.image || '',
     managedQuestionId: card.managedQuestionId || null,
     reportable: card.reportable === true,
   };

@@ -8,6 +8,7 @@ import {
 } from './src/questions/catalog.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { copyText, openLineShare, openXShare } from './src/platform/share.js';
+import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -125,17 +126,10 @@ function creatorEditView() {
       <div class="challenge-progress" aria-label="${state.questionIndex + 1}問目、全10問">
         ${Array.from({ length: QUESTION_COUNT }, (_, index) => `<span class="${index <= state.questionIndex ? 'is-active' : ''}"></span>`).join('')}
       </div>
-      <article class="challenge-card challenge-builder-card" data-testid="challenge-builder-paper-card">
-        <div class="challenge-q-number">Q${state.questionIndex + 1}/10</div>
-        <div class="challenge-card-title"><h2>${escapeHtml(card.title)}</h2></div>
-        <div class="challenge-card-choices">
-          ${card.choices.map((choice, index) => `
-            <div class="challenge-card-choice">
-              <i style="background:${COLORS[index]}" aria-hidden="true"></i>
-              <span>${escapeHtml(choice)}</span>
-            </div>
-          `).join('')}
-        </div>
+      <article class="challenge-card challenge-builder-card notebook-question-card" data-testid="challenge-builder-paper-card">
+        <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/10</div>
+        <h2 class="notebook-card-accessible-title">${escapeHtml(card.title)}</h2>
+        ${renderNotebookQuestionCard(card)}
       </article>
       <div class="challenge-answer-pad challenge-builder-answer-pad" data-testid="challenge-builder-answer-pad">
         <div class="challenge-answer-pad-heading">

@@ -184,6 +184,8 @@ test('旧愛情判定の42問を共通のお題として挑戦クイズに使え
   const builderCard = page.locator('.challenge-builder-card');
   await expect(builderCard.getByRole('heading', { level: 2 })).toHaveText(loveCard.title);
   await expect(builderCard).toContainText(loveCard.firstChoice);
+  await expect(builderCard.locator('.notebook-question-card-picture img'))
+    .toHaveAttribute('src', '/assets/cards/1.png');
 });
 
 test('自作お題は初期同意で、チェック状態を自分で変更して運営へ送信できる', async ({ page }) => {
@@ -446,7 +448,7 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
   const builderCard = page.getByTestId('challenge-builder-paper-card');
   const builderPad = page.getByTestId('challenge-builder-answer-pad');
   const builderButtons = builderPad.locator('[data-action="builder-answer"]');
-  await expect(builderCard.locator('.challenge-card-choice')).toHaveCount(5);
+  await expect(builderCard.locator('.notebook-question-card-visual')).toHaveCount(1);
   await expect(builderButtons).toHaveCount(5);
   await expect(page.locator('.challenge-progress span')).toHaveCount(10);
   const [cardBox, padBox, buttonBoxes, cardGeometry] = await Promise.all([
@@ -458,34 +460,25 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
     })),
     builderCard.evaluate((element) => {
       const paperRect = element.getBoundingClientRect();
-      const titleRect = element.querySelector('.challenge-card-title').getBoundingClientRect();
-      const dots = [...element.querySelectorAll('.challenge-card-choice i')].map((dot) => {
-        const rect = dot.getBoundingClientRect();
-        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-      });
-      const labels = [...element.querySelectorAll('.challenge-card-choice span')].map((label) => {
-        const rect = label.getBoundingClientRect();
-        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-      });
+      const visualRect = element.querySelector('.notebook-question-card-visual').getBoundingClientRect();
       return {
         width: paperRect.width,
         height: paperRect.height,
-        titleLeft: titleRect.left - paperRect.left,
-        titleRight: paperRect.right - titleRect.right,
-        dotXs: dots.map((dot) => dot.x),
-        labelXs: labels.map((label) => label.x),
-        rowOffsets: dots.map((dot, index) => Math.abs(dot.y - labels[index].y)),
+        visualWidth: visualRect.width,
+        visualHeight: visualRect.height,
+        visualLeft: visualRect.left - paperRect.left,
+        visualTop: visualRect.top - paperRect.top,
       };
     }),
   ]);
   expect(cardBox?.y + cardBox?.height).toBeLessThanOrEqual(padBox?.y);
   expect(cardGeometry.width).toBeLessThanOrEqual(506);
-  expect(cardGeometry.height / cardGeometry.width).toBeGreaterThan(1.45);
-  expect(cardGeometry.height / cardGeometry.width).toBeLessThan(1.56);
-  expect(Math.abs(cardGeometry.titleLeft - cardGeometry.titleRight)).toBeLessThanOrEqual(3);
-  expect(Math.max(...cardGeometry.dotXs) - Math.min(...cardGeometry.dotXs)).toBeLessThanOrEqual(1);
-  expect(Math.max(...cardGeometry.labelXs) - Math.min(...cardGeometry.labelXs)).toBeLessThanOrEqual(1);
-  cardGeometry.rowOffsets.forEach((offset) => expect(offset).toBeLessThanOrEqual(1));
+  expect(cardGeometry.height / cardGeometry.width).toBeGreaterThan(1.47);
+  expect(cardGeometry.height / cardGeometry.width).toBeLessThan(1.50);
+  expect(cardGeometry.visualWidth).toBeGreaterThan(cardGeometry.width - 8);
+  expect(cardGeometry.visualHeight).toBeGreaterThan(cardGeometry.height - 8);
+  expect(cardGeometry.visualLeft).toBeGreaterThanOrEqual(0);
+  expect(cardGeometry.visualTop).toBeGreaterThanOrEqual(0);
   buttonBoxes.forEach(({ width, height }) => {
     expect(width).toBeGreaterThanOrEqual(44);
     expect(height).toBeGreaterThanOrEqual(44);

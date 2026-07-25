@@ -8,7 +8,7 @@ async function buildLiveQuestions(page, startIndex = 0) {
   for (let index = startIndex; index < 10; index += 1) {
     await expect(page.getByTestId('live-question-builder')).toBeVisible();
     await expect(page.locator('.q-badge')).toHaveText(`Q${index + 1}/10`);
-    await expect(page.locator('.live-builder-option')).toHaveCount(5);
+    await expect(page.locator('.notebook-question-card-visual')).toHaveCount(1);
     if (index === 0) {
       const paperCard = page.getByTestId('live-builder-paper-card');
       const colorPad = page.getByTestId('live-builder-color-pad');
@@ -120,32 +120,23 @@ test('LIVE問題作成カードは縦長で整列し、前の問題と最初へ�
 
   const geometry = await paper.evaluate((element) => {
     const paperRect = element.getBoundingClientRect();
-    const titleRect = element.querySelector('.live-builder-title').getBoundingClientRect();
-    const dots = [...element.querySelectorAll('.live-builder-option i')].map((dot) => {
-      const rect = dot.getBoundingClientRect();
-      return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-    });
-    const labels = [...element.querySelectorAll('.live-builder-option span')].map((label) => {
-      const rect = label.getBoundingClientRect();
-      return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-    });
+    const visualRect = element.querySelector('.notebook-question-card-visual').getBoundingClientRect();
     return {
       width: paperRect.width,
       height: paperRect.height,
-      titleLeft: titleRect.left - paperRect.left,
-      titleRight: paperRect.right - titleRect.right,
-      dotXs: dots.map((dot) => dot.x),
-      labelXs: labels.map((label) => label.x),
-      rowOffsets: dots.map((dot, index) => Math.abs(dot.y - labels[index].y)),
+      visualWidth: visualRect.width,
+      visualHeight: visualRect.height,
+      visualLeft: visualRect.left - paperRect.left,
+      visualTop: visualRect.top - paperRect.top,
     };
   });
   expect(geometry.width).toBeLessThanOrEqual(506);
-  expect(geometry.height / geometry.width).toBeGreaterThan(1.45);
-  expect(geometry.height / geometry.width).toBeLessThan(1.56);
-  expect(Math.abs(geometry.titleLeft - geometry.titleRight)).toBeLessThanOrEqual(3);
-  expect(Math.max(...geometry.dotXs) - Math.min(...geometry.dotXs)).toBeLessThanOrEqual(1);
-  expect(Math.max(...geometry.labelXs) - Math.min(...geometry.labelXs)).toBeLessThanOrEqual(1);
-  geometry.rowOffsets.forEach((offset) => expect(offset).toBeLessThanOrEqual(1));
+  expect(geometry.height / geometry.width).toBeGreaterThan(1.47);
+  expect(geometry.height / geometry.width).toBeLessThan(1.50);
+  expect(geometry.visualWidth).toBeGreaterThan(geometry.width - 8);
+  expect(geometry.visualHeight).toBeGreaterThan(geometry.height - 8);
+  expect(geometry.visualLeft).toBeGreaterThanOrEqual(0);
+  expect(geometry.visualTop).toBeGreaterThanOrEqual(0);
 
   await page.getByRole('button', { name: /この問題を使う/ }).click();
   await expect(page.locator('.q-badge')).toHaveText('Q2/10');

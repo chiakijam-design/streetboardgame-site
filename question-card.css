@@ -1,0 +1,54 @@
+.notebook-question-card {
+  position: relative;
+  display: block;
+  width: min(100%, clamp(218px, 34dvh, 300px)) !important;
+  min-height: 0 !important;
+  aspect-ratio: 756 / 1122 !important;
+  margin-inline: auto;
+  overflow: hidden;
+  padding: 0 !important;
+  border: 3px solid #fff !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  box-shadow: 0 14px 30px rgba(69, 16, 40, .34) !important;
+}
+
+.notebook-question-card::before,
+.notebook-question-card::after {
+  content: none !important;
+}
+
+.notebook-question-card-picture,
+.notebook-question-card-visual {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.notebook-question-card-visual {
+  object-fit: cover;
+}
+
+.notebook-question-card-copy {
+  font-family: "HuiFontP29", "ふい字", "Yomogi", "Klee One", sans-serif;
+  font-weight: 400;
+}
+
+.notebook-card-accessible-title,
+.notebook-card-counter,
+.notebook-card-accessible-choices {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 380px) {
+  .notebook-question-card {
+    width: 100% !important;
+  }
+}
