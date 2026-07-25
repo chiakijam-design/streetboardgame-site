@@ -11,7 +11,7 @@ const ACCESS_TOKEN = 'b'.repeat(48);
 
 test('収益分配規約のバージョンとSHA-256を実際の規約全文へ固定する', async () => {
   const document = (await readFile(new URL('../../creator-terms.html', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-  assert.equal(CREATOR_TERMS.version, '1.3');
+  assert.equal(CREATOR_TERMS.version, '1.4');
   assert.equal(createHash('sha256').update(document).digest('hex'), CREATOR_TERMS.documentSha256);
 });
 
@@ -40,7 +40,7 @@ test('Web同意は規約・日時・IP・端末・Connect IDを改変せず保�
   assert.equal(response.status, 201);
   const result = await response.json();
   assert.equal(result.accepted, true);
-  assert.equal(result.agreement.termsVersion, '1.3');
+  assert.equal(result.agreement.termsVersion, '1.4');
   assert.equal(result.agreement.contractingName, 'テスト株式会社');
   assert.equal(result.agreement.contactEmailMasked, 'cr•••••@example.com');
   assert.equal(db.agreements.length, 1);

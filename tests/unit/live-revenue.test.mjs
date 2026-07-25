@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { LIVE_REVENUE_POLICY } from '../../src/live/config.js';
+import {
+  LIVE_RESULT_IMAGE_PRICES,
+  LIVE_REVENUE_POLICY,
+  LIVE_SUPPORT_AMOUNTS,
+} from '../../src/live/config.js';
 import { calculateLiveRevenueAllocation } from '../../src/live/revenue.js';
 
 test('LIVE収益配分はYouTuber 70%、決済手数料基準3.6%、運営基準26.4%で固定する', () => {
@@ -38,16 +42,21 @@ test('Stripeへの名目手数料は30%にし、実決済手数料を引いた�
 
 test('応援金の候補金額でもYouTuber 70%と名目手数料30%を維持する', () => {
   const cases = [
-    [200, 140, 60],
-    [500, 350, 150],
-    [1000, 700, 300],
-    [3000, 2100, 900],
+    [180, 126, 54],
+    [480, 336, 144],
+    [980, 686, 294],
+    [2980, 2086, 894],
   ];
   for (const [grossAmount, creatorAmount, applicationFeeAmount] of cases) {
     const allocation = calculateLiveRevenueAllocation(grossAmount);
     assert.equal(allocation.creatorAmount, creatorAmount);
     assert.equal(allocation.applicationFeeAmount, applicationFeeAmount);
   }
+});
+
+test('結果画像と応援機能は指定された税込価格だけを候補にする', () => {
+  assert.deepEqual(LIVE_RESULT_IMAGE_PRICES, [480, 980, 2980]);
+  assert.deepEqual(LIVE_SUPPORT_AMOUNTS, [180, 480, 980, 2980]);
 });
 
 test('円未満の端数はYouTuber分を切り捨て、決済前は運営純額を推測しない', () => {

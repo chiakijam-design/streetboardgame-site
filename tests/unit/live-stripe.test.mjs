@@ -20,7 +20,7 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
   });
   const session = await createLiveCheckoutSession(env, {
     requestUrl: 'https://www.streetboardgame.com/api/live/games/123456/checkout',
-    orderId: 'ord_test01', productType: 'result_image', code: '123456', amount: 1000,
+    orderId: 'ord_test01', productType: 'result_image', code: '123456', amount: 980,
     productName: `テストチャンネル ${LIVE_RESULT_IMAGE_SERVICE.name}`,
     termsVersion: CHECKOUT_TERMS.version, termsDocumentSha256: CHECKOUT_TERMS.documentSha256,
     termsAcceptedAt: 1_800_000_000_000,
@@ -30,7 +30,7 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
   assert.equal(captured.options.headers['idempotency-key'], 'checkout-ord_test01');
   assert.equal(captured.params.get('payment_method_types[0]'), 'card');
   assert.equal(captured.params.get('line_items[0][price_data][currency]'), 'jpy');
-  assert.equal(captured.params.get('line_items[0][price_data][unit_amount]'), '1000');
+  assert.equal(captured.params.get('line_items[0][price_data][unit_amount]'), '980');
   assert.equal(captured.params.get('line_items[0][price_data][tax_behavior]'), 'inclusive');
   assert.equal(captured.params.get('line_items[0][price_data][product_data][name]'), `テストチャンネル ${LIVE_RESULT_IMAGE_SERVICE.name}`);
   assert.equal(captured.params.get('metadata[live_order_id]'), 'ord_test01');
@@ -53,13 +53,13 @@ test('応援金Checkoutは選択金額と応援商品名をStripeへ送り、画
   });
   const session = await createLiveCheckoutSession(env, {
     requestUrl: 'https://www.streetboardgame.com/api/live/games/123456/checkout',
-    orderId: 'ord_support01', productType: 'support', code: '123456', amount: 500,
+    orderId: 'ord_support01', productType: 'support', code: '123456', amount: 180,
     productName: 'テストチャンネル LIVE応援',
     termsVersion: CHECKOUT_TERMS.version, termsDocumentSha256: CHECKOUT_TERMS.documentSha256,
     termsAcceptedAt: 1_800_000_000_000,
   }, 1_800_000_000_000);
   assert.equal(session.id, 'cs_test_support01');
-  assert.equal(captured.params.get('line_items[0][price_data][unit_amount]'), '500');
+  assert.equal(captured.params.get('line_items[0][price_data][unit_amount]'), '180');
   assert.equal(captured.params.get('line_items[0][price_data][product_data][name]'), 'テストチャンネル LIVE応援');
   assert.equal(captured.params.get('metadata[live_product_type]'), 'support');
   assert.equal(captured.params.get('metadata[live_terms_version]'), CHECKOUT_TERMS.version);
@@ -130,7 +130,7 @@ test('決済成功Webhookは1回だけ高画質画像と30日権限を発行す�
   const participant = { id: 'p1', token: 'a'.repeat(48), name: '視聴者A', joinedAt: Date.now() };
   const game = {
     version: 5, title: '決済テスト', subjectName: '本人', channelName: 'テストチャンネル',
-    channelId: 'UC1234567890_sample', channelVerificationId: 'b'.repeat(32), resultImagePrice: 500,
+    channelId: 'UC1234567890_sample', channelVerificationId: 'b'.repeat(32), resultImagePrice: 480,
     scheduledAt: Date.now(), phase: 'complete', currentQuestionIndex: 0,
     questions: [{ id: 'q1', type: 'guess-person', text: '問題', options: ['A','B','C','D','E'], lockedIndex: 0 }],
     results: [{ questionId: 'q1', type: 'guess-person', text: '問題', options: [{ text: 'A', count: 1 },{ text: 'B', count: 0 },{ text: 'C', count: 0 },{ text: 'D', count: 0 },{ text: 'E', count: 0 }], popularIndices: [0], subjectAnswerIndex: 0, isCorrect: true }],
@@ -140,7 +140,7 @@ test('決済成功Webhookは1回だけ高画質画像と30日権限を発行す�
   purchaseDb.order = {
     order_id: `ord_${'a'.repeat(32)}`, checkout_request_id: 'c'.repeat(32), product_type: 'result_image',
     code: '123456', participant_id: 'p1', participant_name: '視聴者A', viewer_name: '視聴者A',
-    amount: 500, currency: 'jpy', creator_amount: 350, platform_amount: 150,
+    amount: 480, currency: 'jpy', creator_amount: 336, platform_amount: 144,
     stripe_checkout_session_id: 'cs_test_webhook01', status: 'checkout_created', purchase_id: null,
   };
   const media = new Map();
@@ -157,7 +157,7 @@ test('決済成功Webhookは1回だけ高画質画像と30日権限を発行す�
     id: 'evt_checkout01', type: 'checkout.session.completed', livemode: false,
     data: { object: {
       id: 'cs_test_webhook01', client_reference_id: `ord_${'a'.repeat(32)}`, payment_status: 'paid',
-      payment_intent: 'pi_webhook01', amount_total: 500, currency: 'jpy',
+      payment_intent: 'pi_webhook01', amount_total: 480, currency: 'jpy',
       customer_details: { email: 'viewer@example.com' },
       metadata: { live_order_id: `ord_${'a'.repeat(32)}` },
     } },
@@ -220,7 +220,7 @@ test('応援金Webhookは画像サービスなしで注文を確定し、画像�
     order_id: `ord_${'b'.repeat(32)}`, checkout_request_id: 'd'.repeat(32), product_type: 'support',
     code: '123456', participant_id: 'p1', participant_name: '視聴者A', viewer_name: '視聴者A',
     channel_verification_id: 'verification01', stripe_account_id: 'acct_creator123',
-    amount: 500, currency: 'jpy', creator_amount: 350, platform_amount: 150,
+    amount: 480, currency: 'jpy', creator_amount: 336, platform_amount: 144,
     stripe_checkout_session_id: 'cs_test_support_webhook01', status: 'checkout_created', purchase_id: null,
   };
   const env = {
@@ -231,7 +231,7 @@ test('応援金Webhookは画像サービスなしで注文を確定し、画像�
     id: 'evt_support_checkout01', type: 'checkout.session.completed', livemode: false,
     data: { object: {
       id: 'cs_test_support_webhook01', client_reference_id: `ord_${'b'.repeat(32)}`, payment_status: 'paid',
-      payment_intent: 'pi_support_webhook01', amount_total: 500, currency: 'jpy',
+      payment_intent: 'pi_support_webhook01', amount_total: 480, currency: 'jpy',
       metadata: { live_order_id: `ord_${'b'.repeat(32)}` },
     } },
   };
