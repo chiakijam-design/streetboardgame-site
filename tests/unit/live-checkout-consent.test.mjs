@@ -28,9 +28,12 @@ test('利用規約は現在の対象年齢・ランキング・投稿審査・�
   ]) assert.equal(document.includes(requiredText), true, requiredText);
 });
 
-test('特商法表記は個人の電話番号を公開せず、請求時の開示方法を案内する', async () => {
+test('特商法表記は個人の住所・電話番号を公開せず、請求時の開示方法を案内する', async () => {
   const document = await readFileAsync(new URL('../../legal.html', import.meta.url), 'utf8');
   const incidentDocument = await readFileAsync(new URL('../../docs/PRIVACY_INCIDENT_RESPONSE.md', import.meta.url), 'utf8');
+  assert.equal(/〒\d{3}-\d{4}/.test(document), false);
+  assert.equal(document.includes('所在地の開示'), true);
+  assert.equal(document.includes('所在地は、消費者から請求があった場合'), true);
   assert.equal(/0\d{1,4}-\d{1,4}-\d{3,4}/.test(document), false);
   assert.equal(document.includes('href="tel:'), false);
   assert.equal(/0\d{1,4}-\d{1,4}-\d{3,4}/.test(incidentDocument), false);
