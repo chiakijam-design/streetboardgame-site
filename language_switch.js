@@ -4,7 +4,11 @@
   const english = /^\/en(?:\/|$)/.test(path);
   const stripEnglish = (value) => value.replace(/^\/en(?=\/|$)/, '') || '/';
   const japanesePath = stripEnglish(path);
-  const englishPath = `/en${japanesePath === '/' ? '/' : japanesePath}`;
+  const englishPaths = new Set(['/', '/challenge', '/live-challenge', '/terms', '/privacy']);
+  const hasEnglishPage = englishPaths.has(japanesePath) || japanesePath.startsWith('/challenge/');
+  const englishPath = hasEnglishPage
+    ? `/en${japanesePath === '/' ? '/' : japanesePath}`
+    : '/en/';
 
   function save(language) {
     try { window.localStorage.setItem(KEY, language); } catch (_) {}
@@ -12,6 +16,7 @@
 
   function destination(language) {
     const nextPath = language === 'en' ? englishPath : japanesePath;
+    if (language === 'en' && !hasEnglishPage) return nextPath;
     return `${nextPath}${window.location.search}${window.location.hash}`;
   }
 

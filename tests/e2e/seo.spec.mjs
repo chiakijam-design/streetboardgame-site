@@ -120,6 +120,25 @@ test('英語トップのLCP画像は初期HTMLから適切な候補を高優先�
   await expect(hero).toHaveAttribute('height', '480');
 });
 
+test('トップの自己ホストスクリプトをCSPで拒否せず、不要なscript preloadを送らない', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'CSPは画面幅に依存しないためPCで1回検証');
+  const errors = [];
+  const failures = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /Content Security Policy|violates the following/i.test(message.text())) {
+      errors.push(message.text());
+    }
+  });
+  page.on('requestfailed', (request) => {
+    if (/\/assets\/vendor\/react(?:-dom)?\.production\.min-/.test(request.url())) failures.push(request.url());
+  });
+  await page.goto('/');
+  await expect(page.locator('#root h1')).toBeVisible();
+  await expect(page.locator('link[data-build-preload="react"], link[data-build-preload="react_dom"]')).toHaveCount(0);
+  expect(errors).toEqual([]);
+  expect(failures).toEqual([]);
+});
+
 test('挑戦モードと説明ページは専用OGP画像を配信する', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'OGPメタと画像配信は画面幅に依存しないためPCで1回検証');
   const imageUrl = `${ORIGIN}/assets/ogp-challenge.png?v=20260725-ogp-2`;

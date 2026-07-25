@@ -73,6 +73,33 @@ test('英語トップから通常版とLIVE版の英語標準お題へ進める'
   await expect(page.getByRole('button', { name: 'Skip this question' })).toBeVisible();
 });
 
+test('英語トップは小さなスマホ幅でも横にはみ出さない', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop-chrome', 'スマホ幅専用のレイアウト検証');
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/en/');
+    const geometry = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(geometry.scrollWidth, `${width}px`).toBeLessThanOrEqual(geometry.clientWidth + 1);
+  }
+});
+
+test('英語版がない日本語ページは存在しないURLを案内しない', async ({ page, request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'リンク先は画面幅に依存しないためPCで1回検証');
+  for (const path of ['/challenge-guide', '/about', '/product']) {
+    await page.goto(path);
+    const englishLink = page.locator('[data-site-language="en"]');
+    await expect(englishLink, path).toHaveAttribute('href', '/en/');
+    await expect(page.locator('link[rel="alternate"][hreflang="en"]'), path).toHaveCount(0);
+  }
+  for (const removedPath of ['/en/challenge-guide', '/en/about', '/en/product']) {
+    const response = await request.get(removedPath);
+    expect(response.status(), removedPath).toBe(404);
+  }
+});
+
 test('英語参加者は10問へ回答し、英語結果カード・称号・総評を確認できる', async ({ request, page }) => {
   const cards = Array.from({ length: 10 }, (_, index) => ({
     id: `ENTEST${index + 1}`,

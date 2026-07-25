@@ -657,6 +657,10 @@ function applySeoMeta(html, page) {
     .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${page.description}" />`)
     .replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${page.url}" />`)
     .replace(/<link rel="alternate" hreflang="ja" href="[^"]*" \/>/, `<link rel="alternate" hreflang="ja" href="${page.url}" />`)
+    .replace(
+      /\s*<link rel="alternate" hreflang="en" href="[^"]*" \/>/,
+      page.enUrl ? `\n<link rel="alternate" hreflang="en" href="${page.enUrl}" />` : '',
+    )
     .replace(/<link rel="alternate" hreflang="x-default" href="[^"]*" \/>/, `<link rel="alternate" hreflang="x-default" href="${page.url}" />`)
     .replace(/<link rel="preload" as="image"[^>]*\/>/, preloadTag)
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${page.ogTitle}" />`)
