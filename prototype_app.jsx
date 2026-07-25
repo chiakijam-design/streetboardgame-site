@@ -2522,14 +2522,14 @@ function CommonRulesCard({ creatorName, nameError, onCreatorNameChange, onStart 
           fontSize: 10,
           fontWeight: 900,
           letterSpacing: '0.08em',
-        }}>クイズを作る人の基本の流れ</span>
+        }}>あなたの理解度診断の作り方</span>
         <h2 id="top-common-rules-title" style={{
           margin: '12px 0 7px',
           fontFamily: proto.body,
           fontSize: 18,
           lineHeight: 1.5,
         }}>
-          あなたのクイズを作って、<br/>みんなに挑戦してもらおう！
+          あなたの理解度診断を作って、<br/>みんなに挑戦してもらおう
         </h2>
         <p style={{
           margin: 0,
