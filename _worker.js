@@ -337,7 +337,7 @@ async function handleRequest(request, env) {
     const pageMap = {
       '/challenge-guide': {
         title: 'みんなに挑戦してもらう｜10問クイズの遊び方・作り方',
-        description: '自分が先に答えた10問を友達や家族に予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせとランキングを楽しめます。',
+        description: '自分が先に答えた10問を友達や家族に予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせと任意の理解度ボードを楽しめます。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
         ogTitle: 'みんなに挑戦してもらう｜わたちゃん',
         ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge-v3.png?v=20260726-ogp-2',
@@ -358,7 +358,7 @@ async function handleRequest(request, env) {
           },
           {
             question: '無料で遊べますか？',
-            answer: '無料で遊べます。クイズ作成、専用URLの共有、答え合わせ、ランキングまで利用できます。',
+            answer: '無料で遊べます。クイズ作成、専用URLの共有、答え合わせ、答え合わせレポート、任意の理解度ボードまで利用できます。',
           },
         ],
       },

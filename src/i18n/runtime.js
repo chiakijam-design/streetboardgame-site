@@ -133,6 +133,7 @@ const UI_TEXT = new Map(Object.entries({
   'Instagramで送る': 'Share on Instagram',
   '管理画面': 'Manage quiz',
   '主催者ダッシュボード': 'Host dashboard',
+  '答え合わせを確認。希望者だけ理解度ボードへ掲載': 'Review the answers; only volunteers appear on the Understanding Board',
   '参加URLを友達に送りましょう！': 'Send the join link to your friends!',
   '挑戦用URL': 'Join link',
   '挑戦用URLのQRコード': 'Join-link QR code',
@@ -142,16 +143,48 @@ const UI_TEXT = new Map(Object.entries({
   'Xでシェア': 'Share on X',
   'Instagramはリンクをコピーして、ストーリーズなどに貼り付けてください。': 'Instagram does not support direct link sharing here. Copy the link and add it to your Story or message.',
   'QRコードで送る': 'Share with a QR code',
+  '理解度ボードを見る': 'View the Understanding Board',
+  '理解度ボードのURLをコピー': 'Copy Understanding Board link',
   'フレンドランキングを見る': 'View leaderboard',
   'ランキングURLをコピー': 'Copy leaderboard link',
   '回答状況を更新': 'Refresh responses',
   '主催者用URLは回答内容を見られる秘密URLです。この端末へ保存され、30日後に無効になります。第三者へ送らないでください。': 'Your host link is private and can view player responses. It is saved on this device, expires after 30 days, and must not be shared.',
   '参加者の回答': 'Player responses',
+  '理解度ボード掲載': 'On Understanding Board',
+  '理解度ボード非掲載': 'Not on Understanding Board',
   'まだ参加者はいません。挑戦用URLを送って待ちましょう。': 'No one has joined yet. Send the join link and wait for responses.',
   '10問に答えて、出題者のことをどれだけ分かっているか確かめよう。': 'Answer 10 questions and see how well you know the quiz creator.',
   '表示名（12文字まで）': 'Display name (up to 12 characters)',
   '例：ゆう（本名は避けてください）': 'e.g. Alex (do not use your full name)',
   '10問の答え当てに挑戦する': 'Start the 10-question challenge',
+  '結果は回答後すぐには公開されません。答え合わせを見てから、理解度ボードに載せるか、もう一度答えを予想するかを選べます。': 'Your result is private at first. After reviewing the answers, choose whether to add it to the Understanding Board or guess the same answers again.',
+  'まずは、どこが当たったか答え合わせを見てみよう。': 'Start by seeing which answers matched.',
+  '答え合わせのあとで、理解度ボードに載せた結果も確認できます。': 'After the answer review, you can also check the result you added to the Understanding Board.',
+  'どこが当たった？': 'Which answers matched?',
+  '答え合わせレポート': 'Answer Review Report',
+  '10問の一致・すれ違いから作成': 'Created from 10 matches and surprises',
+  'シェアするカードを選ぶ': 'Choose a card to share',
+  '結果カードの種類': 'Result card type',
+  '点数を見せたくないときは、点数なしのカードを選べます。': 'Choose a score-free card if you would rather keep your score private.',
+  '点数入り': 'With score',
+  '称号だけ': 'Title only',
+  'おすすめ・点数は非表示': 'Recommended · score hidden',
+  '4つの発見を表示': 'Show four discoveries',
+  '10問から見えたこと': 'What the 10 questions revealed',
+  '4つの答え合わせポイント': 'Four answer-review points',
+  '次の会話につなげよう': 'Start your next conversation',
+  '理解度ボードに載せる？': 'Add it to the Understanding Board?',
+  '載せなくても大丈夫です。もう一度予想して、載せたい結果だけを公開できます。': 'You do not have to add it. Guess again and publish only the result you want.',
+  'もう一度、答えを予想する': 'Guess the answers again',
+  '理解度ボードに載せる（任意）': 'Add to Understanding Board (optional)',
+  'もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。': 'Guessing again replaces this attempt. If it is already listed, it will be removed from the Understanding Board until you choose to add a new result.',
+  '「どこが当たった？」をシェア': 'Share “Which answers matched?”',
+  '理解度ボード': 'Understanding Board',
+  '載せるかは自分で選べます。順位より、答え合わせのきっかけに。': 'Adding a result is your choice. Use the board to start an answer-review conversation, not just to compare ranks.',
+  '理解度ボードに載せた回答者はまだいません。': 'No one has added a result to the Understanding Board yet.',
+  '理解度ボードを更新': 'Refresh Understanding Board',
+  '掲載は任意です。同点は同じ順位として、表示名と得点だけを公開します。問題ごとの回答は主催者だけが確認できます。': 'Listing is optional. Ties share a rank, and only display names and scores are public. Individual answers are visible only to the host.',
+  '結果を理解度ボードへ載せられませんでした。': 'This result could not be added to the Understanding Board.',
   '点数は回答後すぐにはランキングへ登録されません。結果を見てから、登録するか、同じ10問へもう一度挑戦するかを選べます。': 'Your score is not added to the leaderboard automatically. After seeing your result, choose whether to publish it or try the same 10 questions again.',
   '回答内容は答え合わせと主催者の回答確認に使用されます。本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。': 'Your answers are used for scoring and can be reviewed by the host. Do not enter your full name, school, or other identifying information. Progress is saved on this device.',
   '今回の点数はまだフレンドランキングに登録されていません。': 'This score has not been added to the leaderboard.',
@@ -300,6 +333,8 @@ function translatePattern(text) {
   if (match) return `Question ${match[1]} of 10`;
   match = text.match(/^(\d+)\/10問 正解$/);
   if (match) return `${match[1]}/10 correct`;
+  match = text.match(/^(\d+)\/10問を表示$/);
+  if (match) return `Show ${match[1]}/10`;
   match = text.match(/^(\d+)問正解$/);
   if (match) return `${match[1]} correct`;
   match = text.match(/^(\d+)人$/);
@@ -328,12 +363,16 @@ function translatePattern(text) {
   if (match) return `${match[1]} did not join the leaderboard.`;
   match = text.match(/^(.+)さんは、ランキング参加者の中で (\d+)位です。$/);
   if (match) return `${match[1]} ranks #${match[2]} among leaderboard players.`;
+  match = text.match(/^この結果を理解度ボードに載せました。現在(\d+)位です。$/);
+  if (match) return `This result is on the Understanding Board at #${match[1]}.`;
   match = text.match(/^この点数をフレンドランキングに登録しました。現在(\d+)位です。$/);
   if (match) return `This score is now on the leaderboard at #${match[1]}.`;
   match = text.match(/^(.+)さんの結果画像$/);
   if (match) return `${match[1]}’s result image`;
   match = text.match(/^(.+)さんの(.+)さん理解度、(\d+)\/10問正解、称号は(.+)$/);
   if (match) return `${match[1]} scored ${match[3]}/10 on ${match[2]}’s quiz and earned ${match[4]}.`;
+  match = text.match(/^(.+)さんの(.+)さん理解度、(.+)、称号は(.+)$/);
+  if (match) return `${match[1]}’s ${match[2]} understanding result: ${match[3]}, title ${match[4]}.`;
   match = text.match(/^(.+)を正解に選ぶ$/);
   if (match) return `Choose ${match[1]} as your answer`;
   match = text.match(/^(.+)を予想する$/);

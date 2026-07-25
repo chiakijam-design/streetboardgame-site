@@ -317,7 +317,7 @@ test('公開候補チェックを外した自作お題は運営へ送信しな�
   await expect(page.getByTestId('question-submission-status')).toHaveCount(0);
 });
 
-test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わせまで完走する', async ({ browser, page }) => {
+test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カード・理解度ボードまで完走する', async ({ browser, page }) => {
   const challengeUrl = await createChallenge(page);
   await expect(page.getByTestId('participant-count')).toContainText('0人回答済み');
   await expect(page.locator('#challenge-qr')).toBeHidden();
@@ -382,7 +382,7 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
     await participant.goto(challengeUrl);
     await expect(participant.getByRole('heading', { name: 'ちあきさんからの挑戦' })).toBeVisible();
     await participant.getByLabel('表示名（12文字まで）').fill('ゆう');
-    await expect(participant.getByText('点数は回答後すぐにはランキングへ登録されません。')).toBeVisible();
+    await expect(participant.getByText('結果は回答後すぐには公開されません。')).toBeVisible();
     await participant.getByRole('button', { name: /10問の答え当てに挑戦する/ }).click();
     await participant.locator('[data-action="answer"]').first().click();
     await expect(participant.locator('.challenge-q-number')).toHaveText('Q2/10');
@@ -404,17 +404,23 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
     await participant.locator('[data-action="answer"]').first().click();
     await expect(participant.getByRole('heading', { name: '9/10問 正解' })).toBeVisible();
     await expect(participant.locator('.challenge-result')).toHaveCount(10);
-    await expect(participant.getByText('今回の点数はまだフレンドランキングに登録されていません。')).toBeVisible();
-    await participant.getByRole('button', { name: 'この点数をフレンドランキングに登録' }).click();
-    await expect(participant.getByText('ランキング参加者の中で 1位')).toBeVisible();
+    await expect(participant.getByRole('heading', { name: 'どこが当たった？' })).toBeVisible();
+    await expect(participant.getByText('まずは、どこが当たったか答え合わせを見てみよう。')).toBeVisible();
+    await expect(participant.getByRole('button', { name: /称号だけ/ })).toHaveAttribute('aria-pressed', 'true');
+    await participant.getByRole('button', { name: '理解度ボードに載せる（任意）' }).click();
+    await expect(participant.getByText('この結果を理解度ボードに載せました。現在1位です。')).toBeVisible();
     const resultImage = participant.getByTestId('challenge-result-image');
     await expect(resultImage).toBeVisible();
-    await expect(resultImage).toHaveAttribute('alt', /ゆうさんのちあきさん理解度、9\/10問正解、称号は/);
+    await expect(resultImage).toHaveAttribute('alt', /点数を隠した称号だけのカード/);
     await expect.poll(() => resultImage.evaluate((image) => ({
       width: image.naturalWidth,
       height: image.naturalHeight,
     }))).toEqual({ width: 1080, height: 1350 });
     await expect(participant.getByRole('button', { name: 'この結果画像を保存' })).toBeEnabled();
+    await participant.getByRole('button', { name: /点数入り/ }).click();
+    await expect(resultImage).toHaveAttribute('alt', /点数入り結果カード/);
+    await participant.getByRole('button', { name: /答え合わせレポート/ }).click();
+    await expect(resultImage).toHaveAttribute('alt', /答え合わせレポートだけのカード/);
     const feedbackToneCount = await participant.evaluate(
       () => window.__quizFeedbackFrequencies.length,
     );
@@ -426,7 +432,8 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
     expect(await participant.evaluate(() => window.__quizFeedbackFrequencies.length))
       .toBe(feedbackToneCount);
     const aiReview = participant.getByTestId('challenge-ai-review');
-    await expect(aiReview).toContainText('AI総評');
+    await expect(aiReview).toContainText('答え合わせレポート');
+    await expect(aiReview).toContainText('10問の一致・すれ違いから作成');
     await expect(aiReview.locator(':scope > div > p')).toHaveCount(4);
     expect(await aiReview.evaluate((review) => {
       const body = review.querySelector(':scope > div');
@@ -446,7 +453,7 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
         && (answers.compareDocumentPosition(review) & Node.DOCUMENT_POSITION_FOLLOWING));
     })).toBe(true);
     await expect(participant.getByRole('link', { name: '自分も作る' })).toHaveAttribute('href', '/challenge');
-    await participant.getByRole('link', { name: 'フレンドランキングを見る' }).click();
+    await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
     await expect(participant.getByTestId('friend-ranking')).toContainText('ゆう');
     await expect(participant.getByTestId('friend-ranking')).toContainText('9/10');
   } finally {
@@ -459,29 +466,29 @@ test('出題者10問→共有URL→挑戦者10問→順位と全問答え合わ�
   await expect(page.getByTestId('host-answer-management')).toContainText('9/10問');
 });
 
-test('低い点数を登録せず同じ10問へ再挑戦し、高い点数だけランキングへ登録できる', async ({ browser, page }) => {
+test('低い点数を載せず同じ10問を予想し直し、高い点数だけ理解度ボードへ載せられる', async ({ browser, page }) => {
   const challengeUrl = await createChallenge(page);
   const participantContext = await browser.newContext();
   const participant = await participantContext.newPage();
   try {
     await participant.goto(challengeUrl);
     await participant.getByLabel('表示名（12文字まで）').fill('再挑戦');
-    await expect(participant.getByRole('checkbox', { name: /フレンドランキングに参加する/ })).toHaveCount(0);
+    await expect(participant.getByRole('checkbox', { name: /理解度ボードに載せる/ })).toHaveCount(0);
     await participant.getByRole('button', { name: /10問の答え当てに挑戦する/ }).click();
     for (let index = 0; index < 10; index += 1) {
       await participant.locator('[data-action="answer"]').nth(1).click();
     }
     await expect(participant.getByRole('heading', { name: '0/10問 正解' })).toBeVisible();
-    await expect(participant.getByText('今回の点数はまだフレンドランキングに登録されていません。')).toBeVisible();
-    await participant.getByRole('button', { name: 'もう一度同じ10問にチャレンジ' }).click();
+    await expect(participant.getByText('まずは、どこが当たったか答え合わせを見てみよう。')).toBeVisible();
+    await participant.getByRole('button', { name: 'もう一度、答えを予想する' }).click();
     await expect(participant.locator('.challenge-q-number')).toHaveText('Q1/10');
     for (let index = 0; index < 10; index += 1) {
       await participant.locator('[data-action="answer"]').first().click();
     }
     await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toBeVisible();
-    await participant.getByRole('button', { name: 'この点数をフレンドランキングに登録' }).click();
-    await expect(participant.getByText('ランキング参加者の中で 1位')).toBeVisible();
-    await participant.getByRole('link', { name: 'フレンドランキングを見る' }).click();
+    await participant.getByRole('button', { name: '理解度ボードに載せる（任意）' }).click();
+    await expect(participant.getByText('この結果を理解度ボードに載せました。現在1位です。')).toBeVisible();
+    await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
     await expect(participant.getByTestId('friend-ranking')).toContainText('再挑戦');
     await expect(participant.getByTestId('friend-ranking')).toContainText('10/10');
   } finally {
@@ -490,7 +497,7 @@ test('低い点数を登録せず同じ10問へ再挑戦し、高い点数だけ
 
   await page.getByRole('button', { name: '回答状況を更新' }).click();
   await expect(page.getByTestId('host-answer-management')).toContainText('再挑戦');
-  await expect(page.getByTestId('host-answer-management')).toContainText('ランキング参加');
+  await expect(page.getByTestId('host-answer-management')).toContainText('理解度ボード掲載');
   await expect(page.getByTestId('host-answer-management')).toContainText('10/10問');
 });
 

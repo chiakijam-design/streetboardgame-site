@@ -20,7 +20,7 @@ test('10問版は0点から10点まで重複しない11段階の称号を返す'
   assert.equal(getChallengeResultTier(99), CHALLENGE_RESULT_TIERS[10]);
 });
 
-test('回答者名・出題者名・正誤傾向から同じAI総評を安定して生成する', () => {
+test('回答者名・出題者名・正誤傾向から4文の答え合わせレポートを安定して生成する', () => {
   const answers = Array.from({ length: 10 }, (_, index) => ({
     match: index < 7,
     card: {

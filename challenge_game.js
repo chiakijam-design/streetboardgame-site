@@ -72,6 +72,7 @@ let state = {
   ranking: [],
   library: [],
   result: null,
+  resultCardMode: 'title',
   resultImageUrl: '',
   resultImageBusy: false,
   resultImageError: '',
@@ -309,7 +310,7 @@ function createStartView() {
       <ol class="challenge-steps">
         <li><b>あなた</b>が10問に回答</li>
         <li>専用URL・QRコードを共有</li>
-        <li>回答詳細を確認。希望者だけランキング公開</li>
+        <li>答え合わせを確認。希望者だけ理解度ボードへ掲載</li>
       </ol>
       ${preferredCard ? `<div class="challenge-selected-question">
         <b>選んだお題を必ず入れます</b>
@@ -420,8 +421,8 @@ function manageView() {
       </div>
       ${questionSubmissionNotice()}
       <div class="challenge-button-row">
-        <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">フレンドランキングを見る</a>
-        <button class="challenge-secondary" data-action="copy-ranking" data-copy-value="${escapeHtml(rankingUrl)}">ランキングURLをコピー</button>
+        <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a>
+        <button class="challenge-secondary" data-action="copy-ranking" data-copy-value="${escapeHtml(rankingUrl)}">理解度ボードのURLをコピー</button>
       </div>
       <button class="challenge-secondary" data-action="refresh-manage">回答状況を更新</button>
       <p class="challenge-note">主催者用URLは回答内容を見られる秘密URLです。この端末へ保存され、30日後に無効になります。第三者へ送らないでください。</p>
@@ -457,7 +458,7 @@ function questionSubmissionNotice() {
 function participantDetail(participant, cards) {
   return `<details class="challenge-participant">
     <summary>
-      <span>${escapeHtml(participant.name)}<small>${participant.rankingParticipating ? 'ランキング参加' : 'ランキング不参加'}</small></span>
+      <span>${escapeHtml(participant.name)}<small>${participant.rankingParticipating ? '理解度ボード掲載' : '理解度ボード非掲載'}</small></span>
       <b>${participant.submitted ? `${participant.score}/10問` : '回答中'}</b>
     </summary>
     ${participant.submitted ? `<ol>
@@ -493,8 +494,8 @@ function joinView() {
       <input id="participant-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ゆう（本名は避けてください）" value="${escapeHtml(state.participantName)}">
       <button class="challenge-primary" data-action="join">10問の答え当てに挑戦する <span>▶</span></button>
-      <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">フレンドランキングを見る</a>
-      <p class="challenge-note">点数は回答後すぐにはランキングへ登録されません。結果を見てから、登録するか、同じ10問へもう一度挑戦するかを選べます。</p>
+      <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a>
+      <p class="challenge-note">結果は回答後すぐには公開されません。答え合わせを見てから、理解度ボードに載せるか、もう一度答えを予想するかを選べます。</p>
       <p class="challenge-note">回答内容は答え合わせと主催者の回答確認に使用されます。本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。</p>
     </section>`,
   );
@@ -506,43 +507,16 @@ function resultView() {
   const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
   const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(result) : getChallengeReviewLines(result);
   const rankingRegistered = result.participant.rankingParticipating === true;
-  const rankingSummary = !rankingRegistered
-    ? '今回の点数はまだフレンドランキングに登録されていません。'
-    : `${result.participant.name}さんは、ランキング参加者の中で ${result.rank}位です。`;
+  const boardSummary = !rankingRegistered
+    ? 'まずは、どこが当たったか答え合わせを見てみよう。'
+    : '答え合わせのあとで、理解度ボードに載せた結果も確認できます。';
   return shell(
     'RESULT',
     `${result.score}/10問 正解`,
-    rankingSummary,
+    boardSummary,
     `<section class="challenge-panel">
-      <section class="challenge-score-actions" data-testid="challenge-score-actions">
-        <span class="challenge-section-label">SCORE</span>
-        <h2>この点数をどうする？</h2>
-        ${rankingRegistered
-          ? `<p class="challenge-ranking-registered">この点数をフレンドランキングに登録しました。現在${result.rank}位です。</p>`
-          : '<p>今は登録しなくても大丈夫です。何度でも挑戦して、登録したい点数だけ公開できます。</p>'}
-        <button class="challenge-primary" data-action="retry-challenge">もう一度同じ10問にチャレンジ</button>
-        ${rankingRegistered
-          ? ''
-          : '<button class="challenge-secondary" data-action="register-ranking">この点数をフレンドランキングに登録</button>'}
-        <small>再挑戦すると今回の回答は上書きされます。登録済みの場合は、現在のランキング登録もいったん取り消されます。</small>
-      </section>
-      <section class="challenge-result-image-section" aria-labelledby="challenge-result-image-title">
-        <span class="challenge-section-label">RESULT CARD</span>
-        <h2 id="challenge-result-image-title">${escapeHtml(result.participant.name)}さんの結果画像</h2>
-        <p class="challenge-result-title"><small>今日の称号</small><strong>${escapeHtml(tier.title)}</strong></p>
-        ${state.resultImageUrl
-          ? `<img class="challenge-result-image" data-testid="challenge-result-image"
-              src="${state.resultImageUrl}" width="1080" height="1350"
-              alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${result.score}/10問正解、称号は${escapeHtml(tier.title)}">`
-          : `<div class="challenge-result-image-loading" role="status">
-              ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
-            </div>`}
-        <button class="challenge-primary" data-action="save-result-image" ${state.resultImageUrl ? '' : 'disabled'}>
-          ${state.resultImageUrl ? 'この結果画像を保存' : '画像を準備中…'}
-        </button>
-        <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
-      </section>
-      <h2>答え合わせ</h2>
+      <span class="challenge-section-label">ANSWER CHECK</span>
+      <h2>どこが当たった？</h2>
       <div class="challenge-results" data-result-feedback-sequence>
         ${result.answers.map((answer, index) => `
           <article class="challenge-result ${answer.match ? 'is-correct' : ''}"
@@ -555,15 +529,59 @@ function resultView() {
       </div>
       <section class="challenge-ai-review" data-testid="challenge-ai-review" aria-labelledby="challenge-ai-review-title">
         <span class="challenge-section-label">REVIEW</span>
-        <h2 id="challenge-ai-review-title">AI総評</h2>
+        <h2 id="challenge-ai-review-title">答え合わせレポート</h2>
+        <p class="challenge-ai-review-lead">10問の一致・すれ違いから作成</p>
         <div>
           ${reviewLines.map((line) => `<p>${escapeHtml(line)}</p>`).join('')}
         </div>
         <small>回答内容をもとに用意された文章から総評を作成しています。</small>
       </section>
+      <section class="challenge-result-image-section" aria-labelledby="challenge-result-image-title">
+        <span class="challenge-section-label">RESULT CARD</span>
+        <h2 id="challenge-result-image-title">シェアするカードを選ぶ</h2>
+        <p class="challenge-result-card-help">点数を見せたくないときは、点数なしのカードを選べます。</p>
+        <div class="challenge-result-card-tabs" role="group" aria-label="結果カードの種類">
+          <button type="button" data-action="select-result-card" data-result-card-mode="score"
+            aria-pressed="${state.resultCardMode === 'score'}" class="${state.resultCardMode === 'score' ? 'is-selected' : ''}">
+            <b>点数入り</b><small>${result.score}/10問を表示</small>
+          </button>
+          <button type="button" data-action="select-result-card" data-result-card-mode="title"
+            aria-pressed="${state.resultCardMode === 'title'}" class="${state.resultCardMode === 'title' ? 'is-selected' : ''}">
+            <b>称号だけ</b><small>おすすめ・点数は非表示</small>
+          </button>
+          <button type="button" data-action="select-result-card" data-result-card-mode="report"
+            aria-pressed="${state.resultCardMode === 'report'}" class="${state.resultCardMode === 'report' ? 'is-selected' : ''}">
+            <b>答え合わせレポート</b><small>4つの発見を表示</small>
+          </button>
+        </div>
+        <p class="challenge-result-title"><small>${state.resultCardMode === 'report' ? '4つの答え合わせポイント' : '今日の称号'}</small><strong>${state.resultCardMode === 'report' ? '次の会話につなげよう' : escapeHtml(tier.title)}</strong></p>
+        ${state.resultImageUrl
+          ? `<img class="challenge-result-image" data-testid="challenge-result-image"
+              src="${state.resultImageUrl}" width="1080" height="1350"
+              alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${resultCardModeLabel(state.resultCardMode)}、称号は${escapeHtml(tier.title)}">`
+          : `<div class="challenge-result-image-loading" role="status">
+              ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
+            </div>`}
+        <button class="challenge-primary" data-action="save-result-image" ${state.resultImageUrl ? '' : 'disabled'}>
+          ${state.resultImageUrl ? 'この結果画像を保存' : '画像を準備中…'}
+        </button>
+        <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
+      </section>
+      <section class="challenge-score-actions" data-testid="challenge-score-actions">
+        <span class="challenge-section-label">OPTIONAL</span>
+        <h2>理解度ボードに載せる？</h2>
+        ${rankingRegistered
+          ? `<p class="challenge-ranking-registered">この結果を理解度ボードに載せました。現在${result.rank}位です。</p>`
+          : '<p>載せなくても大丈夫です。もう一度予想して、載せたい結果だけを公開できます。</p>'}
+        <button class="challenge-primary" data-action="retry-challenge">もう一度、答えを予想する</button>
+        ${rankingRegistered
+          ? ''
+          : '<button class="challenge-secondary" data-action="register-ranking">理解度ボードに載せる（任意）</button>'}
+        <small>もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。</small>
+      </section>
       <a class="challenge-primary" href="/challenge">自分も作る</a>
-      <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">フレンドランキングを見る</a>
-      <button class="challenge-secondary" data-action="share-result">結果をシェア</button>
+      <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
+      <button class="challenge-secondary" data-action="share-result">「どこが当たった？」をシェア</button>
       <a class="challenge-secondary" href="/">トップへ戻る</a>
     </section>`,
   );
@@ -609,9 +627,13 @@ function queueResultFeedbackCard(card) {
 
 function startResultFeedbackSequence() {
   const key = resultFeedbackSequenceKey();
-  if (!key || key === resultFeedbackKey) return;
+  if (!key) return;
   const cards = Array.from(app.querySelectorAll('[data-result-answer]'));
   if (!cards.length) return;
+  if (key === resultFeedbackKey) {
+    cards.forEach((card) => card.classList.add('is-feedback-revealed'));
+    return;
+  }
 
   stopResultFeedbackSequence();
   resultFeedbackKey = key;
@@ -636,25 +658,25 @@ function rankingView() {
   if (!state.room) return errorView();
   const room = state.room;
   return shell(
-    'FRIEND RANKING',
-    'フレンドランキング',
-    `${room.creatorName}さんのことを一番分かっているのは誰？`,
+    'UNDERSTANDING BOARD',
+    '理解度ボード',
+    '載せるかは自分で選べます。順位より、答え合わせのきっかけに。',
     `<section class="challenge-panel" data-testid="friend-ranking">
       <div class="challenge-count"><b>${room.completedParticipants}</b>人が回答済み ／ 上限${room.maxParticipants}人</div>
       ${state.ranking.length ? `<ol class="challenge-ranking-list">
         ${state.ranking.map((participant) => `
-          <li class="${participant.rank === 1 ? 'is-winner' : ''}">
+          <li>
             <span class="challenge-rank">${participant.rank}位</span>
             <b>${escapeHtml(participant.name)}</b>
             <strong>${participant.score}/10</strong>
           </li>
         `).join('')}
-      </ol>` : '<p class="challenge-empty">ランキングに参加した回答者はまだいません。</p>'}
-      <button class="challenge-primary" data-action="refresh-ranking">ランキングを更新</button>
+      </ol>` : '<p class="challenge-empty">理解度ボードに載せた回答者はまだいません。</p>'}
+      <button class="challenge-primary" data-action="refresh-ranking">理解度ボードを更新</button>
       <a class="challenge-secondary" href="/challenge?room=${room.code}">このクイズに挑戦する</a>
       <button class="challenge-secondary" data-action="copy-url" data-copy-value="${escapeHtml(challengeUrl(room.code))}">挑戦用URLをコピー</button>
       <a class="challenge-secondary" href="/challenge">自分も作る</a>
-      <p class="challenge-note">同点は同じ順位です。表示名と得点だけを公開し、問題ごとの回答は主催者だけが確認できます。</p>
+      <p class="challenge-note">掲載は任意です。同点は同じ順位として、表示名と得点だけを公開します。問題ごとの回答は主催者だけが確認できます。</p>
     </section>`,
   );
 }
@@ -769,6 +791,9 @@ function bindEvents() {
   document.querySelector('[data-action="retry-challenge"]')?.addEventListener('click', retryChallenge);
   document.querySelector('[data-action="share-result"]')?.addEventListener('click', shareResult);
   document.querySelector('[data-action="save-result-image"]')?.addEventListener('click', saveChallengeResultImage);
+  document.querySelectorAll('[data-action="select-result-card"]').forEach((button) => {
+    button.addEventListener('click', () => selectResultCardMode(button.dataset.resultCardMode));
+  });
   if (document.getElementById('challenge-qr') && state.room) {
     QRCode.toCanvas(
       document.getElementById('challenge-qr'),
@@ -1151,7 +1176,7 @@ async function registerRankingScore() {
 async function retryChallenge() {
   if (!state.result || !state.participantToken) return;
   if (state.result.participant?.rankingParticipating
-    && !confirm('再挑戦すると、現在のランキング登録はいったん取り消されます。続けますか？')) return;
+    && !confirm('もう一度予想すると、現在の理解度ボード掲載はいったん取り消されます。続けますか？')) return;
   setState({ loading: true, error: '' });
   try {
     const response = await fetch(`/api/challenge/rooms/${state.roomCode}/retry`, {
@@ -1289,6 +1314,7 @@ async function loadResult(token = state.participantToken) {
     loading: false,
     answerPending: false,
     result: data,
+    resultCardMode: 'title',
     resultImageUrl: '',
     resultImageBusy: false,
     resultImageError: '',
@@ -1332,13 +1358,45 @@ function drawResultLines(context, lines, x, y, lineHeight) {
   lines.forEach((line, index) => context.fillText(line, x, y + index * lineHeight));
 }
 
-async function createChallengeResultCanvas(result) {
+function normalizeResultCardMode(mode) {
+  return ['score', 'title', 'report'].includes(mode) ? mode : 'title';
+}
+
+function resultCardModeLabel(mode) {
+  if (isEnglish) {
+    return ({
+      score: 'score result card',
+      title: 'title-only result card with the score hidden',
+      report: 'answer review report card',
+    })[normalizeResultCardMode(mode)];
+  }
+  return ({
+    score: '点数入り結果カード',
+    title: '点数を隠した称号だけのカード',
+    report: '答え合わせレポートだけのカード',
+  })[normalizeResultCardMode(mode)];
+}
+
+function selectResultCardMode(mode) {
+  const resultCardMode = normalizeResultCardMode(mode);
+  if (resultCardMode === state.resultCardMode) return;
+  setState({
+    resultCardMode,
+    resultImageUrl: '',
+    resultImageBusy: false,
+    resultImageError: '',
+  });
+}
+
+async function createChallengeResultCanvas(result, requestedMode = state.resultCardMode) {
   await document.fonts?.ready?.catch(() => {});
   const [girlImage, qrImage] = await Promise.all([
     loadResultImage(RESULT_GIRL_IMAGE_SRC),
     loadResultImage(RESULT_QR_IMAGE_SRC),
   ]);
   const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
+  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(result) : getChallengeReviewLines(result);
+  const cardMode = normalizeResultCardMode(requestedMode);
   const participantName = String(result.participant?.name || (isEnglish ? 'Player' : '回答者'));
   const creatorName = String(result.creatorName || (isEnglish ? 'Creator' : '出題者'));
   const canvas = document.createElement('canvas');
@@ -1382,90 +1440,129 @@ async function createChallengeResultCanvas(result) {
   context.textAlign = 'center';
   context.fillText(tier.tag, 848, 125);
 
-  context.fillStyle = '#fff8f1';
-  resultRoundRect(context, 140, 248, 800, 344, 30);
-  context.fill();
-  context.strokeStyle = '#ec4683';
-  context.setLineDash([18, 16]);
-  context.lineWidth = 6;
-  resultRoundRect(context, 140, 248, 800, 344, 30);
-  context.stroke();
-  context.setLineDash([]);
+  if (cardMode === 'report') {
+    context.fillStyle = '#e8f9fc';
+    resultRoundRect(context, 140, 248, 800, 770, 30);
+    context.fill();
+    context.strokeStyle = '#55c9dd';
+    context.setLineDash([18, 16]);
+    context.lineWidth = 6;
+    resultRoundRect(context, 140, 248, 800, 770, 30);
+    context.stroke();
+    context.setLineDash([]);
 
-  context.fillStyle = '#ec4683';
-  context.font = '700 31px "HuiFontP29", "Yu Gothic", sans-serif';
-  context.textAlign = 'left';
-  const scoreLabelLines = splitResultText(
-    isEnglish ? `${participantName}’s score on\n${creatorName}’s quiz` : `${participantName}さんの\n${creatorName}さん理解度`,
-    isEnglish ? 24 : 13,
-    2,
-  );
-  drawResultLines(context, scoreLabelLines, 202, 326, 42);
-
-  context.font = '900 116px "Arial Black", "Yu Gothic", sans-serif';
-  context.shadowColor = '#191919';
-  context.shadowOffsetX = 8;
-  context.shadowOffsetY = 8;
-  context.fillText(`${result.score}/10`, 202, 500);
-  context.shadowOffsetX = 0;
-  context.shadowOffsetY = 0;
-
-  context.fillStyle = '#ffe36f';
-  resultRoundRect(context, 210, 514, 148, 50, 25);
-  context.fill();
-  context.strokeStyle = '#191919';
-  context.lineWidth = 4;
-  resultRoundRect(context, 210, 514, 148, 50, 25);
-  context.stroke();
-  context.fillStyle = '#191919';
-  context.font = '900 24px "Yu Gothic", sans-serif';
-  context.textAlign = 'center';
-  context.fillText(isEnglish ? 'CORRECT' : '問正解', 284, 547);
-
-  context.fillStyle = '#55c9dd';
-  context.globalAlpha = 0.18;
-  context.beginPath();
-  context.arc(764, 418, 128, 0, Math.PI * 2);
-  context.fill();
-  context.globalAlpha = 1;
-  if (girlImage) {
-    context.save();
-    context.shadowColor = 'rgba(0,0,0,.18)';
-    context.shadowBlur = 18;
-    context.shadowOffsetY = 10;
-    context.drawImage(girlImage, 642, 286, 238, 284);
-    context.restore();
-  } else {
-    context.fillStyle = '#ec4683';
-    context.font = '900 86px sans-serif';
+    context.fillStyle = '#191919';
+    context.font = '900 38px "HuiFontP29", "Yu Gothic", sans-serif';
     context.textAlign = 'center';
-    context.fillText('★', 764, 454);
+    context.fillText(isEnglish ? 'ANSWER REVIEW REPORT' : '答え合わせレポート', 540, 316);
+    context.fillStyle = '#d63a75';
+    context.font = '700 22px "Yu Gothic", sans-serif';
+    context.fillText(isEnglish ? 'Created from 10 matches and surprises' : '10問の一致・すれ違いから作成', 540, 354);
+    context.textAlign = 'left';
+    reviewLines.forEach((line, index) => {
+      context.fillStyle = '#ffffff';
+      resultRoundRect(context, 174, 382 + index * 138, 732, 116, 18);
+      context.fill();
+      context.strokeStyle = '#191919';
+      context.lineWidth = 3;
+      resultRoundRect(context, 174, 382 + index * 138, 732, 116, 18);
+      context.stroke();
+      context.fillStyle = '#191919';
+      context.font = '700 19px "Yu Gothic", sans-serif';
+      drawResultLines(context, splitResultText(line, isEnglish ? 52 : 26, 3), 202, 416 + index * 138, 27);
+    });
+
+    context.fillStyle = '#d63a75';
+    context.font = '900 27px "Yu Gothic", sans-serif';
+    context.textAlign = 'center';
+    context.fillText(isEnglish ? 'TURN THE REVIEW INTO YOUR NEXT CONVERSATION' : '答え合わせを、次の会話につなげよう', 540, 976);
+  } else {
+    context.fillStyle = '#fff8f1';
+    resultRoundRect(context, 140, 248, 800, 344, 30);
+    context.fill();
+    context.strokeStyle = '#ec4683';
+    context.setLineDash([18, 16]);
+    context.lineWidth = 6;
+    resultRoundRect(context, 140, 248, 800, 344, 30);
+    context.stroke();
+    context.setLineDash([]);
+
+    context.fillStyle = '#ec4683';
+    context.font = '700 31px "HuiFontP29", "Yu Gothic", sans-serif';
+    context.textAlign = 'left';
+    const scoreLabelLines = splitResultText(
+      isEnglish ? `${participantName} on\n${creatorName}’s quiz` : `${participantName}さんの\n${creatorName}さん理解度`,
+      isEnglish ? 24 : 13,
+      2,
+    );
+    drawResultLines(context, scoreLabelLines, 202, 326, 42);
+
+    context.shadowColor = '#191919';
+    context.shadowOffsetX = 8;
+    context.shadowOffsetY = 8;
+    context.font = cardMode === 'score'
+      ? '900 116px "Arial Black", "Yu Gothic", sans-serif'
+      : '900 58px "HuiFontP29", "Yu Gothic", sans-serif';
+    context.fillText(cardMode === 'score'
+      ? `${result.score}/10`
+      : (isEnglish ? 'SCORE PRIVATE' : '点数はひみつ'), 202, 500);
+    context.shadowOffsetX = 0;
+    context.shadowOffsetY = 0;
+
+    context.fillStyle = '#ffe36f';
+    resultRoundRect(context, 210, 514, cardMode === 'score' ? 148 : 220, 50, 25);
+    context.fill();
+    context.strokeStyle = '#191919';
+    context.lineWidth = 4;
+    resultRoundRect(context, 210, 514, cardMode === 'score' ? 148 : 220, 50, 25);
+    context.stroke();
+    context.fillStyle = '#191919';
+    context.font = '900 24px "Yu Gothic", sans-serif';
+    context.textAlign = 'center';
+    context.fillText(cardMode === 'score'
+      ? (isEnglish ? 'CORRECT' : '問正解')
+      : (isEnglish ? 'TITLE ONLY' : '称号だけシェア'), cardMode === 'score' ? 284 : 320, 547);
+
+    context.fillStyle = '#55c9dd';
+    context.globalAlpha = 0.18;
+    context.beginPath();
+    context.arc(764, 418, 128, 0, Math.PI * 2);
+    context.fill();
+    context.globalAlpha = 1;
+    if (girlImage) {
+      context.save();
+      context.shadowColor = 'rgba(0,0,0,.18)';
+      context.shadowBlur = 18;
+      context.shadowOffsetY = 10;
+      context.drawImage(girlImage, 642, 286, 238, 284);
+      context.restore();
+    }
+
+    context.fillStyle = '#191919';
+    resultRoundRect(context, 408, 628, 264, 46, 23);
+    context.fill();
+    context.fillStyle = '#ffe36f';
+    context.font = '900 25px "Yu Gothic", sans-serif';
+    context.textAlign = 'center';
+    context.fillText(isEnglish ? 'YOUR TITLE' : '今日の称号', 540, 660);
+
+    context.fillStyle = '#ec4683';
+    const titleLines = splitResultText(tier.title, 11, 2);
+    context.font = `900 ${titleLines.length > 1 ? 46 : 54}px "HuiFontP29", "Yu Gothic", sans-serif`;
+    drawResultLines(context, titleLines, 540, 740, 58);
+
+    context.fillStyle = '#ffffff';
+    resultRoundRect(context, 150, 816, 780, 248, 26);
+    context.fill();
+    context.strokeStyle = '#191919';
+    context.lineWidth = 6;
+    resultRoundRect(context, 150, 816, 780, 248, 26);
+    context.stroke();
+    context.fillStyle = '#191919';
+    context.font = '900 31px "HuiFontP29", "Yu Gothic", sans-serif';
+    const messageLines = splitResultText(tier.message, 20, 4);
+    drawResultLines(context, messageLines, 540, 878, 47);
   }
-
-  context.fillStyle = '#191919';
-  resultRoundRect(context, 408, 628, 264, 46, 23);
-  context.fill();
-  context.fillStyle = '#ffe36f';
-  context.font = '900 25px "Yu Gothic", sans-serif';
-  context.textAlign = 'center';
-  context.fillText(isEnglish ? 'YOUR TITLE' : '今日の称号', 540, 660);
-
-  context.fillStyle = '#ec4683';
-  const titleLines = splitResultText(tier.title, 11, 2);
-  context.font = `900 ${titleLines.length > 1 ? 46 : 54}px "HuiFontP29", "Yu Gothic", sans-serif`;
-  drawResultLines(context, titleLines, 540, 740, 58);
-
-  context.fillStyle = '#ffffff';
-  resultRoundRect(context, 150, 816, 780, 248, 26);
-  context.fill();
-  context.strokeStyle = '#191919';
-  context.lineWidth = 6;
-  resultRoundRect(context, 150, 816, 780, 248, 26);
-  context.stroke();
-  context.fillStyle = '#191919';
-  context.font = '900 31px "HuiFontP29", "Yu Gothic", sans-serif';
-  const messageLines = splitResultText(tier.message, 20, 4);
-  drawResultLines(context, messageLines, 540, 878, 47);
 
   context.fillStyle = '#ffe36f';
   resultRoundRect(context, 156, 1094, 768, 132, 26);
@@ -1479,7 +1576,7 @@ async function createChallengeResultCanvas(result) {
   context.fillText(isEnglish ? 'Share this result with your friends' : 'この結果、友達に伝えよう', 448, 1134);
   context.fillStyle = '#d63a75';
   context.font = '900 22px "Yu Gothic", sans-serif';
-  context.fillText(isEnglish ? 'How many could they get right?' : 'あなたなら何問当てられる？', 448, 1168);
+  context.fillText(isEnglish ? 'Which answers matched?' : 'どこが当たった？', 448, 1168);
   context.fillStyle = '#191919';
   context.font = '700 22px monospace';
   context.fillText(isEnglish ? 'streetboardgame.com  /  #Watachan' : 'streetboardgame.com  /  #わたちゃん', 448, 1202);
@@ -1496,8 +1593,10 @@ async function createChallengeResultCanvas(result) {
 async function prepareResultImage() {
   if (!state.result || state.resultImageBusy || state.resultImageUrl) return;
   state.resultImageBusy = true;
+  const requestedMode = normalizeResultCardMode(state.resultCardMode);
   try {
-    const canvas = await createChallengeResultCanvas(state.result);
+    const canvas = await createChallengeResultCanvas(state.result, requestedMode);
+    if (requestedMode !== state.resultCardMode) return;
     setState({
       resultImageUrl: canvas.toDataURL('image/png'),
       resultImageBusy: false,
@@ -1523,8 +1622,8 @@ async function saveChallengeResultImage() {
     const blob = dataUrlToBlob(state.resultImageUrl);
     await saveImageBlob(
       blob,
-      `watachan-challenge-result-${state.result.score}-of-10.png`,
-      'わたし理解度診断｜私のこと、ちゃんと分かってるよね？ 結果画像',
+      `watachan-challenge-${normalizeResultCardMode(state.resultCardMode)}.png`,
+      `わたし理解度診断｜${resultCardModeLabel(state.resultCardMode)}`,
     );
   } catch (error) {
     if (error?.name !== 'AbortError') alert('画像を保存できませんでした。もう一度お試しください。');
@@ -1538,15 +1637,12 @@ async function saveChallengeResultImage() {
 
 async function shareResult() {
   const tier = isEnglish ? getChallengeResultTierEnglish(state.result.score) : getChallengeResultTier(state.result.score);
-  const rankingText = isEnglish
-    ? (state.result.rank == null ? 'not on the leaderboard' : `ranked #${state.result.rank}`)
-    : (state.result.rank == null ? 'ランキング不参加' : `ランキング参加者の中で${state.result.rank}位`);
   const shareUrl = state.result.rank == null
     ? `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`
     : `${location.origin}${languagePrefix}/challenge/ranking?room=${state.result.code}`;
   const text = isEnglish
-    ? `I scored ${state.result.score}/10 on ${state.result.creatorName}’s quiz and ${rankingText}!\nMy title: “${tier.title}”\n#Watachan\n${shareUrl}`
-    : `${state.result.creatorName}の「わたし理解度診断」結果：${state.result.score}/10問正解、${rankingText}！\n私のこと、ちゃんと分かってるよね？\n当てるより、話すための10問。\n称号は「${tier.title}」\n#わたちゃん\n${shareUrl}`;
+    ? `I guessed ${state.result.creatorName}’s answers!\nWhich ones matched? Check the answers and try the same 10 questions.\nMy title: “${tier.title}”\n#Watachan\n${shareUrl}`
+    : `${state.result.creatorName}の「わたし理解度診断」で答えを予想してみた📒\nどこが当たった？答え合わせしてみて👇\n称号は「${tier.title}」\n結果公開は任意・もう一度予想もOK\n#わたちゃん\n${shareUrl}`;
   if (navigator.share) {
     try {
       await navigator.share({ title: isEnglish ? 'Challenge your friends' : 'わたし理解度診断', text });
@@ -1673,7 +1769,7 @@ function errorMessage(code) {
     'participant-forbidden': '参加情報を確認できません。もう一度URLを開いてください。',
     'answers-already-submitted': 'この参加者の回答はすでに確定しています。',
     'answers-not-submitted': '10問の回答が完了していません。',
-    'ranking-registration-failed': '点数をランキングへ登録できませんでした。',
+    'ranking-registration-failed': '結果を理解度ボードへ載せられませんでした。',
     'retry-failed': '再挑戦を開始できませんでした。',
     'manage-forbidden': '主催者用URLを確認できません。',
     'draft-not-found': '途中保存データが見つかりません。',
@@ -1694,7 +1790,7 @@ async function bootChallenge() {
   document.title = isEnglish ? 'Popular questions | How well do you know me?' : '人気のお題ライブラリ｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   loadLibrary();
   } else if (state.mode === 'ranking') {
-  document.title = isEnglish ? 'Leaderboard | How well do you know me?' : 'フレンドランキング｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
+  document.title = isEnglish ? 'Understanding Board | How well do you know me?' : '理解度ボード｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   loadRanking();
   } else if (state.mode === 'manage') {
   document.title = isEnglish ? 'Manage responses | How well do you know me?' : '主催者用回答管理｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';

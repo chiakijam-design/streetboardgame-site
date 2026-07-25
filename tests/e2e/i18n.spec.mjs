@@ -133,12 +133,16 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
     await page.getByRole('button', { name: /^Guess One$/ }).click();
   }
   await expect(page.getByRole('heading', { name: '10/10 correct' })).toBeVisible();
-  await expect(page.getByText('This score has not been added to the leaderboard.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Try the same 10 questions again' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Add this score to the leaderboard' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Which answers matched?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Answer Review Report' })).toBeVisible();
+  await expect(page.getByTestId('challenge-ai-review').locator(':scope > div > p')).toHaveCount(4);
+  await expect(page.getByRole('button', { name: /Title only/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: /With score Show 10\/10/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Guess the answers again' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add to Understanding Board (optional)' })).toBeVisible();
   await expect(page.getByText('Certified Mind Reader', { exact: true })).toBeVisible();
-  await expect(page.getByTestId('challenge-ai-review')).toContainText('AI-style review');
-  await expect(page.getByTestId('challenge-ai-review')).toContainText('Alex scored 10/10');
+  await expect(page.getByTestId('challenge-ai-review')).toContainText('Overall understanding');
+  await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');
   await expect(page.getByTestId('challenge-result-image')).toBeVisible();
 });
 

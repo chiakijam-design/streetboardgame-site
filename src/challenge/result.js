@@ -157,20 +157,17 @@ export function getChallengeReviewLinesEnglish(result = {}) {
   const missed = answers.filter((answer) => answer?.match !== true && answer?.isCorrect !== true);
   const hit = String(correct[0]?.card?.title || '');
   const miss = String(missed[0]?.card?.title || '');
+  const nextTopic = miss || hit || 'one of the answers';
   const lines = [
-    `${participant} scored ${score}/10 on ${creator}’s quiz and earned “${tier.title}.”`,
+    `Overall understanding: ${participant} earned “${tier.title}” on ${creator}’s 10 questions.`,
   ];
   lines.push(hit
-    ? `You read “${hit}” correctly—your observation skills showed there.`
-    : `The answers brought plenty of surprises, so the review is a great place to begin.`);
+    ? `What you knew well: You read “${hit}” correctly—your observation skills showed there.`
+    : `What you knew well: The review is a fresh starting point, with plenty still to discover.`);
   lines.push(miss
-    ? `“${miss}” is a new side to remember and an easy topic for your next conversation.`
-    : `Nothing caught you out this time—you understood every answer.`);
-  lines.push(score >= 8
-    ? `You understand them remarkably well. The few surprises left are part of the fun.`
-    : score >= 4
-      ? `You have the basics. Remember the misses and expert level is within reach.`
-      : `There is lots left to discover, which means plenty of things to talk about next.`);
+    ? `A surprising mismatch: “${miss}” revealed a side you had not quite expected.`
+    : `A surprising mismatch: Nothing caught you out this time—you understood every answer.`);
+  lines.push(`A fun topic for next time: Ask why they chose “${nextTopic}” and keep the conversation going.`);
   return lines;
 }
 
@@ -190,18 +187,22 @@ export function getChallengeReviewLines(result = {}) {
     miss: context.miss,
   };
   const { fillTemplate, pickVariant } = createReviewTemplateTools(values, context);
-  const scoreBand = context.score >= 8 ? 'high' : context.score >= 4 ? 'mid' : 'low';
   const hitLine = context.score > 0
-    ? fillTemplate(pickVariant(REVIEW_VARIANTS.hit, 2))
-    : `${participant}さんにとって、${creator}さんの答えはまだ意外性多め。まずは答え合わせから理解度アップ！`;
+    ? `「${context.hit}」。${creator}さんらしさをよく読めています。`
+    : `まだ得意分野を探している途中。今回の答え合わせがスタートです。`;
   const missLine = context.score < 10
-    ? fillTemplate(pickVariant(REVIEW_VARIANTS.miss, 3))
+    ? `「${context.miss}」。まだ知らなかった一面が見つかりました。`
     : `今回は外した問題なし。${creator}さんの好みや考え方まで、${participant}さんの読みが届いています。`;
+  const nextTopic = String(
+    answers.find((answer) => answer?.match !== true && answer?.isCorrect !== true)?.card?.title
+      || answers[0]?.card?.title
+      || context.miss,
+  );
 
   return [
-    fillTemplate(pickVariant(REVIEW_VARIANTS.opening, 1)),
-    hitLine,
-    missLine,
-    fillTemplate(pickVariant(REVIEW_VARIANTS.close[scoreBand], 4)),
+    `全体の理解度：${fillTemplate(pickVariant(REVIEW_VARIANTS.opening, 1))}`,
+    `よく分かっていた分野：${hitLine}`,
+    `意外にズレた分野：${missLine}`,
+    `次に話すと楽しそうな話題：「${nextTopic}」。選んだ理由を聞いてみよう。`,
   ];
 }
