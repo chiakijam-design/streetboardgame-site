@@ -2532,14 +2532,6 @@ function CommonRulesCard({ creatorName, nameError, onCreatorNameChange, onStart 
         }}>
           あなたの理解度診断を作って、<br/>みんなに挑戦してもらおう
         </h2>
-        <p style={{
-          margin: 0,
-          fontSize: 11,
-          lineHeight: 1.7,
-          fontWeight: 700,
-        }}>
-          この説明は出題者向けです。<br/>回答する人は、届いた参加URLから直接遊びます。
-        </p>
       </div>
       <ol style={{
         display: 'grid',
