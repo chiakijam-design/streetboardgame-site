@@ -1,5 +1,6 @@
 import { safetyFlagLabels } from './src/questions/safety.js';
 import { findSimilarQuestions, sortQuestionsForOperations } from './src/questions/similarity.js';
+import { downloadQuestionBackup } from './src/questions/export.js';
 
 const tokenInput = document.getElementById('adminToken');
 const otpInput = document.getElementById('adminOtp');
@@ -24,6 +25,7 @@ document.getElementById('forgetSession').addEventListener('click', () => {
 document.getElementById('questionSearch').addEventListener('input', renderAllQuestions);
 document.getElementById('questionFilter').addEventListener('change', renderAllQuestions);
 document.getElementById('saveAllQuestions').addEventListener('click', saveAllQuestions);
+document.getElementById('exportQuestionsCsv').addEventListener('click', exportQuestionsCsv);
 
 async function loadOverview() {
   try {
@@ -293,6 +295,17 @@ async function saveAllQuestions() {
   } catch (error) {
     showStatus(humanError(error), true);
     updateBulkButton();
+  }
+}
+
+function exportQuestionsCsv() {
+  if (!allQuestions.length) return;
+  if (dirtyQuestionIds.size && !confirm('未保存の変更はバックアップに含まれません。保存済みの内容で続けますか？')) return;
+  try {
+    const result = downloadQuestionBackup(allQuestions);
+    showStatus(`採用・無効化を含む全${result.count}問をスプレッドシート用CSVに保存しました。`);
+  } catch (error) {
+    showStatus('CSVを保存できませんでした。ブラウザのダウンロード設定を確認してください。', true);
   }
 }
 

@@ -1,4 +1,5 @@
 import { expect, test } from './test.mjs';
+import { readFile } from 'node:fs/promises';
 
 test('運営だけが二要素認証後に表形式でお題を審査し、採用と無効化を管理できる', async ({ page }) => {
   const reviewBodies = [];
@@ -97,6 +98,16 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   const totalText = await page.locator('#questionCount').textContent();
   const total = Number(totalText?.match(/全(\d+)問/)?.[1] || 0);
   expect(total).toBeGreaterThanOrEqual(60);
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: '全お題をスプレッドシート用に保存' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^streetboardgame-questions-\d{4}-\d{2}-\d{2}_\d{4}\.csv$/);
+  const csv = await readFile(await download.path(), 'utf8');
+  expect(csv.charCodeAt(0)).toBe(0xFEFF);
+  expect(csv).toContain('状態,問題ID,問題文,選択肢1,選択肢2,選択肢3,選択肢4,選択肢5');
+  expect(csv).toContain('無効化,CUSREPORTED123,通報されたお題,1,2,3,4,5');
+  expect(csv.split('\r\n').length - 2).toBe(total);
+  await expect(page.locator('#authStatus')).toContainText(`全${total}問`);
   const statusOrder = await page.locator('#allQuestions [data-catalog]').evaluateAll((rows) => rows.map((row) => row.dataset.statusRow));
   expect(statusOrder.indexOf('disabled')).toBeGreaterThan(statusOrder.lastIndexOf('approved'));
   await expect(page.locator('#similaritySummary')).not.toHaveText('類似候補：0問');
