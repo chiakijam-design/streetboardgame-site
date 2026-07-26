@@ -425,7 +425,7 @@ test('公開候補チェックを外した自作お題は運営へ送信しな�
   await expect(page.getByTestId('question-submission-status')).toHaveCount(0);
 });
 
-test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カード・理解度ボードまで完走する', async ({ browser, page }) => {
+test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入りカード・理解度ボードまで完走する', async ({ browser, page }) => {
   const challengeUrl = await createChallenge(page);
   await expect(page.getByTestId('participant-count')).toContainText('0人回答済み');
   await expect(page.locator('#challenge-qr')).toBeHidden();
@@ -515,7 +515,9 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カー
     await expect(participant.locator('.challenge-result')).toHaveCount(10);
     await expect(participant.getByRole('heading', { name: 'どこが当たった？' })).toBeVisible();
     await expect(participant.getByText('まずは、どこが当たったか答え合わせを見てみよう。')).toBeVisible();
-    await expect(participant.getByRole('button', { name: /称号だけ/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(participant.getByRole('heading', { name: '点数入り結果カード' })).toBeVisible();
+    await expect(participant.getByRole('heading', { name: 'シェアするカードを選ぶ' })).toHaveCount(0);
+    await expect(participant.locator('[data-action="select-result-card"]')).toHaveCount(0);
     const commentOptions = participant.locator('[data-comment-candidate] input[name="board-comment"]');
     await expect(commentOptions).toHaveCount(4);
     await expect(participant.getByRole('radio', { name: 'コメントなしで載せる' })).toBeChecked();
@@ -528,16 +530,12 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カー
     await expect(participant.getByText('この結果を理解度ボードに載せました。')).toBeVisible();
     const resultImage = participant.getByTestId('challenge-result-image');
     await expect(resultImage).toBeVisible();
-    await expect(resultImage).toHaveAttribute('alt', /点数を隠した称号だけのカード/);
+    await expect(resultImage).toHaveAttribute('alt', /9\/10問正解/);
     await expect.poll(() => resultImage.evaluate((image) => ({
       width: image.naturalWidth,
       height: image.naturalHeight,
     }))).toEqual({ width: 1080, height: 1350 });
     await expect(participant.getByRole('button', { name: 'この結果画像を保存' })).toBeEnabled();
-    await participant.getByRole('button', { name: /点数入り/ }).click();
-    await expect(resultImage).toHaveAttribute('alt', /点数入り結果カード/);
-    await participant.getByRole('button', { name: /答え合わせレポート/ }).click();
-    await expect(resultImage).toHaveAttribute('alt', /答え合わせレポートだけのカード/);
     const feedbackToneCount = await participant.evaluate(
       () => window.__quizFeedbackFrequencies.length,
     );

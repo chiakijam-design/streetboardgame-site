@@ -71,7 +71,6 @@ let state = {
   ranking: [],
   library: [],
   result: null,
-  resultCardMode: 'title',
   resultImageUrl: '',
   resultImageBusy: false,
   resultImageError: '',
@@ -561,27 +560,12 @@ function resultView() {
       </section>
       <section class="challenge-result-image-section" aria-labelledby="challenge-result-image-title">
         <span class="challenge-section-label">RESULT CARD</span>
-        <h2 id="challenge-result-image-title">シェアするカードを選ぶ</h2>
-        <p class="challenge-result-card-help">点数を見せたくないときは、点数なしのカードを選べます。</p>
-        <div class="challenge-result-card-tabs" role="group" aria-label="結果カードの種類">
-          <button type="button" data-action="select-result-card" data-result-card-mode="score"
-            aria-pressed="${state.resultCardMode === 'score'}" class="${state.resultCardMode === 'score' ? 'is-selected' : ''}">
-            <b>点数入り</b><small>${result.score}/10問を表示</small>
-          </button>
-          <button type="button" data-action="select-result-card" data-result-card-mode="title"
-            aria-pressed="${state.resultCardMode === 'title'}" class="${state.resultCardMode === 'title' ? 'is-selected' : ''}">
-            <b>称号だけ</b><small>おすすめ・点数は非表示</small>
-          </button>
-          <button type="button" data-action="select-result-card" data-result-card-mode="report"
-            aria-pressed="${state.resultCardMode === 'report'}" class="${state.resultCardMode === 'report' ? 'is-selected' : ''}">
-            <b>答え合わせレポート</b><small>4つの発見を表示</small>
-          </button>
-        </div>
-        <p class="challenge-result-title"><small>${state.resultCardMode === 'report' ? '4つの答え合わせポイント' : '今日の称号'}</small><strong>${state.resultCardMode === 'report' ? '次の会話につなげよう' : escapeHtml(tier.title)}</strong></p>
+        <h2 id="challenge-result-image-title">点数入り結果カード</h2>
+        <p class="challenge-result-title"><small>今日の称号</small><strong>${escapeHtml(tier.title)}</strong></p>
         ${state.resultImageUrl
           ? `<img class="challenge-result-image" data-testid="challenge-result-image"
               src="${state.resultImageUrl}" width="1080" height="1350"
-              alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${resultCardModeLabel(state.resultCardMode)}、称号は${escapeHtml(tier.title)}">`
+              alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${result.score}/10問正解、称号は${escapeHtml(tier.title)}">`
           : `<div class="challenge-result-image-loading" role="status">
               ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
             </div>`}
@@ -869,9 +853,6 @@ function bindEvents() {
   document.querySelector('[data-action="swap-roles"]')?.addEventListener('click', startRoleSwap);
   document.querySelector('[data-action="share-result"]')?.addEventListener('click', shareResult);
   document.querySelector('[data-action="save-result-image"]')?.addEventListener('click', saveChallengeResultImage);
-  document.querySelectorAll('[data-action="select-result-card"]').forEach((button) => {
-    button.addEventListener('click', () => selectResultCardMode(button.dataset.resultCardMode));
-  });
   if (document.getElementById('challenge-qr') && state.room) {
     QRCode.toCanvas(
       document.getElementById('challenge-qr'),
@@ -1447,7 +1428,6 @@ async function loadResult(token = state.participantToken) {
     loading: false,
     answerPending: false,
     result: data,
-    resultCardMode: 'title',
     resultImageUrl: '',
     resultImageBusy: false,
     resultImageError: '',
@@ -1491,45 +1471,13 @@ function drawResultLines(context, lines, x, y, lineHeight) {
   lines.forEach((line, index) => context.fillText(line, x, y + index * lineHeight));
 }
 
-function normalizeResultCardMode(mode) {
-  return ['score', 'title', 'report'].includes(mode) ? mode : 'title';
-}
-
-function resultCardModeLabel(mode) {
-  if (isEnglish) {
-    return ({
-      score: 'score result card',
-      title: 'title-only result card with the score hidden',
-      report: 'answer review report card',
-    })[normalizeResultCardMode(mode)];
-  }
-  return ({
-    score: '点数入り結果カード',
-    title: '点数を隠した称号だけのカード',
-    report: '答え合わせレポートだけのカード',
-  })[normalizeResultCardMode(mode)];
-}
-
-function selectResultCardMode(mode) {
-  const resultCardMode = normalizeResultCardMode(mode);
-  if (resultCardMode === state.resultCardMode) return;
-  setState({
-    resultCardMode,
-    resultImageUrl: '',
-    resultImageBusy: false,
-    resultImageError: '',
-  });
-}
-
-async function createChallengeResultCanvas(result, requestedMode = state.resultCardMode) {
+async function createChallengeResultCanvas(result) {
   await document.fonts?.ready?.catch(() => {});
   const [girlImage, qrImage] = await Promise.all([
     loadResultImage(RESULT_GIRL_IMAGE_SRC),
     loadResultImage(RESULT_QR_IMAGE_SRC),
   ]);
   const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
-  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(result) : getChallengeReviewLines(result);
-  const cardMode = normalizeResultCardMode(requestedMode);
   const participantName = String(result.participant?.name || (isEnglish ? 'Player' : '回答者'));
   const creatorName = String(result.creatorName || (isEnglish ? 'Creator' : '出題者'));
   const canvas = document.createElement('canvas');
@@ -1573,129 +1521,85 @@ async function createChallengeResultCanvas(result, requestedMode = state.resultC
   context.textAlign = 'center';
   context.fillText(tier.tag, 848, 125);
 
-  if (cardMode === 'report') {
-    context.fillStyle = '#e8f9fc';
-    resultRoundRect(context, 140, 248, 800, 770, 30);
-    context.fill();
-    context.strokeStyle = '#55c9dd';
-    context.setLineDash([18, 16]);
-    context.lineWidth = 6;
-    resultRoundRect(context, 140, 248, 800, 770, 30);
-    context.stroke();
-    context.setLineDash([]);
+  context.fillStyle = '#fff8f1';
+  resultRoundRect(context, 140, 248, 800, 344, 30);
+  context.fill();
+  context.strokeStyle = '#ec4683';
+  context.setLineDash([18, 16]);
+  context.lineWidth = 6;
+  resultRoundRect(context, 140, 248, 800, 344, 30);
+  context.stroke();
+  context.setLineDash([]);
 
-    context.fillStyle = '#191919';
-    context.font = '900 38px "HuiFontP29", "Yu Gothic", sans-serif';
-    context.textAlign = 'center';
-    context.fillText(isEnglish ? 'ANSWER REVIEW REPORT' : '答え合わせレポート', 540, 316);
-    context.fillStyle = '#d63a75';
-    context.font = '700 22px "Yu Gothic", sans-serif';
-    context.fillText(isEnglish ? 'Created from 10 matches and surprises' : '10問の一致・すれ違いから作成', 540, 354);
-    context.textAlign = 'left';
-    reviewLines.forEach((line, index) => {
-      context.fillStyle = '#ffffff';
-      resultRoundRect(context, 174, 382 + index * 138, 732, 116, 18);
-      context.fill();
-      context.strokeStyle = '#191919';
-      context.lineWidth = 3;
-      resultRoundRect(context, 174, 382 + index * 138, 732, 116, 18);
-      context.stroke();
-      context.fillStyle = '#191919';
-      context.font = '700 19px "Yu Gothic", sans-serif';
-      drawResultLines(context, splitResultText(line, isEnglish ? 52 : 26, 3), 202, 416 + index * 138, 27);
-    });
+  context.fillStyle = '#ec4683';
+  context.font = '700 31px "HuiFontP29", "Yu Gothic", sans-serif';
+  context.textAlign = 'left';
+  const scoreLabelLines = splitResultText(
+    isEnglish ? `${participantName} on\n${creatorName}’s quiz` : `${participantName}さんの\n${creatorName}さん理解度`,
+    isEnglish ? 24 : 13,
+    2,
+  );
+  drawResultLines(context, scoreLabelLines, 202, 326, 42);
 
-    context.fillStyle = '#d63a75';
-    context.font = '900 27px "Yu Gothic", sans-serif';
-    context.textAlign = 'center';
-    context.fillText(isEnglish ? 'TURN THE REVIEW INTO YOUR NEXT CONVERSATION' : '答え合わせを、次の会話につなげよう', 540, 976);
-  } else {
-    context.fillStyle = '#fff8f1';
-    resultRoundRect(context, 140, 248, 800, 344, 30);
-    context.fill();
-    context.strokeStyle = '#ec4683';
-    context.setLineDash([18, 16]);
-    context.lineWidth = 6;
-    resultRoundRect(context, 140, 248, 800, 344, 30);
-    context.stroke();
-    context.setLineDash([]);
+  context.shadowColor = '#191919';
+  context.shadowOffsetX = 8;
+  context.shadowOffsetY = 8;
+  context.font = '900 116px "Arial Black", "Yu Gothic", sans-serif';
+  context.fillText(`${result.score}/10`, 202, 500);
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
 
-    context.fillStyle = '#ec4683';
-    context.font = '700 31px "HuiFontP29", "Yu Gothic", sans-serif';
-    context.textAlign = 'left';
-    const scoreLabelLines = splitResultText(
-      isEnglish ? `${participantName} on\n${creatorName}’s quiz` : `${participantName}さんの\n${creatorName}さん理解度`,
-      isEnglish ? 24 : 13,
-      2,
-    );
-    drawResultLines(context, scoreLabelLines, 202, 326, 42);
+  context.fillStyle = '#ffe36f';
+  resultRoundRect(context, 210, 514, 148, 50, 25);
+  context.fill();
+  context.strokeStyle = '#191919';
+  context.lineWidth = 4;
+  resultRoundRect(context, 210, 514, 148, 50, 25);
+  context.stroke();
+  context.fillStyle = '#191919';
+  context.font = '900 24px "Yu Gothic", sans-serif';
+  context.textAlign = 'center';
+  context.fillText(isEnglish ? 'CORRECT' : '問正解', 284, 547);
 
-    context.shadowColor = '#191919';
-    context.shadowOffsetX = 8;
-    context.shadowOffsetY = 8;
-    context.font = cardMode === 'score'
-      ? '900 116px "Arial Black", "Yu Gothic", sans-serif'
-      : '900 58px "HuiFontP29", "Yu Gothic", sans-serif';
-    context.fillText(cardMode === 'score'
-      ? `${result.score}/10`
-      : (isEnglish ? 'SCORE PRIVATE' : '点数はひみつ'), 202, 500);
-    context.shadowOffsetX = 0;
-    context.shadowOffsetY = 0;
-
-    context.fillStyle = '#ffe36f';
-    resultRoundRect(context, 210, 514, cardMode === 'score' ? 148 : 220, 50, 25);
-    context.fill();
-    context.strokeStyle = '#191919';
-    context.lineWidth = 4;
-    resultRoundRect(context, 210, 514, cardMode === 'score' ? 148 : 220, 50, 25);
-    context.stroke();
-    context.fillStyle = '#191919';
-    context.font = '900 24px "Yu Gothic", sans-serif';
-    context.textAlign = 'center';
-    context.fillText(cardMode === 'score'
-      ? (isEnglish ? 'CORRECT' : '問正解')
-      : (isEnglish ? 'TITLE ONLY' : '称号だけシェア'), cardMode === 'score' ? 284 : 320, 547);
-
-    context.fillStyle = '#55c9dd';
-    context.globalAlpha = 0.18;
-    context.beginPath();
-    context.arc(764, 418, 128, 0, Math.PI * 2);
-    context.fill();
-    context.globalAlpha = 1;
-    if (girlImage) {
-      context.save();
-      context.shadowColor = 'rgba(0,0,0,.18)';
-      context.shadowBlur = 18;
-      context.shadowOffsetY = 10;
-      context.drawImage(girlImage, 642, 286, 238, 284);
-      context.restore();
-    }
-
-    context.fillStyle = '#191919';
-    resultRoundRect(context, 408, 628, 264, 46, 23);
-    context.fill();
-    context.fillStyle = '#ffe36f';
-    context.font = '900 25px "Yu Gothic", sans-serif';
-    context.textAlign = 'center';
-    context.fillText(isEnglish ? 'YOUR TITLE' : '今日の称号', 540, 660);
-
-    context.fillStyle = '#ec4683';
-    const titleLines = splitResultText(tier.title, 11, 2);
-    context.font = `900 ${titleLines.length > 1 ? 46 : 54}px "HuiFontP29", "Yu Gothic", sans-serif`;
-    drawResultLines(context, titleLines, 540, 740, 58);
-
-    context.fillStyle = '#ffffff';
-    resultRoundRect(context, 150, 816, 780, 248, 26);
-    context.fill();
-    context.strokeStyle = '#191919';
-    context.lineWidth = 6;
-    resultRoundRect(context, 150, 816, 780, 248, 26);
-    context.stroke();
-    context.fillStyle = '#191919';
-    context.font = '900 31px "HuiFontP29", "Yu Gothic", sans-serif';
-    const messageLines = splitResultText(tier.message, 20, 4);
-    drawResultLines(context, messageLines, 540, 878, 47);
+  context.fillStyle = '#55c9dd';
+  context.globalAlpha = 0.18;
+  context.beginPath();
+  context.arc(764, 418, 128, 0, Math.PI * 2);
+  context.fill();
+  context.globalAlpha = 1;
+  if (girlImage) {
+    context.save();
+    context.shadowColor = 'rgba(0,0,0,.18)';
+    context.shadowBlur = 18;
+    context.shadowOffsetY = 10;
+    context.drawImage(girlImage, 642, 286, 238, 284);
+    context.restore();
   }
+
+  context.fillStyle = '#191919';
+  resultRoundRect(context, 408, 628, 264, 46, 23);
+  context.fill();
+  context.fillStyle = '#ffe36f';
+  context.font = '900 25px "Yu Gothic", sans-serif';
+  context.textAlign = 'center';
+  context.fillText(isEnglish ? 'YOUR TITLE' : '今日の称号', 540, 660);
+
+  context.fillStyle = '#ec4683';
+  const titleLines = splitResultText(tier.title, 11, 2);
+  context.font = `900 ${titleLines.length > 1 ? 46 : 54}px "HuiFontP29", "Yu Gothic", sans-serif`;
+  drawResultLines(context, titleLines, 540, 740, 58);
+
+  context.fillStyle = '#ffffff';
+  resultRoundRect(context, 150, 816, 780, 248, 26);
+  context.fill();
+  context.strokeStyle = '#191919';
+  context.lineWidth = 6;
+  resultRoundRect(context, 150, 816, 780, 248, 26);
+  context.stroke();
+  context.fillStyle = '#191919';
+  context.font = '900 31px "HuiFontP29", "Yu Gothic", sans-serif';
+  const messageLines = splitResultText(tier.message, 20, 4);
+  drawResultLines(context, messageLines, 540, 878, 47);
 
   context.fillStyle = '#ffe36f';
   resultRoundRect(context, 156, 1094, 768, 132, 26);
@@ -1726,10 +1630,8 @@ async function createChallengeResultCanvas(result, requestedMode = state.resultC
 async function prepareResultImage() {
   if (!state.result || state.resultImageBusy || state.resultImageUrl) return;
   state.resultImageBusy = true;
-  const requestedMode = normalizeResultCardMode(state.resultCardMode);
   try {
-    const canvas = await createChallengeResultCanvas(state.result, requestedMode);
-    if (requestedMode !== state.resultCardMode) return;
+    const canvas = await createChallengeResultCanvas(state.result);
     setState({
       resultImageUrl: canvas.toDataURL('image/png'),
       resultImageBusy: false,
@@ -1755,8 +1657,8 @@ async function saveChallengeResultImage() {
     const blob = dataUrlToBlob(state.resultImageUrl);
     await saveImageBlob(
       blob,
-      `watachan-challenge-${normalizeResultCardMode(state.resultCardMode)}.png`,
-      `わたし理解度診断｜${resultCardModeLabel(state.resultCardMode)}`,
+      'watachan-challenge-score.png',
+      isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード',
     );
   } catch (error) {
     if (error?.name !== 'AbortError') alert('画像を保存できませんでした。もう一度お試しください。');

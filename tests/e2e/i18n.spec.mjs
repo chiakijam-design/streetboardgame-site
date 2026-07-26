@@ -140,8 +140,9 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByRole('heading', { name: 'Which answers matched?' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Answer Review Report' })).toBeVisible();
   await expect(page.getByTestId('challenge-ai-review').locator(':scope > div > p')).toHaveCount(4);
-  await expect(page.getByRole('button', { name: /Title only/ })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByRole('button', { name: /With score Show 10\/10/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Score result card' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Title only/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /With score/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Guess the answers again' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add to Understanding Board (optional)' })).toBeVisible();
   await expect(page.locator('[data-comment-candidate] input[name="board-comment"]')).toHaveCount(2);
