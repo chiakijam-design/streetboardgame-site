@@ -227,6 +227,7 @@ const UI_TEXT = new Map(Object.entries({
   '10問LIVEを作る': 'Create a 10-question LIVE',
   '共通のお題ライブラリから10問を選び、問題文と5択を自由に編集できます。': 'Choose 10 questions from the shared library, then edit the question text and five choices.',
   '審査済みの配信者は、結果画像の販売と応援受付を任意で追加できます。無料LIVEは登録なしで作れます。': 'Approved streamers may optionally sell result images and accept support. Free LIVE games require no registration.',
+  '配信者登録審査へ進む': 'Continue to streamer registration review',
   '配信サービスごとの年齢・保護者同意ルールを確認してください。YouTubeで配信を開始できるのは原則16歳以上です。': 'Check the age and guardian-consent rules for your streaming service. As a general rule, you must be at least 16 to start a YouTube livestream.',
   '⚠️ 配信サービスごとの年齢・保護者同意ルールを確認してください。YouTubeで配信を開始できるのは原則16歳以上です。': '⚠️ Check the age and guardian-consent rules for your streaming service. As a general rule, you must be at least 16 to start a YouTube livestream.',
   '小さな配信でも、すぐ遊べます': 'Works for small streams too',

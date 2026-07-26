@@ -161,6 +161,10 @@ test('LIVE問題作成カードは縦長で整列し、前の問題と最初へ�
 
 test('未登録の配信者は販売登録の申込フォームへ進める', async ({ page }) => {
   await page.goto('/live-challenge');
+  const landingRegistrationLink = page.getByRole('link', { name: /配信者登録審査へ進む/ });
+  await expect(landingRegistrationLink).toHaveAttribute('href', '/?screen=about&to=contact&topic=live-creator-registration');
+  await expect(landingRegistrationLink).toBeVisible();
+  await expect(landingRegistrationLink).toHaveCSS('min-height', '44px');
   await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
 
   const salesSettings = page.getByTestId('live-sales-settings');

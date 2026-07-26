@@ -138,7 +138,9 @@ function landingView() {
         <li><b>3</b><span>視聴者と同時回答して進行</span></li>
       </ul>
       <button class="primary" data-action="open-create">LIVEクイズを作る <span>▶</span></button>
-      <p class="notice">審査済みの配信者は、結果画像の販売と応援受付を任意で追加できます。無料LIVEは登録なしで作れます。</p>
+      <p class="notice">審査済みの配信者は、結果画像の販売と応援受付を任意で追加できます。無料LIVEは登録なしで作れます。
+        <a class="landing-registration-link" href="/?screen=about&to=contact&topic=live-creator-registration">配信者登録審査へ進む <span aria-hidden="true">▶</span></a>
+      </p>
       <p class="live-age-notice" data-testid="live-age-notice">⚠️ ${LIVE_AGE_NOTICE}</p>
     </section>
     <section class="panel entry-card">
