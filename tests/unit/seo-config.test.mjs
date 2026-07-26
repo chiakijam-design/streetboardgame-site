@@ -7,6 +7,8 @@ test('ハッシュ付き本番JavaScriptだけを長期キャッシュする', a
   const headers = await readFile('_headers', 'utf8');
   assert.match(headers, /\/dist\/\*[\s\S]*Cache-Control: public, max-age=31536000, immutable/);
   assert.match(headers, /\/assets\/vendor\/\*[\s\S]*Cache-Control: public, max-age=31536000, immutable/);
+  assert.match(headers, /\/accessibility\.css[\s\S]*Cache-Control: public, max-age=31536000, immutable/);
+  assert.match(headers, /\/question-card\.css[\s\S]*Cache-Control: public, max-age=31536000, immutable/);
   assert.doesNotMatch(headers, /^\/\*\.js$/m);
 });
 

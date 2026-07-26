@@ -48,6 +48,12 @@
 /assets/vendor/*
   Cache-Control: public, max-age=31536000, immutable
 
+# HTMLから版番号付きURLで参照する共通CSS
+/accessibility.css
+  Cache-Control: public, max-age=31536000, immutable
+/question-card.css
+  Cache-Control: public, max-age=31536000, immutable
+
 # assets直下の更新可能な画像
 /assets/apple-touch-icon.png
   Cache-Control: public, max-age=86400, must-revalidate
