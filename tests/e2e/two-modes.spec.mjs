@@ -89,6 +89,12 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   const challengeButton = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
   const liveButton = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
   await expect(page.getByText('わたし理解度診断', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('product-positioning')).toHaveText('通常でも配信でも使える理解度診断メーカー');
+  await expect(page.getByTestId('brand-promise')).toHaveText('相手を理解できるまで、何度でも挑戦できる');
+  await expect(page.getByTestId('top-mode-pillars')).toContainText('友達向け');
+  await expect(page.getByTestId('top-mode-pillars')).toContainText('URLを送って、好きな時間に回答');
+  await expect(page.getByTestId('top-mode-pillars')).toContainText('LIVE向け');
+  await expect(page.getByTestId('top-mode-pillars')).toContainText('配信者と視聴者が同時回答し、1問ずつ答え合わせ');
   await expect(page.getByText('クイズを作る人向け', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('あなたの名前（12文字まで）')).toBeVisible();
   await expect(page.getByText('この説明は出題者向けです。')).toHaveCount(0);
@@ -386,6 +392,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カー
       };
     });
     await participant.goto(challengeUrl);
+    await expect(participant.getByText('相手を理解できるまで、何度でも挑戦できる')).toBeVisible();
     await expect(participant.getByRole('heading', { name: 'ちあきさんからの挑戦' })).toBeVisible();
     await participant.getByLabel('表示名（12文字まで）').fill('ゆう');
     await expect(participant.getByText('結果は回答後すぐには公開されません。')).toBeVisible();
@@ -413,6 +420,14 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カー
     await expect(participant.getByRole('heading', { name: 'どこが当たった？' })).toBeVisible();
     await expect(participant.getByText('まずは、どこが当たったか答え合わせを見てみよう。')).toBeVisible();
     await expect(participant.getByRole('button', { name: /称号だけ/ })).toHaveAttribute('aria-pressed', 'true');
+    const commentOptions = participant.locator('[data-comment-candidate] input[name="board-comment"]');
+    await expect(commentOptions).toHaveCount(4);
+    await expect(participant.getByRole('radio', { name: 'コメントなしで載せる' })).toBeChecked();
+    const customCommentInput = participant.getByRole('textbox', { name: '自分で書くコメント（80文字まで）' });
+    await expect(customCommentInput).toHaveAttribute('maxlength', '80');
+    const selectedComment = '次は好きな旅行先の話をもっと聞きたい！';
+    await customCommentInput.fill(selectedComment);
+    await expect(participant.getByRole('radio', { name: '自分で短いコメントを書く' })).toBeChecked();
     await participant.getByRole('button', { name: '理解度ボードに載せる（任意）' }).click();
     await expect(participant.getByText('この結果を理解度ボードに載せました。')).toBeVisible();
     const resultImage = participant.getByTestId('challenge-result-image');
@@ -463,7 +478,10 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カー
     await expect(participant.getByTestId('understanding-board')).toContainText('ゆう');
     await expect(participant.getByTestId('understanding-board')).toContainText('答え合わせ済み');
     await expect(participant.getByTestId('understanding-board')).toContainText('9/10問一致');
+    await expect(participant.getByTestId('understanding-board')).toContainText(selectedComment);
     await expect(participant.getByTestId('understanding-board')).not.toContainText('1位');
+    await expect(participant.getByText('掲載された回答は、10問を回答し終えた順に表示します。')).toBeVisible();
+    await expect(participant.getByText(/順位や点数順の並び替えはありません/)).toBeVisible();
   } finally {
     await participantContext.close();
   }
@@ -501,6 +519,7 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
     await expect(participant.getByTestId('understanding-board')).toContainText('答え合わせ済み');
     await expect(participant.getByTestId('understanding-board')).toContainText('10/10問一致');
     await expect(participant.getByTestId('understanding-board')).not.toContainText('1位');
+    await expect(participant.getByText(/順位や点数順の並び替えはありません/)).toBeVisible();
   } finally {
     await participantContext.close();
   }

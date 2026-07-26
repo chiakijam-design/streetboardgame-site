@@ -63,6 +63,10 @@ test('英語の主要ページは専用SEO・hreflangを持ち、言語切替は
 
 test('英語トップから通常版とLIVE版の英語標準お題へ進める', async ({ page }) => {
   await page.goto('/en/');
+  await expect(page.getByText('A “Know Me” quiz maker for sharing or livestreaming')).toBeVisible();
+  await expect(page.getByText('Try again as many times as it takes to understand each other')).toBeVisible();
+  await expect(page.getByText('For friends', { exact: true })).toBeVisible();
+  await expect(page.getByText('For livestreams', { exact: true })).toBeVisible();
   await page.getByRole('textbox', { name: /Your name/ }).fill('Mia');
   await page.getByRole('link', { name: 'Challenge your friends ▶' }).click();
   await expect(page).toHaveURL(/\/en\/challenge$/);
@@ -140,6 +144,10 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByRole('button', { name: /With score Show 10\/10/ })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Guess the answers again' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add to Understanding Board (optional)' })).toBeVisible();
+  await expect(page.locator('[data-comment-candidate] input[name="board-comment"]')).toHaveCount(2);
+  await expect(page.getByRole('radio', { name: 'Post without a comment' })).toBeChecked();
+  await expect(page.getByRole('textbox', { name: 'Your comment (up to 80 characters)' }))
+    .toHaveAttribute('maxlength', '80');
   await expect(page.getByText('Certified Mind Reader', { exact: true })).toBeVisible();
   await expect(page.getByTestId('challenge-ai-review')).toContainText('Overall understanding');
   await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');

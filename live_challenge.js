@@ -287,6 +287,7 @@ function joinView() {
   return `<section class="panel">
     <span class="section-pill">視聴者用</span>
     <h2 style="margin-top:10px">LIVEクイズに参加</h2>
+    <p class="brand-promise">相手を理解できるまで、何度でも挑戦できる</p>
     <div class="room-code">${escapeHtml(state.code)}</div>
     <p>結果カードに表示する名前を入力してください。</p>
     <div class="field">

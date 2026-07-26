@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Watachan | Make a quiz and challenge your friends</title>
-  <meta name="description" content="Create a free 10-question “How well do you know me?” quiz, share one link with friends, or play live with viewers on Instagram Live or YouTube Live.">
+  <meta name="description" content="A free “Know Me” quiz maker for sharing or livestreaming: friends can answer anytime from one URL, or streamers and viewers can answer together and review each question live.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="https://www.streetboardgame.com/en/">
   <link rel="alternate" hreflang="ja" href="https://www.streetboardgame.com/">
@@ -35,7 +35,7 @@
     .hero{text-align:center;color:#fff}.eyebrow{display:inline-block;margin:0;padding:7px 15px;border:2px solid #fff;border-radius:999px;font-size:13px;letter-spacing:.08em}
     h1{margin:24px auto 13px;font-size:clamp(40px,10vw,74px);line-height:1.05;text-shadow:5px 5px 0 var(--cyan)}.hero>p:last-child{max-width:580px;margin:0 auto;font-size:18px;line-height:1.65}
     .art{position:relative;display:grid;grid-template-columns:180px 1fr;align-items:end;justify-content:center;max-width:620px;min-height:260px;margin:26px auto}.art .girl{z-index:2;width:190px;max-height:300px;object-fit:contain;filter:drop-shadow(0 12px 12px rgba(89,18,48,.32))}.quiz-stack{position:relative;width:370px;height:250px}.quiz-card{position:absolute;top:22px;left:50%;width:190px;height:230px;padding:15px 12px;border:3px solid #fff;border-radius:13px;background:repeating-linear-gradient(#fff 0 28px,#b8ddea 29px 30px);filter:drop-shadow(0 10px 10px rgba(89,18,48,.34));color:var(--black);font-size:11px;text-align:center}.quiz-card b{display:block;margin-bottom:15px;padding:9px 5px;background:#74c7e3}.quiz-card span{display:block;line-height:29px}.quiz-card:nth-child(1){transform:translateX(-82%) rotate(-8deg)}.quiz-card:nth-child(2){z-index:2;transform:translateX(-48%) rotate(3deg)}.quiz-card:nth-child(3){transform:translateX(-10%) rotate(9deg)}
-    .card{margin-top:22px;padding:24px;background:var(--paper);border:3px solid var(--black);border-radius:22px;box-shadow:7px 8px 0 var(--black)}.card h2{margin:0 0 8px;text-align:center;font-size:28px}.card>p{margin:0 0 18px;text-align:center;line-height:1.6}
+    .card{margin-top:22px;padding:24px;background:var(--paper);border:3px solid var(--black);border-radius:22px;box-shadow:7px 8px 0 var(--black)}.card h2{margin:0 0 8px;text-align:center;font-size:28px}.card>p{margin:0 0 18px;text-align:center;line-height:1.6}.positioning{color:#a61955;font-size:14px;font-weight:900;letter-spacing:.04em}.promise{padding:10px 12px;border:2px solid var(--black);border-radius:999px;background:#fff;font-size:15px;font-weight:900}.pillars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0}.pillar{min-height:124px;padding:12px 9px;border:3px solid var(--black);border-radius:14px;background:#fff;text-align:center;box-shadow:3px 4px 0 var(--cyan)}.pillar.live{box-shadow-color:var(--yellow)}.pillar b,.pillar small{display:block}.pillar b{font-size:17px}.pillar small{margin:7px auto 8px}.pillar p{margin:0;font-size:13px;line-height:1.55}
     .steps{display:grid;gap:9px;margin:20px 0}.step{display:grid;grid-template-columns:42px 1fr;align-items:center;gap:10px;min-height:58px;padding:8px 12px;background:#fff;border:2px solid var(--black);border-radius:13px;box-shadow:2px 3px 0 var(--black)}.step b{display:grid;width:36px;height:36px;place-items:center;border:2px solid var(--black);border-radius:50%;background:var(--yellow)}
     .name-label{display:block;margin:23px 0 7px}.name{width:100%;min-height:52px;padding:12px 14px;border:3px solid var(--black);border-radius:12px;background:#fff;font:700 16px Arial}
     .actions{display:grid;gap:13px;margin-top:16px}.action{display:flex;min-height:58px;align-items:center;justify-content:center;padding:11px 15px;border:3px solid var(--black);border-radius:13px;background:var(--black);color:#fff;text-align:center;text-decoration:none;box-shadow:4px 5px 0 var(--cyan);font-size:17px}.action.live{box-shadow:4px 5px 0 var(--yellow)}
@@ -61,13 +61,18 @@
       </div>
     </div>
     <section class="card">
-      <h2>Create your “Know Me” quiz</h2>
-      <p>This page is for quiz creators. Players open the join link you send them.</p>
+      <p class="positioning">A “Know Me” quiz maker for sharing or livestreaming</p>
+      <h2>Two main ways to play</h2>
+      <p class="promise">Try again as many times as it takes to understand each other</p>
       <div class="steps" aria-label="How it works">
         <div class="step"><b>1</b><span>Choose or write 10 questions</span></div>
         <div class="step"><b>2</b><span>Choose your own answers</span></div>
         <div class="step"><b>3</b><span>Send the link or QR code to friends</span></div>
         <div class="step"><b>4</b><span>See who understands you best</span></div>
+      </div>
+      <div class="pillars" aria-label="Two main ways to play">
+        <section class="pillar"><small>STANDARD</small><b>For friends</b><p>Send a URL.<br>Answer anytime.</p></section>
+        <section class="pillar live"><small>LIVE</small><b>For livestreams</b><p>Answer together,<br>then review each question.</p></section>
       </div>
       <label class="name-label" for="creator-name">Your name <small>(up to 12 characters)</small></label>
       <input class="name" id="creator-name" maxlength="12" autocomplete="nickname" placeholder="e.g. Mia">

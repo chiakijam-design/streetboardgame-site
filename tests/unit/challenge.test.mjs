@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import {
+  buildBoardCommentCandidates,
+  CHALLENGE_BOARD_COMMENT_MAX_LENGTH,
   CHALLENGE_MAX_PARTICIPANTS,
   CHALLENGE_QUESTION_COUNT,
   handleChallengeApi,
@@ -72,6 +74,36 @@ test('共通お題データは題名を正規化して重複を除ける', () =>
   assert.equal(pickChallengeCards(merged, 2, () => 0).length, 2);
 });
 
+test('答え合わせから3定型文を2種類ずつ生成し、自由入力は使わない', () => {
+  const candidates = buildBoardCommentCandidates({
+    cards,
+    answerKey: Array(CHALLENGE_QUESTION_COUNT).fill(0),
+  }, {
+    answers: [1, 1, ...Array(CHALLENGE_QUESTION_COUNT - 2).fill(0)],
+  });
+  assert.equal(candidates.length, 6);
+  assert.equal(candidates.filter((comment) => comment.endsWith('なんだね。意外！')).length, 2);
+  assert.equal(candidates.filter((comment) => comment.includes('は絶対')).length, 2);
+  assert.equal(candidates.filter((comment) => comment.endsWith('と2択で迷った')).length, 2);
+});
+
+test('満点または0点では実際に存在する正解・不正解だけからコメント候補を作る', () => {
+  const room = {
+    cards,
+    answerKey: Array(CHALLENGE_QUESTION_COUNT).fill(0),
+  };
+  const perfect = buildBoardCommentCandidates(room, {
+    answers: Array(CHALLENGE_QUESTION_COUNT).fill(0),
+  });
+  const zero = buildBoardCommentCandidates(room, {
+    answers: Array(CHALLENGE_QUESTION_COUNT).fill(1),
+  });
+  assert.equal(perfect.length, 2);
+  assert.equal(perfect.every((comment) => comment.includes('は絶対')), true);
+  assert.equal(zero.length, 4);
+  assert.equal(zero.some((comment) => comment.includes('は絶対')), false);
+});
+
 test('挑戦ルームは10問固定で正解を公開せず50人まで受け付ける', async () => {
   const env = { CHALLENGE_KV: new MemoryKV() };
   const createdResponse = await api(env, '/api/challenge/rooms', {
@@ -104,7 +136,7 @@ test('挑戦ルームは10問固定で正解を公開せず50人まで受け付�
   assert.equal(rejected.status, 409);
 });
 
-test('挑戦者の得点・同率順位・10問の答え合わせを本人だけに返す', async () => {
+test('挑戦者の得点と10問の答え合わせを本人だけに返し、順位は返さない', async () => {
   const env = { CHALLENGE_KV: new MemoryKV() };
   const created = await (await api(env, '/api/challenge/rooms', {
     method: 'POST',
@@ -127,14 +159,30 @@ test('挑戦者の得点・同率順位・10問の答え合わせを本人だけ
   const unpublishedResult = await (await api(env, `/api/challenge/rooms/${created.code}/result`, {
     headers: { 'x-challenge-participant-token': joined.participantToken },
   })).json();
-  assert.equal(unpublishedResult.rank, null);
+  assert.equal(Object.hasOwn(unpublishedResult, 'rank'), false);
   assert.equal(unpublishedResult.participant.rankingParticipating, false);
+  const tooLongComment = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
+    method: 'POST',
+    headers: tokenHeader,
+    body: JSON.stringify({ comment: 'あ'.repeat(CHALLENGE_BOARD_COMMENT_MAX_LENGTH + 1) }),
+  });
+  assert.equal(tooLongComment.status, 400);
+  assert.equal((await tooLongComment.json()).error, 'board-comment-too-long');
+  const personalComment = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
+    method: 'POST',
+    headers: tokenHeader,
+    body: JSON.stringify({ comment: '連絡先は090-1234-5678です' }),
+  });
+  assert.equal(personalComment.status, 400);
+  assert.equal((await personalComment.json()).error, 'board-comment-personal-information');
+  const boardComment = '次は旅行の話をもっと聞いてみたい！';
   const registered = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
     method: 'POST',
     headers: tokenHeader,
+    body: JSON.stringify({ comment: boardComment }),
   });
   assert.equal(registered.status, 200);
-  assert.equal((await registered.json()).rank, 1);
+  assert.equal(Object.hasOwn(await registered.json(), 'rank'), false);
   const resubmitted = await api(env, `/api/challenge/rooms/${created.code}/submit`, {
     method: 'POST',
     headers: tokenHeader,
@@ -145,7 +193,7 @@ test('挑戦者の得点・同率順位・10問の答え合わせを本人だけ
     headers: { 'x-challenge-participant-token': joined.participantToken },
   })).json();
   assert.equal(result.score, 10);
-  assert.equal(result.rank, 1);
+  assert.equal(Object.hasOwn(result, 'rank'), false);
   assert.equal(result.answers.length, 10);
   assert.equal(result.answers.every((answer) => answer.match), true);
 
@@ -153,8 +201,9 @@ test('挑戦者の得点・同率順位・10問の答え合わせを本人だけ
   assert.deepEqual(ranking.participants.map((participant) => ({
     name: participant.name,
     score: participant.score,
-    rank: participant.rank,
-  })), [{ name: '挑戦者', score: 10, rank: 1 }]);
+    comment: participant.comment,
+  })), [{ name: '挑戦者', score: 10, comment: boardComment }]);
+  assert.equal(ranking.participants.every((participant) => !Object.hasOwn(participant, 'rank')), true);
 
   const managed = await (await api(env, `/api/challenge/rooms/${created.code}/manage`, {
     headers: { 'x-challenge-manage-token': created.manageToken },
@@ -172,6 +221,7 @@ test('選択した1問だけを順番に確定し、正解を漏らさず正誤�
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0018_challenge_board_comments.sql', import.meta.url), 'utf8'));
   const environments = [
     { CHALLENGE_KV: new MemoryKV() },
     { REMOTE_DB: d1Adapter(sqlite) },
@@ -276,6 +326,7 @@ test('結果確認後だけ点数を登録でき、同じ参加枠で再挑戦�
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0018_challenge_board_comments.sql', import.meta.url), 'utf8'));
   const environments = [
     { CHALLENGE_KV: new MemoryKV() },
     { REMOTE_DB: d1Adapter(sqlite) },
@@ -309,7 +360,7 @@ test('結果確認後だけ点数を登録でき、同じ参加枠で再挑戦�
       headers: tokenHeader,
     })).json();
     assert.equal(firstResult.score, 0);
-    assert.equal(firstResult.rank, null);
+    assert.equal(Object.hasOwn(firstResult, 'rank'), false);
     assert.equal(firstResult.participant.rankingParticipating, false);
     assert.deepEqual((await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json()).participants, []);
 
@@ -337,11 +388,12 @@ test('結果確認後だけ点数を登録でき、同じ参加枠で再挑戦�
       headers: tokenHeader,
     });
     assert.equal(registered.status, 200);
-    assert.equal((await registered.json()).rank, 1);
+    assert.equal(Object.hasOwn(await registered.json(), 'rank'), false);
     const finalRanking = await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json();
-    assert.deepEqual(finalRanking.participants.map(({ name, score, rank }) => ({ name, score, rank })), [
-      { name: '再挑戦者', score: 10, rank: 1 },
+    assert.deepEqual(finalRanking.participants.map(({ name, score }) => ({ name, score })), [
+      { name: '再挑戦者', score: 10 },
     ]);
+    assert.equal(finalRanking.participants.every((participant) => !Object.hasOwn(participant, 'rank')), true);
 
     const managed = await (await api(env, `/api/challenge/rooms/${created.code}/manage`, {
       headers: { 'x-challenge-manage-token': created.manageToken },
@@ -354,13 +406,79 @@ test('結果確認後だけ点数を登録でき、同じ参加枠で再挑戦�
   sqlite.close();
 });
 
-test('挑戦モードのD1移行はランキング同意と人気お題集計を追加する', () => {
+test('理解度ボードは点数ではなく10問の回答完了順で並び、順位を返さない', async (t) => {
+  let currentTime = 1_750_000_000_000;
+  t.mock.method(Date, 'now', () => {
+    currentTime += 1;
+    return currentTime;
+  });
+
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0018_challenge_board_comments.sql', import.meta.url), 'utf8'));
+  const environments = [
+    { CHALLENGE_KV: new MemoryKV() },
+    { REMOTE_DB: d1Adapter(sqlite) },
+  ];
+
+  for (const env of environments) {
+    const created = await (await api(env, '/api/challenge/rooms', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        creatorName: '出題者',
+        cards,
+        answers: Array(CHALLENGE_QUESTION_COUNT).fill(0),
+      }),
+    })).json();
+
+    const answerAndList = async (name, answers) => {
+      const joined = await (await api(env, `/api/challenge/rooms/${created.code}/join`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })).json();
+      const tokenHeaders = {
+        'content-type': 'application/json',
+        'x-challenge-participant-token': joined.participantToken,
+      };
+      assert.equal((await api(env, `/api/challenge/rooms/${created.code}/submit`, {
+        method: 'POST',
+        headers: tokenHeaders,
+        body: JSON.stringify({ answers }),
+      })).status, 200);
+      const registration = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
+        method: 'POST',
+        headers: tokenHeaders,
+      });
+      assert.equal(registration.status, 200);
+      assert.equal(Object.hasOwn(await registration.json(), 'rank'), false);
+    };
+
+    await answerAndList('先に回答・0問一致', Array(CHALLENGE_QUESTION_COUNT).fill(1));
+    await answerAndList('後に回答・10問一致', Array(CHALLENGE_QUESTION_COUNT).fill(0));
+
+    const board = await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json();
+    assert.deepEqual(board.participants, [
+      { name: '先に回答・0問一致', score: 0, comment: '' },
+      { name: '後に回答・10問一致', score: 10, comment: '' },
+    ]);
+    assert.equal(board.participants.every((participant) => !Object.hasOwn(participant, 'rank')), true);
+  }
+
+  sqlite.close();
+});
+
+test('挑戦モードのD1移行は理解度ボード掲載同意と人気お題集計を追加する', () => {
+  const sqlite = new DatabaseSync(':memory:');
+  sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0018_challenge_board_comments.sql', import.meta.url), 'utf8'));
   const participantColumns = sqlite.prepare('PRAGMA table_info(challenge_participants)').all()
     .map((column) => column.name);
   assert.equal(participantColumns.includes('ranking_consent_at'), true);
+  assert.equal(participantColumns.includes('board_comment'), true);
   const statsColumns = sqlite.prepare('PRAGMA table_info(challenge_question_stats)').all()
     .map((column) => column.name);
   assert.deepEqual(statsColumns, [

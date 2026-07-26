@@ -318,6 +318,7 @@ test('streamer and viewer answer ten questions and viewer receives a result card
   const viewer = await context.newPage();
   await viewer.setViewportSize(activeViewport);
   await viewer.goto(`/live-challenge?room=${code}`);
+  await expect(viewer.getByText('相手を理解できるまで、何度でも挑戦できる')).toBeVisible();
   await viewer.getByLabel('あなたの名前（24文字まで）').fill('視聴者A');
   await viewer.getByRole('button', { name: /^参加する/ }).click();
   await expect(viewer.getByRole('heading', { name: '配信者のスタート待ち' })).toBeVisible();

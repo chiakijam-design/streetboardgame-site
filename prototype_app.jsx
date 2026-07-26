@@ -108,10 +108,50 @@ function TopPage() {
         borderRadius: 18,
         boxShadow: `5px 5px 0 ${theme.pinkDeep}`,
       }}>
+        <p data-testid="product-positioning" style={{
+          margin: '0 0 12px',
+          textAlign: 'center',
+          color: theme.pinkDeep,
+          fontSize: 13,
+          fontWeight: 900,
+          letterSpacing: '.04em',
+        }}>
+          通常でも配信でも使える理解度診断メーカー
+        </p>
         <h2 id="rules-title" style={{ margin: 0, textAlign: 'center', fontSize: 18, lineHeight: 1.5 }}>
           あなたの「わたし理解度診断」を作って、<br />みんなに挑戦してもらおう
         </h2>
+        <p data-testid="brand-promise" style={{
+          margin: '12px 0 0',
+          padding: '10px 12px',
+          border: `2px solid ${theme.black}`,
+          borderRadius: 999,
+          background: theme.white,
+          textAlign: 'center',
+          fontSize: 14,
+          fontWeight: 900,
+          lineHeight: 1.5,
+        }}>
+          相手を理解できるまで、何度でも挑戦できる
+        </p>
         <Rules />
+        <div data-testid="top-mode-pillars" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2,minmax(0,1fr))',
+          gap: 10,
+          marginTop: 16,
+        }}>
+          <section style={modePillarStyle(theme.cyan)}>
+            <span style={modePillarLabelStyle()}>通常版</span>
+            <b style={{ fontSize: 16 }}>友達向け</b>
+            <p style={modePillarNoteStyle()}>URLを送って、<br />好きな時間に回答</p>
+          </section>
+          <section style={modePillarStyle(theme.yellow)}>
+            <span style={modePillarLabelStyle()}>LIVE版</span>
+            <b style={{ fontSize: 16 }}>LIVE向け</b>
+            <p style={modePillarNoteStyle()}>配信者と視聴者が同時回答し、<br />1問ずつ答え合わせ</p>
+          </section>
+        </div>
         <form onSubmit={(event) => { event.preventDefault(); start('challenge'); }} style={{
           display: 'grid',
           gap: 10,
@@ -199,6 +239,43 @@ function Rules() {
       ))}
     </ol>
   );
+}
+
+function modePillarStyle(accent) {
+  return {
+    display: 'grid',
+    alignContent: 'start',
+    gap: 6,
+    minHeight: 126,
+    padding: '12px 9px',
+    border: `3px solid ${theme.black}`,
+    borderRadius: 14,
+    background: theme.white,
+    boxShadow: `3px 4px 0 ${accent}`,
+    textAlign: 'center',
+  };
+}
+
+function modePillarLabelStyle() {
+  return {
+    justifySelf: 'center',
+    padding: '3px 9px',
+    borderRadius: 999,
+    background: theme.black,
+    color: theme.white,
+    fontFamily: theme.caption,
+    fontSize: 10,
+    letterSpacing: '.08em',
+  };
+}
+
+function modePillarNoteStyle() {
+  return {
+    margin: 0,
+    fontSize: 12,
+    fontWeight: 800,
+    lineHeight: 1.55,
+  };
 }
 
 function CommonCardStack() {
