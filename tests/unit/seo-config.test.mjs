@@ -13,11 +13,14 @@ test('ハッシュ付き本番JavaScriptだけを長期キャッシュする', a
 test('sitemapは正規URL・正確な更新日だけを掲載する', async () => {
   const sitemap = await readFile('sitemap.xml', 'utf8');
   const locations = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+  const lastModifiedDates = [...sitemap.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map((match) => match[1]);
   assert.equal(new Set(locations).size, locations.length);
+  assert.equal(lastModifiedDates.length, locations.length);
   assert.equal(locations.includes('https://www.streetboardgame.com/challenge'), true);
   assert.equal(locations.includes('https://www.streetboardgame.com/live'), false);
   assert.equal(locations.some((location) => location.includes('?')), false);
   assert.equal(sitemap.includes('<changefreq>'), false);
   assert.equal(sitemap.includes('<priority>'), false);
-  assert.equal([...sitemap.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].every(([, date]) => /^\d{4}-\d{2}-\d{2}$/.test(date)), true);
+  assert.equal(lastModifiedDates.every((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)), true);
+  assert.deepEqual(new Set(lastModifiedDates), new Set(['2026-07-26']));
 });

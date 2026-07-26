@@ -1330,7 +1330,17 @@ function HomeLink() {
 }
 
 function SiteFooter() {
-  const links = [['About', '/about'], ['人気のお題', '/challenge/library'], ['製品版', '/product'], ['利用規約', '/terms'], ['プライバシー', '/privacy'], ['特商法表記', '/legal']];
+  const links = [
+    ['通常版', '/challenge'],
+    ['LIVE版', '/live-challenge'],
+    ['遊び方', '/challenge-guide'],
+    ['About', '/about'],
+    ['人気のお題', '/challenge/library'],
+    ['製品版', '/product'],
+    ['利用規約', '/terms'],
+    ['プライバシー', '/privacy'],
+    ['特商法表記', '/legal'],
+  ];
   return (
     <footer style={{ padding: '24px 20px 32px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '10px 18px', position: 'relative', zIndex: 1 }}>
       {links.map(([label, href]) => <a key={href} href={href} style={{ color: theme.white, fontSize: 12, fontWeight: 800 }}>{label}</a>)}

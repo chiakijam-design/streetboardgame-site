@@ -15,15 +15,17 @@ const VARIANTS = {
     webp: 'girl-full.webp',
     webpSrcSet: 'girl-full-480.webp 326w, girl-full-960.webp 653w, girl-full.webp 2088w',
     aspect: 3072/2088,
+    intrinsicWidth: 2088,
+    intrinsicHeight: 3072,
   },
-  default: { file: 'girl-default.png', webp: 'girl-default.webp', aspect: 297/244 },
-  upper:   { file: 'girl-upper.png',   webp: 'girl-upper.webp',   aspect: 297/244 },
+  default: { file: 'girl-default.png', webp: 'girl-default.webp', aspect: 297/244, intrinsicWidth: 244, intrinsicHeight: 297 },
+  upper:   { file: 'girl-upper.png',   webp: 'girl-upper.webp',   aspect: 297/244, intrinsicWidth: 244, intrinsicHeight: 297 },
 
   // 結果画面用エイリアス。素材が増えたら差し替え
-  happy:   { file: 'girl-default.png', webp: 'girl-default.webp', aspect: 297/244 },
-  smile:   { file: 'girl-default.png', webp: 'girl-default.webp', aspect: 297/244 },
-  wink:    { file: 'girl-upper.png',   webp: 'girl-upper.webp',   aspect: 297/244 },
-  pout:    { file: 'girl-upper.png',   webp: 'girl-upper.webp',   aspect: 297/244 },
+  happy:   { file: 'girl-default.png', webp: 'girl-default.webp', aspect: 297/244, intrinsicWidth: 244, intrinsicHeight: 297 },
+  smile:   { file: 'girl-default.png', webp: 'girl-default.webp', aspect: 297/244, intrinsicWidth: 244, intrinsicHeight: 297 },
+  wink:    { file: 'girl-upper.png',   webp: 'girl-upper.webp',   aspect: 297/244, intrinsicWidth: 244, intrinsicHeight: 297 },
+  pout:    { file: 'girl-upper.png',   webp: 'girl-upper.webp',   aspect: 297/244, intrinsicWidth: 244, intrinsicHeight: 297 },
 };
 
 function Girl({
@@ -70,8 +72,8 @@ function Girl({
       <img
         src={IMAGE_BASE + conf.file}
         alt={alt}
-        width={typeof w === 'number' ? w : undefined}
-        height={typeof h === 'number' ? h : undefined}
+        width={typeof w === 'number' ? w : conf.intrinsicWidth}
+        height={typeof h === 'number' ? h : conf.intrinsicHeight}
         loading={loading}
         decoding="async"
         fetchPriority={fetchPriority}

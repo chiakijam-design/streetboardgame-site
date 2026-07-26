@@ -12,6 +12,7 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
 const HASHED_JS_PATH = /^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12})\.js$/i;
+const VERSIONED_STATIC_ASSET_PATH = /\.(?:css|js|png|jpe?g|svg|webp)$/i;
 const RETIRED_GAME_PATHS = new Set([
   '/love',
   '/friends',
@@ -187,7 +188,8 @@ async function handleRequest(request, env) {
       const headers = new Headers(response.headers);
       headers.set('content-type', 'text/html; charset=UTF-8');
       if (url.searchParams.has('room')) headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
-      return new Response(request.method === 'HEAD' ? null : await response.text(), {
+      const html = request.method === 'HEAD' ? null : await response.text();
+      return new Response(html ? selectQuestionDataScript(html, 'ja') : null, {
         status: response.status,
         headers,
       });
@@ -209,11 +211,12 @@ async function handleRequest(request, env) {
         headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       }
       const html = request.method === 'HEAD' ? null : await response.text();
-      const body = html && path === '/challenge/library'
+      const localizedBody = html && path === '/challenge/library'
         ? applyChallengeLibraryMeta(html)
         : html && path === '/challenge'
           ? applyChallengeShareMeta(html, url)
           : html;
+      const body = localizedBody ? selectQuestionDataScript(localizedBody, 'ja') : localizedBody;
       return new Response(body, {
         status: response.status,
         headers,
@@ -392,7 +395,7 @@ async function handleRequest(request, env) {
       return new Response(body, { status: 404, headers });
     }
 
-    if (response.ok && HASHED_JS_PATH.test(url.pathname)) {
+    if (response.ok && (HASHED_JS_PATH.test(url.pathname) || isVersionedStaticAsset(url))) {
       const headers = new Headers(response.headers);
       headers.set('cache-control', 'public, max-age=31536000, immutable');
       return new Response(response.body, { status: response.status, headers });
@@ -541,7 +544,14 @@ function applyChallengeLibraryMeta(html) {
     );
 }
 
+function isVersionedStaticAsset(url) {
+  const version = String(url.searchParams.get('v') || '');
+  return VERSIONED_STATIC_ASSET_PATH.test(url.pathname)
+    && /^[a-z0-9][a-z0-9._-]{0,63}$/i.test(version);
+}
+
 function applyEnglishGameMeta(html, kind, requestUrl) {
+  html = selectQuestionDataScript(html, 'en');
   const isLive = kind === 'live';
   const canonicalPath = isLive ? '/en/live-challenge' : '/en/challenge';
   const title = isLive
@@ -643,6 +653,17 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
     .replace('利用規約', 'Terms')
     .replace('プライバシー', 'Privacy');
   return localized;
+}
+
+function selectQuestionDataScript(html, language) {
+  const entryToRemove = language === 'en'
+    ? 'prototype_common_data'
+    : 'prototype_english_common_data';
+  const scriptPattern = new RegExp(
+    `\\s*<script\\b[^>]*data-build-entry=["']${entryToRemove}["'][^>]*>\\s*<\\/script>`,
+    'i',
+  );
+  return html.replace(scriptPattern, '');
 }
 
 function applyChallengeShareMeta(html, requestUrl) {

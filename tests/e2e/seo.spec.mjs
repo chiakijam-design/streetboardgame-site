@@ -75,11 +75,35 @@ test('サイトマップ掲載URLは200・自己canonical・index可能で統一
   expect(robots).toContain(`Sitemap: ${ORIGIN}/sitemap.xml`);
 });
 
+test('ゲーム画面は表示言語のお題データだけを読み込む', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', '配信HTMLは画面幅に依存しないためPCで1回検証');
+  for (const path of ['/challenge', '/live-challenge']) {
+    const html = await (await request.get(path)).text();
+    expect(html, path).toContain('data-build-entry="prototype_common_data"');
+    expect(html, path).not.toContain('data-build-entry="prototype_english_common_data"');
+  }
+  for (const path of ['/en/challenge', '/en/live-challenge']) {
+    const html = await (await request.get(path)).text();
+    expect(html, path).not.toContain('data-build-entry="prototype_common_data"');
+    expect(html, path).toContain('data-build-entry="prototype_english_common_data"');
+  }
+});
+
+test('版番号付き静的ファイルを長期キャッシュする', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPキャッシュは画面幅に依存しないためPCで1回検証');
+  const stylesheet = await request.get('/question-card.css?v=20260725-1');
+  expect(stylesheet.headers()['cache-control']).toContain('max-age=31536000');
+  expect(stylesheet.headers()['cache-control']).toContain('immutable');
+});
+
 test('トップの内部リンクと構造化データに廃止モードを残さない', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTML構造は画面幅に依存しないためPCで1回検証');
   await page.goto('/');
   await expect(page.locator('a[href="/love"]')).toHaveCount(0);
   await expect(page.locator('a[href="/challenge-guide"]').first()).toBeAttached();
+  await expect(page.locator('footer a[href="/challenge"]')).toBeAttached();
+  await expect(page.locator('footer a[href="/live-challenge"]')).toBeAttached();
+  await expect(page.locator('footer a[href="/challenge-guide"]')).toBeAttached();
   await expect(page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true })).toBeAttached();
   await expect(page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toBeAttached();
   await expect(page.locator('a[href="/challenge/library"]').first()).toContainText('人気のお題');
@@ -125,6 +149,25 @@ test('英語トップのLCP画像は初期HTMLから適切な候補を高優先�
   await expect(hero).toHaveAttribute('fetchpriority', 'high');
   await expect(hero).toHaveAttribute('width', '326');
   await expect(hero).toHaveAttribute('height', '480');
+});
+
+test('公開ページの画像は代替テキストと表示寸法を持つ', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', '画像属性は画面幅に依存しないためPCで1回検証');
+  for (const path of ['/', '/challenge-guide', '/about', '/product', '/en/']) {
+    await page.goto(path);
+    const images = page.locator('img');
+    for (let index = 0; index < await images.count(); index += 1) {
+      const image = images.nth(index);
+      const attributes = await image.evaluate((element) => ({
+        alt: element.getAttribute('alt'),
+        width: element.getAttribute('width'),
+        height: element.getAttribute('height'),
+      }));
+      expect(attributes.alt, `${path} img[${index}] alt`).not.toBeNull();
+      expect(Number(attributes.width), `${path} img[${index}] width`).toBeGreaterThan(0);
+      expect(Number(attributes.height), `${path} img[${index}] height`).toBeGreaterThan(0);
+    }
+  }
 });
 
 test('トップの自己ホストスクリプトをCSPで拒否せず、不要なscript preloadを送らない', async ({ page }, testInfo) => {
