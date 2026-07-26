@@ -1,5 +1,9 @@
 import { safetyFlagLabels } from './src/questions/safety.js';
-import { findSimilarQuestions, sortQuestionsForOperations } from './src/questions/similarity.js';
+import {
+  findSimilarQuestions,
+  questionSkipRate,
+  sortQuestionsForOperations,
+} from './src/questions/similarity.js';
 import { downloadQuestionBackup } from './src/questions/export.js';
 import {
   clearAdminSessionToken,
@@ -17,7 +21,7 @@ const dashboard = document.getElementById('dashboard');
 const authStatus = document.getElementById('authStatus');
 const staticQuestions = buildStaticQuestions();
 const dirtyQuestionIds = new Set();
-let overview = { catalog: [], submissions: [] };
+let overview = { catalog: [], submissions: [], selectionStats: [] };
 let allQuestions = [];
 let similarityMatches = new Map();
 
@@ -36,7 +40,10 @@ async function loadOverview() {
   try {
     if (!getAdminSessionToken() || otpInput.value.trim()) await createAdminSession();
     overview = await adminApi('/api/questions/admin/overview');
-    allQuestions = sortQuestionsForOperations(mergeQuestionOverview(staticQuestions, overview.catalog));
+    allQuestions = sortQuestionsForOperations(mergeQuestionSelectionStats(
+      mergeQuestionOverview(staticQuestions, overview.catalog),
+      overview.selectionStats,
+    ));
     similarityMatches = findSimilarQuestions([
       ...allQuestions,
       ...(overview.submissions || []).filter((item) => item.status === 'pending'),
@@ -165,6 +172,7 @@ function renderAllQuestions() {
           <th class="status-col">無効化</th>
           <th class="question-col">問題文</th>
           ${choiceHeaders()}
+          <th class="skip-col">スキップ率<br>（低い順）</th>
           <th class="similar-col">類似候補</th>
           <th class="action-col">保存</th>
         </tr></thead>
@@ -202,6 +210,7 @@ function questionRow(item) {
         </div>
       </td>
       ${choiceCells(item)}
+      <td class="skip-col">${skipRateCell(item)}</td>
       <td>${similarityCell(id, matches)}</td>
       <td>
         <div class="row-actions">
@@ -238,7 +247,7 @@ function comparisonRow(id, item, matches) {
   if (!matches.length) return '';
   return `
     <tr class="compare-row" data-comparison="${attr(id)}" hidden>
-      <td colspan="11">
+      <td colspan="12">
         <div class="comparison-grid">
           ${comparisonCard('この問題', item, id)}
           ${matches.map((match, index) => comparisonCard(`類似候補${index + 1}（${Math.round(match.score * 100)}%）`, match, id)).join('')}
@@ -472,6 +481,65 @@ function mergeQuestionOverview(base, catalog) {
     });
   }
   return result;
+}
+
+function mergeQuestionSelectionStats(items, rows) {
+  const statsByQuestion = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const id = String(row?.questionId || '');
+    const mode = row?.mode === 'live' ? 'live' : row?.mode === 'challenge' ? 'challenge' : '';
+    if (!id || !mode) continue;
+    const summary = statsByQuestion.get(id) || {
+      challengeShownCount: 0,
+      challengeSkipCount: 0,
+      liveShownCount: 0,
+      liveSkipCount: 0,
+    };
+    summary[`${mode}ShownCount`] += Math.max(0, Number(row.shownCount) || 0);
+    summary[`${mode}SkipCount`] += Math.max(0, Number(row.skipCount) || 0);
+    statsByQuestion.set(id, summary);
+  }
+  return (items || []).map((item) => {
+    const summary = statsByQuestion.get(String(item.id)) || {
+      challengeShownCount: 0,
+      challengeSkipCount: 0,
+      liveShownCount: 0,
+      liveSkipCount: 0,
+    };
+    return {
+      ...item,
+      ...summary,
+      selectionShownCount: summary.challengeShownCount + summary.liveShownCount,
+      selectionSkipCount: summary.challengeSkipCount + summary.liveSkipCount,
+    };
+  });
+}
+
+function skipRateCell(item) {
+  const rate = questionSkipRate(item);
+  if (rate == null) {
+    return `
+      <strong class="skip-rate no-data">データなし</strong>
+      <span class="meta">表示後に集計</span>
+    `;
+  }
+  const shownCount = Math.max(0, Number(item.selectionShownCount) || 0);
+  const skipCount = Math.max(0, Number(item.selectionSkipCount) || 0);
+  return `
+    <strong class="skip-rate">${formatPercent(rate)}</strong>
+    <span class="meta">スキップ ${skipCount}回 / 表示 ${shownCount}回</span>
+    <span class="meta">通常 ${formatModeRate(item.challengeSkipCount, item.challengeShownCount)}<br>LIVE ${formatModeRate(item.liveSkipCount, item.liveShownCount)}</span>
+  `;
+}
+
+function formatModeRate(skipCount, shownCount) {
+  const shown = Math.max(0, Number(shownCount) || 0);
+  if (!shown) return 'データなし';
+  return `${formatPercent(Math.min(Math.max(0, Number(skipCount) || 0) / shown, 1))}（${Math.max(0, Number(skipCount) || 0)}/${shown}）`;
+}
+
+function formatPercent(rate) {
+  return `${(Math.max(0, Number(rate) || 0) * 100).toFixed(1)}%`;
 }
 
 function normalizeCatalogStatus(value) {

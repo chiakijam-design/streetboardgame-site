@@ -131,12 +131,7 @@ async function publicSelectionStats(env) {
     FROM question_selection_stats
     WHERE shown_count > 0 OR skip_count > 0
   `).all();
-  return (result?.results || []).map((row) => ({
-    questionId: row.question_id,
-    mode: row.mode,
-    shownCount: Math.max(0, Number(row.shown_count) || 0),
-    skipCount: Math.max(0, Number(row.skip_count) || 0),
-  }));
+  return (result?.results || []).map(mapSelectionStatsRow);
 }
 
 async function recordSelectionEvent(request, env) {
@@ -175,7 +170,7 @@ async function recordSelectionEvent(request, env) {
 }
 
 async function adminOverview(env) {
-  const [catalogResult, submissionResult] = await Promise.all([
+  const [catalogResult, submissionResult, selectionStatsResult] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT q.question_id, q.source_kind, q.source_ref, q.title, q.category, q.choices_json, q.status,
         q.use_challenge, q.use_live, q.created_at, q.updated_at,
@@ -193,10 +188,16 @@ async function adminOverview(env) {
       ORDER BY CASE s.status WHEN 'pending' THEN 0 ELSE 1 END, s.submitted_at DESC
       LIMIT 500
     `).all(),
+    env.REMOTE_DB.prepare(`
+      SELECT question_id, mode, shown_count, skip_count
+      FROM question_selection_stats
+      WHERE shown_count > 0 OR skip_count > 0
+    `).all(),
   ]);
   return {
     catalog: (catalogResult?.results || []).map(mapCatalogRow),
     submissions: (submissionResult?.results || []).map(mapSubmissionRow),
+    selectionStats: (selectionStatsResult?.results || []).map(mapSelectionStatsRow),
   };
 }
 
@@ -398,6 +399,15 @@ function mapCatalogRow(row) {
     reportCount: Number(row.report_count || 0),
     lastReportedAt: row.last_reported_at == null ? null : Number(row.last_reported_at),
     language: String(row.question_id || '').startsWith('CUSEN') ? 'en' : 'ja',
+  };
+}
+
+function mapSelectionStatsRow(row) {
+  return {
+    questionId: row.question_id,
+    mode: row.mode,
+    shownCount: Math.max(0, Number(row.shown_count) || 0),
+    skipCount: Math.max(0, Number(row.skip_count) || 0),
   };
 }
 

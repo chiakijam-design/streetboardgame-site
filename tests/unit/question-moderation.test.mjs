@@ -8,10 +8,11 @@ import { applyManagedQuestionCards } from '../../src/questions/catalog.js';
 import { scanQuestionSafety } from '../../src/questions/safety.js';
 import {
   findSimilarQuestions,
+  questionSkipRate,
   sortQuestionsForOperations,
 } from '../../src/questions/similarity.js';
 
-test('採用・保留・無効の順に並べ、保留と無効は採用との類似だけを検出する', () => {
+test('採用・保留・無効の各区分でスキップ率の低い順に並べ、未計測は後ろへ送る', () => {
   const questions = [{
     id: 'q3',
     status: 'disabled',
@@ -22,11 +23,15 @@ test('採用・保留・無効の順に並べ、保留と無効は採用との�
     status: 'approved',
     title: 'あさ起きて最初にすることは？',
     choices: ['水を飲む', 'スマホを見る', '顔を洗う', '二度寝', '着替える'],
+    selectionShownCount: 20,
+    selectionSkipCount: 8,
   }, {
     id: 'q1',
     status: 'approved',
     title: 'あさ起きて最初にすることは？',
     choices: ['水を飲む', 'スマホを見る', '顔を洗う', 'もう一度寝る', '着替える'],
+    selectionShownCount: 20,
+    selectionSkipCount: 2,
   }, {
     id: 'q4',
     status: 'held',
@@ -35,6 +40,8 @@ test('採用・保留・無効の順に並べ、保留と無効は採用との�
   }];
 
   assert.deepEqual(sortQuestionsForOperations(questions).map((item) => item.id), ['q1', 'q2', 'q4', 'q3']);
+  assert.equal(questionSkipRate(questions[2]), 0.1);
+  assert.equal(questionSkipRate(questions[0]), null);
   const matches = findSimilarQuestions(questions);
   assert.equal(matches.get('q1')[0].id, 'q2');
   assert.ok(matches.get('q1')[0].score >= 0.58);
@@ -254,6 +261,12 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   assert.equal(overview.submissions.length, 2);
   assert.equal(overview.submissions[0].status, 'pending');
   assert.deepEqual(overview.submissions[0].safetyFlags, ['bullying']);
+  assert.deepEqual(overview.selectionStats, [{
+    questionId: 'Q001',
+    mode: 'challenge',
+    shownCount: 1,
+    skipCount: 1,
+  }]);
 
   const submissionId = submitted.submissionIds[0];
   const approvedResponse = await handleQuestionApi(jsonRequest(

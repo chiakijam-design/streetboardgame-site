@@ -8,10 +8,24 @@ export function sortQuestionsForOperations(items) {
   return [...(items || [])].sort((left, right) => {
     const statusOrder = statusRank(left?.status) - statusRank(right?.status);
     if (statusOrder) return statusOrder;
+    const leftSkipRate = questionSkipRate(left);
+    const rightSkipRate = questionSkipRate(right);
+    if (leftSkipRate == null && rightSkipRate != null) return 1;
+    if (leftSkipRate != null && rightSkipRate == null) return -1;
+    if (leftSkipRate != null && rightSkipRate != null && leftSkipRate !== rightSkipRate) {
+      return leftSkipRate - rightSkipRate;
+    }
     const titleOrder = JAPANESE_COLLATOR.compare(String(left?.title || ''), String(right?.title || ''));
     if (titleOrder) return titleOrder;
     return JAPANESE_COLLATOR.compare(String(left?.id || ''), String(right?.id || ''));
   });
+}
+
+export function questionSkipRate(item) {
+  const shownCount = Math.max(0, Number(item?.selectionShownCount) || 0);
+  if (!shownCount) return null;
+  const skipCount = Math.max(0, Number(item?.selectionSkipCount) || 0);
+  return Math.min(skipCount / shownCount, 1);
 }
 
 export function findSimilarQuestions(items, threshold = 0.58) {

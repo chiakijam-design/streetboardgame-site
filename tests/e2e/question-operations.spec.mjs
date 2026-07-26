@@ -79,6 +79,32 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
       reportCount: 0,
       lastReportedAt: null,
     }],
+    selectionStats: [{
+      questionId: 'CUSCOMPAREACTIVE1',
+      mode: 'challenge',
+      shownCount: 10,
+      skipCount: 3,
+    }, {
+      questionId: 'CUSCOMPAREACTIVE1',
+      mode: 'live',
+      shownCount: 10,
+      skipCount: 1,
+    }, {
+      questionId: 'CUSCOMPAREACTIVE2',
+      mode: 'challenge',
+      shownCount: 20,
+      skipCount: 1,
+    }, {
+      questionId: 'CUSCOMPAREHELD',
+      mode: 'challenge',
+      shownCount: 10,
+      skipCount: 2,
+    }, {
+      questionId: 'CUSCOMPAREDISABLED',
+      mode: 'challenge',
+      shownCount: 10,
+      skipCount: 3,
+    }],
     submissions: [{
       id: pendingId,
       sourceMode: 'challenge',
@@ -151,6 +177,7 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   await expect(page.locator('#allQuestions')).toContainText('通報1件・即時非公開');
   await expect(page.locator('#allQuestions table')).toBeVisible();
   await expect(page.locator('#allQuestions thead')).toContainText('選択肢5');
+  await expect(page.locator('#allQuestions thead')).toContainText('スキップ率');
   await expect(page.locator('#allQuestions')).not.toContainText('友達向け');
   await expect(page.locator('#allQuestions')).not.toContainText('家族向け');
   const totalText = await page.locator('#questionCount').textContent();
@@ -170,10 +197,18 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   expect(statusOrder.indexOf('held')).toBeGreaterThan(statusOrder.lastIndexOf('approved'));
   expect(statusOrder.indexOf('disabled')).toBeGreaterThan(statusOrder.lastIndexOf('approved'));
   expect(statusOrder.indexOf('disabled')).toBeGreaterThan(statusOrder.lastIndexOf('held'));
+  const activeRowsInDisplayOrder = await page.locator('#allQuestions [data-catalog^="CUSCOMPAREACTIVE"]').evaluateAll(
+    (rows) => rows.map((row) => row.dataset.catalog),
+  );
+  expect(activeRowsInDisplayOrder).toEqual(['CUSCOMPAREACTIVE2', 'CUSCOMPAREACTIVE1']);
   await expect(page.locator('#similaritySummary')).not.toHaveText('類似候補：0問');
   const activeCompareRow = page.locator('[data-catalog="CUSCOMPAREACTIVE1"]');
   const heldCompareRow = page.locator('[data-catalog="CUSCOMPAREHELD"]');
   const disabledCompareRow = page.locator('[data-catalog="CUSCOMPAREDISABLED"]');
+  await expect(activeCompareRow.locator('.skip-col')).toContainText('20.0%');
+  await expect(activeCompareRow.locator('.skip-col')).toContainText('通常 30.0%（3/10）');
+  await expect(activeCompareRow.locator('.skip-col')).toContainText('LIVE 10.0%（1/10）');
+  await expect(page.locator('[data-catalog="CUSSIMILAR123"] .skip-col')).toContainText('データなし');
   await expect(activeCompareRow).toContainText('類似候補 100%');
   await expect(heldCompareRow).toContainText('類似候補 100%');
   await expect(disabledCompareRow).toContainText('類似候補 100%');
