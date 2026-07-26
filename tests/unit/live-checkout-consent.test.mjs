@@ -10,7 +10,7 @@ import { CHECKOUT_TERMS } from '../../src/live/checkout-terms-config.js';
 
 test('視聴者決済の規約バージョンとSHA-256を実際の利用規約全文へ固定する', async () => {
   const document = (await readFileAsync(new URL('../../terms.html', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-  assert.equal(CHECKOUT_TERMS.version, '1.10');
+  assert.equal(CHECKOUT_TERMS.version, '1.11');
   assert.equal(createHash('sha256').update(document).digest('hex'), CHECKOUT_TERMS.documentSha256);
 });
 
@@ -20,9 +20,16 @@ test('利用規約は現在の対象年齢・理解度ボード・投稿審査�
     '18歳未満の利用者',
     '10歳から12歳までの利用者',
     '理解度ボード掲載は任意',
+    '10問の回答完了順で表示',
+    '再挑戦すると現在の回答と結果は上書き',
+    '答え合わせレポートは、10問の一致・不一致と回答内容に基づき',
+    '配信者が各問の回答を締め切ったあとに配信者の答えを公開',
     '掲載候補として送信しない問題',
+    '本サービスの提供と無関係な生成AIの学習へ無期限に利用',
     '個人情報らしい文字列の自動検知',
     '通報を受けた場合は確認が終わるまで直ちに非公開',
+    '無料の結果カード保存機能',
+    '変換前の元画像を用いる',
     '480円、980円、2,980円',
     '180円、480円、980円、2,980円',
   ]) assert.equal(document.includes(requiredText), true, requiredText);
