@@ -23,6 +23,21 @@ function loadCards(filename, variableName) {
 const japaneseCards = loadCards('prototype_common_data.js', 'COMMON_QUESTION_CARDS');
 const englishCards = loadCards('prototype_english_common_data.js', 'ENGLISH_COMMON_QUESTION_CARDS');
 
+function cardsWithManagedPackCandidates(packs, cards) {
+  const managedIds = [...new Set(
+    packs.flatMap(({ questionIds }) => questionIds)
+      .filter((id) => String(id).startsWith('HLD')),
+  )];
+  return [
+    ...cards,
+    ...managedIds.map((id) => ({
+      id,
+      title: `管理対象 ${id}`,
+      choices: ['1', '2', '3', '4', '5'],
+    })),
+  ];
+}
+
 test('画像付き10問パックを7種類提供する', () => {
   const packs = questionPacks(false);
   assert.deepEqual(
@@ -90,4 +105,24 @@ test('LIVE専用パックは通常版から選べず、LIVE版からだけ選べ
     questionPackCards(japaneseCards, 'live-comment-split', false, 10, { includeLive: true }).length,
     10,
   );
+});
+
+test('日本語パックは採用済みの新規候補を含む先頭10問を優先する', () => {
+  const packs = [...questionPacks(false), ...liveExclusiveQuestionPacks(false)];
+  const cards = cardsWithManagedPackCandidates(packs, japaneseCards);
+
+  for (const pack of packs) {
+    const selected = questionPackCards(
+      cards,
+      pack.slug,
+      false,
+      10,
+      { includeLive: true },
+    );
+    assert.deepEqual(
+      selected.map(({ id }) => id),
+      pack.questionIds.slice(0, 10),
+      pack.slug,
+    );
+  }
 });

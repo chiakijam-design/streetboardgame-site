@@ -8,8 +8,13 @@ const PACKS = Object.freeze([
     },
     image: '/assets/question-packs/unexpected-side.svg',
     ids: {
-      ja: ['Q307', 'Q293', 'Q289', 'Q298', 'Q141', 'Q166', 'Q179', 'Q159', 'Q306', 'Q434', 'Q433', 'Q308'],
-      en: ['ENF031', 'ENF038', 'ENF037', 'ENF039', 'ENF029', 'ENF035', 'ENF036', 'ENF030', 'ENF034', 'ENF017', 'ENF033', 'ENF019'],
+      ja: [
+        'HLD070', 'HLD071', 'HLD072', 'HLD073', 'HLD075',
+        'Q307', 'Q298', 'Q289', 'Q433', 'Q421',
+        'Q441', 'Q547', 'Q159', 'Q293', 'Q141',
+        'Q306', 'Q308', 'Q432', 'Q434', 'Q437',
+      ],
+      en: ['ENF031', 'ENF039', 'ENF037', 'ENF038', 'ENF035', 'ENF036', 'ENF029', 'ENF030', 'ENF034', 'ENF032'],
     },
   },
   {
@@ -21,8 +26,13 @@ const PACKS = Object.freeze([
     },
     image: '/assets/question-packs/easy-first-meeting.svg',
     ids: {
-      ja: ['Q001', 'Q007', 'Q013', 'Q045', 'Q091', 'Q119', 'Q418', 'Q423', 'Q426', 'Q440', 'Q012', 'Q424'],
-      en: ['ENF001', 'ENF006', 'ENF005', 'ENF015', 'ENF025', 'ENF011', 'ENF004', 'ENF007', 'ENF008', 'ENF026', 'ENF016', 'ENF020'],
+      ja: [
+        'HLD014', 'HLD090', 'HLD079', 'HLD088', 'HLD089',
+        'HLD087', 'HLD086', 'HLD002', 'HLD006', 'HLD051',
+        'Q001', 'Q007', 'Q045', 'Q424', 'Q426',
+        'Q440', 'Q418', 'Q423', 'Q505', 'Q509',
+      ],
+      en: ['ENF001', 'ENF006', 'ENF005', 'ENF015', 'ENF025', 'ENF026', 'ENF004', 'ENF007', 'ENF008', 'ENF020'],
     },
   },
   {
@@ -34,8 +44,13 @@ const PACKS = Object.freeze([
     },
     image: '/assets/question-packs/fandom-social.svg',
     ids: {
-      ja: ['Q079', 'Q067', 'Q301', 'Q416', 'Q045', 'Q099', 'Q091', 'Q208', 'Q137', 'Q150', 'Q256', 'Q059'],
-      en: ['ENF027', 'ENF028', 'ENF015', 'ENF014', 'ENF025', 'ENF026', 'ENF013', 'ENF032', 'ENF017', 'ENF029', 'ENF016', 'ENF011'],
+      ja: [
+        'HLD046', 'HLD048', 'HLD086', 'HLD075', 'Q431',
+        'Q304', 'Q099', 'Q067', 'Q079', 'Q301',
+        'Q416', 'Q208', 'Q150', 'Q137', 'Q276',
+        'Q045', 'Q549', 'Q159', 'Q091', 'Q059',
+      ],
+      en: ['ENF014', 'ENF015', 'ENF026', 'ENF027', 'ENF028', 'ENF032', 'ENF013', 'ENF017', 'ENF025', 'ENF006'],
     },
   },
   {
@@ -47,8 +62,13 @@ const PACKS = Object.freeze([
     },
     image: '/assets/question-packs/know-me-deeper.svg',
     ids: {
-      ja: ['Q302', 'Q303', 'Q130', 'Q144', 'Q108', 'Q150', 'Q206', 'Q159', 'Q307', 'Q141', 'Q153', 'Q298'],
-      en: ['ENF012', 'ENF013', 'ENF030', 'ENF010', 'ENF032', 'ENF029', 'ENF031', 'ENF039', 'ENF040', 'ENF035', 'ENF023', 'ENF024'],
+      ja: [
+        'HLD056', 'HLD057', 'HLD059', 'HLD060', 'HLD063',
+        'HLD065', 'Q302', 'Q303', 'Q130', 'Q144',
+        'Q159', 'Q141', 'Q439', 'Q527', 'Q528',
+        'Q529', 'Q206', 'Q150', 'Q307', 'Q153',
+      ],
+      en: ['ENF012', 'ENF013', 'ENF010', 'ENF029', 'ENF030', 'ENF031', 'ENF032', 'ENF039', 'ENF023', 'ENF024'],
     },
   },
   {
@@ -60,8 +80,13 @@ const PACKS = Object.freeze([
     },
     image: '/assets/question-packs/live-party.svg',
     ids: {
-      ja: ['Q267', 'Q057', 'Q293', 'Q289', 'Q403', 'Q408', 'Q412', 'Q434', 'Q437', 'Q433', 'Q276', 'Q169'],
-      en: ['ENF016', 'ENF019', 'ENF038', 'ENF037', 'ENF035', 'ENF036', 'ENF033', 'ENF034', 'ENF026', 'ENF040', 'ENF039', 'ENF018'],
+      ja: [
+        'HLD096', 'HLD079', 'HLD087', 'HLD085', 'HLD090',
+        'Q267', 'Q403', 'Q408', 'Q412', 'Q434',
+        'Q057', 'Q289', 'Q293', 'Q276', 'Q169',
+        'Q417', 'Q536', 'Q438', 'Q406', 'Q410',
+      ],
+      en: ['ENF016', 'ENF019', 'ENF035', 'ENF036', 'ENF037', 'ENF038', 'ENF033', 'ENF034', 'ENF026', 'ENF040'],
     },
   },
   {
@@ -73,8 +98,13 @@ const PACKS = Object.freeze([
     },
     image: '/assets/question-packs/summer-vacation.svg',
     ids: {
-      ja: ['Q012', 'Q022', 'Q034', 'Q039', 'Q169', 'Q417', 'Q428', 'Q429', 'Q045', 'Q306', 'Q179', 'Q239'],
-      en: ['ENF004', 'ENF018', 'ENF019', 'ENF020', 'ENF036', 'ENF015', 'ENF017', 'ENF034', 'ENF033', 'ENF022', 'ENF023', 'ENF026'],
+      ja: [
+        'HLD018', 'HLD013', 'HLD055', 'HLD051', 'Q012',
+        'Q022', 'Q428', 'Q429', 'Q519', 'Q522',
+        'Q417', 'Q420', 'Q524', 'Q525', 'Q034',
+        'Q039', 'Q169', 'Q179', 'Q404', 'Q018',
+      ],
+      en: ['ENF004', 'ENF018', 'ENF019', 'ENF020', 'ENF036', 'ENF033', 'ENF034', 'ENF014', 'ENF027', 'ENF017'],
     },
   },
   {
@@ -86,8 +116,13 @@ const PACKS = Object.freeze([
     },
     image: '/assets/question-packs/oshi-life.svg',
     ids: {
-      ja: ['Q431', 'Q304', 'Q099', 'Q150', 'Q137', 'Q208', 'Q276', 'Q079', 'Q067', 'Q167', 'Q159', 'Q091'],
-      en: ['ENF014', 'ENF032', 'ENF013', 'ENF026', 'ENF027', 'ENF028', 'ENF033', 'ENF029', 'ENF025', 'ENF034', 'ENF017', 'ENF006'],
+      ja: [
+        'HLD046', 'HLD075', 'HLD086', 'Q431', 'Q304',
+        'Q150', 'Q099', 'Q079', 'Q067', 'Q208',
+        'Q416', 'Q301', 'Q137', 'Q276', 'Q536',
+        'Q045', 'Q549', 'Q159', 'Q091', 'Q059',
+      ],
+      en: ['ENF014', 'ENF026', 'ENF027', 'ENF028', 'ENF032', 'ENF013', 'ENF015', 'ENF017', 'ENF029', 'ENF006'],
     },
   },
 ]);
@@ -102,8 +137,13 @@ const LIVE_PACKS = Object.freeze([
     },
     image: '/assets/question-packs/live-comment-split.svg',
     ids: {
-      ja: ['Q401', 'Q406', 'Q407', 'Q410', 'Q412', 'Q413', 'Q414', 'Q416', 'Q427', 'Q432'],
-      en: ['ENF001', 'ENF006', 'ENF015', 'ENF016', 'ENF019', 'ENF026', 'ENF032', 'ENF035', 'ENF037', 'ENF038'],
+      ja: [
+        'HLD079', 'HLD090', 'HLD087', 'HLD086', 'HLD085',
+        'HLD078', 'Q401', 'Q406', 'Q407', 'Q414',
+        'Q410', 'Q413', 'Q427', 'Q425', 'Q507',
+        'Q402', 'Q408', 'Q409', 'Q411', 'Q403',
+      ],
+      en: ['ENF001', 'ENF002', 'ENF006', 'ENF007', 'ENF016', 'ENF019', 'ENF025', 'ENF037', 'ENF038', 'ENF040'],
     },
   },
   {
@@ -115,8 +155,13 @@ const LIVE_PACKS = Object.freeze([
     },
     image: '/assets/question-packs/live-first-viewers.svg',
     ids: {
-      ja: ['Q001', 'Q007', 'Q013', 'Q045', 'Q091', 'Q119', 'Q418', 'Q423', 'Q426', 'Q440'],
-      en: ['ENF001', 'ENF006', 'ENF005', 'ENF015', 'ENF025', 'ENF011', 'ENF007', 'ENF008', 'ENF026', 'ENF020'],
+      ja: [
+        'HLD096', 'HLD001', 'HLD014', 'HLD079', 'HLD087',
+        'HLD086', 'HLD078', 'HLD090', 'Q418', 'Q423',
+        'Q001', 'Q007', 'Q424', 'Q426', 'Q440',
+        'Q505', 'Q509', 'Q549', 'Q427', 'Q401',
+      ],
+      en: ['ENF001', 'ENF004', 'ENF005', 'ENF006', 'ENF008', 'ENF015', 'ENF020', 'ENF025', 'ENF026', 'ENF017'],
     },
   },
   {
@@ -128,8 +173,13 @@ const LIVE_PACKS = Object.freeze([
     },
     image: '/assets/question-packs/live-streamer-surprises.svg',
     ids: {
-      ja: ['Q307', 'Q293', 'Q289', 'Q298', 'Q159', 'Q304', 'Q306', 'Q433', 'Q434', 'Q437'],
-      en: ['ENF031', 'ENF038', 'ENF037', 'ENF039', 'ENF029', 'ENF010', 'ENF015', 'ENF034', 'ENF036', 'ENF035'],
+      ja: [
+        'HLD070', 'HLD071', 'HLD072', 'HLD073', 'HLD075',
+        'Q307', 'Q298', 'Q421', 'Q441', 'Q547',
+        'Q289', 'Q293', 'Q159', 'Q304', 'Q306',
+        'Q308', 'Q432', 'Q433', 'Q434', 'Q437',
+      ],
+      en: ['ENF031', 'ENF039', 'ENF037', 'ENF038', 'ENF035', 'ENF036', 'ENF029', 'ENF030', 'ENF034', 'ENF032'],
     },
   },
   {
@@ -141,8 +191,13 @@ const LIVE_PACKS = Object.freeze([
     },
     image: '/assets/question-packs/live-small-stream.svg',
     ids: {
-      ja: ['Q111', 'Q130', 'Q137', 'Q141', 'Q150', 'Q153', 'Q256', 'Q301', 'Q302', 'Q305'],
-      en: ['ENF012', 'ENF013', 'ENF014', 'ENF029', 'ENF030', 'ENF031', 'ENF032', 'ENF039', 'ENF010', 'ENF011'],
+      ja: [
+        'HLD008', 'HLD018', 'HLD046', 'HLD051', 'HLD056',
+        'HLD059', 'HLD060', 'Q111', 'Q305', 'Q137',
+        'Q130', 'Q141', 'Q150', 'Q153', 'Q256',
+        'Q301', 'Q302', 'Q303', 'Q306', 'Q307',
+      ],
+      en: ['ENF009', 'ENF010', 'ENF011', 'ENF012', 'ENF013', 'ENF014', 'ENF029', 'ENF030', 'ENF031', 'ENF039'],
     },
   },
 ]);
