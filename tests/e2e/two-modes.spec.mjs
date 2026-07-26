@@ -98,8 +98,8 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   await expect(page.getByTestId('top-mode-pillars')).toContainText('URLを送って、好きな時間に回答');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('LIVE向け');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('配信者と視聴者が同時回答し、1問ずつ答え合わせ');
-  await expect(page.getByTestId('top-mode-pillars')).toContainText('①10問を作る②自分の正解を登録 →③参加URLを送る');
-  await expect(page.getByTestId('top-mode-pillars')).toContainText('①10問を作る②配信で参加方法を案内 →③視聴者と同時回答');
+  await expect(page.getByTestId('top-mode-pillars')).toContainText('①10問を作る②自分の正解を登録③参加URLを送る');
+  await expect(page.getByTestId('top-mode-pillars')).toContainText('①10問を作る②配信で参加方法を案内③視聴者と同時回答');
   await expect(page.getByText('クイズを作る人向け', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('あなたの名前（12文字まで）')).toBeVisible();
   await expect(page.getByText('この説明は出題者向けです。')).toHaveCount(0);

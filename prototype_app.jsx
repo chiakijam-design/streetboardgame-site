@@ -144,7 +144,7 @@ function TopPage() {
               label="通常版"
               title="友達向け"
               note={<>URLを送って、<br />好きな時間に回答</>}
-              steps={['10問を作る', '自分の正解を登録 →', '参加URLを送る']}
+              steps={['10問を作る', '自分の正解を登録', '参加URLを送る']}
             />
             <ModeStartChoice
               type="button"
@@ -153,7 +153,7 @@ function TopPage() {
               label="LIVE版"
               title="LIVE向け"
               note={<>配信者と視聴者が同時回答し、<br />1問ずつ答え合わせ</>}
-              steps={['10問を作る', '配信で参加方法を案内 →', '視聴者と同時回答']}
+              steps={['10問を作る', '配信で参加方法を案内', '視聴者と同時回答']}
               onClick={() => start('live')}
             />
           </div>
