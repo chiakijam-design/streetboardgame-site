@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="t d">
+  <title id="t">推し活の10問</title><desc id="d">ペンライト、うちわ、チケットのイラスト</desc>
+  <rect width="640" height="360" rx="28" fill="#ffb6d1"/>
+  <g transform="translate(78 43) rotate(-13 75 140)"><path d="M64 0h44l15 160H49z" fill="#ffe36f" stroke="#191919" stroke-width="8"/><rect x="57" y="155" width="58" height="117" rx="18" fill="#fff" stroke="#191919" stroke-width="8"/><path d="M75 181v65M95 181v65" stroke="#55c9dd" stroke-width="8"/></g>
+  <g transform="translate(230 49)"><circle cx="90" cy="90" r="86" fill="#fff" stroke="#191919" stroke-width="9"/><rect x="66" y="164" width="48" height="136" rx="19" fill="#55c9dd" stroke="#191919" stroke-width="9"/><path d="M90 128c-50-29-66-52-66-74 0-21 15-36 36-36 13 0 24 7 30 18 7-11 17-18 30-18 21 0 36 15 36 36 0 22-16 45-66 74z" fill="#ec4683"/></g>
+  <g transform="translate(445 70) rotate(9 70 105)"><rect width="140" height="210" rx="16" fill="#fff" stroke="#191919" stroke-width="8"/><path d="M15 57h110M15 99h110M15 141h110" stroke="#a8d4e8" stroke-width="5"/><path d="M28 25h84" stroke="#ec4683" stroke-width="13" stroke-linecap="round"/><circle cx="42" cy="176" r="14" fill="#f5c83b"/><circle cx="78" cy="176" r="14" fill="#3f78bd"/><circle cx="114" cy="176" r="14" fill="#77bb62"/></g>
+</svg>

@@ -492,8 +492,8 @@ function applySeoMeta(html, page) {
 }
 
 function applyChallengeLibraryMeta(html) {
-  const title = '人気のお題ライブラリ｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
-  const description = '友達や家族が実際に遊んだ回数から、人気の質問と5つの選択肢を探せる無料のお題ライブラリです。気になるお題を入れて10問クイズを作れます。';
+  const title = '人気の10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
+  const description = '意外な一面、初対面、推し・SNS、深く知る、LIVE、夏休み、推し活から選べる画像付き10問パックです。通常版・LIVE版のクイズをすぐ作れます。';
   const url = CANONICAL_ORIGIN + '/challenge/library';
   const breadcrumbId = url + '#breadcrumb';
   return html
@@ -514,7 +514,7 @@ function applyChallengeLibraryMeta(html) {
           {
             '@type': 'CollectionPage',
             '@id': url + '#webpage',
-            name: '人気のお題ライブラリ',
+            name: '人気の10問パック',
             url,
             description,
             inLanguage: 'ja',
@@ -534,7 +534,7 @@ function applyChallengeLibraryMeta(html) {
               {
                 '@type': 'ListItem',
                 position: 2,
-                name: '人気のお題ライブラリ',
+                name: '人気の10問パック',
                 item: url,
               },
             ],

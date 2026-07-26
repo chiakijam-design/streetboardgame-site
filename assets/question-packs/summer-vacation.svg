@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="t d">
+  <title id="t">夏休みの10問</title><desc id="d">太陽、海、かき氷、旅行かばんのイラスト</desc>
+  <rect width="640" height="360" rx="28" fill="#8fe4f2"/><circle cx="104" cy="91" r="55" fill="#ffe36f" stroke="#191919" stroke-width="7"/>
+  <path d="M0 252c102-62 174 51 277-4 111-59 180 45 363-8v120H0z" fill="#3f78bd"/><path d="M0 286c117-49 184 48 299 2 123-50 204 35 341-9" fill="none" stroke="#fff" stroke-width="13"/>
+  <g transform="translate(406 91)"><rect x="0" y="62" width="145" height="150" rx="22" fill="#ec4683" stroke="#191919" stroke-width="8"/><path d="M45 62V34c0-19 56-19 56 0v28" fill="none" stroke="#191919" stroke-width="8"/><path d="M31 89v94M114 89v94" stroke="#ffe36f" stroke-width="9"/></g>
+  <g transform="translate(205 72)"><path d="M0 64h137l-20 136H20z" fill="#fff" stroke="#191919" stroke-width="8"/><path d="M10 64C18 12 118 12 127 64" fill="#f5c83b" stroke="#191919" stroke-width="8"/><path d="M40 103h57" stroke="#ec4683" stroke-width="15" stroke-linecap="round"/><path d="M106 1 74 65" stroke="#191919" stroke-width="7"/></g>
+</svg>

@@ -94,6 +94,14 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   await expect(page.getByText('当てるより、話すための10問。', { exact: true })).toHaveCount(0);
   await expect(page.getByText('通常でも配信でも使える理解度診断メーカー', { exact: true })).toHaveCount(0);
   await expect(page.getByText('相手を理解できるまで、何度でも挑戦できる', { exact: true })).toHaveCount(0);
+  const resultPreviews = page.getByTestId('top-result-card-previews');
+  await expect(resultPreviews.locator('[data-result-card-preview]')).toHaveCount(3);
+  await expect(resultPreviews).toContainText('点数入り結果カード');
+  await expect(resultPreviews).toContainText('点数を隠した称号カード');
+  await expect(resultPreviews).toContainText('答え合わせレポートカード');
+  await expect(resultPreviews).toContainText('再挑戦OK');
+  await expect(resultPreviews).toContainText('結果公開は自分で選べる');
+  await expect(resultPreviews).toContainText('答え合わせレポート付き');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('友達向け');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('URLを送って、好きな時間に回答');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('LIVE向け');
@@ -507,7 +515,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カー
       return Boolean(answers && review
         && (answers.compareDocumentPosition(review) & Node.DOCUMENT_POSITION_FOLLOWING));
     })).toBe(true);
-    await expect(participant.getByRole('link', { name: '自分も作る' })).toHaveAttribute('href', '/challenge');
+    await expect(participant.getByRole('link', { name: '別の10問で自分も作る' })).toHaveAttribute('href', '/challenge');
     await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
     await expect(participant.getByTestId('understanding-board')).toContainText('ゆう');
     await expect(participant.getByTestId('understanding-board')).toContainText('答え合わせ済み');
@@ -564,7 +572,31 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
   await expect(page.getByTestId('host-answer-management')).toContainText('10/10問');
 });
 
-test('途中保存から再開し、人気のお題を指定してクイズ作成へ戻れる', async ({ page }) => {
+test('参加者が結果画面から役割交代し、同じ10問の出題者になれる', async ({ browser, page }) => {
+  const challengeUrl = await createChallenge(page, '最初の出題者');
+  const participantContext = await browser.newContext();
+  const participant = await participantContext.newPage();
+  try {
+    await participant.goto(challengeUrl);
+    await participant.getByLabel('表示名（12文字まで）').fill('次の出題者');
+    await participant.getByRole('button', { name: /10問の答え当てに挑戦する/ }).click();
+    const firstQuestion = await participant.locator('.notebook-card-accessible-title').first().textContent();
+    for (let index = 0; index < 10; index += 1) {
+      await participant.locator('[data-action="answer"]').first().click();
+    }
+    await expect(participant.getByTestId('challenge-role-swap')).toContainText('今度は役割交代');
+    await expect(participant.getByTestId('challenge-role-swap')).toContainText('元の出題者の正解は引き継がれません');
+    await participant.getByRole('button', { name: '役割交代して、次は自分が出題する' }).click();
+    await expect(participant).toHaveURL('/challenge?role=swap');
+    await expect(participant.locator('.challenge-hero h1')).toHaveText('次の出題者さんのクイズを作成');
+    await expect(participant.getByTestId('challenge-builder-paper-card')).toContainText(firstQuestion.trim());
+    await expect(participant.locator('[data-action="builder-answer"].is-selected')).toHaveCount(0);
+  } finally {
+    await participantContext.close();
+  }
+});
+
+test('途中保存から再開し、画像付き10問パックでクイズ作成へ戻れる', async ({ page }) => {
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill('途中保存');
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
@@ -574,26 +606,31 @@ test('途中保存から再開し、人気のお題を指定してクイズ作�
   await page.getByRole('button', { name: '途中から再開' }).click();
   await expect(page.locator('.challenge-q-number')).toHaveText('Q2/10');
 
-  await page.route('**/api/challenge/library', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({
-      questions: [{
-        id: 'Q045',
-        title: '暇つぶしで開くのは',
-        category: '休日・遊び',
-        choices: ['SNS', '動画アプリ', '漫画アプリ', 'ゲーム', 'ニュース'],
-        playCount: 12,
-        lastPlayedAt: Date.now(),
-      }],
-    }),
-  }));
   await page.goto('/challenge/library');
   await expect(page.getByRole('heading', { name: '人気のお題ライブラリ' })).toBeVisible();
-  await expect(page.getByTestId('question-library').locator('.challenge-library-card')).toHaveCount(30);
+  await expect(page.getByTestId('question-library').locator('.challenge-pack-card')).toHaveCount(7);
+  await expect(page.getByTestId('question-library').locator('.challenge-pack-card img')).toHaveCount(7);
+  await expect(page.getByRole('heading', { name: '意外な一面が分かる10問' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '夏休みの10問' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '推し活の10問' })).toBeVisible();
   await expect(page.getByTestId('question-library')).not.toContainText('回プレイ');
-  await page.getByRole('link', { name: 'このお題を入れて作る' }).first().click();
-  await expect(page.getByText('選んだお題を必ず入れます')).toBeVisible();
+  await page.locator('[data-pack="unexpected-side"]').getByRole('link', { name: '通常版で作る' }).click();
+  await expect(page.getByTestId('selected-question-pack')).toContainText('意外な一面が分かる10問');
+  await page.getByLabel('出題者の名前（12文字まで）').fill('パックテスト');
+  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await expect(page.locator('.challenge-q-number')).toHaveText('Q1/10');
+  await expect(page.locator('.challenge-builder-card')).toContainText('「第一印象」と本当の自分の違いに近いのは');
+});
+
+test('10問パックをLIVE版の作成画面でもそのまま使える', async ({ page }) => {
+  await page.goto('/challenge/library');
+  await page.locator('[data-pack="summer-vacation"]').getByRole('link', { name: 'LIVE版で作る' }).click();
+  await expect(page).toHaveURL('/live-challenge?pack=summer-vacation');
+  await expect(page.locator('.selected-live-pack')).toContainText('夏休みの10問');
+  await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
+  await expect(page.getByRole('heading', { name: '1問ずつクイズを作る' })).toBeVisible();
+  await expect(page.locator('.selected-live-pack')).toContainText('夏休みの10問');
+  await expect(page.getByTestId('live-builder-paper-card')).toContainText('お祭りで買うなら');
 });
 
 test('正解は回答前の公開レスポンスへ出さず、51人目をサーバー側で拒否する', async ({ page, request }, testInfo) => {

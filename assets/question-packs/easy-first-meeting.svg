@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="t d">
+  <title id="t">初対面でも答えやすい10問</title><desc id="d">二人がノートカードを挟んで会話するイラスト</desc>
+  <rect width="640" height="360" rx="28" fill="#bcecf4"/><circle cx="126" cy="109" r="56" fill="#ffe36f" stroke="#191919" stroke-width="7"/><circle cx="514" cy="109" r="56" fill="#ec4683" stroke="#191919" stroke-width="7"/>
+  <path d="M46 306c6-88 45-134 80-134s75 46 80 134M434 306c6-88 45-134 80-134s75 46 80 134" fill="#fff" stroke="#191919" stroke-width="8"/>
+  <g transform="translate(208 56)"><rect width="224" height="250" rx="18" fill="#fff" stroke="#191919" stroke-width="8"/><path d="M18 69h188M18 111h188M18 153h188M18 195h188" stroke="#a8d4e8" stroke-width="5"/><path d="M52 15v220" stroke="#ee848c" stroke-width="4"/><path d="M0 24h224" stroke="#ec4683" stroke-width="16" stroke-dasharray="18 8"/><circle cx="83" cy="103" r="13" fill="#77bb62"/><circle cx="83" cy="145" r="13" fill="#3f78bd"/><circle cx="83" cy="187" r="13" fill="#f5c83b"/></g>
+  <path d="M77 59h91l-20-24M473 59h90l-20-24" fill="none" stroke="#191919" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

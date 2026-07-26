@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="t d">
+  <title id="t">もっと深く知る10問</title><desc id="d">二枚のノートカードと重なるハートのイラスト</desc>
+  <rect width="640" height="360" rx="28" fill="#f7d9e5"/>
+  <g transform="translate(92 58) rotate(-7 145 120)"><rect width="290" height="242" rx="20" fill="#fff" stroke="#191919" stroke-width="8"/><path d="M18 72h254M18 120h254M18 168h254" stroke="#a8d4e8" stroke-width="5"/><path d="M60 18v205" stroke="#ee848c" stroke-width="4"/></g>
+  <g transform="translate(260 54) rotate(6 145 120)"><rect width="290" height="242" rx="20" fill="#fff" stroke="#191919" stroke-width="8"/><path d="M18 72h254M18 120h254M18 168h254" stroke="#a8d4e8" stroke-width="5"/><path d="M60 18v205" stroke="#ee848c" stroke-width="4"/></g>
+  <path d="M320 282c-93-54-123-97-123-137 0-38 28-65 65-65 24 0 43 12 58 32 14-20 33-32 58-32 37 0 65 27 65 65 0 40-30 83-123 137z" fill="#ec4683" stroke="#191919" stroke-width="8"/>
+  <path d="M282 142h76M282 173h76M298 204h44" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
+</svg>

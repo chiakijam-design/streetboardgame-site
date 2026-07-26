@@ -1,5 +1,6 @@
 import QRCode from 'qrcode';
 import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
+import { questionPackBySlug, questionPackCards, questionPacks } from './src/challenge/packs.js';
 import {
   changedQuestionCandidates,
   loadManagedQuestionCards,
@@ -43,6 +44,7 @@ const pagePath = currentUrl.pathname.replace(/^\/en(?=\/|$)/, '').replace(/\/+$/
 const languagePrefix = isEnglish ? '/en' : '';
 const roomCode = currentUrl.searchParams.get('room')?.trim().toUpperCase() || '';
 const preferredCardId = currentUrl.searchParams.get('question')?.trim() || '';
+const preferredPackSlug = currentUrl.searchParams.get('pack')?.trim() || '';
 const quickStart = readCreatorQuickStart('challenge');
 const hashManageToken = new URLSearchParams(location.hash.slice(1)).get('manage') || '';
 const savedManageToken = roomCode ? manageHistory().find((item) => item.code === roomCode)?.token || '' : '';
@@ -283,6 +285,8 @@ function shell(label, title, description, content) {
 function createStartView() {
   const draft = creatorDraft();
   const preferredCard = allCards.find((card) => card.id === preferredCardId);
+  const preferredPack = questionPackBySlug(preferredPackSlug, isEnglish);
+  const preferredPackQuestions = questionPackCards(allCards, preferredPackSlug, isEnglish, QUESTION_COUNT);
   const historyItems = manageHistory();
   return shell(
     'わたし理解度診断｜通常版',
@@ -311,6 +315,13 @@ function createStartView() {
       ${preferredCard ? `<div class="challenge-selected-question">
         <b>選んだお題を必ず入れます</b>
         <span>${escapeHtml(preferredCard.title)}</span>
+      </div>` : ''}
+      ${preferredPack ? `<div class="challenge-selected-question" data-testid="selected-question-pack">
+        <b>選んだ10問パック</b>
+        <span>${escapeHtml(preferredPack.title)}</span>
+        <small>${preferredPackQuestions.length === QUESTION_COUNT
+          ? 'このパックの10問を順番に使います。問題・選択肢はあとから編集できます。'
+          : '現在使える問題が10問に満たないため、このパックは利用できません。'}</small>
       </div>` : ''}
       <label class="challenge-label" for="creator-name">出題者の名前（12文字まで）</label>
       <input id="creator-name" class="challenge-input" maxlength="12" autocomplete="nickname"
@@ -598,7 +609,13 @@ function resultView() {
             <button class="challenge-secondary" data-action="register-ranking">理解度ボードに載せる（任意）</button>`}
         <small>もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。</small>
       </section>
-      <a class="challenge-primary" href="/challenge">自分も作る</a>
+      <section class="challenge-role-swap" data-testid="challenge-role-swap">
+        <span class="challenge-section-label">ROLE CHANGE</span>
+        <h2>今度は役割交代</h2>
+        <p>同じ10問を使って、次はあなたが出題者になれます。元の出題者の正解は引き継がれません。</p>
+        <button class="challenge-primary" data-action="swap-roles">役割交代して、次は自分が出題する</button>
+      </section>
+      <a class="challenge-secondary" href="/challenge">別の10問で自分も作る</a>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
       <button class="challenge-secondary" data-action="share-result">「どこが当たった？」をシェア</button>
       <a class="challenge-secondary" href="/">トップへ戻る</a>
@@ -725,35 +742,36 @@ function rankingView() {
 }
 
 function libraryView() {
-  const played = new Map(state.library.map((question) => [question.id, question]));
-  const sourceOrder = new Map(allCards.map((card, index) => [card.id, index]));
-  const cards = allCards.slice().sort((left, right) => {
-    const leftStats = played.get(left.id);
-    const rightStats = played.get(right.id);
-    return Number(rightStats?.playCount || 0) - Number(leftStats?.playCount || 0)
-      || Number(rightStats?.lastPlayedAt || 0) - Number(leftStats?.lastPlayedAt || 0)
-      || Number(sourceOrder.get(left.id)) - Number(sourceOrder.get(right.id));
-  }).slice(0, 30);
-  const hasStats = state.library.some((question) => Number(question.playCount) > 0);
+  const packs = questionPacks(isEnglish);
   return shell(
-    'QUESTION LIBRARY',
+    '10 QUESTION PACKS',
     '人気のお題ライブラリ',
-    'みんなが実際に遊んだ回数をもとに、人気のお題を見つけられます。',
+    'テーマを選ぶだけで、10問をまとめてクイズにできます。',
     `<section class="challenge-panel">
-      <p class="challenge-library-status">${hasStats
-        ? '回答完了回数が多い順に表示しています。'
-        : 'まだ集計がないため、おすすめのお題を表示しています。'}</p>
-      <div class="challenge-library" data-testid="question-library">
-        ${cards.map((card, index) => {
-          return `<article class="challenge-library-card">
-            <div><span>${index + 1}</span><small>${escapeHtml(card.category)}</small></div>
-            <h2>${escapeHtml(card.title)}</h2>
-            <p>${card.choices.map(escapeHtml).join(' ／ ')}</p>
-            <a class="challenge-secondary" href="/challenge?question=${encodeURIComponent(card.id)}">このお題を入れて作る</a>
+      <p class="challenge-library-status">気分や相手に合うパックを選んでください。どのパックも通常版・LIVE版の両方で使えます。</p>
+      <div class="challenge-library challenge-pack-library" data-testid="question-library">
+        ${packs.map((pack) => {
+          const cards = questionPackCards(allCards, pack.slug, isEnglish, QUESTION_COUNT);
+          return `<article class="challenge-library-card challenge-pack-card" data-pack="${escapeHtml(pack.slug)}">
+              <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="lazy"
+                alt="${escapeHtml(pack.title)}${isEnglish ? ' illustration' : 'のイメージ画像'}">
+            <div class="challenge-pack-copy">
+              <span class="challenge-pack-count">10問パック</span>
+              <h2>${escapeHtml(pack.title)}</h2>
+              <p>${escapeHtml(pack.description)}</p>
+              <details>
+                <summary>入っている10問を見る</summary>
+                <ol>${cards.map((card) => `<li>${escapeHtml(card.title)}</li>`).join('')}</ol>
+              </details>
+            </div>
+            <div class="challenge-pack-actions">
+              <a href="${languagePrefix}/challenge?pack=${encodeURIComponent(pack.slug)}">通常版で作る</a>
+              <a href="${languagePrefix}/live-challenge?pack=${encodeURIComponent(pack.slug)}">LIVE版で作る</a>
+            </div>
           </article>`;
         }).join('')}
       </div>
-      <a class="challenge-primary" href="/challenge">ランダム10問で作る</a>
+      <a class="challenge-primary" href="${languagePrefix}/challenge">パックを使わず1問ずつ選ぶ</a>
     </section>`,
   );
 }
@@ -834,6 +852,7 @@ function bindEvents() {
     if (customRadio) customRadio.checked = true;
   });
   document.querySelector('[data-action="retry-challenge"]')?.addEventListener('click', retryChallenge);
+  document.querySelector('[data-action="swap-roles"]')?.addEventListener('click', startRoleSwap);
   document.querySelector('[data-action="share-result"]')?.addEventListener('click', shareResult);
   document.querySelector('[data-action="save-result-image"]')?.addEventListener('click', saveChallengeResultImage);
   document.querySelectorAll('[data-action="select-result-card"]').forEach((button) => {
@@ -852,11 +871,18 @@ function startCreate() {
   const name = document.getElementById('creator-name')?.value.trim().slice(0, 12) || '';
   if (!name) return setState({ error: 'name-required', creatorName: '' });
   if (allCards.length < QUESTION_COUNT) return setState({ error: 'questions-unavailable' });
+  const preferredPack = questionPackBySlug(preferredPackSlug, isEnglish);
+  const packedCards = questionPackCards(allCards, preferredPackSlug, isEnglish, QUESTION_COUNT);
+  if (preferredPack && packedCards.length !== QUESTION_COUNT) {
+    return setState({ error: 'questions-unavailable' });
+  }
   const preferredCard = allCards.find((card) => card.id === preferredCardId);
   const pool = preferredCard ? allCards.filter((card) => card.id !== preferredCard.id) : allCards;
-  const cards = (preferredCard
-    ? [preferredCard, ...pickChallengeCards(pool, QUESTION_COUNT - 1)]
-    : pickChallengeCards(pool, QUESTION_COUNT)).map(toCreatorDraftCard);
+  const cards = (packedCards.length === QUESTION_COUNT
+    ? packedCards
+    : preferredCard
+      ? [preferredCard, ...pickChallengeCards(pool, QUESTION_COUNT - 1)]
+      : pickChallengeCards(pool, QUESTION_COUNT)).map(toCreatorDraftCard);
   const next = {
     creatorName: name,
     cards,
@@ -1258,6 +1284,42 @@ async function retryChallenge() {
   } catch (error) {
     setState({ loading: false, mode: 'result', error: error.message });
   }
+}
+
+function startRoleSwap() {
+  if (!state.result) return;
+  const cards = (state.result.answers || [])
+    .map((answer) => answer?.card)
+    .filter((card) => card?.title && Array.isArray(card.choices) && card.choices.length >= 5)
+    .slice(0, QUESTION_COUNT)
+    .map(toCreatorDraftCard);
+  if (cards.length !== QUESTION_COUNT) {
+    setState({ error: 'questions-unavailable' });
+    return;
+  }
+  const next = {
+    mode: 'creator-edit',
+    roomCode: '',
+    room: null,
+    creatorName: String(state.result.participant?.name || state.participantName || '').slice(0, 12),
+    participantName: '',
+    participantToken: '',
+    manageToken: '',
+    cards,
+    answers: [],
+    questionIndex: 0,
+    result: null,
+    resultImageUrl: '',
+    resultImageBusy: false,
+    resultImageError: '',
+    questionSubmissionConsent: true,
+    editingQuestion: false,
+    editingOriginalCard: null,
+    error: '',
+  };
+  history.replaceState(null, '', `${languagePrefix}/challenge?role=swap`);
+  saveCreatorDraft(next);
+  setState(next);
 }
 
 async function loadRoom() {
@@ -1842,8 +1904,8 @@ async function bootChallenge() {
     state.cards = pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard);
   }
   if (state.mode === 'library') {
-  document.title = isEnglish ? 'Popular questions | How well do you know me?' : '人気のお題ライブラリ｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
-  loadLibrary();
+  document.title = isEnglish ? '10-question packs | How well do you know me?' : '人気の10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
+  render();
   } else if (state.mode === 'ranking') {
   document.title = isEnglish ? 'Understanding Board | How well do you know me?' : '理解度ボード｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   loadRanking();

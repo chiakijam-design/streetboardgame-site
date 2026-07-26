@@ -1,5 +1,6 @@
 import QRCode from 'qrcode';
 import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
+import { questionPackBySlug, questionPackCards } from './src/challenge/packs.js';
 import { LIVE_AGE_NOTICE } from './src/live/age-notice.js';
 import {
   LIVE_POLL_INTERVAL_MS,
@@ -28,9 +29,16 @@ const url = new URL(location.href);
 const initialCode = (url.searchParams.get('room') || '').replace(/\D/g, '').slice(0, 6);
 const initialCheckoutResult = String(url.searchParams.get('checkout') || '');
 const initialCheckoutSessionId = String(url.searchParams.get('session_id') || '');
+const initialPackSlug = String(url.searchParams.get('pack') || '').trim();
 const initialHostToken = new URLSearchParams(location.hash.slice(1)).get('host') || '';
 const savedParticipant = initialCode ? readSession(`live-challenge:${initialCode}`) : null;
 const quickStart = readCreatorQuickStart('live');
+
+function initialQuestions(cards) {
+  const packed = questionPackCards(cards, initialPackSlug, isEnglish, QUESTION_COUNT);
+  return (packed.length === QUESTION_COUNT ? packed : pickChallengeCards(cards, QUESTION_COUNT))
+    .map(toDraftQuestion);
+}
 
 function readCreatorQuickStart(expectedMode) {
   try {
@@ -57,7 +65,7 @@ let state = {
   participantToken: savedParticipant?.token || '',
   participantName: savedParticipant?.name || '',
   hostName: quickStart?.name || '',
-  questions: pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion),
+  questions: initialQuestions(allCards),
   game: null,
   hostAnswers: {},
   participantAnswers: readSession(`live-challenge:answers:${initialCode}`) || {},
@@ -97,7 +105,7 @@ if (state.view === 'create') loadPaidCreatorProfiles();
 loadManagedQuestionCards(allCards, 'live', isEnglish ? 'en' : 'ja').then((cards) => {
   allCards = cards;
   if (state.view === 'landing' || (quickStart && state.view === 'create')) {
-    state.questions = pickChallengeCards(allCards, QUESTION_COUNT).map(toDraftQuestion);
+    state.questions = initialQuestions(allCards);
     state.questionSubmissionConsent = true;
     state.loading = false;
     render();
@@ -126,12 +134,14 @@ function render() {
 }
 
 function landingView() {
+  const selectedPack = questionPackBySlug(initialPackSlug, isEnglish);
   return `<div class="entry-grid">
     <section class="panel entry-card">
       <div class="icon">🎙️</div>
       <span class="section-pill">配信者</span>
       <h2>10問LIVEを作る</h2>
       <p>共通のお題ライブラリから10問を選び、問題文と5択を自由に編集できます。</p>
+      ${selectedPack ? `<p class="selected-live-pack"><b>選んだ10問パック</b><span>${escapeHtml(selectedPack.title)}</span></p>` : ''}
       <ul class="steps">
         <li><b>1</b><span>10問を選ぶ・ランダム選択</span></li>
         <li><b>2</b><span>URL・QR・6桁コードを配信で案内</span></li>
@@ -163,12 +173,14 @@ function landingView() {
 
 function createView() {
   const question = state.questions[state.builderIndex];
+  const selectedPack = questionPackBySlug(initialPackSlug, isEnglish);
   if (!question) return loadingView();
   if (state.editingQuestion) return liveQuestionEditView(question);
   return `<section class="panel">
     <span class="section-pill">配信者用</span>
     <h2 style="margin-top:10px">1問ずつクイズを作る</h2>
     <p>問題を確認して「この問題を使う」を押すと、その1問が完成します。答えは配信中に視聴者と同時に選びます。</p>
+    ${selectedPack ? `<p class="selected-live-pack"><b>選んだ10問パック</b><span>${escapeHtml(selectedPack.title)}</span></p>` : ''}
     <div class="field">
       <label for="host-name">配信者名（24文字まで）</label>
       <input id="host-name" maxlength="24" autocomplete="nickname" placeholder="例：わたちゃん" value="${escapeHtml(state.hostName)}">
