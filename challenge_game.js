@@ -717,7 +717,7 @@ function libraryView() {
         ${packs.map((pack) => {
           const cards = questionPackCards(allCards, pack.slug, isEnglish, QUESTION_COUNT);
           return `<article class="challenge-library-card challenge-pack-card" data-pack="${escapeHtml(pack.slug)}">
-              <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="lazy"
+              <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="lazy" decoding="async"
                 alt="${escapeHtml(pack.title)}${isEnglish ? ' illustration' : 'のイメージ画像'}">
             <div class="challenge-pack-copy">
               <span class="challenge-pack-count">10問パック</span>

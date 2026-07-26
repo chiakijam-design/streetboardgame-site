@@ -38,5 +38,21 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
   assert.equal(sitemap.includes('<changefreq>'), false);
   assert.equal(sitemap.includes('<priority>'), false);
   assert.equal(lastModifiedDates.every((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)), true);
-  assert.deepEqual(new Set(lastModifiedDates), new Set(['2026-07-26']));
+  const todayInJapan = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo' }).format(new Date());
+  assert.equal(lastModifiedDates.every((date) => date <= todayInJapan), true);
+  const lastModifiedByUrl = new Map(locations.map((location, index) => [location, lastModifiedDates[index]]));
+  for (const updatedUrl of [
+    'https://www.streetboardgame.com/',
+    'https://www.streetboardgame.com/challenge',
+    'https://www.streetboardgame.com/challenge/library',
+    'https://www.streetboardgame.com/live-challenge',
+    'https://www.streetboardgame.com/terms',
+    'https://www.streetboardgame.com/privacy',
+    'https://www.streetboardgame.com/en/challenge',
+    'https://www.streetboardgame.com/en/live-challenge',
+    'https://www.streetboardgame.com/en/terms',
+    'https://www.streetboardgame.com/en/privacy',
+  ]) {
+    assert.equal(lastModifiedByUrl.get(updatedUrl), '2026-07-27', updatedUrl);
+  }
 });

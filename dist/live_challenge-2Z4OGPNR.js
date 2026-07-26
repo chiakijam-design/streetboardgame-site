@@ -81,7 +81,7 @@ URL\u307E\u305F\u306F6\u6841\u30B3\u30FC\u30C9\u304B\u3089\u53C2\u52A0\u3057\u30
     <p>\u901A\u5E38\u7248\u3068\u540C\u3058\u304A\u984C\u306B\u52A0\u3048\u3066\u3001\u914D\u4FE1\u3067\u30B3\u30E1\u30F3\u30C8\u304C\u52D5\u304D\u3084\u3059\u30444\u30D1\u30C3\u30AF\u3092\u7528\u610F\u3057\u307E\u3057\u305F\u3002</p>
     <div class="live-pack-grid">
       ${e.map(n=>`<article class="live-pack-card" data-live-pack="${h(n.slug)}">
-        <img src="${h(n.image)}" width="640" height="360" loading="lazy"
+        <img src="${h(n.image)}" width="640" height="360" loading="lazy" decoding="async"
           alt="${h(n.title)}${E?" illustration":"\u306E\u30A4\u30E1\u30FC\u30B8\u753B\u50CF"}">
         <div>
           <small>LIVE\u5C02\u7528</small>

@@ -12,7 +12,7 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
 const HASHED_BUILD_ASSET_PATH = /^\/(?:dist\/(?:[a-z0-9_]+-[a-z0-9]{8}\.js|[a-z0-9-]+-[a-f0-9]{12}\.css)|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12}\.js)$/i;
-const VERSIONED_STATIC_ASSET_PATH = /\.(?:css|js|png|jpe?g|svg|webp)$/i;
+const VERSIONED_STATIC_ASSET_PATH = /\.(?:css|js|png|jpe?g|svg|webp|woff2)$/i;
 const RETIRED_GAME_PATHS = new Set([
   '/love',
   '/friends',
@@ -519,6 +519,12 @@ function applyChallengeLibraryMeta(html) {
             description,
             inLanguage: 'ja',
             isPartOf: { '@type': 'WebSite', url: CANONICAL_ORIGIN + '/' },
+            primaryImageOfPage: {
+              '@type': 'ImageObject',
+              url: CANONICAL_ORIGIN + '/assets/ogp-challenge-v3.png?v=20260726-ogp-2',
+              width: 1200,
+              height: 630,
+            },
             breadcrumb: { '@id': breadcrumbId },
           },
           {
@@ -578,6 +584,12 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
         description,
         inLanguage: 'en',
         breadcrumb: { '@id': breadcrumbId },
+        primaryImageOfPage: {
+          '@type': 'ImageObject',
+          url: CANONICAL_ORIGIN + '/assets/ogp-challenge-en.png?v=20260725-en-1',
+          width: 1729,
+          height: 910,
+        },
         mainEntity: { '@id': gameId },
       },
       {
@@ -609,6 +621,11 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
         operatingSystem: 'Any',
         isAccessibleForFree: true,
         inLanguage: 'en',
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'JPY',
+        },
       },
     ],
   };

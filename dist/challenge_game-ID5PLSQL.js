@@ -392,7 +392,7 @@ You know their tastes and choices inside out!`}]),po=Object.freeze({opening:["{p
       <p class="challenge-library-status">\u6C17\u5206\u3084\u76F8\u624B\u306B\u5408\u3046\u30D1\u30C3\u30AF\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002\u3069\u306E\u30D1\u30C3\u30AF\u3082\u901A\u5E38\u7248\u30FBLIVE\u7248\u306E\u4E21\u65B9\u3067\u4F7F\u3048\u307E\u3059\u3002</p>
       <div class="challenge-library challenge-pack-library" data-testid="question-library">
         ${t.map(e=>{let n=Pe(N,e.slug,m,q);return`<article class="challenge-library-card challenge-pack-card" data-pack="${p(e.slug)}">
-              <img src="${p(e.image)}" width="640" height="360" loading="lazy"
+              <img src="${p(e.image)}" width="640" height="360" loading="lazy" decoding="async"
                 alt="${p(e.title)}${m?" illustration":"\u306E\u30A4\u30E1\u30FC\u30B8\u753B\u50CF"}">
             <div class="challenge-pack-copy">
               <span class="challenge-pack-count">10\u554F\u30D1\u30C3\u30AF</span>

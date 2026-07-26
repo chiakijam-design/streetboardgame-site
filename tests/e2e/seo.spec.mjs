@@ -59,20 +59,52 @@ test('サイトマップ掲載URLは200・自己canonical・index可能で統一
   const sitemap = await (await request.get('/sitemap.xml')).text();
   const urls = [...sitemap.matchAll(/<loc>(https:\/\/www\.streetboardgame\.com\/[^<]*)<\/loc>/g)]
     .map((match) => match[1]);
+  const lastModifiedDates = [...sitemap.matchAll(/<lastmod>(\d{4}-\d{2}-\d{2})<\/lastmod>/g)]
+    .map((match) => match[1]);
   expect(urls.length).toBeGreaterThan(10);
   expect(new Set(urls).size).toBe(urls.length);
+  expect(lastModifiedDates).toHaveLength(urls.length);
+  expect(lastModifiedDates.every((value) => Number.isFinite(Date.parse(`${value}T00:00:00Z`)))).toBe(true);
+  for (const updatedUrl of [
+    `${ORIGIN}/`,
+    `${ORIGIN}/challenge`,
+    `${ORIGIN}/challenge/library`,
+    `${ORIGIN}/live-challenge`,
+    `${ORIGIN}/terms`,
+    `${ORIGIN}/privacy`,
+    `${ORIGIN}/en/challenge`,
+    `${ORIGIN}/en/live-challenge`,
+    `${ORIGIN}/en/terms`,
+    `${ORIGIN}/en/privacy`,
+  ]) {
+    expect(sitemap).toContain(`<loc>${updatedUrl}</loc>\n    <lastmod>2026-07-27</lastmod>`);
+  }
 
+  const titles = new Set();
+  const descriptions = new Set();
   for (const url of urls) {
     const response = await request.get(new URL(url).pathname);
     expect(response.status(), url).toBe(200);
     const html = await response.text();
     expect(html, url).toContain(`<link rel="canonical" href="${url}"`);
+    expect(html.match(/<link rel="canonical"/gi) || [], `${url} canonical count`).toHaveLength(1);
+    expect(html.match(/<h1(?:\s|>)/gi) || [], `${url} h1 count`).toHaveLength(1);
+    const title = html.match(/<title>([^<]+)<\/title>/i)?.[1]?.trim() || '';
+    const description = html.match(/<meta name="description" content="([^"]+)"/i)?.[1]?.trim() || '';
+    expect(title.length, `${url} title`).toBeGreaterThan(10);
+    expect(description.length, `${url} description`).toBeGreaterThan(30);
+    expect(titles.has(title), `${url} duplicate title: ${title}`).toBe(false);
+    expect(descriptions.has(description), `${url} duplicate description: ${description}`).toBe(false);
+    titles.add(title);
+    descriptions.add(description);
     const robots = html.match(/<meta name="robots" content="([^"]*)"/i)?.[1] || '';
     expect(robots, url).not.toContain('noindex');
   }
 
   const robots = await (await request.get('/robots.txt')).text();
   expect(robots).toContain(`Sitemap: ${ORIGIN}/sitemap.xml`);
+  expect(robots).not.toContain('Disallow: /challenge');
+  expect(robots).not.toContain('Disallow: /live-challenge');
 });
 
 test('ゲーム画面は表示言語のお題データだけを読み込む', async ({ request }, testInfo) => {
@@ -104,6 +136,22 @@ test('内容ハッシュ付きCSSを長期キャッシュする', async ({ reque
       expect(stylesheet.headers()['cache-control'], stylesheetPath).toContain('immutable');
     }
   }
+});
+
+test('手書きフォントは軽量WOFF2だけを参照し長期キャッシュする', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPキャッシュは画面幅に依存しないためPCで1回検証');
+  const fontPath = '/assets/fonts/HuiFontP29.woff2?v=20260727-font-1';
+  for (const path of ['/', '/challenge', '/live-challenge']) {
+    const html = await (await request.get(path)).text();
+    expect(html, path).toContain(fontPath);
+    expect(html, path).not.toContain('HuiFontP29.ttf');
+  }
+  const font = await request.get(fontPath);
+  expect(font.status()).toBe(200);
+  expect(font.headers()['content-type']).toContain('font/woff2');
+  expect(font.headers()['cache-control']).toContain('max-age=31536000');
+  expect(font.headers()['cache-control']).toContain('immutable');
+  expect((await font.body()).byteLength).toBeLessThan(2_000_000);
 });
 
 test('トップの内部リンクと構造化データに廃止モードを残さない', async ({ page }, testInfo) => {
@@ -138,6 +186,18 @@ test('ゲームページはパンくず構造化データ、専用canonical、�
     await page.goto(path);
     const jsonLd = (await page.locator('script[type="application/ld+json"]').first().textContent()) || '';
     expect(jsonLd, path).toContain('BreadcrumbList');
+    const graph = JSON.parse(jsonLd)['@graph'] || [];
+    const pageNode = graph.find((node) => ['WebPage', 'CollectionPage'].includes(node['@type']));
+    expect(pageNode?.primaryImageOfPage?.url, `${path} primary image`).toMatch(/^https:\/\/www\.streetboardgame\.com\/assets\/ogp-/);
+    if (path !== '/challenge/library') {
+      const appNode = graph.find((node) => Array.isArray(node['@type']) && node['@type'].includes('WebApplication'));
+      expect(appNode?.isAccessibleForFree, `${path} free app`).toBe(true);
+      expect(appNode?.offers, `${path} free offer`).toMatchObject({
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'JPY',
+      });
+    }
     const canonical = path === '/challenge/library' ? `${ORIGIN}/challenge/library` : `${ORIGIN}${path}`;
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', canonical);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /max-image-preview:large/);

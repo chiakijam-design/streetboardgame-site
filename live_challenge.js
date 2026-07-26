@@ -200,7 +200,7 @@ function landingView() {
     <p>通常版と同じお題に加えて、配信でコメントが動きやすい4パックを用意しました。</p>
     <div class="live-pack-grid">
       ${livePacks.map((pack) => `<article class="live-pack-card" data-live-pack="${escapeHtml(pack.slug)}">
-        <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="lazy"
+        <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="lazy" decoding="async"
           alt="${escapeHtml(pack.title)}${isEnglish ? ' illustration' : 'のイメージ画像'}">
         <div>
           <small>LIVE専用</small>
