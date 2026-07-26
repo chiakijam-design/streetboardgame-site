@@ -11,7 +11,7 @@ import {
   sortQuestionsForOperations,
 } from '../../src/questions/similarity.js';
 
-test('採用を先に並べ、採用側は採用同士、無効側は採用との類似だけを検出する', () => {
+test('採用・保留・無効の順に並べ、保留と無効は採用との類似だけを検出する', () => {
   const questions = [{
     id: 'q3',
     status: 'disabled',
@@ -27,13 +27,21 @@ test('採用を先に並べ、採用側は採用同士、無効側は採用と�
     status: 'approved',
     title: 'あさ起きて最初にすることは？',
     choices: ['水を飲む', 'スマホを見る', '顔を洗う', 'もう一度寝る', '着替える'],
+  }, {
+    id: 'q4',
+    status: 'held',
+    title: 'あさ起きて最初にすることは？',
+    choices: ['水を飲む', 'スマホを見る', '顔を洗う', '二度寝', '着替える'],
   }];
 
-  assert.deepEqual(sortQuestionsForOperations(questions).map((item) => item.id), ['q1', 'q2', 'q3']);
+  assert.deepEqual(sortQuestionsForOperations(questions).map((item) => item.id), ['q1', 'q2', 'q4', 'q3']);
   const matches = findSimilarQuestions(questions);
   assert.equal(matches.get('q1')[0].id, 'q2');
   assert.ok(matches.get('q1')[0].score >= 0.58);
   assert.equal(matches.get('q1').some((item) => item.id === 'q3'), false);
+  assert.equal(matches.get('q1').some((item) => item.id === 'q4'), false);
+  assert.equal(matches.get('q4')[0].id, 'q2');
+  assert.equal(matches.get('q4').some((item) => item.id === 'q1'), true);
   assert.equal(matches.get('q3')[0].id, 'q2');
   assert.equal(matches.get('q3').some((item) => item.id === 'q1'), true);
 });
@@ -55,6 +63,7 @@ test('既存DBから旧シリーズ分類列と廃止お題を削除する', asy
   sqlite.exec(await readFile(new URL('../../migrations/0015_remove_retired_games.sql', import.meta.url), 'utf8'));
   sqlite.exec(await readFile(new URL('../../migrations/0016_restore_common_question_overrides.sql', import.meta.url), 'utf8'));
   sqlite.exec(await readFile(new URL('../../migrations/0017_consolidate_legacy_question_ids.sql', import.meta.url), 'utf8'));
+  sqlite.exec(await readFile(new URL('../../migrations/0019_add_held_question_candidates.sql', import.meta.url), 'utf8'));
   const approved = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('Q001');
   const disabled = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('FAM001');
   const restoredDisabled = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('Q502');
@@ -75,6 +84,18 @@ test('既存DBから旧シリーズ分類列と廃止お題を削除する', asy
   );
   assert.equal(columns.includes('target_friend'), false);
   assert.equal(columns.includes('target_family'), false);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM question_catalog WHERE status = 'held'").get().count, 100);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM question_catalog WHERE source_kind = 'candidate'").get().count, 100);
+  assert.deepEqual(
+    sqlite.prepare(`
+      SELECT substr(source_ref, 1, 1) AS source_group, COUNT(*) AS count
+      FROM question_catalog
+      WHERE source_kind = 'candidate'
+      GROUP BY source_group
+      ORDER BY source_group
+    `).all().map((row) => [row.source_group, row.count]),
+    [['A', 30], ['B', 25], ['C', 20], ['D', 15], ['E', 10]],
+  );
 });
 
 test('本番に混在した旧IDと現行IDは新しい運営設定を優先して共通IDへ統合する', async () => {
@@ -261,6 +282,32 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   const updated = await updateResponse.json();
   assert.equal(updated.question.useLive, true);
   assert.equal('targetFamily' in updated.question, false);
+
+  const heldCandidateResponse = await handleQuestionApi(jsonRequest(
+    '/api/questions/admin/catalog/HLD999',
+    {
+      title: '保留中の候補はどれ？',
+      choices: ['候補1', '候補2', '候補3', '候補4', '候補5'],
+      category: '会話',
+      sourceKind: 'candidate',
+      sourceRef: 'test-candidate',
+      status: 'held',
+    },
+    adminHeaders,
+    'PUT',
+  ), env, '/api/questions/admin/catalog/HLD999');
+  assert.equal(heldCandidateResponse.status, 200);
+  const heldCandidate = await heldCandidateResponse.json();
+  assert.equal(heldCandidate.question.status, 'held');
+  assert.equal(heldCandidate.question.sourceKind, 'candidate');
+  assert.equal(heldCandidate.question.useChallenge, false);
+  assert.equal(heldCandidate.question.useLive, false);
+  const publicWithHeld = await (await handleQuestionApi(
+    new Request('https://example.com/api/questions/catalog'),
+    env,
+    '/api/questions/catalog',
+  )).json();
+  assert.equal(publicWithHeld.questions.some((item) => item.id === 'HLD999'), false);
 
   const disabledStaticResponse = await handleQuestionApi(jsonRequest(
     '/api/questions/admin/catalog/Q001',

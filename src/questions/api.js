@@ -231,9 +231,13 @@ async function reviewSubmission(request, env, submissionId) {
 async function saveCatalogQuestion(request, env, questionId) {
   const body = await readJson(request);
   const question = sanitizeQuestion(body);
-  const sourceKind = body.sourceKind === 'custom' ? 'custom' : 'static';
+  const sourceKind = body.sourceKind === 'custom'
+    ? 'custom'
+    : body.sourceKind === 'candidate'
+      ? 'candidate'
+      : 'static';
   const sourceRef = sanitizeShortText(body.sourceRef, 80) || questionId;
-  const status = body.status === 'disabled' ? 'disabled' : 'approved';
+  const status = normalizeCatalogStatus(body.status);
   const now = Date.now();
   await env.REMOTE_DB.prepare(`
     INSERT INTO question_catalog
@@ -311,6 +315,10 @@ function normalizeSourceMode(value) {
   if (value === 'challenge' || value === 'live-challenge'
     || value === 'challenge-en' || value === 'live-challenge-en') return value;
   throw apiError('question-source-mode-invalid', 400);
+}
+
+function normalizeCatalogStatus(value) {
+  return value === 'held' ? 'held' : value === 'disabled' ? 'disabled' : 'approved';
 }
 
 function sanitizeShortText(value, maxLength) {

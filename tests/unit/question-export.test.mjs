@@ -24,12 +24,21 @@ test('全お題のバックアップCSVはBOM・見出し・採用状態・5択�
     status: 'disabled',
     sourceKind: 'custom',
     reportCount: 2,
+  }, {
+    id: 'HLD001',
+    title: '保留中の問題',
+    choices: ['A', 'B', 'C', 'D', 'E'],
+    status: 'held',
+    sourceKind: 'candidate',
+    sourceRef: 'A-001',
   }]);
 
   assert.equal(csv.charCodeAt(0), 0xFEFF);
   assert.ok(csv.includes(QUESTION_BACKUP_HEADERS.join(',')));
   assert.ok(csv.includes('採用,Q001,好きな食べ物は？,寿司,焼肉,パスタ,ケーキ,家ごはん'));
   assert.ok(csv.includes('無効化,CUS001,"カンマ,と""引用符""を含む問題"'));
+  assert.ok(csv.includes('保留,HLD001,保留中の問題,A,B,C,D,E'));
+  assert.ok(csv.includes(',新規候補,A-001,停止,停止,0,'));
   assert.ok(csv.includes(',"\'=HYPERLINK(""https://example.invalid"")",'));
   assert.ok(csv.includes(',使用,使用,0,'));
   assert.ok(csv.includes(',停止,停止,2,'));

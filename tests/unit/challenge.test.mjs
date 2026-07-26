@@ -74,6 +74,24 @@ test('共通お題データは題名を正規化して重複を除ける', () =>
   assert.equal(pickChallengeCards(merged, 2, () => 0).length, 2);
 });
 
+test('保留候補は非公開のまま、採用後は通常版・LIVE版の共通お題へ追加できる', async () => {
+  const { applyManagedQuestionCards } = await import('../../src/questions/catalog.js');
+  const managed = [{
+    id: 'HLD001',
+    sourceKind: 'candidate',
+    title: '候補のお題',
+    category: '会話',
+    choices: ['1', '2', '3', '4', '5'],
+    status: 'held',
+    language: 'ja',
+  }];
+  assert.equal(applyManagedQuestionCards([], managed, 'challenge').length, 0);
+  const approved = applyManagedQuestionCards([], [{ ...managed[0], status: 'approved' }], 'challenge');
+  assert.equal(approved.length, 1);
+  assert.equal(approved[0].sourceKind, 'candidate');
+  assert.equal(approved[0].reportable, false);
+});
+
 test('答え合わせから3定型文を2種類ずつ生成し、自由入力は使わない', () => {
   const candidates = buildBoardCommentCandidates({
     cards,

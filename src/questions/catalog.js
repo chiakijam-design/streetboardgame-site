@@ -32,7 +32,7 @@ export function applyManagedQuestionCards(baseCards, managedQuestions, series, l
 
   const baseIds = new Set((baseCards || []).map((card) => String(card.id)));
   for (const row of rows) {
-    if (row.sourceKind !== 'custom' || row.status !== 'approved'
+    if (!['custom', 'candidate'].includes(row.sourceKind) || row.status !== 'approved'
       || (row.language || 'ja') !== language
       || baseIds.has(String(row.id))) continue;
     if (!row.title || !Array.isArray(row.choices) || row.choices.length !== 5) continue;
@@ -41,9 +41,9 @@ export function applyManagedQuestionCards(baseCards, managedQuestions, series, l
       category: row.category || 'みんなのお題',
       title: row.title,
       choices: row.choices.slice(0, 5),
-      sourceKind: 'custom',
+      sourceKind: row.sourceKind,
       managedQuestionId: row.id,
-      reportable: true,
+      reportable: row.sourceKind === 'custom',
     });
   }
   return cards;

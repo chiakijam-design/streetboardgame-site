@@ -110,7 +110,7 @@ function roundScore(value) {
 }
 
 function statusRank(status) {
-  return status === 'disabled' ? 1 : 0;
+  return status === 'held' ? 1 : status === 'disabled' ? 2 : 0;
 }
 
 function isCompleteQuestion(item) {

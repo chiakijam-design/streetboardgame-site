@@ -1,7 +1,7 @@
 import { expect, test } from './test.mjs';
 import { readFile } from 'node:fs/promises';
 
-test('運営だけが二要素認証後に表形式でお題を審査し、採用と無効化を管理できる', async ({ page }) => {
+test('運営だけが二要素認証後に表形式でお題を審査し、採用・保留・無効化を管理できる', async ({ page }) => {
   const reviewBodies = [];
   const saveBodies = [];
   const pendingId = '11111111-1111-4111-8111-111111111111';
@@ -28,6 +28,18 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
       status: 'approved',
       useChallenge: true,
       useLive: true,
+      reportCount: 0,
+      lastReportedAt: null,
+    }, {
+      id: 'CUSCOMPAREHELD',
+      sourceKind: 'candidate',
+      sourceRef: 'A-001',
+      title: '管理テスト専用の休み時間は？',
+      category: 'みんなのお題',
+      choices: ['図書室', '校庭', '教室', '購買', '音楽室'],
+      status: 'held',
+      useChallenge: false,
+      useLive: false,
       reportCount: 0,
       lastReportedAt: null,
     }, {
@@ -125,7 +137,7 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   expect(await page.evaluate(() => sessionStorage.getItem('live:admin-session'))).toBe('question-admin-session');
   await expect(page.locator('#pendingSubmissions')).toContainText('放課後にみんなでしたいことは？');
   await expect(page.locator('#pendingSubmissions')).toContainText('重点審査：いじめ・容姿攻撃');
-  await expect(page.getByText('通常版とLIVE版は同じ採用済みお題を使います。採用・無効化、問題文、5つの選択肢を表でまとめて管理できます。')).toBeVisible();
+  await expect(page.getByText('通常版とLIVE版は同じ採用済みお題を使います。採用・保留・無効化、問題文、5つの選択肢を表でまとめて管理できます。')).toBeVisible();
   await expect(page.locator('#allQuestions')).toContainText('通報1件・即時非公開');
   await expect(page.locator('#allQuestions table')).toBeVisible();
   await expect(page.locator('#allQuestions thead')).toContainText('選択肢5');
@@ -145,18 +157,29 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   expect(csv.split('\r\n').length - 2).toBe(total);
   await expect(page.locator('#authStatus')).toContainText(`全${total}問`);
   const statusOrder = await page.locator('#allQuestions [data-catalog]').evaluateAll((rows) => rows.map((row) => row.dataset.statusRow));
+  expect(statusOrder.indexOf('held')).toBeGreaterThan(statusOrder.lastIndexOf('approved'));
   expect(statusOrder.indexOf('disabled')).toBeGreaterThan(statusOrder.lastIndexOf('approved'));
+  expect(statusOrder.indexOf('disabled')).toBeGreaterThan(statusOrder.lastIndexOf('held'));
   await expect(page.locator('#similaritySummary')).not.toHaveText('類似候補：0問');
   const activeCompareRow = page.locator('[data-catalog="CUSCOMPAREACTIVE1"]');
+  const heldCompareRow = page.locator('[data-catalog="CUSCOMPAREHELD"]');
   const disabledCompareRow = page.locator('[data-catalog="CUSCOMPAREDISABLED"]');
   await expect(activeCompareRow).toContainText('類似候補 100%');
+  await expect(heldCompareRow).toContainText('類似候補 100%');
   await expect(disabledCompareRow).toContainText('類似候補 100%');
   await expect(disabledCompareRow.locator('[data-compare]')).toHaveCount(1);
   await activeCompareRow.getByRole('button', { name: '並べて比較' }).click();
   const activeComparison = page.locator('[data-comparison="CUSCOMPAREACTIVE1"]');
   await expect(activeComparison.locator('[data-compare-catalog]')).toHaveCount(2);
   await expect(activeComparison.locator('[data-compare-catalog="CUSCOMPAREACTIVE2"]')).toBeVisible();
+  await expect(activeComparison.locator('[data-compare-catalog="CUSCOMPAREHELD"]')).toHaveCount(0);
   await expect(activeComparison.locator('[data-compare-catalog="CUSCOMPAREDISABLED"]')).toHaveCount(0);
+  await heldCompareRow.getByRole('button', { name: '並べて比較' }).click();
+  const heldComparison = page.locator('[data-comparison="CUSCOMPAREHELD"]');
+  await expect(heldComparison.locator('[data-compare-catalog="CUSCOMPAREHELD"]')).toBeVisible();
+  await expect(heldComparison.locator('[data-compare-catalog="CUSCOMPAREACTIVE1"]')).toBeVisible();
+  await expect(heldComparison.locator('[data-compare-catalog="CUSCOMPAREACTIVE2"]')).toBeVisible();
+  await expect(heldComparison.locator('[data-compare-catalog="CUSCOMPAREHELD"] [data-compare-status][value="held"]')).toBeChecked();
   await disabledCompareRow.getByRole('button', { name: '並べて比較' }).click();
   const disabledComparison = page.locator('[data-comparison="CUSCOMPAREDISABLED"]');
   await expect(disabledComparison.locator('[data-compare-catalog="CUSCOMPAREDISABLED"]')).toBeVisible();

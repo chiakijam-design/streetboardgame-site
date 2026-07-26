@@ -126,10 +126,11 @@ function renderAllQuestions() {
       || filter === 'custom' && item.sourceKind === 'custom' && item.status === 'approved';
     return textMatches && filterMatches;
   });
-  const approvedCount = allQuestions.filter((item) => item.status !== 'disabled').length;
-  const disabledCount = allQuestions.length - approvedCount;
+  const approvedCount = allQuestions.filter((item) => item.status === 'approved').length;
+  const heldCount = allQuestions.filter((item) => item.status === 'held').length;
+  const disabledCount = allQuestions.filter((item) => item.status === 'disabled').length;
   const similarCount = allQuestions.filter((item) => (similarityMatches.get(String(item.id)) || []).length).length;
-  document.getElementById('questionCount').textContent = `${filtered.length}問を表示（採用${approvedCount}問／無効化${disabledCount}問／全${allQuestions.length}問）`;
+  document.getElementById('questionCount').textContent = `${filtered.length}問を表示（採用${approvedCount}問／保留${heldCount}問／無効化${disabledCount}問／全${allQuestions.length}問）`;
   document.getElementById('similaritySummary').textContent = `類似候補：${similarCount}問`;
   const target = document.getElementById('allQuestions');
   target.innerHTML = filtered.length ? `
@@ -137,6 +138,7 @@ function renderAllQuestions() {
       <table class="question-table">
         <thead><tr>
           <th class="status-col">採用</th>
+          <th class="status-col">保留</th>
           <th class="status-col">無効化</th>
           <th class="question-col">問題文</th>
           ${choiceHeaders()}
@@ -161,16 +163,17 @@ function renderAllQuestions() {
 
 function questionRow(item) {
   const id = String(item.id);
-  const disabled = item.status === 'disabled';
+  const status = normalizeCatalogStatus(item.status);
   const matches = topMatches(id);
   return `
-    <tr data-catalog="${attr(id)}" data-status-row="${disabled ? 'disabled' : 'approved'}">
-      <td class="status-col"><label class="status-choice"><input type="radio" name="status-${attr(id)}" data-status value="approved" ${disabled ? '' : 'checked'}><span>採用</span></label></td>
-      <td class="status-col"><label class="status-choice disabled"><input type="radio" name="status-${attr(id)}" data-status value="disabled" ${disabled ? 'checked' : ''}><span>無効</span></label></td>
+    <tr data-catalog="${attr(id)}" data-status-row="${status}">
+      <td class="status-col"><label class="status-choice"><input type="radio" name="status-${attr(id)}" data-status value="approved" ${status === 'approved' ? 'checked' : ''}><span>採用</span></label></td>
+      <td class="status-col"><label class="status-choice held"><input type="radio" name="status-${attr(id)}" data-status value="held" ${status === 'held' ? 'checked' : ''}><span>保留</span></label></td>
+      <td class="status-col"><label class="status-choice disabled"><input type="radio" name="status-${attr(id)}" data-status value="disabled" ${status === 'disabled' ? 'checked' : ''}><span>無効</span></label></td>
       <td>
         <textarea class="sheet-input sheet-title" data-field="title" maxlength="180">${html(item.title)}</textarea>
         <div class="meta">
-          <span class="pill ${item.sourceKind === 'custom' ? 'info' : ''}">${item.sourceKind === 'custom' ? '採用した自作' : '標準のお題'}</span>
+          <span class="pill ${item.sourceKind === 'custom' ? 'info' : item.sourceKind === 'candidate' ? 'warning' : ''}">${sourceKindLabel(item.sourceKind)}</span>
           <span class="pill">${html(id)}</span>
           ${item.reportCount ? `<span class="pill critical">通報${item.reportCount}件・即時非公開</span>` : ''}
         </div>
@@ -212,7 +215,7 @@ function comparisonRow(id, item, matches) {
   if (!matches.length) return '';
   return `
     <tr class="compare-row" data-comparison="${attr(id)}" hidden>
-      <td colspan="10">
+      <td colspan="11">
         <div class="comparison-grid">
           ${comparisonCard('この問題', item, id)}
           ${matches.map((match, index) => comparisonCard(`類似候補${index + 1}（${Math.round(match.score * 100)}%）`, match, id)).join('')}
@@ -225,17 +228,18 @@ function comparisonRow(id, item, matches) {
 function comparisonCard(label, item, comparisonId) {
   const catalogItem = allQuestions.find((question) => String(question.id) === String(item.id));
   if (!catalogItem) return readOnlyComparisonCard(label, item);
-  const disabled = catalogItem.status === 'disabled';
+  const status = normalizeCatalogStatus(catalogItem.status);
   const radioName = `compare-status-${comparisonId}-${catalogItem.id}`;
   return `
-    <div class="comparison-card" data-compare-catalog="${attr(catalogItem.id)}" data-status-row="${disabled ? 'disabled' : 'approved'}">
+    <div class="comparison-card" data-compare-catalog="${attr(catalogItem.id)}" data-status-row="${status}">
       <div class="comparison-card-head">
         <span class="pill similar">${label}</span>
         <span class="pill">${html(catalogItem.id)}</span>
       </div>
       <div class="comparison-status" role="group" aria-label="${attr(catalogItem.title)}の掲載状態">
-        <label class="status-choice"><input type="radio" name="${attr(radioName)}" data-compare-status value="approved" ${disabled ? '' : 'checked'}><span>採用</span></label>
-        <label class="status-choice disabled"><input type="radio" name="${attr(radioName)}" data-compare-status value="disabled" ${disabled ? 'checked' : ''}><span>無効</span></label>
+        <label class="status-choice"><input type="radio" name="${attr(radioName)}" data-compare-status value="approved" ${status === 'approved' ? 'checked' : ''}><span>採用</span></label>
+        <label class="status-choice held"><input type="radio" name="${attr(radioName)}" data-compare-status value="held" ${status === 'held' ? 'checked' : ''}><span>保留</span></label>
+        <label class="status-choice disabled"><input type="radio" name="${attr(radioName)}" data-compare-status value="disabled" ${status === 'disabled' ? 'checked' : ''}><span>無効</span></label>
       </div>
       <label class="comparison-field">
         <span>問題文</span>
@@ -322,12 +326,12 @@ async function saveQuestion(id, { reload = true } = {}) {
     ...readQuestionRow(row),
     sourceKind: current.sourceKind,
     sourceRef: current.sourceRef || current.id,
-    status: row.querySelector('[data-status]:checked')?.value === 'disabled' ? 'disabled' : 'approved',
+    status: normalizeCatalogStatus(row.querySelector('[data-status]:checked')?.value),
   };
   await adminApi(`/api/questions/admin/catalog/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
   dirtyQuestionIds.delete(String(id));
   if (reload) {
-    showStatus(`「${body.title}」を${body.status === 'approved' ? '採用' : '無効化'}として保存しました。`);
+    showStatus(`「${body.title}」を${statusLabel(body.status)}として保存しました。`);
     await loadOverview();
   }
 }
@@ -342,7 +346,7 @@ async function saveComparisonQuestion(card) {
     ...readQuestionRow(card),
     sourceKind: current.sourceKind,
     sourceRef: current.sourceRef || current.id,
-    status: card.querySelector('[data-compare-status]:checked')?.value === 'disabled' ? 'disabled' : 'approved',
+    status: normalizeCatalogStatus(card.querySelector('[data-compare-status]:checked')?.value),
   };
   button.disabled = true;
   button.textContent = '保存中';
@@ -351,7 +355,7 @@ async function saveComparisonQuestion(card) {
       method: 'PUT',
       body: JSON.stringify(body),
     });
-    showStatus(`比較欄の「${body.title}」を${body.status === 'approved' ? '採用' : '無効化'}として保存しました。`);
+    showStatus(`比較欄の「${body.title}」を${statusLabel(body.status)}として保存しました。`);
     await loadOverview();
   } catch (error) {
     button.disabled = false;
@@ -384,7 +388,7 @@ function exportQuestionsCsv() {
   if (dirtyQuestionIds.size && !confirm('未保存の変更はバックアップに含まれません。保存済みの内容で続けますか？')) return;
   try {
     const result = downloadQuestionBackup(allQuestions);
-    showStatus(`採用・無効化を含む全${result.count}問をスプレッドシート用CSVに保存しました。`);
+    showStatus(`採用・保留・無効化を含む全${result.count}問をスプレッドシート用CSVに保存しました。`);
   } catch (error) {
     showStatus('CSVを保存できませんでした。ブラウザのダウンロード設定を確認してください。', true);
   }
@@ -439,9 +443,24 @@ function mergeQuestionOverview(base, catalog) {
   });
   const baseIds = new Set(base.map((item) => String(item.id)));
   for (const item of catalog || []) {
-    if (!baseIds.has(String(item.id))) result.push({ ...item, sourceLabel: '採用した自作' });
+    if (!baseIds.has(String(item.id))) result.push({
+      ...item,
+      sourceLabel: item.sourceKind === 'candidate' ? '新規候補' : '採用した自作',
+    });
   }
   return result;
+}
+
+function normalizeCatalogStatus(value) {
+  return value === 'held' ? 'held' : value === 'disabled' ? 'disabled' : 'approved';
+}
+
+function statusLabel(value) {
+  return value === 'held' ? '保留' : value === 'disabled' ? '無効化' : '採用';
+}
+
+function sourceKindLabel(value) {
+  return value === 'custom' ? '採用した自作' : value === 'candidate' ? '新規100問候補' : '標準のお題';
 }
 
 async function adminApi(path, options = {}) {
