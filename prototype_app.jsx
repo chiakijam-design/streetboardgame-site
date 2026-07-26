@@ -934,16 +934,21 @@ function ContactForm() {
   const contactTopic = new URLSearchParams(location.search).get('topic') || '';
   const isCreatorRegistration = contactTopic === 'live-creator-registration';
   const isCommerceDisclosure = contactTopic === 'commerce-disclosure';
+  const isRefundRequest = contactTopic === 'refund-request';
   const contactSubject = isCreatorRegistration
     ? 'streetboardgame.com LIVE配信者登録申込み'
     : isCommerceDisclosure
       ? 'streetboardgame.com 特定商取引法第11条表示事項の開示請求'
-      : 'streetboardgame.com お問い合わせ';
+      : isRefundRequest
+        ? 'streetboardgame.com 返金・キャンセル申請'
+        : 'streetboardgame.com お問い合わせ';
   const defaultMessage = isCreatorRegistration
     ? 'LIVE配信者登録を希望します。\n\n配信サービス：\n配信アカウント／チャンネルURL：\n利用予定：'
     : isCommerceDisclosure
       ? '特定商取引法第11条に基づく表示事項（事業者の所在地・電話番号）の開示を請求します。\n\n確認したい有料サービス：\n購入予定時期：'
-      : '';
+      : isRefundRequest
+        ? '返金・キャンセルの確認を希望します。\n\n申込み時のメールアドレス：\n注文番号（ord_から始まる番号）：\n決済日時：\n金額：\n対象サービス（結果画像／応援機能）：\nLIVE名または参加コード：\n申請理由：'
+        : '';
 
   const submit = async (event) => {
     event.preventDefault();
@@ -1005,6 +1010,20 @@ function ContactForm() {
           fontWeight: 900,
         }}>
           購入を決める前に、事業者の所在地・電話番号の開示を請求するためのフォームです。確認したい有料サービスと購入予定時期を追記して送信してください。
+        </p>
+      )}
+      {isRefundRequest && (
+        <p data-testid="refund-request-contact-notice" style={{
+          margin: 0,
+          padding: 10,
+          border: `2px solid ${theme.black}`,
+          borderRadius: 10,
+          background: '#FFF9D7',
+          fontSize: 13,
+          lineHeight: 1.65,
+          fontWeight: 900,
+        }}>
+          返金・キャンセルの確認用フォームです。注文番号など、分かる範囲の購入情報を追記してください。カード番号全桁やセキュリティコードは入力しないでください。
         </p>
       )}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>

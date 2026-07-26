@@ -69,3 +69,12 @@ test('特商法表示事項の開示請求は専用案内と入力ひな形を�
   await expect(page.locator('input[name="_subject"]')).toHaveValue('streetboardgame.com 特定商取引法第11条表示事項の開示請求');
   await expect(page.locator('input[name="topic"]')).toHaveValue('commerce-disclosure');
 });
+
+test('返金申請は専用案内と注文情報の入力ひな形を表示する', async ({ page }) => {
+  await page.goto('/?screen=about&to=contact&topic=refund-request');
+
+  await expect(page.getByTestId('refund-request-contact-notice')).toContainText('カード番号全桁やセキュリティコードは入力しない');
+  await expect(page.getByLabel('お問い合わせ内容')).toHaveValue(/注文番号（ord_から始まる番号）/);
+  await expect(page.locator('input[name="_subject"]')).toHaveValue('streetboardgame.com 返金・キャンセル申請');
+  await expect(page.locator('input[name="topic"]')).toHaveValue('refund-request');
+});

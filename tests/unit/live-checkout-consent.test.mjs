@@ -65,6 +65,23 @@ test('特商法表記は現行LIVE版の料金・提供・キャンセル条件�
   ]) assert.equal(document.includes(requiredText), true, requiredText);
 });
 
+test('返金ポリシーは現行LIVE版の提供完了・代替提供・返金申請条件を表示する', async () => {
+  const document = await readFileAsync(new URL('../../refund-policy.html', import.meta.url), 'utf8');
+  for (const requiredText of [
+    '2026年7月26日',
+    'バージョン：1.3',
+    '通信販売にクーリング・オフ制度は適用されず',
+    '決済完了時に応援受付が完了',
+    '応援受付の不具合',
+    '変換前の元画像を用いて高画質結果画像を生成',
+    '購入時の注文番号とメールアドレスによる購入権限の回復',
+    'topic=refund-request',
+    '配信者への分配は保留・取消し・相殺',
+    '未成年者による取消し',
+  ]) assert.equal(document.includes(requiredText), true, requiredText);
+  assert.equal(document.includes('関連するYouTuberへの分配'), false);
+});
+
 test('チェック済みの現行利用規約だけを決済同意として受け付ける', () => {
   assert.deepEqual(assertCheckoutConsent({
     termsAccepted: true,
