@@ -214,7 +214,11 @@ function paidSalesSettingsView() {
     ? '<div class="notice" role="status">この端末の販売登録を確認しています。</div>'
     : '';
   const unavailable = state.paidCreatorProfilesLoaded && !profiles.length
-    ? '<div class="notice">この端末に販売可能な配信者登録がありません。無料LIVEはそのまま作れます。販売登録が反映されていない場合は運営へお問い合わせください。</div>'
+    ? `<div class="sales-registration-next" id="paid-sales-registration-help">
+        <div class="notice">この端末に販売可能な配信者登録がありません。販売機能を使うには、申込み後にYouTubeチャンネルの所有確認、収益分配規約への同意、Stripe本人確認、運営審査が必要です。無料LIVEは登録せず作れます。</div>
+        <a class="primary sales-registration-link" href="/contact?topic=live-creator-registration">配信者登録を申し込む <span aria-hidden="true">▶</span></a>
+        <p class="help">申込み済みなのに販売登録が表示されない場合も、リンク先から運営へお問い合わせください。</p>
+      </div>`
     : '';
   const settings = profiles.length ? `<div class="sales-fields" ${state.paidSalesEnabled ? '' : 'hidden'}>
       <div class="field">
@@ -234,7 +238,7 @@ function paidSalesSettingsView() {
   return `<section class="sales-settings" data-testid="live-sales-settings">
     <div class="sales-heading"><span>販売機能</span><small>任意</small></div>
     <label class="check">
-      <input id="enable-paid-sales" type="checkbox" ${state.paidSalesEnabled ? 'checked' : ''} ${profiles.length ? '' : 'disabled'}>
+      <input id="enable-paid-sales" type="checkbox" ${state.paidSalesEnabled ? 'checked' : ''} ${profiles.length ? '' : `disabled${state.paidCreatorProfilesLoaded ? ' aria-describedby="paid-sales-registration-help"' : ''}`}>
       <span><b>結果画像の販売・応援を受け付ける</b><br><small>無料結果カードは全員に表示されます。販売を使う場合だけ、審査済みの配信者登録を選びます。</small></span>
     </label>
     ${loading}${unavailable}${settings}

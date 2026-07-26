@@ -931,6 +931,14 @@ function ContactForm() {
   const [errorMessage, setErrorMessage] = useState('');
   const sending = status === 'sending';
   const sent = status === 'sent';
+  const contactTopic = new URLSearchParams(location.search).get('topic') || '';
+  const isCreatorRegistration = contactTopic === 'live-creator-registration';
+  const contactSubject = isCreatorRegistration
+    ? 'streetboardgame.com LIVE配信者登録申込み'
+    : 'streetboardgame.com お問い合わせ';
+  const defaultMessage = isCreatorRegistration
+    ? 'LIVE配信者登録を希望します。\n\n配信サービス：\n配信アカウント／チャンネルURL：\n利用予定：'
+    : '';
 
   const submit = async (event) => {
     event.preventDefault();
@@ -964,7 +972,22 @@ function ContactForm() {
 
   return (
     <form onSubmit={submit} style={{ display: 'grid', gap: 12, marginTop: 16 }}>
-      <input type="hidden" name="_subject" value="streetboardgame.com お問い合わせ" />
+      <input type="hidden" name="_subject" value={contactSubject} />
+      <input type="hidden" name="topic" value={contactTopic} />
+      {isCreatorRegistration && (
+        <p data-testid="creator-registration-contact-notice" style={{
+          margin: 0,
+          padding: 10,
+          border: `2px solid ${theme.black}`,
+          borderRadius: 10,
+          background: '#FFF9D7',
+          fontSize: 13,
+          lineHeight: 1.65,
+          fontWeight: 900,
+        }}>
+          LIVE配信者登録のお申し込みです。配信アカウントのURLと利用予定を追記して送信してください。
+        </p>
+      )}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
         <label htmlFor="contact-company">入力しないでください</label>
         <input id="contact-company" name="_gotcha" tabIndex="-1" autoComplete="off" />
@@ -979,7 +1002,7 @@ function ContactForm() {
       </label>
       <label htmlFor="contact-message" style={contactLabelStyle()}>
         お問い合わせ内容
-        <textarea id="contact-message" name="message" required maxLength={2000} rows={7} style={{ ...inputStyle(), minHeight: 150, marginTop: 5, resize: 'vertical', lineHeight: 1.6 }} disabled={sending} />
+        <textarea id="contact-message" name="message" required maxLength={2000} rows={7} defaultValue={defaultMessage} style={{ ...inputStyle(), minHeight: 150, marginTop: 5, resize: 'vertical', lineHeight: 1.6 }} disabled={sending} />
       </label>
       <p style={{ margin: 0, fontSize: 12, lineHeight: 1.65, fontWeight: 700 }}>
         送信内容はお問い合わせ対応に利用します。詳しくは<a href="/privacy">プライバシーポリシー</a>をご確認ください。

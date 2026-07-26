@@ -368,6 +368,9 @@ async function handleRequest(request, env) {
 
     if (redirectMap[path]) {
       const target = new URL(redirectMap[path], url.origin);
+      if (path === '/contact' && url.searchParams.get('topic') === 'live-creator-registration') {
+        target.searchParams.set('topic', 'live-creator-registration');
+      }
       return Response.redirect(target.toString(), 301);
     }
 

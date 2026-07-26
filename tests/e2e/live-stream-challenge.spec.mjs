@@ -159,6 +159,27 @@ test('LIVE問題作成カードは縦長で整列し、前の問題と最初へ�
   await expect(page.locator('.q-badge')).toHaveText('Q1/10');
 });
 
+test('未登録の配信者は販売登録の申込フォームへ進める', async ({ page }) => {
+  await page.goto('/live-challenge');
+  await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
+
+  const salesSettings = page.getByTestId('live-sales-settings');
+  const salesCheckbox = page.getByLabel('結果画像の販売・応援を受け付ける');
+  const registrationLink = page.getByRole('link', { name: /配信者登録を申し込む/ });
+  await expect(salesCheckbox).toBeDisabled();
+  await expect(salesCheckbox).toHaveAttribute('aria-describedby', 'paid-sales-registration-help');
+  await expect(salesSettings).toContainText('無料LIVEは登録せず作れます');
+  await expect(registrationLink).toHaveAttribute('href', '/contact?topic=live-creator-registration');
+  await expect(registrationLink).toBeVisible();
+
+  await registrationLink.click();
+  await expect(page).toHaveURL(/screen=about&to=contact&topic=live-creator-registration/);
+  await expect(page.getByTestId('creator-registration-contact-notice')).toContainText('LIVE配信者登録のお申し込み');
+  await expect(page.getByLabel('お問い合わせ内容')).toHaveValue(/LIVE配信者登録を希望します。/);
+  await expect(page.locator('input[name="_subject"]')).toHaveValue('streetboardgame.com LIVE配信者登録申込み');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+});
+
 test('審査済み配信者は公開LIVEで結果画像価格と応援販売を設定できる', async ({ page }) => {
   const verificationId = 'a'.repeat(32);
   const verificationToken = 'b'.repeat(48);
