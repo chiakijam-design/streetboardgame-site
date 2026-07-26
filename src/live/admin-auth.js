@@ -1,20 +1,23 @@
 const TOTP_PERIOD_MS = 30_000;
 const ADMIN_SESSION_TTL_MS = 15 * 60 * 1000;
+const ADMIN_TRUSTED_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export async function createLiveAdminSession(request, env, now = Date.now()) {
   const config = adminAuthConfig(env);
   const token = String(request.headers.get('x-live-admin-token') || '');
   const otp = String(request.headers.get('x-live-admin-otp') || '').replace(/\D/g, '');
+  const trusted = request.headers.get('x-live-admin-remember') === '1';
   if (!safeStringEqual(token, config.adminToken)) throw authError('admin-forbidden', 403);
   if (!await verifyLiveAdminTotp(config.totpSecret, otp, now)) throw authError('admin-otp-invalid', 403);
-  const expiresAt = now + ADMIN_SESSION_TTL_MS;
+  const expiresAt = now + (trusted ? ADMIN_TRUSTED_SESSION_TTL_MS : ADMIN_SESSION_TTL_MS);
   const payload = encodeBase64Url(new TextEncoder().encode(JSON.stringify({
-    version: 1,
+    version: 2,
     expiresAt,
+    trusted,
     nonce: crypto.randomUUID(),
   })));
   const signature = encodeBase64Url(await signHmac(payload, config.sessionSecret, 'SHA-256'));
-  return { sessionToken: `${payload}.${signature}`, expiresAt };
+  return { sessionToken: `${payload}.${signature}`, expiresAt, trusted };
 }
 
 export async function requireLiveAdminSession(request, env, now = Date.now()) {
@@ -31,11 +34,16 @@ export async function requireLiveAdminSession(request, env, now = Date.now()) {
     throw authError('admin-session-invalid', 401);
   }
   const expiresAt = Number(session?.expiresAt);
-  if (session?.version !== 1 || !Number.isFinite(expiresAt) || expiresAt <= now
-    || expiresAt > now + ADMIN_SESSION_TTL_MS) {
+  const isLegacySession = session?.version === 1;
+  const isCurrentSession = session?.version === 2 && typeof session?.trusted === 'boolean';
+  const maxTtl = isCurrentSession && session.trusted
+    ? ADMIN_TRUSTED_SESSION_TTL_MS
+    : ADMIN_SESSION_TTL_MS;
+  if ((!isLegacySession && !isCurrentSession) || !Number.isFinite(expiresAt) || expiresAt <= now
+    || expiresAt > now + maxTtl) {
     throw authError('admin-session-expired', 401);
   }
-  return { expiresAt };
+  return { expiresAt, trusted: Boolean(session.trusted) };
 }
 
 export async function generateLiveAdminTotp(secret, now = Date.now()) {

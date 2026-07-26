@@ -5,10 +5,15 @@ async function mockAdminLogin(page) {
   await page.route('**/api/live/admin/session', async (route) => {
     expect(route.request().headers()['x-live-admin-token']).toHaveLength(32);
     expect(route.request().headers()['x-live-admin-otp']).toBe('123456');
+    expect(route.request().headers()['x-live-admin-remember']).toBe('1');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ sessionToken: 'test-admin-session', expiresAt: Date.now() + 15 * 60 * 1000 }),
+      body: JSON.stringify({
+        sessionToken: 'test-admin-session',
+        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+        trusted: true,
+      }),
     });
   });
 }
@@ -74,7 +79,12 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
   await expect(page.locator('#dashboard')).toBeVisible();
   await expect(page.locator('#adminToken')).toHaveValue('');
   expect(await page.evaluate(() => sessionStorage.getItem('live:admin-token'))).toBeNull();
-  expect(await page.evaluate(() => sessionStorage.getItem('live:admin-session'))).toBe('test-admin-session');
+  expect(await page.evaluate(() => sessionStorage.getItem('live:admin-session'))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem('live:trusted-admin-session'))).toBe('test-admin-session');
+  await expect(page.locator('#authPanel')).toBeHidden();
+  await page.reload();
+  await expect(page.locator('#dashboard')).toBeVisible();
+  await expect(page.locator('#authPanel')).toBeHidden();
   await expect(page.locator('#sessions')).toContainText('テストLIVE');
   const reservationCard = page.locator('#sessions .card').filter({ hasText: '123456' });
   const activeCard = page.locator('#sessions .card').filter({ hasText: '654321' });

@@ -74,7 +74,7 @@ test('外形監視はWorker・D1・リアルタイム構成が正常な場合だ
   assert.equal((await maintenanceResponse.json()).state, 'maintenance');
 });
 
-test('管理画面は管理トークンとTOTPの二要素で15分セッションを発行する', async () => {
+test('管理画面は通常15分、信頼済み端末は30日間の二要素認証セッションを発行する', async () => {
   assert.equal(await generateLiveAdminTotp('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', 59_000), '287082');
   const now = 1_800_000_000_000;
   const env = adminAuthEnv(memoryKv());
@@ -84,13 +84,37 @@ test('管理画面は管理トークンとTOTPの二要素で15分セッショ�
   }), env, now);
   assert.match(session.sessionToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
   assert.equal(session.expiresAt, now + 15 * 60 * 1000);
+  assert.equal(session.trusted, false);
   assert.deepEqual(await requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
     headers: { 'x-live-admin-session': session.sessionToken },
-  }), env, now + 14 * 60 * 1000), { expiresAt: session.expiresAt });
+  }), env, now + 14 * 60 * 1000), { expiresAt: session.expiresAt, trusted: false });
   await assert.rejects(
     requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
       headers: { 'x-live-admin-session': session.sessionToken },
     }), env, now + 16 * 60 * 1000),
+    (error) => error.message === 'admin-session-expired' && error.status === 401,
+  );
+
+  const trustedSession = await createLiveAdminSession(new Request('https://example.com/api/live/admin/session', {
+    method: 'POST',
+    headers: {
+      'x-live-admin-token': env.LIVE_ADMIN_TOKEN,
+      'x-live-admin-otp': otp,
+      'x-live-admin-remember': '1',
+    },
+  }), env, now);
+  assert.equal(trustedSession.expiresAt, now + 30 * 24 * 60 * 60 * 1000);
+  assert.equal(trustedSession.trusted, true);
+  assert.deepEqual(await requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
+    headers: { 'x-live-admin-session': trustedSession.sessionToken },
+  }), env, now + 29 * 24 * 60 * 60 * 1000), {
+    expiresAt: trustedSession.expiresAt,
+    trusted: true,
+  });
+  await assert.rejects(
+    requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
+      headers: { 'x-live-admin-session': trustedSession.sessionToken },
+    }), env, now + 31 * 24 * 60 * 60 * 1000),
     (error) => error.message === 'admin-session-expired' && error.status === 401,
   );
 });

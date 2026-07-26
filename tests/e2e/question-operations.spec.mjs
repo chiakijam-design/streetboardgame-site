@@ -97,10 +97,15 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   await page.route('**/api/live/admin/session', async (route) => {
     expect(route.request().headers()['x-live-admin-token']).toHaveLength(32);
     expect(route.request().headers()['x-live-admin-otp']).toBe('123456');
+    expect(route.request().headers()['x-live-admin-remember']).toBe('1');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ sessionToken: 'question-admin-session', expiresAt: Date.now() + 15 * 60 * 1000 }),
+      body: JSON.stringify({
+        sessionToken: 'question-admin-session',
+        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+        trusted: true,
+      }),
     });
   });
   await page.route('**/api/questions/admin/overview', async (route) => {
@@ -134,7 +139,12 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
 
   await expect(page.locator('#dashboard')).toBeVisible();
   await expect(page.locator('#adminToken')).toHaveValue('');
-  expect(await page.evaluate(() => sessionStorage.getItem('live:admin-session'))).toBe('question-admin-session');
+  expect(await page.evaluate(() => sessionStorage.getItem('live:admin-session'))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem('live:trusted-admin-session'))).toBe('question-admin-session');
+  await expect(page.locator('#authPanel')).toBeHidden();
+  await page.reload();
+  await expect(page.locator('#dashboard')).toBeVisible();
+  await expect(page.locator('#authPanel')).toBeHidden();
   await expect(page.locator('#pendingSubmissions')).toContainText('放課後にみんなでしたいことは？');
   await expect(page.locator('#pendingSubmissions')).toContainText('重点審査：いじめ・容姿攻撃');
   await expect(page.getByText('通常版とLIVE版は同じ採用済みお題を使います。採用・保留・無効化、問題文、5つの選択肢を表でまとめて管理できます。')).toBeVisible();

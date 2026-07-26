@@ -1,9 +1,18 @@
 import { safetyFlagLabels } from './src/questions/safety.js';
 import { findSimilarQuestions, sortQuestionsForOperations } from './src/questions/similarity.js';
 import { downloadQuestionBackup } from './src/questions/export.js';
+import {
+  clearAdminSessionToken,
+  getAdminSessionToken,
+  hasTrustedAdminSession,
+  saveAdminSessionToken,
+} from './src/live/admin-session-client.js';
 
 const tokenInput = document.getElementById('adminToken');
 const otpInput = document.getElementById('adminOtp');
+const rememberDeviceInput = document.getElementById('rememberDevice');
+const authPanel = document.getElementById('authPanel');
+const forgetTrustedDeviceButton = document.getElementById('forgetTrustedDevice');
 const dashboard = document.getElementById('dashboard');
 const authStatus = document.getElementById('authStatus');
 const staticQuestions = buildStaticQuestions();
@@ -15,21 +24,17 @@ let similarityMatches = new Map();
 sessionStorage.removeItem('live:admin-token');
 tokenInput.value = '';
 document.getElementById('loadQuestions').addEventListener('click', loadOverview);
-document.getElementById('forgetSession').addEventListener('click', () => {
-  sessionStorage.removeItem('live:admin-session');
-  tokenInput.value = '';
-  otpInput.value = '';
-  dashboard.hidden = true;
-  showStatus('管理セッションを消しました。');
-});
+document.getElementById('forgetSession').addEventListener('click', forgetAdminSession);
+forgetTrustedDeviceButton.addEventListener('click', forgetAdminSession);
 document.getElementById('questionSearch').addEventListener('input', renderAllQuestions);
 document.getElementById('questionFilter').addEventListener('change', renderAllQuestions);
 document.getElementById('saveAllQuestions').addEventListener('click', saveAllQuestions);
 document.getElementById('exportQuestionsCsv').addEventListener('click', exportQuestionsCsv);
+if (getAdminSessionToken()) void loadOverview();
 
 async function loadOverview() {
   try {
-    if (!sessionStorage.getItem('live:admin-session') || otpInput.value.trim()) await createAdminSession();
+    if (!getAdminSessionToken() || otpInput.value.trim()) await createAdminSession();
     overview = await adminApi('/api/questions/admin/overview');
     allQuestions = sortQuestionsForOperations(mergeQuestionOverview(staticQuestions, overview.catalog));
     similarityMatches = findSimilarQuestions([
@@ -38,10 +43,13 @@ async function loadOverview() {
     ]);
     dirtyQuestionIds.clear();
     dashboard.hidden = false;
+    setAuthenticatedUi(true);
     renderPending();
     renderAllQuestions();
   } catch (error) {
+    if (error.status === 401) clearAdminSessionToken();
     dashboard.hidden = true;
+    setAuthenticatedUi(false);
     showStatus(humanError(error), true);
   }
 }
@@ -53,15 +61,30 @@ async function createAdminSession() {
       'content-type': 'application/json',
       'x-live-admin-token': tokenInput.value.trim(),
       'x-live-admin-otp': otpInput.value.trim(),
+      'x-live-admin-remember': rememberDeviceInput.checked ? '1' : '0',
     },
     body: '{}',
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw apiError(data.error || 'request-failed', response.status);
-  sessionStorage.setItem('live:admin-session', data.sessionToken);
+  saveAdminSessionToken(data.sessionToken, Boolean(data.trusted));
   tokenInput.value = '';
   otpInput.value = '';
   showStatus(`二要素認証に成功しました。管理セッション有効期限：${formatDate(data.expiresAt)}`);
+}
+
+function setAuthenticatedUi(authenticated) {
+  authPanel.hidden = authenticated;
+  forgetTrustedDeviceButton.hidden = !authenticated || !hasTrustedAdminSession();
+}
+
+function forgetAdminSession() {
+  clearAdminSessionToken();
+  tokenInput.value = '';
+  otpInput.value = '';
+  dashboard.hidden = true;
+  setAuthenticatedUi(false);
+  showStatus('この端末に保存した管理認証を解除しました。');
 }
 
 function renderPending() {
@@ -464,7 +487,7 @@ function sourceKindLabel(value) {
 }
 
 async function adminApi(path, options = {}) {
-  const session = sessionStorage.getItem('live:admin-session') || '';
+  const session = getAdminSessionToken();
   const headers = new Headers(options.headers || {});
   headers.set('x-live-admin-session', session);
   if (options.body) headers.set('content-type', 'application/json');
@@ -485,7 +508,7 @@ function humanError(error) {
     'admin-forbidden': '管理トークンが違います。',
     'admin-otp-invalid': '6桁の認証コードが違うか、有効時間を過ぎています。',
     'admin-session-required': '管理者認証を行ってください。',
-    'admin-session-expired': '15分の管理セッションが切れました。もう一度認証してください。',
+    'admin-session-expired': '管理セッションの期限が切れました。もう一度認証してください。',
     'admin-2fa-not-configured': '本番の管理者二要素認証が未設定です。',
     'question-invalid': '問題文と5つの選択肢をすべて入力してください。',
     'question-personal-information-detected': '本名・学校名・SNS ID・電話番号・住所らしい内容が含まれています。',

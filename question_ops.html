@@ -16,19 +16,20 @@
 </head>
 <body>
   <main class="shell">
-    <div class="top"><strong>Streetboardgame Operations</strong><a href="/">サイトへ</a></div>
+    <div class="top"><strong>Streetboardgame Operations</strong><div class="actions"><button class="button secondary compact" id="forgetTrustedDevice" hidden>この端末の認証を解除</button><a href="/">サイトへ</a></div></div>
     <section class="hero">
       <h1>お題審査・問題管理</h1>
       <p>通常版とLIVE版は同じ採用済みお題を使います。採用・保留・無効化、問題文、5つの選択肢を表でまとめて管理できます。</p>
     </section>
-    <section class="panel">
+    <section class="panel" id="authPanel">
       <h2>管理者二要素認証</h2>
-      <p class="help">LIVE運営コンソールと同じ管理トークン・認証アプリを使います。認証後はこのタブだけで15分間有効です。</p>
+      <p class="help">LIVE運営コンソールと同じ管理トークン・認証アプリを使います。このパソコンを信頼すると30日間、再認証を省略できます。</p>
       <div class="grid two">
         <div class="field"><label for="adminToken">管理トークン</label><input id="adminToken" type="password" autocomplete="current-password" spellcheck="false"></div>
         <div class="field"><label for="adminOtp">認証アプリの6桁コード</label><input id="adminOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"></div>
       </div>
-      <div class="actions"><button class="button" id="loadQuestions">二要素認証して読み込む</button><button class="button secondary" id="forgetSession">認証情報をこのタブから消す</button></div>
+      <label class="field"><span><input id="rememberDevice" type="checkbox" checked style="width:auto;min-height:auto"> このパソコンでは30日間、再認証を省略する</span></label>
+      <div class="actions"><button class="button" id="loadQuestions">二要素認証して読み込む</button><button class="button secondary" id="forgetSession">保存した認証情報を消す</button></div>
       <div id="authStatus" class="status" hidden></div>
     </section>
     <div id="dashboard" hidden>
@@ -75,6 +76,6 @@
     </div>
   </main>
 <script data-build-entry="prototype_common_data" src="/dist/prototype_common_data-6WKKYLSF.js"></script>
-  <script data-build-entry="question_ops" src="/dist/question_ops-5VRHTORZ.js"></script>
+  <script data-build-entry="question_ops" src="/dist/question_ops-UUXTCGFK.js"></script>
 </body>
 </html>
