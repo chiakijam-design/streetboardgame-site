@@ -408,6 +408,7 @@ async function withSecurityHeaders(response, request) {
   if (response.status === 101 || response.webSocket) return response;
   const headers = new Headers(response.headers);
   const isHtml = /text\/html/i.test(headers.get('content-type') || '');
+  if (isHtml) headers.set('content-type', 'text/html; charset=UTF-8');
   const nonce = isHtml ? createCspNonce() : '';
   const requestPath = request ? new URL(request.url).pathname : '';
   const sensitivePath = /^\/(?:en\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|api(?:\/|$))/.test(requestPath);

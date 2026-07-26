@@ -282,6 +282,7 @@ test('CSP・主要セキュリティヘッダーと404を維持する', async ({
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPヘッダーは画面幅に依存しないためPCで1回検証');
   for (const path of ['/', '/challenge-guide', '/challenge', '/live-challenge', '/privacy']) {
     const response = await request.get(path);
+    expect(response.headers()['content-type'], path).toContain('text/html; charset=UTF-8');
     expect(response.headers()['content-security-policy'], path).toContain("default-src 'none'");
     expect(response.headers()['x-content-type-options'], path).toBe('nosniff');
     expect(response.headers()['referrer-policy'], path).toBeTruthy();
