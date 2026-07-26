@@ -1,9 +1,6 @@
-import { scanQuestionSafety } from '../questions/safety.js';
-
 export const CHALLENGE_MAX_PARTICIPANTS = 50;
 export const CHALLENGE_ROOM_TTL_DAYS = 30;
 export const CHALLENGE_QUESTION_COUNT = 10;
-export const CHALLENGE_BOARD_COMMENT_MAX_LENGTH = 80;
 
 const ROOM_TTL_MS = CHALLENGE_ROOM_TTL_DAYS * 24 * 60 * 60 * 1000;
 const ROOM_CODE_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -201,27 +198,9 @@ async function registerRankingScore(request, env, code) {
     return jsonResponse({ error: 'answers-not-submitted' }, 409);
   }
 
-  const body = await readJson(request);
-  const comment = normalizeBoardComment(body.comment);
-  if ([...comment].length > CHALLENGE_BOARD_COMMENT_MAX_LENGTH) {
-    return jsonResponse({ error: 'board-comment-too-long' }, 400);
-  }
-  const allowedComments = new Set([
-    ...buildBoardCommentCandidates(room, participant, 'ja'),
-    ...buildBoardCommentCandidates(room, participant, 'en'),
-  ]);
-  if (comment && !allowedComments.has(comment)) {
-    const safety = scanQuestionSafety({ title: comment, choices: [] });
-    if (safety.personalInfoFlags.length) {
-      return jsonResponse({ error: 'board-comment-personal-information' }, 400);
-    }
-    if (safety.moderationFlags.length) {
-      return jsonResponse({ error: 'board-comment-unsafe' }, 400);
-    }
-  }
   const registeredAt = participant.rankingConsentAt || Date.now();
   const saved = participant.rankingConsentAt != null
-    || await saveRankingRegistration(env, code, token, registeredAt, comment || null, room);
+    || await saveRankingRegistration(env, code, token, registeredAt, room);
   if (!saved) return jsonResponse({ error: 'ranking-registration-failed' }, 409);
   return jsonResponse({
     participant: publicParticipant({ ...participant, rankingConsentAt: registeredAt }),
@@ -446,39 +425,6 @@ function publicParticipant(participant) {
   };
 }
 
-export function buildBoardCommentCandidates(room, participant, language = 'ja') {
-  if (!room || !Array.isArray(room.cards) || !Array.isArray(room.answerKey)
-    || !participant || !Array.isArray(participant.answers)) return [];
-  const answers = room.cards.map((card, index) => ({
-    index,
-    title: String(card?.title || ''),
-    correctAnswer: String(card?.choices?.[room.answerKey[index]] || ''),
-    match: participant.answers[index] === room.answerKey[index],
-  })).filter((answer) => answer.title && answer.correctAnswer);
-  if (!answers.length) return [];
-
-  const incorrect = answers.filter((answer) => !answer.match).slice(0, 2);
-  const correct = answers.filter((answer) => answer.match).slice(0, 2);
-  if (language === 'en') {
-    return [
-      ...incorrect.map((answer) => `“${answer.title}” being ${answer.correctAnswer} surprised me!`),
-      ...correct.map((answer) => `I knew “${answer.title}” had to be ${answer.correctAnswer}.`),
-      ...incorrect.map((answer) => `I was torn between ${answer.correctAnswer} and another choice for “${answer.title}”.`),
-    ];
-  }
-  return [
-    ...incorrect.map((answer) => `「${answer.title}」の答え、${answer.correctAnswer}なんだね。意外！`),
-    ...correct.map((answer) => `「${answer.title}」の答えは絶対${answer.correctAnswer}だと思った`),
-    ...incorrect.map((answer) => `「${answer.title}」は${answer.correctAnswer}と2択で迷った`),
-  ];
-}
-
-function normalizeBoardComment(value) {
-  return typeof value === 'string'
-    ? value.replace(/\s+/gu, ' ').trim()
-    : '';
-}
-
 async function ensureD1(env) {
   return Boolean(env.REMOTE_DB);
 }
@@ -561,7 +507,7 @@ async function readParticipant(env, code, token, room) {
   if (!TOKEN_PATTERN.test(token)) return null;
   if (await ensureD1(env)) {
     const row = await env.REMOTE_DB.prepare(`
-      SELECT participant_id, name, answers_json, score, created_at, completed_at, ranking_consent_at, board_comment
+      SELECT participant_id, name, answers_json, score, created_at, completed_at, ranking_consent_at
       FROM challenge_participants
       WHERE room_code = ? AND participant_token_hash = ?
     `).bind(code, await hashToken(token)).first();
@@ -574,7 +520,6 @@ async function readParticipant(env, code, token, room) {
       createdAt: Number(row.created_at),
       completedAt: row.completed_at == null ? null : Number(row.completed_at),
       rankingConsentAt: row.ranking_consent_at == null ? null : Number(row.ranking_consent_at),
-      boardComment: row.board_comment || null,
     };
   }
   return (room.participants || []).find((participant) => participant.token === token) || null;
@@ -640,13 +585,13 @@ async function saveParticipantProgress(
   return true;
 }
 
-async function saveRankingRegistration(env, code, token, registeredAt, boardComment, room) {
+async function saveRankingRegistration(env, code, token, registeredAt, room) {
   if (await ensureD1(env)) {
     const result = await env.REMOTE_DB.prepare(`
       UPDATE challenge_participants
-      SET ranking_consent_at = COALESCE(ranking_consent_at, ?), board_comment = ?
+      SET ranking_consent_at = COALESCE(ranking_consent_at, ?), board_comment = NULL
       WHERE room_code = ? AND participant_token_hash = ? AND completed_at IS NOT NULL
-    `).bind(registeredAt, boardComment, code, await hashToken(token)).run();
+    `).bind(registeredAt, code, await hashToken(token)).run();
     return Number(result?.meta?.changes || 0) === 1;
   }
 
@@ -657,7 +602,7 @@ async function saveRankingRegistration(env, code, token, registeredAt, boardComm
   nextParticipants[index] = {
     ...participants[index],
     rankingConsentAt: registeredAt,
-    boardComment,
+    boardComment: null,
   };
   await putKvRoom(env, code, { ...room, participants: nextParticipants });
   return true;
@@ -709,7 +654,7 @@ async function participantCounts(env, code, room) {
 async function rankedParticipants(env, code, room) {
   if (await ensureD1(env)) {
     const result = await env.REMOTE_DB.prepare(`
-      SELECT name, score, board_comment
+      SELECT name, score
       FROM challenge_participants
       WHERE room_code = ? AND completed_at IS NOT NULL AND ranking_consent_at IS NOT NULL
       ORDER BY completed_at ASC, created_at ASC
@@ -718,7 +663,6 @@ async function rankedParticipants(env, code, room) {
     return (result?.results || []).map((row) => ({
       name: row.name,
       score: Number(row.score),
-      comment: row.board_comment || '',
     }));
   }
   return (room.participants || [])
@@ -728,7 +672,6 @@ async function rankedParticipants(env, code, room) {
     .map((participant) => ({
       name: participant.name,
       score: Number(participant.score),
-      comment: participant.boardComment || '',
     }));
 }
 

@@ -3,8 +3,6 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import {
-  buildBoardCommentCandidates,
-  CHALLENGE_BOARD_COMMENT_MAX_LENGTH,
   CHALLENGE_MAX_PARTICIPANTS,
   CHALLENGE_QUESTION_COUNT,
   handleChallengeApi,
@@ -170,36 +168,6 @@ test('保留候補は非公開のまま、採用後は通常版・LIVE版の共�
   );
 });
 
-test('答え合わせから3定型文を2種類ずつ生成し、自由入力は使わない', () => {
-  const candidates = buildBoardCommentCandidates({
-    cards,
-    answerKey: Array(CHALLENGE_QUESTION_COUNT).fill(0),
-  }, {
-    answers: [1, 1, ...Array(CHALLENGE_QUESTION_COUNT - 2).fill(0)],
-  });
-  assert.equal(candidates.length, 6);
-  assert.equal(candidates.filter((comment) => comment.endsWith('なんだね。意外！')).length, 2);
-  assert.equal(candidates.filter((comment) => comment.includes('は絶対')).length, 2);
-  assert.equal(candidates.filter((comment) => comment.endsWith('と2択で迷った')).length, 2);
-});
-
-test('満点または0点では実際に存在する正解・不正解だけからコメント候補を作る', () => {
-  const room = {
-    cards,
-    answerKey: Array(CHALLENGE_QUESTION_COUNT).fill(0),
-  };
-  const perfect = buildBoardCommentCandidates(room, {
-    answers: Array(CHALLENGE_QUESTION_COUNT).fill(0),
-  });
-  const zero = buildBoardCommentCandidates(room, {
-    answers: Array(CHALLENGE_QUESTION_COUNT).fill(1),
-  });
-  assert.equal(perfect.length, 2);
-  assert.equal(perfect.every((comment) => comment.includes('は絶対')), true);
-  assert.equal(zero.length, 4);
-  assert.equal(zero.some((comment) => comment.includes('は絶対')), false);
-});
-
 test('挑戦ルームは10問固定で正解を公開せず50人まで受け付ける', async () => {
   const env = { CHALLENGE_KV: new MemoryKV() };
   const createdResponse = await api(env, '/api/challenge/rooms', {
@@ -257,25 +225,10 @@ test('挑戦者の得点と10問の答え合わせを本人だけに返し、順
   })).json();
   assert.equal(Object.hasOwn(unpublishedResult, 'rank'), false);
   assert.equal(unpublishedResult.participant.rankingParticipating, false);
-  const tooLongComment = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
-    method: 'POST',
-    headers: tokenHeader,
-    body: JSON.stringify({ comment: 'あ'.repeat(CHALLENGE_BOARD_COMMENT_MAX_LENGTH + 1) }),
-  });
-  assert.equal(tooLongComment.status, 400);
-  assert.equal((await tooLongComment.json()).error, 'board-comment-too-long');
-  const personalComment = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
-    method: 'POST',
-    headers: tokenHeader,
-    body: JSON.stringify({ comment: '連絡先は090-1234-5678です' }),
-  });
-  assert.equal(personalComment.status, 400);
-  assert.equal((await personalComment.json()).error, 'board-comment-personal-information');
-  const boardComment = '次は旅行の話をもっと聞いてみたい！';
   const registered = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
     method: 'POST',
     headers: tokenHeader,
-    body: JSON.stringify({ comment: boardComment }),
+    body: JSON.stringify({ comment: '旧画面からコメントが送られても保存・公開しない' }),
   });
   assert.equal(registered.status, 200);
   assert.equal(Object.hasOwn(await registered.json(), 'rank'), false);
@@ -294,11 +247,7 @@ test('挑戦者の得点と10問の答え合わせを本人だけに返し、順
   assert.equal(result.answers.every((answer) => answer.match), true);
 
   const ranking = await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json();
-  assert.deepEqual(ranking.participants.map((participant) => ({
-    name: participant.name,
-    score: participant.score,
-    comment: participant.comment,
-  })), [{ name: '挑戦者', score: 10, comment: boardComment }]);
+  assert.deepEqual(ranking.participants, [{ name: '挑戦者', score: 10 }]);
   assert.equal(ranking.participants.every((participant) => !Object.hasOwn(participant, 'rank')), true);
 
   const managed = await (await api(env, `/api/challenge/rooms/${created.code}/manage`, {
@@ -557,8 +506,8 @@ test('理解度ボードは点数ではなく10問の回答完了順で並び、
 
     const board = await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json();
     assert.deepEqual(board.participants, [
-      { name: '先に回答・0問一致', score: 0, comment: '' },
-      { name: '後に回答・10問一致', score: 10, comment: '' },
+      { name: '先に回答・0問一致', score: 0 },
+      { name: '後に回答・10問一致', score: 10 },
     ]);
     assert.equal(board.participants.every((participant) => !Object.hasOwn(participant, 'rank')), true);
   }

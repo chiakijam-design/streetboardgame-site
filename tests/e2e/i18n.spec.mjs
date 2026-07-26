@@ -145,10 +145,10 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByRole('button', { name: /With score/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Guess the answers again' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add to Understanding Board (optional)' })).toBeVisible();
-  await expect(page.locator('[data-comment-candidate] input[name="board-comment"]')).toHaveCount(2);
-  await expect(page.getByRole('radio', { name: 'Post without a comment' })).toBeChecked();
-  await expect(page.getByRole('textbox', { name: 'Your comment (up to 80 characters)' }))
-    .toHaveAttribute('maxlength', '80');
+  await expect(page.locator('input[name="board-comment"]')).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: /comment/i })).toHaveCount(0);
+  await expect(page.getByText('The Understanding Board shows only your display name and matching-answer count, without a comment.'))
+    .toBeVisible();
   await expect(page.getByText('Certified Mind Reader', { exact: true })).toBeVisible();
   await expect(page.getByTestId('challenge-ai-review')).toContainText('Overall understanding');
   await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');

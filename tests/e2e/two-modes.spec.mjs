@@ -518,14 +518,10 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(participant.getByRole('heading', { name: '点数入り結果カード' })).toBeVisible();
     await expect(participant.getByRole('heading', { name: 'シェアするカードを選ぶ' })).toHaveCount(0);
     await expect(participant.locator('[data-action="select-result-card"]')).toHaveCount(0);
-    const commentOptions = participant.locator('[data-comment-candidate] input[name="board-comment"]');
-    await expect(commentOptions).toHaveCount(4);
-    await expect(participant.getByRole('radio', { name: 'コメントなしで載せる' })).toBeChecked();
-    const customCommentInput = participant.getByRole('textbox', { name: '自分で書くコメント（80文字まで）' });
-    await expect(customCommentInput).toHaveAttribute('maxlength', '80');
-    const selectedComment = '次は好きな旅行先の話をもっと聞きたい！';
-    await customCommentInput.fill(selectedComment);
-    await expect(participant.getByRole('radio', { name: '自分で短いコメントを書く' })).toBeChecked();
+    await expect(participant.locator('input[name="board-comment"]')).toHaveCount(0);
+    await expect(participant.getByRole('textbox', { name: /コメント/ })).toHaveCount(0);
+    await expect(participant.getByText('理解度ボードには、表示名と一致した問題数だけをコメントなしで載せます。'))
+      .toBeVisible();
     await participant.getByRole('button', { name: '理解度ボードに載せる（任意）' }).click();
     await expect(participant.getByText('この結果を理解度ボードに載せました。')).toBeVisible();
     const resultImage = participant.getByTestId('challenge-result-image');
@@ -572,7 +568,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(participant.getByTestId('understanding-board')).toContainText('ゆう');
     await expect(participant.getByTestId('understanding-board')).toContainText('答え合わせ済み');
     await expect(participant.getByTestId('understanding-board')).toContainText('9/10問一致');
-    await expect(participant.getByTestId('understanding-board')).toContainText(selectedComment);
+    await expect(participant.getByTestId('understanding-board').locator('.challenge-board-comment')).toHaveCount(0);
     await expect(participant.getByTestId('understanding-board')).not.toContainText('1位');
     await expect(participant.getByText('掲載された回答は、10問を回答し終えた順に表示します。')).toBeVisible();
     await expect(participant.getByText(/順位や点数順の並び替えはありません/)).toBeVisible();
