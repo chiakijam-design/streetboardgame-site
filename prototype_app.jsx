@@ -1,5 +1,6 @@
 import { LIVE_AGE_NOTICE } from './src/live/age-notice.js';
 import { BOARD_GAME_PRODUCT } from './src/product/config.js';
+import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 
 const { useEffect, useState } = React;
 const CREATOR_QUICK_START_KEY = 'watachan:creator-quick-start:v1';
@@ -209,31 +210,27 @@ function CommonCardStack() {
   return (
     <div aria-hidden="true" style={{ position: 'relative', width: '58%', maxWidth: 300, height: 215 }}>
       {cards.map(([title, choices], index) => (
-        <div key={title} style={{
-          position: 'absolute',
-          top: [22, 0, 30][index],
-          left: [0, '28%', '52%'][index],
-          width: 118,
-          minHeight: 175,
-          padding: '10px 8px',
-          overflow: 'hidden',
-          transform: `rotate(${[-8, 4, -3][index]}deg)`,
-          zIndex: [1, 3, 2][index],
-          border: '3px solid #fff',
-          borderRadius: 10,
-          background: 'repeating-linear-gradient(#fff 0 23px,#b8ddea 24px 25px)',
-          boxShadow: '0 12px 24px rgba(0,0,0,.25)',
-          color: theme.black,
-          fontFamily: theme.body,
-        }}>
-          <div style={{ padding: '8px 4px', background: '#74C7E3', fontSize: 10, fontWeight: 900, textAlign: 'center' }}>{title}</div>
-          {choices.map((choice, choiceIndex) => (
-            <div key={choice} style={{ display: 'grid', gridTemplateColumns: '12px 1fr', gap: 5, alignItems: 'center', minHeight: 24, fontSize: 8 }}>
-              <i style={{ width: 9, height: 9, borderRadius: '50%', background: ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'][choiceIndex] }} />
-              <span>{choice}</span>
-            </div>
-          ))}
-        </div>
+        <div
+          key={title}
+          className="top-question-card"
+          data-testid="top-question-card"
+          style={{
+            position: 'absolute',
+            top: [22, 0, 30][index],
+            left: [0, '28%', '52%'][index],
+            width: 118,
+            aspectRatio: '756 / 1122',
+            overflow: 'hidden',
+            transform: `rotate(${[-8, 4, -3][index]}deg)`,
+            zIndex: [1, 3, 2][index],
+            border: '3px solid #fff',
+            borderRadius: 10,
+            background: '#fff',
+            boxShadow: '0 12px 24px rgba(0,0,0,.25)',
+            color: theme.black,
+          }}
+          dangerouslySetInnerHTML={{ __html: renderNotebookQuestionCard({ title, choices }) }}
+        />
       ))}
     </div>
   );

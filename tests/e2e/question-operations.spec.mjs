@@ -7,6 +7,42 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   const pendingId = '11111111-1111-4111-8111-111111111111';
   const overview = {
     catalog: [{
+      id: 'CUSCOMPAREACTIVE1',
+      sourceKind: 'custom',
+      sourceRef: null,
+      title: '管理テスト専用の休み時間は？',
+      category: 'みんなのお題',
+      choices: ['図書室', '校庭', '教室', '購買', '音楽室'],
+      status: 'approved',
+      useChallenge: true,
+      useLive: true,
+      reportCount: 0,
+      lastReportedAt: null,
+    }, {
+      id: 'CUSCOMPAREACTIVE2',
+      sourceKind: 'custom',
+      sourceRef: null,
+      title: '管理テスト専用の休み時間は？',
+      category: 'みんなのお題',
+      choices: ['図書室', '校庭', '教室', '購買', '音楽室'],
+      status: 'approved',
+      useChallenge: true,
+      useLive: true,
+      reportCount: 0,
+      lastReportedAt: null,
+    }, {
+      id: 'CUSCOMPAREDISABLED',
+      sourceKind: 'custom',
+      sourceRef: null,
+      title: '管理テスト専用の休み時間は？',
+      category: 'みんなのお題',
+      choices: ['図書室', '校庭', '教室', '購買', '音楽室'],
+      status: 'disabled',
+      useChallenge: false,
+      useLive: false,
+      reportCount: 0,
+      lastReportedAt: null,
+    }, {
       id: 'CUSREPORTED123',
       sourceKind: 'custom',
       sourceRef: null,
@@ -111,8 +147,27 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   const statusOrder = await page.locator('#allQuestions [data-catalog]').evaluateAll((rows) => rows.map((row) => row.dataset.statusRow));
   expect(statusOrder.indexOf('disabled')).toBeGreaterThan(statusOrder.lastIndexOf('approved'));
   await expect(page.locator('#similaritySummary')).not.toHaveText('類似候補：0問');
-  await page.locator('#allQuestions [data-compare]').first().click();
-  await expect(page.locator('#allQuestions .compare-row:not([hidden]) .comparison-card')).toHaveCount(2);
+  const activeCompareRow = page.locator('[data-catalog="CUSCOMPAREACTIVE1"]');
+  const disabledCompareRow = page.locator('[data-catalog="CUSCOMPAREDISABLED"]');
+  await expect(activeCompareRow).toContainText('類似候補 100%');
+  await expect(disabledCompareRow.locator('[data-compare]')).toHaveCount(0);
+  await activeCompareRow.getByRole('button', { name: '並べて比較' }).click();
+  const activeComparison = page.locator('[data-comparison="CUSCOMPAREACTIVE1"]');
+  await expect(activeComparison.locator('[data-compare-catalog]')).toHaveCount(2);
+  await expect(activeComparison.locator('[data-compare-catalog="CUSCOMPAREACTIVE2"]')).toBeVisible();
+  await expect(activeComparison.locator('[data-compare-catalog="CUSCOMPAREDISABLED"]')).toHaveCount(0);
+  const comparedCandidate = activeComparison.locator('[data-compare-catalog="CUSCOMPAREACTIVE2"]');
+  await comparedCandidate.locator('[data-field="title"]').fill('編集した休み時間の過ごし方は？');
+  await comparedCandidate.locator('[data-choice="0"]').fill('中庭');
+  await comparedCandidate.locator('[data-compare-status][value="disabled"]').check();
+  await expect(comparedCandidate).toHaveClass(/dirty/);
+  await comparedCandidate.getByRole('button', { name: 'この問題を保存' }).click();
+  await expect.poll(() => saveBodies.length).toBe(1);
+  expect(saveBodies[0]).toMatchObject({
+    title: '編集した休み時間の過ごし方は？',
+    status: 'disabled',
+  });
+  expect(saveBodies[0].choices[0]).toBe('中庭');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   expect(await page.locator('#allQuestions .table-wrap').evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
 
@@ -131,8 +186,8 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   await firstQuestion.locator('[data-status][value="disabled"]').check();
   await expect(page.locator('#saveAllQuestions')).toContainText('1問');
   await firstQuestion.getByRole('button', { name: 'この行を保存' }).click();
-  await expect.poll(() => saveBodies.length).toBe(1);
-  expect(saveBodies[0].status).toBe('disabled');
-  expect(saveBodies[0]).not.toHaveProperty('useChallenge');
-  expect(saveBodies[0]).not.toHaveProperty('useLive');
+  await expect.poll(() => saveBodies.length).toBe(2);
+  expect(saveBodies[1].status).toBe('disabled');
+  expect(saveBodies[1]).not.toHaveProperty('useChallenge');
+  expect(saveBodies[1]).not.toHaveProperty('useLive');
 });

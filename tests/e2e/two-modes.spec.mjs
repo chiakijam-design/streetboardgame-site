@@ -77,6 +77,15 @@ test('SMS・その他は再挑戦と任意公開を明記した招待文を共�
 
 test('トップは作成者向けに通常版とライブ配信版の2本だけを案内する', async ({ page }) => {
   await page.goto('/');
+  const topCards = page.getByTestId('top-question-card');
+  await expect(topCards).toHaveCount(3);
+  await expect(topCards.locator('svg.notebook-question-card-visual')).toHaveCount(3);
+  await expect(topCards.locator('.notebook-question-card-choice')).toHaveCount(15);
+  await expect(topCards.locator('svg').first()).toHaveAttribute('viewBox', '0 0 756 1122');
+  const topCardFont = await topCards.locator('.notebook-question-card-copy').first().evaluate((element) => (
+    getComputedStyle(element).fontFamily
+  ));
+  expect(topCardFont).toContain('HuiFontP29');
   const challengeButton = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
   const liveButton = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
   await expect(page.getByText('わたし理解度診断', { exact: true })).toBeVisible();

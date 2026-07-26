@@ -15,6 +15,19 @@ function text(path) {
   return readFileSync(new URL(path, rootUrl), 'utf8');
 }
 
+test('日本語標準ライブラリは復元した158問を重複IDなし・各5択で保持する', () => {
+  const context = { window: {} };
+  vm.runInNewContext(text('prototype_common_data.js'), context);
+  const cards = context.window.COMMON_QUESTION_CARDS;
+  assert.equal(cards.length, 158);
+  assert.equal(new Set(cards.map((card) => card.id)).size, 158);
+  for (const card of cards) {
+    assert.match(card.id, /^Q/);
+    assert.equal(card.choices.length, 5, card.id);
+    assert.ok(card.title.trim().length > 0, card.id);
+  }
+});
+
 test('英語標準ライブラリは60問・各5択の共通配列として分離する', () => {
   const context = { window: {} };
   vm.runInNewContext(text('prototype_english_common_data.js'), context);

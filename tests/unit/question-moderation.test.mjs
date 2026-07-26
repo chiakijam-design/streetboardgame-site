@@ -11,7 +11,7 @@ import {
   sortQuestionsForOperations,
 } from '../../src/questions/similarity.js';
 
-test('採用を先にして問題文の日本語順へ並べ、似た問題と5択を検出する', () => {
+test('採用を先にして問題文の日本語順へ並べ、採用中同士だけで似た問題と5択を検出する', () => {
   const questions = [{
     id: 'q3',
     status: 'disabled',
@@ -20,7 +20,7 @@ test('採用を先にして問題文の日本語順へ並べ、似た問題と5�
   }, {
     id: 'q2',
     status: 'approved',
-    title: 'きゅうじつに最初にしたいことは？',
+    title: 'あさ起きて最初にすることは？',
     choices: ['水を飲む', 'スマホを見る', '顔を洗う', '二度寝', '着替える'],
   }, {
     id: 'q1',
@@ -31,8 +31,10 @@ test('採用を先にして問題文の日本語順へ並べ、似た問題と5�
 
   assert.deepEqual(sortQuestionsForOperations(questions).map((item) => item.id), ['q1', 'q2', 'q3']);
   const matches = findSimilarQuestions(questions);
-  assert.equal(matches.get('q1')[0].id, 'q3');
+  assert.equal(matches.get('q1')[0].id, 'q2');
   assert.ok(matches.get('q1')[0].score >= 0.58);
+  assert.equal(matches.get('q1').some((item) => item.id === 'q3'), false);
+  assert.equal(matches.has('q3'), false);
 });
 
 test('既存DBから旧シリーズ分類列と廃止お題を削除する', async () => {
@@ -50,16 +52,57 @@ test('既存DBから旧シリーズ分類列と廃止お題を削除する', asy
   sqlite.exec(await readFile(new URL('../../migrations/0013_question_safety_reports.sql', import.meta.url), 'utf8'));
   sqlite.exec(await readFile(new URL('../../migrations/0014_unify_question_catalog.sql', import.meta.url), 'utf8'));
   sqlite.exec(await readFile(new URL('../../migrations/0015_remove_retired_games.sql', import.meta.url), 'utf8'));
+  sqlite.exec(await readFile(new URL('../../migrations/0016_restore_common_question_overrides.sql', import.meta.url), 'utf8'));
+  sqlite.exec(await readFile(new URL('../../migrations/0017_consolidate_legacy_question_ids.sql', import.meta.url), 'utf8'));
   const approved = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('Q001');
   const disabled = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('FAM001');
+  const restoredDisabled = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('Q502');
+  const restoredApproved = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('Q534');
   const columns = sqlite.prepare('PRAGMA table_info(question_catalog)').all().map((column) => column.name);
   assert.deepEqual(
     [approved.use_challenge, approved.use_live, approved.category],
     [1, 1, 'みんなのお題'],
   );
   assert.equal(disabled, undefined);
+  assert.deepEqual(
+    [restoredDisabled.status, restoredDisabled.use_challenge, restoredDisabled.use_live],
+    ['disabled', 0, 0],
+  );
+  assert.deepEqual(
+    [restoredApproved.status, restoredApproved.use_challenge, restoredApproved.use_live],
+    ['approved', 1, 1],
+  );
   assert.equal(columns.includes('target_friend'), false);
   assert.equal(columns.includes('target_family'), false);
+});
+
+test('本番に混在した旧IDと現行IDは新しい運営設定を優先して共通IDへ統合する', async () => {
+  const sqlite = new DatabaseSync(':memory:');
+  sqlite.exec(await readFile(new URL('../../migrations/0012_question_catalog_moderation.sql', import.meta.url), 'utf8'));
+  const insert = sqlite.prepare(`
+    INSERT INTO question_catalog
+      (question_id, source_kind, source_ref, title, category, choices_json, status,
+       use_challenge, use_live, target_friend, target_family, created_at, updated_at)
+    VALUES (?, 'static', ?, ?, 'みんなのお題', '["1","2","3","4","5"]', ?, ?, ?, 0, 0, 1, ?)
+  `);
+  insert.run('FQ013', 'FQ013', '古い設定', 'approved', 1, 1, 1);
+  insert.run('Q013', 'Q013', '新しい設定', 'disabled', 0, 0, 2);
+  insert.run('FAM025', 'FAM025', '家族で行くなら', 'approved', 1, 1, 3);
+  insert.run('LOVE5', 'LOVE5', 'デート中のNG行動', 'disabled', 0, 0, 4);
+
+  sqlite.exec(await readFile(new URL('../../migrations/0017_consolidate_legacy_question_ids.sql', import.meta.url), 'utf8'));
+  sqlite.exec(await readFile(new URL('../../migrations/0016_restore_common_question_overrides.sql', import.meta.url), 'utf8'));
+
+  const consolidated = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('Q013');
+  const family = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('Q525');
+  const love = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('Q405');
+  assert.deepEqual(
+    [consolidated.title, consolidated.status, consolidated.use_challenge, consolidated.use_live],
+    ['新しい設定', 'disabled', 0, 0],
+  );
+  assert.equal(family.status, 'approved');
+  assert.equal(love.status, 'disabled');
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM question_catalog WHERE question_id LIKE 'FQ%' OR question_id LIKE 'FAM%' OR question_id LIKE 'LOVE%'").get().count, 0);
 });
 
 test('個人情報らしい文字列と重点審査4分類を自動検知する', () => {

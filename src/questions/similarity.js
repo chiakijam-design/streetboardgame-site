@@ -15,7 +15,9 @@ export function sortQuestionsForOperations(items) {
 }
 
 export function findSimilarQuestions(items, threshold = 0.58) {
-  const questions = (items || []).filter(isCompleteQuestion);
+  const questions = (items || []).filter((item) => (
+    isCompleteQuestion(item) && item.status !== 'disabled'
+  ));
   const matches = new Map(questions.map((item) => [String(item.id), []]));
 
   for (let leftIndex = 0; leftIndex < questions.length; leftIndex += 1) {

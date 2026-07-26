@@ -83,6 +83,7 @@ function renderPending() {
   target.querySelectorAll('[data-approve]').forEach((button) => button.addEventListener('click', () => review(button.dataset.approve, 'approved')));
   target.querySelectorAll('[data-reject]').forEach((button) => button.addEventListener('click', () => review(button.dataset.reject, 'rejected')));
   bindComparisonButtons(target);
+  bindComparisonEditors(target);
 }
 
 function pendingRow(item) {
@@ -154,6 +155,7 @@ function renderAllQuestions() {
     markDirty(row);
   }));
   bindComparisonButtons(target);
+  bindComparisonEditors(target);
   updateBulkButton();
 }
 
@@ -212,20 +214,56 @@ function comparisonRow(id, item, matches) {
     <tr class="compare-row" data-comparison="${attr(id)}" hidden>
       <td colspan="10">
         <div class="comparison-grid">
-          ${comparisonCard('この問題', item)}
-          ${matches.map((match, index) => comparisonCard(`類似候補${index + 1}（${Math.round(match.score * 100)}%）`, match)).join('')}
+          ${comparisonCard('この問題', item, id)}
+          ${matches.map((match, index) => comparisonCard(`類似候補${index + 1}（${Math.round(match.score * 100)}%）`, match, id)).join('')}
         </div>
       </td>
     </tr>
   `;
 }
 
-function comparisonCard(label, item) {
+function comparisonCard(label, item, comparisonId) {
+  const catalogItem = allQuestions.find((question) => String(question.id) === String(item.id));
+  if (!catalogItem) return readOnlyComparisonCard(label, item);
+  const disabled = catalogItem.status === 'disabled';
+  const radioName = `compare-status-${comparisonId}-${catalogItem.id}`;
   return `
-    <div class="comparison-card">
+    <div class="comparison-card" data-compare-catalog="${attr(catalogItem.id)}" data-status-row="${disabled ? 'disabled' : 'approved'}">
+      <div class="comparison-card-head">
+        <span class="pill similar">${label}</span>
+        <span class="pill">${html(catalogItem.id)}</span>
+      </div>
+      <div class="comparison-status" role="group" aria-label="${attr(catalogItem.title)}の掲載状態">
+        <label class="status-choice"><input type="radio" name="${attr(radioName)}" data-compare-status value="approved" ${disabled ? '' : 'checked'}><span>採用</span></label>
+        <label class="status-choice disabled"><input type="radio" name="${attr(radioName)}" data-compare-status value="disabled" ${disabled ? 'checked' : ''}><span>無効</span></label>
+      </div>
+      <label class="comparison-field">
+        <span>問題文</span>
+        <textarea class="sheet-input sheet-title" data-field="title" maxlength="180">${html(catalogItem.title)}</textarea>
+      </label>
+      <div class="comparison-choices">
+        ${(catalogItem.choices || []).slice(0, 5).map((choice, index) => `
+          <label class="comparison-field">
+            <span>選択肢${index + 1}</span>
+            <input class="sheet-input" data-choice="${index}" maxlength="60" value="${attr(choice)}">
+          </label>
+        `).join('')}
+      </div>
+      <div class="comparison-actions">
+        <button class="button compact" data-compare-save="${attr(catalogItem.id)}">この問題を保存</button>
+        <span class="dirty-mark">未保存</span>
+      </div>
+    </div>
+  `;
+}
+
+function readOnlyComparisonCard(label, item) {
+  return `
+    <div class="comparison-card comparison-card-readonly">
       <span class="pill similar">${label}</span>
       <strong>${html(item.title)}</strong>
       <ol>${(item.choices || []).map((choice) => `<li>${html(choice)}</li>`).join('')}</ol>
+      <span class="meta">審査待ちのお題は上の審査欄で編集してください。</span>
     </div>
   `;
 }
@@ -236,6 +274,21 @@ function bindComparisonButtons(container) {
     if (!comparison) return;
     comparison.hidden = !comparison.hidden;
     button.textContent = comparison.hidden ? '並べて比較' : '比較を閉じる';
+  }));
+}
+
+function bindComparisonEditors(container) {
+  container.querySelectorAll('[data-compare-catalog]').forEach((card) => {
+    card.querySelectorAll('input,textarea').forEach((control) => control.addEventListener('input', () => {
+      card.classList.add('dirty');
+    }));
+    card.querySelectorAll('[data-compare-status]').forEach((control) => control.addEventListener('change', () => {
+      card.dataset.statusRow = control.value;
+      card.classList.add('dirty');
+    }));
+  });
+  container.querySelectorAll('[data-compare-save]').forEach((button) => button.addEventListener('click', () => {
+    saveComparisonQuestion(button.closest('[data-compare-catalog]'));
   }));
 }
 
@@ -276,6 +329,34 @@ async function saveQuestion(id, { reload = true } = {}) {
   if (reload) {
     showStatus(`「${body.title}」を${body.status === 'approved' ? '採用' : '無効化'}として保存しました。`);
     await loadOverview();
+  }
+}
+
+async function saveComparisonQuestion(card) {
+  if (!card) return;
+  const id = String(card.dataset.compareCatalog || '');
+  const current = allQuestions.find((item) => String(item.id) === id);
+  if (!current) return;
+  const button = card.querySelector('[data-compare-save]');
+  const body = {
+    ...readQuestionRow(card),
+    sourceKind: current.sourceKind,
+    sourceRef: current.sourceRef || current.id,
+    status: card.querySelector('[data-compare-status]:checked')?.value === 'disabled' ? 'disabled' : 'approved',
+  };
+  button.disabled = true;
+  button.textContent = '保存中';
+  try {
+    await adminApi(`/api/questions/admin/catalog/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+    showStatus(`比較欄の「${body.title}」を${body.status === 'approved' ? '採用' : '無効化'}として保存しました。`);
+    await loadOverview();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = 'この問題を保存';
+    showStatus(humanError(error), true);
   }
 }
 
