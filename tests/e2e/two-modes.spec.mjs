@@ -88,6 +88,8 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   expect(topCardFont).toContain('HuiFontP29');
   const challengeButton = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
   const liveButton = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
+  await expect(page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toHaveCount(1);
   await expect(page.getByText('わたし理解度診断', { exact: true })).toBeVisible();
   await expect(page.getByText('当てるより、話すための10問。', { exact: true })).toHaveCount(0);
   await expect(page.getByText('通常でも配信でも使える理解度診断メーカー', { exact: true })).toHaveCount(0);
@@ -96,6 +98,8 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   await expect(page.getByTestId('top-mode-pillars')).toContainText('URLを送って、好きな時間に回答');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('LIVE向け');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('配信者と視聴者が同時回答し、1問ずつ答え合わせ');
+  await expect(page.getByTestId('top-mode-pillars')).toContainText('①10問を作る②自分の正解を登録 →③参加URLを送る');
+  await expect(page.getByTestId('top-mode-pillars')).toContainText('①10問を作る②配信で参加方法を案内 →③視聴者と同時回答');
   await expect(page.getByText('クイズを作る人向け', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('あなたの名前（12文字まで）')).toBeVisible();
   await expect(page.getByText('この説明は出題者向けです。')).toHaveCount(0);
@@ -108,7 +112,6 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
         backgroundColor: style.backgroundColor,
         border: style.border,
         borderRadius: style.borderRadius,
-        boxShadow: style.boxShadow,
         color: style.color,
         fontFamily: style.fontFamily,
         fontSize: style.fontSize,
@@ -122,7 +125,6 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
         backgroundColor: style.backgroundColor,
         border: style.border,
         borderRadius: style.borderRadius,
-        boxShadow: style.boxShadow,
         color: style.color,
         fontFamily: style.fontFamily,
         fontSize: style.fontSize,
@@ -132,6 +134,8 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
     }),
   ]);
   expect(liveStyle).toEqual(challengeStyle);
+  expect(challengeStyle.backgroundColor).toBe('rgb(255, 255, 255)');
+  expect(challengeStyle.color).toBe('rgb(26, 26, 26)');
   await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
   await expect(page.locator('a[href="/love"]')).toHaveCount(0);
   await expect(page.getByText('メイン', { exact: true })).toHaveCount(0);

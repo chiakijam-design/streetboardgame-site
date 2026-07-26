@@ -84,22 +84,24 @@ test('top page exposes normal and live creator buttons with the same primary des
   expect(visualBox?.y + visualBox?.height).toBeLessThanOrEqual(rulesBox?.y);
   expect(nameBox?.y).toBeGreaterThan(rulesBox?.y);
   expect(nameBox?.y + nameBox?.height).toBeLessThanOrEqual(normalBox?.y);
-  expect(normalBox?.y + normalBox?.height).toBeLessThanOrEqual(liveBox?.y);
+  expect(Math.abs((normalBox?.y || 0) - (liveBox?.y || 0))).toBeLessThanOrEqual(2);
+  expect(normalBox?.y + normalBox?.height).toBeLessThanOrEqual(liveAgeNoticeBox?.y);
   expect(liveBox?.y + liveBox?.height).toBeLessThanOrEqual(liveAgeNoticeBox?.y);
-  expect(liveBox?.y + liveBox?.height).toBeLessThanOrEqual(rulesBox?.y + rulesBox?.height);
+  expect(liveAgeNoticeBox?.y + liveAgeNoticeBox?.height).toBeLessThanOrEqual(rulesBox?.y + rulesBox?.height);
   const styles = await Promise.all([normal, live].map((locator) => locator.evaluate((element) => {
     const style = getComputedStyle(element);
     return {
       backgroundColor: style.backgroundColor,
       border: style.border,
       borderRadius: style.borderRadius,
-      boxShadow: style.boxShadow,
       color: style.color,
       fontWeight: style.fontWeight,
       minHeight: style.minHeight,
     };
   })));
   expect(styles[1]).toEqual(styles[0]);
+  expect(styles[0].backgroundColor).toBe('rgb(255, 255, 255)');
+  expect(styles[0].color).toBe('rgb(26, 26, 26)');
 });
 
 test('LIVE問題作成カードは縦長で整列し、前の問題と最初へ戻れる', async ({ page }) => {
