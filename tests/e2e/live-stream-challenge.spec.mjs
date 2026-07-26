@@ -169,7 +169,7 @@ test('未登録の配信者は販売登録の申込フォームへ進める', as
   await expect(salesCheckbox).toBeDisabled();
   await expect(salesCheckbox).toHaveAttribute('aria-describedby', 'paid-sales-registration-help');
   await expect(salesSettings).toContainText('無料LIVEは登録せず作れます');
-  await expect(registrationLink).toHaveAttribute('href', '/contact?topic=live-creator-registration');
+  await expect(registrationLink).toHaveAttribute('href', '/?screen=about&to=contact&topic=live-creator-registration');
   await expect(registrationLink).toBeVisible();
 
   await registrationLink.click();

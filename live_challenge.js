@@ -216,7 +216,7 @@ function paidSalesSettingsView() {
   const unavailable = state.paidCreatorProfilesLoaded && !profiles.length
     ? `<div class="sales-registration-next" id="paid-sales-registration-help">
         <div class="notice">この端末に販売可能な配信者登録がありません。販売機能を使うには、申込み後にYouTubeチャンネルの所有確認、収益分配規約への同意、Stripe本人確認、運営審査が必要です。無料LIVEは登録せず作れます。</div>
-        <a class="primary sales-registration-link" href="/contact?topic=live-creator-registration">配信者登録を申し込む <span aria-hidden="true">▶</span></a>
+        <a class="primary sales-registration-link" href="/?screen=about&to=contact&topic=live-creator-registration">配信者登録を申し込む <span aria-hidden="true">▶</span></a>
         <p class="help">申込み済みなのに販売登録が表示されない場合も、リンク先から運営へお問い合わせください。</p>
       </div>`
     : '';
