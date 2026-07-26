@@ -15,6 +15,12 @@ const DIST_ENTRIES = {
   prototype_app: 'prototype_app.jsx',
 };
 
+const STYLE_ENTRIES = {
+  accessibility: 'accessibility.css',
+  question_card: 'question-card.css',
+  legal: 'legal.css',
+};
+
 const HTML_ENTRY_MAP = {
   'index.html': [
     'react',
@@ -42,10 +48,50 @@ const HTML_ENTRY_MAP = {
   ],
 };
 
+const HTML_STYLE_MAP = {
+  'index.html': [
+    'accessibility',
+    'question_card',
+  ],
+  'challenge.html': [
+    'question_card',
+    'accessibility',
+  ],
+  'live_challenge.html': [
+    'question_card',
+    'accessibility',
+  ],
+  '404.html': [
+    'accessibility',
+  ],
+  'content-guidelines.html': [
+    'legal',
+  ],
+  'creator-terms.html': [
+    'legal',
+  ],
+  'legal.html': [
+    'legal',
+  ],
+  'minor-policy.html': [
+    'legal',
+  ],
+  'privacy.html': [
+    'legal',
+  ],
+  'refund-policy.html': [
+    'legal',
+  ],
+  'terms.html': [
+    'legal',
+  ],
+};
+
 await mkdir('dist', { recursive: true });
 await mkdir('assets/vendor', { recursive: true });
 
 await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_common_data|prototype_english_common_data|challenge_game|live_challenge|live_ops|question_ops|prototype_character|prototype_app)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
+await removeGeneratedFiles('dist', /^(accessibility|question-card|legal)-[a-f0-9]+\.css$/i);
 await removeGeneratedFiles('assets/vendor', /^react(?:-dom)?\.production\.min(?:-[a-f0-9]+)?\.js$/i);
 
 const runtimeSources = {
@@ -53,6 +99,16 @@ const runtimeSources = {
   react_dom: await readFile('node_modules/react-dom/umd/react-dom.production.min.js'),
 };
 const scriptPaths = {};
+const stylePaths = {};
+
+for (const [entryName, sourcePath] of Object.entries(STYLE_ENTRIES)) {
+  const source = await readFile(sourcePath);
+  const hash = createHash('sha256').update(source).digest('hex').slice(0, 12);
+  const baseName = basename(sourcePath, extname(sourcePath));
+  const outputPath = `dist/${baseName}-${hash}.css`;
+  await writeFile(outputPath, source);
+  stylePaths[entryName] = `/${outputPath.replace(/\\/g, '/')}`;
+}
 
 for (const [entryName, source] of Object.entries(runtimeSources)) {
   const baseName = entryName === 'react_dom' ? 'react-dom.production.min' : 'react.production.min';
@@ -95,6 +151,16 @@ for (const [htmlPath, entryNames] of Object.entries(HTML_ENTRY_MAP)) {
     if (!scriptPath) throw new Error(`Missing generated script for ${entryName}`);
     html = replaceTaggedAsset(html, 'script', 'data-build-entry', entryName, 'src', scriptPath);
     html = replaceTaggedAsset(html, 'link', 'data-build-preload', entryName, 'href', scriptPath, false);
+  }
+  await writeFile(htmlPath, html);
+}
+
+for (const [htmlPath, entryNames] of Object.entries(HTML_STYLE_MAP)) {
+  let html = await readFile(htmlPath, 'utf8');
+  for (const entryName of entryNames) {
+    const stylePath = stylePaths[entryName];
+    if (!stylePath) throw new Error(`Missing generated stylesheet for ${entryName}`);
+    html = replaceTaggedAsset(html, 'link', 'data-build-style', entryName, 'href', stylePath);
   }
   await writeFile(htmlPath, html);
 }

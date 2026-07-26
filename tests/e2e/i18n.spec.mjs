@@ -29,7 +29,7 @@ test('言語切替はページ上部にだけ表示し、スクロールへ追�
 test('英語の主要ページは専用SEO・hreflangを持ち、言語切替はトップだけに表示する', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'メタ情報は画面幅に依存しないためPCで1回検証');
   const routes = [
-    ['/en/', 'Watachan | Make a quiz and challenge your friends', 'How well do you know me?'],
+    ['/en/', 'How Well Do You Know Me? | Understanding Quiz', 'How well do you know me?'],
     ['/en/challenge', 'Challenge Your Friends | How well do they know you?', 'How well do you know me?'],
     ['/en/live-challenge', 'Livestream Challenge | Play with Instagram or YouTube viewers', 'How well do you know me?'],
     ['/en/terms', 'Terms of Service | Streetboardgame', 'Terms of Service'],

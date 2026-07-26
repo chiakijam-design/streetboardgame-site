@@ -11,7 +11,7 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 // 廃止したゲームURLとAPIは互換転送せず404を返す。
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
-const HASHED_JS_PATH = /^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12})\.js$/i;
+const HASHED_BUILD_ASSET_PATH = /^\/(?:dist\/(?:[a-z0-9_]+-[a-z0-9]{8}\.js|[a-z0-9-]+-[a-f0-9]{12}\.css)|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12}\.js)$/i;
 const VERSIONED_STATIC_ASSET_PATH = /\.(?:css|js|png|jpe?g|svg|webp)$/i;
 const RETIRED_GAME_PATHS = new Set([
   '/love',
@@ -297,7 +297,7 @@ async function handleRequest(request, env) {
         title: 'みんなに挑戦してもらう｜10問クイズの遊び方・作り方',
         description: '自分が先に答えた10問をみんなに予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせと任意の理解度ボードを楽しめます。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
-        ogTitle: 'みんなに挑戦してもらう｜わたちゃん',
+        ogTitle: 'みんなに挑戦してもらう｜わたし理解度診断',
         ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge-v3.png?v=20260726-ogp-2',
         imageWidth: 1200,
         imageHeight: 630,
@@ -321,14 +321,14 @@ async function handleRequest(request, env) {
         ],
       },
       '/about': {
-        title: 'About｜わたちゃん・みんなに挑戦してもらうクイズ',
-        description: 'わたちゃんは、自分の10問を最大50人に予想してもらう通常版と、視聴者と同時回答するライブ配信版を公開する無料ゲームサイトです。',
+        title: 'About｜わたし理解度診断・私のこと、ちゃんと分かってるよね？',
+        description: '「わたし理解度診断」は、自分の10問を最大50人に予想してもらう通常版と、視聴者と同時回答するLIVE版を公開する無料ゲームサイトです。',
         url: CANONICAL_ORIGIN + '/about',
-        ogTitle: 'About｜わたちゃん',
-        imageAlt: 'わたちゃん みんなに挑戦してもらう',
+        ogTitle: 'About｜わたし理解度診断',
+        imageAlt: 'わたし理解度診断「私のこと、ちゃんと分かってるよね？」',
         pageId: CANONICAL_ORIGIN + '/about#webpage',
-        noscriptTitle: 'About｜わたちゃん',
-        noscriptBody: 'わたちゃんは、クイズを作って参加URLを送る通常版と、視聴者と同時回答するライブ配信版を公開しています。',
+        noscriptTitle: 'About｜わたし理解度診断',
+        noscriptBody: '「わたし理解度診断」は、10問を作って参加URLを送る通常版と、視聴者と同時回答するLIVE版を公開しています。',
       },
       '/product': {
         title: '製品版｜私のこと、ちゃんと分かってるよね？',
@@ -395,7 +395,7 @@ async function handleRequest(request, env) {
       return new Response(body, { status: 404, headers });
     }
 
-    if (response.ok && (HASHED_JS_PATH.test(url.pathname) || isVersionedStaticAsset(url))) {
+    if (response.ok && (HASHED_BUILD_ASSET_PATH.test(url.pathname) || isVersionedStaticAsset(url))) {
       const headers = new Headers(response.headers);
       headers.set('cache-control', 'public, max-age=31536000, immutable');
       return new Response(response.body, { status: response.status, headers });
@@ -528,7 +528,7 @@ function applyChallengeLibraryMeta(html) {
               {
                 '@type': 'ListItem',
                 position: 1,
-                name: 'わたちゃん',
+                name: 'わたし理解度診断',
                 item: CANONICAL_ORIGIN + '/',
               },
               {
@@ -560,7 +560,7 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
   const description = isLive
     ? 'Answer the same 10 questions with your livestream viewers. Earn one point for every match and give each viewer a personal result card.'
     : 'Create a free 10-question quiz, share one link, and see how well up to 50 friends know your answers.';
-  const ogTitle = isLive ? 'Challenge your livestream viewers | Watachan' : 'How well do you know me? | Watachan';
+  const ogTitle = isLive ? 'Challenge your livestream viewers | Understanding Quiz' : 'How well do you know me? | Understanding Quiz';
   const shareUrl = new URL(canonicalPath, CANONICAL_ORIGIN);
   const room = String(requestUrl.searchParams.get('room') || '').trim();
   if (room) shareUrl.searchParams.set('room', room);
@@ -587,7 +587,7 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
           {
             '@type': 'ListItem',
             position: 1,
-            name: 'Watachan',
+            name: 'Understanding Quiz',
             item: CANONICAL_ORIGIN + '/en/',
           },
           {
@@ -720,7 +720,7 @@ function buildStructuredData(page) {
     {
       '@type': 'Organization',
       '@id': organizationId,
-      name: 'streetboardgame.com',
+      name: 'Streetboardgame',
       url: 'https://www.streetboardgame.com/',
       logo: 'https://www.streetboardgame.com/assets/favicon-girl.png',
     },
@@ -728,7 +728,8 @@ function buildStructuredData(page) {
       '@type': 'WebSite',
       '@id': websiteId,
       url: 'https://www.streetboardgame.com/',
-      name: 'streetboardgame.com',
+      name: 'わたし理解度診断',
+      alternateName: '私のこと、ちゃんと分かってるよね？',
       inLanguage: 'ja',
       description: '自分の10問を最大50人へ出題する通常版と、視聴者と同時回答するライブ配信版を公開する無料クイズサイトです。',
       publisher: {
@@ -764,7 +765,7 @@ function buildStructuredData(page) {
         {
           '@type': 'ListItem',
           position: 1,
-          name: 'わたちゃん',
+          name: 'わたし理解度診断',
           item: 'https://www.streetboardgame.com/',
         },
         {
@@ -787,7 +788,7 @@ function buildStructuredData(page) {
       '@id': page.gameId,
       url: page.url,
       name: page.gameName,
-      alternateName: 'わたちゃん',
+      alternateName: '私のこと、ちゃんと分かってるよね？',
       headline: page.headline,
       description: page.description,
       applicationCategory: 'GameApplication',

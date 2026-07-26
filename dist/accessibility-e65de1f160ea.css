@@ -1,0 +1,120 @@
+/*
+ * Public-page readability baseline.
+ * Normal copy: 14px+, supporting copy: 12px+, actions: about 16px,
+ * interactive tap targets: 44px+.
+ */
+body {
+  font-size: 14px;
+}
+
+body :where(p, li, label, summary, td, th, dd, dt) {
+  font-size: 14px !important;
+}
+
+body :where(
+  small,
+  .help,
+  .note,
+  .meta,
+  .eyebrow,
+  .badge,
+  .pill,
+  .hint,
+  .caption,
+  .disclaimer,
+  .challenge-note,
+  .challenge-builder-help,
+  .challenge-pill,
+  .challenge-q-number,
+  .footer
+) {
+  font-size: 12px !important;
+}
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+[role="button"],
+.button,
+.btn,
+.primary,
+.secondary,
+.danger,
+.mini,
+.tab,
+.challenge-primary,
+.challenge-secondary,
+.challenge-share {
+  min-height: 44px !important;
+  font-size: 16px !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  min-height: 44px;
+  font-size: 16px !important;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  min-width: 24px;
+  min-height: 24px;
+}
+
+label:has(input[type="checkbox"]),
+label:has(input[type="radio"]) {
+  min-height: 44px;
+}
+
+:where(
+  .home-link,
+  .back,
+  .challenge-top a,
+  .challenge-feature-nav a,
+  .legal-nav a
+) {
+  min-height: 44px !important;
+}
+
+:where(
+  .home-link,
+  .back,
+  .challenge-top a,
+  .challenge-feature-nav a
+) {
+  font-size: 16px !important;
+}
+
+.challenge-color-choice span {
+  font-size: 16px !important;
+}
+
+.challenge-answer-pad-heading small,
+.challenge-answer-pad > p,
+.challenge-choice small,
+.result-row,
+.invite-step p,
+.viewer-entry-heading p,
+.amazon-product-card small,
+.amazon-product-card .product-description {
+  font-size: 12px !important;
+}
+
+@media (max-width: 420px) {
+  button,
+  [role="button"],
+  .button,
+  .btn,
+  .primary,
+  .secondary,
+  .danger,
+  .mini,
+  .tab,
+  .challenge-primary,
+  .challenge-secondary,
+  .challenge-share {
+    line-height: 1.35;
+  }
+}

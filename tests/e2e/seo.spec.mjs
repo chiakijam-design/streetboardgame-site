@@ -10,7 +10,7 @@ test('公開する2モードと共通ページのSEO・構造が一貫する', a
     ['/challenge', '通常版｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？', '私のこと、ちゃんと分かってるよね？'],
     ['/challenge/library', '人気のお題ライブラリ｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？', '人気のお題ライブラリ'],
     ['/live-challenge', 'LIVE版｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？', '私のこと、ちゃんと'],
-    ['/about', 'About｜わたちゃん・みんなに挑戦してもらうクイズ', 'About'],
+    ['/about', 'About｜わたし理解度診断・私のこと、ちゃんと分かってるよね？', 'About'],
     ['/product', '製品版｜私のこと、ちゃんと分かってるよね？', '製品版もあります'],
     ['/terms', '利用規約｜Streetboardgame', '利用規約'],
     ['/privacy', 'プライバシーポリシー｜Streetboardgame', 'プライバシーポリシー'],
@@ -89,11 +89,21 @@ test('ゲーム画面は表示言語のお題データだけを読み込む', as
   }
 });
 
-test('版番号付き静的ファイルを長期キャッシュする', async ({ request }, testInfo) => {
+test('内容ハッシュ付きCSSを長期キャッシュする', async ({ request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPキャッシュは画面幅に依存しないためPCで1回検証');
-  const stylesheet = await request.get('/question-card.css?v=20260725-1');
-  expect(stylesheet.headers()['cache-control']).toContain('max-age=31536000');
-  expect(stylesheet.headers()['cache-control']).toContain('immutable');
+  for (const path of ['/', '/challenge', '/live-challenge', '/terms']) {
+    const html = await (await request.get(path)).text();
+    const stylesheets = [...html.matchAll(/<link[^>]+data-build-style="[^"]+"[^>]+href="([^"]+)"/g)]
+      .map((match) => match[1]);
+    expect(stylesheets.length, path).toBeGreaterThan(0);
+    for (const stylesheetPath of stylesheets) {
+      expect(stylesheetPath, path).toMatch(/^\/dist\/[a-z0-9-]+-[a-f0-9]{12}\.css$/);
+      const stylesheet = await request.get(stylesheetPath);
+      expect(stylesheet.status(), stylesheetPath).toBe(200);
+      expect(stylesheet.headers()['cache-control'], stylesheetPath).toContain('max-age=31536000');
+      expect(stylesheet.headers()['cache-control'], stylesheetPath).toContain('immutable');
+    }
+  }
 });
 
 test('トップの内部リンクと構造化データに廃止モードを残さない', async ({ page }, testInfo) => {

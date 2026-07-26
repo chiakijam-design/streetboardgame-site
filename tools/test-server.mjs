@@ -7,7 +7,7 @@ import { build } from 'esbuild';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const host = '127.0.0.1';
 const port = Number(process.env.TEST_PORT || 4173);
-const HASHED_JS_PATH = /^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12})\.js$/i;
+const HASHED_BUILD_ASSET_PATH = /^\/(?:dist\/(?:[a-z0-9_]+-[a-z0-9]{8}\.js|[a-z0-9-]+-[a-f0-9]{12}\.css)|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12}\.js)$/i;
 
 class MemoryKV {
   constructor() { this.values = new Map(); }
@@ -127,7 +127,7 @@ async function fetchStaticAsset(request) {
       status: 200,
       headers: {
         'content-type': mime[path.extname(absolute).toLowerCase()] || 'application/octet-stream',
-        'cache-control': HASHED_JS_PATH.test(parsed.pathname)
+        'cache-control': HASHED_BUILD_ASSET_PATH.test(parsed.pathname)
           ? 'public, max-age=31536000, immutable'
           : 'no-store',
       },
