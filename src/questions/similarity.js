@@ -15,19 +15,16 @@ export function sortQuestionsForOperations(items) {
 }
 
 export function findSimilarQuestions(items, threshold = 0.58) {
-  const questions = (items || []).filter((item) => (
-    isCompleteQuestion(item) && item.status !== 'disabled'
-  ));
+  const questions = (items || []).filter(isCompleteQuestion);
+  const approvedQuestions = questions.filter(isApprovedQuestion);
   const matches = new Map(questions.map((item) => [String(item.id), []]));
 
-  for (let leftIndex = 0; leftIndex < questions.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < questions.length; rightIndex += 1) {
-      const left = questions[leftIndex];
-      const right = questions[rightIndex];
-      const score = questionSimilarity(left, right);
+  for (const question of questions) {
+    for (const approvedQuestion of approvedQuestions) {
+      if (String(question.id) === String(approvedQuestion.id)) continue;
+      const score = questionSimilarity(question, approvedQuestion);
       if (score < threshold) continue;
-      matches.get(String(left.id)).push(compactMatch(right, score));
-      matches.get(String(right.id)).push(compactMatch(left, score));
+      matches.get(String(question.id)).push(compactMatch(approvedQuestion, score));
     }
   }
 
@@ -118,4 +115,8 @@ function statusRank(status) {
 
 function isCompleteQuestion(item) {
   return item && item.id && item.title && Array.isArray(item.choices) && item.choices.length === 5;
+}
+
+function isApprovedQuestion(item) {
+  return item?.status === 'approved' || !item?.status;
 }

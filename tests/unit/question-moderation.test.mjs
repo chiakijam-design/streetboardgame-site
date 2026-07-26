@@ -11,7 +11,7 @@ import {
   sortQuestionsForOperations,
 } from '../../src/questions/similarity.js';
 
-test('採用を先にして問題文の日本語順へ並べ、採用中同士だけで似た問題と5択を検出する', () => {
+test('採用を先に並べ、採用側は採用同士、無効側は採用との類似だけを検出する', () => {
   const questions = [{
     id: 'q3',
     status: 'disabled',
@@ -34,7 +34,8 @@ test('採用を先にして問題文の日本語順へ並べ、採用中同士�
   assert.equal(matches.get('q1')[0].id, 'q2');
   assert.ok(matches.get('q1')[0].score >= 0.58);
   assert.equal(matches.get('q1').some((item) => item.id === 'q3'), false);
-  assert.equal(matches.has('q3'), false);
+  assert.equal(matches.get('q3')[0].id, 'q2');
+  assert.equal(matches.get('q3').some((item) => item.id === 'q1'), true);
 });
 
 test('既存DBから旧シリーズ分類列と廃止お題を削除する', async () => {
