@@ -33,6 +33,7 @@ LIVE運営コンソール、障害告知、Stripe Checkout・Webhook・返金・
 
 - Apply `migrations/0012_question_catalog_moderation.sql` to `REMOTE_DB` before deployment.
 - Apply `migrations/0013_question_safety_reports.sql` to `REMOTE_DB` before deploying automatic safety flags and question reporting.
+- Apply `migrations/0014_unify_question_catalog.sql` to `REMOTE_DB` to normalize every approved question for both the normal and LIVE modes and clear the retired audience flags.
 - `/question-ops` reuses the existing LIVE operations token and TOTP authentication.
 - Do not expose `LIVE_ADMIN_TOKEN` or the TOTP secret in static assets or browser code.
 - Public submissions are stored only when the creator explicitly checks the review-consent checkbox.

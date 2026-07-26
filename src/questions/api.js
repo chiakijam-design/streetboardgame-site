@@ -202,7 +202,6 @@ async function reviewSubmission(request, env, submissionId) {
     });
     const isEnglishSubmission = String(current.source_mode || '').endsWith('-en');
     catalogId = `${isEnglishSubmission ? 'CUSEN' : 'CUS'}${crypto.randomUUID().replace(/-/g, '').slice(0, 20).toUpperCase()}`;
-    const settings = sanitizeSettings(body);
     await env.REMOTE_DB.prepare(`
       INSERT INTO question_catalog
         (question_id, source_kind, source_ref, title, category, choices_json, status,
@@ -214,10 +213,10 @@ async function reviewSubmission(request, env, submissionId) {
       question.title,
       sanitizeShortText(body.category, 60) || (isEnglishSubmission ? 'Community questions' : 'みんなのお題'),
       JSON.stringify(question.choices),
-      boolInt(settings.useChallenge),
-      boolInt(settings.useLive),
-      boolInt(settings.targetFriend),
-      boolInt(settings.targetFamily),
+      1,
+      1,
+      0,
+      0,
       now,
       now,
     ).run();
@@ -234,7 +233,6 @@ async function reviewSubmission(request, env, submissionId) {
 async function saveCatalogQuestion(request, env, questionId) {
   const body = await readJson(request);
   const question = sanitizeQuestion(body);
-  const settings = sanitizeSettings(body);
   const sourceKind = body.sourceKind === 'custom' ? 'custom' : 'static';
   const sourceRef = sanitizeShortText(body.sourceRef, 80) || questionId;
   const status = body.status === 'disabled' ? 'disabled' : 'approved';
@@ -264,10 +262,10 @@ async function saveCatalogQuestion(request, env, questionId) {
     sanitizeShortText(body.category, 60) || 'みんなのお題',
     JSON.stringify(question.choices),
     status,
-    boolInt(settings.useChallenge),
-    boolInt(settings.useLive),
-    boolInt(settings.targetFriend),
-    boolInt(settings.targetFamily),
+    status === 'approved' ? 1 : 0,
+    status === 'approved' ? 1 : 0,
+    0,
+    0,
     now,
     now,
   ).run();
@@ -315,15 +313,6 @@ function sanitizeQuestion(value) {
   };
 }
 
-function sanitizeSettings(value) {
-  return {
-    useChallenge: value?.useChallenge === true,
-    useLive: value?.useLive === true,
-    targetFriend: value?.targetFriend === true,
-    targetFamily: value?.targetFamily === true,
-  };
-}
-
 function normalizeSourceMode(value) {
   if (value === 'challenge' || value === 'live-challenge'
     || value === 'challenge-en' || value === 'live-challenge-en') return value;
@@ -343,10 +332,10 @@ function mapCatalogRow(row) {
     category: row.category,
     choices: parseChoices(row.choices_json),
     status: row.status || 'approved',
-    useChallenge: Boolean(row.use_challenge),
-    useLive: Boolean(row.use_live),
-    targetFriend: Boolean(row.target_friend),
-    targetFamily: Boolean(row.target_family),
+    useChallenge: (row.status || 'approved') === 'approved',
+    useLive: (row.status || 'approved') === 'approved',
+    targetFriend: false,
+    targetFamily: false,
     createdAt: row.created_at == null ? null : Number(row.created_at),
     updatedAt: Number(row.updated_at || 0),
     reportCount: Number(row.report_count || 0),
@@ -441,10 +430,6 @@ async function readJson(request) {
   } catch (error) {
     return {};
   }
-}
-
-function boolInt(value) {
-  return value ? 1 : 0;
 }
 
 function apiError(message, status, details = null) {

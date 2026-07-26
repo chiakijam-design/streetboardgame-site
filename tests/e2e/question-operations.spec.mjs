@@ -1,6 +1,6 @@
 import { expect, test } from './test.mjs';
 
-test('運営だけが二要素認証後にお題を審査し、全問題の掲載先を変更できる', async ({ page }) => {
+test('運営だけが二要素認証後に表形式でお題を審査し、採用と無効化を管理できる', async ({ page }) => {
   const reviewBodies = [];
   const saveBodies = [];
   const pendingId = '11111111-1111-4111-8111-111111111111';
@@ -19,6 +19,20 @@ test('運営だけが二要素認証後にお題を審査し、全問題の掲�
       targetFamily: false,
       reportCount: 1,
       lastReportedAt: Date.now(),
+    }, {
+      id: 'CUSSIMILAR123',
+      sourceKind: 'custom',
+      sourceRef: null,
+      title: '通報されていないお題',
+      category: 'みんなのお題',
+      choices: ['1', '2', '3', '4', '5'],
+      status: 'approved',
+      useChallenge: true,
+      useLive: true,
+      targetFriend: false,
+      targetFamily: false,
+      reportCount: 0,
+      lastReportedAt: null,
     }],
     submissions: [{
       id: pendingId,
@@ -78,30 +92,40 @@ test('運営だけが二要素認証後にお題を審査し、全問題の掲�
   expect(await page.evaluate(() => sessionStorage.getItem('live:admin-session'))).toBe('question-admin-session');
   await expect(page.locator('#pendingSubmissions')).toContainText('放課後にみんなでしたいことは？');
   await expect(page.locator('#pendingSubmissions')).toContainText('重点審査：いじめ・容姿攻撃');
-  await expect(page.getByText(/性的内容、いじめ、容姿攻撃、差別表現は必ず審査対象/)).toBeVisible();
+  await expect(page.getByText('通常版とLIVE版は同じ採用済みお題を使います。採用・無効化、問題文、5つの選択肢を表でまとめて管理できます。')).toBeVisible();
   await expect(page.locator('#allQuestions')).toContainText('通報1件・即時非公開');
+  await expect(page.locator('#allQuestions table')).toBeVisible();
+  await expect(page.locator('#allQuestions thead')).toContainText('選択肢5');
+  await expect(page.locator('#allQuestions')).not.toContainText('友達向け');
+  await expect(page.locator('#allQuestions')).not.toContainText('家族向け');
   const totalText = await page.locator('#questionCount').textContent();
   const total = Number(totalText?.match(/全(\d+)問/)?.[1] || 0);
   expect(total).toBeGreaterThan(100);
+  const statusOrder = await page.locator('#allQuestions [data-catalog]').evaluateAll((rows) => rows.map((row) => row.dataset.statusRow));
+  expect(statusOrder.indexOf('disabled')).toBeGreaterThan(statusOrder.lastIndexOf('approved'));
+  await expect(page.locator('#similaritySummary')).not.toHaveText('類似候補：0問');
+  await page.locator('#allQuestions [data-compare]').first().click();
+  await expect(page.locator('#allQuestions .compare-row:not([hidden]) .comparison-card')).toHaveCount(2);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  expect(await page.locator('#allQuestions .table-wrap').evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
 
   const pending = page.locator(`[data-submission="${pendingId}"]`);
-  await pending.locator('[data-field="targetFamily"]').uncheck();
   page.once('dialog', (dialog) => dialog.accept());
-  await pending.getByRole('button', { name: '編集内容で承認' }).click();
+  await pending.getByRole('button', { name: '採用' }).click();
   await expect.poll(() => reviewBodies.length).toBe(1);
   expect(reviewBodies[0]).toMatchObject({
     decision: 'approved',
-    useChallenge: true,
-    useLive: true,
-    targetFriend: true,
-    targetFamily: false,
+    category: 'みんなのお題',
   });
+  expect(reviewBodies[0]).not.toHaveProperty('targetFriend');
+  expect(reviewBodies[0]).not.toHaveProperty('targetFamily');
 
   const firstQuestion = page.locator('[data-catalog]').first();
-  await firstQuestion.locator('[data-field="useLive"]').uncheck();
-  await firstQuestion.getByRole('button', { name: '編集・掲載先を保存' }).click();
+  await firstQuestion.locator('[data-status][value="disabled"]').check();
+  await expect(page.locator('#saveAllQuestions')).toContainText('1問');
+  await firstQuestion.getByRole('button', { name: 'この行を保存' }).click();
   await expect.poll(() => saveBodies.length).toBe(1);
-  expect(saveBodies[0].useChallenge).toBe(true);
-  expect(saveBodies[0].useLive).toBe(false);
-  expect(saveBodies[0].status).toBe('approved');
+  expect(saveBodies[0].status).toBe('disabled');
+  expect(saveBodies[0]).not.toHaveProperty('useChallenge');
+  expect(saveBodies[0]).not.toHaveProperty('useLive');
 });

@@ -1,12 +1,15 @@
 import { safetyFlagLabels } from './src/questions/safety.js';
+import { findSimilarQuestions, sortQuestionsForOperations } from './src/questions/similarity.js';
 
 const tokenInput = document.getElementById('adminToken');
 const otpInput = document.getElementById('adminOtp');
 const dashboard = document.getElementById('dashboard');
 const authStatus = document.getElementById('authStatus');
 const staticQuestions = buildStaticQuestions();
+const dirtyQuestionIds = new Set();
 let overview = { catalog: [], submissions: [] };
 let allQuestions = [];
+let similarityMatches = new Map();
 
 sessionStorage.removeItem('live:admin-token');
 tokenInput.value = '';
@@ -20,12 +23,18 @@ document.getElementById('forgetSession').addEventListener('click', () => {
 });
 document.getElementById('questionSearch').addEventListener('input', renderAllQuestions);
 document.getElementById('questionFilter').addEventListener('change', renderAllQuestions);
+document.getElementById('saveAllQuestions').addEventListener('click', saveAllQuestions);
 
 async function loadOverview() {
   try {
     if (!sessionStorage.getItem('live:admin-session') || otpInput.value.trim()) await createAdminSession();
     overview = await adminApi('/api/questions/admin/overview');
-    allQuestions = mergeQuestionOverview(staticQuestions, overview.catalog);
+    allQuestions = sortQuestionsForOperations(mergeQuestionOverview(staticQuestions, overview.catalog));
+    similarityMatches = findSimilarQuestions([
+      ...allQuestions,
+      ...(overview.submissions || []).filter((item) => item.status === 'pending'),
+    ]);
+    dirtyQuestionIds.clear();
     dashboard.hidden = false;
     renderPending();
     renderAllQuestions();
@@ -56,82 +65,191 @@ async function createAdminSession() {
 function renderPending() {
   const pending = (overview.submissions || []).filter((item) => item.status === 'pending');
   const target = document.getElementById('pendingSubmissions');
-  target.innerHTML = pending.length ? pending.map((item) => `
-    <article class="card pending" data-submission="${attr(item.id)}">
-      <span class="pill warning">審査待ち</span><span class="pill">${item.sourceMode === 'live-challenge' ? 'ライブ配信から' : 'みんなに挑戦から'}</span>
-      ${(item.safetyFlags || []).length ? `<span class="pill critical">重点審査：${html(safetyFlagLabels(item.safetyFlags).join('・'))}</span>` : ''}
-      <div class="meta">送信：${formatDate(item.submittedAt)}${item.sourceQuestionId ? ` / 編集元：${html(item.sourceQuestionId)}` : ' / 完全な自作'}</div>
-      ${questionFields(item)}
-      <div class="checks">
-        ${check('useChallenge', 'みんなに挑戦', true)}
-        ${check('useLive', 'ライブ配信', true)}
-        ${check('targetFriend', '友達向け', true)}
-        ${check('targetFamily', '家族向け', true)}
-      </div>
-      <div class="field"><label>カテゴリ</label><input data-field="category" maxlength="60" value="みんなのお題"></div>
-      <div class="field"><label>審査メモ（利用者には非公開）</label><input data-field="reviewNote" maxlength="300"></div>
-      <div class="actions"><button class="button good" data-approve="${attr(item.id)}">編集内容で承認</button><button class="button danger" data-reject="${attr(item.id)}">却下</button></div>
-    </article>
-  `).join('') : '<div class="empty">審査待ちのお題はありません。</div>';
+  target.innerHTML = pending.length ? `
+    <div class="table-wrap pending-table">
+      <table class="question-table">
+        <thead><tr>
+          <th class="question-col">問題文</th>
+          ${choiceHeaders()}
+          <th class="similar-col">類似候補</th>
+          <th class="action-col">審査</th>
+        </tr></thead>
+        <tbody>${pending.map(pendingRow).join('')}</tbody>
+      </table>
+    </div>
+  ` : '<div class="empty">審査待ちのお題はありません。</div>';
   target.querySelectorAll('[data-approve]').forEach((button) => button.addEventListener('click', () => review(button.dataset.approve, 'approved')));
   target.querySelectorAll('[data-reject]').forEach((button) => button.addEventListener('click', () => review(button.dataset.reject, 'rejected')));
+  bindComparisonButtons(target);
 }
 
-function renderAllQuestions() {
-  const query = document.getElementById('questionSearch').value.normalize('NFKC').toLowerCase().trim();
-  const filter = document.getElementById('questionFilter').value;
-  const filtered = allQuestions.filter((item) => {
-    const textMatches = !query || `${item.id} ${item.title} ${item.category}`.normalize('NFKC').toLowerCase().includes(query);
-    const filterMatches = filter === 'all'
-      || filter === 'challenge' && item.useChallenge
-      || filter === 'live' && item.useLive
-      || filter === 'friend' && item.targetFriend
-      || filter === 'family' && item.targetFamily
-      || filter === 'custom' && item.sourceKind === 'custom';
-    return textMatches && filterMatches;
-  });
-  document.getElementById('questionCount').textContent = `${filtered.length}問を表示（全${allQuestions.length}問）`;
-  const target = document.getElementById('allQuestions');
-  target.innerHTML = filtered.length ? filtered.map((item) => `
-    <article class="card" data-catalog="${attr(item.id)}">
-      <span class="pill ${item.sourceKind === 'custom' ? 'info' : ''}">${item.sourceKind === 'custom' ? '承認済み自作' : html(item.sourceLabel)}</span>
-      <span class="pill">${html(item.id)}</span>
-      ${item.reportCount ? `<span class="pill critical">通報${item.reportCount}件・即時非公開</span>` : ''}
-      ${questionFields(item)}
-      <div class="field"><label>カテゴリ</label><input data-field="category" maxlength="60" value="${attr(item.category)}"></div>
-      <div class="checks">
-        ${check('useChallenge', 'みんなに挑戦', item.useChallenge)}
-        ${check('useLive', 'ライブ配信', item.useLive)}
-        ${check('targetFriend', '友達向け', item.targetFriend)}
-        ${check('targetFamily', '家族向け', item.targetFamily)}
-        ${check('disabled', '無効化', item.status === 'disabled')}
-      </div>
-      <div class="actions"><button class="button" data-save="${attr(item.id)}">編集・掲載先を保存</button></div>
-    </article>
-  `).join('') : '<div class="empty">条件に一致するお題はありません。</div>';
-  target.querySelectorAll('[data-save]').forEach((button) => button.addEventListener('click', () => saveQuestion(button.dataset.save)));
-}
-
-function questionFields(item) {
+function pendingRow(item) {
+  const matches = topMatches(item.id);
   return `
-    <div class="field"><label>問題文</label><textarea data-field="title" maxlength="180">${html(item.title)}</textarea></div>
-    <div class="choices-edit">${item.choices.map((choice, index) => `<div class="field"><label>選択肢${index + 1}</label><input data-choice="${index}" maxlength="60" value="${attr(choice)}"></div>`).join('')}</div>
+    <tr data-submission="${attr(item.id)}">
+      <td>
+        <textarea class="sheet-input sheet-title" data-field="title" maxlength="180">${html(item.title)}</textarea>
+        <div class="meta">
+          <span class="pill warning">審査待ち</span>
+          <span class="pill">${item.sourceMode === 'live-challenge' ? 'LIVE版から' : '通常版から'}</span>
+          ${(item.safetyFlags || []).length ? `<span class="pill critical">重点審査：${html(safetyFlagLabels(item.safetyFlags).join('・'))}</span>` : ''}
+          <br>送信：${formatDate(item.submittedAt)}
+        </div>
+        <input data-field="reviewNote" maxlength="300" placeholder="審査メモ（非公開）">
+      </td>
+      ${choiceCells(item)}
+      <td>${similarityCell(item.id, matches)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="button compact good" data-approve="${attr(item.id)}">採用</button>
+          <button class="button compact danger" data-reject="${attr(item.id)}">却下</button>
+        </div>
+      </td>
+    </tr>
+    ${comparisonRow(item.id, item, matches)}
   `;
 }
 
-function check(field, label, checked) {
-  return `<label class="check"><input type="checkbox" data-field="${field}" ${checked ? 'checked' : ''}><span>${label}</span></label>`;
+function renderAllQuestions() {
+  const query = normalizeSearch(document.getElementById('questionSearch').value);
+  const filter = document.getElementById('questionFilter').value;
+  const filtered = allQuestions.filter((item) => {
+    const searchable = normalizeSearch(`${item.id} ${item.title} ${(item.choices || []).join(' ')}`);
+    const textMatches = !query || searchable.includes(query);
+    const matches = similarityMatches.get(String(item.id)) || [];
+    const filterMatches = filter === 'all'
+      || filter === item.status
+      || filter === 'similar' && matches.length
+      || filter === 'custom' && item.sourceKind === 'custom' && item.status === 'approved';
+    return textMatches && filterMatches;
+  });
+  const approvedCount = allQuestions.filter((item) => item.status !== 'disabled').length;
+  const disabledCount = allQuestions.length - approvedCount;
+  const similarCount = allQuestions.filter((item) => (similarityMatches.get(String(item.id)) || []).length).length;
+  document.getElementById('questionCount').textContent = `${filtered.length}問を表示（採用${approvedCount}問／無効化${disabledCount}問／全${allQuestions.length}問）`;
+  document.getElementById('similaritySummary').textContent = `類似候補：${similarCount}問`;
+  const target = document.getElementById('allQuestions');
+  target.innerHTML = filtered.length ? `
+    <div class="table-wrap">
+      <table class="question-table">
+        <thead><tr>
+          <th class="status-col">採用</th>
+          <th class="status-col">無効化</th>
+          <th class="question-col">問題文</th>
+          ${choiceHeaders()}
+          <th class="similar-col">類似候補</th>
+          <th class="action-col">保存</th>
+        </tr></thead>
+        <tbody>${filtered.map(questionRow).join('')}</tbody>
+      </table>
+    </div>
+  ` : '<div class="empty">条件に一致するお題はありません。</div>';
+  target.querySelectorAll('[data-save]').forEach((button) => button.addEventListener('click', () => saveQuestion(button.dataset.save)));
+  target.querySelectorAll('input,textarea').forEach((control) => control.addEventListener('input', () => markDirty(control.closest('[data-catalog]'))));
+  target.querySelectorAll('[data-status]').forEach((control) => control.addEventListener('change', () => {
+    const row = control.closest('[data-catalog]');
+    row.dataset.statusRow = control.value;
+    markDirty(row);
+  }));
+  bindComparisonButtons(target);
+  updateBulkButton();
+}
+
+function questionRow(item) {
+  const id = String(item.id);
+  const disabled = item.status === 'disabled';
+  const matches = topMatches(id);
+  return `
+    <tr data-catalog="${attr(id)}" data-status-row="${disabled ? 'disabled' : 'approved'}">
+      <td class="status-col"><label class="status-choice"><input type="radio" name="status-${attr(id)}" data-status value="approved" ${disabled ? '' : 'checked'}><span>採用</span></label></td>
+      <td class="status-col"><label class="status-choice disabled"><input type="radio" name="status-${attr(id)}" data-status value="disabled" ${disabled ? 'checked' : ''}><span>無効</span></label></td>
+      <td>
+        <textarea class="sheet-input sheet-title" data-field="title" maxlength="180">${html(item.title)}</textarea>
+        <div class="meta">
+          <span class="pill ${item.sourceKind === 'custom' ? 'info' : ''}">${item.sourceKind === 'custom' ? '採用した自作' : '標準のお題'}</span>
+          <span class="pill">${html(id)}</span>
+          ${item.reportCount ? `<span class="pill critical">通報${item.reportCount}件・即時非公開</span>` : ''}
+        </div>
+      </td>
+      ${choiceCells(item)}
+      <td>${similarityCell(id, matches)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="button compact" data-save="${attr(id)}">この行を保存</button>
+          <span class="dirty-mark">未保存</span>
+        </div>
+      </td>
+    </tr>
+    ${comparisonRow(id, item, matches)}
+  `;
+}
+
+function choiceHeaders() {
+  return [1, 2, 3, 4, 5].map((number) => `<th class="choice-col">選択肢${number}</th>`).join('');
+}
+
+function choiceCells(item) {
+  return (item.choices || []).slice(0, 5).map((choice, index) => `
+    <td><input class="sheet-input" data-choice="${index}" maxlength="60" value="${attr(choice)}"></td>
+  `).join('');
+}
+
+function similarityCell(id, matches) {
+  if (!matches.length) return '<span class="meta">なし</span>';
+  const first = matches[0];
+  return `
+    <span class="pill similar">類似候補 ${Math.round(first.score * 100)}%</span>
+    <div class="meta">${html(first.title)}</div>
+    <button class="button compact secondary" data-compare="${attr(id)}">並べて比較</button>
+  `;
+}
+
+function comparisonRow(id, item, matches) {
+  if (!matches.length) return '';
+  return `
+    <tr class="compare-row" data-comparison="${attr(id)}" hidden>
+      <td colspan="10">
+        <div class="comparison-grid">
+          ${comparisonCard('この問題', item)}
+          ${matches.map((match, index) => comparisonCard(`類似候補${index + 1}（${Math.round(match.score * 100)}%）`, match)).join('')}
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+function comparisonCard(label, item) {
+  return `
+    <div class="comparison-card">
+      <span class="pill similar">${label}</span>
+      <strong>${html(item.title)}</strong>
+      <ol>${(item.choices || []).map((choice) => `<li>${html(choice)}</li>`).join('')}</ol>
+    </div>
+  `;
+}
+
+function bindComparisonButtons(container) {
+  container.querySelectorAll('[data-compare]').forEach((button) => button.addEventListener('click', () => {
+    const comparison = container.querySelector(`[data-comparison="${CSS.escape(button.dataset.compare)}"]`);
+    if (!comparison) return;
+    comparison.hidden = !comparison.hidden;
+    button.textContent = comparison.hidden ? '並べて比較' : '比較を閉じる';
+  }));
+}
+
+function topMatches(id) {
+  return (similarityMatches.get(String(id)) || []).slice(0, 3);
 }
 
 async function review(id, decision) {
-  const card = document.querySelector(`[data-submission="${CSS.escape(id)}"]`);
-  if (!card) return;
+  const row = document.querySelector(`[data-submission="${CSS.escape(id)}"]`);
+  if (!row) return;
   if (decision === 'rejected' && !confirm('この掲載候補を却下しますか？')) return;
-  if (decision === 'approved' && !confirm('編集内容と掲載先を確認し、共通お題ライブラリへ追加しますか？')) return;
+  if (decision === 'approved' && !confirm('編集内容を確認し、通常版・LIVE版の共通お題として採用しますか？')) return;
   try {
-    const body = decision === 'approved' ? readCard(card) : {
+    const body = decision === 'approved' ? readQuestionRow(row) : {
       decision,
-      reviewNote: card.querySelector('[data-field="reviewNote"]').value.trim(),
+      reviewNote: row.querySelector('[data-field="reviewNote"]').value.trim(),
     };
     body.decision = decision;
     await adminApi(`/api/questions/admin/submissions/${id}/review`, { method: 'POST', body: JSON.stringify(body) });
@@ -141,72 +259,97 @@ async function review(id, decision) {
   }
 }
 
-async function saveQuestion(id) {
-  const card = document.querySelector(`[data-catalog="${CSS.escape(id)}"]`);
+async function saveQuestion(id, { reload = true } = {}) {
+  const row = document.querySelector(`[data-catalog="${CSS.escape(id)}"]`);
   const current = allQuestions.find((item) => String(item.id) === String(id));
-  if (!card || !current) return;
-  try {
-    const body = {
-      ...readCard(card),
-      sourceKind: current.sourceKind,
-      sourceRef: current.sourceRef || current.id,
-      status: card.querySelector('[data-field="disabled"]').checked ? 'disabled' : 'approved',
-    };
-    await adminApi(`/api/questions/admin/catalog/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
-    showStatus(`「${body.title}」の編集内容と掲載先を保存しました。`);
+  if (!row || !current) return;
+  const body = {
+    ...readQuestionRow(row),
+    sourceKind: current.sourceKind,
+    sourceRef: current.sourceRef || current.id,
+    status: row.querySelector('[data-status]:checked')?.value === 'disabled' ? 'disabled' : 'approved',
+  };
+  await adminApi(`/api/questions/admin/catalog/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
+  dirtyQuestionIds.delete(String(id));
+  if (reload) {
+    showStatus(`「${body.title}」を${body.status === 'approved' ? '採用' : '無効化'}として保存しました。`);
     await loadOverview();
-  } catch (error) {
-    alert(humanError(error));
   }
 }
 
-function readCard(card) {
+async function saveAllQuestions() {
+  const ids = [...dirtyQuestionIds];
+  if (!ids.length) return;
+  const button = document.getElementById('saveAllQuestions');
+  button.disabled = true;
+  button.textContent = `保存中 0/${ids.length}`;
+  try {
+    for (let index = 0; index < ids.length; index += 1) {
+      await saveQuestion(ids[index], { reload: false });
+      button.textContent = `保存中 ${index + 1}/${ids.length}`;
+    }
+    showStatus(`${ids.length}問の変更を保存しました。`);
+    await loadOverview();
+  } catch (error) {
+    showStatus(humanError(error), true);
+    updateBulkButton();
+  }
+}
+
+function readQuestionRow(row) {
   return {
-    title: card.querySelector('[data-field="title"]').value.trim(),
-    choices: Array.from(card.querySelectorAll('[data-choice]')).map((input) => input.value.trim()),
-    category: card.querySelector('[data-field="category"]')?.value.trim() || 'みんなのお題',
-    reviewNote: card.querySelector('[data-field="reviewNote"]')?.value.trim() || '',
-    useChallenge: card.querySelector('[data-field="useChallenge"]')?.checked === true,
-    useLive: card.querySelector('[data-field="useLive"]')?.checked === true,
-    targetFriend: card.querySelector('[data-field="targetFriend"]')?.checked === true,
-    targetFamily: card.querySelector('[data-field="targetFamily"]')?.checked === true,
+    title: row.querySelector('[data-field="title"]').value.trim(),
+    choices: Array.from(row.querySelectorAll('[data-choice]')).map((input) => input.value.trim()),
+    category: 'みんなのお題',
+    reviewNote: row.querySelector('[data-field="reviewNote"]')?.value.trim() || '',
   };
 }
 
+function markDirty(row) {
+  if (!row) return;
+  dirtyQuestionIds.add(String(row.dataset.catalog));
+  row.classList.add('dirty');
+  updateBulkButton();
+}
+
+function updateBulkButton() {
+  const button = document.getElementById('saveAllQuestions');
+  button.disabled = dirtyQuestionIds.size === 0;
+  button.textContent = dirtyQuestionIds.size ? `変更をまとめて保存（${dirtyQuestionIds.size}問）` : '変更をまとめて保存';
+}
+
 function buildStaticQuestions() {
-  const love = (window.ALL_CARDS || []).map((item) => ({
-    ...item,
-    id: `LOVE${item.id}`,
-    category: '共通のお題',
-    sourceKind: 'static',
-    sourceRef: `LOVE${item.id}`,
-    sourceLabel: '共通のお題',
-    useChallenge: true,
-    useLive: true,
-    targetFriend: false,
-    targetFamily: false,
-    status: 'approved',
-  }));
-  const friend = (window.FRIEND_CARDS || []).map((item) => ({
-    ...item, sourceKind: 'static', sourceRef: item.id, sourceLabel: '友達向け',
-    useChallenge: true, useLive: true, targetFriend: true, targetFamily: false, status: 'approved',
-  }));
-  const family = (window.FAMILY_CARDS || []).map((item) => ({
-    ...item, sourceKind: 'static', sourceRef: item.id, sourceLabel: '家族向け',
-    useChallenge: true, useLive: true, targetFriend: false, targetFamily: true, status: 'approved',
-  }));
-  return [...love, ...friend, ...family];
+  const common = [
+    ...(window.ALL_CARDS || []).map((item) => ({ ...item, id: `LOVE${item.id}` })),
+    ...(window.FRIEND_CARDS || []),
+    ...(window.FAMILY_CARDS || []),
+  ];
+  const seen = new Set();
+  return common.flatMap((item) => {
+    const id = String(item.id);
+    if (!id || seen.has(id)) return [];
+    seen.add(id);
+    return [{
+      ...item,
+      id,
+      category: 'みんなのお題',
+      sourceKind: 'static',
+      sourceRef: id,
+      sourceLabel: '標準のお題',
+      status: 'approved',
+    }];
+  });
 }
 
 function mergeQuestionOverview(base, catalog) {
   const overrides = new Map((catalog || []).map((item) => [String(item.id), item]));
   const result = base.map((item) => {
     const override = overrides.get(String(item.id));
-    return override ? { ...item, ...override, sourceLabel: item.sourceLabel } : item;
+    return override ? { ...item, ...override, sourceLabel: '標準のお題' } : item;
   });
   const baseIds = new Set(base.map((item) => String(item.id)));
   for (const item of catalog || []) {
-    if (!baseIds.has(String(item.id))) result.push({ ...item, sourceLabel: '承認済み自作' });
+    if (!baseIds.has(String(item.id))) result.push({ ...item, sourceLabel: '採用した自作' });
   }
   return result;
 }
@@ -234,7 +377,7 @@ function humanError(error) {
     'admin-otp-invalid': '6桁の認証コードが違うか、有効時間を過ぎています。',
     'admin-session-required': '管理者認証を行ってください。',
     'admin-session-expired': '15分の管理セッションが切れました。もう一度認証してください。',
-    'admin-2fa-not-configured': '本番の管理者二要素認証が未設定です。CloudflareへLIVE_ADMIN_TOKEN・LIVE_ADMIN_TOTP_SECRET・LIVE_ADMIN_SESSION_SECRETを設定してください。',
+    'admin-2fa-not-configured': '本番の管理者二要素認証が未設定です。',
     'question-invalid': '問題文と5つの選択肢をすべて入力してください。',
     'question-personal-information-detected': '本名・学校名・SNS ID・電話番号・住所らしい内容が含まれています。',
     'submission-already-reviewed': 'このお題はすでに審査済みです。',
@@ -246,6 +389,10 @@ function apiError(message, status) {
   const error = new Error(message);
   error.status = status;
   return error;
+}
+
+function normalizeSearch(value) {
+  return String(value || '').normalize('NFKC').toLocaleLowerCase('ja').trim();
 }
 
 function formatDate(value) {

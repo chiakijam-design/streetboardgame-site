@@ -6,6 +6,59 @@ import { createLiveAdminSession, generateLiveAdminTotp } from '../../src/live/ad
 import { handleQuestionApi } from '../../src/questions/api.js';
 import { applyManagedQuestionCards } from '../../src/questions/catalog.js';
 import { scanQuestionSafety } from '../../src/questions/safety.js';
+import {
+  findSimilarQuestions,
+  sortQuestionsForOperations,
+} from '../../src/questions/similarity.js';
+
+test('採用を先にして問題文の日本語順へ並べ、似た問題と5択を検出する', () => {
+  const questions = [{
+    id: 'q3',
+    status: 'disabled',
+    title: 'あさ起きて最初にすることは？',
+    choices: ['水を飲む', 'スマホを見る', '顔を洗う', '二度寝', '着替える'],
+  }, {
+    id: 'q2',
+    status: 'approved',
+    title: 'きゅうじつに最初にしたいことは？',
+    choices: ['水を飲む', 'スマホを見る', '顔を洗う', '二度寝', '着替える'],
+  }, {
+    id: 'q1',
+    status: 'approved',
+    title: 'あさ起きて最初にすることは？',
+    choices: ['水を飲む', 'スマホを見る', '顔を洗う', 'もう一度寝る', '着替える'],
+  }];
+
+  assert.deepEqual(sortQuestionsForOperations(questions).map((item) => item.id), ['q1', 'q2', 'q3']);
+  const matches = findSimilarQuestions(questions);
+  assert.equal(matches.get('q1')[0].id, 'q3');
+  assert.ok(matches.get('q1')[0].score >= 0.58);
+});
+
+test('既存DBの旧シリーズ分類を採用・無効化の共通状態へ移行する', async () => {
+  const sqlite = new DatabaseSync(':memory:');
+  sqlite.exec(await readFile(new URL('../../migrations/0012_question_catalog_moderation.sql', import.meta.url), 'utf8'));
+  const insert = sqlite.prepare(`
+    INSERT INTO question_catalog
+      (question_id, source_kind, source_ref, title, category, choices_json, status,
+       use_challenge, use_live, target_friend, target_family, created_at, updated_at)
+    VALUES (?, 'static', ?, ?, ?, '["1","2","3","4","5"]', ?, ?, ?, ?, ?, 1, 1)
+  `);
+  insert.run('FQ001', 'FQ001', '採用問題', '友達向け', 'approved', 1, 0, 1, 0);
+  insert.run('FAM001', 'FAM001', '無効問題', '家族向け', 'disabled', 1, 1, 0, 1);
+
+  sqlite.exec(await readFile(new URL('../../migrations/0014_unify_question_catalog.sql', import.meta.url), 'utf8'));
+  const approved = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('FQ001');
+  const disabled = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('FAM001');
+  assert.deepEqual(
+    [approved.use_challenge, approved.use_live, approved.target_friend, approved.target_family, approved.category],
+    [1, 1, 0, 0, 'みんなのお題'],
+  );
+  assert.deepEqual(
+    [disabled.use_challenge, disabled.use_live, disabled.target_friend, disabled.target_family, disabled.category],
+    [0, 0, 0, 0, 'みんなのお題'],
+  );
+});
 
 test('個人情報らしい文字列と重点審査4分類を自動検知する', () => {
   const personal = scanQuestionSafety({
@@ -145,7 +198,7 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   assert.deepEqual(publicData.questions[0].choices, question.choices);
   assert.equal(publicData.questions[0].useChallenge, true);
   assert.equal(publicData.questions[0].useLive, true);
-  assert.equal(publicData.questions[0].targetFriend, true);
+  assert.equal(publicData.questions[0].targetFriend, false);
   assert.equal(publicData.questions[0].targetFamily, false);
 
   const updateResponse = await handleQuestionApi(jsonRequest(
@@ -166,8 +219,8 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   ), env, `/api/questions/admin/catalog/${approved.catalogId}`);
   assert.equal(updateResponse.status, 200);
   const updated = await updateResponse.json();
-  assert.equal(updated.question.useLive, false);
-  assert.equal(updated.question.targetFamily, true);
+  assert.equal(updated.question.useLive, true);
+  assert.equal(updated.question.targetFamily, false);
 
   const disabledStaticResponse = await handleQuestionApi(jsonRequest(
     '/api/questions/admin/catalog/FQ001',
@@ -204,6 +257,17 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   assert.equal(cardsAfterDisable.some((item) => item.id === approved.catalogId), true);
   assert.equal(cardsAfterDisable.find((item) => item.id === approved.catalogId).reportable, true);
   assert.equal(cardsAfterDisable.find((item) => item.id === approved.catalogId).managedQuestionId, approved.catalogId);
+  const liveCardsAfterDisable = applyManagedQuestionCards([{
+    id: 'FQ001',
+    title: question.title,
+    category: 'みんなのお題',
+    choices: question.choices,
+  }], catalogWithDisabled.questions, 'live');
+  assert.deepEqual(
+    liveCardsAfterDisable.map((item) => item.id),
+    cardsAfterDisable.map((item) => item.id),
+    '通常版とLIVE版は同じ採用済みお題を使う',
+  );
 
   const reportResponse = await handleQuestionApi(jsonRequest(
     `/api/questions/catalog/${approved.catalogId}/report`,

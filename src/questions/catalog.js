@@ -13,14 +13,13 @@ export async function loadManagedQuestionCards(baseCards, series, language = 'ja
 }
 
 export function applyManagedQuestionCards(baseCards, managedQuestions, series, language = 'ja') {
-  const enabledKey = series === 'live' ? 'useLive' : 'useChallenge';
   const rows = Array.isArray(managedQuestions) ? managedQuestions : [];
   const byId = new Map(rows.map((row) => [String(row.id), row]));
   const cards = [];
 
   for (const base of baseCards || []) {
     const row = byId.get(String(base.id));
-    if (row && (row.status !== 'approved' || row[enabledKey] !== true)) continue;
+    if (row && row.status !== 'approved') continue;
     cards.push(row ? {
       ...base,
       title: row.title,
@@ -34,7 +33,7 @@ export function applyManagedQuestionCards(baseCards, managedQuestions, series, l
   const baseIds = new Set((baseCards || []).map((card) => String(card.id)));
   for (const row of rows) {
     if (row.sourceKind !== 'custom' || row.status !== 'approved'
-      || row[enabledKey] !== true || (row.language || 'ja') !== language
+      || (row.language || 'ja') !== language
       || baseIds.has(String(row.id))) continue;
     if (!row.title || !Array.isArray(row.choices) || row.choices.length !== 5) continue;
     cards.push({
