@@ -170,6 +170,27 @@ test('トップ下部から挑戦モードの説明を読み、10問クイズ作
   await expect(page.locator('a[href="/love"]')).toHaveCount(0);
 });
 
+test('PCのトップページは横へ広がらず中央600px以内に収まる', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'PCの横長画面専用の確認');
+  await page.setViewportSize({ width: 1900, height: 1000 });
+  await page.goto('/');
+
+  const geometry = await page.locator('main').first().evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      left: rect.left,
+      right: rect.right,
+      width: rect.width,
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+    };
+  });
+  expect(geometry.width).toBeLessThanOrEqual(600);
+  expect(Math.abs(geometry.left - (geometry.viewportWidth - geometry.width) / 2)).toBeLessThanOrEqual(1);
+  expect(Math.abs(geometry.right - (geometry.viewportWidth + geometry.width) / 2)).toBeLessThanOrEqual(1);
+  expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+});
+
 test('共通お題を挑戦クイズと人気ライブラリで使える', async ({ page }) => {
   await page.goto('/challenge');
   const commonCard = await page.evaluate(() => ({

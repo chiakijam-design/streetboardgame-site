@@ -467,7 +467,17 @@ function Decor() {
 }
 
 function pageStyle() {
-  return { minHeight: '100dvh', background: theme.pink, color: theme.black, fontFamily: theme.body, position: 'relative', overflow: 'hidden' };
+  return {
+    width: '100%',
+    maxWidth: 600,
+    minHeight: '100dvh',
+    margin: '0 auto',
+    background: theme.pink,
+    color: theme.black,
+    fontFamily: theme.body,
+    position: 'relative',
+    overflow: 'hidden',
+  };
 }
 
 function contentWrap() {
