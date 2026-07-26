@@ -698,12 +698,10 @@ function libraryView() {
         : 'まだ集計がないため、おすすめのお題を表示しています。'}</p>
       <div class="challenge-library" data-testid="question-library">
         ${cards.map((card, index) => {
-          const stats = played.get(card.id);
           return `<article class="challenge-library-card">
             <div><span>${index + 1}</span><small>${escapeHtml(card.category)}</small></div>
             <h2>${escapeHtml(card.title)}</h2>
             <p>${card.choices.map(escapeHtml).join(' ／ ')}</p>
-            <strong>${hasStats ? `${Number(stats?.playCount || 0)}回プレイ` : 'おすすめ'}</strong>
             <a class="challenge-secondary" href="/challenge?question=${encodeURIComponent(card.id)}">このお題を入れて作る</a>
           </article>`;
         }).join('')}

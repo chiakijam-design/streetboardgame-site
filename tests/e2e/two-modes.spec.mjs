@@ -521,9 +521,24 @@ test('途中保存から再開し、人気のお題を指定してクイズ作�
   await page.getByRole('button', { name: '途中から再開' }).click();
   await expect(page.locator('.challenge-q-number')).toHaveText('Q2/10');
 
+  await page.route('**/api/challenge/library', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      questions: [{
+        id: 'Q045',
+        title: '暇つぶしで開くのは',
+        category: '休日・遊び',
+        choices: ['SNS', '動画アプリ', '漫画アプリ', 'ゲーム', 'ニュース'],
+        playCount: 12,
+        lastPlayedAt: Date.now(),
+      }],
+    }),
+  }));
   await page.goto('/challenge/library');
   await expect(page.getByRole('heading', { name: '人気のお題ライブラリ' })).toBeVisible();
   await expect(page.getByTestId('question-library').locator('.challenge-library-card')).toHaveCount(30);
+  await expect(page.getByTestId('question-library')).not.toContainText('回プレイ');
   await page.getByRole('link', { name: 'このお題を入れて作る' }).first().click();
   await expect(page.getByText('選んだお題を必ず入れます')).toBeVisible();
 });
