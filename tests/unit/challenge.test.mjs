@@ -12,6 +12,8 @@ import {
 import {
   mergeChallengeCards,
   pickChallengeCards,
+  questionSelectionWeight,
+  questionSkipRate,
 } from '../../src/challenge/data.js';
 
 class MemoryKV {
@@ -74,8 +76,41 @@ test('共通お題データは題名を正規化して重複を除ける', () =>
   assert.equal(pickChallengeCards(merged, 2, () => 0).length, 2);
 });
 
+test('スキップ率が低い問題ほど候補選出の重みが高くなる', () => {
+  const oftenSkipped = {
+    id: 'Q-SKIP',
+    title: 'よくスキップされる',
+    choices: ['1', '2', '3', '4', '5'],
+    selectionShownCount: 20,
+    selectionSkipCount: 16,
+  };
+  const rarelySkipped = {
+    id: 'Q-KEEP',
+    title: 'ほとんどスキップされない',
+    choices: ['1', '2', '3', '4', '5'],
+    selectionShownCount: 20,
+    selectionSkipCount: 1,
+  };
+  const newQuestion = {
+    id: 'Q-NEW',
+    title: '新しい問題',
+    choices: ['1', '2', '3', '4', '5'],
+  };
+
+  assert.ok(questionSkipRate(rarelySkipped) < questionSkipRate(oftenSkipped));
+  assert.ok(questionSelectionWeight(rarelySkipped) > questionSelectionWeight(oftenSkipped));
+  assert.ok(questionSelectionWeight(newQuestion) > questionSelectionWeight(oftenSkipped));
+  assert.equal(
+    pickChallengeCards([oftenSkipped, rarelySkipped, newQuestion], 1, () => 0.2)[0].id,
+    'Q-KEEP',
+  );
+});
+
 test('保留候補は非公開のまま、採用後は通常版・LIVE版の共通お題へ追加できる', async () => {
-  const { applyManagedQuestionCards } = await import('../../src/questions/catalog.js');
+  const {
+    applyManagedQuestionCards,
+    applyQuestionSelectionStats,
+  } = await import('../../src/questions/catalog.js');
   const managed = [{
     id: 'HLD001',
     sourceKind: 'candidate',
@@ -90,6 +125,21 @@ test('保留候補は非公開のまま、採用後は通常版・LIVE版の共�
   assert.equal(approved.length, 1);
   assert.equal(approved[0].sourceKind, 'candidate');
   assert.equal(approved[0].reportable, false);
+  const withStats = applyQuestionSelectionStats(approved, [{
+    questionId: 'HLD001',
+    mode: 'challenge',
+    shownCount: 12,
+    skipCount: 3,
+  }, {
+    questionId: 'HLD001',
+    mode: 'live',
+    shownCount: 20,
+    skipCount: 9,
+  }], 'challenge');
+  assert.deepEqual(
+    [withStats[0].selectionShownCount, withStats[0].selectionSkipCount],
+    [12, 3],
+  );
 });
 
 test('答え合わせから3定型文を2種類ずつ生成し、自由入力は使わない', () => {

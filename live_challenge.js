@@ -17,6 +17,7 @@ import { CHECKOUT_TERMS } from './src/live/checkout-terms-config.js';
 import {
   changedQuestionCandidates,
   loadManagedQuestionCards,
+  recordQuestionSelectionEvent,
   reportManagedQuestion,
   submitQuestionCandidates,
 } from './src/questions/catalog.js';
@@ -107,11 +108,14 @@ let state = {
   checkoutEntitlementUrl: '',
   supportPanelOpen: false,
 };
+let questionCatalogReady = false;
+const trackedLiveBuilderQuestions = new WeakSet();
 
 render();
 if (state.view === 'create') loadPaidCreatorProfiles();
 loadManagedQuestionCards(allCards, 'live', isEnglish ? 'en' : 'ja').then((cards) => {
   allCards = cards;
+  questionCatalogReady = true;
   if (state.view === 'landing' || (quickStart && state.view === 'create')) {
     state.questions = initialQuestions(allCards);
     state.questionSubmissionConsent = true;
@@ -137,8 +141,19 @@ function render() {
   app.innerHTML = `${state.error ? `<div class="error" role="alert">${escapeHtml(errorText(state.error))}</div>` : ''}${content}`;
   localizeDom(app);
   bindEvents();
+  trackCurrentLiveBuilderQuestionShown();
   const qr = document.getElementById('live-challenge-qr');
   if (qr) QRCode.toCanvas(qr, joinUrl(), { width: 188, margin: 1, errorCorrectionLevel: 'M' }).catch(() => {});
+}
+
+function trackCurrentLiveBuilderQuestionShown() {
+  if (!questionCatalogReady || state.view !== 'create' || state.editingQuestion) return;
+  const question = state.questions[state.builderIndex];
+  if (!question || trackedLiveBuilderQuestions.has(question)) return;
+  const questionId = String(question.sourceId || '');
+  if (!questionId) return;
+  trackedLiveBuilderQuestions.add(question);
+  recordQuestionSelectionEvent(questionId, 'live', 'shown');
 }
 
 function landingView() {
@@ -765,12 +780,15 @@ function useLiveQuestion() {
   createGame();
 }
 
-function skipLiveQuestion() {
+function skipLiveQuestion(options = {}) {
   captureDraft();
   const usedIds = new Set(state.questions.map((question, index) => (
     index === state.builderIndex ? '' : String(question.sourceId || '')
   )).filter(Boolean));
   const currentSourceId = String(state.questions[state.builderIndex]?.sourceId || '');
+  if (options?.trackSkip !== false && currentSourceId) {
+    recordQuestionSelectionEvent(currentSourceId, 'live', 'skipped');
+  }
   const pool = allCards.filter((card) => !usedIds.has(String(card.id)) && String(card.id) !== currentSourceId);
   const replacement = pickChallengeCards(pool.length ? pool : allCards, 1)[0];
   if (!replacement) return showError('questions-incomplete');
@@ -931,7 +949,7 @@ async function reportQuestion(button) {
     await reportManagedQuestion(questionId, reason);
     allCards = allCards.filter((card) => String(card.managedQuestionId || card.id) !== questionId);
     alert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
-    skipLiveQuestion();
+    skipLiveQuestion({ trackSkip: false });
   } catch (error) {
     button.disabled = false;
     showError(error);

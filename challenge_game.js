@@ -4,6 +4,7 @@ import { questionPackBySlug, questionPackCards, questionPacks } from './src/chal
 import {
   changedQuestionCandidates,
   loadManagedQuestionCards,
+  recordQuestionSelectionEvent,
   reportManagedQuestion,
   submitQuestionCandidates,
 } from './src/questions/catalog.js';
@@ -85,6 +86,8 @@ let state = {
   editingOriginalCard: null,
 };
 let lastQuestionViewportKey = '';
+let questionCatalogReady = false;
+const trackedCreatorQuestions = new WeakSet();
 let resultFeedbackKey = '';
 let resultFeedbackObserver = null;
 let resultFeedbackTimer = 0;
@@ -147,6 +150,7 @@ function render() {
   app.innerHTML = body;
   localizeDom(app);
   bindEvents();
+  trackCurrentCreatorQuestionShown();
   if (state.mode === 'result' && state.result && !state.resultImageUrl
     && !state.resultImageBusy && !state.resultImageError) {
     prepareResultImage();
@@ -160,6 +164,16 @@ function render() {
     requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
   }
   lastQuestionViewportKey = questionViewportKey;
+}
+
+function trackCurrentCreatorQuestionShown() {
+  if (!questionCatalogReady || state.mode !== 'creator-edit' || state.editingQuestion) return;
+  const card = state.cards[state.questionIndex];
+  if (!card || trackedCreatorQuestions.has(card)) return;
+  const questionId = String(card.sourceId || '');
+  if (!questionId) return;
+  trackedCreatorQuestions.add(card);
+  recordQuestionSelectionEvent(questionId, 'challenge', 'shown');
 }
 
 function creatorEditView() {
@@ -934,8 +948,12 @@ function cancelCreatorQuestionEdit() {
   setState(next);
 }
 
-function skipCreatorQuestion() {
+function skipCreatorQuestion(options = {}) {
   captureCreatorConsent();
+  const currentQuestionId = String(state.cards[state.questionIndex]?.sourceId || '');
+  if (options?.trackSkip !== false && currentQuestionId) {
+    recordQuestionSelectionEvent(currentQuestionId, 'challenge', 'skipped');
+  }
   const usedIds = new Set(state.cards.map((card, index) => (
     index === state.questionIndex ? '' : String(card.sourceId || card.id)
   )).filter(Boolean));
@@ -1137,7 +1155,7 @@ async function reportQuestion(button) {
     await reportManagedQuestion(questionId, reason);
     allCards = allCards.filter((card) => String(card.managedQuestionId || card.id) !== questionId);
     alert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
-    skipCreatorQuestion();
+    skipCreatorQuestion({ trackSkip: false });
   } catch (error) {
     button.disabled = false;
     setState({ error: error.message || 'question-report-failed' });
@@ -1900,6 +1918,7 @@ function errorMessage(code) {
 
 async function bootChallenge() {
   allCards = await loadManagedQuestionCards(allCards, 'challenge', isEnglish ? 'en' : 'ja');
+  questionCatalogReady = true;
   if (quickStart && state.mode === 'creator-edit') {
     state.cards = pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard);
   }

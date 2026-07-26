@@ -185,6 +185,44 @@ test('トップで名前を入力するとライブ版の10問作成画面へ直
   await expect(page.getByLabel('配信者名（24文字まで）')).toHaveValue('トップ配信');
 });
 
+test('通常版とLIVE版は表示・スキップを問題選出統計へ記録する', async ({ page }) => {
+  const events = [];
+  await page.route('**/api/questions/catalog', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ questions: [], selectionStats: [] }),
+  }));
+  await page.route('**/api/questions/selection-events', async (route) => {
+    events.push(await route.request().postDataJSON());
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ recorded: true }),
+    });
+  });
+
+  await page.goto('/challenge');
+  await page.getByLabel('出題者の名前（12文字まで）').fill('統計確認');
+  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await expect.poll(() => events.filter((event) => event.mode === 'challenge'
+    && event.event === 'shown').length).toBe(1);
+  const challengeQuestionId = events.find((event) => event.mode === 'challenge'
+    && event.event === 'shown').questionId;
+  await page.getByRole('button', { name: /この問題をスキップ/ }).click();
+  await expect.poll(() => events.some((event) => event.mode === 'challenge'
+    && event.event === 'skipped' && event.questionId === challengeQuestionId)).toBe(true);
+
+  await page.goto('/live-challenge');
+  await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
+  await expect.poll(() => events.filter((event) => event.mode === 'live'
+    && event.event === 'shown').length).toBe(1);
+  const liveQuestionId = events.find((event) => event.mode === 'live'
+    && event.event === 'shown').questionId;
+  await page.getByRole('button', { name: /この問題をスキップ/ }).click();
+  await expect.poll(() => events.some((event) => event.mode === 'live'
+    && event.event === 'skipped' && event.questionId === liveQuestionId)).toBe(true);
+});
+
 test('トップ下部から挑戦モードの説明を読み、10問クイズ作成へ進める', async ({ page }) => {
   await page.goto('/');
   const guideLink = page.locator('nav[aria-label="ゲームシリーズの紹介ページ"] a[href="/challenge-guide"]');

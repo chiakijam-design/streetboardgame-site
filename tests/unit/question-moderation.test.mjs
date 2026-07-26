@@ -162,6 +162,30 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
     LIVE_ADMIN_TOTP_SECRET: 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
     LIVE_ADMIN_SESSION_SECRET: 'session-secret-which-is-longer-than-thirty-two-characters',
   };
+  const shownResponse = await handleQuestionApi(jsonRequest('/api/questions/selection-events', {
+    questionId: 'Q001',
+    mode: 'challenge',
+    event: 'shown',
+  }), env, '/api/questions/selection-events');
+  const skippedResponse = await handleQuestionApi(jsonRequest('/api/questions/selection-events', {
+    questionId: 'Q001',
+    mode: 'challenge',
+    event: 'skipped',
+  }), env, '/api/questions/selection-events');
+  assert.equal(shownResponse.status, 200, await shownResponse.clone().text());
+  assert.equal(skippedResponse.status, 200, await skippedResponse.clone().text());
+  const catalogResponse = await handleQuestionApi(
+    new Request('https://example.com/api/questions/catalog'),
+    env,
+    '/api/questions/catalog',
+  );
+  assert.equal(catalogResponse.status, 200);
+  assert.deepEqual((await catalogResponse.json()).selectionStats, [{
+    questionId: 'Q001',
+    mode: 'challenge',
+    shownCount: 1,
+    skipCount: 1,
+  }]);
   const question = {
     sourceQuestionId: 'Q001',
     title: '自作した問題はどれ？',

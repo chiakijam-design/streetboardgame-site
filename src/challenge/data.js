@@ -14,9 +14,33 @@ export function mergeChallengeCards(...cardGroups) {
 
 export function pickChallengeCards(cards, count = 10, random = Math.random) {
   const pool = (cards || []).slice();
-  for (let index = pool.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(random() * (index + 1));
-    [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
+  const selected = [];
+  const limit = Math.min(Math.max(Number(count) || 0, 0), pool.length);
+
+  while (selected.length < limit) {
+    const weights = pool.map(questionSelectionWeight);
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    let cursor = Math.max(0, Math.min(Number(random()) || 0, 0.9999999999999999)) * totalWeight;
+    let selectedIndex = weights.length - 1;
+    for (let index = 0; index < weights.length; index += 1) {
+      cursor -= weights[index];
+      if (cursor < 0) {
+        selectedIndex = index;
+        break;
+      }
+    }
+    selected.push(pool.splice(selectedIndex, 1)[0]);
   }
-  return pool.slice(0, count);
+  return selected;
+}
+
+export function questionSkipRate(card) {
+  const shownCount = Math.max(0, Number(card?.selectionShownCount) || 0);
+  const skipCount = Math.min(shownCount, Math.max(0, Number(card?.selectionSkipCount) || 0));
+  return (skipCount + 1) / (shownCount + 4);
+}
+
+export function questionSelectionWeight(card) {
+  const completionRate = 1 - questionSkipRate(card);
+  return Math.max(0.15, completionRate ** 2);
 }

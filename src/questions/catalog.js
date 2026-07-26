@@ -6,10 +6,50 @@ export async function loadManagedQuestionCards(baseCards, series, language = 'ja
     });
     if (!response.ok) return baseCards;
     const data = await response.json();
-    return applyManagedQuestionCards(baseCards, data.questions, series, language);
+    const cards = applyManagedQuestionCards(baseCards, data.questions, series, language);
+    return applyQuestionSelectionStats(cards, data.selectionStats, series);
   } catch (error) {
     return baseCards;
   }
+}
+
+let selectionEventQueue = Promise.resolve();
+
+export function recordQuestionSelectionEvent(questionId, mode, event) {
+  const payload = {
+    questionId: String(questionId || ''),
+    mode: mode === 'live' ? 'live' : 'challenge',
+    event: event === 'skipped' ? 'skipped' : 'shown',
+  };
+  if (!/^[A-Za-z0-9_-]{2,80}$/.test(payload.questionId)) return Promise.resolve(false);
+  selectionEventQueue = selectionEventQueue
+    .catch(() => false)
+    .then(async () => {
+      const response = await fetch('/api/questions/selection-events', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      });
+      return response.ok;
+    })
+    .catch(() => false);
+  return selectionEventQueue;
+}
+
+export function applyQuestionSelectionStats(cards, selectionStats, mode) {
+  const normalizedMode = mode === 'live' ? 'live' : 'challenge';
+  const stats = new Map((Array.isArray(selectionStats) ? selectionStats : [])
+    .filter((row) => row?.mode === normalizedMode)
+    .map((row) => [String(row.questionId), row]));
+  return (cards || []).map((card) => {
+    const row = stats.get(String(card.id));
+    return {
+      ...card,
+      selectionShownCount: Math.max(0, Number(row?.shownCount) || 0),
+      selectionSkipCount: Math.max(0, Number(row?.skipCount) || 0),
+    };
+  });
 }
 
 export function applyManagedQuestionCards(baseCards, managedQuestions, series, language = 'ja') {

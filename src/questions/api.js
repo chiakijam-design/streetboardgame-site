@@ -11,7 +11,7 @@ const REPORT_REASONS = new Set([
   'discrimination',
   'other',
 ]);
-let schemaReadyPromise = null;
+const schemaReadyByDatabase = new WeakMap();
 
 export async function handleQuestionApi(request, env, path) {
   if (request.method === 'OPTIONS') return json({});
@@ -21,7 +21,15 @@ export async function handleQuestionApi(request, env, path) {
     await ensureQuestionSchema(env);
 
     if (path === '/api/questions/catalog' && request.method === 'GET') {
-      return json({ questions: await publicCatalog(env) });
+      const [questions, selectionStats] = await Promise.all([
+        publicCatalog(env),
+        publicSelectionStats(env),
+      ]);
+      return json({ questions, selectionStats });
+    }
+
+    if (path === '/api/questions/selection-events' && request.method === 'POST') {
+      return await recordSelectionEvent(request, env);
     }
 
     if (path === '/api/questions/submissions' && request.method === 'POST') {
@@ -115,6 +123,55 @@ async function publicCatalog(env) {
     ORDER BY updated_at DESC
   `).all();
   return (result?.results || []).map(mapCatalogRow);
+}
+
+async function publicSelectionStats(env) {
+  const result = await env.REMOTE_DB.prepare(`
+    SELECT question_id, mode, shown_count, skip_count
+    FROM question_selection_stats
+    WHERE shown_count > 0 OR skip_count > 0
+  `).all();
+  return (result?.results || []).map((row) => ({
+    questionId: row.question_id,
+    mode: row.mode,
+    shownCount: Math.max(0, Number(row.shown_count) || 0),
+    skipCount: Math.max(0, Number(row.skip_count) || 0),
+  }));
+}
+
+async function recordSelectionEvent(request, env) {
+  const body = await readJson(request);
+  const questionId = sanitizeShortText(body.questionId, 80);
+  if (!/^[A-Za-z0-9_-]{2,80}$/.test(questionId)) {
+    throw apiError('question-selection-id-invalid', 400);
+  }
+  const mode = body.mode === 'live' ? 'live' : body.mode === 'challenge' ? 'challenge' : '';
+  if (!mode) throw apiError('question-selection-mode-invalid', 400);
+  const event = body.event === 'shown' ? 'shown' : body.event === 'skipped' ? 'skipped' : '';
+  if (!event) throw apiError('question-selection-event-invalid', 400);
+  const now = Date.now();
+  const shownIncrement = event === 'shown' ? 1 : 0;
+  const skipIncrement = event === 'skipped' ? 1 : 0;
+  await env.REMOTE_DB.prepare(`
+    INSERT INTO question_selection_stats
+      (question_id, mode, shown_count, skip_count, last_shown_at, last_skipped_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(question_id, mode) DO UPDATE SET
+      shown_count = shown_count + excluded.shown_count,
+      skip_count = skip_count + excluded.skip_count,
+      last_shown_at = CASE
+        WHEN excluded.last_shown_at IS NULL THEN last_shown_at ELSE excluded.last_shown_at END,
+      last_skipped_at = CASE
+        WHEN excluded.last_skipped_at IS NULL THEN last_skipped_at ELSE excluded.last_skipped_at END
+  `).bind(
+    questionId,
+    mode,
+    shownIncrement,
+    skipIncrement,
+    event === 'shown' ? now : null,
+    event === 'skipped' ? now : null,
+  ).run();
+  return json({ recorded: true });
 }
 
 async function adminOverview(env) {
@@ -387,6 +444,7 @@ async function requestIpHash(request) {
 }
 
 async function ensureQuestionSchema(env) {
+  let schemaReadyPromise = schemaReadyByDatabase.get(env.REMOTE_DB);
   if (!schemaReadyPromise) {
     schemaReadyPromise = env.REMOTE_DB.batch([
       env.REMOTE_DB.prepare(`CREATE TABLE IF NOT EXISTS question_catalog (
@@ -415,10 +473,17 @@ async function ensureQuestionSchema(env) {
       )`),
       env.REMOTE_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_question_reports_question
         ON question_reports (question_id, reported_at)`),
+      env.REMOTE_DB.prepare(`CREATE TABLE IF NOT EXISTS question_selection_stats (
+        question_id TEXT NOT NULL, mode TEXT NOT NULL,
+        shown_count INTEGER NOT NULL DEFAULT 0, skip_count INTEGER NOT NULL DEFAULT 0,
+        last_shown_at INTEGER, last_skipped_at INTEGER,
+        PRIMARY KEY (question_id, mode)
+      )`),
     ]).catch((error) => {
-      schemaReadyPromise = null;
+      schemaReadyByDatabase.delete(env.REMOTE_DB);
       throw error;
     });
+    schemaReadyByDatabase.set(env.REMOTE_DB, schemaReadyPromise);
   }
   return schemaReadyPromise;
 }
