@@ -353,29 +353,295 @@ function ChallengeGuide() {
 
 function AboutPage() {
   return (
-    <main style={pageStyle()}>
-      <Header title="About" label="STREETBOARDGAME" />
+    <main data-testid="about-page" style={pageStyle()}>
+      <Decor />
+      <header data-testid="about-hero" style={{
+        minHeight: 228,
+        padding: '48px 22px 28px',
+        position: 'relative',
+        overflow: 'hidden',
+        background: theme.black,
+        color: theme.white,
+        textAlign: 'center',
+      }}>
+        <a href="/" style={{
+          position: 'absolute',
+          top: 18,
+          left: 18,
+          zIndex: 3,
+          minHeight: 44,
+          display: 'inline-flex',
+          alignItems: 'center',
+          padding: '9px 14px',
+          border: `2px solid ${theme.black}`,
+          borderRadius: 999,
+          background: theme.white,
+          color: theme.black,
+          boxShadow: '3px 3px 0 rgba(91,212,232,.85)',
+          textDecoration: 'none',
+          fontSize: 14,
+          fontWeight: 900,
+        }}>
+          ← トップへ
+        </a>
+        <div aria-hidden="true" style={{
+          position: 'absolute',
+          left: -28,
+          bottom: -10,
+          width: 172,
+          opacity: .9,
+          filter: 'drop-shadow(0 5px 13px rgba(236,79,136,.38))',
+          pointerEvents: 'none',
+        }}>
+          <Girl variant="default" width="100%" height="auto" flip loading="eager" fetchPriority="high" />
+        </div>
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <div aria-hidden="true" style={{ marginBottom: 3, fontSize: 32 }}>💌</div>
+          <h1 style={{
+            margin: 0,
+            color: theme.white,
+            fontFamily: theme.display,
+            fontSize: 'clamp(34px,10vw,44px)',
+            lineHeight: 1.25,
+            textShadow: `4px 4px 0 ${theme.cyan}`,
+          }}>
+            About
+          </h1>
+          <p style={{
+            margin: '8px 0 0',
+            color: theme.white,
+            opacity: .78,
+            fontFamily: theme.caption,
+            fontSize: 10,
+            letterSpacing: '.2em',
+          }}>
+            STREET BOARD GAME とは
+          </p>
+        </div>
+      </header>
       <div style={contentWrap()}>
-        <Panel>
-          <h2 style={{ marginTop: 0 }}>当てるより、話すための10問。</h2>
-          <p style={paragraph()}>
-            「私のこと、ちゃんと分かってるよね？」は、自分の答えをみんなに予想してもらい、
-            答え合わせから次の会話を生む「わたし理解度診断」です。
-          </p>
-          <p style={paragraph()}>
-            通常版とLIVE版は同じお題ライブラリを使い、結果公開と理解度ボードへの掲載は自分で選べます。
-          </p>
-        </Panel>
-        <Panel>
-          <h2 id="contact-section" style={{ marginTop: 0 }}>お問い合わせ</h2>
-          <p style={paragraph()}>不具合・掲載内容・サービスについて、下のフォームから送信できます。</p>
-          <ContactForm />
-        </Panel>
+        <section aria-labelledby="about-concept-title">
+          <AboutSectionTitle id="about-concept-title">♡ コンセプト</AboutSectionTitle>
+          <AboutCard>
+            <span style={aboutLabelStyle(theme.cyan)}>わたし理解度診断</span>
+            <h2 style={{ margin: '13px 0 0', color: theme.pinkDeep, fontSize: 22, lineHeight: 1.5 }}>
+              私のこと、ちゃんと<br />分かってるよね？
+            </h2>
+            <p style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.65, fontWeight: 900 }}>
+              当てるより、話すための10問。
+            </p>
+            <p style={paragraph()}>
+              自分の答えをみんなに予想してもらい、答え合わせから次の会話を生むゲームです。
+              出題者が10問を作り、回答する人へ参加URLを送って遊びます。
+            </p>
+          </AboutCard>
+        </section>
+
+        <section aria-labelledby="about-promise-title">
+          <AboutSectionTitle id="about-promise-title">♡ 大切にしていること</AboutSectionTitle>
+          <AboutCard>
+            <div data-testid="about-brand-promise" style={{
+              padding: '13px 14px',
+              border: `2.5px solid ${theme.black}`,
+              borderRadius: 12,
+              background: theme.black,
+              color: theme.white,
+              boxShadow: `3px 3px 0 ${theme.cyan}`,
+              textAlign: 'center',
+              fontSize: 15,
+              lineHeight: 1.6,
+              fontWeight: 900,
+            }}>
+              相手を理解できるまで、何度でも挑戦できる
+            </div>
+            <div style={{ display: 'grid', gap: 9, marginTop: 15 }}>
+              <AboutValue
+                icon="↻"
+                title="もう一度、答えを予想できる"
+                text="点数が気になっても、結果を載せる前に同じ10問へ再挑戦できます。"
+              />
+              <AboutValue
+                icon="○"
+                title="結果公開は自分で選べる"
+                text="理解度ボードへの掲載は任意。掲載した結果は回答完了順で表示し、点数による順位づけもしません。"
+              />
+              <AboutValue
+                icon="✎"
+                title="答え合わせを会話の入口に"
+                text="結果画像と答え合わせレポートで、当たった理由や意外な違いを話せます。"
+              />
+            </div>
+          </AboutCard>
+        </section>
+
+        <section aria-labelledby="about-modes-title">
+          <AboutSectionTitle id="about-modes-title">♡ 2つの遊び方</AboutSectionTitle>
+          <nav aria-label="現在遊べる2つのモード" style={{ display: 'grid', gap: 10 }}>
+            <AboutMode
+              href="/challenge"
+              icon="📣"
+              label="通常版"
+              title="みんなに挑戦してもらう"
+              text="URLを送って、好きな時間に回答"
+              color={theme.cyan}
+            />
+            <AboutMode
+              href="/live-challenge"
+              icon="🎙️"
+              label="LIVE版"
+              title="ライブ配信でみんなに挑戦してもらう"
+              text="配信者と視聴者が同時回答し、1問ずつ答え合わせ"
+              color={theme.yellow}
+            />
+          </nav>
+        </section>
+
+        <a href="/product" style={{
+          minHeight: 64,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 11,
+          padding: '11px 14px',
+          border: `2.5px solid ${theme.black}`,
+          borderRadius: 13,
+          background: '#FFE4EE',
+          color: theme.black,
+          boxShadow: '3px 3px 0 #000',
+          textDecoration: 'none',
+        }}>
+          <span aria-hidden="true" style={{ fontSize: 27 }}>🎴</span>
+          <span style={{ flex: 1 }}>
+            <strong style={{ display: 'block', fontSize: 14 }}>カードで遊べる製品版もあります</strong>
+            <span style={{ display: 'block', marginTop: 3, fontSize: 12, lineHeight: 1.55, fontWeight: 700 }}>
+              スマホを置いて、その場でカードを囲む
+            </span>
+          </span>
+          <span aria-hidden="true">›</span>
+        </a>
+
+        <section id="contact-section" aria-labelledby="about-contact-title" style={{ scrollMarginTop: 20 }}>
+          <AboutSectionTitle id="about-contact-title">♡ お問い合わせ</AboutSectionTitle>
+          <AboutCard>
+            <p style={{ ...paragraph(), marginTop: 0 }}>
+              不具合・掲載内容・サービスについて、下のフォームから送信できます。
+            </p>
+            <ContactForm />
+          </AboutCard>
+        </section>
         <HomeLink />
       </div>
       <SiteFooter />
     </main>
   );
+}
+
+function AboutSectionTitle({ id, children }) {
+  return (
+    <h2 id={id} style={{
+      display: 'inline-flex',
+      margin: '0 0 11px',
+      padding: '6px 13px',
+      border: `2.5px solid ${theme.black}`,
+      borderRadius: 8,
+      background: theme.yellow,
+      color: theme.black,
+      boxShadow: '2px 2px 0 #000',
+      fontSize: 15,
+      lineHeight: 1.4,
+      transform: 'rotate(-1deg)',
+    }}>
+      {children}
+    </h2>
+  );
+}
+
+function AboutCard({ children }) {
+  return (
+    <div style={{
+      padding: 17,
+      border: `2.5px solid ${theme.black}`,
+      borderRadius: 16,
+      background: theme.white,
+      boxShadow: '4px 4px 0 #000',
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function AboutValue({ icon, title, text }) {
+  return (
+    <article style={{
+      display: 'grid',
+      gridTemplateColumns: '42px minmax(0,1fr)',
+      gap: 10,
+      alignItems: 'center',
+      padding: 10,
+      border: `2px solid ${theme.black}`,
+      borderRadius: 11,
+      background: theme.cream,
+    }}>
+      <span aria-hidden="true" style={{
+        width: 38,
+        height: 38,
+        display: 'grid',
+        placeItems: 'center',
+        border: `2px solid ${theme.black}`,
+        borderRadius: '50%',
+        background: theme.pink,
+        color: theme.white,
+        fontSize: 19,
+        fontWeight: 900,
+      }}>
+        {icon}
+      </span>
+      <div>
+        <h3 style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{title}</h3>
+        <p style={{ margin: '3px 0 0', color: '#6D5861', fontSize: 12, lineHeight: 1.65, fontWeight: 700 }}>{text}</p>
+      </div>
+    </article>
+  );
+}
+
+function AboutMode({ href, icon, label, title, text, color }) {
+  return (
+    <a href={href} style={{
+      minHeight: 92,
+      display: 'grid',
+      gridTemplateColumns: '48px minmax(0,1fr) 18px',
+      gap: 10,
+      alignItems: 'center',
+      padding: 13,
+      border: `2.5px solid ${theme.black}`,
+      borderRadius: 14,
+      background: theme.white,
+      color: theme.black,
+      boxShadow: '4px 4px 0 #000',
+      textDecoration: 'none',
+    }}>
+      <span aria-hidden="true" style={{ fontSize: 28, textAlign: 'center' }}>{icon}</span>
+      <span>
+        <span style={{ ...aboutLabelStyle(color), padding: '3px 9px', fontSize: 10 }}>{label}</span>
+        <strong style={{ display: 'block', marginTop: 6, fontSize: 14, lineHeight: 1.5 }}>{title}</strong>
+        <span style={{ display: 'block', marginTop: 3, color: '#6D5861', fontSize: 12, lineHeight: 1.55, fontWeight: 700 }}>{text}</span>
+      </span>
+      <span aria-hidden="true" style={{ fontSize: 20, fontWeight: 900 }}>›</span>
+    </a>
+  );
+}
+
+function aboutLabelStyle(background) {
+  return {
+    display: 'inline-flex',
+    padding: '5px 10px',
+    border: `2px solid ${theme.black}`,
+    borderRadius: 999,
+    background,
+    color: theme.black,
+    fontSize: 11,
+    lineHeight: 1.2,
+    fontWeight: 900,
+  };
 }
 
 function ContactForm() {

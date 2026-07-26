@@ -1,5 +1,21 @@
 import { expect, test } from './test.mjs';
 
+test('Aboutは旧来の立体カードデザインで現在の2モードと方針を案内する', async ({ page }) => {
+  await page.goto('/about');
+
+  await expect(page.getByTestId('about-hero')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'About' })).toBeVisible();
+  await expect(page.getByText('当てるより、話すための10問。')).toBeVisible();
+  await expect(page.getByTestId('about-brand-promise')).toContainText('何度でも挑戦できる');
+  await expect(page.getByText('結果公開は自分で選べる', { exact: true })).toBeVisible();
+  await expect(page.getByText('点数による順位づけもしません。')).toBeVisible();
+  await expect(page.getByRole('link', { name: /通常版.*みんなに挑戦してもらう/ })).toHaveAttribute('href', '/challenge');
+  await expect(page.getByRole('link', { name: /LIVE版.*ライブ配信でみんなに挑戦してもらう/ })).toHaveAttribute('href', '/live-challenge');
+  await expect(page.getByRole('link', { name: /カードで遊べる製品版/ })).toHaveAttribute('href', '/product');
+  await expect(page.getByTestId('about-page')).toHaveCSS('max-width', '600px');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+});
+
 test('お問い合わせフォームをページ内からFormspreeへ送信できる', async ({ page }) => {
   const requests = [];
   await page.route('https://formspree.io/f/xrevejjr', async (route) => {
