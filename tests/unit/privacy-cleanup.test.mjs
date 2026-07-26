@@ -6,7 +6,7 @@ import { PRIVACY_RETENTION, runPrivacyCleanup } from '../../src/privacy/cleanup.
 test('プライバシーポリシーは現在の公開範囲・子ども・第三者提供・統計情報を明記する', async () => {
   const document = await readFile(new URL('../../privacy.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    'ポリシーバージョン：1.5',
+    'ポリシーバージョン：1.6',
     '理解度ボードへ載せるかは自分で選べます',
     '掲載候補として送信しない問題は、この目的では公開しません',
     '個人情報または統計情報を広告事業者、データ販売事業者、AI開発事業者へ販売しません',

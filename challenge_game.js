@@ -571,7 +571,7 @@ function resultView() {
         <span class="challenge-section-label">OPTIONAL</span>
         <h2>理解度ボードに載せる？</h2>
         ${rankingRegistered
-          ? `<p class="challenge-ranking-registered">この結果を理解度ボードに載せました。現在${result.rank}位です。</p>`
+          ? '<p class="challenge-ranking-registered">この結果を理解度ボードに載せました。</p>'
           : '<p>載せなくても大丈夫です。もう一度予想して、載せたい結果だけを公開できます。</p>'}
         <button class="challenge-primary" data-action="retry-challenge">もう一度、答えを予想する</button>
         ${rankingRegistered
@@ -660,23 +660,23 @@ function rankingView() {
   return shell(
     'UNDERSTANDING BOARD',
     '理解度ボード',
-    '載せるかは自分で選べます。順位より、答え合わせのきっかけに。',
+    '載せるかは自分で選べます。みんなの答え合わせを、次の会話のきっかけに。',
     `<section class="challenge-panel" data-testid="friend-ranking">
       <div class="challenge-count"><b>${room.completedParticipants}</b>人が回答済み ／ 上限${room.maxParticipants}人</div>
-      ${state.ranking.length ? `<ol class="challenge-ranking-list">
+      ${state.ranking.length ? `<ul class="challenge-ranking-list">
         ${state.ranking.map((participant) => `
           <li>
-            <span class="challenge-rank">${participant.rank}位</span>
+            <span class="challenge-board-status">答え合わせ済み</span>
             <b>${escapeHtml(participant.name)}</b>
-            <strong>${participant.score}/10</strong>
+            <strong>${participant.score}/10問一致</strong>
           </li>
         `).join('')}
-      </ol>` : '<p class="challenge-empty">理解度ボードに載せた回答者はまだいません。</p>'}
+      </ul>` : '<p class="challenge-empty">理解度ボードに載せた回答者はまだいません。</p>'}
       <button class="challenge-primary" data-action="refresh-ranking">理解度ボードを更新</button>
       <a class="challenge-secondary" href="/challenge?room=${room.code}">このクイズに挑戦する</a>
       <button class="challenge-secondary" data-action="copy-url" data-copy-value="${escapeHtml(challengeUrl(room.code))}">挑戦用URLをコピー</button>
       <a class="challenge-secondary" href="/challenge">自分も作る</a>
-      <p class="challenge-note">掲載は任意です。同点は同じ順位として、表示名と得点だけを公開します。問題ごとの回答は主催者だけが確認できます。</p>
+      <p class="challenge-note">掲載は任意です。表示名と一致した問題数だけを公開します。問題ごとの回答は主催者だけが確認できます。</p>
     </section>`,
   );
 }
@@ -1637,9 +1637,7 @@ async function saveChallengeResultImage() {
 
 async function shareResult() {
   const tier = isEnglish ? getChallengeResultTierEnglish(state.result.score) : getChallengeResultTier(state.result.score);
-  const shareUrl = state.result.rank == null
-    ? `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`
-    : `${location.origin}${languagePrefix}/challenge/ranking?room=${state.result.code}`;
+  const shareUrl = `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`;
   const text = isEnglish
     ? `I guessed ${state.result.creatorName}’s answers!\nWhich ones matched? Check the answers and try the same 10 questions.\nMy title: “${tier.title}”\n#Watachan\n${shareUrl}`
     : `${state.result.creatorName}の「わたし理解度診断」で答えを予想してみた📒\nどこが当たった？答え合わせしてみて👇\n称号は「${tier.title}」\n結果公開は任意・もう一度予想もOK\n#わたちゃん\n${shareUrl}`;

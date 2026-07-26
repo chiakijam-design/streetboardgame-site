@@ -144,6 +144,12 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByTestId('challenge-ai-review')).toContainText('Overall understanding');
   await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');
   await expect(page.getByTestId('challenge-result-image')).toBeVisible();
+  await page.getByRole('button', { name: 'Add to Understanding Board (optional)' }).click();
+  await expect(page.getByText('This result is now on the Understanding Board.')).toBeVisible();
+  await page.getByRole('link', { name: 'View the Understanding Board' }).click();
+  await expect(page.getByTestId('friend-ranking')).toContainText('Answer reviewed');
+  await expect(page.getByTestId('friend-ranking')).toContainText('10/10 matched');
+  await expect(page.getByTestId('friend-ranking')).not.toContainText('#1');
 });
 
 test('英語の参加・LIVEエラーは日本語を残さない', async ({ page }) => {

@@ -408,7 +408,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カー
     await expect(participant.getByText('まずは、どこが当たったか答え合わせを見てみよう。')).toBeVisible();
     await expect(participant.getByRole('button', { name: /称号だけ/ })).toHaveAttribute('aria-pressed', 'true');
     await participant.getByRole('button', { name: '理解度ボードに載せる（任意）' }).click();
-    await expect(participant.getByText('この結果を理解度ボードに載せました。現在1位です。')).toBeVisible();
+    await expect(participant.getByText('この結果を理解度ボードに載せました。')).toBeVisible();
     const resultImage = participant.getByTestId('challenge-result-image');
     await expect(resultImage).toBeVisible();
     await expect(resultImage).toHaveAttribute('alt', /点数を隠した称号だけのカード/);
@@ -455,7 +455,9 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カー
     await expect(participant.getByRole('link', { name: '自分も作る' })).toHaveAttribute('href', '/challenge');
     await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
     await expect(participant.getByTestId('friend-ranking')).toContainText('ゆう');
-    await expect(participant.getByTestId('friend-ranking')).toContainText('9/10');
+    await expect(participant.getByTestId('friend-ranking')).toContainText('答え合わせ済み');
+    await expect(participant.getByTestId('friend-ranking')).toContainText('9/10問一致');
+    await expect(participant.getByTestId('friend-ranking')).not.toContainText('1位');
   } finally {
     await participantContext.close();
   }
@@ -487,10 +489,12 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
     }
     await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toBeVisible();
     await participant.getByRole('button', { name: '理解度ボードに載せる（任意）' }).click();
-    await expect(participant.getByText('この結果を理解度ボードに載せました。現在1位です。')).toBeVisible();
+    await expect(participant.getByText('この結果を理解度ボードに載せました。')).toBeVisible();
     await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
     await expect(participant.getByTestId('friend-ranking')).toContainText('再挑戦');
-    await expect(participant.getByTestId('friend-ranking')).toContainText('10/10');
+    await expect(participant.getByTestId('friend-ranking')).toContainText('答え合わせ済み');
+    await expect(participant.getByTestId('friend-ranking')).toContainText('10/10問一致');
+    await expect(participant.getByTestId('friend-ranking')).not.toContainText('1位');
   } finally {
     await participantContext.close();
   }

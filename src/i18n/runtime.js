@@ -29,7 +29,7 @@ const UI_TEXT = new Map(Object.entries({
   'あなた': 'You',
   'が10問に回答': ' answer 10 questions',
   '専用URL・QRコードを共有': 'Share your link or QR code',
-  '回答詳細を確認。希望者だけランキング公開': 'Review responses; leaderboard participation is optional',
+  '回答詳細を確認。希望者だけ理解度ボードへ掲載': 'Review responses; adding a result to the Understanding Board is optional',
   '出題者の名前（12文字まで）': 'Creator name (up to 12 characters)',
   '例：ちあき': 'e.g. Mia',
   '10問に答えてクイズを作る': 'Answer 10 questions and create your quiz',
@@ -98,9 +98,6 @@ const UI_TEXT = new Map(Object.entries({
   '結果をシェア': 'Share result',
   '画像を保存': 'Save image',
   '画像を保存しています…': 'Saving image…',
-  'ランキング': 'Leaderboard',
-  'ランキングに参加する': 'Join the leaderboard',
-  'ランキング不参加': 'Not on the leaderboard',
   '参加者': 'Players',
   '参加中': 'Playing',
   '参加上限': 'Player limit',
@@ -145,8 +142,6 @@ const UI_TEXT = new Map(Object.entries({
   'QRコードで送る': 'Share with a QR code',
   '理解度ボードを見る': 'View the Understanding Board',
   '理解度ボードのURLをコピー': 'Copy Understanding Board link',
-  'フレンドランキングを見る': 'View leaderboard',
-  'ランキングURLをコピー': 'Copy leaderboard link',
   '回答状況を更新': 'Refresh responses',
   '主催者用URLは回答内容を見られる秘密URLです。この端末へ保存され、30日後に無効になります。第三者へ送らないでください。': 'Your host link is private and can view player responses. It is saved on this device, expires after 30 days, and must not be shared.',
   '参加者の回答': 'Player responses',
@@ -180,20 +175,14 @@ const UI_TEXT = new Map(Object.entries({
   'もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。': 'Guessing again replaces this attempt. If it is already listed, it will be removed from the Understanding Board until you choose to add a new result.',
   '「どこが当たった？」をシェア': 'Share “Which answers matched?”',
   '理解度ボード': 'Understanding Board',
-  '載せるかは自分で選べます。順位より、答え合わせのきっかけに。': 'Adding a result is your choice. Use the board to start an answer-review conversation, not just to compare ranks.',
+  '載せるかは自分で選べます。みんなの答え合わせを、次の会話のきっかけに。': 'Adding a result is your choice. Let everyone’s answer review start the next conversation.',
+  '答え合わせ済み': 'Answer reviewed',
+  'この結果を理解度ボードに載せました。': 'This result is now on the Understanding Board.',
   '理解度ボードに載せた回答者はまだいません。': 'No one has added a result to the Understanding Board yet.',
   '理解度ボードを更新': 'Refresh Understanding Board',
-  '掲載は任意です。同点は同じ順位として、表示名と得点だけを公開します。問題ごとの回答は主催者だけが確認できます。': 'Listing is optional. Ties share a rank, and only display names and scores are public. Individual answers are visible only to the host.',
+  '掲載は任意です。表示名と一致した問題数だけを公開します。問題ごとの回答は主催者だけが確認できます。': 'Listing is optional. Only display names and the number of matching answers are public. Individual answers are visible only to the host.',
   '結果を理解度ボードへ載せられませんでした。': 'This result could not be added to the Understanding Board.',
-  '点数は回答後すぐにはランキングへ登録されません。結果を見てから、登録するか、同じ10問へもう一度挑戦するかを選べます。': 'Your score is not added to the leaderboard automatically. After seeing your result, choose whether to publish it or try the same 10 questions again.',
   '回答内容は答え合わせと主催者の回答確認に使用されます。本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。': 'Your answers are used for scoring and can be reviewed by the host. Do not enter your full name, school, or other identifying information. Progress is saved on this device.',
-  '今回の点数はまだフレンドランキングに登録されていません。': 'This score has not been added to the leaderboard.',
-  'この点数をどうする？': 'What would you like to do with this score?',
-  '今は登録しなくても大丈夫です。何度でも挑戦して、登録したい点数だけ公開できます。': 'You do not have to publish this score. Try again as often as you like and publish only the score you want to share.',
-  'もう一度同じ10問にチャレンジ': 'Try the same 10 questions again',
-  'この点数をフレンドランキングに登録': 'Add this score to the leaderboard',
-  '再挑戦すると今回の回答は上書きされます。登録済みの場合は、現在のランキング登録もいったん取り消されます。': 'Trying again replaces this attempt. If this score is already published, its leaderboard entry will be removed until you publish a new score.',
-  '再挑戦すると、現在のランキング登録はいったん取り消されます。続けますか？': 'Trying again will remove your current leaderboard entry. Continue?',
   '掲載候補のお題を運営へ送信しています。': 'Sending eligible questions to the team for review.',
   '掲載候補の送信に同意しましたが、自作・編集したお題がないため送信対象はありませんでした。': 'You agreed to submit questions, but there were no new or edited questions to review.',
   'クイズは作成できましたが、掲載候補のお題は通信エラーで送信できませんでした。': 'Your quiz was created, but the candidate questions could not be submitted because of a network error.',
@@ -276,7 +265,6 @@ const UI_TEXT = new Map(Object.entries({
   '参加情報を確認できません。もう一度URLを開いてください。': 'Your join information could not be verified. Open the join link again.',
   'この参加者の回答はすでに確定しています。': 'This player has already submitted their answers.',
   '10問の回答が完了していません。': 'Complete all 10 answers first.',
-  '点数をランキングへ登録できませんでした。': 'This score could not be added to the leaderboard.',
   '再挑戦を開始できませんでした。': 'The retry could not be started.',
   '主催者用URLを確認できません。': 'The host management link could not be verified.',
   '途中保存データが見つかりません。': 'No saved draft was found.',
@@ -335,6 +323,8 @@ function translatePattern(text) {
   if (match) return `${match[1]}/10 correct`;
   match = text.match(/^(\d+)\/10問を表示$/);
   if (match) return `Show ${match[1]}/10`;
+  match = text.match(/^(\d+)\/10問一致$/);
+  if (match) return `${match[1]}/10 matched`;
   match = text.match(/^(\d+)問正解$/);
   if (match) return `${match[1]} correct`;
   match = text.match(/^(\d+)人$/);
@@ -359,14 +349,6 @@ function translatePattern(text) {
   if (match) return `${match[1]} challenged you`;
   match = text.match(/^(\d+)人が回答済み ／ 上限(\d+)人$/);
   if (match) return `${match[1]} answered / limit ${match[2]}`;
-  match = text.match(/^(.+)さんはランキングに参加していません。$/);
-  if (match) return `${match[1]} did not join the leaderboard.`;
-  match = text.match(/^(.+)さんは、ランキング参加者の中で (\d+)位です。$/);
-  if (match) return `${match[1]} ranks #${match[2]} among leaderboard players.`;
-  match = text.match(/^この結果を理解度ボードに載せました。現在(\d+)位です。$/);
-  if (match) return `This result is on the Understanding Board at #${match[1]}.`;
-  match = text.match(/^この点数をフレンドランキングに登録しました。現在(\d+)位です。$/);
-  if (match) return `This score is now on the leaderboard at #${match[1]}.`;
   match = text.match(/^(.+)さんの結果画像$/);
   if (match) return `${match[1]}’s result image`;
   match = text.match(/^(.+)さんの(.+)さん理解度、(\d+)\/10問正解、称号は(.+)$/);
