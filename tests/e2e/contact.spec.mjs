@@ -60,3 +60,12 @@ test('送信先がエラーを返した場合は再送できる案内を表示�
   await expect(page.getByRole('alert')).toContainText('入力内容を確認してください。');
   await expect(page.getByRole('button', { name: '送信する' })).toBeEnabled();
 });
+
+test('特商法表示事項の開示請求は専用案内と入力ひな形を表示する', async ({ page }) => {
+  await page.goto('/?screen=about&to=contact&topic=commerce-disclosure');
+
+  await expect(page.getByTestId('commerce-disclosure-contact-notice')).toContainText('所在地・電話番号の開示');
+  await expect(page.getByLabel('お問い合わせ内容')).toHaveValue(/特定商取引法第11条に基づく表示事項/);
+  await expect(page.locator('input[name="_subject"]')).toHaveValue('streetboardgame.com 特定商取引法第11条表示事項の開示請求');
+  await expect(page.locator('input[name="topic"]')).toHaveValue('commerce-disclosure');
+});

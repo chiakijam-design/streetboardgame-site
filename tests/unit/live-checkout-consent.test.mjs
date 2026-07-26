@@ -39,13 +39,30 @@ test('特商法表記は個人の住所・電話番号を公開せず、請求�
   const document = await readFileAsync(new URL('../../legal.html', import.meta.url), 'utf8');
   const incidentDocument = await readFileAsync(new URL('../../docs/PRIVACY_INCIDENT_RESPONSE.md', import.meta.url), 'utf8');
   assert.equal(/〒\d{3}-\d{4}/.test(document), false);
+  assert.equal(document.includes('販売・役務提供事業者'), true);
+  assert.equal(document.includes('特定商取引法第11条ただし書に基づき'), true);
   assert.equal(document.includes('所在地の開示'), true);
-  assert.equal(document.includes('所在地は、消費者から請求があった場合'), true);
   assert.equal(/0\d{1,4}-\d{1,4}-\d{3,4}/.test(document), false);
   assert.equal(document.includes('href="tel:'), false);
   assert.equal(/0\d{1,4}-\d{1,4}-\d{3,4}/.test(incidentDocument), false);
-  assert.equal(document.includes('申込みの意思決定に先立って遅滞なく電子メール等で提供します'), true);
-  assert.equal(document.includes('<a href="/contact">お問い合わせフォーム</a>'), true);
+  assert.equal(document.includes('申込みの意思決定に先立って十分な時間的余裕を確保できるよう、遅滞なく電子メール等で提供します'), true);
+  assert.equal(document.includes('topic=commerce-disclosure'), true);
+});
+
+test('特商法表記は現行LIVE版の料金・提供・キャンセル条件を表示する', async () => {
+  const document = await readFileAsync(new URL('../../legal.html', import.meta.url), 'utf8');
+  for (const requiredText of [
+    '2026年7月26日',
+    '480円、980円、2,980円',
+    '180円、480円、980円、2,980円',
+    '応援機能は寄付・贈与ではなく',
+    'Stripeを利用したクレジットカード決済',
+    '2,160×2,700px',
+    '購入日から30日間',
+    '変換前の元画像を用いて生成',
+    '通信販売にはクーリング・オフ制度は適用されません',
+    '未成年者は、購入前に法定代理人（保護者等）の同意を得てください',
+  ]) assert.equal(document.includes(requiredText), true, requiredText);
 });
 
 test('チェック済みの現行利用規約だけを決済同意として受け付ける', () => {

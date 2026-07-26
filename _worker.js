@@ -368,8 +368,8 @@ async function handleRequest(request, env) {
 
     if (redirectMap[path]) {
       const target = new URL(redirectMap[path], url.origin);
-      if (path === '/contact' && url.searchParams.get('topic') === 'live-creator-registration') {
-        target.searchParams.set('topic', 'live-creator-registration');
+      if (path === '/contact' && ['live-creator-registration', 'commerce-disclosure'].includes(url.searchParams.get('topic'))) {
+        target.searchParams.set('topic', url.searchParams.get('topic'));
       }
       return Response.redirect(target.toString(), 301);
     }

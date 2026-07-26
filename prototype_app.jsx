@@ -933,12 +933,17 @@ function ContactForm() {
   const sent = status === 'sent';
   const contactTopic = new URLSearchParams(location.search).get('topic') || '';
   const isCreatorRegistration = contactTopic === 'live-creator-registration';
+  const isCommerceDisclosure = contactTopic === 'commerce-disclosure';
   const contactSubject = isCreatorRegistration
     ? 'streetboardgame.com LIVE配信者登録申込み'
-    : 'streetboardgame.com お問い合わせ';
+    : isCommerceDisclosure
+      ? 'streetboardgame.com 特定商取引法第11条表示事項の開示請求'
+      : 'streetboardgame.com お問い合わせ';
   const defaultMessage = isCreatorRegistration
     ? 'LIVE配信者登録を希望します。\n\n配信サービス：\n配信アカウント／チャンネルURL：\n利用予定：'
-    : '';
+    : isCommerceDisclosure
+      ? '特定商取引法第11条に基づく表示事項（事業者の所在地・電話番号）の開示を請求します。\n\n確認したい有料サービス：\n購入予定時期：'
+      : '';
 
   const submit = async (event) => {
     event.preventDefault();
@@ -986,6 +991,20 @@ function ContactForm() {
           fontWeight: 900,
         }}>
           LIVE配信者登録のお申し込みです。配信アカウントのURLと利用予定を追記して送信してください。
+        </p>
+      )}
+      {isCommerceDisclosure && (
+        <p data-testid="commerce-disclosure-contact-notice" style={{
+          margin: 0,
+          padding: 10,
+          border: `2px solid ${theme.black}`,
+          borderRadius: 10,
+          background: '#FFF9D7',
+          fontSize: 13,
+          lineHeight: 1.65,
+          fontWeight: 900,
+        }}>
+          購入を決める前に、事業者の所在地・電話番号の開示を請求するためのフォームです。確認したい有料サービスと購入予定時期を追記して送信してください。
         </p>
       )}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
