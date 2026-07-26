@@ -94,14 +94,8 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   await expect(page.getByText('当てるより、話すための10問。', { exact: true })).toHaveCount(0);
   await expect(page.getByText('通常でも配信でも使える理解度診断メーカー', { exact: true })).toHaveCount(0);
   await expect(page.getByText('相手を理解できるまで、何度でも挑戦できる', { exact: true })).toHaveCount(0);
-  const resultPreviews = page.getByTestId('top-result-card-previews');
-  await expect(resultPreviews.locator('[data-result-card-preview]')).toHaveCount(3);
-  await expect(resultPreviews).toContainText('点数入り結果カード');
-  await expect(resultPreviews).toContainText('点数を隠した称号カード');
-  await expect(resultPreviews).toContainText('答え合わせレポートカード');
-  await expect(resultPreviews).toContainText('再挑戦OK');
-  await expect(resultPreviews).toContainText('結果公開は自分で選べる');
-  await expect(resultPreviews).toContainText('答え合わせレポート付き');
+  await expect(page.getByTestId('top-result-card-previews')).toHaveCount(0);
+  await expect(page.getByText('作る前に、結果カードを見てみよう', { exact: true })).toHaveCount(0);
   await expect(page.getByTestId('top-mode-pillars')).toContainText('友達向け');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('URLを送って、好きな時間に回答');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('LIVE向け');

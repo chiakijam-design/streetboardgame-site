@@ -109,7 +109,6 @@ function TopPage() {
           あなたの「わたし理解度診断」を作って、<br />みんなに挑戦してもらおう
         </h2>
         <Rules />
-        <ResultCardPreviewShowcase />
         <form onSubmit={(event) => { event.preventDefault(); start('challenge'); }} style={{
           display: 'grid',
           gap: 10,
@@ -214,106 +213,6 @@ function Rules() {
         </li>
       ))}
     </ol>
-  );
-}
-
-function ResultCardPreviewShowcase() {
-  const previews = [
-    {
-      key: 'score',
-      label: '点数入り結果カード',
-      headline: '8/10問 正解',
-      body: ['今日の称号', 'わたし通'],
-      color: theme.yellow,
-    },
-    {
-      key: 'title',
-      label: '点数を隠した称号カード',
-      headline: '今日の称号',
-      body: ['わたし通', '点数は非表示'],
-      color: theme.pink,
-    },
-    {
-      key: 'report',
-      label: '答え合わせレポートカード',
-      headline: '答え合わせレポート',
-      body: ['分かっていたこと', '次に話したいこと'],
-      color: theme.cyan,
-    },
-  ];
-  return (
-    <section data-testid="top-result-card-previews" aria-labelledby="result-card-preview-title" style={{
-      marginTop: 16,
-      paddingTop: 14,
-      borderTop: `2px dashed ${theme.black}`,
-    }}>
-      <h3 id="result-card-preview-title" style={{ margin: '0 0 10px', textAlign: 'center', fontSize: 14 }}>
-        作る前に、結果カードを見てみよう
-      </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 7 }}>
-        {previews.map((preview) => (
-          <article key={preview.key} data-result-card-preview={preview.key} style={{
-            minWidth: 0,
-            minHeight: 174,
-            display: 'grid',
-            gridTemplateRows: 'auto 1fr',
-            overflow: 'hidden',
-            border: `2px solid ${theme.black}`,
-            borderRadius: 12,
-            background: theme.white,
-            boxShadow: '2px 2px 0 #1b1b1b',
-          }}>
-            <strong style={{
-              minHeight: 42,
-              display: 'grid',
-              placeItems: 'center',
-              padding: '5px 4px',
-              background: preview.color,
-              borderBottom: `2px solid ${theme.black}`,
-              fontSize: 10,
-              lineHeight: 1.35,
-              textAlign: 'center',
-            }}>{preview.label}</strong>
-            <div style={{
-              display: 'grid',
-              alignContent: 'center',
-              gap: 9,
-              padding: '10px 6px',
-              background: preview.key === 'report'
-                ? 'linear-gradient(#fff 0 24px,#bcecf5 25px 27px,#fff 28px 50px)'
-                : theme.black,
-              color: preview.key === 'report' ? theme.black : theme.white,
-              textAlign: 'center',
-            }}>
-              <b style={{ fontSize: preview.key === 'score' ? 18 : 11, lineHeight: 1.35 }}>{preview.headline}</b>
-              <span style={{ display: 'grid', fontSize: 10, lineHeight: 1.55, fontWeight: 900 }}>
-                {preview.body.map((line) => <span key={line}>{line}</span>)}
-              </span>
-            </div>
-          </article>
-        ))}
-      </div>
-      <ul style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        gap: 6,
-        margin: '12px 0 0',
-        padding: 0,
-        listStyle: 'none',
-      }}>
-        {['再挑戦OK', '結果公開は自分で選べる', '答え合わせレポート付き'].map((text) => (
-          <li key={text} style={{
-            padding: '5px 8px',
-            border: `2px solid ${theme.black}`,
-            borderRadius: 999,
-            background: theme.white,
-            fontSize: 10,
-            fontWeight: 900,
-          }}>{text}</li>
-        ))}
-      </ul>
-    </section>
   );
 }
 
