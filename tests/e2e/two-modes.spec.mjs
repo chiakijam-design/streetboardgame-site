@@ -511,10 +511,11 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       await expect(participant.locator('.challenge-q-number')).toHaveText(`Q${index + 2}/10`);
     }
     await participant.locator('[data-action="answer"]').first().click();
-    await expect(participant.getByRole('heading', { name: '9/10問 正解' })).toBeVisible();
+    await expect(participant.getByRole('heading', { name: '9/10問 正解' })).toHaveCount(1);
+    await expect(participant.locator('.challenge-hero')).toHaveCount(0);
     await expect(participant.locator('.challenge-result')).toHaveCount(10);
     await expect(participant.getByRole('heading', { name: 'どこが当たった？' })).toBeVisible();
-    await expect(participant.getByRole('heading', { name: '点数入り結果カード' })).toBeVisible();
+    await expect(participant.getByRole('heading', { name: '点数入り結果カード' })).toHaveCount(0);
     await expect(participant.getByRole('heading', { name: 'シェアするカードを選ぶ' })).toHaveCount(0);
     await expect(participant.locator('[data-action="select-result-card"]')).toHaveCount(0);
     await expect(participant.locator('input[name="board-comment"]')).toHaveCount(0);
@@ -528,6 +529,12 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       width: image.naturalWidth,
       height: image.naturalHeight,
     }))).toEqual({ width: 1080, height: 1350 });
+    expect(await participant.evaluate(() => {
+      const image = document.querySelector('[data-testid="challenge-result-image"]');
+      const answerCheck = document.querySelector('.challenge-results');
+      return Boolean(image && answerCheck
+        && (image.compareDocumentPosition(answerCheck) & Node.DOCUMENT_POSITION_FOLLOWING));
+    })).toBe(true);
     const resultShare = participant.getByTestId('challenge-result-share');
     await expect(resultShare).toHaveCSS('background-color', 'rgb(255, 227, 111)');
     await expect(resultShare.getByRole('heading', { name: 'この結果、友達に伝えよう' })).toBeVisible();
@@ -644,7 +651,7 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
     for (let index = 0; index < 10; index += 1) {
       await participant.locator('[data-action="answer"]').nth(1).click();
     }
-    await expect(participant.getByRole('heading', { name: '0/10問 正解' })).toBeVisible();
+    await expect(participant.getByRole('heading', { name: '0/10問 正解' })).toHaveCount(1);
     const firstAttemptBoardCheckbox = participant.getByTestId('challenge-result-share')
       .getByRole('checkbox', { name: /理解度ボードに載せる/ });
     await expect(firstAttemptBoardCheckbox).toBeChecked();
@@ -657,7 +664,7 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
     for (let index = 0; index < 10; index += 1) {
       await participant.locator('[data-action="answer"]').first().click();
     }
-    await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toBeVisible();
+    await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toHaveCount(1);
     const secondAttemptBoardCheckbox = participant.getByTestId('challenge-result-share')
       .getByRole('checkbox', { name: /理解度ボードに載せる/ });
     await expect(secondAttemptBoardCheckbox).toBeChecked();

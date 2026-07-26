@@ -136,11 +136,12 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   for (let index = 0; index < 10; index += 1) {
     await page.getByRole('button', { name: /^Guess One$/ }).click();
   }
-  await expect(page.getByRole('heading', { name: '10/10 correct' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '10/10 correct' })).toHaveCount(1);
+  await expect(page.locator('.challenge-hero')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Which answers matched?' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Answer Review Report' })).toBeVisible();
   await expect(page.getByTestId('challenge-ai-review').locator(':scope > div > p')).toHaveCount(4);
-  await expect(page.getByRole('heading', { name: 'Score result card' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Score result card' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Title only/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /With score/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Guess the answers again' })).toBeVisible();
@@ -148,10 +149,10 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByRole('button', { name: 'Add to Understanding Board (optional)' })).toHaveCount(0);
   await expect(page.locator('input[name="board-comment"]')).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: /comment/i })).toHaveCount(0);
-  await expect(page.getByText('Certified Mind Reader', { exact: true })).toBeVisible();
   await expect(page.getByTestId('challenge-ai-review')).toContainText('Overall understanding');
   await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');
   await expect(page.getByTestId('challenge-result-image')).toBeVisible();
+  await expect(page.getByTestId('challenge-result-image')).toHaveAttribute('alt', /Certified Mind Reader/);
   const resultShare = page.getByTestId('challenge-result-share');
   await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();
   const boardCheckbox = resultShare.getByRole('checkbox', { name: /Add to Understanding Board/ });

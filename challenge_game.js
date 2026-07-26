@@ -530,15 +530,20 @@ function resultView() {
   if (!result) return errorView();
   const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
   const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(result) : getChallengeReviewLines(result);
-  const rankingRegistered = result.participant.rankingParticipating === true;
-  const boardSummary = !rankingRegistered
-    ? 'まずは、どこが当たったか答え合わせを見てみよう。'
-    : '答え合わせのあとで、理解度ボードに載せた結果も確認できます。';
-  return shell(
-    'RESULT',
-    `${result.score}/10問 正解`,
-    boardSummary,
-    `<section class="challenge-panel">
+  return `
+    <section class="challenge-result-image-section" aria-labelledby="challenge-result-score-title">
+      <h1 id="challenge-result-score-title" class="challenge-result-visually-hidden">${result.score}/10問 正解</h1>
+      ${state.resultImageUrl
+        ? `<img class="challenge-result-image" data-testid="challenge-result-image"
+            src="${state.resultImageUrl}" width="1080" height="1350"
+            alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${result.score}/10問正解、称号は${escapeHtml(tier.title)}">`
+        : `<div class="challenge-result-image-loading" role="status">
+            ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
+          </div>`}
+      <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
+    </section>
+    ${state.error ? `<p class="challenge-error" role="alert">${escapeHtml(errorMessage(state.error))}</p>` : ''}
+    <section class="challenge-panel">
       <span class="challenge-section-label">ANSWER CHECK</span>
       <h2>どこが当たった？</h2>
       <div class="challenge-results" data-result-feedback-sequence>
@@ -559,19 +564,6 @@ function resultView() {
           ${reviewLines.map((line) => `<p>${escapeHtml(line)}</p>`).join('')}
         </div>
         <small>回答内容をもとに用意された文章から総評を作成しています。</small>
-      </section>
-      <section class="challenge-result-image-section" aria-labelledby="challenge-result-image-title">
-        <span class="challenge-section-label">RESULT CARD</span>
-        <h2 id="challenge-result-image-title">点数入り結果カード</h2>
-        <p class="challenge-result-title"><small>今日の称号</small><strong>${escapeHtml(tier.title)}</strong></p>
-        ${state.resultImageUrl
-          ? `<img class="challenge-result-image" data-testid="challenge-result-image"
-              src="${state.resultImageUrl}" width="1080" height="1350"
-              alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${result.score}/10問正解、称号は${escapeHtml(tier.title)}">`
-          : `<div class="challenge-result-image-loading" role="status">
-              ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
-            </div>`}
-        <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
       </section>
       <div class="challenge-result-share-wrap">
         <section class="challenge-result-share" data-testid="challenge-result-share"
@@ -615,8 +607,8 @@ function resultView() {
       <a class="challenge-secondary" href="/challenge">別の10問で自分も作る</a>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
       <a class="challenge-secondary" href="/">トップへ戻る</a>
-    </section>`,
-  );
+    </section>
+  `;
 }
 
 function resultFeedbackSequenceKey() {
