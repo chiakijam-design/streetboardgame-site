@@ -294,16 +294,93 @@ function AboutPage() {
         </Panel>
         <Panel>
           <h2 id="contact-section" style={{ marginTop: 0 }}>お問い合わせ</h2>
-          <p style={paragraph()}>不具合・掲載内容・サービスについてのお問い合わせは、専用フォームから受け付けています。</p>
-          <a href="https://docs.google.com/forms/d/e/1FAIpQLSeQeT5BD6t9JScWcPoBYPyQIEeQADfImSu1uGyJcSnJqnM8gA/viewform" rel="noopener noreferrer" target="_blank" style={{ ...primaryButton(), display: 'flex', textDecoration: 'none' }}>
-            お問い合わせフォーム
-          </a>
+          <p style={paragraph()}>不具合・掲載内容・サービスについて、下のフォームから送信できます。</p>
+          <ContactForm />
         </Panel>
         <HomeLink />
       </div>
       <SiteFooter />
     </main>
   );
+}
+
+function ContactForm() {
+  const [status, setStatus] = useState('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+  const sending = status === 'sending';
+  const sent = status === 'sent';
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (sending) return;
+    const form = event.currentTarget;
+    setStatus('sending');
+    setErrorMessage('');
+    try {
+      const response = await fetch('https://formspree.io/f/xrevejjr', {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: new FormData(form),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = Array.isArray(data?.errors) && data.errors[0]?.message
+          ? data.errors[0].message
+          : '送信に失敗しました。時間をおいてもう一度お試しください。';
+        throw new Error(message);
+      }
+      form.reset();
+      setStatus('sent');
+      if (typeof window.trackEvent === 'function') {
+        window.trackEvent('contact_form_submit', { result: 'success' });
+      }
+    } catch (error) {
+      setStatus('error');
+      setErrorMessage(error?.message || '通信エラーが発生しました。ネット接続を確認してください。');
+    }
+  };
+
+  return (
+    <form onSubmit={submit} style={{ display: 'grid', gap: 12, marginTop: 16 }}>
+      <input type="hidden" name="_subject" value="streetboardgame.com お問い合わせ" />
+      <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
+        <label htmlFor="contact-company">入力しないでください</label>
+        <input id="contact-company" name="_gotcha" tabIndex="-1" autoComplete="off" />
+      </div>
+      <label htmlFor="contact-name" style={contactLabelStyle()}>
+        お名前
+        <input id="contact-name" name="name" required maxLength={50} autoComplete="name" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending} />
+      </label>
+      <label htmlFor="contact-email" style={contactLabelStyle()}>
+        メールアドレス
+        <input id="contact-email" name="email" type="email" required maxLength={160} autoComplete="email" inputMode="email" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending} />
+      </label>
+      <label htmlFor="contact-message" style={contactLabelStyle()}>
+        お問い合わせ内容
+        <textarea id="contact-message" name="message" required maxLength={2000} rows={7} style={{ ...inputStyle(), minHeight: 150, marginTop: 5, resize: 'vertical', lineHeight: 1.6 }} disabled={sending} />
+      </label>
+      <p style={{ margin: 0, fontSize: 12, lineHeight: 1.65, fontWeight: 700 }}>
+        送信内容はお問い合わせ対応に利用します。詳しくは<a href="/privacy">プライバシーポリシー</a>をご確認ください。
+      </p>
+      {status === 'error' && (
+        <p role="alert" style={{ margin: 0, padding: 10, border: '2px solid #B81745', borderRadius: 10, background: '#FFE7EF', color: '#8E1237', fontSize: 13, lineHeight: 1.6, fontWeight: 900 }}>
+          {errorMessage}
+        </p>
+      )}
+      {sent && (
+        <p role="status" style={{ margin: 0, padding: 10, border: '2px solid #16805D', borderRadius: 10, background: '#DFF8EF', color: '#075940', fontSize: 13, lineHeight: 1.6, fontWeight: 900 }}>
+          送信しました。お問い合わせありがとうございます。
+        </p>
+      )}
+      <button type="submit" disabled={sending || sent} style={{ ...primaryButton(), opacity: sending ? .72 : 1 }}>
+        {sent ? '送信済み ✓' : sending ? '送信中…' : '送信する ✉'}
+      </button>
+    </form>
+  );
+}
+
+function contactLabelStyle() {
+  return { display: 'grid', fontSize: 14, lineHeight: 1.5, fontWeight: 900 };
 }
 
 function ProductPage() {
