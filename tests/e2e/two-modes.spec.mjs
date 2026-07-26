@@ -218,6 +218,12 @@ test('製品版はパッケージ風デザインで現在の通常版・LIVE版�
   await page.goto('/product');
   await expect(page.getByRole('heading', { name: '製品版もあります' })).toBeVisible();
   await expect(page.getByTestId('product-showcase')).toBeVisible();
+  await expect(page.getByTestId('product-package-photo')).toBeVisible();
+  await expect(page.getByRole('img', { name: 'ピンクの製品版カードゲームパッケージの実物写真' })).toHaveAttribute(
+    'src',
+    '/assets/product/board-game-package-photo.webp',
+  );
+  await expect(page.getByText('写真は製品版の実物パッケージです。Web版とは問題数・遊び方が異なります。')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Web版で盛り上がったら、製品版でもう一度' })).toBeVisible();
   await expect(page.getByText('54問入り', { exact: true })).toBeVisible();
   await expect(page.getByText('休み時間・放課後に', { exact: true })).toBeVisible();

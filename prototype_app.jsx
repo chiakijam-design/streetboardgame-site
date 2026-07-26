@@ -1013,109 +1013,48 @@ function ProductPage() {
           boxShadow: '5px 5px 0 #000',
         }}>
           <div style={{ padding: 15, background: theme.white, borderRadius: 15 }}>
-            <div aria-label="カードゲーム版のパッケージイメージ" style={{
+            <figure data-testid="product-package-photo" style={{
               width: '100%',
-              aspectRatio: '1 / 1',
-              minHeight: 270,
+              margin: 0,
               position: 'relative',
               overflow: 'hidden',
               border: `2.5px solid ${theme.black}`,
               borderRadius: 13,
-              background: `linear-gradient(145deg, ${theme.pink} 0%, ${theme.pinkDeep} 100%)`,
+              background: '#EEF5F8',
+              boxShadow: '0 8px 18px rgba(0,0,0,.12)',
             }}>
-              <div aria-hidden="true" style={{
+              <img
+                src={BOARD_GAME_PRODUCT.packageImage}
+                width="1280"
+                height="960"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                alt={BOARD_GAME_PRODUCT.packageImageAlt}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  aspectRatio: '4 / 3',
+                  objectFit: 'cover',
+                }}
+              />
+              <figcaption style={{
                 position: 'absolute',
-                inset: 0,
-                background: 'radial-gradient(circle at 14% 18%,rgba(255,255,255,.17) 0 22px,transparent 23px),radial-gradient(circle at 82% 78%,rgba(255,226,107,.2) 0 54px,transparent 55px)',
-              }} />
-              <span style={{
-                position: 'absolute',
-                top: 16,
-                left: 16,
-                zIndex: 3,
-                padding: '6px 13px',
+                left: 12,
+                bottom: 12,
+                padding: '6px 11px',
+                border: `2px solid ${theme.black}`,
                 borderRadius: 999,
-                background: theme.white,
-                color: theme.pinkDeep,
-                fontSize: 10,
-                fontWeight: 900,
-              }}>
-                わたし理解度診断
-              </span>
-              <span style={{
-                position: 'absolute',
-                top: 18,
-                right: 15,
-                zIndex: 3,
-                padding: '5px 8px',
-                borderRadius: 5,
-                background: theme.black,
-                color: theme.yellow,
-                fontFamily: theme.caption,
-                fontSize: 9,
-                letterSpacing: '.12em',
-                transform: 'rotate(2deg)',
-              }}>
-                54 QUESTIONS
-              </span>
-              <div style={{
-                position: 'absolute',
-                left: '2%',
-                bottom: '2%',
-                zIndex: 2,
-                width: '49%',
-                filter: 'drop-shadow(0 9px 13px rgba(0,0,0,.22))',
-              }}>
-                <Girl
-                  variant="full"
-                  width="100%"
-                  height="auto"
-                  loading="eager"
-                  fetchPriority="high"
-                  alt="製品版パッケージのメインキャラクター"
-                />
-              </div>
-              <div style={{
-                position: 'absolute',
-                top: '24%',
-                right: '5%',
-                zIndex: 4,
-                width: '54%',
-                textAlign: 'right',
-                color: theme.white,
-                fontFamily: theme.display,
-                fontSize: 'clamp(20px,6.7vw,32px)',
-                fontWeight: 900,
-                lineHeight: 1.28,
-                textShadow: `3px 3px 0 ${theme.cyan}`,
-              }}>
-                私のこと、<br />ちゃんと<br />分かってる<br />よね？
-              </div>
-              <div style={{
-                position: 'absolute',
-                right: '5%',
-                bottom: '5%',
-                zIndex: 5,
-                width: '35%',
-                maxWidth: 122,
-                aspectRatio: '1 / 1',
-                display: 'grid',
-                placeItems: 'center',
-                padding: 10,
-                borderRadius: '50%',
-                background: theme.yellow,
+                background: 'rgba(255,255,255,.94)',
                 color: theme.black,
-                border: `2.5px solid ${theme.black}`,
-                boxShadow: '3px 4px 0 rgba(0,0,0,.25)',
-                transform: 'rotate(-5deg)',
-                textAlign: 'center',
-                fontSize: 'clamp(10px,3.3vw,14px)',
-                lineHeight: 1.45,
+                boxShadow: '2px 2px 0 #000',
+                fontSize: 11,
                 fontWeight: 900,
               }}>
-                当てるより、<br />話すための<br />54問。
-              </div>
-            </div>
+                実物パッケージ
+              </figcaption>
+            </figure>
 
             <span style={{
               display: 'inline-block',
@@ -1136,6 +1075,15 @@ function ProductPage() {
             <p style={paragraph()}>{BOARD_GAME_PRODUCT.description}</p>
             <p style={paragraph()}>
               Web版の「通常版」「LIVE版」と同じく、正解数を競うより、答え合わせから会話が生まれることを大切にしたカードゲームです。
+            </p>
+            <p style={{
+              margin: '9px 0 0',
+              color: '#6D5861',
+              fontSize: 12,
+              lineHeight: 1.65,
+              fontWeight: 700,
+            }}>
+              {BOARD_GAME_PRODUCT.packageNote}
             </p>
             <div aria-label="製品版の特徴" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 8, marginTop: 15 }}>
               <ProductFeature label="54問入り" />
