@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">コメント欄が割れそうな10問</title>
+  <desc id="desc">左右に分かれたコメントと投票ドットのイラスト</desc>
+  <rect width="640" height="360" rx="28" fill="#ffe26b"/>
+  <rect x="42" y="38" width="556" height="284" rx="24" fill="#fff8f1" stroke="#191919" stroke-width="8"/>
+  <path d="M320 60v238" stroke="#ec4f88" stroke-width="6" stroke-dasharray="12 10"/>
+  <g fill="#5bd4e8" stroke="#191919" stroke-width="5">
+    <path d="M78 92h186a18 18 0 0 1 18 18v46a18 18 0 0 1-18 18H150l-32 28 8-28H78a18 18 0 0 1-18-18v-46a18 18 0 0 1 18-18z"/>
+    <path d="M376 178h186a18 18 0 0 1 18 18v46a18 18 0 0 1-18 18h-48l8 28-32-28H376a18 18 0 0 1-18-18v-46a18 18 0 0 1 18-18z"/>
+  </g>
+  <g fill="#ec4f88" stroke="#191919" stroke-width="4">
+    <circle cx="113" cy="132" r="13"/><circle cx="161" cy="132" r="13"/><circle cx="209" cy="132" r="13"/>
+  </g>
+  <g fill="#ffe26b" stroke="#191919" stroke-width="4">
+    <circle cx="431" cy="218" r="13"/><circle cx="479" cy="218" r="13"/><circle cx="527" cy="218" r="13"/>
+  </g>
+  <text x="320" y="42" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="900" fill="#191919">LIVE CHAT</text>
+</svg>

@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-import { questionPackBySlug, questionPackCards, questionPacks } from '../../src/challenge/packs.js';
+import {
+  liveExclusiveQuestionPacks,
+  liveQuestionPackBySlug,
+  questionPackBySlug,
+  questionPackCards,
+  questionPacks,
+} from '../../src/challenge/packs.js';
 
 function loadCards(filename, variableName) {
   const context = { window: {} };
@@ -34,6 +40,20 @@ test('画像付き10問パックを7種類提供する', () => {
   assert.equal(packs.every(({ image }) => image.startsWith('/assets/question-packs/')), true);
 });
 
+test('LIVE版専用の画像付き10問パックを4種類提供する', () => {
+  const packs = liveExclusiveQuestionPacks(false);
+  assert.deepEqual(
+    packs.map(({ title }) => title),
+    [
+      'コメント欄が割れそうな10問',
+      '初見視聴者も答えやすい10問',
+      '配信者の意外な一面が分かる10問',
+      '30人以下の配信向け10問',
+    ],
+  );
+  assert.equal(packs.every(({ image }) => image.startsWith('/assets/question-packs/live-')), true);
+});
+
 for (const [language, cards, isEnglish] of [
   ['日本語', japaneseCards, false],
   ['英語', englishCards, true],
@@ -46,9 +66,28 @@ for (const [language, cards, isEnglish] of [
       assert.equal(selected.every(({ choices }) => choices.length === 5), true, pack.slug);
     }
   });
+
+  test(`${language}のLIVE専用パックは重複のない有効な10問になる`, () => {
+    for (const pack of liveExclusiveQuestionPacks(isEnglish)) {
+      const selected = questionPackCards(cards, pack.slug, isEnglish, 10, { includeLive: true });
+      assert.equal(selected.length, 10, pack.slug);
+      assert.equal(new Set(selected.map(({ id }) => id)).size, 10, pack.slug);
+      assert.equal(selected.every(({ choices }) => choices.length === 5), true, pack.slug);
+    }
+  });
 }
 
 test('存在しないパックは選択しない', () => {
   assert.equal(questionPackBySlug('not-found', false), null);
   assert.deepEqual(questionPackCards(japaneseCards, 'not-found', false), []);
+});
+
+test('LIVE専用パックは通常版から選べず、LIVE版からだけ選べる', () => {
+  assert.equal(questionPackBySlug('live-comment-split', false), null);
+  assert.equal(liveQuestionPackBySlug('live-comment-split', false)?.title, 'コメント欄が割れそうな10問');
+  assert.deepEqual(questionPackCards(japaneseCards, 'live-comment-split', false), []);
+  assert.equal(
+    questionPackCards(japaneseCards, 'live-comment-split', false, 10, { includeLive: true }).length,
+    10,
+  );
 });

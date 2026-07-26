@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">配信者の意外な一面が分かる10問</title>
+  <desc id="desc">マイクと驚きの記号を組み合わせたイラスト</desc>
+  <rect width="640" height="360" rx="28" fill="#f6a8c5"/>
+  <circle cx="320" cy="180" r="132" fill="#fff8f1" stroke="#191919" stroke-width="8"/>
+  <rect x="269" y="74" width="102" height="154" rx="51" fill="#5bd4e8" stroke="#191919" stroke-width="8"/>
+  <path d="M238 169v14a82 82 0 0 0 164 0v-14M320 266v42M266 310h108" fill="none" stroke="#191919" stroke-width="12" stroke-linecap="round"/>
+  <g fill="#ffe26b" stroke="#191919" stroke-width="5">
+    <path d="m164 76 16 32 36 5-26 25 6 36-32-17-32 17 6-36-26-25 36-5z"/>
+    <path d="m476 58 11 23 26 4-19 18 5 26-23-12-23 12 5-26-19-18 26-4z"/>
+  </g>
+  <text x="477" y="245" text-anchor="middle" font-family="sans-serif" font-size="66" font-weight="900" fill="#ec4f88">!?</text>
+</svg>

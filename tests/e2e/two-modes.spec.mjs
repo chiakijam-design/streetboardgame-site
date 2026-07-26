@@ -633,6 +633,38 @@ test('10問パックをLIVE版の作成画面でもそのまま使える', async
   await expect(page.getByTestId('live-builder-paper-card')).toContainText('お祭りで買うなら');
 });
 
+test('LIVE専用4パックを選べ、配信の最初の案内文をコピーできる', async ({ page }) => {
+  await page.goto('/live-challenge');
+  const livePacks = page.getByTestId('live-exclusive-packs');
+  await expect(livePacks.locator('.live-pack-card')).toHaveCount(4);
+  await expect(livePacks.locator('.live-pack-card img')).toHaveCount(4);
+  await expect(livePacks).toContainText('コメント欄が割れそうな10問');
+  await expect(livePacks).toContainText('初見視聴者も答えやすい10問');
+  await expect(livePacks).toContainText('配信者の意外な一面が分かる10問');
+  await expect(livePacks).toContainText('30人以下の配信向け10問');
+  await expect(livePacks.getByRole('link', { name: '通常版と共通の7パックを見る' }))
+    .toHaveAttribute('href', '/challenge/library');
+
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async (text) => { window.__liveIntroText = text; } },
+    });
+  });
+  await page.getByRole('button', { name: '最初の案内文をコピー' }).click();
+  await expect.poll(() => page.evaluate(() => window.__liveIntroText)).toBe(
+    '今から私の答えを予想する10問をやります！\nURLまたは6桁コードから参加してください。',
+  );
+  await expect(page.getByRole('button', { name: '案内文をコピーしました' })).toBeVisible();
+
+  await page.locator('[data-live-pack="live-comment-split"]')
+    .getByRole('link', { name: 'このパックでLIVEを作る' }).click();
+  await expect(page).toHaveURL('/live-challenge?pack=live-comment-split');
+  await expect(page.locator('.selected-live-pack')).toContainText('コメント欄が割れそうな10問');
+  await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
+  await expect(page.getByTestId('live-builder-paper-card')).toContainText('目玉焼きにかけるのは');
+});
+
 test('正解は回答前の公開レスポンスへ出さず、51人目をサーバー側で拒否する', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', '人数上限のAPI検証は画面幅に依存しないためPCで1回実行');
   await page.goto('/challenge');
