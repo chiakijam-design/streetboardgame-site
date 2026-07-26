@@ -82,6 +82,28 @@ test('返金ポリシーは現行LIVE版の提供完了・代替提供・返金�
   assert.equal(document.includes('関連するYouTuberへの分配'), false);
 });
 
+test('コンテンツ・肖像権ガイドラインは現行2モード・投稿審査・画像利用条件を表示する', async () => {
+  const document = await readFileAsync(new URL('../../content-guidelines.html', import.meta.url), 'utf8');
+  for (const requiredText of [
+    '最終改定日：2026年7月26日',
+    'バージョン：1.2',
+    '「みんなに挑戦してもらう」通常版',
+    '「ライブ配信でみんなに挑戦してもらう」LIVE版',
+    '問題文、5個の選択肢',
+    'OFFにした場合も自分のクイズは作れます',
+    '通常版とLIVE版に共通するお題ライブラリ',
+    '本サービスの提供と無関係な生成AIの学習へ無期限に利用',
+    '本名、学校名、SNS ID、電話番号、住所らしい文字列を自動検知',
+    '性的内容、いじめ、容姿攻撃または差別表現',
+    '通報されたお題は確認が終わるまで直ちに非公開',
+    '登録画像・プレビューは対象LIVE終了後24時間以内',
+    '有料結果画像は購入後30日',
+    '画像そのものの再販売',
+  ]) assert.equal(document.includes(requiredText), true, requiredText);
+  assert.equal(document.includes('YouTuber・クリエイターは'), false);
+  assert.equal(document.includes('YouTubeチャンネル情報から自動生成された問題候補'), false);
+});
+
 test('チェック済みの現行利用規約だけを決済同意として受け付ける', () => {
   assert.deepEqual(assertCheckoutConsent({
     termsAccepted: true,
