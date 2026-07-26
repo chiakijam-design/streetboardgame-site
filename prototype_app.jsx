@@ -458,26 +458,289 @@ function contactLabelStyle() {
 }
 
 function ProductPage() {
+  const scenes = [
+    ['🏫', '休み時間・放課後に', '友達同士でカードを囲んで、会話のきっかけに。'],
+    ['🏠', 'おうち時間に', '家族や友達と、スマホを置いてゆっくり答え合わせ。'],
+    ['🧳', '旅行・集まりに', '移動中や宿泊先で、みんなの意外な答えを発見。'],
+    ['🎁', 'プレゼントにも', '一緒に遊ぶ時間まで贈れる、54問入りのカードゲーム。'],
+  ];
   return (
-    <main style={pageStyle()}>
+    <main data-testid="product-page" style={pageStyle()}>
+      <Decor />
       <Header title="製品版もあります" label="BOARD GAME EDITION" />
       <div style={contentWrap()}>
-        <Panel>
-          <h2 style={{ marginTop: 0 }}>{BOARD_GAME_PRODUCT.title}</h2>
-          <p style={paragraph()}>{BOARD_GAME_PRODUCT.description}</p>
-          <p style={paragraph()}>
-            スマホを置いてカードを囲み、その場で選んだ答えを見せ合える54問入りの製品版です。
+        <section data-testid="product-showcase" aria-labelledby="product-title" style={{
+          padding: 4,
+          background: theme.yellow,
+          border: `3px solid ${theme.black}`,
+          borderRadius: 20,
+          boxShadow: '5px 5px 0 #000',
+        }}>
+          <div style={{ padding: 15, background: theme.white, borderRadius: 15 }}>
+            <div aria-label="カードゲーム版のパッケージイメージ" style={{
+              width: '100%',
+              aspectRatio: '1 / 1',
+              minHeight: 270,
+              position: 'relative',
+              overflow: 'hidden',
+              border: `2.5px solid ${theme.black}`,
+              borderRadius: 13,
+              background: `linear-gradient(145deg, ${theme.pink} 0%, ${theme.pinkDeep} 100%)`,
+            }}>
+              <div aria-hidden="true" style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'radial-gradient(circle at 14% 18%,rgba(255,255,255,.17) 0 22px,transparent 23px),radial-gradient(circle at 82% 78%,rgba(255,226,107,.2) 0 54px,transparent 55px)',
+              }} />
+              <span style={{
+                position: 'absolute',
+                top: 16,
+                left: 16,
+                zIndex: 3,
+                padding: '6px 13px',
+                borderRadius: 999,
+                background: theme.white,
+                color: theme.pinkDeep,
+                fontSize: 10,
+                fontWeight: 900,
+              }}>
+                わたし理解度診断
+              </span>
+              <span style={{
+                position: 'absolute',
+                top: 18,
+                right: 15,
+                zIndex: 3,
+                padding: '5px 8px',
+                borderRadius: 5,
+                background: theme.black,
+                color: theme.yellow,
+                fontFamily: theme.caption,
+                fontSize: 9,
+                letterSpacing: '.12em',
+                transform: 'rotate(2deg)',
+              }}>
+                54 QUESTIONS
+              </span>
+              <div style={{
+                position: 'absolute',
+                left: '2%',
+                bottom: '2%',
+                zIndex: 2,
+                width: '49%',
+                filter: 'drop-shadow(0 9px 13px rgba(0,0,0,.22))',
+              }}>
+                <Girl
+                  variant="full"
+                  width="100%"
+                  height="auto"
+                  loading="eager"
+                  fetchPriority="high"
+                  alt="製品版パッケージのメインキャラクター"
+                />
+              </div>
+              <div style={{
+                position: 'absolute',
+                top: '24%',
+                right: '5%',
+                zIndex: 4,
+                width: '54%',
+                textAlign: 'right',
+                color: theme.white,
+                fontFamily: theme.display,
+                fontSize: 'clamp(20px,6.7vw,32px)',
+                fontWeight: 900,
+                lineHeight: 1.28,
+                textShadow: `3px 3px 0 ${theme.cyan}`,
+              }}>
+                私のこと、<br />ちゃんと<br />分かってる<br />よね？
+              </div>
+              <div style={{
+                position: 'absolute',
+                right: '5%',
+                bottom: '5%',
+                zIndex: 5,
+                width: '35%',
+                maxWidth: 122,
+                aspectRatio: '1 / 1',
+                display: 'grid',
+                placeItems: 'center',
+                padding: 10,
+                borderRadius: '50%',
+                background: theme.yellow,
+                color: theme.black,
+                border: `2.5px solid ${theme.black}`,
+                boxShadow: '3px 4px 0 rgba(0,0,0,.25)',
+                transform: 'rotate(-5deg)',
+                textAlign: 'center',
+                fontSize: 'clamp(10px,3.3vw,14px)',
+                lineHeight: 1.45,
+                fontWeight: 900,
+              }}>
+                当てるより、<br />話すための<br />54問。
+              </div>
+            </div>
+
+            <span style={{
+              display: 'inline-block',
+              marginTop: 14,
+              padding: '4px 10px',
+              borderRadius: 5,
+              background: theme.black,
+              color: theme.yellow,
+              fontFamily: theme.caption,
+              fontSize: 10,
+              letterSpacing: '.14em',
+            }}>
+              BOARD GAME EDITION
+            </span>
+            <h2 id="product-title" style={{ margin: '11px 0 0', color: theme.pink, fontSize: 22, lineHeight: 1.45 }}>
+              {BOARD_GAME_PRODUCT.title}
+            </h2>
+            <p style={paragraph()}>{BOARD_GAME_PRODUCT.description}</p>
+            <p style={paragraph()}>
+              Web版の「通常版」「LIVE版」と同じく、正解数を競うより、答え合わせから会話が生まれることを大切にしたカードゲームです。
+            </p>
+            <div aria-label="製品版の特徴" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 8, marginTop: 15 }}>
+              <ProductFeature label="54問入り" />
+              <ProductFeature label="カードで遊ぶ" />
+              <ProductFeature label="スマホ不要" />
+            </div>
+            <a href={BOARD_GAME_PRODUCT.amazonUrl} rel="sponsored noopener noreferrer" target="_blank" style={{
+              ...primaryButton(),
+              display: 'flex',
+              marginTop: 18,
+              background: '#FF9900',
+              color: theme.black,
+              textDecoration: 'none',
+              boxShadow: '4px 4px 0 #000',
+            }}>
+              {BOARD_GAME_PRODUCT.cta}
+            </a>
+            <p style={{ margin: '10px 0 0', color: '#6D5861', fontSize: 12, lineHeight: 1.6, textAlign: 'center' }}>
+              {BOARD_GAME_PRODUCT.disclosure}
+            </p>
+          </div>
+        </section>
+
+        <section aria-labelledby="product-scenes-title">
+          <h2 id="product-scenes-title" style={productSectionTitle()}>♡ こんな場面にぴったり</h2>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {scenes.map(([icon, title, description]) => (
+              <article key={title} style={{
+                display: 'grid',
+                gridTemplateColumns: '46px minmax(0,1fr)',
+                gap: 11,
+                alignItems: 'center',
+                padding: 13,
+                border: `2.5px solid ${theme.black}`,
+                borderRadius: 13,
+                background: theme.white,
+                boxShadow: '3px 3px 0 #000',
+              }}>
+                <span aria-hidden="true" style={{ fontSize: 27, textAlign: 'center' }}>{icon}</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 15 }}>{title}</h3>
+                  <p style={{ margin: '4px 0 0', color: '#6D5861', fontSize: 12, lineHeight: 1.6, fontWeight: 700 }}>{description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="product-ways-title" style={{
+          padding: 16,
+          border: `3px solid ${theme.black}`,
+          borderRadius: 16,
+          background: '#FFE4EE',
+          boxShadow: '4px 4px 0 #000',
+        }}>
+          <h2 id="product-ways-title" style={{ margin: 0, fontSize: 19, textAlign: 'center' }}>
+            遊ぶ場面に合わせて、3つの楽しみ方
+          </h2>
+          <div style={{ display: 'grid', gap: 9, marginTop: 14 }}>
+            <ProductWay label="通常版" title="URLを送って、好きな時間に回答" href="/challenge" />
+            <ProductWay label="LIVE版" title="配信者と視聴者が同時回答" href="/live-challenge" />
+            <ProductWay label="製品版" title="スマホを置いて、その場でカードを囲む" />
+          </div>
+          <p style={{ ...paragraph(), marginBottom: 0, textAlign: 'center' }}>
+            どの遊び方でも、合言葉は「当てるより、話すため」。
           </p>
-          <a href={BOARD_GAME_PRODUCT.amazonUrl} rel="sponsored noopener noreferrer" target="_blank" style={{ ...primaryButton(), display: 'flex', textDecoration: 'none' }}>
-            {BOARD_GAME_PRODUCT.cta}
-          </a>
-          <p style={{ margin: '10px 0 0', fontSize: 12 }}>{BOARD_GAME_PRODUCT.disclosure}</p>
-        </Panel>
+        </section>
         <HomeLink />
       </div>
       <SiteFooter />
     </main>
   );
+}
+
+function ProductFeature({ label }) {
+  return (
+    <span style={{
+      minHeight: 42,
+      display: 'grid',
+      placeItems: 'center',
+      padding: '7px 4px',
+      border: `2px solid ${theme.black}`,
+      borderRadius: 9,
+      background: theme.pink,
+      color: theme.white,
+      boxShadow: '2px 2px 0 #000',
+      fontSize: 12,
+      fontWeight: 900,
+      textAlign: 'center',
+    }}>
+      {label}
+    </span>
+  );
+}
+
+function ProductWay({ label, title, href }) {
+  const content = (
+    <>
+      <span style={{
+        minWidth: 65,
+        padding: '5px 8px',
+        border: `2px solid ${theme.black}`,
+        borderRadius: 999,
+        background: label === '製品版' ? theme.yellow : theme.cyan,
+        color: theme.black,
+        fontSize: 11,
+        fontWeight: 900,
+        textAlign: 'center',
+      }}>{label}</span>
+      <strong style={{ flex: 1, fontSize: 13, lineHeight: 1.55 }}>{title}</strong>
+      {href && <span aria-hidden="true">›</span>}
+    </>
+  );
+  const style = {
+    minHeight: 58,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    border: `2.5px solid ${theme.black}`,
+    borderRadius: 12,
+    background: theme.white,
+    color: theme.black,
+    boxShadow: '2px 3px 0 #000',
+    textDecoration: 'none',
+  };
+  return href ? <a href={href} style={style}>{content}</a> : <div style={style}>{content}</div>;
+}
+
+function productSectionTitle() {
+  return {
+    display: 'inline-flex',
+    margin: '2px 0 12px',
+    padding: '7px 12px',
+    border: `2.5px solid ${theme.black}`,
+    borderRadius: 999,
+    background: theme.black,
+    color: theme.yellow,
+    boxShadow: `3px 3px 0 ${theme.cyan}`,
+    fontSize: 17,
+  };
 }
 
 function Header({ title, label }) {
