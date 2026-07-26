@@ -223,6 +223,28 @@ test('通常版とLIVE版は表示・スキップを問題選出統計へ記録�
     && event.event === 'skipped' && event.questionId === liveQuestionId)).toBe(true);
 });
 
+test('同じ端末では過去に見た問題より初めて見る問題を優先する', async ({ page }) => {
+  await page.goto('/challenge');
+  const unseenQuestion = await page.evaluate(() => {
+    const cards = window.COMMON_QUESTION_CARDS;
+    const target = cards.at(-1);
+    const history = Object.fromEntries(cards.slice(0, -1).map((card) => [card.id, 1]));
+    localStorage.setItem('watachan:question-view-history:v1', JSON.stringify(history));
+    return { id: target.id, title: target.title };
+  });
+  await page.reload();
+  await page.getByLabel('出題者の名前（12文字まで）').fill('初見優先確認');
+  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await expect(page.getByTestId('challenge-builder-paper-card')).toContainText(unseenQuestion.title);
+  await expect.poll(() => page.evaluate(({ key, id }) => {
+    const history = JSON.parse(localStorage.getItem(key) || '{}');
+    return history[id] || 0;
+  }, {
+    key: 'watachan:question-view-history:v1',
+    id: unseenQuestion.id,
+  })).toBe(1);
+});
+
 test('トップ下部から挑戦モードの説明を読み、10問クイズ作成へ進める', async ({ page }) => {
   await page.goto('/');
   const guideLink = page.locator('nav[aria-label="ゲームシリーズの紹介ページ"] a[href="/challenge-guide"]');

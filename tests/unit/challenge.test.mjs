@@ -106,6 +106,34 @@ test('スキップ率が低い問題ほど候補選出の重みが高くなる',
   );
 });
 
+test('同じ端末では表示回数が最も少ない問題を先に選ぶ', async () => {
+  const {
+    applyQuestionViewHistory,
+    QUESTION_VIEW_HISTORY_KEY,
+    recordQuestionViewHistory,
+  } = await import('../../src/questions/catalog.js');
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) || null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  recordQuestionViewHistory('Q-SEEN', storage);
+  recordQuestionViewHistory('Q-SEEN', storage);
+  const candidates = applyQuestionViewHistory([{
+    id: 'Q-SEEN',
+    title: '前にも見た問題',
+    choices: ['1', '2', '3', '4', '5'],
+  }, {
+    id: 'Q-NEW',
+    title: '初めて見る問題',
+    choices: ['1', '2', '3', '4', '5'],
+  }], storage);
+
+  assert.equal(JSON.parse(values.get(QUESTION_VIEW_HISTORY_KEY))['Q-SEEN'], 2);
+  assert.deepEqual(candidates.map((card) => card.personalSeenCount), [2, 0]);
+  assert.equal(pickChallengeCards(candidates, 1, () => 0)[0].id, 'Q-NEW');
+});
+
 test('保留候補は非公開のまま、採用後は通常版・LIVE版の共通お題へ追加できる', async () => {
   const {
     applyManagedQuestionCards,

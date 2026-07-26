@@ -18,17 +18,23 @@ export function pickChallengeCards(cards, count = 10, random = Math.random) {
   const limit = Math.min(Math.max(Number(count) || 0, 0), pool.length);
 
   while (selected.length < limit) {
-    const weights = pool.map(questionSelectionWeight);
+    const seenCounts = pool.map((card) => Math.max(0, Number(card?.personalSeenCount) || 0));
+    const leastSeenCount = Math.min(...seenCounts);
+    const candidateIndexes = seenCounts.flatMap((seenCount, index) => (
+      seenCount === leastSeenCount ? [index] : []
+    ));
+    const weights = candidateIndexes.map((index) => questionSelectionWeight(pool[index]));
     const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
     let cursor = Math.max(0, Math.min(Number(random()) || 0, 0.9999999999999999)) * totalWeight;
-    let selectedIndex = weights.length - 1;
+    let candidateIndex = weights.length - 1;
     for (let index = 0; index < weights.length; index += 1) {
       cursor -= weights[index];
       if (cursor < 0) {
-        selectedIndex = index;
+        candidateIndex = index;
         break;
       }
     }
+    const selectedIndex = candidateIndexes[candidateIndex];
     selected.push(pool.splice(selectedIndex, 1)[0]);
   }
   return selected;
