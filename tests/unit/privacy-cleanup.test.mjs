@@ -6,13 +6,24 @@ import { PRIVACY_RETENTION, runPrivacyCleanup } from '../../src/privacy/cleanup.
 test('プライバシーポリシーは現在の公開範囲・子ども・第三者提供・統計情報を明記する', async () => {
   const document = await readFile(new URL('../../privacy.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    'ポリシーバージョン：1.6',
+    'ポリシーバージョン：1.7',
     '理解度ボードへ載せるかは自分で選べます',
     '掲載候補として送信しない問題は、この目的では公開しません',
     '個人情報または統計情報を広告事業者、データ販売事業者、AI開発事業者へ販売しません',
+    '現在、答え合わせレポートの生成のために回答内容を外部のAIサービスへ送信しません',
+    'LIVE配信者登録（有料販売を利用する場合）',
+    '購入者メールHMAC',
+    'Cloudflare Images',
     '10歳から12歳までの利用者',
     '国外で保存または処理される場合があります',
   ]) assert.equal(document.includes(requiredText), true, requiredText);
+  for (const retiredText of ['YouTuber登録', 'YouTuberとの契約', 'YouTuber元画像', '遠隔ゲーム']) {
+    assert.equal(document.includes(retiredText), false, retiredText);
+  }
+  const englishDocument = await readFile(new URL('../../en/privacy.html', import.meta.url), 'utf8');
+  assert.equal(englishDocument.includes('Version 1.7'), true);
+  assert.equal(englishDocument.includes('Answer content is not currently sent to an external AI service'), true);
+  assert.equal(englishDocument.includes('Cloudflare Images'), true);
 });
 
 test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2削除を同時に行う', async () => {
