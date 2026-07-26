@@ -1,6 +1,6 @@
 export const CREATOR_TERMS = Object.freeze({
-  version: '1.4',
-  effectiveDate: '2026-07-25',
+  version: '1.5',
+  effectiveDate: '2026-07-26',
   url: 'https://www.streetboardgame.com/creator-terms',
-  documentSha256: '3af68402114e8597316bb0169849cc1515213833a88fe478888fa87b9a1301a1',
+  documentSha256: '330d31eee2196cb7da289608be4430653a747abf2bf198515cc8b5d65e9edf2a',
 });

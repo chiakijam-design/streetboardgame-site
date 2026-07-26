@@ -11,8 +11,19 @@ const ACCESS_TOKEN = 'b'.repeat(48);
 
 test('収益分配規約のバージョンとSHA-256を実際の規約全文へ固定する', async () => {
   const document = (await readFile(new URL('../../creator-terms.html', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-  assert.equal(CREATOR_TERMS.version, '1.4');
+  assert.equal(CREATOR_TERMS.version, '1.5');
   assert.equal(createHash('sha256').update(document).digest('hex'), CREATOR_TERMS.documentSha256);
+  for (const requiredText of [
+    'LIVE配信者向け収益分配規約',
+    '無料LIVEの作成・参加だけを行う利用者',
+    '現時点の販売登録では、YouTubeチャンネルの管理権限確認',
+    '売上総額（税込）の70%',
+    '1円未満の端数が生じる場合は切り捨て',
+    '日本時間の対象月終了から14日後以降',
+    'Stripe Connectアカウントへの送金と、Stripe Connect残高から配信者の銀行口座等への入金は別',
+  ]) assert.equal(document.includes(requiredText), true, requiredText);
+  assert.equal(document.includes('YouTuber向け収益分配規約'), false);
+  assert.equal(document.includes('YouTuberと視聴者の絆を判定する'), false);
 });
 
 test('Web同意は規約・日時・IP・端末・Connect IDを改変せず保存する', async () => {
@@ -40,7 +51,7 @@ test('Web同意は規約・日時・IP・端末・Connect IDを改変せず保�
   assert.equal(response.status, 201);
   const result = await response.json();
   assert.equal(result.accepted, true);
-  assert.equal(result.agreement.termsVersion, '1.4');
+  assert.equal(result.agreement.termsVersion, '1.5');
   assert.equal(result.agreement.contractingName, 'テスト株式会社');
   assert.equal(result.agreement.contactEmailMasked, 'cr•••••@example.com');
   assert.equal(db.agreements.length, 1);
