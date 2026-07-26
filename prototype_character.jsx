@@ -32,7 +32,7 @@ function Girl({
   height = 200,
   style = {},
   flip = false,
-  alt = 'わたちゃん 彼氏の愛情判定ゲームの女の子',
+  alt = 'わたし理解度診断のキャラクター',
   loading = 'lazy',
   fetchPriority = 'auto',
 }) {

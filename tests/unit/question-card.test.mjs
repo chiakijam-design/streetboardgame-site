@@ -6,38 +6,31 @@ import {
 } from '../../src/challenge/question-card.js';
 
 const sourceCard = {
-  id: 37,
-  image: 'assets/cards/37.png',
+  id: 'Q037',
   title: '人生を漢字1文字で表すと',
   choices: ['楽', '幸', '金', '無', '苦'],
 };
 
-test('元の42問も完成済み画像を使わず共通SVGで描画する', () => {
-  const card = {
-    ...sourceCard,
-    id: 'LOVE37',
-    sourceId: 'LOVE37',
-  };
+test('共通お題は完成済み画像を使わず共通SVGで描画する', () => {
+  const card = { ...sourceCard };
   const markup = renderNotebookQuestionCard(card);
   assert.match(markup, /<svg[\s\S]+viewBox="0 0 756 1122"/);
-  assert.doesNotMatch(markup, /<picture|assets\/cards\/37/);
+  assert.doesNotMatch(markup, /<picture/);
 });
 
 test('編集した問題も同じ共通SVGで描画する', () => {
   const edited = {
     ...sourceCard,
-    id: 'LOVE37',
-    sourceId: 'LOVE37',
     title: '編集した問題',
   };
   const markup = renderNotebookQuestionCard(edited);
   assert.match(markup, /<svg[\s\S]+viewBox="0 0 756 1122"/);
-  assert.doesNotMatch(markup, /<picture|assets\/cards\/37/);
+  assert.doesNotMatch(markup, /<picture/);
 });
 
-test('友達・家族・自作問題も同じ縦横比のノートカードで描画する', () => {
+test('自作問題も同じ縦横比のノートカードで描画する', () => {
   const markup = renderNotebookQuestionCard({
-    id: 'FQ001',
+    id: 'Q001',
     title: '休み時間にしたいこと',
     choices: ['話す', '動画', 'ゲーム', '勉強', '寝る'],
   });

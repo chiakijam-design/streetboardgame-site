@@ -89,10 +89,8 @@ const mime = {
 };
 
 function staticPath(urlPath) {
-  if (['/', '/love', '/friends', '/family', '/boardgame', '/about', '/product'].includes(urlPath)) return 'index.html';
+  if (['/', '/about', '/product'].includes(urlPath)) return 'index.html';
   if (urlPath === '/challenge') return 'challenge.html';
-  if (urlPath === '/remote' || urlPath === '/remote-boardgame') return 'remote.html';
-  if (urlPath === '/live') return 'live.html';
   if (urlPath === '/live-ops') return 'live_ops.html';
   if (urlPath === '/question-ops') return 'question_ops.html';
   return urlPath.replace(/^\/+/, '');
@@ -158,7 +156,8 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     const response = await worker.fetch(await toRequest(req), {
-      REMOTE_KV: kv,
+      CHALLENGE_KV: kv,
+      LIVE_KV: kv,
       LIVE_MEDIA: media,
       IMAGES: images,
       LIVE_CREATOR_INVITE_BYPASS_TOKEN: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',

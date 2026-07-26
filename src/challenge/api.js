@@ -8,7 +8,7 @@ const TOKEN_PATTERN = /^[a-f0-9]{48}$/i;
 
 export async function handleChallengeApi(request, env, path) {
   if (request.method === 'OPTIONS') return jsonResponse({});
-  if (!env.REMOTE_DB && !env.REMOTE_KV) {
+  if (!env.REMOTE_DB && !env.CHALLENGE_KV) {
     return jsonResponse({ error: 'challenge-storage-not-configured' }, 500);
   }
 
@@ -451,8 +451,8 @@ async function insertRoom(env, code, room) {
     return Number(result?.meta?.changes || 0) === 1;
   }
   const key = `challenge:${code}`;
-  if (await env.REMOTE_KV.get(key)) return false;
-  await env.REMOTE_KV.put(key, JSON.stringify({ ...room, participants: [] }), {
+  if (await env.CHALLENGE_KV.get(key)) return false;
+  await env.CHALLENGE_KV.put(key, JSON.stringify({ ...room, participants: [] }), {
     expirationTtl: CHALLENGE_ROOM_TTL_DAYS * 24 * 60 * 60,
   });
   return true;
@@ -475,7 +475,7 @@ async function readRoom(env, code) {
       expiresAt: Number(row.expires_at),
     };
   }
-  const room = await env.REMOTE_KV.get(`challenge:${code}`, { type: 'json' });
+  const room = await env.CHALLENGE_KV.get(`challenge:${code}`, { type: 'json' });
   return room && Number(room.expiresAt) > now ? room : null;
 }
 
@@ -770,7 +770,7 @@ async function recordQuestionPlays(env, cards, playedAt) {
     return;
   }
   const key = 'challenge:question-stats';
-  const current = await env.REMOTE_KV.get(key, { type: 'json' }) || {};
+  const current = await env.CHALLENGE_KV.get(key, { type: 'json' }) || {};
   for (const card of cards) {
     const previous = current[card.id] || {};
     current[card.id] = {
@@ -782,7 +782,7 @@ async function recordQuestionPlays(env, cards, playedAt) {
       lastPlayedAt: playedAt,
     };
   }
-  await env.REMOTE_KV.put(key, JSON.stringify(current));
+  await env.CHALLENGE_KV.put(key, JSON.stringify(current));
 }
 
 async function popularQuestions(env) {
@@ -802,7 +802,7 @@ async function popularQuestions(env) {
       lastPlayedAt: Number(row.last_played_at),
     }));
   }
-  const current = await env.REMOTE_KV.get('challenge:question-stats', { type: 'json' }) || {};
+  const current = await env.CHALLENGE_KV.get('challenge:question-stats', { type: 'json' }) || {};
   return Object.values(current)
     .sort((left, right) => Number(right.playCount) - Number(left.playCount)
       || Number(right.lastPlayedAt) - Number(left.lastPlayedAt))
@@ -810,7 +810,7 @@ async function popularQuestions(env) {
 }
 
 async function putKvRoom(env, code, room) {
-  await env.REMOTE_KV.put(`challenge:${code}`, JSON.stringify(room), {
+  await env.CHALLENGE_KV.put(`challenge:${code}`, JSON.stringify(room), {
     expirationTtl: CHALLENGE_ROOM_TTL_DAYS * 24 * 60 * 60,
   });
 }

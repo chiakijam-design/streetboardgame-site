@@ -319,11 +319,7 @@ function updateBulkButton() {
 }
 
 function buildStaticQuestions() {
-  const common = [
-    ...(window.ALL_CARDS || []).map((item) => ({ ...item, id: `LOVE${item.id}` })),
-    ...(window.FRIEND_CARDS || []),
-    ...(window.FAMILY_CARDS || []),
-  ];
+  const common = [...(window.COMMON_QUESTION_CARDS || [])];
   const seen = new Set();
   return common.flatMap((item) => {
     const id = String(item.id);

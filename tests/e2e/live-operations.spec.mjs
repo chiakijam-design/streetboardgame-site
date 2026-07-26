@@ -55,7 +55,7 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
   });
   await page.route('**/api/live/admin/games/123456/rotate-links', async (route) => {
     linkRotations.push(route.request().postDataJSON());
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: '123456', subjectUrl: 'https://example.com/live?room=123456#subject=new-token' }) });
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code: '123456', subjectUrl: 'https://example.com/live-challenge?room=123456#subject=new-token' }) });
   });
   await page.route('**/api/live/admin/revenue/monthly-close', async (route) => {
     payoutCloses.push(route.request().postDataJSON());

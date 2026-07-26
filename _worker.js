@@ -7,33 +7,18 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 // Cloudflare Workers 静的サイト + ルーティング
 // https://developers.cloudflare.com/pages/functions/advanced-mode/
 //
-// 動作:
-//   /watachan         → / にリダイレクト
-//   /watachan/        → / にリダイレクト
-//   /love             → 廃止済みのため /challenge へ恒久転送
-//   /challenge-guide  → みんなに挑戦してもらう紹介ページとして専用SEOメタ付きHTMLを返す
-//   /friends          → 友達の友情判定紹介ページとして専用SEOメタ付きHTMLを返す
-//   /friends/         → /friends にリダイレクト
-//   /family           → 家族の絆判定紹介ページとして専用SEOメタ付きHTMLを返す
-//   /family/          → /family にリダイレクト
-//   /boardgame        → ボドゲ仲間の絆判定紹介ページとして専用SEOメタ付きHTMLを返す
-//   /boardgame/       → /boardgame にリダイレクト
-//   /live-guide       → LIVEゲーム紹介ページとして専用SEOメタ付きHTMLを返す
-//   /live-guide/      → /live-guide にリダイレクト
-//   /contact          → /?screen=about&to=contact にリダイレクト
-//   /contact/         → /?screen=about&to=contact にリダイレクト
-//   /terms など       → 法務ページの静的HTMLをきれいなURLで返す
-//   その他の存在しないパス → 専用404ページを404ステータスで返す
-//   存在するファイル (HTML/画像/JS) → そのまま配信
+// 現行の通常版・LIVE版、共通ページ、法務ページと静的アセットだけを配信する。
+// 廃止したゲームURLとAPIは互換転送せず404を返す。
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
-const BOARDGAME_RESULT_SHARE_VERSION = 'result-20260724-1';
 const HASHED_JS_PATH = /^\/(?:dist\/[a-z0-9_]+-[a-z0-9]{8}|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12})\.js$/i;
-const LEGACY_GAME_PATHS = new Set([
+const RETIRED_GAME_PATHS = new Set([
   '/love',
   '/friends',
   '/family',
   '/boardgame',
+  '/remote',
+  '/remote-boardgame',
   '/live',
   '/live-guide',
 ]);
@@ -58,13 +43,6 @@ const LEGAL_PAGE_FILES = Object.freeze({
   '/refund-policy': '/refund-policy.html',
   '/content-guidelines': '/content-guidelines.html',
   '/minor-policy': '/minor-policy.html',
-});
-const REMOTE_BOARDGAME_SHARE_META = Object.freeze({
-  title: '遠隔でボドゲ仲間の絆判定 | わたちゃん',
-  description: '離れているボドゲ仲間とLINEで遊べる2人用の絆判定ゲーム。ボドゲのお題5問にそれぞれ回答し、相手の好みをどれだけ理解しているか判定できます。',
-  url: CANONICAL_ORIGIN + '/remote-boardgame',
-  image: CANONICAL_ORIGIN + '/assets/ogp-remote-boardgame.jpg?v=20260724-ogp-2',
-  imageAlt: 'わたちゃん 遠隔でボドゲ仲間の絆判定',
 });
 
 export default {
@@ -94,8 +72,6 @@ async function handleRequest(request, env) {
       '/en/terms.html': '/en/terms',
       '/en/privacy.html': '/en/privacy',
       '/challenge.html': '/challenge',
-      '/remote.html': '/remote',
-      '/live.html': '/challenge',
       '/live_challenge.html': LIVE_CHALLENGE_PATH,
       '/live_ops.html': '/live-ops',
       '/question_ops.html': '/question-ops',
@@ -109,7 +85,14 @@ async function handleRequest(request, env) {
     }
 
     if (path.startsWith('/api/remote')) {
-      return handleRemoteApi(request, env, path);
+      return new Response(JSON.stringify({ error: 'not-found' }), {
+        status: 404,
+        headers: {
+          'content-type': 'application/json; charset=UTF-8',
+          'cache-control': 'no-store',
+          'x-robots-tag': 'noindex, nofollow, noarchive',
+        },
+      });
     }
 
     if (path.startsWith('/api/challenge')) {
@@ -237,43 +220,15 @@ async function handleRequest(request, env) {
       });
     }
 
-    if (LEGACY_GAME_PATHS.has(path)) {
-      return Response.redirect(url.origin + '/challenge', 301);
-    }
-
-    if (rawPath !== '/' && rawPath.endsWith('/') && (path === '/remote' || path === '/remote-boardgame')) {
-      return Response.redirect(url.origin + path, 301);
-    }
-
-    if (path === '/remote' || path === '/remote-boardgame') {
-      const remoteUrl = new URL('/remote.html', url.origin);
-      const response = await env.ASSETS.fetch(new Request(remoteUrl.toString(), {
-        method: 'GET',
-        headers: request.headers,
-      }));
-      const headers = new Headers(response.headers);
-      headers.set('content-type', 'text/html; charset=UTF-8');
-      if (url.searchParams.has('room') || url.searchParams.has('manage') || url.searchParams.has('turn')) {
-        headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
-      }
-      const html = request.method === 'HEAD' ? null : await response.text();
-      const body = html && path === '/remote-boardgame' ? applyRemoteBoardgameShareMeta(html, url) : html;
-      return new Response(body, { status: response.status, headers });
-    }
-
-    if (rawPath !== '/' && rawPath.endsWith('/') && path === '/live') {
-      return Response.redirect(url.origin + path + url.search, 301);
-    }
-
-    if (path === '/live') {
-      const liveUrl = new URL('/live.html', url.origin);
-      const response = await env.ASSETS.fetch(new Request(liveUrl.toString(), {
-        method: 'GET',
-        headers: request.headers,
-      }));
-      const headers = new Headers(response.headers);
-      headers.set('content-type', 'text/html; charset=UTF-8');
-      return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
+    if (RETIRED_GAME_PATHS.has(path)) {
+      return new Response(request.method === 'HEAD' ? null : 'Not Found', {
+        status: 404,
+        headers: {
+          'content-type': 'text/plain; charset=UTF-8',
+          'cache-control': 'no-store',
+          'x-robots-tag': 'noindex, nofollow, noarchive',
+        },
+      });
     }
 
     if (rawPath !== '/' && rawPath.endsWith('/') && path === '/live-ops') {
@@ -337,7 +292,7 @@ async function handleRequest(request, env) {
     const pageMap = {
       '/challenge-guide': {
         title: 'みんなに挑戦してもらう｜10問クイズの遊び方・作り方',
-        description: '自分が先に答えた10問を友達や家族に予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせと任意の理解度ボードを楽しめます。',
+        description: '自分が先に答えた10問をみんなに予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせと任意の理解度ボードを楽しめます。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
         ogTitle: 'みんなに挑戦してもらう｜わたちゃん',
         ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge-v3.png?v=20260726-ogp-2',
@@ -346,7 +301,7 @@ async function handleRequest(request, env) {
         imageAlt: 'わたし理解度診断｜私のこと、ちゃんと分かってるよね？｜当てるより、話すための10問。',
         pageId: CANONICAL_ORIGIN + '/challenge-guide#webpage',
         noscriptTitle: 'みんなに挑戦してもらう｜10問クイズの遊び方',
-        noscriptBody: '自分が先に10問へ回答し、発行された専用URLを友達や家族へ送ると、最大50人があなたの答えを予想できます。',
+        noscriptBody: '自分が先に10問へ回答し、発行された専用URLを参加者へ送ると、最大50人があなたの答えを予想できます。',
         faq: [
           {
             question: 'どうやってクイズを作りますか？',
@@ -362,152 +317,6 @@ async function handleRequest(request, env) {
           },
         ],
       },
-      '/friends': {
-        title: '友達の友情判定｜わたちゃん無料友情診断ゲーム',
-        description: '友達の友情判定は、本人が選んだ答えを友達が予想し、友達のことをどれだけ理解しているか診断できる無料の友情診断ゲームです。',
-        url: CANONICAL_ORIGIN + '/friends',
-        ogTitle: '友達の友情判定｜わたちゃん',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-friends.png?v=20260711-ogp-1',
-        imageAlt: 'わたちゃん 友達の友情判定ゲーム',
-        pageId: CANONICAL_ORIGIN + '/friends#webpage',
-        gameId: CANONICAL_ORIGIN + '/friends#friend-game',
-        gameName: 'わたちゃん 友達の友情判定',
-        headline: '友達同士で本人の答えを予想する無料友情診断ゲーム',
-        genre: ['友情ゲーム', '友達ゲーム', '診断ゲーム', 'ボードゲーム'],
-        keywords: '友情判定ゲーム, 友達ゲーム, 友情診断, 友達診断, 大学生 友達 ゲーム, 飲み会ゲーム, 旅行ゲーム, スマホゲーム, わたちゃん',
-        noscriptTitle: '友達の友情判定｜わたちゃん無料友情診断ゲーム',
-        noscriptBody: '本人が自分の答えを選び、友達がその答えを予想する無料友情判定ゲームです。スマホ1台で2〜4人プレイに対応し、5問後に友達ごとの正解数を確認できます。',
-        faq: [
-          {
-            question: '友達の友情判定は何人で遊べますか？',
-            answer: '2〜4人で遊べます。本人が答えを選び、友達A、友達B、友達Cが順番に予想します。',
-          },
-          {
-            question: '友情診断の結果はどう表示されますか？',
-            answer: '5問後に、友達ごとの正解数とランク表、答え合わせ、AI総評をまとめて確認できます。',
-          },
-          {
-            question: '友達同士のどんな場面に向いていますか？',
-            answer: '大学生の集まり、休み時間、飲み会、旅行など、会話のきっかけが欲しい場面で遊びやすいゲームです。',
-          },
-        ],
-      },
-      '/family': {
-        title: '家族の絆判定｜わたちゃん無料家族診断ゲーム',
-        description: '家族の絆判定は、本人が選んだ答えを家族が予想し、家族のことをどれだけ理解しているか診断できる無料の絆チェックゲームです。',
-        url: CANONICAL_ORIGIN + '/family',
-        ogTitle: '家族の絆判定｜わたちゃん',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-family.png?v=20260711-ogp-1',
-        imageAlt: 'わたちゃん 家族の絆判定ゲーム',
-        pageId: CANONICAL_ORIGIN + '/family#webpage',
-        gameId: CANONICAL_ORIGIN + '/family#family-game',
-        gameName: 'わたちゃん 家族の絆判定',
-        headline: '家族で本人の答えを予想する無料の絆チェックゲーム',
-        genre: ['家族ゲーム', '絆ゲーム', '診断ゲーム', 'ボードゲーム'],
-        keywords: '家族ゲーム, 家族診断, 絆判定, 家族の絆, 親子ゲーム, 兄弟姉妹ゲーム, 親戚の集まり ゲーム, スマホゲーム, わたちゃん',
-        noscriptTitle: '家族の絆判定｜わたちゃん無料家族診断ゲーム',
-        noscriptBody: '本人が自分の答えを選び、家族がその答えを予想する無料家族診断ゲームです。スマホ1台で2〜4人プレイに対応し、5問後に家族ごとの正解数を確認できます。',
-        faq: [
-          {
-            question: '家族の絆判定は何人で遊べますか？',
-            answer: '2〜4人で遊べます。本人が選んだ答えを、家族が順番に予想する形式です。',
-          },
-          {
-            question: '家族診断の結果では何が分かりますか？',
-            answer: '家族ごとの正解数、ランク表、答え合わせ、AI総評を表示します。普段聞かない好みや考え方を知るきっかけになります。',
-          },
-          {
-            question: 'どんな家族イベントに向いていますか？',
-            answer: 'おうち時間、親戚の集まり、家族旅行、親子の会話など、少し笑いながらお互いを知りたい場面に向いています。',
-          },
-        ],
-      },
-      '/boardgame': {
-        title: 'ボドゲ仲間の絆判定｜2〜4人の無料ボードゲーム',
-        description: 'ボドゲ仲間の絆判定は、本人が選んだ答えを仲間が予想し、好きなゲームやプレイスタイルをどれだけ理解しているか判定する2〜4人用の無料ゲームです。',
-        url: CANONICAL_ORIGIN + '/boardgame',
-        ogUrl: url.searchParams.get('share') === BOARDGAME_RESULT_SHARE_VERSION
-          ? `${CANONICAL_ORIGIN}/boardgame?share=${BOARDGAME_RESULT_SHARE_VERSION}`
-          : CANONICAL_ORIGIN + '/boardgame',
-        ogTitle: 'ボドゲ仲間の絆判定｜わたちゃん',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-boardgame.jpg?v=20260724-ogp-2',
-        imageAlt: 'わたちゃん ボドゲ仲間の絆判定ゲーム',
-        pageId: CANONICAL_ORIGIN + '/boardgame#webpage',
-        gameId: CANONICAL_ORIGIN + '/boardgame#boardgame-bond-game',
-        gameName: 'わたちゃん ボドゲ仲間の絆判定',
-        headline: 'ボードゲーム仲間の好みを当てる2〜4人用の無料絆判定ゲーム',
-        genre: ['ボードゲーム', 'パーティーゲーム', '友達ゲーム', '診断ゲーム'],
-        keywords: 'ボドゲ仲間, ボードゲーム仲間, ボドゲ会 ゲーム, ボードゲーム 2人, ボードゲーム 3人, ボードゲーム 4人, 絆判定, 無料ゲーム',
-        noscriptTitle: 'ボドゲ仲間の絆判定｜2〜4人の無料ボードゲーム',
-        noscriptBody: '本人が自分の答えを選び、ボドゲ仲間がその答えを予想する無料の絆判定ゲームです。選定した54問から毎回5問を出題し、スマホ1台で2〜4人プレイできます。',
-        faq: [
-          {
-            question: 'ボドゲ仲間の絆判定は何人で遊べますか？',
-            answer: '2〜4人で遊べます。本人が自分の答えを選び、ほかのボドゲ仲間が順番に予想します。',
-          },
-          {
-            question: 'どんな問題が出ますか？',
-            answer: '好きなゲーム、遊びたい人数、プレイスタイル、人狼やブラフゲームでの行動など、選定した54問から毎回5問を出題します。',
-          },
-          {
-            question: '結果は保存・共有できますか？',
-            answer: '結果画像を保存し、XやLINEで共有できます。ボドゲ仲間ごとの正解数とランクも確認できます。',
-          },
-        ],
-      },
-      '/live-guide': {
-        title: 'YouTube企画のネタに｜視聴者参加型ライブゲーム【無料】｜わたちゃん',
-        description: 'YouTubeのライブ配信企画・視聴者参加型のネタを探している方向け。チャンネルURLから5択問題を30問生成し、YouTuber本人と視聴者が同時回答。無料で企画を作成できます。',
-        url: CANONICAL_ORIGIN + '/live-guide',
-        ogTitle: 'YouTube企画のネタに｜視聴者参加型LIVEゲーム',
-        imageAlt: 'YouTubeのライブ配信企画に使える視聴者参加型ゲーム',
-        pageId: CANONICAL_ORIGIN + '/live-guide#webpage',
-        gameId: CANONICAL_ORIGIN + '/live-guide#live-game',
-        gameName: 'YouTuberと視聴者の絆を判定する、私のことちゃんとわかってるよね?Youtubeライブver.',
-        headline: 'YouTube企画のネタをチャンネルURLから作れる視聴者参加型ライブゲーム',
-        genre: ['YouTube企画', 'ライブ配信企画', 'ライブ投票ゲーム', '視聴者参加型ゲーム', 'クイズゲーム'],
-        keywords: 'YouTube 企画 ネタ, YouTube ライブ 企画, ライブ配信 盛り上がる企画, 視聴者参加型 企画, 視聴者参加型 クイズ',
-        noscriptTitle: 'YouTube企画のネタに使える視聴者参加型ライブゲーム',
-        noscriptBody: 'YouTubeのライブ配信企画を探している方向けの無料ゲームです。チャンネルまたは動画のURLから5択問題を30問生成し、YouTuber本人と視聴者が同じ問題へ同時回答。一問ずつ答え合わせできます。',
-        faq: [
-          {
-            question: 'YouTubeの企画ネタが思いつかない時に使えますか？',
-            answer: '使えます。公開されているチャンネル情報や動画タイトルなどをもとに5択の問題候補を30問生成し、配信で使う1〜30問を選んで編集できます。',
-          },
-          {
-            question: 'ライブ配信で盛り上がる視聴者参加型企画ですか？',
-            answer: 'YouTuber本人と視聴者が同じ問題へ回答し、全問出題後に一問ずつ答え合わせします。選択肢別の現在票数を視聴者に見せる設定も選べます。',
-          },
-          {
-            question: 'VTuberや顔出しなしのYouTubeチャンネルでも使えますか？',
-            answer: '公開されているYouTubeチャンネルまたは動画のURLを読み取れる場合は利用できます。生成後に問題文と選択肢を編集して、チャンネルに合う内容へ調整できます。',
-          },
-          {
-            question: '参加者はどうやってLIVEゲームに入りますか？',
-            answer: '司会者がゲームを作ると6桁のルームコードが発行されます。参加者はLIVEページでコードと名前を入力すると参加できます。',
-          },
-          {
-            question: '問題候補は何問作れますか？',
-            answer: '選んだ遊び方の候補を30問生成し、その中から1〜30問を採用できます。2種類の遊び方は1つのゲーム内では混ざりません。',
-          },
-          {
-            question: '問題や選択肢は編集できますか？',
-            answer: '問題文と選択肢は編集できます。選択肢は各問題5個で固定されます。',
-          },
-          {
-            question: '本人の答えはいつ入力しますか？',
-            answer: '企画作成時には入力しません。配信中に本人用URLから視聴者と同じ問題へ同時に秘密回答し、スタッフが「次の問題へ」を押した時点で両方の回答を締め切ります。',
-          },
-          {
-            question: '視聴者も自分の結果を確認できますか？',
-            answer: '全問の出題後、一問ずつ行う答え合わせと最終結果で、自分が選んだ回答と正誤を各視聴者の画面に表示します。',
-          },
-          {
-            question: '視聴者に投票人数を表示できますか？',
-            answer: '企画作成時に、各選択肢の現在票数を視聴者画面へ表示するか選べます。設定は全問題で共通になり、配信中は変更できません。',
-          },
-        ],
-      },
       '/about': {
         title: 'About｜わたちゃん・みんなに挑戦してもらうクイズ',
         description: 'わたちゃんは、自分の10問を最大50人に予想してもらう通常版と、視聴者と同時回答するライブ配信版を公開する無料ゲームサイトです。',
@@ -520,14 +329,14 @@ async function handleRequest(request, env) {
       },
       '/product': {
         title: '製品版｜私のこと、ちゃんと分かってるよね？',
-        description: 'Amazonで販売中のボードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、飲み会や旅行、おうちデートでも遊べます。',
+        description: 'Amazonで販売中のカードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、集まりや旅行、おうち時間でも遊べます。',
         url: CANONICAL_ORIGIN + '/product',
         ogTitle: '製品版｜私のこと、ちゃんと分かってるよね？',
         imageAlt: 'ボードゲーム版 私のこと、ちゃんと分かってるよね？',
         pageId: CANONICAL_ORIGIN + '/product#webpage',
         preloadImage: '/assets/character/girl-full-960.webp',
         noscriptTitle: '製品版｜私のこと、ちゃんと分かってるよね？',
-        noscriptBody: 'Amazonで販売中のボードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、飲み会や旅行、おうちデートでも遊べます。',
+        noscriptBody: 'Amazonで販売中のカードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、集まりや旅行、おうち時間でも遊べます。',
       },
     };
 
@@ -595,7 +404,7 @@ async function withSecurityHeaders(response, request) {
   const isHtml = /text\/html/i.test(headers.get('content-type') || '');
   const nonce = isHtml ? createCspNonce() : '';
   const requestPath = request ? new URL(request.url).pathname : '';
-  const sensitivePath = /^\/(?:en\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|remote(?:-boardgame)?|api(?:\/|$))/.test(requestPath);
+  const sensitivePath = /^\/(?:en\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
     "default-src 'none'",
     "base-uri 'self'",
@@ -642,7 +451,7 @@ function createCspNonce() {
 }
 
 function applySeoMeta(html, page) {
-  const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-love.png?v=20260711-ogp-2';
+  const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=20260726';
   const imageWidth = Number(page.imageWidth || 1200);
   const imageHeight = Number(page.imageHeight || 630);
   const ogUrl = page.ogUrl || page.url;
@@ -846,26 +655,6 @@ function applyChallengeShareMeta(html, requestUrl) {
   );
 }
 
-function applyRemoteBoardgameShareMeta(html, requestUrl) {
-  const page = REMOTE_BOARDGAME_SHARE_META;
-  const ogUrl = requestUrl.searchParams.get('share') === BOARDGAME_RESULT_SHARE_VERSION
-    ? `${page.url}?share=${BOARDGAME_RESULT_SHARE_VERSION}`
-    : page.url;
-  return html
-    .replace(/<title>.*?<\/title>/, `<title>${page.title}</title>`)
-    .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${page.description}" />`)
-    .replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${page.url}" />`)
-    .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${page.title}" />`)
-    .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${page.description}" />`)
-    .replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${ogUrl}" />`)
-    .replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${page.image}" />`)
-    .replace(/<meta property="og:image:alt" content="[^"]*" \/>/, `<meta property="og:image:alt" content="${page.imageAlt}" />`)
-    .replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${page.title}" />`)
-    .replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${page.description}" />`)
-    .replace(/<meta name="twitter:image" content="[^"]*" \/>/, `<meta name="twitter:image" content="${page.image}" />`)
-    .replace(/<meta name="twitter:image:alt" content="[^"]*" \/>/, `<meta name="twitter:image:alt" content="${page.imageAlt}" />`);
-}
-
 function buildNoscript(page) {
   return `<noscript>
   <main style="max-width: 720px; margin: 32px auto; padding: 24px; font-family: sans-serif; line-height: 1.8; color: #1A1A1A; background: #FFFFFF;">
@@ -1021,435 +810,6 @@ function buildStructuredData(page) {
     '@context': 'https://schema.org',
     '@graph': graph,
   };
-}
-
-const REMOTE_ROOM_TTL_SECONDS = 60 * 60 * 24;
-const REMOTE_ROOM_CODE_CHARS = '0123456789';
-const REMOTE_RATE_WINDOW_SECONDS = 10 * 60;
-let remoteRateLimitReadyPromise = null;
-
-async function handleRemoteApi(request, env, path) {
-  if (request.method === 'OPTIONS') {
-    return jsonResponse({});
-  }
-
-  if (!env.REMOTE_DB && !env.REMOTE_KV) {
-    return jsonResponse({ error: 'remote-storage-not-configured' }, 500);
-  }
-
-  try {
-    if (path === '/api/remote/rooms' && request.method === 'POST') {
-      await enforceRemoteRateLimit(request, env, 'create', 10);
-      return await createRemoteRoom(request, env);
-    }
-
-    const chooseMatch = path.match(/^\/api\/remote\/rooms\/([0-9]{6})\/choose$/);
-    if (chooseMatch && request.method === 'POST') {
-      await enforceRemoteRateLimit(request, env, 'choose', 120);
-      return await chooseRemoteAnswer(request, env, chooseMatch[1]);
-    }
-
-    const match = path.match(/^\/api\/remote\/rooms\/([0-9]{6})$/);
-    if (match && request.method === 'GET') {
-      await enforceRemoteRateLimit(request, env, 'read', 180);
-      const code = match[1];
-      const room = await getRemoteRoom(env, code);
-      if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
-      return jsonResponse({
-        code,
-        room: publicRemoteRoom(room),
-        turnAccess: hasRemoteTurnAccess(request, room),
-      });
-    }
-
-    if (match && request.method === 'POST') {
-      await enforceRemoteRateLimit(request, env, 'update', 30);
-      const code = match[1];
-      const room = await getRemoteRoom(env, code);
-      if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
-      const body = await readJson(request);
-      const manageToken = normalizeRemoteManageToken(body && body.manageToken);
-      if (room.manageToken && manageToken !== room.manageToken) {
-        throw remoteApiError('room-update-forbidden', 403);
-      }
-      const patch = sanitizeRemotePatch(body && body.patch);
-      const nextRoom = {
-        ...room,
-        ...patch,
-        updatedAt: Date.now(),
-        expiresAt: Date.now() + REMOTE_ROOM_TTL_SECONDS * 1000,
-      };
-      if (nextRoom.phase === 'result') {
-        nextRoom.turnToken = null;
-      } else if (['target', 'guess'].includes(patch.phase) && (Array.isArray(patch.cards) || room.phase === 'result')) {
-        nextRoom.turnToken = createRemoteTurnToken();
-      }
-      await putRemoteRoom(env, code, nextRoom);
-      return jsonResponse({
-        code,
-        room: publicRemoteRoom(nextRoom),
-        nextTurnToken: nextRoom.turnToken || '',
-      });
-    }
-
-    return jsonResponse({ error: 'not-found' }, 404);
-  } catch (error) {
-    const status = Number(error && error.status) || 500;
-    return jsonResponse(
-      { error: error && error.message ? error.message : 'remote-api-error' },
-      status,
-      error && error.headers ? error.headers : undefined,
-    );
-  }
-}
-
-async function createRemoteRoom(request, env) {
-  const body = await readJson(request);
-  const room = sanitizeNewRemoteRoom(body);
-  await cleanupExpiredRemoteRooms(env);
-  let code = createRemoteCode();
-  for (let i = 0; i < 6; i += 1) {
-    const exists = await getRemoteRoom(env, code);
-    if (!exists) break;
-    code = createRemoteCode();
-  }
-  await putRemoteRoom(env, code, room);
-  return jsonResponse({
-    code,
-    room: publicRemoteRoom(room),
-    nextTurnToken: room.turnToken,
-    manageToken: room.manageToken,
-  });
-}
-
-async function chooseRemoteAnswer(request, env, code) {
-  const room = await getRemoteRoom(env, code);
-  if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
-
-  const body = await readJson(request);
-  const turnToken = String(body && body.turnToken ? body.turnToken : '');
-  const expectedRole = room.phase === 'target' ? 'target' : room.phase === 'guess' ? 'guesser' : '';
-  if (!expectedRole || room.turnToken !== turnToken || body.role !== expectedRole) {
-    return jsonResponse({ error: 'turn-link-expired' }, 409);
-  }
-  if (!isChoiceIndex(body.choice)) return jsonResponse({ error: 'invalid-choice' }, 400);
-
-  const choice = Number(body.choice);
-  const total = (room.cards || []).length;
-  const qIdx = Number(room.qIdx || 0);
-  const targetAnswers = Array.isArray(room.targetAnswers) ? room.targetAnswers.slice(0, total) : [];
-  const guessAnswers = Array.isArray(room.guessAnswers) ? room.guessAnswers.slice(0, total) : [];
-  const currentAnswers = expectedRole === 'target' ? targetAnswers : guessAnswers;
-  currentAnswers[qIdx] = choice;
-  const nextIndex = qIdx + 1;
-  const currentRoleDone = nextIndex >= total;
-  const otherAnswers = expectedRole === 'target' ? guessAnswers : targetAnswers;
-  const otherRoleDone = otherAnswers.length === total && otherAnswers.every(isChoiceIndex);
-  const done = currentRoleDone && otherRoleDone;
-  const answers = done ? targetAnswers.map((target, index) => ({
-    target: Number(target),
-    guess: Number(guessAnswers[index]),
-    match: Number(target) === Number(guessAnswers[index]),
-  })) : [];
-  const currentPhase = expectedRole === 'guesser' ? 'guess' : 'target';
-  const nextPhase = done ? 'result' : currentRoleDone ? oppositeRemoteRole(expectedRole) : currentPhase;
-  const nextRoom = {
-    ...room,
-    targetAnswers,
-    guessAnswers,
-    answers,
-    qIdx: done ? total - 1 : currentRoleDone ? 0 : nextIndex,
-    phase: nextPhase,
-    turnToken: done ? null : createRemoteTurnToken(),
-    updatedAt: Date.now(),
-    expiresAt: Date.now() + REMOTE_ROOM_TTL_SECONDS * 1000,
-  };
-
-  await putRemoteRoom(env, code, nextRoom);
-  return jsonResponse({
-    code,
-    room: publicRemoteRoom(nextRoom),
-    nextTurnToken: nextRoom.turnToken || '',
-  });
-}
-
-function sanitizeNewRemoteRoom(body) {
-  const cards = Array.isArray(body && body.cards) ? body.cards.slice(0, 5).map(sanitizeRemoteCard) : [];
-  if (cards.length !== 5) throw new Error('cards-required');
-  const loveMode = body && body.loveMode === 'boyTarget' ? 'boyTarget' : 'girlTarget';
-  const creatorSide = body && body.creatorSide === 'girl' ? 'girl' : 'boy';
-  const targetSide = loveMode === 'boyTarget' ? 'boy' : 'girl';
-  const creatorPhase = creatorSide === targetSide ? 'target' : 'guess';
-  const players = body && body.players ? body.players : {};
-  const type = body && body.type === 'boardgame' ? 'boardgame' : 'love';
-  const now = Date.now();
-  return {
-    type,
-    version: 4,
-    loveMode,
-    creatorSide,
-    players: {
-      girl: sanitizeRemoteName(players.girl, '相手'),
-      boy: sanitizeRemoteName(players.boy, '私'),
-    },
-    cards,
-    qIdx: 0,
-    phase: creatorPhase,
-    targetAnswers: [],
-    guessAnswers: [],
-    turnToken: createRemoteTurnToken(),
-    manageToken: createRemoteManageToken(),
-    answers: [],
-    createdAt: now,
-    updatedAt: now,
-    expiresAt: now + REMOTE_ROOM_TTL_SECONDS * 1000,
-  };
-}
-
-function sanitizeRemotePatch(patch) {
-  const source = patch && typeof patch === 'object' ? patch : {};
-  const next = {};
-  if (source.loveMode === 'girlTarget' || source.loveMode === 'boyTarget') next.loveMode = source.loveMode;
-  if (['target', 'guess', 'result'].includes(source.phase)) next.phase = source.phase;
-  if (Number.isInteger(source.qIdx) && source.qIdx >= 0 && source.qIdx <= 4) next.qIdx = source.qIdx;
-  if (Array.isArray(source.targetAnswers) && source.targetAnswers.length === 0) next.targetAnswers = [];
-  if (Array.isArray(source.guessAnswers) && source.guessAnswers.length === 0) next.guessAnswers = [];
-  if (Array.isArray(source.cards)) {
-    const cards = source.cards.slice(0, 5).map(sanitizeRemoteCard);
-    if (cards.length !== 5) throw new Error('cards-required');
-    next.cards = cards;
-  }
-  if (typeof source.roleSwapNonce === 'string' && /^[A-Za-z0-9_-]{1,48}$/.test(source.roleSwapNonce)) {
-    next.roleSwapNonce = source.roleSwapNonce;
-  }
-  if (Array.isArray(source.answers)) {
-    next.answers = source.answers.slice(0, 5).map((answer) => ({
-      target: isChoiceIndex(answer && answer.target) ? Number(answer.target) : 0,
-      guess: isChoiceIndex(answer && answer.guess) ? Number(answer.guess) : 0,
-      match: Boolean(answer && answer.match),
-    }));
-  }
-  return next;
-}
-
-function sanitizeRemoteCard(card) {
-  const choices = Array.isArray(card && card.choices) ? card.choices.slice(0, 5) : [];
-  if (choices.length !== 5) throw new Error('invalid-card');
-  return {
-    id: String(card && card.id ? card.id : ''),
-    image: String(card && card.image ? card.image : '').slice(0, 160),
-    title: String(card && card.title ? card.title : '').slice(0, 80),
-    choices: choices.map((choice) => String(choice || '').slice(0, 40)),
-  };
-}
-
-function sanitizeRemoteName(value, fallback) {
-  const text = String(value || '').replace(/\s+/g, ' ').trim().slice(0, 6);
-  return text || fallback;
-}
-
-function isChoiceIndex(value) {
-  const number = Number(value);
-  return Number.isInteger(number) && number >= 0 && number <= 4;
-}
-
-function oppositeRemoteRole(role) {
-  return role === 'target' ? 'guess' : 'target';
-}
-
-function createRemoteCode() {
-  const bytes = new Uint8Array(6);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => REMOTE_ROOM_CODE_CHARS[byte % REMOTE_ROOM_CODE_CHARS.length]).join('');
-}
-
-function createRemoteTurnToken() {
-  const bytes = new Uint8Array(18);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-function createRemoteManageToken() {
-  const bytes = new Uint8Array(24);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-function normalizeRemoteManageToken(value) {
-  const token = String(value || '').trim();
-  return /^[a-f0-9]{48}$/i.test(token) ? token : '';
-}
-
-function publicRemoteRoom(room) {
-  const { turnToken, manageToken, targetAnswers, guessAnswers, ...publicRoom } = room || {};
-  const total = Array.isArray(room && room.cards) ? room.cards.length : 0;
-  return {
-    ...publicRoom,
-    targetComplete: total > 0 && Array.isArray(targetAnswers) && targetAnswers.length === total && targetAnswers.every(isChoiceIndex),
-    guessComplete: total > 0 && Array.isArray(guessAnswers) && guessAnswers.length === total && guessAnswers.every(isChoiceIndex),
-  };
-}
-
-function hasRemoteTurnAccess(request, room) {
-  const url = new URL(request.url);
-  const token = String(url.searchParams.get('turn') || '');
-  const isHandoff = url.searchParams.get('handoff') === '1';
-  const claimedRole = isHandoff ? url.searchParams.get('next') : url.searchParams.get('role');
-  const expectedRole = room && room.phase === 'target' ? 'target' : room && room.phase === 'guess' ? 'guesser' : '';
-  return Boolean(expectedRole && room && room.turnToken && token === room.turnToken && claimedRole === expectedRole);
-}
-
-async function readJson(request) {
-  try {
-    return await request.json();
-  } catch (e) {
-    return {};
-  }
-}
-
-async function ensureRemoteD1(env) {
-  if (!env.REMOTE_DB) return false;
-  await env.REMOTE_DB.prepare(`
-    CREATE TABLE IF NOT EXISTS remote_rooms (
-      code TEXT PRIMARY KEY,
-      payload TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      expires_at INTEGER NOT NULL
-    )
-  `).run();
-  return true;
-}
-
-async function getRemoteRoom(env, code) {
-  if (await ensureRemoteD1(env)) {
-    const now = Date.now();
-    const row = await env.REMOTE_DB
-      .prepare('SELECT payload, expires_at FROM remote_rooms WHERE code = ?')
-      .bind(code)
-      .first();
-    if (!row) return null;
-    if (Number(row.expires_at) < now) {
-      await env.REMOTE_DB
-        .prepare('DELETE FROM remote_rooms WHERE code = ? AND expires_at < ?')
-        .bind(code, now)
-        .run();
-      return null;
-    }
-    return JSON.parse(row.payload);
-  }
-  if (env.REMOTE_KV) {
-    return await env.REMOTE_KV.get(`room:${code}`, { type: 'json' });
-  }
-  throw new Error('remote-storage-not-configured');
-}
-
-async function cleanupExpiredRemoteRooms(env) {
-  if (!env.REMOTE_DB || !(await ensureRemoteD1(env))) return;
-  const now = Date.now();
-  await Promise.all([
-    env.REMOTE_DB
-      .prepare('DELETE FROM remote_rooms WHERE expires_at < ?')
-      .bind(now)
-      .run(),
-    ensureRemoteRateLimitD1(env).then((ready) => ready
-      ? env.REMOTE_DB.prepare('DELETE FROM remote_rate_limits WHERE expires_at < ?').bind(now).run()
-      : null),
-  ]);
-}
-
-async function ensureRemoteRateLimitD1(env) {
-  if (!env.REMOTE_DB) return false;
-  if (!remoteRateLimitReadyPromise) {
-    remoteRateLimitReadyPromise = (async () => {
-      await env.REMOTE_DB.prepare(`
-        CREATE TABLE IF NOT EXISTS remote_rate_limits (
-          rate_key TEXT PRIMARY KEY,
-          window_start INTEGER NOT NULL,
-          request_count INTEGER NOT NULL,
-          expires_at INTEGER NOT NULL
-        )
-      `).run();
-      await env.REMOTE_DB.prepare(`
-        CREATE INDEX IF NOT EXISTS idx_remote_rate_limits_expires_at
-        ON remote_rate_limits (expires_at)
-      `).run();
-    })().catch((error) => {
-      remoteRateLimitReadyPromise = null;
-      throw error;
-    });
-  }
-  await remoteRateLimitReadyPromise;
-  return true;
-}
-
-async function remoteRateKey(request, scope) {
-  const ip = String(request.headers.get('CF-Connecting-IP') || 'unknown');
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
-  const hash = Array.from(new Uint8Array(digest).slice(0, 16), (byte) => byte.toString(16).padStart(2, '0')).join('');
-  return `${scope}:${hash}`;
-}
-
-async function enforceRemoteRateLimit(request, env, scope, limit) {
-  if (!env.REMOTE_DB || !(await ensureRemoteRateLimitD1(env))) return;
-  const now = Date.now();
-  const windowMs = REMOTE_RATE_WINDOW_SECONDS * 1000;
-  const windowStart = Math.floor(now / windowMs) * windowMs;
-  const expiresAt = windowStart + windowMs * 2;
-  const key = await remoteRateKey(request, scope);
-  await env.REMOTE_DB.prepare(`
-    INSERT INTO remote_rate_limits (rate_key, window_start, request_count, expires_at)
-    VALUES (?, ?, 1, ?)
-    ON CONFLICT(rate_key) DO UPDATE SET
-      window_start = CASE
-        WHEN remote_rate_limits.window_start = excluded.window_start THEN remote_rate_limits.window_start
-        ELSE excluded.window_start
-      END,
-      request_count = CASE
-        WHEN remote_rate_limits.window_start = excluded.window_start THEN remote_rate_limits.request_count + 1
-        ELSE 1
-      END,
-      expires_at = excluded.expires_at
-  `).bind(key, windowStart, expiresAt).run();
-  const row = await env.REMOTE_DB
-    .prepare('SELECT request_count FROM remote_rate_limits WHERE rate_key = ?')
-    .bind(key)
-    .first();
-  if (Number(row && row.request_count || 0) > limit) {
-    const retryAfter = Math.max(1, Math.ceil((windowStart + windowMs - now) / 1000));
-    throw remoteApiError('rate-limit-exceeded', 429, { 'Retry-After': String(retryAfter) });
-  }
-}
-
-function remoteApiError(message, status, headers) {
-  const error = new Error(message);
-  error.status = status;
-  error.headers = headers || {};
-  return error;
-}
-
-async function putRemoteRoom(env, code, room) {
-  if (await ensureRemoteD1(env)) {
-    await env.REMOTE_DB
-      .prepare(`
-        INSERT INTO remote_rooms (code, payload, created_at, updated_at, expires_at)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(code) DO UPDATE SET
-          payload = excluded.payload,
-          updated_at = excluded.updated_at,
-          expires_at = excluded.expires_at
-      `)
-      .bind(code, JSON.stringify(room), room.createdAt || Date.now(), Date.now(), room.expiresAt)
-      .run();
-    return;
-  }
-  if (env.REMOTE_KV) {
-    await env.REMOTE_KV.put(`room:${code}`, JSON.stringify(room), {
-      expirationTtl: REMOTE_ROOM_TTL_SECONDS,
-    });
-    return;
-  }
-  throw new Error('remote-storage-not-configured');
 }
 
 function jsonResponse(data, status = 200, extraHeaders) {

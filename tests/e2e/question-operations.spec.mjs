@@ -15,8 +15,6 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
       status: 'disabled',
       useChallenge: false,
       useLive: false,
-      targetFriend: true,
-      targetFamily: false,
       reportCount: 1,
       lastReportedAt: Date.now(),
     }, {
@@ -29,8 +27,6 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
       status: 'approved',
       useChallenge: true,
       useLive: true,
-      targetFriend: false,
-      targetFamily: false,
       reportCount: 0,
       lastReportedAt: null,
     }],
@@ -81,7 +77,7 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
 
   const response = await page.goto('/question-ops');
   expect(response?.headers()['x-robots-tag']).toBe('noindex, nofollow, noarchive');
-  await expect(page).toHaveTitle('お題審査・シリーズ管理 | Streetboardgame');
+  await expect(page).toHaveTitle('お題審査・問題管理 | Streetboardgame');
   await expect(page.locator('#dashboard')).toBeHidden();
   await page.locator('#adminToken').fill('x'.repeat(32));
   await page.locator('#adminOtp').fill('123456');
@@ -100,7 +96,7 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   await expect(page.locator('#allQuestions')).not.toContainText('家族向け');
   const totalText = await page.locator('#questionCount').textContent();
   const total = Number(totalText?.match(/全(\d+)問/)?.[1] || 0);
-  expect(total).toBeGreaterThan(100);
+  expect(total).toBeGreaterThanOrEqual(60);
   const statusOrder = await page.locator('#allQuestions [data-catalog]').evaluateAll((rows) => rows.map((row) => row.dataset.statusRow));
   expect(statusOrder.indexOf('disabled')).toBeGreaterThan(statusOrder.lastIndexOf('approved'));
   await expect(page.locator('#similaritySummary')).not.toHaveText('類似候補：0問');

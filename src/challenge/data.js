@@ -2,14 +2,6 @@ export function normalizeChallengeTitle(value) {
   return String(value || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
 }
 
-export function prepareLoveChallengeCards(cards) {
-  return (cards || []).map((card) => ({
-    ...card,
-    id: `LOVE${String(card && card.id || '')}`,
-    category: '共通のお題',
-  }));
-}
-
 export function mergeChallengeCards(...cardGroups) {
   const seen = new Set();
   return cardGroups.flatMap((cards) => cards || []).filter((card) => {

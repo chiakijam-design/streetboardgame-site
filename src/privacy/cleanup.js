@@ -1,7 +1,6 @@
 import { ensureLivePurchaseD1, getLivePurchaseDb } from '../live/purchases.js';
 
 export const PRIVACY_RETENTION = Object.freeze({
-  remoteGameHours: 24,
   challengeGameDays: 30,
   liveGameHoursAfterEnd: 24,
   paidAssetDays: 30,
@@ -56,7 +55,6 @@ async function cleanupGameDatabase(env, now, summary) {
     summary.expiredGames += codes.length;
   }
 
-  await safeRun(env.REMOTE_DB, 'DELETE FROM remote_rooms WHERE expires_at < ?', [now]);
   const expiredChallenges = await safeRows(
     env.REMOTE_DB,
     'SELECT code FROM challenge_rooms WHERE expires_at < ? LIMIT 500',
@@ -73,7 +71,6 @@ async function cleanupGameDatabase(env, now, summary) {
     );
     summary.expiredChallengeRooms = changes(deletedRooms);
   }
-  await safeRun(env.REMOTE_DB, 'DELETE FROM remote_rate_limits WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_rate_limits WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_reservations WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_active_sessions WHERE expires_at < ?', [now]);

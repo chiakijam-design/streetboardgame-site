@@ -67,7 +67,7 @@ test('stream challenge accepts only approved-price paid sales metadata', () => {
 
 test('streamer and viewer complete ten simultaneous answers with a personalized score', async () => {
   const kv = liveMemoryKv();
-  const env = { REMOTE_KV: kv };
+  const env = { LIVE_KV: kv };
   const questions = Array.from({ length: 10 }, (_, index) => ({
     id: `stream-flow-${index}`,
     text: `Question ${index + 1}`,

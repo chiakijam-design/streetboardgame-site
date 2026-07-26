@@ -227,7 +227,7 @@ export async function handleLiveApi(request, env, path) {
       await requireLivePurchaseDb(env);
       return await downloadLiveResult(request, env, downloadRoute[1]);
     }
-    if (!env.REMOTE_DB && !env.LIVE_KV && !env.REMOTE_KV) {
+    if (!env.REMOTE_DB && !env.LIVE_KV) {
       return liveJson({ error: 'live-storage-not-configured' }, 500);
     }
     if (path === '/api/live/reservations/availability' && request.method === 'GET') {
@@ -568,8 +568,8 @@ async function rotateLiveGameLinksAsHost(request, env, code) {
     code,
     hostToken: rotateHost ? game.hostToken : undefined,
     subjectToken: rotateSubject ? game.subjectToken : undefined,
-    hostUrl: rotateHost ? `${origin}/live?room=${code}#host=${game.hostToken}` : undefined,
-    subjectUrl: rotateSubject ? `${origin}/live?room=${code}#subject=${game.subjectToken}` : undefined,
+    hostUrl: rotateHost ? `${origin}/live-challenge?room=${code}#host=${game.hostToken}` : undefined,
+    subjectUrl: rotateSubject ? `${origin}/live-challenge?room=${code}#subject=${game.subjectToken}` : undefined,
     game: publicLiveGame(game, { host: true }),
   });
 }
@@ -710,7 +710,7 @@ async function createLiveCheckout(request, env, code) {
   try {
     const session = await createLiveCheckoutSession(env, {
       requestUrl: request.url, orderId, productType, code, amount, productName,
-      returnPath: game.mode === 'stream-challenge' ? '/live-challenge' : '/live',
+      returnPath: '/live-challenge',
       termsVersion: checkoutConsent.termsVersion,
       termsDocumentSha256: checkoutConsent.termsDocumentSha256,
       termsAcceptedAt: now,
@@ -967,8 +967,8 @@ async function rotateLiveGameLinksAsAdmin(request, env, code) {
   const origin = new URL(request.url).origin;
   return liveJson({
     code,
-    hostUrl: rotateHost ? `${origin}/live?room=${code}#host=${game.hostToken}` : undefined,
-    subjectUrl: rotateSubject ? `${origin}/live?room=${code}#subject=${game.subjectToken}` : undefined,
+    hostUrl: rotateHost ? `${origin}/live-challenge?room=${code}#host=${game.hostToken}` : undefined,
+    subjectUrl: rotateSubject ? `${origin}/live-challenge?room=${code}#subject=${game.subjectToken}` : undefined,
   });
 }
 
@@ -2367,7 +2367,7 @@ async function getStoredLiveGame(env, code, options = {}) {
     }
     return game;
   }
-  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const kv = env.LIVE_KV;
   const game = kv ? await kv.get(`live:${code}`, { type: 'json' }) : null;
   if (options.baseOnly && game) return { ...game, participants: [], votes: {} };
   return options.polling ? createPollingSnapshot(game, options.participantToken) : game;
@@ -2481,7 +2481,7 @@ async function loadLiveParticipant(env, code, participantToken) {
       joinedAt: Number(row.joined_at),
     } : null;
   }
-  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const kv = env.LIVE_KV;
   const game = kv ? await kv.get(`live:${code}`, { type: 'json' }) : null;
   return game?.participants?.find((item) => item.token === participantToken) || null;
 }
@@ -2554,7 +2554,7 @@ async function putStoredLiveGame(env, code, game) {
     `).bind(code, JSON.stringify(storedGame), game.createdAt, game.updatedAt, game.expiresAt).run();
     return;
   }
-  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const kv = env.LIVE_KV;
   if (!kv) throw liveError('live-storage-not-configured', 500);
   const fallbackTtl = game.phase === 'lobby' ? LIVE_SAVED_TTL_SECONDS : LIVE_ACTIVE_TTL_SECONDS;
   const ttlSeconds = Math.max(60, Math.ceil((Number(game.expiresAt) - Date.now()) / 1000) || fallbackTtl);
@@ -2564,7 +2564,7 @@ async function putStoredLiveGame(env, code, game) {
 async function cleanupExpiredLiveData(env) {
   const now = Date.now();
   if (!await ensureLiveD1(env)) {
-    const kv = env.LIVE_KV || env.REMOTE_KV;
+    const kv = env.LIVE_KV;
     if (!kv) return;
     const reservations = await getKvLiveReservations(kv);
     await kv.put('live:reservations', JSON.stringify(reservations.filter((item) => Number(item.expiresAt) >= now)));
@@ -2587,7 +2587,7 @@ async function isLiveSlotAvailable(env, scheduledAt, excludeCode = '') {
     `).bind(blockedFrom, blockedUntil, Date.now(), excludeCode).first();
     return !row;
   }
-  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const kv = env.LIVE_KV;
   const reservations = await getKvLiveReservations(kv);
   return !reservations.some((item) => item.code !== excludeCode
     && Math.abs(Number(item.scheduledAt) - scheduledAt) < LIVE_RESERVATION_BUFFER_MS);
@@ -2609,7 +2609,7 @@ async function moveLiveReservation(env, code, scheduledAt) {
     if (Number(moved?.meta?.changes || 0) !== 1) throw liveError('live-slot-unavailable', 409);
     return { scheduledAt, blockedFrom, blockedUntil };
   }
-  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const kv = env.LIVE_KV;
   const reservations = await getKvLiveReservations(kv);
   const currentIndex = reservations.findIndex((item) => item.code === code && Number(item.expiresAt) >= now);
   if (currentIndex < 0) throw liveError('reservation-not-found', 404);
@@ -2640,7 +2640,7 @@ async function reserveLiveSlot(env, code, scheduledAt, now) {
     if (Number(inserted?.meta?.changes || 0) !== 1) throw liveError('live-slot-unavailable', 409);
     return { scheduledAt, blockedFrom, blockedUntil };
   }
-  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const kv = env.LIVE_KV;
   const reservations = await getKvLiveReservations(kv);
   if (reservations.some((item) => Math.abs(Number(item.scheduledAt) - scheduledAt) < LIVE_RESERVATION_BUFFER_MS)) {
     throw liveError('live-slot-unavailable', 409);
@@ -2655,7 +2655,7 @@ async function releaseLiveReservation(env, code) {
     await env.REMOTE_DB.prepare('DELETE FROM live_reservations WHERE code = ?').bind(code).run();
     return;
   }
-  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const kv = env.LIVE_KV;
   const reservations = await getKvLiveReservations(kv);
   await kv.put('live:reservations', JSON.stringify(reservations.filter((item) => item.code !== code)));
 }
@@ -2680,7 +2680,7 @@ async function acquireLiveActiveSlot(env, code, game) {
     if (Number(locked?.meta?.changes || 0) !== 1) throw liveError('another-live-active', 409);
     return;
   }
-  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const kv = env.LIVE_KV;
   const active = await kv.get('live:active', { type: 'json' });
   if (active && active.code !== code && Number(active.expiresAt) >= now) throw liveError('another-live-active', 409);
   await kv.put('live:active', JSON.stringify({ code, startedAt: now, expiresAt }), {
@@ -2693,7 +2693,7 @@ async function releaseLiveActiveSlot(env, code) {
     await env.REMOTE_DB.prepare('DELETE FROM live_active_sessions WHERE lock_key = ? AND code = ?').bind('global', code).run();
     return;
   }
-  const kv = env.LIVE_KV || env.REMOTE_KV;
+  const kv = env.LIVE_KV;
   const active = await kv.get('live:active', { type: 'json' });
   if (active?.code === code) await kv.delete('live:active');
 }

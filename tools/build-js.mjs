@@ -5,15 +5,10 @@ import { copyFile, mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/p
 
 const DIST_ENTRIES = {
   viewport_recovery: 'viewport_recovery.js',
-  prototype_quiz_data: 'prototype_quiz_data.js',
-  prototype_friend_data: 'prototype_friend_data.js',
-  prototype_family_data: 'prototype_family_data.js',
-  prototype_english_data: 'prototype_english_data.js',
-  prototype_boardgame_data: 'prototype_boardgame_data.js',
+  prototype_common_data: 'prototype_common_data.js',
+  prototype_english_common_data: 'prototype_english_common_data.js',
   challenge_game: 'challenge_game.js',
   live_challenge: 'live_challenge.js',
-  remote_love: 'remote_love.js',
-  live_game: 'live_game.js',
   live_ops: 'live_ops.js',
   question_ops: 'question_ops.js',
   prototype_character: 'prototype_character.jsx',
@@ -25,42 +20,24 @@ const HTML_ENTRY_MAP = {
     'react',
     'react_dom',
     'viewport_recovery',
-    'prototype_quiz_data',
-    'prototype_friend_data',
-    'prototype_family_data',
-    'prototype_boardgame_data',
     'prototype_character',
     'prototype_app',
   ],
-  'remote.html': [
-    'viewport_recovery',
-    'prototype_quiz_data',
-    'prototype_boardgame_data',
-    'remote_love',
-  ],
   'challenge.html': [
-    'prototype_friend_data',
-    'prototype_family_data',
-    'prototype_english_data',
+    'prototype_common_data',
+    'prototype_english_common_data',
     'challenge_game',
   ],
   'live_challenge.html': [
-    'prototype_friend_data',
-    'prototype_family_data',
-    'prototype_english_data',
+    'prototype_common_data',
+    'prototype_english_common_data',
     'live_challenge',
-  ],
-  'live.html': [
-    'viewport_recovery',
-    'live_game',
   ],
   'live_ops.html': [
     'live_ops',
   ],
   'question_ops.html': [
-    'prototype_quiz_data',
-    'prototype_friend_data',
-    'prototype_family_data',
+    'prototype_common_data',
     'question_ops',
   ],
 };
@@ -68,7 +45,7 @@ const HTML_ENTRY_MAP = {
 await mkdir('dist', { recursive: true });
 await mkdir('assets/vendor', { recursive: true });
 
-await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_quiz_data|prototype_friend_data|prototype_family_data|prototype_english_data|prototype_boardgame_data|challenge_game|live_challenge|remote_love|live_game|live_ops|question_ops|prototype_character|prototype_app)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
+await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_common_data|prototype_english_common_data|challenge_game|live_challenge|live_ops|question_ops|prototype_character|prototype_app)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
 await removeGeneratedFiles('assets/vendor', /^react(?:-dom)?\.production\.min(?:-[a-f0-9]+)?\.js$/i);
 
 const runtimeSources = {

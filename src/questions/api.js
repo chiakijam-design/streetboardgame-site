@@ -109,7 +109,7 @@ async function createSubmissions(request, env) {
 async function publicCatalog(env) {
   const result = await env.REMOTE_DB.prepare(`
     SELECT question_id, source_kind, source_ref, title, category, choices_json,
-      status, use_challenge, use_live, target_friend, target_family, updated_at
+      status, use_challenge, use_live, updated_at
     FROM question_catalog
     WHERE status = 'approved' OR source_kind = 'static'
     ORDER BY updated_at DESC
@@ -121,7 +121,7 @@ async function adminOverview(env) {
   const [catalogResult, submissionResult] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT q.question_id, q.source_kind, q.source_ref, q.title, q.category, q.choices_json, q.status,
-        q.use_challenge, q.use_live, q.target_friend, q.target_family, q.created_at, q.updated_at,
+        q.use_challenge, q.use_live, q.created_at, q.updated_at,
         (SELECT COUNT(*) FROM question_reports r WHERE r.question_id = q.question_id) AS report_count,
         (SELECT MAX(reported_at) FROM question_reports r WHERE r.question_id = q.question_id) AS last_reported_at
       FROM question_catalog q
@@ -205,8 +205,8 @@ async function reviewSubmission(request, env, submissionId) {
     await env.REMOTE_DB.prepare(`
       INSERT INTO question_catalog
         (question_id, source_kind, source_ref, title, category, choices_json, status,
-          use_challenge, use_live, target_friend, target_family, created_at, updated_at)
-      VALUES (?, 'custom', ?, ?, ?, ?, 'approved', ?, ?, ?, ?, ?, ?)
+          use_challenge, use_live, created_at, updated_at)
+      VALUES (?, 'custom', ?, ?, ?, ?, 'approved', ?, ?, ?, ?)
     `).bind(
       catalogId,
       question.sourceQuestionId,
@@ -215,8 +215,6 @@ async function reviewSubmission(request, env, submissionId) {
       JSON.stringify(question.choices),
       1,
       1,
-      0,
-      0,
       now,
       now,
     ).run();
@@ -240,8 +238,8 @@ async function saveCatalogQuestion(request, env, questionId) {
   await env.REMOTE_DB.prepare(`
     INSERT INTO question_catalog
       (question_id, source_kind, source_ref, title, category, choices_json, status,
-        use_challenge, use_live, target_friend, target_family, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        use_challenge, use_live, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(question_id) DO UPDATE SET
       source_kind = excluded.source_kind,
       source_ref = excluded.source_ref,
@@ -251,8 +249,6 @@ async function saveCatalogQuestion(request, env, questionId) {
       status = excluded.status,
       use_challenge = excluded.use_challenge,
       use_live = excluded.use_live,
-      target_friend = excluded.target_friend,
-      target_family = excluded.target_family,
       updated_at = excluded.updated_at
   `).bind(
     questionId,
@@ -264,14 +260,12 @@ async function saveCatalogQuestion(request, env, questionId) {
     status,
     status === 'approved' ? 1 : 0,
     status === 'approved' ? 1 : 0,
-    0,
-    0,
     now,
     now,
   ).run();
   const row = await env.REMOTE_DB.prepare(`
     SELECT question_id, source_kind, source_ref, title, category, choices_json, status,
-      use_challenge, use_live, target_friend, target_family, created_at, updated_at
+      use_challenge, use_live, created_at, updated_at
     FROM question_catalog WHERE question_id = ?
   `).bind(questionId).first();
   return json({ question: mapCatalogRow(row) });
@@ -334,8 +328,6 @@ function mapCatalogRow(row) {
     status: row.status || 'approved',
     useChallenge: (row.status || 'approved') === 'approved',
     useLive: (row.status || 'approved') === 'approved',
-    targetFriend: false,
-    targetFamily: false,
     createdAt: row.created_at == null ? null : Number(row.created_at),
     updatedAt: Number(row.updated_at || 0),
     reportCount: Number(row.report_count || 0),
@@ -394,7 +386,6 @@ async function ensureQuestionSchema(env) {
         category TEXT NOT NULL DEFAULT 'みんなのお題', choices_json TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT 'approved', use_challenge INTEGER NOT NULL DEFAULT 0,
         use_live INTEGER NOT NULL DEFAULT 0,
-        target_friend INTEGER NOT NULL DEFAULT 0, target_family INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
       )`),
       env.REMOTE_DB.prepare(`CREATE TABLE IF NOT EXISTS question_submissions (

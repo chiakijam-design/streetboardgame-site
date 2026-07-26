@@ -12,28 +12,6 @@ async function preparePage(page) {
   });
 }
 
-async function pickLoveColor(page, index) {
-  const button = page.getByTestId(`color-${index}`);
-  await expect(button).toBeVisible();
-  await button.click();
-}
-
-async function completeLoveGame(page, mode) {
-  await page.goto('/?screen=intro');
-  await page.getByTestId(`love-mode-${mode}`).click();
-  await page.getByTestId('love-start').click();
-  for (let index = 0; index < 5; index += 1) await pickLoveColor(page, 0);
-  await page.getByTestId('love-batch-next-button').click();
-  for (let index = 0; index < 5; index += 1) await pickLoveColor(page, index < 3 ? 0 : 1);
-  await page.getByRole('button', { name: /答え合わせへ/ }).click();
-  for (let index = 0; index < 5; index += 1) {
-    await expect(page.getByTestId('love-reveal-page')).toBeVisible();
-    await page.getByTestId(index === 4 ? 'love-reveal-result' : 'love-reveal-next').click();
-  }
-  await expect(page.getByText('3/5', { exact: true }).first()).toBeVisible();
-  await expect(page.getByTestId('love-answer-details')).toBeVisible();
-}
-
 async function buildChallengeQuestions(page, startIndex = 0) {
   for (let index = startIndex; index < 10; index += 1) {
     await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
@@ -192,20 +170,20 @@ test('トップ下部から挑戦モードの説明を読み、10問クイズ作
   await expect(page.locator('a[href="/love"]')).toHaveCount(0);
 });
 
-test('旧愛情判定の42問を共通のお題として挑戦クイズに使える', async ({ page }) => {
+test('共通お題を挑戦クイズと人気ライブラリで使える', async ({ page }) => {
   await page.goto('/challenge');
-  const loveCard = await page.evaluate(() => ({
-    id: `LOVE${window.ALL_CARDS[0].id}`,
-    title: window.ALL_CARDS[0].title,
-    firstChoice: window.ALL_CARDS[0].choices[0],
+  const commonCard = await page.evaluate(() => ({
+    id: window.COMMON_QUESTION_CARDS[0].id,
+    title: window.COMMON_QUESTION_CARDS[0].title,
+    firstChoice: window.COMMON_QUESTION_CARDS[0].choices[0],
   }));
-  await page.goto(`/challenge?question=${encodeURIComponent(loveCard.id)}`);
-  await expect(page.getByText(loveCard.title, { exact: true })).toBeVisible();
-  await page.getByLabel('出題者の名前（12文字まで）').fill('愛情お題テスト');
+  await page.goto(`/challenge?question=${encodeURIComponent(commonCard.id)}`);
+  await expect(page.getByText(commonCard.title, { exact: true })).toBeVisible();
+  await page.getByLabel('出題者の名前（12文字まで）').fill('共通お題テスト');
   await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
   const builderCard = page.locator('.challenge-builder-card');
-  await expect(builderCard.getByRole('heading', { level: 2 })).toHaveText(loveCard.title);
-  await expect(builderCard).toContainText(loveCard.firstChoice);
+  await expect(builderCard.getByRole('heading', { level: 2 })).toHaveText(commonCard.title);
+  await expect(builderCard).toContainText(commonCard.firstChoice);
   await expect(builderCard.locator('svg.notebook-question-card-visual')).toHaveCount(1);
   await expect(builderCard.locator('.notebook-question-card-picture')).toHaveCount(0);
 });
@@ -266,8 +244,6 @@ test('承認済み自作お題を理由付きで通報すると、即時非公�
           status: 'approved',
           useChallenge: true,
           useLive: true,
-          targetFriend: true,
-          targetFamily: true,
         }],
       }),
     });
@@ -454,10 +430,10 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・3種カー
     })).toBe(true);
     await expect(participant.getByRole('link', { name: '自分も作る' })).toHaveAttribute('href', '/challenge');
     await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
-    await expect(participant.getByTestId('friend-ranking')).toContainText('ゆう');
-    await expect(participant.getByTestId('friend-ranking')).toContainText('答え合わせ済み');
-    await expect(participant.getByTestId('friend-ranking')).toContainText('9/10問一致');
-    await expect(participant.getByTestId('friend-ranking')).not.toContainText('1位');
+    await expect(participant.getByTestId('understanding-board')).toContainText('ゆう');
+    await expect(participant.getByTestId('understanding-board')).toContainText('答え合わせ済み');
+    await expect(participant.getByTestId('understanding-board')).toContainText('9/10問一致');
+    await expect(participant.getByTestId('understanding-board')).not.toContainText('1位');
   } finally {
     await participantContext.close();
   }
@@ -491,10 +467,10 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
     await participant.getByRole('button', { name: '理解度ボードに載せる（任意）' }).click();
     await expect(participant.getByText('この結果を理解度ボードに載せました。')).toBeVisible();
     await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
-    await expect(participant.getByTestId('friend-ranking')).toContainText('再挑戦');
-    await expect(participant.getByTestId('friend-ranking')).toContainText('答え合わせ済み');
-    await expect(participant.getByTestId('friend-ranking')).toContainText('10/10問一致');
-    await expect(participant.getByTestId('friend-ranking')).not.toContainText('1位');
+    await expect(participant.getByTestId('understanding-board')).toContainText('再挑戦');
+    await expect(participant.getByTestId('understanding-board')).toContainText('答え合わせ済み');
+    await expect(participant.getByTestId('understanding-board')).toContainText('10/10問一致');
+    await expect(participant.getByTestId('understanding-board')).not.toContainText('1位');
   } finally {
     await participantContext.close();
   }
@@ -526,7 +502,7 @@ test('正解は回答前の公開レスポンスへ出さず、51人目をサー
   test.skip(testInfo.project.name === 'mobile-chrome', '人数上限のAPI検証は画面幅に依存しないためPCで1回実行');
   await page.goto('/challenge');
   const mergedPool = await page.evaluate(() => {
-    const merged = [...window.FRIEND_CARDS, ...window.FAMILY_CARDS];
+    const merged = [...window.COMMON_QUESTION_CARDS];
     const seen = new Set();
     const unique = merged.filter((card) => {
       const key = card.title.normalize('NFKC').replace(/\s+/g, '').toLowerCase();
@@ -536,7 +512,7 @@ test('正解は回答前の公開レスポンスへ出さず、51人目をサー
     });
     return { count: unique.length, cards: unique.slice(0, 10) };
   });
-  expect(mergedPool.count).toBe(102);
+  expect(mergedPool.count).toBeGreaterThanOrEqual(10);
   const cards = mergedPool.cards;
   const createdResponse = await request.post('/api/challenge/rooms', {
     data: { creatorName: '出題者', cards, answers: Array(10).fill(0) },
@@ -633,7 +609,7 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
   }));
   expect(builderDimensions.scrollWidth).toBeLessThanOrEqual(builderDimensions.innerWidth);
 
-  const participantCards = await page.evaluate(() => window.FRIEND_CARDS.slice(0, 10));
+  const participantCards = await page.evaluate(() => window.COMMON_QUESTION_CARDS.slice(0, 10));
   const roomResponse = await page.request.post('/api/challenge/rooms', {
     data: {
       creatorName: '表示確認',
@@ -672,29 +648,16 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
   expect(participantCardGeometry.height / participantCardGeometry.width).toBeLessThan(1.50);
 });
 
-test('廃止した公開URLは挑戦モードへ恒久転送し、旧screen指定も開かない', async ({ page, request }, testInfo) => {
-  test.skip(testInfo.project.name === 'mobile-chrome', 'リダイレクトは画面幅に依存しないためPCで1回実行');
-  for (const path of ['/love', '/friends', '/family', '/boardgame', '/live', '/live-guide']) {
+test('廃止した公開URLと遠隔APIは404になり、旧screen指定も開かない', async ({ page, request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'HTTP状態は画面幅に依存しないためPCで1回実行');
+  for (const path of ['/love', '/friends', '/family', '/boardgame', '/remote', '/remote-boardgame', '/live', '/live-guide']) {
     const response = await request.get(path, { maxRedirects: 0 });
-    expect(response.status(), path).toBe(301);
-    expect(new URL(response.headers().location).pathname, path).toBe('/challenge');
+    expect(response.status(), path).toBe(404);
   }
-  for (const path of ['/remote', '/remote-boardgame']) {
-    const response = await request.get(`${path}?room=123456`, { maxRedirects: 0 });
-    expect(response.status(), path).toBe(200);
-    expect(await response.text(), path).toContain('data-build-entry="remote_love"');
-  }
+  expect((await request.get('/api/remote/rooms/123456')).status()).toBe(404);
   await page.goto('/?screen=friendIntro');
   await expect(page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
   await expect(page.getByText('友達の友情判定ゲーム', { exact: true })).toHaveCount(0);
-});
-
-test('既存のリモートURLはルーム情報を保ったままPC・スマホで開ける', async ({ page }) => {
-  await page.goto('/remote?room=123456');
-  expect(new URL(page.url()).pathname).toBe('/remote');
-  expect(new URL(page.url()).searchParams.get('room')).toBe('123456');
-  await expect(page.locator('#remoteHeroTitle')).toBeVisible();
-  await expect(page.locator('html')).not.toHaveClass(/has-horizontal-overflow/);
 });

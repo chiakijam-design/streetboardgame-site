@@ -1,68 +1,22 @@
 # streetboardgame.com
 
-公開中のゲームは、出題者の10問の答えを最大50人が予想する「みんなに挑戦してもらう」と、配信者・視聴者が同時回答する「ライブ配信でみんなに挑戦してもらう」の2モードです。
+「わたし理解度診断｜私のこと、ちゃんと分かってるよね？」のWebサイトです。
 
-LIVEの監視・障害対応は[`docs/LIVE_OPERATIONS_RUNBOOK.md`](docs/LIVE_OPERATIONS_RUNBOOK.md)を参照してください。
+## 現行モード
 
-『私のこと、ちゃんと分かってるよね？』クイズ作成ゲームの公式サイト。
+- 通常版 `/challenge`
+- LIVE版 `/live-challenge`
 
-## 構成
+両モードは同じ共通お題ライブラリを使います。お題の採用・無効化・編集・類似比較は
+`/question-ops` で管理します。
 
-純粋な静的サイト (HTML + JS + 画像) で、Cloudflare Pages 等の静的ホスティングにそのままデプロイできます。
+## 開発
 
-| ファイル | 役割 |
-|---|---|
-| `index.html` | エントリポイント。OGP / GA / ルーティングロジック含む |
-| `prototype_app.jsx` | メインアプリの編集元 |
-| `prototype_character.jsx` | キャラクター画像コンポーネント |
-| `dist/` | 事前変換済みの本番配信用JavaScript |
-| `prototype_quiz_data.js` | 全42問のお題カードデータ |
-| `favicon.svg` | favicon |
-| `assets/cards/` | お題カード画像 42 枚 |
-| `assets/character/` | キャラクター画像 3 枚 |
-| `assets/ogp.jpg` | SNSシェア用OGP画像 |
-| `_redirects` | Cloudflare Pages のリライト設定 |
-| `_headers` | Cloudflare Pages のHTTPヘッダー設定 |
-
-## ローカル動作確認
-
-初回のみNode.jsとpnpmを用意し、依存関係をインストールします。
-
-```bash
+```powershell
 pnpm install
-```
-
-`prototype_app.jsx`または`prototype_character.jsx`を変更したら、本番配信用JavaScriptを再生成します。
-
-```bash
 pnpm run build
+pnpm test
+pnpm run test:e2e
 ```
 
-`index.html`を直接ブラウザで開いても動きません。代わりに簡易HTTPサーバーで配信してください。
-
-```bash
-cd streetboardgame-site
-python -m http.server 8000
-# http://localhost:8000 で開く
-```
-
-## デプロイ
-
-`DEPLOY_CLOUDFLARE.md` を参照。
-
-## 更新の流れ
-
-1. JSXを編集した場合は`pnpm run build`を実行
-2. 編集元と`dist/`を一緒にコミットしてgit push
-3. Cloudflare Pagesが静的ファイルを配信し、1〜2分で本番反映
-
-画像を同じファイル名で差し替える場合は、参照URLの`?v=`も更新してください。過去の長期キャッシュが残っている端末にも、新しい画像を確実に読み込ませられます。
-
-Codexで作業するときは `CODEX_PROJECT.md` も参照してください。
-
-## ライセンス / クレジット
-
-- フォント: Google Fonts (Klee One, Zen Maru Gothic, RocknRoll One, DotGothic16, Noto Sans JP)
-- イラスト: パッケージオリジナル
-
-© 2026 streetboardgame.com
+Workerルーティングを含むローカル確認には `tools/test-server.mjs` を使います。

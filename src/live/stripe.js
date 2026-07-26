@@ -3,7 +3,7 @@ const CHECKOUT_TTL_SECONDS = 35 * 60;
 
 export async function createLiveCheckoutSession(env, input, now = Date.now()) {
   const origin = new URL(input.requestUrl).origin;
-  const returnPath = input.returnPath === '/live-challenge' ? '/live-challenge' : '/live';
+  const returnPath = '/live-challenge';
   const successUrl = new URL(returnPath, origin);
   successUrl.searchParams.set('room', input.code);
   successUrl.searchParams.set('checkout', 'success');
@@ -41,7 +41,7 @@ export async function createLiveCheckoutSession(env, input, now = Date.now()) {
   if (input.productType === 'result_image') {
     params.set(
       'payment_intent_data[description]',
-      `${input.productName} / 再ダウンロード: ${origin}/live?recover=1 / 注文番号: ${input.orderId}`,
+      `${input.productName} / 再ダウンロード: ${origin}/live-challenge?recover=1 / 注文番号: ${input.orderId}`,
     );
   }
   return stripeRequest(env, '/v1/checkout/sessions', params, `checkout-${input.orderId}`);

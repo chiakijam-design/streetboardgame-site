@@ -17,7 +17,6 @@ test('プライバシーポリシーは現在の公開範囲・子ども・第�
 
 test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2削除を同時に行う', async () => {
   assert.deepEqual(PRIVACY_RETENTION, {
-    remoteGameHours: 24,
     challengeGameDays: 30,
     liveGameHoursAfterEnd: 24,
     paidAssetDays: 30,

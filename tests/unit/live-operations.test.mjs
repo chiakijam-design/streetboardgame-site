@@ -147,7 +147,7 @@ test('漏えいURLを再発行すると旧トークンを失効し、強制終�
   }), env, '/api/live/admin/games/123456/rotate-links');
   assert.equal(rotateResponse.status, 200);
   const rotated = await rotateResponse.json();
-  assert.match(rotated.hostUrl, /\/live\?room=123456#host=[a-f0-9]{48}$/);
+  assert.match(rotated.hostUrl, /\/live-challenge\?room=123456#host=[a-f0-9]{48}$/);
   assert.equal(new URL(rotated.hostUrl).searchParams.has('host'), false);
   const storedAfterRotate = await kv.get('live:123456', { type: 'json' });
   assert.notEqual(storedAfterRotate.hostToken, game.hostToken);
@@ -222,7 +222,7 @@ test('スタッフは開始前の予約を安全に変更・URL再発行・キ�
   }), env, '/api/live/games/654321/rotate-links');
   assert.equal(rotateResponse.status, 200);
   const rotated = await rotateResponse.json();
-  assert.match(rotated.hostUrl, /\/live\?room=654321#host=[a-f0-9]{48}$/);
+  assert.match(rotated.hostUrl, /\/live-challenge\?room=654321#host=[a-f0-9]{48}$/);
   assert.notEqual(rotated.hostToken, hostToken);
 
   const oldTokenResponse = await handleLiveApi(new Request('https://example.com/api/live/games/654321/cancel', {

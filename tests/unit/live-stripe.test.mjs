@@ -42,7 +42,7 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
   assert.equal(captured.params.get('payment_intent_data[metadata][live_terms_version]'), CHECKOUT_TERMS.version);
   assert.equal(captured.params.get('payment_intent_data[transfer_group]'), 'ord_test01');
   assert.equal(captured.params.has('payment_intent_data[transfer_data][destination]'), false);
-  assert.match(captured.params.get('payment_intent_data[description]'), /\/live\?recover=1/);
+  assert.match(captured.params.get('payment_intent_data[description]'), /\/live-challenge\?recover=1/);
   assert.match(captured.params.get('payment_intent_data[description]'), /ord_test01/);
   assert.match(captured.params.get('success_url'), /session_id=\{CHECKOUT_SESSION_ID\}/);
 });

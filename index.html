@@ -126,25 +126,7 @@
 <!-- GA4は本番ドメインかつ、このブラウザが計測除外でない場合だけ読み込む -->
 <script src="/analytics.js"></script>
 
-<!-- =========================
-  旧Wix URL からのルーティング
-  ※ SPA なので物理ページは1つ(index.html)。URL パスに応じて
-    アプリの初期画面を切り替えるために window.__INITIAL_SCREEN を立てる。
-
-  マッピング:
-    /          → トップ画面
-    /watachan  → 遊び方(How to play)画面
-    /love      → 廃止済み。Workerで /challenge へ恒久転送
-    /challenge-guide → みんなに挑戦してもらう紹介ページ
-    /friends   → 友達の友情判定紹介ページ
-    /family    → 家族の絆判定紹介ページ
-    /boardgame → ボドゲ仲間の絆判定紹介ページ
-    /live-guide → LIVEゲーム紹介ページ
-    /about     → About ページ
-    /product   → 製品版ページ
-    /contact   → お問い合わせ(About のフォーム位置までスクロール)
-    その他     → トップ画面 (旧URLからの誘導は全部トップへ)
-========================= -->
+<!-- 現行の共通ページだけを同じHTMLから描画する。 -->
 <script>
   (function() {
     // テスト用: ?screen=challengePage|about|product|top で強制的に初期画面を指定可能
@@ -183,18 +165,14 @@
       if (lastSegment === 'contact') {
         window.__SCROLL_TO_CONTACT = true;
       }
-      // GA に旧URLアクセスを記録
+      // GA にページ内ルートを記録
       if (lastSegment !== '' && lastSegment !== 'index.html' && typeof gtag === 'function') {
         gtag('event', 'legacy_url_route', { from: path, to: routes[lastSegment] });
       }
       return;
     }
 
-    // 未知パスはトップに集約
     window.__INITIAL_SCREEN = 'top';
-    if (typeof gtag === 'function') {
-      gtag('event', 'unknown_url_route', { from: path });
-    }
   })();
 </script>
 
@@ -262,12 +240,8 @@
 <div id="root" aria-live="polite"></div>
 
 <script data-build-entry="viewport_recovery" src="/dist/viewport_recovery-MXTVWKCL.js"></script>
-<script data-build-entry="prototype_quiz_data" src="/dist/prototype_quiz_data-QOZCGR4D.js"></script>
-<script data-build-entry="prototype_friend_data" src="/dist/prototype_friend_data-IG72QJVR.js"></script>
-<script data-build-entry="prototype_family_data" src="/dist/prototype_family_data-T4YEJVTX.js"></script>
-<script data-build-entry="prototype_boardgame_data" src="/dist/prototype_boardgame_data-7RDJ3MR3.js"></script>
-<script data-build-entry="prototype_character" defer src="/dist/prototype_character-D4RIZ5YT.js"></script>
-<script data-build-entry="prototype_app" defer src="/dist/prototype_app-Y64JTTC2.js"></script>
+<script data-build-entry="prototype_character" defer src="/dist/prototype_character-57CBGQ5D.js"></script>
+<script data-build-entry="prototype_app" defer src="/dist/prototype_app-J5EJUM4K.js"></script>
 <script src="/language_switch.js?v=20260725-i18n-2"></script>
 </body>
 </html>

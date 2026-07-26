@@ -1,6 +1,6 @@
 import { expect, test } from './test.mjs';
 
-const publicRoutes = ['/', '/challenge', '/live-challenge', '/live', '/remote', '/404.html'];
+const publicRoutes = ['/', '/challenge', '/live-challenge', '/404.html'];
 const legalRoutes = [
   '/terms',
   '/privacy',

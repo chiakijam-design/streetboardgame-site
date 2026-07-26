@@ -15,12 +15,11 @@ function text(path) {
   return readFileSync(new URL(path, rootUrl), 'utf8');
 }
 
-test('英語標準ライブラリは60問・各5択を自然文として分離する', () => {
+test('英語標準ライブラリは60問・各5択の共通配列として分離する', () => {
   const context = { window: {} };
-  vm.runInNewContext(text('prototype_english_data.js'), context);
-  assert.equal(context.window.ENGLISH_FRIEND_CARDS.length, 40);
-  assert.equal(context.window.ENGLISH_FAMILY_CARDS.length, 20);
-  const cards = [...context.window.ENGLISH_FRIEND_CARDS, ...context.window.ENGLISH_FAMILY_CARDS];
+  vm.runInNewContext(text('prototype_english_common_data.js'), context);
+  const cards = context.window.ENGLISH_COMMON_QUESTION_CARDS;
+  assert.equal(cards.length, 60);
   assert.equal(new Set(cards.map((card) => card.id)).size, 60);
   for (const card of cards) {
     assert.match(card.id, /^EN/);

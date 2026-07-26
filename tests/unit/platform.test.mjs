@@ -8,7 +8,6 @@ import {
   openXShare,
 } from '../../src/platform/share.js';
 import { fetchImageBlob, sharePreparedImage } from '../../src/platform/imageSave.js';
-import { createRemoteClient } from '../../src/api/remoteClient.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -37,7 +36,6 @@ test('LINE共有は端末に応じたURLを返す', () => {
   assert.match(href, /^line:\/\/msg\/text\//);
   assert.equal(mobileWindow.location.href, href);
 });
-
 test('わたし理解度診断の招待文は再挑戦と任意公開を明記する', () => {
   const text = buildChallengeInviteText({
     creatorName: 'ちあき',
@@ -130,19 +128,4 @@ test('スマホの共有APIが失敗しても結果画像の保存へフォー�
   });
   assert.equal(result, 'downloaded');
   assert.equal(clicked, true);
-});
-
-test('遠隔API窓口はエンドポイントとJSON処理を集約する', async () => {
-  const calls = [];
-  const client = createRemoteClient({
-    baseUrl: '/api/remote',
-    fetchRef: async (url, options) => {
-      calls.push({ url, options });
-      return { ok: true, json: async () => ({ room: '123456' }) };
-    },
-  });
-  const result = await client.createRoom({ name: 'A' });
-  assert.equal(result.room, '123456');
-  assert.equal(calls[0].url, '/api/remote/rooms');
-  assert.equal(calls[0].options.method, 'POST');
 });

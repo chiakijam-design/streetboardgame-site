@@ -10,7 +10,6 @@ import {
 import {
   mergeChallengeCards,
   pickChallengeCards,
-  prepareLoveChallengeCards,
 } from '../../src/challenge/data.js';
 
 class MemoryKV {
@@ -64,28 +63,17 @@ function d1Adapter(sqlite) {
   };
 }
 
-test('共通・友達・家族データは題名を正規化して重複を除ける', () => {
-  const loveCards = prepareLoveChallengeCards([
-    { id: 1, title: '愛情判定の問題', choices: ['A', 'B', 'C', 'D', 'E'], image: 'card.png' },
-  ]);
+test('共通お題データは題名を正規化して重複を除ける', () => {
   const merged = mergeChallengeCards(
-    [{ title: '同じ 問題', choices: ['1', '2', '3', '4', '5'] }, { title: '友達問題', choices: ['1', '2', '3', '4', '5'] }],
-    [{ title: '同じ問題', choices: ['a', 'b', 'c', 'd', 'e'] }, { title: '家族問題', choices: ['1', '2', '3', '4', '5'] }],
-    loveCards,
+    [{ title: '同じ 問題', choices: ['1', '2', '3', '4', '5'] }, { title: '問題A', choices: ['1', '2', '3', '4', '5'] }],
+    [{ title: '同じ問題', choices: ['a', 'b', 'c', 'd', 'e'] }, { title: '問題B', choices: ['1', '2', '3', '4', '5'] }],
   );
-  assert.deepEqual(merged.map((card) => card.title), ['同じ 問題', '友達問題', '家族問題', '愛情判定の問題']);
-  assert.deepEqual(loveCards[0], {
-    id: 'LOVE1',
-    category: '共通のお題',
-    title: '愛情判定の問題',
-    choices: ['A', 'B', 'C', 'D', 'E'],
-    image: 'card.png',
-  });
+  assert.deepEqual(merged.map((card) => card.title), ['同じ 問題', '問題A', '問題B']);
   assert.equal(pickChallengeCards(merged, 2, () => 0).length, 2);
 });
 
 test('挑戦ルームは10問固定で正解を公開せず50人まで受け付ける', async () => {
-  const env = { REMOTE_KV: new MemoryKV() };
+  const env = { CHALLENGE_KV: new MemoryKV() };
   const createdResponse = await api(env, '/api/challenge/rooms', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -117,7 +105,7 @@ test('挑戦ルームは10問固定で正解を公開せず50人まで受け付�
 });
 
 test('挑戦者の得点・同率順位・10問の答え合わせを本人だけに返す', async () => {
-  const env = { REMOTE_KV: new MemoryKV() };
+  const env = { CHALLENGE_KV: new MemoryKV() };
   const created = await (await api(env, '/api/challenge/rooms', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -185,7 +173,7 @@ test('選択した1問だけを順番に確定し、正解を漏らさず正誤�
   sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
   const environments = [
-    { REMOTE_KV: new MemoryKV() },
+    { CHALLENGE_KV: new MemoryKV() },
     { REMOTE_DB: d1Adapter(sqlite) },
   ];
 
@@ -289,7 +277,7 @@ test('結果確認後だけ点数を登録でき、同じ参加枠で再挑戦�
   sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
   const environments = [
-    { REMOTE_KV: new MemoryKV() },
+    { CHALLENGE_KV: new MemoryKV() },
     { REMOTE_DB: d1Adapter(sqlite) },
   ];
 

@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { mergeChallengeCards, pickChallengeCards, prepareLoveChallengeCards } from './src/challenge/data.js';
+import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
 import { LIVE_AGE_NOTICE } from './src/live/age-notice.js';
 import {
   LIVE_POLL_INTERVAL_MS,
@@ -21,12 +21,8 @@ import { isEnglish, localizeDom } from './src/i18n/runtime.js';
 const QUESTION_COUNT = 10;
 const app = document.getElementById('live-challenge-app');
 let allCards = isEnglish
-  ? mergeChallengeCards(window.ENGLISH_FRIEND_CARDS, window.ENGLISH_FAMILY_CARDS)
-  : mergeChallengeCards(
-    window.FRIEND_CARDS,
-    window.FAMILY_CARDS,
-    prepareLoveChallengeCards(window.ALL_CARDS),
-  );
+  ? mergeChallengeCards(window.ENGLISH_COMMON_QUESTION_CARDS)
+  : mergeChallengeCards(window.COMMON_QUESTION_CARDS);
 const languagePrefix = isEnglish ? '/en' : '';
 const url = new URL(location.href);
 const initialCode = (url.searchParams.get('room') || '').replace(/\D/g, '').slice(0, 6);
@@ -135,7 +131,7 @@ function landingView() {
       <div class="icon">🎙️</div>
       <span class="section-pill">配信者</span>
       <h2>10問LIVEを作る</h2>
-      <p>友達・家族・共通のお題から10問を選び、問題文と5択を自由に編集できます。</p>
+      <p>共通のお題ライブラリから10問を選び、問題文と5択を自由に編集できます。</p>
       <ul class="steps">
         <li><b>1</b><span>10問を選ぶ・ランダム選択</span></li>
         <li><b>2</b><span>URL・QR・6桁コードを配信で案内</span></li>
@@ -218,8 +214,7 @@ function paidSalesSettingsView() {
     ? '<div class="notice" role="status">この端末の販売登録を確認しています。</div>'
     : '';
   const unavailable = state.paidCreatorProfilesLoaded && !profiles.length
-    ? `<div class="notice">この端末に販売可能な配信者登録がありません。無料LIVEはそのまま作れます。販売にはYouTubeチャンネルの所有確認、収益分配契約、Stripe審査が必要です。</div>
-      <a class="ghost" href="/live" target="_blank" rel="noopener noreferrer">販売登録・本人確認を確認する</a>`
+    ? '<div class="notice">この端末に販売可能な配信者登録がありません。無料LIVEはそのまま作れます。販売登録が反映されていない場合は運営へお問い合わせください。</div>'
     : '';
   const settings = profiles.length ? `<div class="sales-fields" ${state.paidSalesEnabled ? '' : 'hidden'}>
       <div class="field">

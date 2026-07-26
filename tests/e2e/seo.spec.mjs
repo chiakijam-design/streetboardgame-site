@@ -46,6 +46,13 @@ test('サイトマップは2モードだけを掲載し、挑戦URLはnoindexに
   const managePage = await request.get('/challenge/manage?room=ABCDEFGH');
   expect(managePage.headers()['x-robots-tag']).toContain('noindex');
 });
+test('廃止した6モードと遠隔APIは404を返す', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'HTTP状態は画面幅に依存しないためPCで1回検証');
+  for (const path of ['/love', '/friends', '/family', '/boardgame', '/remote', '/remote-boardgame']) {
+    expect((await request.get(path, { maxRedirects: 0 })).status(), path).toBe(404);
+  }
+  expect((await request.get('/api/remote/rooms/123456')).status()).toBe(404);
+});
 
 test('サイトマップ掲載URLは200・自己canonical・index可能で統一する', async ({ request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPメタ情報は画面幅に依存しないためPCで1回検証');
@@ -169,11 +176,4 @@ test('CSP・主要セキュリティヘッダーと404を維持する', async ({
   const response = await page.goto('/does-not-exist-for-test');
   expect(response?.status()).toBe(404);
   await expect(page.getByRole('heading', { name: 'ページが見つかりません' })).toBeVisible();
-});
-
-test('廃止した愛情判定URLは通常の挑戦モードへ恒久転送する', async ({ request }, testInfo) => {
-  test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPリダイレクトは画面幅に依存しないためPCで1回検証');
-  const response = await request.get('/love', { maxRedirects: 0 });
-  expect(response.status()).toBe(301);
-  expect(new URL(response.headers().location).pathname).toBe('/challenge');
 });

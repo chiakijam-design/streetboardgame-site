@@ -35,7 +35,7 @@ test('採用を先にして問題文の日本語順へ並べ、似た問題と5�
   assert.ok(matches.get('q1')[0].score >= 0.58);
 });
 
-test('既存DBの旧シリーズ分類を採用・無効化の共通状態へ移行する', async () => {
+test('既存DBから旧シリーズ分類列と廃止お題を削除する', async () => {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(await readFile(new URL('../../migrations/0012_question_catalog_moderation.sql', import.meta.url), 'utf8'));
   const insert = sqlite.prepare(`
@@ -47,17 +47,19 @@ test('既存DBの旧シリーズ分類を採用・無効化の共通状態へ移
   insert.run('FQ001', 'FQ001', '採用問題', '友達向け', 'approved', 1, 0, 1, 0);
   insert.run('FAM001', 'FAM001', '無効問題', '家族向け', 'disabled', 1, 1, 0, 1);
 
+  sqlite.exec(await readFile(new URL('../../migrations/0013_question_safety_reports.sql', import.meta.url), 'utf8'));
   sqlite.exec(await readFile(new URL('../../migrations/0014_unify_question_catalog.sql', import.meta.url), 'utf8'));
-  const approved = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('FQ001');
+  sqlite.exec(await readFile(new URL('../../migrations/0015_remove_retired_games.sql', import.meta.url), 'utf8'));
+  const approved = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('Q001');
   const disabled = sqlite.prepare('SELECT * FROM question_catalog WHERE question_id = ?').get('FAM001');
+  const columns = sqlite.prepare('PRAGMA table_info(question_catalog)').all().map((column) => column.name);
   assert.deepEqual(
-    [approved.use_challenge, approved.use_live, approved.target_friend, approved.target_family, approved.category],
-    [1, 1, 0, 0, 'みんなのお題'],
+    [approved.use_challenge, approved.use_live, approved.category],
+    [1, 1, 'みんなのお題'],
   );
-  assert.deepEqual(
-    [disabled.use_challenge, disabled.use_live, disabled.target_friend, disabled.target_family, disabled.category],
-    [0, 0, 0, 0, 'みんなのお題'],
-  );
+  assert.equal(disabled, undefined);
+  assert.equal(columns.includes('target_friend'), false);
+  assert.equal(columns.includes('target_family'), false);
 });
 
 test('個人情報らしい文字列と重点審査4分類を自動検知する', () => {
@@ -96,7 +98,7 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
     LIVE_ADMIN_SESSION_SECRET: 'session-secret-which-is-longer-than-thirty-two-characters',
   };
   const question = {
-    sourceQuestionId: 'FQ001',
+    sourceQuestionId: 'Q001',
     title: '自作した問題はどれ？',
     choices: ['その1', 'その2', 'その3', 'その4', 'その5'],
   };
@@ -173,8 +175,6 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
       category: '会話',
       useChallenge: true,
       useLive: true,
-      targetFriend: true,
-      targetFamily: false,
     },
     adminHeaders,
   ), env, `/api/questions/admin/submissions/${submissionId}/review`);
@@ -198,8 +198,8 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   assert.deepEqual(publicData.questions[0].choices, question.choices);
   assert.equal(publicData.questions[0].useChallenge, true);
   assert.equal(publicData.questions[0].useLive, true);
-  assert.equal(publicData.questions[0].targetFriend, false);
-  assert.equal(publicData.questions[0].targetFamily, false);
+  assert.equal('targetFriend' in publicData.questions[0], false);
+  assert.equal('targetFamily' in publicData.questions[0], false);
 
   const updateResponse = await handleQuestionApi(jsonRequest(
     `/api/questions/admin/catalog/${approved.catalogId}`,
@@ -209,10 +209,6 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
       sourceKind: 'custom',
       sourceRef: approved.catalogId,
       status: 'approved',
-      useChallenge: true,
-      useLive: false,
-      targetFriend: true,
-      targetFamily: true,
     },
     adminHeaders,
     'PUT',
@@ -220,23 +216,19 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   assert.equal(updateResponse.status, 200);
   const updated = await updateResponse.json();
   assert.equal(updated.question.useLive, true);
-  assert.equal(updated.question.targetFamily, false);
+  assert.equal('targetFamily' in updated.question, false);
 
   const disabledStaticResponse = await handleQuestionApi(jsonRequest(
-    '/api/questions/admin/catalog/FQ001',
+    '/api/questions/admin/catalog/Q001',
     {
       ...question,
       sourceKind: 'static',
-      sourceRef: 'FQ001',
+      sourceRef: 'Q001',
       status: 'disabled',
-      useChallenge: true,
-      useLive: true,
-      targetFriend: true,
-      targetFamily: false,
     },
     adminHeaders,
     'PUT',
-  ), env, '/api/questions/admin/catalog/FQ001');
+  ), env, '/api/questions/admin/catalog/Q001');
   assert.equal(disabledStaticResponse.status, 200);
 
   const catalogWithDisabledResponse = await handleQuestionApi(
@@ -245,20 +237,20 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
     '/api/questions/catalog',
   );
   const catalogWithDisabled = await catalogWithDisabledResponse.json();
-  const disabledStatic = catalogWithDisabled.questions.find((item) => item.id === 'FQ001');
+  const disabledStatic = catalogWithDisabled.questions.find((item) => item.id === 'Q001');
   assert.equal(disabledStatic.status, 'disabled');
   const cardsAfterDisable = applyManagedQuestionCards([{
-    id: 'FQ001',
+    id: 'Q001',
     title: question.title,
-    category: '友達向け',
+    category: 'みんなのお題',
     choices: question.choices,
   }], catalogWithDisabled.questions, 'challenge');
-  assert.equal(cardsAfterDisable.some((item) => item.id === 'FQ001'), false);
+  assert.equal(cardsAfterDisable.some((item) => item.id === 'Q001'), false);
   assert.equal(cardsAfterDisable.some((item) => item.id === approved.catalogId), true);
   assert.equal(cardsAfterDisable.find((item) => item.id === approved.catalogId).reportable, true);
   assert.equal(cardsAfterDisable.find((item) => item.id === approved.catalogId).managedQuestionId, approved.catalogId);
   const liveCardsAfterDisable = applyManagedQuestionCards([{
-    id: 'FQ001',
+    id: 'Q001',
     title: question.title,
     category: 'みんなのお題',
     choices: question.choices,

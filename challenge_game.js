@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { mergeChallengeCards, pickChallengeCards, prepareLoveChallengeCards } from './src/challenge/data.js';
+import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
 import {
   changedQuestionCandidates,
   loadManagedQuestionCards,
@@ -36,12 +36,8 @@ const quizFeedbackSoundPlayer = createQuizFeedbackSoundPlayer();
 window.addEventListener('pointerdown', () => quizFeedbackSoundPlayer.prime(), { once: true, passive: true });
 const app = document.getElementById('challenge-app');
 let allCards = isEnglish
-  ? mergeChallengeCards(window.ENGLISH_FRIEND_CARDS, window.ENGLISH_FAMILY_CARDS)
-  : mergeChallengeCards(
-    window.FRIEND_CARDS,
-    window.FAMILY_CARDS,
-    prepareLoveChallengeCards(window.ALL_CARDS),
-  );
+  ? mergeChallengeCards(window.ENGLISH_COMMON_QUESTION_CARDS)
+  : mergeChallengeCards(window.COMMON_QUESTION_CARDS);
 const currentUrl = new URL(location.href);
 const pagePath = currentUrl.pathname.replace(/^\/en(?=\/|$)/, '').replace(/\/+$/, '') || '/challenge';
 const languagePrefix = isEnglish ? '/en' : '';
@@ -320,7 +316,7 @@ function createStartView() {
       <input id="creator-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ちあき" value="${escapeHtml(state.creatorName)}">
       <button class="challenge-primary" data-action="start-create">10問に答えてクイズを作る <span>▶</span></button>
-      <p class="challenge-note">友達・家族・共通のお題から出題します。回答途中はこの端末へ自動保存されます。</p>
+      <p class="challenge-note">共通のお題ライブラリから出題します。回答途中はこの端末へ自動保存されます。</p>
     </section>`,
   );
 }
@@ -661,7 +657,7 @@ function rankingView() {
     'UNDERSTANDING BOARD',
     '理解度ボード',
     '載せるかは自分で選べます。みんなの答え合わせを、次の会話のきっかけに。',
-    `<section class="challenge-panel" data-testid="friend-ranking">
+    `<section class="challenge-panel" data-testid="understanding-board">
       <div class="challenge-count"><b>${room.completedParticipants}</b>人が回答済み ／ 上限${room.maxParticipants}人</div>
       ${state.ranking.length ? `<ul class="challenge-ranking-list">
         ${state.ranking.map((participant) => `
@@ -1573,7 +1569,7 @@ async function createChallengeResultCanvas(result, requestedMode = state.resultC
   context.stroke();
   context.fillStyle = '#191919';
   context.font = '900 28px "Yu Gothic", sans-serif';
-  context.fillText(isEnglish ? 'Share this result with your friends' : 'この結果、友達に伝えよう', 448, 1134);
+  context.fillText(isEnglish ? 'Share this result' : 'この結果をシェアしよう', 448, 1134);
   context.fillStyle = '#d63a75';
   context.font = '900 22px "Yu Gothic", sans-serif';
   context.fillText(isEnglish ? 'Which answers matched?' : 'どこが当たった？', 448, 1168);
