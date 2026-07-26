@@ -32,6 +32,7 @@ const QUESTION_COUNT = 10;
 const CHALLENGE_SHARE_VERSION = 'challenge-20260726-1';
 const CREATOR_DRAFT_KEY = 'watachan-challenge-creator-draft:v1';
 const MANAGE_HISTORY_KEY = 'watachan-challenge-manage-history:v1';
+const BOARD_OPT_IN_KEY_PREFIX = 'watachan-challenge-board-opt-in:';
 const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
 const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
 const quizFeedbackSoundPlayer = createQuizFeedbackSoundPlayer();
@@ -74,6 +75,8 @@ let state = {
   resultImageUrl: '',
   resultImageBusy: false,
   resultImageError: '',
+  boardOptIn: readBoardOptIn(roomCode),
+  boardPreferenceBusy: false,
   error: '',
   loading: false,
   answerPending: false,
@@ -516,7 +519,7 @@ function joinView() {
         placeholder="例：ゆう（本名は避けてください）" value="${escapeHtml(state.participantName)}">
       <button class="challenge-primary" data-action="join">10問の答え当てに挑戦する <span>▶</span></button>
       <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a>
-      <p class="challenge-note">結果は回答後すぐには公開されません。答え合わせを見てから、理解度ボードに載せるか、もう一度答えを予想するかを選べます。</p>
+      <p class="challenge-note">回答後は、初期設定では理解度ボードに載ります。結果画面のチェックを外せば非掲載にでき、同じ10問へもう一度挑戦することもできます。</p>
       <p class="challenge-note">回答内容は答え合わせと主催者の回答確認に使用されます。本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。</p>
     </section>`,
   );
@@ -576,6 +579,14 @@ function resultView() {
           <span class="challenge-section-label">SHARE YOUR RESULT</span>
           <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
           <p>XやLINEは参加URLつきで送れます。Instagramはプロフィールリンクへ。</p>
+          <label class="challenge-result-board-toggle">
+            <input type="checkbox" data-action="toggle-ranking"
+              ${state.boardOptIn ? 'checked' : ''} ${state.boardPreferenceBusy ? 'disabled' : ''}>
+            <span>
+              <strong>理解度ボードに載せる</strong>
+              <small>初期設定はオンです。チェックを外すと、理解度ボードから外れます。</small>
+            </span>
+          </label>
           <div class="challenge-result-share-buttons">
             <button type="button" class="challenge-result-share-button line" data-action="share-result-line">
               LINEで結果を送る
@@ -593,19 +604,8 @@ function resultView() {
           文章だけコピーする
         </button>
       </div>
-      <section class="challenge-score-actions" data-testid="challenge-score-actions">
-        <span class="challenge-section-label">OPTIONAL</span>
-        <h2>理解度ボードに載せる？</h2>
-        ${rankingRegistered
-          ? '<p class="challenge-ranking-registered">この結果を理解度ボードに載せました。</p>'
-          : '<p>載せなくても大丈夫です。もう一度予想して、載せたい結果だけを公開できます。</p>'}
-        <button class="challenge-primary" data-action="retry-challenge">もう一度、答えを予想する</button>
-        ${rankingRegistered
-          ? ''
-          : `<p>理解度ボードには、表示名と一致した問題数だけをコメントなしで載せます。</p>
-            <button class="challenge-secondary" data-action="register-ranking">理解度ボードに載せる（任意）</button>`}
-        <small>もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。</small>
-      </section>
+      <button class="challenge-primary" data-action="retry-challenge">もう一度、答えを予想する</button>
+      <p class="challenge-result-retry-note">もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。</p>
       <section class="challenge-role-swap" data-testid="challenge-role-swap">
         <span class="challenge-section-label">ROLE CHANGE</span>
         <h2>今度は役割交代</h2>
@@ -818,7 +818,9 @@ function bindEvents() {
   document.querySelector('[data-action="report-question"]')?.addEventListener('click', (event) => reportQuestion(event.currentTarget));
   document.querySelector('[data-action="refresh-ranking"]')?.addEventListener('click', loadRanking);
   document.querySelector('[data-action="join"]')?.addEventListener('click', joinRoom);
-  document.querySelector('[data-action="register-ranking"]')?.addEventListener('click', registerRankingScore);
+  document.querySelector('[data-action="toggle-ranking"]')?.addEventListener('change', (event) => {
+    updateBoardPreference(event.currentTarget.checked);
+  });
   document.querySelector('[data-action="retry-challenge"]')?.addEventListener('click', retryChallenge);
   document.querySelector('[data-action="swap-roles"]')?.addEventListener('click', startRoleSwap);
   document.querySelector('[data-action="share-result-line"]')?.addEventListener('click', shareResultToLine);
@@ -1199,12 +1201,12 @@ async function joinRoom() {
   }
 }
 
-async function registerRankingScore() {
+async function updateBoardPreference(enabled) {
   if (!state.result || !state.participantToken) return;
-  setState({ loading: true, error: '' });
+  setState({ boardOptIn: enabled, boardPreferenceBusy: true, error: '' });
   try {
     const response = await fetch(`/api/challenge/rooms/${state.roomCode}/ranking`, {
-      method: 'POST',
+      method: enabled ? 'POST' : 'DELETE',
       headers: {
         'content-type': 'application/json',
         'x-challenge-participant-token': state.participantToken,
@@ -1212,10 +1214,26 @@ async function registerRankingScore() {
       body: JSON.stringify({}),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'ranking-registration-failed');
-    await loadResult();
+    if (!response.ok) {
+      throw new Error(data.error || (enabled
+        ? 'ranking-registration-failed'
+        : 'ranking-unregistration-failed'));
+    }
+    saveBoardOptIn(state.roomCode, enabled);
+    setState({
+      result: { ...state.result, participant: data.participant },
+      boardOptIn: enabled,
+      boardPreferenceBusy: false,
+    });
   } catch (error) {
-    setState({ loading: false, mode: 'result', error: error.message });
+    const actualPreference = state.result.participant?.rankingParticipating === true;
+    saveBoardOptIn(state.roomCode, actualPreference);
+    setState({
+      boardOptIn: actualPreference,
+      boardPreferenceBusy: false,
+      mode: 'result',
+      error: error.message,
+    });
   }
 }
 
@@ -1232,6 +1250,7 @@ async function retryChallenge() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'retry-failed');
     localStorage.removeItem(participantDraftKey(state.roomCode));
+    resetBoardOptIn(state.roomCode);
     const next = {
       loading: false,
       answerPending: false,
@@ -1243,6 +1262,8 @@ async function retryChallenge() {
       resultImageUrl: '',
       resultImageBusy: false,
       resultImageError: '',
+      boardOptIn: true,
+      boardPreferenceBusy: false,
       mode: 'participant-answer',
       error: '',
     };
@@ -1392,6 +1413,7 @@ async function loadResult(token = state.participantToken) {
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'result-failed');
+  const boardOptIn = readBoardOptIn(state.roomCode);
   setState({
     loading: false,
     answerPending: false,
@@ -1399,8 +1421,13 @@ async function loadResult(token = state.participantToken) {
     resultImageUrl: '',
     resultImageBusy: false,
     resultImageError: '',
+    boardOptIn,
+    boardPreferenceBusy: false,
     mode: 'result',
   });
+  if (data.participant.rankingParticipating !== boardOptIn) {
+    await updateBoardPreference(boardOptIn);
+  }
 }
 
 function loadResultImage(src) {
@@ -1770,6 +1797,33 @@ function writeStorage(key, value) {
   }
 }
 
+function readBoardOptIn(code) {
+  if (!code) return true;
+  try {
+    return localStorage.getItem(`${BOARD_OPT_IN_KEY_PREFIX}${code}`) !== '0';
+  } catch (error) {
+    return true;
+  }
+}
+
+function saveBoardOptIn(code, enabled) {
+  if (!code) return;
+  try {
+    localStorage.setItem(`${BOARD_OPT_IN_KEY_PREFIX}${code}`, enabled ? '1' : '0');
+  } catch (error) {
+    // 保存できない場合も現在の画面では選択状態を維持する。
+  }
+}
+
+function resetBoardOptIn(code) {
+  if (!code) return;
+  try {
+    localStorage.removeItem(`${BOARD_OPT_IN_KEY_PREFIX}${code}`);
+  } catch (error) {
+    // 次の結果画面ではメモリ上の既定値を使用する。
+  }
+}
+
 function challengeUrl(code) {
   return `${location.origin}${languagePrefix}/challenge?room=${code}&share=${CHALLENGE_SHARE_VERSION}`;
 }
@@ -1797,6 +1851,7 @@ function errorMessage(code) {
     'answers-already-submitted': 'この参加者の回答はすでに確定しています。',
     'answers-not-submitted': '10問の回答が完了していません。',
     'ranking-registration-failed': '結果を理解度ボードへ載せられませんでした。',
+    'ranking-unregistration-failed': '結果を理解度ボードから外せませんでした。',
     'retry-failed': '再挑戦を開始できませんでした。',
     'manage-forbidden': '主催者用URLを確認できません。',
     'draft-not-found': '途中保存データが見つかりません。',

@@ -144,23 +144,23 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByRole('button', { name: /Title only/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /With score/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Guess the answers again' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Add to Understanding Board (optional)' })).toBeVisible();
+  await expect(page.getByTestId('challenge-score-actions')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add to Understanding Board (optional)' })).toHaveCount(0);
   await expect(page.locator('input[name="board-comment"]')).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: /comment/i })).toHaveCount(0);
-  await expect(page.getByText('The Understanding Board shows only your display name and matching-answer count, without a comment.'))
-    .toBeVisible();
   await expect(page.getByText('Certified Mind Reader', { exact: true })).toBeVisible();
   await expect(page.getByTestId('challenge-ai-review')).toContainText('Overall understanding');
   await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');
   await expect(page.getByTestId('challenge-result-image')).toBeVisible();
   const resultShare = page.getByTestId('challenge-result-share');
   await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();
+  const boardCheckbox = resultShare.getByRole('checkbox', { name: /Add to Understanding Board/ });
+  await expect(boardCheckbox).toBeChecked();
+  await expect(boardCheckbox).toBeEnabled();
   await expect(resultShare.getByRole('button', { name: 'Send result on LINE' })).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'Post result on X' })).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'Want to share the result image too? Save it first' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Copy text only' })).toBeVisible();
-  await page.getByRole('button', { name: 'Add to Understanding Board (optional)' }).click();
-  await expect(page.getByText('This result is now on the Understanding Board.')).toBeVisible();
   await page.getByRole('link', { name: 'View the Understanding Board' }).click();
   await expect(page.getByTestId('understanding-board')).toContainText('Answer reviewed');
   await expect(page.getByTestId('understanding-board')).toContainText('10/10 matched');

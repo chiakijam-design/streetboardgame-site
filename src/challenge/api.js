@@ -38,6 +38,9 @@ export async function handleChallengeApi(request, env, path) {
     if (rankingMatch && request.method === 'POST') {
       return await registerRankingScore(request, env, rankingMatch[1]);
     }
+    if (rankingMatch && request.method === 'DELETE') {
+      return await unregisterRankingScore(request, env, rankingMatch[1]);
+    }
 
     const retryMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/retry$/);
     if (retryMatch && request.method === 'POST') {
@@ -204,6 +207,25 @@ async function registerRankingScore(request, env, code) {
   if (!saved) return jsonResponse({ error: 'ranking-registration-failed' }, 409);
   return jsonResponse({
     participant: publicParticipant({ ...participant, rankingConsentAt: registeredAt }),
+  });
+}
+
+async function unregisterRankingScore(request, env, code) {
+  const room = await readRoom(env, code);
+  if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
+  const token = headerToken(request, 'x-challenge-participant-token');
+  if (!token) return jsonResponse({ error: 'participant-forbidden' }, 403);
+  const participant = await readParticipant(env, code, token, room);
+  if (!participant) return jsonResponse({ error: 'participant-forbidden' }, 403);
+  if (participant.completedAt == null || !Number.isInteger(participant.score)) {
+    return jsonResponse({ error: 'answers-not-submitted' }, 409);
+  }
+
+  const saved = participant.rankingConsentAt == null
+    || await removeRankingRegistration(env, code, token, room);
+  if (!saved) return jsonResponse({ error: 'ranking-unregistration-failed' }, 409);
+  return jsonResponse({
+    participant: publicParticipant({ ...participant, rankingConsentAt: null, boardComment: null }),
   });
 }
 
@@ -602,6 +624,29 @@ async function saveRankingRegistration(env, code, token, registeredAt, room) {
   nextParticipants[index] = {
     ...participants[index],
     rankingConsentAt: registeredAt,
+    boardComment: null,
+  };
+  await putKvRoom(env, code, { ...room, participants: nextParticipants });
+  return true;
+}
+
+async function removeRankingRegistration(env, code, token, room) {
+  if (await ensureD1(env)) {
+    const result = await env.REMOTE_DB.prepare(`
+      UPDATE challenge_participants
+      SET ranking_consent_at = NULL, board_comment = NULL
+      WHERE room_code = ? AND participant_token_hash = ? AND completed_at IS NOT NULL
+    `).bind(code, await hashToken(token)).run();
+    return Number(result?.meta?.changes || 0) === 1;
+  }
+
+  const participants = Array.isArray(room.participants) ? room.participants : [];
+  const index = participants.findIndex((item) => item.token === token && item.completedAt != null);
+  if (index < 0) return false;
+  const nextParticipants = participants.slice();
+  nextParticipants[index] = {
+    ...participants[index],
+    rankingConsentAt: null,
     boardComment: null,
   };
   await putKvRoom(env, code, { ...room, participants: nextParticipants });

@@ -232,6 +232,21 @@ test('挑戦者の得点と10問の答え合わせを本人だけに返し、順
   });
   assert.equal(registered.status, 200);
   assert.equal(Object.hasOwn(await registered.json(), 'rank'), false);
+  const unregistered = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
+    method: 'DELETE',
+    headers: tokenHeader,
+    body: JSON.stringify({}),
+  });
+  assert.equal(unregistered.status, 200);
+  assert.equal((await unregistered.json()).participant.rankingParticipating, false);
+  const emptyRanking = await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json();
+  assert.deepEqual(emptyRanking.participants, []);
+  const reregistered = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
+    method: 'POST',
+    headers: tokenHeader,
+    body: JSON.stringify({}),
+  });
+  assert.equal(reregistered.status, 200);
   const resubmitted = await api(env, `/api/challenge/rooms/${created.code}/submit`, {
     method: 'POST',
     headers: tokenHeader,
@@ -439,6 +454,17 @@ test('結果確認後だけ点数を登録でき、同じ参加枠で再挑戦�
       { name: '再挑戦者', score: 10 },
     ]);
     assert.equal(finalRanking.participants.every((participant) => !Object.hasOwn(participant, 'rank')), true);
+    const unregistered = await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
+      method: 'DELETE',
+      headers: tokenHeader,
+    });
+    assert.equal(unregistered.status, 200);
+    assert.equal((await unregistered.json()).participant.rankingParticipating, false);
+    assert.deepEqual((await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json()).participants, []);
+    assert.equal((await api(env, `/api/challenge/rooms/${created.code}/ranking`, {
+      method: 'POST',
+      headers: tokenHeader,
+    })).status, 200);
 
     const managed = await (await api(env, `/api/challenge/rooms/${created.code}/manage`, {
       headers: { 'x-challenge-manage-token': created.manageToken },
