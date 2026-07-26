@@ -568,11 +568,31 @@ function resultView() {
           : `<div class="challenge-result-image-loading" role="status">
               ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
             </div>`}
-        <button class="challenge-primary" data-action="save-result-image" ${state.resultImageUrl ? '' : 'disabled'}>
-          ${state.resultImageUrl ? 'この結果画像を保存' : '画像を準備中…'}
-        </button>
         <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
       </section>
+      <div class="challenge-result-share-wrap">
+        <section class="challenge-result-share" data-testid="challenge-result-share"
+          aria-labelledby="challenge-result-share-title">
+          <span class="challenge-section-label">SHARE YOUR RESULT</span>
+          <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
+          <p>XやLINEは参加URLつきで送れます。Instagramはプロフィールリンクへ。</p>
+          <div class="challenge-result-share-buttons">
+            <button type="button" class="challenge-result-share-button line" data-action="share-result-line">
+              LINEで結果を送る
+            </button>
+            <button type="button" class="challenge-result-share-button x" data-action="share-result-x">
+              Xで結果をツイート
+            </button>
+          </div>
+          <button type="button" class="challenge-result-share-save" data-action="save-result-image"
+            ${state.resultImageUrl ? '' : 'disabled'}>
+            ${state.resultImageUrl ? '結果画像も送りたい。まずは画像を保存' : '画像を準備中…'}
+          </button>
+        </section>
+        <button type="button" class="challenge-result-share-copy" data-action="copy-result-text">
+          文章だけコピーする
+        </button>
+      </div>
       <section class="challenge-score-actions" data-testid="challenge-score-actions">
         <span class="challenge-section-label">OPTIONAL</span>
         <h2>理解度ボードに載せる？</h2>
@@ -594,7 +614,6 @@ function resultView() {
       </section>
       <a class="challenge-secondary" href="/challenge">別の10問で自分も作る</a>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
-      <button class="challenge-secondary" data-action="share-result">「どこが当たった？」をシェア</button>
       <a class="challenge-secondary" href="/">トップへ戻る</a>
     </section>`,
   );
@@ -802,7 +821,9 @@ function bindEvents() {
   document.querySelector('[data-action="register-ranking"]')?.addEventListener('click', registerRankingScore);
   document.querySelector('[data-action="retry-challenge"]')?.addEventListener('click', retryChallenge);
   document.querySelector('[data-action="swap-roles"]')?.addEventListener('click', startRoleSwap);
-  document.querySelector('[data-action="share-result"]')?.addEventListener('click', shareResult);
+  document.querySelector('[data-action="share-result-line"]')?.addEventListener('click', shareResultToLine);
+  document.querySelector('[data-action="share-result-x"]')?.addEventListener('click', shareResultToX);
+  document.querySelector('[data-action="copy-result-text"]')?.addEventListener('click', copyResultText);
   document.querySelector('[data-action="save-result-image"]')?.addEventListener('click', saveChallengeResultImage);
   if (document.getElementById('challenge-qr') && state.room) {
     QRCode.toCanvas(
@@ -1598,7 +1619,7 @@ async function saveChallengeResultImage() {
   const previousText = button?.textContent || '';
   if (button) {
     button.disabled = true;
-    button.textContent = '画像を保存しています…';
+    button.textContent = isEnglish ? 'Saving image…' : '画像を保存しています…';
   }
   try {
     const blob = dataUrlToBlob(state.resultImageUrl);
@@ -1608,7 +1629,11 @@ async function saveChallengeResultImage() {
       isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード',
     );
   } catch (error) {
-    if (error?.name !== 'AbortError') alert('画像を保存できませんでした。もう一度お試しください。');
+    if (error?.name !== 'AbortError') {
+      alert(isEnglish
+        ? 'The image could not be saved. Please try again.'
+        : '画像を保存できませんでした。もう一度お試しください。');
+    }
   } finally {
     if (button) {
       button.disabled = false;
@@ -1617,21 +1642,43 @@ async function saveChallengeResultImage() {
   }
 }
 
-async function shareResult() {
+function resultShareText({ includeUrl = true } = {}) {
   const tier = isEnglish ? getChallengeResultTierEnglish(state.result.score) : getChallengeResultTier(state.result.score);
   const shareUrl = `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`;
-  const text = isEnglish
-    ? `I guessed ${state.result.creatorName}’s answers!\nWhich ones matched? Check the answers and try the same 10 questions.\nMy title: “${tier.title}”\n#Watachan\n${shareUrl}`
-    : `${state.result.creatorName}の「わたし理解度診断」で答えを予想してみた📒\nどこが当たった？答え合わせしてみて👇\n称号は「${tier.title}」\n結果公開は任意・もう一度予想もOK\n#わたちゃん\n${shareUrl}`;
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: isEnglish ? 'Challenge your friends' : 'わたし理解度診断', text });
-      return;
-    } catch (error) {
-      if (error?.name === 'AbortError') return;
-    }
-  }
-  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+  const lines = isEnglish
+    ? [
+        `I guessed ${state.result.creatorName}’s answers!`,
+        'Which ones matched? Check the answers and try the same 10 questions.',
+        `My title: “${tier.title}”`,
+        '#Watachan',
+      ]
+    : [
+        `${state.result.creatorName}の「わたし理解度診断」で答えを予想してみた📒`,
+        'どこが当たった？答え合わせしてみて👇',
+        `称号は「${tier.title}」`,
+        '結果公開は任意・もう一度予想もOK',
+        '#わたちゃん',
+      ];
+  if (includeUrl) lines.push(shareUrl);
+  return lines.join('\n');
+}
+
+function shareResultToLine() {
+  if (!state.result) return;
+  openLineShare(resultShareText());
+}
+
+function shareResultToX() {
+  if (!state.result) return;
+  openXShare(resultShareText());
+}
+
+async function copyResultText() {
+  if (!state.result) return;
+  const button = document.querySelector('[data-action="copy-result-text"]');
+  const copied = await copyText(resultShareText({ includeUrl: false }));
+  if (!copied) return setState({ error: 'copy-failed' });
+  if (button) button.textContent = isEnglish ? 'Copied' : 'コピーしました';
 }
 
 function saveCurrentProgress(patch) {

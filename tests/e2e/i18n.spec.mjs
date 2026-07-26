@@ -153,6 +153,12 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByTestId('challenge-ai-review')).toContainText('Overall understanding');
   await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');
   await expect(page.getByTestId('challenge-result-image')).toBeVisible();
+  const resultShare = page.getByTestId('challenge-result-share');
+  await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();
+  await expect(resultShare.getByRole('button', { name: 'Send result on LINE' })).toBeVisible();
+  await expect(resultShare.getByRole('button', { name: 'Post result on X' })).toBeVisible();
+  await expect(resultShare.getByRole('button', { name: 'Want to share the result image too? Save it first' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Copy text only' })).toBeVisible();
   await page.getByRole('button', { name: 'Add to Understanding Board (optional)' }).click();
   await expect(page.getByText('This result is now on the Understanding Board.')).toBeVisible();
   await page.getByRole('link', { name: 'View the Understanding Board' }).click();

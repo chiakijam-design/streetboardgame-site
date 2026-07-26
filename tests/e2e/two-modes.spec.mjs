@@ -425,7 +425,7 @@ test('公開候補チェックを外した自作お題は運営へ送信しな�
   await expect(page.getByTestId('question-submission-status')).toHaveCount(0);
 });
 
-test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入りカード・理解度ボードまで完走する', async ({ browser, page }) => {
+test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入りカード・理解度ボードまで完走する', async ({ browser, page }, testInfo) => {
   const challengeUrl = await createChallenge(page);
   await expect(page.getByTestId('participant-count')).toContainText('0人回答済み');
   await expect(page.locator('#challenge-qr')).toBeHidden();
@@ -531,7 +531,57 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       width: image.naturalWidth,
       height: image.naturalHeight,
     }))).toEqual({ width: 1080, height: 1350 });
-    await expect(participant.getByRole('button', { name: 'この結果画像を保存' })).toBeEnabled();
+    const resultShare = participant.getByTestId('challenge-result-share');
+    await expect(resultShare).toHaveCSS('background-color', 'rgb(255, 227, 111)');
+    await expect(resultShare.getByRole('heading', { name: 'この結果、友達に伝えよう' })).toBeVisible();
+    await expect(resultShare.getByRole('button', { name: 'LINEで結果を送る' })).toBeVisible();
+    await expect(resultShare.getByRole('button', { name: 'Xで結果をツイート' })).toBeVisible();
+    await expect(resultShare.getByRole('button', { name: '結果画像も送りたい。まずは画像を保存' })).toBeEnabled();
+    expect(await resultShare.evaluate((share) => {
+      const shareRect = share.getBoundingClientRect();
+      const buttons = Array.from(share.querySelectorAll('button')).map((button) => {
+        const rect = button.getBoundingClientRect();
+        return {
+          left: rect.left,
+          right: rect.right,
+          height: rect.height,
+        };
+      });
+      return {
+        shareLeft: shareRect.left,
+        shareRight: shareRect.right,
+        viewportWidth: window.innerWidth,
+        buttonsFit: buttons.every((button) => (
+          button.left >= shareRect.left
+          && button.right <= shareRect.right
+          && button.height >= 44
+        )),
+      };
+    })).toMatchObject({
+      buttonsFit: true,
+    });
+    await participant.evaluate(() => {
+      window.open = (url) => { window.__openedResultShareUrl = url; };
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: async (text) => { window.__copiedResultText = text; } },
+      });
+    });
+    if (testInfo.project.name === 'desktop-chrome') {
+      await resultShare.getByRole('button', { name: 'Xで結果をツイート' }).click();
+      expect(await participant.evaluate(() => window.__openedResultShareUrl)).toMatch(/^https:\/\/x\.com\/intent\/post\?text=/);
+      expect(decodeURIComponent(await participant.evaluate(() => window.__openedResultShareUrl)))
+        .toContain('/challenge?room=');
+    }
+    await participant.getByRole('button', { name: '文章だけコピーする' }).click();
+    await expect(participant.getByRole('button', { name: 'コピーしました' })).toBeVisible();
+    expect(await participant.evaluate(() => ({
+      text: window.__copiedResultText,
+      origin: location.origin,
+    }))).toMatchObject({
+      text: expect.stringContaining('称号は「'),
+    });
+    expect(await participant.evaluate(() => window.__copiedResultText.includes(location.origin))).toBe(false);
     const feedbackToneCount = await participant.evaluate(
       () => window.__quizFeedbackFrequencies.length,
     );
