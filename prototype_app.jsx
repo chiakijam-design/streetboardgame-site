@@ -68,10 +68,7 @@ function TopPage() {
           <Logo>ちゃんと</Logo>
           <Logo>分かってるよね？</Logo>
         </div>
-        <p style={{ margin: '14px 0 0', color: theme.white, fontWeight: 900, fontSize: 16 }}>
-          当てるより、話すための10問。
-        </p>
-        <p style={{ margin: '8px 0 0', color: theme.white, opacity: .85, fontFamily: theme.caption, fontSize: 10, letterSpacing: '.2em' }}>
+        <p style={{ margin: '14px 0 0', color: theme.white, opacity: .85, fontFamily: theme.caption, fontSize: 10, letterSpacing: '.2em' }}>
           STREET BOARD GAME / vol.01
         </p>
       </section>
@@ -108,32 +105,9 @@ function TopPage() {
         borderRadius: 18,
         boxShadow: `5px 5px 0 ${theme.pinkDeep}`,
       }}>
-        <p data-testid="product-positioning" style={{
-          margin: '0 0 12px',
-          textAlign: 'center',
-          color: theme.pinkDeep,
-          fontSize: 13,
-          fontWeight: 900,
-          letterSpacing: '.04em',
-        }}>
-          通常でも配信でも使える理解度診断メーカー
-        </p>
         <h2 id="rules-title" style={{ margin: 0, textAlign: 'center', fontSize: 18, lineHeight: 1.5 }}>
           あなたの「わたし理解度診断」を作って、<br />みんなに挑戦してもらおう
         </h2>
-        <p data-testid="brand-promise" style={{
-          margin: '12px 0 0',
-          padding: '10px 12px',
-          border: `2px solid ${theme.black}`,
-          borderRadius: 999,
-          background: theme.white,
-          textAlign: 'center',
-          fontSize: 14,
-          fontWeight: 900,
-          lineHeight: 1.5,
-        }}>
-          相手を理解できるまで、何度でも挑戦できる
-        </p>
         <Rules />
         <div data-testid="top-mode-pillars" style={{
           display: 'grid',
