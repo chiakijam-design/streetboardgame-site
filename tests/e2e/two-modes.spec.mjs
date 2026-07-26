@@ -180,9 +180,17 @@ test('トップ下部から挑戦モードの説明を読み、10問クイズ作
   await expect(page).toHaveURL('/challenge-guide');
   await expect(page.getByRole('heading', { level: 1, name: 'みんなに挑戦してもらう' })).toBeVisible();
   await expect(page.getByText('あなたの答えを、最大50人が予想します', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: '10問クイズを作る' })).toHaveAttribute('href', '/challenge');
+  await expect(page.getByTestId('challenge-guide-hero')).toBeVisible();
+  await expect(page.getByText('PLAY SCENE', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'こんな人におすすめ' })).toBeVisible();
+  await expect(page.getByTestId('challenge-guide-promise')).toContainText('何度でも挑戦できる');
+  await expect(page.getByText('点数順ではなく回答完了順で表示します。')).toBeVisible();
+  await expect(page.getByRole('link', { name: '10問の理解度診断を作る' })).toHaveAttribute('href', '/challenge');
+  await expect(page.getByRole('link', { name: /LIVE版もあります/ })).toHaveAttribute('href', '/live-challenge');
+  await expect(page.getByTestId('challenge-guide-page')).toHaveCSS('max-width', '600px');
   await expect(page.getByRole('link', { name: '彼氏の愛情判定を見る' })).toHaveCount(0);
   await expect(page.locator('a[href="/love"]')).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 });
 
 test('PCのトップページは横へ広がらず中央600px以内に収まる', async ({ page }, testInfo) => {

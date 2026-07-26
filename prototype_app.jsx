@@ -314,41 +314,311 @@ function CommonCardStack() {
 }
 
 function ChallengeGuide() {
+  const steps = [
+    '名前を入力して、出題する10問を選ぶ・作る',
+    '自分の正解を選ぶ',
+    '参加URL・QRコードを友達へ送る',
+    '何問正解かを確認し、答え合わせを楽しむ',
+  ];
+  const recommendations = [
+    '友達が自分のことをどれだけ分かっているか知りたい',
+    '休み時間・放課後・旅行で会話のきっかけがほしい',
+    'LINEやSNSで参加URLを送り、離れた相手にも挑戦してほしい',
+    '点数を競うより、意外な答えから次の会話を楽しみたい',
+  ];
+  const faqs = [
+    {
+      question: 'どうやって理解度診断を作りますか？',
+      answer: '共通のお題から1問ずつ選び、自分の正解を登録して10問を完成させます。問題文と5つの選択肢は編集でき、自分で問題を作ることもできます。',
+    },
+    {
+      question: '何人まで挑戦できますか？',
+      answer: '1つの理解度診断へ最大50人まで参加できます。回答する人は、届いた参加URLから自分のスマホで10問へ回答します。',
+    },
+    {
+      question: '無料で遊べますか？',
+      answer: 'クイズ作成、参加URL・QRコードの共有、10問の答え合わせ、答え合わせレポートを無料で利用できます。',
+    },
+    {
+      question: '点数は必ず公開されますか？',
+      answer: '公開されません。理解度ボードへ載せるかは回答した本人が選べます。載せる前に、同じ10問へもう一度挑戦することもできます。',
+    },
+  ];
+
   return (
-    <main style={pageStyle()}>
-      <Header title="みんなに挑戦してもらう" label="CHALLENGE" />
+    <main data-testid="challenge-guide-page" style={pageStyle()}>
+      <Decor />
+      <header data-testid="challenge-guide-hero" style={{
+        minHeight: 240,
+        padding: '50px 22px 31px',
+        position: 'relative',
+        overflow: 'hidden',
+        background: theme.black,
+        color: theme.white,
+        textAlign: 'center',
+      }}>
+        <a href="/" style={{
+          position: 'absolute',
+          top: 18,
+          left: 18,
+          zIndex: 3,
+          minHeight: 44,
+          display: 'inline-flex',
+          alignItems: 'center',
+          padding: '9px 14px',
+          border: `2px solid ${theme.black}`,
+          borderRadius: 999,
+          background: theme.white,
+          color: theme.black,
+          boxShadow: `3px 3px 0 ${theme.cyan}`,
+          textDecoration: 'none',
+          fontSize: 14,
+          fontWeight: 900,
+        }}>
+          ← トップへ
+        </a>
+        <div aria-hidden="true" style={{
+          position: 'absolute',
+          right: -22,
+          bottom: -22,
+          width: 176,
+          opacity: .84,
+          filter: 'drop-shadow(0 5px 13px rgba(236,79,136,.38))',
+          pointerEvents: 'none',
+        }}>
+          <Girl variant="default" width="100%" height="auto" loading="eager" fetchPriority="high" />
+        </div>
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <Pill>CHALLENGE</Pill>
+          <h1 style={{
+            maxWidth: 430,
+            margin: '17px auto 0',
+            color: theme.white,
+            fontFamily: theme.display,
+            fontSize: 'clamp(27px,7.5vw,38px)',
+            lineHeight: 1.35,
+            textShadow: `4px 4px 0 ${theme.cyan}`,
+          }}>
+            みんなに挑戦してもらう
+          </h1>
+          <p style={{
+            margin: '10px 0 0',
+            color: theme.yellow,
+            fontSize: 13,
+            lineHeight: 1.55,
+            fontWeight: 900,
+          }}>
+            URLを送って、好きな時間に回答
+          </p>
+        </div>
+      </header>
+
       <div style={contentWrap()}>
-        <Panel>
-          <h2 style={{ margin: 0, fontSize: 20 }}>あなたの答えを、最大50人が予想します</h2>
+        <section data-testid="challenge-guide-intro" style={guideCardStyle()}>
+          <span style={aboutLabelStyle(theme.cyan)}>通常版</span>
+          <h2 style={{ margin: '12px 0 0', color: theme.pinkDeep, fontSize: 22, lineHeight: 1.5 }}>
+            あなたの答えを、<br />最大50人が予想します
+          </h2>
           <p style={paragraph()}>
-            自分が選んだ10問へ先に答え、発行された参加URLをみんなに送る無料クイズです。
-            参加者はあなたの答えを予想し、10問の答え合わせから理解度を確かめます。
+            出題者が10問を選び、自分の正解を先に登録して、発行された参加URLをみんなへ送る「わたし理解度診断」です。
+            回答する人は、届いたURLからあなたの答えを予想します。
           </p>
           <p style={paragraph()}>
             問題は共通のお題ライブラリから1問ずつ選び、スキップ・編集・自作もできます。
-            結果公開は任意で、もう一度答えを予想することもできます。
+            10問後は正解とすれ違いを振り返る答え合わせレポートを確認できます。
           </p>
-        </Panel>
-        <Panel dark>
-          <h2 style={{ margin: '0 0 12px', fontSize: 17 }}>遊び方</h2>
-          {['名前を入力して10問を選ぶ・作る', '自分の正解を登録する', '参加URL・QRコードを送る', '10問の答え合わせを見る'].map((item, index) => (
-            <div key={item} style={{ marginTop: 8, padding: 10, borderRadius: 10, background: theme.white, color: theme.black, fontWeight: 900, fontSize: 13 }}>
-              {index + 1}. {item}
-            </div>
-          ))}
-        </Panel>
-        <a href="/challenge" style={{ ...primaryButton(), textDecoration: 'none', display: 'flex' }}>
-          10問クイズを作る <span style={{ color: theme.yellow }}>▶</span>
+        </section>
+
+        <section aria-label="おすすめの利用場面" style={{
+          padding: '15px',
+          border: `3px solid ${theme.black}`,
+          borderRadius: 14,
+          background: theme.black,
+          color: theme.white,
+          boxShadow: '4px 4px 0 #000',
+        }}>
+          <div style={{
+            marginBottom: 11,
+            color: theme.yellow,
+            fontFamily: theme.caption,
+            fontSize: 10,
+            letterSpacing: '.16em',
+          }}>
+            PLAY SCENE
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {['休み時間', '放課後', 'LINE', '友達グループ', '旅行'].map((scene) => (
+              <span key={scene} style={{
+                minHeight: 30,
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '5px 10px',
+                border: `2px solid ${theme.black}`,
+                borderRadius: 999,
+                background: theme.yellow,
+                color: theme.black,
+                boxShadow: '2px 2px 0 #000',
+                fontSize: 11,
+                fontWeight: 900,
+              }}>
+                {scene}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="guide-recommend-title" style={guideCardStyle()}>
+          <h2 id="guide-recommend-title" style={{ margin: '0 0 12px', fontSize: 18 }}>
+            こんな人におすすめ
+          </h2>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {recommendations.map((item) => (
+              <div key={item} style={{
+                display: 'grid',
+                gridTemplateColumns: '24px minmax(0,1fr)',
+                gap: 9,
+                alignItems: 'start',
+                fontSize: 14,
+                lineHeight: 1.65,
+                fontWeight: 800,
+              }}>
+                <span aria-hidden="true" style={{
+                  width: 22,
+                  height: 22,
+                  display: 'grid',
+                  placeItems: 'center',
+                  border: `2px solid ${theme.black}`,
+                  borderRadius: '50%',
+                  background: theme.cyan,
+                  boxShadow: '1px 1px 0 #000',
+                  fontSize: 11,
+                }}>✓</span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="guide-steps-title" style={{
+          padding: 16,
+          border: `3px solid ${theme.black}`,
+          borderRadius: 14,
+          background: '#FFE4EE',
+          boxShadow: '4px 4px 0 #000',
+        }}>
+          <h2 id="guide-steps-title" style={{ margin: '0 0 12px', fontSize: 18 }}>遊び方</h2>
+          <div style={{ display: 'grid', gap: 9 }}>
+            {steps.map((item, index) => (
+              <div key={item} style={{
+                minHeight: 56,
+                display: 'grid',
+                gridTemplateColumns: '38px minmax(0,1fr)',
+                gap: 10,
+                alignItems: 'center',
+                padding: 9,
+                border: `2.5px solid ${theme.black}`,
+                borderRadius: 12,
+                background: theme.white,
+                boxShadow: '2px 2px 0 #000',
+                fontSize: 14,
+                lineHeight: 1.55,
+                fontWeight: 900,
+              }}>
+                <span style={{
+                  width: 34,
+                  height: 34,
+                  display: 'grid',
+                  placeItems: 'center',
+                  border: `2px solid ${theme.black}`,
+                  borderRadius: '50%',
+                  background: [theme.cyan, theme.pink, theme.yellow, theme.white][index],
+                  color: index === 1 ? theme.white : theme.black,
+                }}>
+                  {index + 1}
+                </span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section data-testid="challenge-guide-promise" style={{
+          padding: '15px 16px',
+          border: `3px solid ${theme.black}`,
+          borderRadius: 14,
+          background: theme.white,
+          boxShadow: `4px 4px 0 ${theme.cyan}`,
+          textAlign: 'center',
+        }}>
+          <span style={aboutLabelStyle(theme.yellow)}>このゲームの約束</span>
+          <h2 style={{ margin: '11px 0 0', fontSize: 17, lineHeight: 1.6 }}>
+            相手を理解できるまで、<br />何度でも挑戦できる
+          </h2>
+          <p style={paragraph()}>
+            理解度ボードへの掲載は任意です。掲載前に同じ10問へ再挑戦でき、
+            掲載した結果も点数順ではなく回答完了順で表示します。
+          </p>
+        </section>
+
+        <a href="/challenge" style={{ ...primaryButton(), minHeight: 68, textDecoration: 'none', display: 'flex' }}>
+          10問の理解度診断を作る <span style={{ color: theme.yellow }}>▶</span>
         </a>
-        <Panel>
-          <h2 style={{ margin: '0 0 10px', fontSize: 17 }}>よくある質問</h2>
-          <p style={paragraph()}><b>無料で遊べますか？</b><br />クイズ作成、参加URLの共有、答え合わせを無料で利用できます。</p>
-          <p style={paragraph()}><b>何人まで参加できますか？</b><br />1つのクイズへ最大50人まで参加できます。</p>
-        </Panel>
+
+        <section aria-labelledby="guide-faq-title" style={{ ...guideCardStyle(), background: theme.cream }}>
+          <h2 id="guide-faq-title" style={{ margin: '0 0 12px', fontSize: 18 }}>よくある質問</h2>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {faqs.map((item) => (
+              <article key={item.question} style={{
+                padding: 12,
+                border: `2px solid ${theme.black}`,
+                borderRadius: 12,
+                background: theme.white,
+              }}>
+                <h3 style={{ margin: 0, fontSize: 14, lineHeight: 1.55 }}>{item.question}</h3>
+                <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.75, fontWeight: 700 }}>{item.answer}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <a href="/live-challenge" style={{
+          minHeight: 62,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '11px 14px',
+          border: `2.5px solid ${theme.black}`,
+          borderRadius: 13,
+          background: theme.white,
+          color: theme.black,
+          boxShadow: '3px 3px 0 #000',
+          textDecoration: 'none',
+        }}>
+          <span aria-hidden="true" style={{ fontSize: 27 }}>🎙️</span>
+          <span style={{ flex: 1 }}>
+            <strong style={{ display: 'block', fontSize: 14 }}>LIVE版もあります</strong>
+            <span style={{ display: 'block', marginTop: 3, fontSize: 12, lineHeight: 1.55, fontWeight: 700 }}>
+              配信者と視聴者が同時回答し、1問ずつ答え合わせ
+            </span>
+          </span>
+          <span aria-hidden="true">›</span>
+        </a>
+
+        <HomeLink />
       </div>
       <SiteFooter />
     </main>
   );
+}
+
+function guideCardStyle() {
+  return {
+    padding: 16,
+    border: `3px solid ${theme.black}`,
+    borderRadius: 14,
+    background: theme.white,
+    boxShadow: '4px 4px 0 #000',
+  };
 }
 
 function AboutPage() {
