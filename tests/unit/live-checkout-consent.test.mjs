@@ -104,6 +104,30 @@ test('コンテンツ・肖像権ガイドラインは現行2モード・投稿�
   assert.equal(document.includes('YouTubeチャンネル情報から自動生成された問題候補'), false);
 });
 
+test('未成年者利用規定は現行の年齢区分・通常版・LIVE版・購入・販売登録条件を表示する', async () => {
+  const document = await readFileAsync(new URL('../../minor-policy.html', import.meta.url), 'utf8');
+  for (const requiredText of [
+    '最終改定日：2026年7月26日',
+    'バージョン：1.2',
+    '13歳から18歳までの中高生を主な対象',
+    '19歳から20歳までの大学生・専門学生を副次的な対象',
+    '10歳から12歳までの小学生を制限付きの対象',
+    '理解度ボードへの掲載は任意',
+    'コメントなしでも掲載できます',
+    '通常版とLIVE版に共通するお題ライブラリ',
+    '採用後も、問題は通報を受けた時点で一旦非公開',
+    '無料LIVEの作成・参加には配信者登録は不要',
+    'YouTubeでライブ配信を開始できるのは原則16歳以上',
+    '応援機能は寄付・贈与ではなく',
+    '法令上認められる未成年者による契約の取消し',
+    'Stripe Connectによる本人確認',
+    '法定後見人がStripeアカウントの所有者',
+    '未成年者が識別できる画像',
+  ]) assert.equal(document.includes(requiredText), true, requiredText);
+  assert.equal(document.includes('YouTuber・クリエイター登録'), false);
+  assert.equal(document.includes('YouTuber登録する際'), false);
+});
+
 test('チェック済みの現行利用規約だけを決済同意として受け付ける', () => {
   assert.deepEqual(assertCheckoutConsent({
     termsAccepted: true,
