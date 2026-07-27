@@ -731,7 +731,7 @@ function libraryView() {
     '人気のお題ライブラリ',
     'テーマを選ぶだけで、10問をまとめてクイズにできます。',
     `<section class="challenge-panel">
-      <p class="challenge-library-status">気分や相手に合うパックを選んでください。どのパックも通常版・LIVE版の両方で使えます。</p>
+      <p class="challenge-library-status">気分や相手に合うパックを選んでください。選んだ10問ですぐにクイズを作れます。</p>
       <div class="challenge-library challenge-pack-library" data-testid="question-library">
         ${packs.map((pack) => {
           const cards = questionPackCards(allCards, pack.slug, isEnglish, QUESTION_COUNT);
@@ -748,8 +748,7 @@ function libraryView() {
               </details>
             </div>
             <div class="challenge-pack-actions">
-              <a href="${languagePrefix}/challenge?pack=${encodeURIComponent(pack.slug)}">通常版で作る</a>
-              <a href="${languagePrefix}/live-challenge?pack=${encodeURIComponent(pack.slug)}">LIVE版で作る</a>
+              <a href="${languagePrefix}/challenge?pack=${encodeURIComponent(pack.slug)}">この10問で作る</a>
             </div>
           </article>`;
         }).join('')}
