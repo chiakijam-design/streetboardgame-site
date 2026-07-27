@@ -25,16 +25,16 @@ const japaneseCards = mergeChallengeCards(loadCards('prototype_common_data.js', 
 const englishCards = mergeChallengeCards(loadCards('prototype_english_common_data.js', 'ENGLISH_COMMON_QUESTION_CARDS'));
 
 const expectedJapanesePackTop10 = Object.freeze({
-  'easy-first-meeting': ['Q001', 'Q215', 'HLD087', 'HLD002', 'Q428', 'HLD086', 'Q427', 'HLD176', 'HLD046', 'Q013'],
-  'school-after-school': ['HLD032', 'Q209', 'HLD028', 'HLD200', 'HLD119', 'Q214', 'HLD010', 'HLD115', 'Q111', 'HLD135'],
+  'easy-first-meeting': ['Q001', 'Q215', 'HLD087', 'HLD002', 'Q428', 'HLD086', 'Q427', 'HLD176', 'HLD046', 'HLD198'],
+  'school-after-school': ['HLD032', 'Q209', 'HLD028', 'HLD200', 'HLD119', 'Q214', 'HLD214', 'HLD213', 'HLD228', 'HLD496'],
   'food-preferences': ['Q401', 'Q414', 'HLD014', 'Q007', 'HLD079', 'HLD181', 'Q018', 'Q507', 'HLD199', 'HLD184'],
-  'my-manual': ['HLD101', 'HLD004', 'HLD102', 'Q436', 'HLD008', 'HLD133', 'Q302', 'HLD060', 'HLD158', 'HLD162'],
-  'unexpected-side': ['Q307', 'HLD134', 'Q305', 'Q547', 'HLD071', 'HLD070', 'HLD072', 'Q289', 'Q298', 'HLD073'],
+  'my-manual': ['HLD101', 'HLD292', 'HLD353', 'HLD133', 'HLD008', 'Q302', 'HLD060', 'HLD158', 'HLD162', 'HLD297'],
+  'unexpected-side': ['Q307', 'HLD134', 'Q305', 'Q547', 'HLD071', 'HLD381', 'HLD382', 'HLD384', 'HLD385', 'HLD388'],
   'holiday-outings': ['HLD055', 'HLD006', 'HLD145', 'HLD146', 'HLD188', 'HLD189', 'Q519', 'HLD111', 'HLD149', 'HLD113'],
-  'smartphone-social-fandom': ['Q416', 'Q045', 'Q067', 'Q079', 'Q549', 'HLD136', 'HLD127', 'HLD132', 'HLD194', 'HLD141'],
-  'values-future': ['Q150', 'HLD057', 'HLD168', 'HLD056', 'Q439', 'HLD063', 'HLD152', 'HLD174', 'HLD065', 'Q435'],
-  'memories-past': ['HLD120', 'HLD026', 'HLD117', 'HLD118', 'Q208', 'Q206', 'HLD124', 'HLD121', 'HLD116', 'HLD112'],
-  'live-comment-split': ['Q166', 'Q406', 'Q410', 'Q412', 'HLD144', 'Q434', 'Q167', 'HLD143', 'Q433', 'Q438'],
+  'smartphone-social-fandom': ['Q416', 'Q045', 'Q067', 'Q079', 'HLD253', 'HLD255', 'HLD127', 'HLD132', 'HLD442', 'HLD141'],
+  'values-future': ['Q150', 'HLD057', 'HLD168', 'HLD056', 'HLD341', 'HLD063', 'HLD152', 'HLD336', 'HLD174', 'Q435'],
+  'memories-past': ['HLD120', 'HLD026', 'HLD117', 'HLD118', 'Q208', 'HLD277', 'HLD124', 'HLD271', 'HLD275', 'HLD397'],
+  'live-comment-split': ['Q406', 'Q410', 'Q412', 'HLD144', 'Q434', 'HLD143', 'HLD313', 'HLD315', 'Q433', 'Q438'],
   'live-first-viewers': ['HLD096', 'Q423', 'Q407', 'Q422', 'Q418', 'HLD085', 'Q293', 'Q432', 'HLD159', 'Q442'],
 });
 

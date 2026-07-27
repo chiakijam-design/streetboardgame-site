@@ -801,7 +801,7 @@ test('LIVE専用2パックを選べ、不要な案内文カードを表示しな
   await expect(page).toHaveURL('/live-challenge?pack=live-comment-split');
   await expect(page.locator('.selected-live-pack')).toContainText('LIVEで答えが割れる10問');
   await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
-  await expect(page.getByTestId('live-builder-paper-card')).toContainText('1つだけ消せるなら');
+  await expect(page.getByTestId('live-builder-paper-card')).toContainText('1週間これしか食べられないどれ？');
 });
 
 test('正解は回答前の公開レスポンスへ出さず、51人目をサーバー側で拒否する', async ({ page, request }, testInfo) => {
