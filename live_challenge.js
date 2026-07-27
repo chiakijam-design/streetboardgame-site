@@ -5,7 +5,6 @@ import {
   liveQuestionPackBySlug,
   questionPackCards,
 } from './src/challenge/packs.js';
-import { copyText } from './src/platform/share.js';
 import { LIVE_AGE_NOTICE } from './src/live/age-notice.js';
 import {
   LIVE_POLL_INTERVAL_MS,
@@ -39,10 +38,6 @@ const initialPackSlug = String(url.searchParams.get('pack') || '').trim();
 const initialHostToken = new URLSearchParams(location.hash.slice(1)).get('host') || '';
 const savedParticipant = initialCode ? readSession(`live-challenge:${initialCode}`) : null;
 const quickStart = readCreatorQuickStart('live');
-const LIVE_INTRO_TEXT = isEnglish
-  ? 'We are about to play 10 questions where you predict my answers!\nJoin with the URL or 6-digit code.'
-  : '今から私の答えを予想する10問をやります！\nURLまたは6桁コードから参加してください。';
-
 function initialQuestions(cards) {
   const packed = questionPackCards(cards, initialPackSlug, isEnglish, QUESTION_COUNT, { includeLive: true });
   return (packed.length === QUESTION_COUNT ? packed : pickChallengeCards(cards, QUESTION_COUNT))
@@ -172,11 +167,6 @@ function landingView() {
         <li><b>3</b><span>視聴者と同時回答して進行</span></li>
       </ul>
       <button class="primary" data-action="open-create">LIVEクイズを作る <span>▶</span></button>
-      <div class="live-intro-copy" data-testid="live-intro-copy">
-        <b>配信の最初に読み上げる案内文</b>
-        <p>${escapeHtml(LIVE_INTRO_TEXT).replace(/\n/g, '<br>')}</p>
-        <button class="ghost" data-action="copy-live-intro">最初の案内文をコピー</button>
-      </div>
       <p class="notice">審査済みの配信者は、結果画像の販売と応援受付を任意で追加できます。無料LIVEは登録なしで作れます。
         <a class="landing-registration-link" href="/?screen=about&to=contact&topic=live-creator-registration">配信者登録審査へ進む <span aria-hidden="true">▶</span></a>
       </p>
@@ -673,7 +663,6 @@ function bindEvents() {
     });
   }));
   document.querySelector('[data-action="go-code"]')?.addEventListener('click', goToCode);
-  document.querySelector('[data-action="copy-live-intro"]')?.addEventListener('click', copyLiveIntro);
   document.getElementById('entry-code')?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') goToCode();
   });
@@ -1323,13 +1312,6 @@ function joinUrl() {
   return `${location.origin}${languagePrefix}/live-challenge?room=${state.code}`;
 }
 
-async function copyLiveIntro() {
-  const copied = await copyText(LIVE_INTRO_TEXT);
-  if (!copied) return showError('intro-copy-failed');
-  const button = document.querySelector('[data-action="copy-live-intro"]');
-  if (button) button.textContent = '案内文をコピーしました';
-}
-
 function resultMessage(score) {
   if (isEnglish) {
     if (score === 10) return 'Perfect match!';
@@ -1361,7 +1343,6 @@ function errorText(code) {
     'live-storage-not-configured': 'LIVE機能の保存先が設定されていません。',
     'live-realtime-unavailable': 'リアルタイム接続を利用できません。',
     'copy-failed': 'コピーできませんでした。参加URLを長押ししてコピーしてください。',
-    'intro-copy-failed': '案内文をコピーできませんでした。文章を選択してコピーしてください。',
     'question-report-reason-required': '通報理由を選んでください。',
     'question-report-not-available': 'このお題は通報対象ではないか、すでに非公開です。',
     'question-report-failed': '通報を送信できませんでした。時間をおいてもう一度お試しください。',

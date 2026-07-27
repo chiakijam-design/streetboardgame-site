@@ -746,9 +746,10 @@ test('10問パックをLIVE版の作成画面でもそのまま使える', async
   await expect(page.getByTestId('live-builder-paper-card')).toContainText('お祭りで買うなら');
 });
 
-test('LIVE専用4パックを選べ、配信の最初の案内文をコピーできる', async ({ page }) => {
+test('LIVE専用4パックを選べ、不要な案内文カードを表示しない', async ({ page }) => {
   await page.goto('/live-challenge');
   const livePacks = page.getByTestId('live-exclusive-packs');
+  await expect(page.getByTestId('live-intro-copy')).toHaveCount(0);
   await expect(livePacks.locator('.live-pack-card')).toHaveCount(4);
   await expect(livePacks.locator('.live-pack-card img')).toHaveCount(4);
   await expect(livePacks).toContainText('コメント欄が割れそうな10問');
@@ -757,18 +758,6 @@ test('LIVE専用4パックを選べ、配信の最初の案内文をコピーで
   await expect(livePacks).toContainText('30人以下の配信向け10問');
   await expect(livePacks.getByRole('link', { name: '通常版と共通の7パックを見る' }))
     .toHaveAttribute('href', '/challenge/library');
-
-  await page.evaluate(() => {
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: { writeText: async (text) => { window.__liveIntroText = text; } },
-    });
-  });
-  await page.getByRole('button', { name: '最初の案内文をコピー' }).click();
-  await expect.poll(() => page.evaluate(() => window.__liveIntroText)).toBe(
-    '今から私の答えを予想する10問をやります！\nURLまたは6桁コードから参加してください。',
-  );
-  await expect(page.getByRole('button', { name: '案内文をコピーしました' })).toBeVisible();
 
   await page.locator('[data-live-pack="live-comment-split"]')
     .getByRole('link', { name: 'このパックでLIVEを作る' }).click();
