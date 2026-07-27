@@ -158,10 +158,13 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   const boardCheckbox = resultShare.getByRole('checkbox', { name: /Add to Understanding Board/ });
   await expect(boardCheckbox).toBeChecked();
   await expect(boardCheckbox).toBeEnabled();
-  await expect(resultShare.getByRole('button', { name: 'Send result on LINE' })).toBeVisible();
+  await expect(resultShare.getByRole('button', { name: 'Add only to Understanding Board' })).toBeEnabled();
+  await expect(resultShare.getByRole('button', { name: /For Instagram/ })).toBeEnabled();
+  await expect(resultShare.getByRole('button', { name: 'Share on LINE' })).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'Post result on X' })).toBeVisible();
-  await expect(resultShare.getByRole('button', { name: 'Want to share the result image too? Save it first' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Copy text only' })).toBeVisible();
+  await expect(resultShare.getByRole('button', { name: 'Save image only' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Copy text only' })).toHaveCount(0);
+  await resultShare.getByRole('button', { name: 'Add only to Understanding Board' }).click();
   await page.getByRole('link', { name: 'View the Understanding Board' }).click();
   await expect(page.getByTestId('understanding-board')).toContainText('Answer reviewed');
   await expect(page.getByTestId('understanding-board')).toContainText('10/10 matched');

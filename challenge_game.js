@@ -77,6 +77,7 @@ let state = {
   resultImageError: '',
   boardOptIn: readBoardOptIn(roomCode),
   boardPreferenceBusy: false,
+  boardActionMessage: '',
   error: '',
   loading: false,
   answerPending: false,
@@ -519,7 +520,7 @@ function joinView() {
         placeholder="例：ゆう（本名は避けてください）" value="${escapeHtml(state.participantName)}">
       <button class="challenge-primary" data-action="join">10問の答え当てに挑戦する <span>▶</span></button>
       <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a>
-      <p class="challenge-note">回答後は、初期設定では理解度ボードに載ります。結果画面のチェックを外せば非掲載にでき、同じ10問へもう一度挑戦することもできます。</p>
+      <p class="challenge-note">回答後に、理解度ボードへ載せるかを結果画面で選べます。同じ10問へもう一度挑戦することもできます。</p>
       <p class="challenge-note">回答内容は答え合わせと主催者の回答確認に使用されます。本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。</p>
     </section>`,
   );
@@ -570,31 +571,49 @@ function resultView() {
           aria-labelledby="challenge-result-share-title">
           <span class="challenge-section-label">SHARE YOUR RESULT</span>
           <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
-          <p>XやLINEは参加URLつきで送れます。Instagramはプロフィールリンクへ。</p>
+          <p>理解度ボードだけに載せるか、結果の送り方・保存方法を選べます。</p>
+          <button type="button" class="challenge-result-board-only" data-action="publish-board-only"
+            ${state.boardPreferenceBusy || state.result.participant?.rankingParticipating ? 'disabled' : ''}>
+            <span aria-hidden="true">📒</span>
+            ${state.boardPreferenceBusy
+              ? '理解度ボードを更新中…'
+              : state.result.participant?.rankingParticipating
+                ? '理解度ボードに掲載済み'
+                : '理解度ボードだけに載せる'}
+          </button>
+          <div class="challenge-result-share-divider"><span>共有・保存する場合</span></div>
           <label class="challenge-result-board-toggle">
             <input type="checkbox" data-action="toggle-ranking"
               ${state.boardOptIn ? 'checked' : ''} ${state.boardPreferenceBusy ? 'disabled' : ''}>
             <span>
-              <strong>理解度ボードに載せる</strong>
-              <small>初期設定はオンです。チェックを外すと、理解度ボードから外れます。</small>
+              <strong>理解度ボードに載せる（共有・保存と同時）</strong>
+              <small>初期設定はオンです。チェックを外すと、理解度ボードへ載せずに共有・保存します。</small>
             </span>
           </label>
+          ${state.boardActionMessage
+            ? `<p class="challenge-result-board-message" role="status">${escapeHtml(state.boardActionMessage)}</p>`
+            : ''}
           <div class="challenge-result-share-buttons">
-            <button type="button" class="challenge-result-share-button line" data-action="share-result-line">
-              LINEで結果を送る
+            <button type="button" class="challenge-result-share-button instagram"
+              data-action="share-result-instagram"
+              ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
+              <strong>Instagram用</strong>
+              <small>ストーリー用：文章コピー＋画像保存</small>
             </button>
-            <button type="button" class="challenge-result-share-button x" data-action="share-result-x">
-              Xで結果をツイート
+            <button type="button" class="challenge-result-share-button line" data-action="share-result-line"
+              ${state.boardPreferenceBusy ? 'disabled' : ''}>
+              <strong>LINEで送る</strong>
+            </button>
+            <button type="button" class="challenge-result-share-button x" data-action="share-result-x"
+              ${state.boardPreferenceBusy ? 'disabled' : ''}>
+              <strong>Xで結果を投稿</strong>
+            </button>
+            <button type="button" class="challenge-result-share-button image" data-action="save-result-image"
+              ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
+              <strong>${state.resultImageUrl ? '画像だけ保存' : '画像を準備中…'}</strong>
             </button>
           </div>
-          <button type="button" class="challenge-result-share-save" data-action="save-result-image"
-            ${state.resultImageUrl ? '' : 'disabled'}>
-            ${state.resultImageUrl ? '結果画像も送りたい。まずは画像を保存' : '画像を準備中…'}
-          </button>
         </section>
-        <button type="button" class="challenge-result-share-copy" data-action="copy-result-text">
-          文章だけコピーする
-        </button>
       </div>
       <button class="challenge-primary" data-action="retry-challenge">もう一度、答えを予想する</button>
       <p class="challenge-result-retry-note">もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。</p>
@@ -811,14 +830,17 @@ function bindEvents() {
   document.querySelector('[data-action="refresh-ranking"]')?.addEventListener('click', loadRanking);
   document.querySelector('[data-action="join"]')?.addEventListener('click', joinRoom);
   document.querySelector('[data-action="toggle-ranking"]')?.addEventListener('change', (event) => {
-    updateBoardPreference(event.currentTarget.checked);
+    chooseBoardPreference(event.currentTarget.checked);
   });
+  document.querySelector('[data-action="publish-board-only"]')?.addEventListener('click', publishBoardOnly);
   document.querySelector('[data-action="retry-challenge"]')?.addEventListener('click', retryChallenge);
   document.querySelector('[data-action="swap-roles"]')?.addEventListener('click', startRoleSwap);
   document.querySelector('[data-action="share-result-line"]')?.addEventListener('click', shareResultToLine);
   document.querySelector('[data-action="share-result-x"]')?.addEventListener('click', shareResultToX);
-  document.querySelector('[data-action="copy-result-text"]')?.addEventListener('click', copyResultText);
-  document.querySelector('[data-action="save-result-image"]')?.addEventListener('click', saveChallengeResultImage);
+  document.querySelector('[data-action="share-result-instagram"]')?.addEventListener('click', shareResultToInstagram);
+  document.querySelector('[data-action="save-result-image"]')?.addEventListener('click', () => {
+    saveResultImageOnly();
+  });
   if (document.getElementById('challenge-qr') && state.room) {
     QRCode.toCanvas(
       document.getElementById('challenge-qr'),
@@ -1193,9 +1215,33 @@ async function joinRoom() {
   }
 }
 
+function chooseBoardPreference(enabled) {
+  saveBoardOptIn(state.roomCode, enabled);
+  setState({
+    boardOptIn: enabled,
+    boardActionMessage: '',
+    error: '',
+  });
+}
+
 async function updateBoardPreference(enabled) {
-  if (!state.result || !state.participantToken) return;
-  setState({ boardOptIn: enabled, boardPreferenceBusy: true, error: '' });
+  if (!state.result || !state.participantToken) return false;
+  const currentPreference = state.result.participant?.rankingParticipating === true;
+  saveBoardOptIn(state.roomCode, enabled);
+  if (currentPreference === enabled) {
+    setState({
+      boardOptIn: enabled,
+      boardPreferenceBusy: false,
+      error: '',
+    });
+    return true;
+  }
+  setState({
+    boardOptIn: enabled,
+    boardPreferenceBusy: true,
+    boardActionMessage: '',
+    error: '',
+  });
   try {
     const response = await fetch(`/api/challenge/rooms/${state.roomCode}/ranking`, {
       method: enabled ? 'POST' : 'DELETE',
@@ -1217,6 +1263,7 @@ async function updateBoardPreference(enabled) {
       boardOptIn: enabled,
       boardPreferenceBusy: false,
     });
+    return true;
   } catch (error) {
     const actualPreference = state.result.participant?.rankingParticipating === true;
     saveBoardOptIn(state.roomCode, actualPreference);
@@ -1226,7 +1273,25 @@ async function updateBoardPreference(enabled) {
       mode: 'result',
       error: error.message,
     });
+    return false;
   }
+}
+
+async function applySelectedBoardPreference() {
+  if (state.boardPreferenceBusy) return false;
+  return updateBoardPreference(state.boardOptIn);
+}
+
+async function publishBoardOnly() {
+  if (!state.result || state.boardPreferenceBusy) return;
+  const updated = await updateBoardPreference(true);
+  if (!updated) return;
+  setState({
+    boardOptIn: true,
+    boardActionMessage: isEnglish
+      ? 'Added to the Understanding Board.'
+      : '理解度ボードに載せました。',
+  });
 }
 
 async function retryChallenge() {
@@ -1415,11 +1480,9 @@ async function loadResult(token = state.participantToken) {
     resultImageError: '',
     boardOptIn,
     boardPreferenceBusy: false,
+    boardActionMessage: '',
     mode: 'result',
   });
-  if (data.participant.rankingParticipating !== boardOptIn) {
-    await updateBoardPreference(boardOptIn);
-  }
 }
 
 function loadResultImage(src) {
@@ -1632,9 +1695,9 @@ async function prepareResultImage() {
   }
 }
 
-async function saveChallengeResultImage() {
-  if (!state.resultImageUrl || !state.result) return;
-  const button = document.querySelector('[data-action="save-result-image"]');
+async function saveChallengeResultImage(action = 'save-result-image') {
+  if (!state.resultImageUrl || !state.result) return '';
+  const button = document.querySelector(`[data-action="${action}"]`);
   const previousText = button?.textContent || '';
   if (button) {
     button.disabled = true;
@@ -1642,7 +1705,7 @@ async function saveChallengeResultImage() {
   }
   try {
     const blob = dataUrlToBlob(state.resultImageUrl);
-    await saveImageBlob(
+    return await saveImageBlob(
       blob,
       'watachan-challenge-score.png',
       isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード',
@@ -1653,6 +1716,7 @@ async function saveChallengeResultImage() {
         ? 'The image could not be saved. Please try again.'
         : '画像を保存できませんでした。もう一度お試しください。');
     }
+    return '';
   } finally {
     if (button) {
       button.disabled = false;
@@ -1682,22 +1746,34 @@ function resultShareText({ includeUrl = true } = {}) {
   return lines.join('\n');
 }
 
-function shareResultToLine() {
+async function shareResultToLine() {
   if (!state.result) return;
+  if (!await applySelectedBoardPreference()) return;
   openLineShare(resultShareText());
 }
 
-function shareResultToX() {
+async function shareResultToX() {
   if (!state.result) return;
+  if (!await applySelectedBoardPreference()) return;
   openXShare(resultShareText());
 }
 
-async function copyResultText() {
-  if (!state.result) return;
-  const button = document.querySelector('[data-action="copy-result-text"]');
+async function shareResultToInstagram() {
+  if (!state.result || !state.resultImageUrl) return;
+  if (!await applySelectedBoardPreference()) return;
   const copied = await copyText(resultShareText({ includeUrl: false }));
   if (!copied) return setState({ error: 'copy-failed' });
-  if (button) button.textContent = isEnglish ? 'Copied' : 'コピーしました';
+  const saveResult = await saveChallengeResultImage('share-result-instagram');
+  if (!saveResult) return;
+  window.alert(isEnglish
+    ? 'The text was copied and the result image is ready. Choose Instagram Stories from the share sheet, or select the saved image in Instagram.'
+    : '文章をコピーし、結果画像を用意しました。共有メニューからInstagramストーリーズを選ぶか、Instagramで保存した画像を選んでください。');
+}
+
+async function saveResultImageOnly() {
+  if (!state.result || !state.resultImageUrl) return;
+  if (!await applySelectedBoardPreference()) return;
+  await saveChallengeResultImage();
 }
 
 function saveCurrentProgress(patch) {
