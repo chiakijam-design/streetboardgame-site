@@ -13,6 +13,19 @@ test('10問版は0点から10点まで重複しない11段階の称号を返す'
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
   ]);
   assert.equal(new Set(CHALLENGE_RESULT_TIERS.map((tier) => tier.title)).size, 11);
+  assert.deepEqual(CHALLENGE_RESULT_TIERS.map((tier) => tier.title), [
+    '未知のわたし、全問発見',
+    'ぴったりの第一歩',
+    '「そうなんだ！」が2つ',
+    'わかってきた予感',
+    'わたし理解度、更新中',
+    '半分ぴったり、半分発見',
+    'ぴったりが一歩リード',
+    'かなりのわたし通',
+    'わたし解像度、高画質',
+    'あと1問も、会話の種',
+    'わたし解像度100%',
+  ]);
   for (let score = 0; score <= 10; score += 1) {
     assert.equal(getChallengeResultTier(score), CHALLENGE_RESULT_TIERS[score]);
   }

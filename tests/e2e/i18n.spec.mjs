@@ -152,7 +152,7 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByTestId('challenge-ai-review')).toContainText('Overall understanding');
   await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');
   await expect(page.getByTestId('challenge-result-image')).toBeVisible();
-  await expect(page.getByTestId('challenge-result-image')).toHaveAttribute('alt', /Perfectly in Sync/);
+  await expect(page.getByTestId('challenge-result-image')).toHaveAttribute('alt', /You in 100% Focus/);
   const roleSwap = page.getByTestId('challenge-role-swap');
   await expect(roleSwap).toContainText('RECOMMENDED');
   await expect(roleSwap.getByRole('button', {

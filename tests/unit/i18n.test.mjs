@@ -66,8 +66,8 @@ test('英語結果は0点から10点まで11称号と英語総評を返す', () 
   assert.equal(CHALLENGE_RESULT_TIERS_EN.length, 11);
   assert.deepEqual(CHALLENGE_RESULT_TIERS_EN.map((tier) => tier.score), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(new Set(CHALLENGE_RESULT_TIERS_EN.map((tier) => tier.title)).size, 11);
-  assert.equal(getChallengeResultTierEnglish(0).title, '10 New Discoveries');
-  assert.equal(getChallengeResultTierEnglish(10).title, 'Perfectly in Sync');
+  assert.equal(getChallengeResultTierEnglish(0).title, '10 New Sides Discovered');
+  assert.equal(getChallengeResultTierEnglish(10).title, 'You in 100% Focus');
   assert.match(getChallengeResultTierEnglish(0).message, /ten new things to talk about/i);
   assert.match(getChallengeResultTierEnglish(10).message, /All ten answers matched/);
   const review = getChallengeReviewLinesEnglish({
