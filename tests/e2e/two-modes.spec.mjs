@@ -837,6 +837,79 @@ test('途中保存から再開し、画像付き10問パックでクイズ作成
     .toHaveText('Create with these 10 questions');
 });
 
+test('採用済みのお題だけを4種類の最近人気として表示し、1問から作成できる', async ({ page }, testInfo) => {
+  await page.route('**/api/questions/catalog', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      questions: [],
+      selectionStats: [
+        { questionId: 'Q045', mode: 'challenge', shownCount: 20, skipCount: 1 },
+        { questionId: 'Q001', mode: 'challenge', shownCount: 12, skipCount: 2 },
+        { questionId: 'Q226', mode: 'challenge', shownCount: 8, skipCount: 2 },
+      ],
+    }),
+  }));
+  await page.route('**/api/questions/trends?*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      weeklySelections: [
+        { questionId: 'DISABLED', selectedCount: 99 },
+        { questionId: 'Q045', selectedCount: 8 },
+        { questionId: 'Q001', selectedCount: 5 },
+      ],
+      recentApprovals: [
+        { questionId: 'DISABLED', addedAt: 999 },
+        { questionId: 'Q226', addedAt: 300 },
+        { questionId: 'Q214', addedAt: 200 },
+      ],
+      liveResponses: [
+        { questionId: 'DISABLED', optionCounts: [2, 2, 2, 2, 2] },
+        { questionId: 'Q267', optionCounts: [3, 3, 2, 2, 2] },
+      ],
+    }),
+  }));
+
+  await page.goto('/challenge/library');
+  const trends = page.getByTestId('recent-question-trends');
+  await expect(trends).toBeVisible();
+  await expect(trends.getByRole('heading', { name: '最近人気' })).toBeVisible();
+  for (const heading of [
+    '今週よく選ばれたお題',
+    'スキップ率が低いお題',
+    '最近追加されたお題',
+    'LIVEで回答が割れたお題',
+  ]) {
+    await expect(trends.getByRole('heading', { name: heading })).toBeVisible();
+  }
+  await expect(trends.locator('[data-question-id="DISABLED"]')).toHaveCount(0);
+  await expect(trends.locator('[data-trend-group="weekly"] li')).toHaveCount(2);
+  await expect(trends.locator('[data-trend-group="low-skip"] li')).toHaveCount(3);
+  await expect(trends.locator('[data-trend-group="recent"] li')).toHaveCount(2);
+  await expect(trends.locator('[data-trend-group="live-split"] li')).toHaveCount(1);
+  await expect(trends.getByRole('link', { name: 'このお題を入れて作る' })).toHaveCount(8);
+  expect(await trends.evaluate((element) => (
+    element.getBoundingClientRect().right <= document.documentElement.clientWidth
+  ))).toBe(true);
+  const actionHeight = await trends.getByRole('link', { name: 'このお題を入れて作る' }).first()
+    .evaluate((element) => element.getBoundingClientRect().height);
+  expect(actionHeight).toBeGreaterThanOrEqual(44);
+
+  await trends.locator('[data-trend-group="weekly"] [data-question-id="Q045"] a').click();
+  await expect(page).toHaveURL('/challenge?question=Q045');
+  await page.getByLabel('出題者の名前（12文字まで）').fill('最近人気');
+  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await expect(page.locator('.challenge-builder-card')).toContainText('暇つぶしで開くのは');
+
+  if (testInfo.project.name === 'mobile-chrome') {
+    await page.goto('/en/challenge/library');
+    const englishTrends = page.getByTestId('recent-question-trends');
+    await expect(englishTrends.getByRole('heading', { name: 'Popular now' })).toBeVisible();
+    await expect(englishTrends.getByRole('heading', { name: 'Frequently chosen this week' })).toBeVisible();
+  }
+});
+
 test('LIVE専用2パックを選べ、不要な案内文カードを表示しない', async ({ page }) => {
   await page.goto('/live-challenge');
   const livePacks = page.getByTestId('live-exclusive-packs');

@@ -200,6 +200,38 @@ test('挑戦ルームは10問固定で正解を公開せず50人まで受け付�
   assert.equal(rejected.status, 409);
 });
 
+test('通常版で採用済みのお題を使うと元のお題IDで今週の作成回数を記録する', async () => {
+  const sqlite = new DatabaseSync(':memory:');
+  sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0018_challenge_board_comments.sql', import.meta.url), 'utf8'));
+  const env = { REMOTE_DB: d1Adapter(sqlite) };
+  const sourceCards = cards.map((card, index) => ({
+    ...card,
+    id: `draft-${index}`,
+    sourceId: `Q${String(index + 1).padStart(3, '0')}`,
+  }));
+
+  const response = await api(env, '/api/challenge/rooms', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      creatorName: '出題者',
+      cards: sourceCards,
+      answers: Array(CHALLENGE_QUESTION_COUNT).fill(0),
+    }),
+  });
+  assert.equal(response.status, 201);
+  const rows = sqlite.prepare(`
+    SELECT question_id, selected_count
+    FROM question_weekly_activity
+    ORDER BY question_id
+  `).all();
+  assert.equal(rows.length, CHALLENGE_QUESTION_COUNT);
+  assert.equal(rows[0].question_id, 'Q001');
+  assert.equal(rows[0].selected_count, 1);
+});
+
 test('挑戦者の得点と10問の答え合わせを本人だけに返し、順位は返さない', async () => {
   const env = { CHALLENGE_KV: new MemoryKV() };
   const created = await (await api(env, '/api/challenge/rooms', {

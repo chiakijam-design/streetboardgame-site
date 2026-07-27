@@ -27,6 +27,7 @@ export function normalizeLiveQuestion(question, maxOptions = 5) {
     : Number(source.lockedIndex);
   return {
     id: normalizeId(source.id) || createClientId(),
+    sourceId: normalizeId(source.sourceId),
     type,
     text: normalizeText(source.text, 180),
     options,

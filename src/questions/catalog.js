@@ -16,6 +16,19 @@ export async function loadManagedQuestionCards(baseCards, series, language = 'ja
   }
 }
 
+export async function loadQuestionTrendMetrics(language = 'ja') {
+  try {
+    const response = await fetch(`/api/questions/trends?lang=${language === 'en' ? 'en' : 'ja'}`, {
+      headers: { accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (!response.ok) return { weeklySelections: [], recentApprovals: [], liveResponses: [] };
+    return await response.json();
+  } catch (error) {
+    return { weeklySelections: [], recentApprovals: [], liveResponses: [] };
+  }
+}
+
 let selectionEventQueue = Promise.resolve();
 
 export function recordQuestionSelectionEvent(questionId, mode, event) {

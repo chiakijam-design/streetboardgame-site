@@ -7,6 +7,7 @@ import { validateStreamChallengeDraft } from '../../src/live/model.js';
 test('stream challenge requires exactly ten five-option questions', () => {
   const questions = Array.from({ length: 10 }, (_, index) => ({
     id: `stream-${index}`,
+    sourceId: `Q${String(index + 1).padStart(3, '0')}`,
     text: `Question ${index + 1}`,
     options: ['A', 'B', 'C', 'D', 'E'],
   }));
@@ -19,6 +20,7 @@ test('stream challenge requires exactly ten five-option questions', () => {
   assert.equal(valid.draft.questions.length, 10);
   assert.equal(valid.draft.questions.every((question) => question.type === 'guess-person'), true);
   assert.equal(valid.draft.questions.every((question) => question.lockedIndex === null), true);
+  assert.equal(valid.draft.questions[0].sourceId, 'Q001');
   assert.equal(valid.draft.showLiveVoteCounts, true);
   assert.equal(valid.draft.paidSalesRequested, false);
   assert.equal(valid.draft.resultImagePrice, 0);

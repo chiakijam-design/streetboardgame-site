@@ -84,6 +84,10 @@ import {
   requireLiveCreatorInvite,
   revokeLiveCreatorInvite,
 } from './security.js';
+import {
+  recordLiveAnswerDistribution,
+  recordQuestionSelections,
+} from '../questions/trends.js';
 
 const LIVE_ACTIVE_TTL_SECONDS = 60 * 60 * 24;
 const LIVE_SAVED_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -349,6 +353,7 @@ async function createLiveGame(request, env) {
   try {
     if (creatorImageFile) game.creatorImage = await storePrivateCreatorImage(creatorImageFile, env, code);
     await putStoredLiveGame(env, code, game);
+    await recordQuestionSelections(env, game.questions, 'live', now).catch(() => false);
     if (hasLiveRealtime(env)) {
       await initializeLiveRealtime(env, code);
       await broadcastCurrentRealtimeState(env, code, game);
@@ -421,6 +426,7 @@ async function createStreamChallengeGame(request, env) {
     expiresAt: now + LIVE_ACTIVE_TTL_SECONDS * 1000,
   };
   await putStoredLiveGame(env, code, game);
+  await recordQuestionSelections(env, game.questions, 'live', now).catch(() => false);
   if (hasLiveRealtime(env)) {
     await initializeLiveRealtime(env, code);
     await broadcastCurrentRealtimeState(env, code, game);
@@ -1658,6 +1664,9 @@ async function updateLiveGameAsHost(request, env, code, action) {
     && game.mode !== 'stream-challenge';
   if (shouldAcquireActiveSlot && game.phase !== 'lobby') throw liveError('game-already-started', 409);
   if (shouldAcquireActiveSlot) await acquireLiveActiveSlot(env, code, game);
+  const trendQuestion = action === 'advance' && game.phase === 'voting'
+    ? game.questions[game.currentQuestionIndex]
+    : null;
   try {
     if (realtime && action === 'advance' && game.phase === 'voting') {
       const question = game.questions[game.currentQuestionIndex];
@@ -1676,6 +1685,10 @@ async function updateLiveGameAsHost(request, env, code, action) {
     }
     touchLiveGame(game);
     await putStoredLiveGame(env, code, game);
+    if (trendQuestion) {
+      const result = game.results.find((item) => item.questionId === trendQuestion.id);
+      await recordLiveAnswerDistribution(env, trendQuestion, result, game.updatedAt).catch(() => false);
+    }
     if (realtime) await broadcastCurrentRealtimeState(env, code, game);
   } catch (error) {
     if (shouldAcquireActiveSlot) await releaseLiveActiveSlot(env, code);

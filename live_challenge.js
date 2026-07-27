@@ -839,6 +839,7 @@ async function createGame() {
         resultImagePrice: state.paidSalesEnabled ? state.resultImagePrice : 0,
         questions: state.questions.map((question) => ({
           id: question.id,
+          sourceId: question.sourceId,
           type: 'guess-person',
           text: question.text,
           options: question.options,

@@ -4,10 +4,12 @@ import { questionPackBySlug, questionPackCards, questionPacks } from './src/chal
 import {
   changedQuestionCandidates,
   loadManagedQuestionCards,
+  loadQuestionTrendMetrics,
   recordQuestionSelectionEvent,
   reportManagedQuestion,
   submitQuestionCandidates,
 } from './src/questions/catalog.js';
+import { buildRecentQuestionGroups } from './src/questions/trends.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import {
   buildChallengeInviteText,
@@ -72,6 +74,7 @@ let state = {
   participants: [],
   ranking: [],
   library: [],
+  questionTrends: { weeklySelections: [], recentApprovals: [], liveResponses: [] },
   result: null,
   resultImageUrl: '',
   resultImageBusy: false,
@@ -868,9 +871,61 @@ function libraryView() {
           </article>`;
         }).join('')}
       </div>
+      ${recentQuestionTrendsView()}
       <a class="challenge-primary" href="${languagePrefix}/challenge">パックを使わず1問ずつ選ぶ</a>
     </section>`,
   );
+}
+
+function recentQuestionTrendsView() {
+  const groups = buildRecentQuestionGroups(allCards, state.questionTrends, 4);
+  const sections = [{
+    key: 'weekly',
+    title: '今週よく選ばれたお題',
+    description: '今週、作成されたクイズへよく入ったお題です。',
+    items: groups.weekly,
+  }, {
+    key: 'low-skip',
+    title: 'スキップ率が低いお題',
+    description: '表示されたとき、そのまま選ばれやすかったお題です。',
+    items: groups.lowSkip,
+  }, {
+    key: 'recent',
+    title: '最近追加されたお題',
+    description: '管理画面で最近採用された新しいお題です。',
+    items: groups.recent,
+  }, {
+    key: 'live-split',
+    title: 'LIVEで回答が割れたお題',
+    description: '直近のLIVEで、回答が複数の選択肢へ分かれたお題です。',
+    items: groups.liveSplit,
+  }];
+  return `<section class="challenge-recent-trends" data-testid="recent-question-trends" aria-labelledby="recent-question-trends-title">
+    <div class="challenge-recent-heading">
+      <span class="challenge-pack-count">採用済みのお題だけ</span>
+      <h2 id="recent-question-trends-title">最近人気</h2>
+      <p>みんなの選び方を参考に、1問からクイズへ追加できます。</p>
+    </div>
+    <div class="challenge-trend-groups">
+      ${sections.map((section) => trendGroupView(section)).join('')}
+    </div>
+  </section>`;
+}
+
+function trendGroupView(section) {
+  return `<article class="challenge-trend-group" data-trend-group="${section.key}">
+    <h3>${section.title}</h3>
+    <p>${section.description}</p>
+    ${section.items.length ? `<ul>
+      ${section.items.map(({ card }) => `<li data-question-id="${escapeHtml(card.id)}">
+        <div>
+          <small>${escapeHtml(card.category || 'みんなのお題')}</small>
+          <b>${escapeHtml(card.title)}</b>
+        </div>
+        <a href="${languagePrefix}/challenge?question=${encodeURIComponent(card.id)}">このお題を入れて作る</a>
+      </li>`).join('')}
+    </ul>` : '<p class="challenge-trend-empty">データが集まると表示します。</p>'}
+  </article>`;
 }
 
 function errorView() {
@@ -2048,6 +2103,9 @@ function errorMessage(code) {
 async function bootChallenge() {
   allCards = await loadManagedQuestionCards(allCards, 'challenge', isEnglish ? 'en' : 'ja');
   questionCatalogReady = true;
+  if (state.mode === 'library') {
+    state.questionTrends = await loadQuestionTrendMetrics(isEnglish ? 'en' : 'ja');
+  }
   if (quickStart && state.mode === 'creator-edit') {
     state.cards = pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard);
   }

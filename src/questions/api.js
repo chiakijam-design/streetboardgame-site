@@ -1,5 +1,6 @@
 import { requireLiveAdminSession } from '../live/admin-auth.js';
 import { scanQuestionSafety } from './safety.js';
+import { getQuestionTrendMetrics } from './trends.js';
 
 const DAILY_QUESTION_LIMIT = 20;
 const MAX_BATCH_SIZE = 10;
@@ -26,6 +27,11 @@ export async function handleQuestionApi(request, env, path) {
         publicSelectionStats(env),
       ]);
       return json({ questions, selectionStats });
+    }
+
+    if (path === '/api/questions/trends' && request.method === 'GET') {
+      const language = new URL(request.url).searchParams.get('lang') === 'en' ? 'en' : 'ja';
+      return json(await getQuestionTrendMetrics(env, language));
     }
 
     if (path === '/api/questions/selection-events' && request.method === 'POST') {

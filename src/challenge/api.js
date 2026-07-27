@@ -1,3 +1,5 @@
+import { recordQuestionSelections } from '../questions/trends.js';
+
 export const CHALLENGE_MAX_PARTICIPANTS = 50;
 export const CHALLENGE_ROOM_TTL_DAYS = 30;
 export const CHALLENGE_QUESTION_COUNT = 10;
@@ -98,6 +100,7 @@ async function createRoom(request, env) {
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const code = createRoomCode();
     if (await insertRoom(env, code, room)) {
+      await recordQuestionSelections(env, cards, 'challenge', now).catch(() => false);
       return jsonResponse({
         code,
         manageToken: room.manageToken,
@@ -402,6 +405,9 @@ function sanitizeCards(value) {
     }
     return {
       id: String(card && card.id || '').slice(0, 24),
+      sourceId: /^[A-Za-z0-9_-]{2,80}$/.test(String(card && card.sourceId || ''))
+        ? String(card.sourceId)
+        : '',
       category: String(card && card.category || '').slice(0, 40),
       title,
       choices,
