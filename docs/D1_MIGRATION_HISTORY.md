@@ -18,6 +18,13 @@ Replaying the files was unsafe: migration 0011 failed immediately because
 `challenge_participants.ranking_consent_at` already existed, and later files
 contain table rebuilds and data normalization.
 
+Git history also contains `0001_remote_rooms.sql` and
+`0002_remote_rate_limits.sql`. Those files belonged to retired remote-game
+tables, were removed from the current migration directory, and their tables
+were dropped by 0015. They are retained in Git history instead of being restored
+as current migrations. Their original production application timestamps cannot
+be proven from the present D1 ledger.
+
 The read-only audit confirmed:
 
 - 0011: ranking consent column, ranking index, statistics table and index exist.
@@ -41,6 +48,11 @@ Two non-destructive indexes were absent:
 `tools/d1-reconcile-migration-history-20260727.sql` creates those indexes and
 records the eleven already-realized migration file names. It does not rebuild
 tables, update question status, or delete application data.
+
+The `applied_at` values for the backfilled ledger rows show the reconciliation
+time, not the unknown original direct-SQL execution time. The original state
+transition is documented by the migration files and Git history; the live
+ledger now represents which current files have been realized.
 
 ## Rules for future migrations
 
