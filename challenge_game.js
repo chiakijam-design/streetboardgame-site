@@ -615,15 +615,15 @@ function resultView() {
           </div>
         </section>
       </div>
-      <button class="challenge-primary" data-action="retry-challenge">もう一度、答えを予想する</button>
-      <p class="challenge-result-retry-note">もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。</p>
       <section class="challenge-role-swap" data-testid="challenge-role-swap">
-        <span class="challenge-section-label">ROLE CHANGE</span>
-        <h2>今度は役割交代</h2>
-        <p>同じ10問を使って、次はあなたが出題者になれます。元の出題者の正解は引き継がれません。</p>
-        <button class="challenge-primary" data-action="swap-roles">役割交代して、次は自分が出題する</button>
+        <span class="challenge-section-label">NEXT TURN</span>
+        <h2>次は、あなたが出題者</h2>
+        <button class="challenge-primary" data-action="swap-roles">同じ10問で、今度は私が出題する</button>
+        <p>問題と選択肢だけ引き継ぎます。元の出題者の正解は引き継がれません。</p>
       </section>
-      <a class="challenge-secondary" href="/challenge">別の10問で自分も作る</a>
+      <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>
+      <p class="challenge-result-retry-note">もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。</p>
+      <a class="challenge-secondary" href="/challenge">新しいお題でもう一度</a>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
       <a class="challenge-secondary" href="/">トップへ戻る</a>
     </section>
