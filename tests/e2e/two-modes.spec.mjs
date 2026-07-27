@@ -771,7 +771,7 @@ test('参加者が結果画面から役割交代し、同じ10問の出題者に
   }
 });
 
-test('出題者画面は順位を使わず、迷った問題と選択人数を会話向けに表示する', async ({ page, request }) => {
+test('出題者画面は順位を使わず、問題別の人数・割合を会話のきっかけとして最初に表示する', async ({ page, request }) => {
   const challengeUrl = await createChallenge(page, '会話集計');
   const code = new URL(challengeUrl).searchParams.get('room');
   const answerSets = [
@@ -796,16 +796,27 @@ test('出題者画面は順位を使わず、迷った問題と選択人数を�
 
   await page.getByRole('button', { name: '回答状況を更新' }).click();
   const insights = page.getByTestId('host-conversation-insights');
-  await expect(insights.getByRole('heading', { name: 'みんなが迷った問題' })).toBeVisible();
+  await expect(insights.getByRole('heading', { name: '答え合わせから、会話のきっかけ' })).toBeVisible();
   await expect(insights).toContainText('順位ではなく、みんなの答え合わせを次の会話のきっかけに。');
   await expect(insights).toContainText('4人の回答を集計');
   await expect(insights.locator('[data-insight-kind]')).toHaveCount(3);
   await expect(insights).toContainText('一番予想が割れた問題');
   await expect(insights).toContainText('最も正解者が少なかった問題');
-  await expect(insights).toContainText('一番意外な回答が集まった問題');
+  await expect(insights).toContainText('一番意外な選択肢が選ばれた問題');
   await expect(insights.getByText('この答えについて話してみよう')).toHaveCount(3);
   await expect(insights.locator('[data-insight-kind] .challenge-choice-counts li')).toHaveCount(15);
-  await insights.getByText('10問すべての選択人数を見る').click();
+  await expect(insights).toContainText('1人（25%）');
+  await expect(insights).toContainText('3人（75%）');
+  expect(await page.evaluate(() => {
+    const insightsElement = document.querySelector('[data-testid="host-conversation-insights"]');
+    const shareElement = document.querySelector('[data-testid="challenge-share-screen"]');
+    return Boolean(
+      insightsElement
+      && shareElement
+      && (insightsElement.compareDocumentPosition(shareElement) & Node.DOCUMENT_POSITION_FOLLOWING)
+    );
+  })).toBe(true);
+  await insights.getByText('10問すべての人数・割合を見る').click();
   await expect(insights.locator('.challenge-question-distribution')).toHaveCount(10);
   await expect(insights.locator('.challenge-question-distribution .challenge-choice-counts li')).toHaveCount(50);
   expect(await insights.evaluate((element) => (

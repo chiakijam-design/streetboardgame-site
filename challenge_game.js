@@ -403,6 +403,8 @@ function manageView() {
   const room = state.room;
   if (!room) return errorView();
   const shareUrl = challengeUrl(room.code);
+  const hasCompletedResponses = state.participants.some((participant) => participant?.submitted);
+  const conversationInsights = hostConversationInsightsView(state.participants, room.cards);
   const shareLead = isEnglish
     ? `Send ${room.creatorName}'s quiz to friends.`
     : `${room.creatorName}さんの診断を友達へ送りましょう。`;
@@ -410,7 +412,8 @@ function manageView() {
     'HOST DASHBOARD',
     '主催者用回答管理',
     `${room.creatorName}さんのクイズを共有し、参加状況と一人ずつの回答を確認できます。`,
-    `<section class="challenge-panel challenge-share-screen" data-testid="challenge-share-screen">
+    `${hasCompletedResponses ? conversationInsights : ''}
+    <section class="challenge-panel challenge-share-screen" data-testid="challenge-share-screen">
       <div class="challenge-created-heading">
         <h2>理解度診断ができました</h2>
       </div>
@@ -440,7 +443,7 @@ function manageView() {
       <button class="challenge-secondary" data-action="refresh-manage">回答状況を更新</button>
       <p class="challenge-note">主催者用URLは回答内容を見られる秘密URLです。この端末へ保存され、30日後に無効になります。第三者へ送らないでください。</p>
     </section>
-    ${hostConversationInsightsView(state.participants, room.cards)}
+    ${hasCompletedResponses ? '' : conversationInsights}
     <section class="challenge-panel" data-testid="host-answer-management">
       <h2>参加者の回答</h2>
       ${state.participants.length ? `
@@ -456,18 +459,18 @@ function hostConversationInsightsView(participants, cards) {
   const insights = buildQuestionConversationInsights(cards, participants);
   const copy = isEnglish
     ? {
-      label: 'ANSWER TALK',
-      title: 'Questions everyone hesitated on',
+      label: 'CONVERSATION STARTERS',
+      title: 'Conversation starters from the answer review',
       lead: 'No rankings. Use the answer patterns to start the next conversation.',
       count: `${insights.completedCount} completed responses`,
       waiting: 'Highlights appear after at least two people finish all 10 questions.',
-      all: 'View choice counts for all 10 questions',
+      all: 'View counts and percentages for all 10 questions',
       talk: 'Talk about this answer',
       correct: 'Creator’s answer',
-      people: (count) => `${count}`,
+      choiceStat: (count, total) => `${count} (${choicePercentage(count, total)})`,
       splitLabel: 'Most divided predictions',
       leastLabel: 'Fewest correct predictions',
-      surpriseLabel: 'Most surprising answer',
+      surpriseLabel: 'Question with the most unexpected choice',
       splitSummary: (question) => `${question.activeChoiceCount} choices received votes; the largest group had ${question.topCount}.`,
       leastSummary: (question) => `${question.correctCount} of ${question.total} predicted the creator’s answer.`,
       surpriseSummary: (question) => {
@@ -476,18 +479,18 @@ function hostConversationInsightsView(participants, cards) {
       },
     }
     : {
-      label: 'ANSWER TALK',
-      title: 'みんなが迷った問題',
+      label: '会話のきっかけ',
+      title: '答え合わせから、会話のきっかけ',
       lead: '順位ではなく、みんなの答え合わせを次の会話のきっかけに。',
       count: `${insights.completedCount}人の回答を集計`,
       waiting: '2人以上が10問を答え終えると、会話のきっかけになる問題を表示します。',
-      all: '10問すべての選択人数を見る',
+      all: '10問すべての人数・割合を見る',
       talk: 'この答えについて話してみよう',
       correct: '出題者の答え',
-      people: (count) => `${count}人`,
+      choiceStat: (count, total) => `${count}人（${choicePercentage(count, total)}）`,
       splitLabel: '一番予想が割れた問題',
       leastLabel: '最も正解者が少なかった問題',
-      surpriseLabel: '一番意外な回答が集まった問題',
+      surpriseLabel: '一番意外な選択肢が選ばれた問題',
       splitSummary: (question) => `${question.activeChoiceCount}つの選択肢に分かれ、最多でも${question.topCount}人でした。`,
       leastSummary: (question) => `${question.total}人中${question.correctCount}人が出題者の答えを当てました。`,
       surpriseSummary: (question) => {
@@ -559,10 +562,16 @@ function choiceCountListView(question, copy) {
   return `<ul class="challenge-choice-counts">
     ${question.card.choices.map((choice, index) => `<li class="${index === question.correctIndex ? 'is-correct' : ''}">
       <span><i style="background:${COLORS[index]}"></i>${escapeHtml(choice)}</span>
-      <b>${copy.people(question.counts[index] || 0)}</b>
+      <b>${copy.choiceStat(question.counts[index] || 0, question.total)}</b>
       ${index === question.correctIndex ? `<small>${copy.correct}</small>` : ''}
     </li>`).join('')}
   </ul>`;
+}
+
+function choicePercentage(count, total) {
+  if (!total) return '0%';
+  const percentage = Math.round((Number(count || 0) / Number(total)) * 1000) / 10;
+  return `${Number.isInteger(percentage) ? percentage : percentage.toFixed(1)}%`;
 }
 
 function questionSubmissionNotice() {
