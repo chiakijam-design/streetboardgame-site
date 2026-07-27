@@ -157,6 +157,8 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
 
   const response = await page.goto('/question-ops');
   expect(response?.headers()['x-robots-tag']).toBe('noindex, nofollow, noarchive');
+  expect(response?.headers()['referrer-policy']).toBe('no-referrer');
+  expect(response?.headers()['cache-control']).toBe('no-store');
   await expect(page).toHaveTitle('お題審査・問題管理 | Streetboardgame');
   await expect(page.locator('#dashboard')).toBeHidden();
   await page.locator('#adminToken').fill('x'.repeat(32));

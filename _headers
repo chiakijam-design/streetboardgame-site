@@ -14,6 +14,12 @@
 
 /live-ops
   Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store
+/question-ops
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store
 /challenge*
   Referrer-Policy: no-referrer
 /en/challenge*

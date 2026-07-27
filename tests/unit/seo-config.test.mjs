@@ -56,3 +56,27 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
     assert.equal(lastModifiedByUrl.get(updatedUrl), '2026-07-27', updatedUrl);
   }
 });
+
+test('公開説明は現行の二本立てと答え合わせ中心の方針に統一する', async () => {
+  const challenge = await readFile('challenge.html', 'utf8');
+  const top = await readFile('index.html', 'utf8');
+  const topApp = await readFile('prototype_app.jsx', 'utf8');
+  const englishTop = await readFile('en/index.html', 'utf8');
+
+  assert.doesNotMatch(challenge, /友達や家族/);
+  assert.doesNotMatch(top, /相手を理解できるまで、何度でも挑戦できます/);
+  assert.doesNotMatch(topApp, /家族や友達/);
+  assert.doesNotMatch(englishTop, /who (?:knows|understands) you best/i);
+  assert.match(englishTop, /See where your answers match/);
+});
+
+test('運営画面は検索除外・キャッシュ禁止・参照元非送信を重ねて指定する', async () => {
+  const headers = await readFile('_headers', 'utf8');
+  const worker = await readFile('_worker.js', 'utf8');
+
+  for (const route of ['/live-ops', '/question-ops']) {
+    const escapedRoute = route.replace('/', '\\/');
+    assert.match(headers, new RegExp(`${escapedRoute}[\\s\\S]*?Referrer-Policy: no-referrer[\\s\\S]*?X-Robots-Tag: noindex, nofollow, noarchive[\\s\\S]*?Cache-Control: no-store`));
+  }
+  assert.equal((worker.match(/headers\.set\('referrer-policy', 'no-referrer'\)/g) || []).length >= 2, true);
+});

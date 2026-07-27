@@ -72,6 +72,8 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
   });
   const response = await page.goto('/live-ops');
   expect(response?.headers()['x-robots-tag']).toBe('noindex, nofollow, noarchive');
+  expect(response?.headers()['referrer-policy']).toBe('no-referrer');
+  expect(response?.headers()['cache-control']).toBe('no-store');
   await expect(page).toHaveTitle('LIVE運営コンソール | Streetboardgame');
   await page.locator('#adminToken').fill('x'.repeat(32));
   await page.locator('#adminOtp').fill('123456');

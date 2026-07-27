@@ -248,6 +248,7 @@ async function handleRequest(request, env) {
       headers.set('content-type', 'text/html; charset=UTF-8');
       headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       headers.set('cache-control', 'no-store');
+      headers.set('referrer-policy', 'no-referrer');
       return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
     }
 
@@ -265,6 +266,7 @@ async function handleRequest(request, env) {
       headers.set('content-type', 'text/html; charset=UTF-8');
       headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       headers.set('cache-control', 'no-store');
+      headers.set('referrer-policy', 'no-referrer');
       return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
     }
 
@@ -411,7 +413,7 @@ async function withSecurityHeaders(response, request) {
   if (isHtml) headers.set('content-type', 'text/html; charset=UTF-8');
   const nonce = isHtml ? createCspNonce() : '';
   const requestPath = request ? new URL(request.url).pathname : '';
-  const sensitivePath = /^\/(?:en\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|api(?:\/|$))/.test(requestPath);
+  const sensitivePath = /^\/(?:en\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|question-ops|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
     "default-src 'none'",
     "base-uri 'self'",
