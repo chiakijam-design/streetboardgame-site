@@ -153,6 +153,11 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');
   await expect(page.getByTestId('challenge-result-image')).toBeVisible();
   await expect(page.getByTestId('challenge-result-image')).toHaveAttribute('alt', /Perfectly in Sync/);
+  const roleSwap = page.getByTestId('challenge-role-swap');
+  await expect(roleSwap).toContainText('RECOMMENDED');
+  await expect(roleSwap.getByRole('button', {
+    name: 'Use the same 10 questions — now I’ll be the creator',
+  })).toBeVisible();
   const resultShare = page.getByTestId('challenge-result-share');
   await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();
   const boardCheckbox = resultShare.getByRole('checkbox', { name: /Add to Understanding Board/ });
@@ -163,6 +168,20 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(resultShare.getByRole('button', { name: 'Share on LINE' })).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'Post result on X' })).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'Save image only' })).toBeEnabled();
+  await expect(page.getByRole('link', { name: 'Create with new questions' })).toBeVisible();
+  expect(await page.evaluate(() => {
+    const review = document.querySelector('[data-testid="challenge-ai-review"]');
+    const swap = document.querySelector('[data-action="swap-roles"]');
+    const share = document.querySelector('[data-testid="challenge-result-share"]');
+    const retry = document.querySelector('[data-action="retry-challenge"]');
+    const create = Array.from(document.querySelectorAll('a'))
+      .find((link) => link.textContent.trim() === 'Create with new questions');
+    return Boolean(review && swap && share && retry && create
+      && (review.compareDocumentPosition(swap) & Node.DOCUMENT_POSITION_FOLLOWING)
+      && (swap.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING)
+      && (share.compareDocumentPosition(retry) & Node.DOCUMENT_POSITION_FOLLOWING)
+      && (retry.compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING));
+  })).toBe(true);
   await expect(page.getByRole('button', { name: 'Copy text only' })).toHaveCount(0);
   await resultShare.getByRole('button', { name: 'Add only to Understanding Board' }).click();
   await page.getByRole('link', { name: 'View the Understanding Board' }).click();

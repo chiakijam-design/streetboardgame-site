@@ -662,7 +662,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       return Boolean(answers && review
         && (answers.compareDocumentPosition(review) & Node.DOCUMENT_POSITION_FOLLOWING));
     })).toBe(true);
-    await expect(participant.getByRole('link', { name: '新しいお題でもう一度' })).toHaveAttribute('href', '/challenge');
+    await expect(participant.getByRole('link', { name: '新しいお題で作る' })).toHaveAttribute('href', '/challenge');
     await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
     await expect(participant.getByTestId('understanding-board')).toContainText('ゆう');
     await expect(participant.getByTestId('understanding-board')).toContainText('答え合わせ済み');
@@ -741,17 +741,18 @@ test('参加者が結果画面から役割交代し、同じ10問の出題者に
       await participant.locator('[data-action="answer"]').first().click();
     }
     await expect(participant.getByTestId('challenge-role-swap')).toContainText('次は、あなたが出題者');
+    await expect(participant.getByTestId('challenge-role-swap')).toContainText('おすすめ');
     await expect(participant.getByTestId('challenge-role-swap')).toContainText('元の出題者の正解は引き継がれません');
     const roleSwap = participant.getByRole('button', { name: '同じ10問で、今度は私が出題する' });
     const retry = participant.getByRole('button', { name: 'もう一度、答えを予想する' });
-    const newQuestions = participant.getByRole('link', { name: '新しいお題でもう一度' });
+    const newQuestions = participant.getByRole('link', { name: '新しいお題で作る' });
     expect(await participant.evaluate(() => {
       const review = document.querySelector('[data-testid="challenge-ai-review"]');
       const swap = document.querySelector('[data-action="swap-roles"]');
       const share = document.querySelector('[data-testid="challenge-result-share"]');
       const retryButton = document.querySelector('[data-action="retry-challenge"]');
       const newQuestionLink = Array.from(document.querySelectorAll('a'))
-        .find((link) => link.textContent.trim() === '新しいお題でもう一度');
+        .find((link) => link.textContent.trim() === '新しいお題で作る');
       return Boolean(review && swap && share && retryButton && newQuestionLink
         && (review.compareDocumentPosition(swap) & Node.DOCUMENT_POSITION_FOLLOWING)
         && (swap.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING)
