@@ -86,6 +86,7 @@ function TopPage() {
           <Girl
             variant="full"
             height={310}
+            style={{ maxWidth: 'none' }}
             loading="eager"
             fetchPriority="high"
             alt="わたし理解度診断のメインキャラクター"

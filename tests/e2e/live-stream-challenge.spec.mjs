@@ -50,6 +50,7 @@ test('top page exposes normal and live creator buttons with the same primary des
   const live = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
   const nameInput = page.getByLabel('あなたの名前（12文字まで）');
   const visual = page.getByTestId('top-character-visual');
+  const character = visual.locator('img');
   const rules = page.getByTestId('top-common-rules');
   const liveAgeNotice = page.getByTestId('live-age-notice');
   await expect(rules).toBeVisible();
@@ -73,14 +74,16 @@ test('top page exposes normal and live creator buttons with the same primary des
   await expect(liveAgeNotice).toHaveText('⚠️ 配信サービスごとの年齢・保護者同意ルールを確認してください。YouTubeで配信を開始できるのは原則16歳以上です。');
   await expect(page.getByRole('navigation', { name: 'ゲームシリーズの紹介ページ' })
     .getByRole('link', { name: /ライブ配信でみんなに挑戦してもらう/ })).toBeVisible();
-  const [visualBox, rulesBox, nameBox, normalBox, liveBox, liveAgeNoticeBox] = await Promise.all([
+  const [visualBox, characterBox, rulesBox, nameBox, normalBox, liveBox, liveAgeNoticeBox] = await Promise.all([
     visual.boundingBox(),
+    character.boundingBox(),
     rules.boundingBox(),
     nameInput.boundingBox(),
     normal.boundingBox(),
     live.boundingBox(),
     liveAgeNotice.boundingBox(),
   ]);
+  expect((characterBox?.height || 0) / (characterBox?.width || 1)).toBeCloseTo(3072 / 2088, 2);
   expect(visualBox?.y + visualBox?.height).toBeLessThanOrEqual(rulesBox?.y);
   expect(nameBox?.y).toBeGreaterThan(rulesBox?.y);
   expect(nameBox?.y + nameBox?.height).toBeLessThanOrEqual(normalBox?.y);
