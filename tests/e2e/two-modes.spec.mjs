@@ -39,13 +39,14 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await expect(page.getByLabel('このクイズを友達や他の人も使えるようにする')).toBeChecked();
   await buildChallengeQuestions(page);
   await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
-  await expect(page.getByTestId('challenge-share-screen')).toContainText(`${creatorName}の「わたし理解度診断」ができました！`);
-  await expect(page.getByRole('button', { name: 'リンクをコピーする' })).toBeVisible();
+  await expect(page.getByTestId('challenge-share-screen')).toContainText('理解度診断ができました');
+  await expect(page.getByRole('button', { name: 'URLをコピー' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Instagramでシェア' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Xでシェア' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'LINEで送る' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'SMS・その他で送る' })).toBeVisible();
-  const url = await page.getByRole('textbox', { name: '挑戦用URL' }).inputValue();
+  await expect(page.getByRole('link', { name: '理解度ボードを見る' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '最近作った診断へ保存' })).toBeVisible();
+  const url = await page.getByRole('button', { name: 'URLをコピー' }).getAttribute('data-copy-value');
   expect(url).toMatch(/\/challenge\?room=[A-Z2-9]{8}&share=challenge-20260726-1$/);
   return url;
 }
@@ -55,24 +56,40 @@ test.beforeEach(async ({ page, request }) => {
   await preparePage(page);
 });
 
-test('SMS・その他は再挑戦と任意公開を明記した招待文を共有する', async ({ page }) => {
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, 'share', {
-      configurable: true,
-      value: async (payload) => {
-        sessionStorage.setItem('captured-participation-share', JSON.stringify(payload));
-      },
-    });
-  });
-  const url = await createChallenge(page, 'ちあき');
-  await page.getByRole('button', { name: 'SMS・その他で送る' }).click();
-  const shared = await page.evaluate(() => JSON.parse(
-    sessionStorage.getItem('captured-participation-share') || 'null',
-  ));
-  expect(shared).toEqual({
-    title: 'ちあきの「わたし理解度診断」',
-    text: `ちあきの「わたし理解度診断」📒\n私のこと、ちゃんと分かってるよね？\n当てるより、話すための10問。\n結果を公開するかは自分で選べて、再挑戦もOK。\n10問やってみて👇\n${url}`,
-  });
+test('作成完了後は共有と保存の6導線だけを指定順で表示する', async ({ page }) => {
+  await createChallenge(page, 'ちあき');
+  const shareScreen = page.getByTestId('challenge-share-screen');
+  const orderedActions = await shareScreen.locator(
+    '[data-action="share-line"],[data-action="copy-url"],[data-action="share-instagram"],'
+      + '[data-action="share-x"],a[href*="/challenge/ranking"],[data-action="save-recent-challenge"]',
+  ).evaluateAll((elements) => elements.map((element) => (
+    element.getAttribute('data-action') || 'ranking'
+  )));
+  expect(orderedActions).toEqual([
+    'share-line',
+    'copy-url',
+    'share-instagram',
+    'share-x',
+    'ranking',
+    'save-recent-challenge',
+  ]);
+  await expect(shareScreen.getByRole('button', { name: 'SMS・その他で送る' })).toHaveCount(0);
+  await expect(shareScreen.locator('#challenge-qr')).toHaveCount(0);
+  expect(await shareScreen.locator('.challenge-share-action').evaluateAll((actions) => {
+    const screen = actions[0]?.closest('[data-testid="challenge-share-screen"]')?.getBoundingClientRect();
+    return Boolean(screen && actions.every((action) => {
+      const rect = action.getBoundingClientRect();
+      return rect.height >= 44 && rect.left >= screen.left && rect.right <= screen.right;
+    }));
+  })).toBe(true);
+
+  await page.evaluate(() => localStorage.removeItem('watachan-challenge-manage-history:v1'));
+  await shareScreen.getByRole('button', { name: '最近作った診断へ保存' }).click();
+  await expect(page.getByTestId('recent-challenge-save-message'))
+    .toHaveText('この端末の「最近作った診断」に保存しました。');
+  expect(await page.evaluate(() => (
+    JSON.parse(localStorage.getItem('watachan-challenge-manage-history:v1') || '[]').length
+  ))).toBe(1);
 });
 
 test('トップは作成者向けに通常版とライブ配信版の2本だけを案内する', async ({ page }, testInfo) => {
@@ -447,9 +464,6 @@ test('公開候補チェックを外した自作お題は運営へ送信しな�
 test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入りカード・理解度ボードまで完走する', async ({ browser, page }, testInfo) => {
   const challengeUrl = await createChallenge(page);
   await expect(page.getByTestId('participant-count')).toContainText('0人回答済み');
-  await expect(page.locator('#challenge-qr')).toBeHidden();
-  await page.getByText('QRコードで送る', { exact: true }).click();
-  await expect(page.locator('#challenge-qr')).toBeVisible();
 
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', {

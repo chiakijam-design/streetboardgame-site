@@ -171,6 +171,28 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByTestId('understanding-board')).not.toContainText('#1');
 });
 
+test('英語の作成完了画面も共有と保存の導線を英語で表示する', async ({ request, page }) => {
+  const cards = Array.from({ length: 10 }, (_, index) => ({
+    id: `ENHOST${index + 1}`,
+    category: 'Test',
+    title: `Host test question ${index + 1}?`,
+    choices: ['One', 'Two', 'Three', 'Four', 'Five'],
+  }));
+  const createdResponse = await request.post('/api/challenge/rooms', {
+    data: { creatorName: 'Mia', cards, answers: Array(10).fill(0) },
+  });
+  expect(createdResponse.status()).toBe(201);
+  const created = await createdResponse.json();
+  await page.goto(`/en/challenge/manage?room=${created.code}#manage=${created.manageToken}`);
+  const shareScreen = page.getByTestId('challenge-share-screen');
+  await expect(shareScreen.getByRole('heading', { name: 'Your quiz is ready' })).toBeVisible();
+  await expect(shareScreen.getByRole('button', { name: 'Share on LINE' })).toBeVisible();
+  await expect(shareScreen.getByRole('button', { name: 'Copy URL' })).toBeVisible();
+  await expect(shareScreen.getByRole('group', { name: 'Instagram & X' })).toBeVisible();
+  await expect(shareScreen.getByRole('link', { name: 'View the Understanding Board' })).toBeVisible();
+  await expect(shareScreen.getByRole('button', { name: 'Save to recent quizzes' })).toBeVisible();
+});
+
 test('英語の参加・LIVEエラーは日本語を残さない', async ({ page }) => {
   await page.goto('/en/challenge?room=NOEXIST1');
   await expect(page.getByRole('heading', { name: 'This quiz could not be opened' })).toBeVisible();

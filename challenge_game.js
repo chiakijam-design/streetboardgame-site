@@ -1,4 +1,3 @@
-import QRCode from 'qrcode';
 import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
 import { questionPackBySlug, questionPackCards, questionPacks } from './src/challenge/packs.js';
 import {
@@ -404,54 +403,40 @@ function manageView() {
   const room = state.room;
   if (!room) return errorView();
   const shareUrl = challengeUrl(room.code);
-  const rankingUrl = `${location.origin}${languagePrefix}/challenge/ranking?room=${room.code}`;
+  const shareLead = isEnglish
+    ? `Send ${room.creatorName}'s quiz to friends.`
+    : `${room.creatorName}さんの診断を友達へ送りましょう。`;
   return shell(
     'HOST DASHBOARD',
     '主催者用回答管理',
     `${room.creatorName}さんのクイズを共有し、参加状況と一人ずつの回答を確認できます。`,
     `<section class="challenge-panel challenge-share-screen" data-testid="challenge-share-screen">
       <div class="challenge-created-heading">
-        <span aria-hidden="true">🏆</span>
-        <h2>${escapeHtml(room.creatorName)}の「わたし理解度診断」ができました！</h2>
-        <span aria-hidden="true">🏆</span>
+        <h2>理解度診断ができました</h2>
       </div>
-      <p class="challenge-share-lead">参加URLを友達に送りましょう！</p>
-      <div class="challenge-share-card">
-        <label class="challenge-label" for="share-url">挑戦用URL</label>
-        <input id="share-url" class="challenge-input challenge-share-url" readonly value="${escapeHtml(shareUrl)}">
-        <button class="challenge-primary challenge-copy-link" data-action="copy-url" data-copy-value="${escapeHtml(shareUrl)}">リンクをコピーする</button>
-        <div class="challenge-social-row" role="group" aria-label="参加URLをシェア">
-          <button type="button" class="challenge-social-button instagram" data-action="share-instagram" aria-label="Instagramでシェア">
-            <span class="challenge-social-mark" aria-hidden="true"><i></i></span>
-            <span>Instagram</span>
-          </button>
-          <button type="button" class="challenge-social-button x" data-action="share-x" aria-label="Xでシェア">
-            <span class="challenge-social-mark" aria-hidden="true">X</span>
-            <span>X</span>
-          </button>
-          <button type="button" class="challenge-social-button line" data-action="share-line" aria-label="LINEで送る">
-            <span class="challenge-social-mark" aria-hidden="true">LINE</span>
-            <span>LINE</span>
-          </button>
-          <button type="button" class="challenge-social-button sms" data-action="share-native" aria-label="SMS・その他で送る">
-            <span class="challenge-social-mark" aria-hidden="true">SMS</span>
-            <span>SMS・その他</span>
-          </button>
+      <p class="challenge-share-lead">${escapeHtml(shareLead)}</p>
+      <div class="challenge-share-actions" aria-label="完成した理解度診断を共有・保存">
+        <button type="button" class="challenge-share-action line" data-action="share-line">LINEで送る</button>
+        <button type="button" class="challenge-share-action copy" data-action="copy-url"
+          data-copy-value="${escapeHtml(shareUrl)}">URLをコピー</button>
+        <div class="challenge-share-social-pair" role="group" aria-label="Instagram・X">
+          <button type="button" class="challenge-share-action instagram" data-action="share-instagram"
+            aria-label="Instagramでシェア">Instagram</button>
+          <button type="button" class="challenge-share-action x" data-action="share-x"
+            aria-label="Xでシェア">X</button>
         </div>
-        <p class="challenge-instagram-note">Instagramはリンクをコピーして、ストーリーズなどに貼り付けてください。</p>
+        <a class="challenge-share-action board" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a>
+        <button type="button" class="challenge-share-action recent" data-action="save-recent-challenge">
+          最近作った診断へ保存
+        </button>
+        <p class="challenge-recent-save-message" data-testid="recent-challenge-save-message"
+          role="status" aria-live="polite"></p>
       </div>
-      <details class="challenge-qr-details">
-        <summary>QRコードで送る</summary>
-        <div class="challenge-qr"><canvas id="challenge-qr" width="180" height="180" aria-label="挑戦用URLのQRコード"></canvas></div>
-      </details>
+      <div class="challenge-manage-divider"><span>回答管理</span></div>
       <div class="challenge-count" data-testid="participant-count">
         <b>${room.completedParticipants}</b>人回答済み ／ <b>${room.participantCount}</b>人参加 ／ 上限${room.maxParticipants}人
       </div>
       ${questionSubmissionNotice()}
-      <div class="challenge-button-row">
-        <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a>
-        <button class="challenge-secondary" data-action="copy-ranking" data-copy-value="${escapeHtml(rankingUrl)}">理解度ボードのURLをコピー</button>
-      </div>
       <button class="challenge-secondary" data-action="refresh-manage">回答状況を更新</button>
       <p class="challenge-note">主催者用URLは回答内容を見られる秘密URLです。この端末へ保存され、30日後に無効になります。第三者へ送らないでください。</p>
     </section>
@@ -992,7 +977,7 @@ function bindEvents() {
     const url = challengeUrl(state.room.code);
     openXShare(shareText(state.room, url));
   });
-  document.querySelector('[data-action="share-native"]')?.addEventListener('click', shareParticipation);
+  document.querySelector('[data-action="save-recent-challenge"]')?.addEventListener('click', saveRecentChallenge);
   document.querySelector('[data-action="refresh-manage"]')?.addEventListener('click', loadManageRoom);
   document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
   document.querySelector('[data-action="report-question"]')?.addEventListener('click', (event) => reportQuestion(event.currentTarget));
@@ -1010,13 +995,6 @@ function bindEvents() {
   document.querySelector('[data-action="save-result-image"]')?.addEventListener('click', () => {
     saveResultImageOnly();
   });
-  if (document.getElementById('challenge-qr') && state.room) {
-    QRCode.toCanvas(
-      document.getElementById('challenge-qr'),
-      challengeUrl(state.room.code),
-      { width: 180, margin: 1, color: { dark: '#1b1b1b', light: '#ffffff' } },
-    ).catch(() => {});
-  }
 }
 
 function startCreate() {
@@ -1317,33 +1295,6 @@ async function shareToInstagram() {
   const copied = await copyText(challengeUrl(state.room.code));
   if (!copied) return setState({ error: 'copy-failed' });
   window.alert('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
-}
-
-async function shareParticipation() {
-  if (!state.room) return;
-  const url = challengeUrl(state.room.code);
-  const text = shareText(state.room, url);
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: isEnglish
-          ? `${state.room.creatorName}’s “Know Me” quiz`
-          : `${state.room.creatorName}の「わたし理解度診断」`,
-        text,
-      });
-      return;
-    } catch (error) {
-      if (error?.name === 'AbortError') return;
-    }
-  }
-  const copied = await copyText(text);
-  if (copied) {
-    window.alert(isEnglish
-      ? 'The invitation text was copied.'
-      : 'SMSなどで送れる共有文をコピーしました。');
-    return;
-  }
-  setState({ error: 'copy-failed' });
 }
 
 async function joinRoom() {
@@ -2009,6 +1960,22 @@ function saveManageRoom(code, token, creatorName) {
     ...manageHistory().filter((item) => item.code !== code),
   ].slice(0, 5);
   writeStorage(MANAGE_HISTORY_KEY, next);
+}
+
+function saveRecentChallenge() {
+  if (!state.roomCode || !state.manageToken || !state.room) return;
+  saveManageRoom(state.roomCode, state.manageToken, state.room.creatorName);
+  const message = document.querySelector('[data-testid="recent-challenge-save-message"]');
+  const button = document.querySelector('[data-action="save-recent-challenge"]');
+  if (message) {
+    message.textContent = isEnglish
+      ? 'Saved to recent quizzes on this device.'
+      : 'この端末の「最近作った診断」に保存しました。';
+  }
+  if (button) {
+    button.textContent = isEnglish ? 'Saved to recent quizzes' : '最近作った診断に保存済み';
+    button.disabled = true;
+  }
 }
 
 function manageHistory() {
