@@ -28,7 +28,7 @@
     style.id = 'site-language-style';
     style.textContent = `
       .site-language-switch{position:absolute;z-index:2147483000;top:max(8px,env(safe-area-inset-top));right:8px;display:flex;align-items:center;min-height:44px;padding:4px;background:rgba(255,255,255,.96);border:2px solid #191919;border-radius:999px;box-shadow:2px 3px 0 #191919;font:800 13px/1.2 Arial,"Yu Gothic",sans-serif;color:#191919}
-      .site-language-switch a{display:grid;min-height:34px;place-items:center;padding:0 10px;border-radius:999px;color:#191919;text-decoration:none;white-space:nowrap}
+      .site-language-switch a{display:grid;min-height:44px;place-items:center;padding:0 10px;border-radius:999px;color:#191919;text-decoration:none;white-space:nowrap}
       .site-language-switch a[aria-current="page"]{background:#ffe36f}
       .site-language-offer{position:fixed;z-index:2147482999;left:50%;top:max(62px,calc(env(safe-area-inset-top) + 54px));width:min(calc(100% - 24px),460px);transform:translateX(-50%);padding:14px;background:#fff;border:3px solid #191919;border-radius:16px;box-shadow:5px 6px 0 #191919;color:#191919;font:700 14px/1.5 Arial,"Yu Gothic",sans-serif;text-align:left}
       .site-language-offer strong{display:block;font-size:17px}.site-language-offer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.site-language-offer button{min-height:44px;border:2px solid #191919;border-radius:10px;background:#fff;font:800 14px Arial,"Yu Gothic",sans-serif}.site-language-offer button:first-child{background:#ffe36f}

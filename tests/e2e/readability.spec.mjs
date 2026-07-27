@@ -59,6 +59,8 @@ test('公開ゲーム画面は本文14px・補足12px・ボタン16px・タッ�
         '.back',
         '.challenge-top a',
         '.challenge-feature-nav a',
+        '.site-language-switch a',
+        'footer a',
         'label:has(input[type="checkbox"])',
         'label:has(input[type="radio"])',
       ].join(',');

@@ -207,6 +207,26 @@ test('ゲームページはパンくず構造化データ、専用canonical、�
   await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveCount(0);
 });
 
+test('日英の主要ページは共有先へブランド名・言語・安全なOGP画像URLを渡す', async ({ page }) => {
+  for (const path of ['/', '/challenge', '/live-challenge']) {
+    await page.goto(path);
+    await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute('content', 'わたし理解度診断');
+    await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute('content', 'ja_JP');
+    await expect(page.locator('meta[property="og:locale:alternate"]')).toHaveAttribute('content', 'en_US');
+    await expect(page.locator('meta[property="og:image:secure_url"]')).toHaveAttribute('content', /^https:\/\/www\.streetboardgame\.com\/assets\/ogp-/);
+    await expect(page.locator('meta[property="og:image:type"]')).toHaveAttribute('content', 'image/png');
+  }
+
+  for (const path of ['/en/', '/en/challenge', '/en/live-challenge']) {
+    await page.goto(path);
+    await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute('content', 'Understanding Quiz');
+    await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute('content', 'en_US');
+    await expect(page.locator('meta[property="og:locale:alternate"]')).toHaveAttribute('content', 'ja_JP');
+    await expect(page.locator('meta[property="og:image:secure_url"]')).toHaveAttribute('content', /^https:\/\/www\.streetboardgame\.com\/assets\/ogp-/);
+    await expect(page.locator('meta[property="og:image:type"]')).toHaveAttribute('content', 'image/png');
+  }
+});
+
 test('英語トップのLCP画像は初期HTMLから適切な候補を高優先で取得する', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTML属性は画面幅に依存しないためPCで1回検証');
   await page.goto('/en/');

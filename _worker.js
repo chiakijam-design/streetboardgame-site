@@ -638,6 +638,7 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
     .replace(/<meta name="description" content="[^"]*"\s*\/?>/i, `<meta name="description" content="${description}">`)
     .replace(/<link rel="canonical" href="[^"]*"\s*\/?>/i, `<link rel="canonical" href="${CANONICAL_ORIGIN + canonicalPath}">`)
     .replace(/<meta property="og:title" content="[^"]*"\s*\/?>/i, `<meta property="og:title" content="${ogTitle}">`)
+    .replace(/<meta property="og:site_name" content="[^"]*"\s*\/?>/i, '<meta property="og:site_name" content="Understanding Quiz">')
     .replace(/<meta property="og:description" content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${description}">`)
     .replace(/<meta property="og:url" content="[^"]*"\s*\/?>/i, `<meta property="og:url" content="${shareUrl.toString()}">`)
     .replace(/<meta property="og:image" content="[^"]*"\s*\/?>/i, '<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en.png?v=20260725-en-1">')
@@ -655,8 +656,12 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
   } else {
     localized = localized.replace('<meta property="og:type" content="website">', '<meta property="og:type" content="website">\n  <meta property="og:locale" content="en_US">');
   }
+  if (/<meta property="og:locale:alternate" content="[^"]*"\s*\/?>/i.test(localized)) {
+    localized = localized.replace(/<meta property="og:locale:alternate" content="[^"]*"\s*\/?>/i, '<meta property="og:locale:alternate" content="ja_JP">');
+  } else {
+    localized = localized.replace('<meta property="og:locale" content="en_US">', '<meta property="og:locale" content="en_US">\n  <meta property="og:locale:alternate" content="ja_JP">');
+  }
   localized = localized
-    .replace('<meta property="og:locale" content="en_US">', '<meta property="og:locale" content="en_US">\n  <meta property="og:locale:alternate" content="ja_JP">')
     .replace('わたし理解度診断｜LIVE版', 'Know Me Quiz | Live')
     .replace('<h1>私のこと、ちゃんと<br>分かってるよね？</h1>', '<h1>How well do you<br>know me?</h1>')
     .replace('私のこと、ちゃんと分かってるよね？', 'How well do you know me?')

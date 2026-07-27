@@ -73,7 +73,8 @@ label:has(input[type="radio"]) {
   .back,
   .challenge-top a,
   .challenge-feature-nav a,
-  .legal-nav a
+  .legal-nav a,
+  footer a
 ) {
   min-height: 44px !important;
 }
@@ -85,6 +86,12 @@ label:has(input[type="radio"]) {
   .challenge-feature-nav a
 ) {
   font-size: 16px !important;
+}
+
+footer a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .challenge-color-choice span {
