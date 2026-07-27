@@ -2,6 +2,7 @@ import { handleLiveApi } from './src/live/api.js';
 import { handleChallengeApi } from './src/challenge/api.js';
 import { handleQuestionApi } from './src/questions/api.js';
 import { runPrivacyCleanup } from './src/privacy/cleanup.js';
+import { runSocialPublishing } from './src/social/publisher.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
@@ -51,7 +52,11 @@ export default {
     return withSecurityHeaders(await handleRequest(request, env), request);
   },
   async scheduled(controller, env, context) {
-    context.waitUntil(runPrivacyCleanup(env, Number(controller?.scheduledTime) || Date.now()));
+    const scheduledAt = Number(controller?.scheduledTime) || Date.now();
+    context.waitUntil(Promise.all([
+      runPrivacyCleanup(env, scheduledAt),
+      runSocialPublishing(env, scheduledAt),
+    ]));
   },
 };
 
@@ -102,6 +107,19 @@ async function handleRequest(request, env) {
 
     if (path.startsWith('/api/questions')) {
       return handleQuestionApi(request, env, path);
+    }
+
+    if (path === '/api/social/x/callback') {
+      return new Response(JSON.stringify({
+        ok: true,
+        message: 'X OAuth callback is configured. Automated posting uses the approved account token.',
+      }), {
+        headers: {
+          'content-type': 'application/json; charset=UTF-8',
+          'cache-control': 'no-store',
+          'x-robots-tag': 'noindex, nofollow, noarchive',
+        },
+      });
     }
 
     if (path === '/en') {
