@@ -757,6 +757,49 @@ test('参加者が結果画面から役割交代し、同じ10問の出題者に
   }
 });
 
+test('出題者画面は順位を使わず、迷った問題と選択人数を会話向けに表示する', async ({ page, request }) => {
+  const challengeUrl = await createChallenge(page, '会話集計');
+  const code = new URL(challengeUrl).searchParams.get('room');
+  const answerSets = [
+    Array(10).fill(0),
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+    [2, 1, 2, 0, 0, 0, 0, 0, 0, 0],
+    [3, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+  ];
+
+  for (let index = 0; index < answerSets.length; index += 1) {
+    const joinedResponse = await request.post(`/api/challenge/rooms/${code}/join`, {
+      data: { name: `回答者${index + 1}` },
+    });
+    expect(joinedResponse.status()).toBe(201);
+    const joined = await joinedResponse.json();
+    const submitted = await request.post(`/api/challenge/rooms/${code}/submit`, {
+      headers: { 'x-challenge-participant-token': joined.participantToken },
+      data: { answers: answerSets[index] },
+    });
+    expect(submitted.status()).toBe(200);
+  }
+
+  await page.getByRole('button', { name: '回答状況を更新' }).click();
+  const insights = page.getByTestId('host-conversation-insights');
+  await expect(insights.getByRole('heading', { name: 'みんなが迷った問題' })).toBeVisible();
+  await expect(insights).toContainText('順位ではなく、みんなの答え合わせを次の会話のきっかけに。');
+  await expect(insights).toContainText('4人の回答を集計');
+  await expect(insights.locator('[data-insight-kind]')).toHaveCount(3);
+  await expect(insights).toContainText('一番予想が割れた問題');
+  await expect(insights).toContainText('最も正解者が少なかった問題');
+  await expect(insights).toContainText('一番意外な回答が集まった問題');
+  await expect(insights.getByText('この答えについて話してみよう')).toHaveCount(3);
+  await expect(insights.locator('[data-insight-kind] .challenge-choice-counts li')).toHaveCount(15);
+  await insights.getByText('10問すべての選択人数を見る').click();
+  await expect(insights.locator('.challenge-question-distribution')).toHaveCount(10);
+  await expect(insights.locator('.challenge-question-distribution .challenge-choice-counts li')).toHaveCount(50);
+  expect(await insights.evaluate((element) => (
+    element.getBoundingClientRect().right <= document.documentElement.clientWidth
+  ))).toBe(true);
+  await expect(insights).not.toContainText('1位');
+});
+
 test('途中保存から再開し、画像付き10問パックでクイズ作成へ戻れる', async ({ page }) => {
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill('途中保存');

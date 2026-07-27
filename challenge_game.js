@@ -18,6 +18,7 @@ import {
 import { dataUrlToBlob, saveImageBlob } from './src/platform/imageSave.js';
 import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
+import { buildQuestionConversationInsights } from './src/challenge/insights.js';
 import {
   getChallengeResultTier,
   getChallengeResultTierEnglish,
@@ -451,6 +452,7 @@ function manageView() {
       <button class="challenge-secondary" data-action="refresh-manage">回答状況を更新</button>
       <p class="challenge-note">主催者用URLは回答内容を見られる秘密URLです。この端末へ保存され、30日後に無効になります。第三者へ送らないでください。</p>
     </section>
+    ${hostConversationInsightsView(state.participants, room.cards)}
     <section class="challenge-panel" data-testid="host-answer-management">
       <h2>参加者の回答</h2>
       ${state.participants.length ? `
@@ -460,6 +462,119 @@ function manageView() {
       ` : '<p class="challenge-empty">まだ参加者はいません。挑戦用URLを送って待ちましょう。</p>'}
     </section>`,
   );
+}
+
+function hostConversationInsightsView(participants, cards) {
+  const insights = buildQuestionConversationInsights(cards, participants);
+  const copy = isEnglish
+    ? {
+      label: 'ANSWER TALK',
+      title: 'Questions everyone hesitated on',
+      lead: 'No rankings. Use the answer patterns to start the next conversation.',
+      count: `${insights.completedCount} completed responses`,
+      waiting: 'Highlights appear after at least two people finish all 10 questions.',
+      all: 'View choice counts for all 10 questions',
+      talk: 'Talk about this answer',
+      correct: 'Creator’s answer',
+      people: (count) => `${count}`,
+      splitLabel: 'Most divided predictions',
+      leastLabel: 'Fewest correct predictions',
+      surpriseLabel: 'Most surprising answer',
+      splitSummary: (question) => `${question.activeChoiceCount} choices received votes; the largest group had ${question.topCount}.`,
+      leastSummary: (question) => `${question.correctCount} of ${question.total} predicted the creator’s answer.`,
+      surpriseSummary: (question) => {
+        const choice = question.card.choices[question.unexpectedChoiceIndex];
+        return `The most common unexpected answer was “${choice}” with ${question.unexpectedCount}.`;
+      },
+    }
+    : {
+      label: 'ANSWER TALK',
+      title: 'みんなが迷った問題',
+      lead: '順位ではなく、みんなの答え合わせを次の会話のきっかけに。',
+      count: `${insights.completedCount}人の回答を集計`,
+      waiting: '2人以上が10問を答え終えると、会話のきっかけになる問題を表示します。',
+      all: '10問すべての選択人数を見る',
+      talk: 'この答えについて話してみよう',
+      correct: '出題者の答え',
+      people: (count) => `${count}人`,
+      splitLabel: '一番予想が割れた問題',
+      leastLabel: '最も正解者が少なかった問題',
+      surpriseLabel: '一番意外な回答が集まった問題',
+      splitSummary: (question) => `${question.activeChoiceCount}つの選択肢に分かれ、最多でも${question.topCount}人でした。`,
+      leastSummary: (question) => `${question.total}人中${question.correctCount}人が出題者の答えを当てました。`,
+      surpriseSummary: (question) => {
+        const choice = question.card.choices[question.unexpectedChoiceIndex];
+        return `正解以外では「${choice}」が${question.unexpectedCount}人で最多でした。`;
+      },
+    };
+  const highlights = [
+    insights.highlights.split && {
+      kind: 'split',
+      label: copy.splitLabel,
+      summary: copy.splitSummary(insights.highlights.split),
+      question: insights.highlights.split,
+    },
+    insights.highlights.leastCorrect && {
+      kind: 'least-correct',
+      label: copy.leastLabel,
+      summary: copy.leastSummary(insights.highlights.leastCorrect),
+      question: insights.highlights.leastCorrect,
+    },
+    insights.highlights.surprising && {
+      kind: 'surprising',
+      label: copy.surpriseLabel,
+      summary: copy.surpriseSummary(insights.highlights.surprising),
+      question: insights.highlights.surprising,
+    },
+  ].filter(Boolean);
+
+  return `<section class="challenge-panel challenge-conversation-insights" data-testid="host-conversation-insights">
+    <span class="challenge-section-label">${copy.label}</span>
+    <h2>${copy.title}</h2>
+    <p class="challenge-conversation-lead">${copy.lead}</p>
+    <p class="challenge-conversation-count">${copy.count}</p>
+    ${highlights.length
+      ? `<div class="challenge-insight-grid">
+          ${highlights.map((highlight) => insightCardView(highlight, copy)).join('')}
+        </div>`
+      : `<p class="challenge-empty">${copy.waiting}</p>`}
+    ${insights.completedCount
+      ? `<details class="challenge-all-distributions">
+          <summary>${copy.all}</summary>
+          <div class="challenge-all-distribution-list">
+            ${insights.questions.map((question) => questionDistributionView(question, copy)).join('')}
+          </div>
+        </details>`
+      : ''}
+  </section>`;
+}
+
+function insightCardView(highlight, copy) {
+  const { question } = highlight;
+  return `<article class="challenge-insight-card is-${highlight.kind}" data-insight-kind="${highlight.kind}">
+    <span class="challenge-insight-label">${escapeHtml(highlight.label)}</span>
+    <h3>Q${question.index + 1} ${escapeHtml(question.card.title)}</h3>
+    <p>${escapeHtml(highlight.summary)}</p>
+    ${choiceCountListView(question, copy)}
+    <p class="challenge-conversation-prompt"><span aria-hidden="true">💬</span> ${copy.talk}</p>
+  </article>`;
+}
+
+function questionDistributionView(question, copy) {
+  return `<article class="challenge-question-distribution">
+    <h3>Q${question.index + 1} ${escapeHtml(question.card.title)}</h3>
+    ${choiceCountListView(question, copy)}
+  </article>`;
+}
+
+function choiceCountListView(question, copy) {
+  return `<ul class="challenge-choice-counts">
+    ${question.card.choices.map((choice, index) => `<li class="${index === question.correctIndex ? 'is-correct' : ''}">
+      <span><i style="background:${COLORS[index]}"></i>${escapeHtml(choice)}</span>
+      <b>${copy.people(question.counts[index] || 0)}</b>
+      ${index === question.correctIndex ? `<small>${copy.correct}</small>` : ''}
+    </li>`).join('')}
+  </ul>`;
 }
 
 function questionSubmissionNotice() {
