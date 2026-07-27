@@ -67,6 +67,8 @@
   Cache-Control: public, max-age=300, must-revalidate
 /assets/ogp-challenge-v2.png
   Cache-Control: public, max-age=300, must-revalidate
+/assets/ogp-challenge-v3.png
+  Cache-Control: public, max-age=300, must-revalidate
 /assets/ogp-challenge-en.png
   Cache-Control: public, max-age=300, must-revalidate
 /assets/qr-site.png

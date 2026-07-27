@@ -46,6 +46,11 @@ async function buildLiveQuestions(page, startIndex = 0) {
 
 test('top page exposes normal and live creator buttons with the same primary design', async ({ page }) => {
   await page.goto('/');
+  const duplicateIds = await page.evaluate(() => {
+    const ids = [...document.querySelectorAll('[id]')].map((element) => element.id).filter(Boolean);
+    return [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
+  });
+  expect(duplicateIds).toEqual([]);
   const normal = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
   const live = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
   const nameInput = page.getByLabel('あなたの名前（12文字まで）');

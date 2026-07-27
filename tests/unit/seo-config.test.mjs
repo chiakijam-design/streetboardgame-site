@@ -10,6 +10,7 @@ test('内容ハッシュ付き本番JavaScript・CSSだけを長期キャッシ�
   assert.doesNotMatch(headers, /^\/accessibility\.css$/m);
   assert.doesNotMatch(headers, /^\/question-card\.css$/m);
   assert.doesNotMatch(headers, /^\/\*\.js$/m);
+  assert.match(headers, /\/assets\/ogp-challenge-v3\.png[\s\S]*?Cache-Control: public, max-age=300, must-revalidate/);
 
   const buildScript = await readFile('tools/build-js.mjs', 'utf8');
   assert.match(buildScript, /const STYLE_ENTRIES = \{/);

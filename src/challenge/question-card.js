@@ -3,6 +3,7 @@ const CARD_HEIGHT = 1122;
 const LINE_YS = [40, 113, 186, 260, 333, 407, 480, 553, 627, 701, 773, 848, 922, 996, 1068];
 const CHOICE_YS = [296, 444, 590, 739, 885];
 const COLORS = ['#7BB661', '#3B6FB5', '#F0C53D', '#C8323C', '#E88A3C'];
+let svgInstanceSerial = 0;
 
 function escapeMarkup(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({
@@ -43,6 +44,10 @@ function dynamicQuestionCardSvg(card) {
   const titleLines = splitLine(title, 13);
   const titleSize = titleLines.length > 1 ? 38 : title.length >= 15 ? 40 : title.length >= 11 ? 44 : 50;
   const holes = Array.from({ length: 12 }, (_, index) => 30 + index * 63);
+  svgInstanceSerial += 1;
+  const definitionPrefix = `notebook-card-${svgInstanceSerial.toString(36)}`;
+  const dotShadowId = `${definitionPrefix}-dot-shadow`;
+  const curlId = `${definitionPrefix}-curl`;
 
   return `<svg
     class="notebook-question-card-visual"
@@ -54,10 +59,10 @@ function dynamicQuestionCardSvg(card) {
   >
     <title>${escapeMarkup(title)}</title>
     <defs>
-      <filter id="notebook-card-dot-shadow" x="-35%" y="-35%" width="170%" height="170%">
+      <filter id="${dotShadowId}" x="-35%" y="-35%" width="170%" height="170%">
         <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity=".24"/>
       </filter>
-      <linearGradient id="notebook-card-curl" x1="0" y1="0" x2="1" y2="0">
+      <linearGradient id="${curlId}" x1="0" y1="0" x2="1" y2="0">
         <stop offset="0" stop-color="#D8D8D8"/>
         <stop offset=".48" stop-color="#FFFFFF"/>
         <stop offset="1" stop-color="#C8C8C8"/>
@@ -73,7 +78,7 @@ function dynamicQuestionCardSvg(card) {
       ${choices.map((choice, index) => {
         const lines = splitLine(choice, 12);
         const size = lines.length > 1 ? 34 : choice.length >= 14 ? 32 : choice.length >= 10 ? 36 : 42;
-        return `<circle cx="76" cy="${CHOICE_YS[index]}" r="42" fill="${COLORS[index]}" filter="url(#notebook-card-dot-shadow)"/>
+        return `<circle cx="76" cy="${CHOICE_YS[index]}" r="42" fill="${COLORS[index]}" filter="url(#${dotShadowId})"/>
           ${textElement(lines, {
             x: 406,
             y: CHOICE_YS[index],
@@ -83,7 +88,7 @@ function dynamicQuestionCardSvg(card) {
           })}`;
       }).join('')}
     </g>
-    <path d="M690 920 C726 932 750 1005 738 1122 L650 1122 C667 1055 677 982 690 920 Z" fill="url(#notebook-card-curl)" opacity=".94"/>
+    <path d="M690 920 C726 932 750 1005 738 1122 L650 1122 C667 1055 677 982 690 920 Z" fill="url(#${curlId})" opacity=".94"/>
     <path d="M681 932 C716 953 731 1015 725 1122" stroke="rgba(0,0,0,.12)" stroke-width="4" fill="none"/>
   </svg>`;
 }
