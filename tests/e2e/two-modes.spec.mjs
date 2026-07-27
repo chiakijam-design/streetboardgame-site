@@ -743,7 +743,7 @@ test('10問パックをLIVE版の作成画面でもそのまま使える', async
   await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
   await expect(page.getByRole('heading', { name: '1問ずつクイズを作る' })).toBeVisible();
   await expect(page.locator('.selected-live-pack')).toContainText('夏休みの10問');
-  await expect(page.getByTestId('live-builder-paper-card')).toContainText('お祭りで買うなら');
+  await expect(page.getByTestId('live-builder-paper-card')).toContainText('行ってみたい都道府県');
 });
 
 test('LIVE専用4パックを選べ、不要な案内文カードを表示しない', async ({ page }) => {
