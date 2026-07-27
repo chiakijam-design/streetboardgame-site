@@ -106,8 +106,18 @@ function TopPage() {
         borderRadius: 18,
         boxShadow: `5px 5px 0 ${theme.pinkDeep}`,
       }}>
-        <h2 id="rules-title" style={{ margin: 0, textAlign: 'center', fontSize: 18, lineHeight: 1.5 }}>
-          あなたの「わたし理解度診断」を作って、<br />みんなに挑戦してもらおう
+        <h2 id="rules-title" style={{
+          margin: 0,
+          textAlign: 'center',
+          fontSize: 'clamp(14px, 4.2vw, 18px)',
+          lineHeight: 1.5,
+        }}>
+          <span data-testid="top-rules-title-line" style={{ display: 'block', whiteSpace: 'nowrap' }}>
+            あなたの「わたし理解度診断」を
+          </span>
+          <span data-testid="top-rules-title-line" style={{ display: 'block', whiteSpace: 'nowrap' }}>
+            作って、みんなに挑戦してもらおう
+          </span>
         </h2>
         <Rules />
         <form onSubmit={(event) => { event.preventDefault(); start('challenge'); }} style={{
@@ -285,10 +295,30 @@ function ModeStartChoice({
         fontWeight: 800,
         lineHeight: 1.45,
       }}>
-        {steps.map((step, index) => <li key={step}>{['①', '②', '③'][index]}{step}</li>)}
+        {steps.map((step, index) => {
+          const segments = splitModeStep(step);
+          return (
+            <li
+              key={step}
+              data-testid={step === '配信で参加方法を案内' ? 'top-live-join-step' : undefined}
+              style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', minWidth: 0 }}
+            >
+              <span style={{ whiteSpace: 'nowrap' }}>{['①', '②', '③'][index]}{segments[0]}</span>
+              {segments.slice(1).map((segment) => (
+                <span key={segment} style={{ whiteSpace: 'nowrap' }}>{segment}</span>
+              ))}
+            </li>
+          );
+        })}
       </ol>
     </section>
   );
+}
+
+function splitModeStep(step) {
+  if (step === '配信で参加方法を案内') return ['配信で', '参加方法を案内'];
+  if (step === '視聴者と同時回答') return ['視聴者と', '同時回答'];
+  return [step];
 }
 
 function CommonCardStack() {

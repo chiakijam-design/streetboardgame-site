@@ -75,7 +75,7 @@ test('SMS・その他は再挑戦と任意公開を明記した招待文を共�
   });
 });
 
-test('トップは作成者向けに通常版とライブ配信版の2本だけを案内する', async ({ page }) => {
+test('トップは作成者向けに通常版とライブ配信版の2本だけを案内する', async ({ page }, testInfo) => {
   await page.goto('/');
   const topCards = page.getByTestId('top-question-card');
   await expect(topCards).toHaveCount(3);
@@ -102,6 +102,31 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   await expect(page.getByTestId('top-mode-pillars')).toContainText('配信者と視聴者が同時回答し、1問ずつ答え合わせ');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('①10問を作る②自分の正解を登録③参加URLを送る');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('①10問を作る②配信で参加方法を案内③視聴者と同時回答');
+  const titleLines = page.getByTestId('top-rules-title-line');
+  await expect(titleLines).toHaveCount(2);
+  await expect(titleLines.nth(0)).toHaveText('あなたの「わたし理解度診断」を');
+  await expect(titleLines.nth(1)).toHaveText('作って、みんなに挑戦してもらおう');
+  for (const line of await titleLines.all()) {
+    const metrics = await line.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }));
+    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
+  }
+  const liveJoinStepParts = page.getByTestId('top-live-join-step').locator('span');
+  await expect(liveJoinStepParts).toHaveCount(2);
+  await expect(liveJoinStepParts.nth(0)).toHaveText('②配信で');
+  await expect(liveJoinStepParts.nth(1)).toHaveText('参加方法を案内');
+  if (testInfo.project.name === 'mobile-chrome') {
+    await page.setViewportSize({ width: 320, height: 568 });
+    for (const line of await titleLines.all()) {
+      const metrics = await line.evaluate((element) => ({
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+      }));
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
+    }
+  }
   await expect(page.getByText('クイズを作る人向け', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('あなたの名前（12文字まで）')).toBeVisible();
   await expect(page.getByText('この説明は出題者向けです。')).toHaveCount(0);
