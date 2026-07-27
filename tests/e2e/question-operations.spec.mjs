@@ -175,11 +175,16 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   await expect(page.locator('#authPanel')).toBeHidden();
   await expect(page.locator('#pendingSubmissions')).toContainText('放課後にみんなでしたいことは？');
   await expect(page.locator('#pendingSubmissions')).toContainText('重点審査：いじめ・容姿攻撃');
-  await expect(page.getByText('通常版とLIVE版は同じ採用済みお題を使います。採用・保留・無効化、問題文、5つの選択肢を表でまとめて管理できます。')).toBeVisible();
+  await expect(page.getByText('問題数ではなく「どの問題が出ても答え合わせで会話になる」を品質基準に、通常版・LIVE版で共通のお題を管理します。')).toBeVisible();
+  await expect(page.getByText(/問題文の成立性、重複選択肢、誤字・意味不明/)).toBeVisible();
   await expect(page.locator('#allQuestions')).toContainText('通報1件・即時非公開');
   await expect(page.locator('#allQuestions table')).toBeVisible();
   await expect(page.locator('#allQuestions thead')).toContainText('選択肢5');
   await expect(page.locator('#allQuestions thead')).toContainText('スキップ率');
+  await expect(page.locator('#allQuestions thead')).toContainText('会話品質');
+  await expect(page.locator('#qualitySummary')).toContainText('品質要確認');
+  await expect(page.locator('[data-catalog="CUSREPORTED123"] [data-quality-cell]')).toContainText('要修正');
+  await expect(page.locator('[data-catalog="CUSREPORTED123"] [data-quality-cell]')).toContainText('意味不明な表現の可能性');
   await expect(page.locator('#allQuestions')).not.toContainText('友達向け');
   await expect(page.locator('#allQuestions')).not.toContainText('家族向け');
   const totalText = await page.locator('#questionCount').textContent();

@@ -1,4 +1,5 @@
 import { safetyFlagLabels } from './src/questions/safety.js';
+import { assessQuestionQuality } from './src/questions/quality.js';
 import {
   findSimilarQuestions,
   questionSkipRate,
@@ -103,6 +104,7 @@ function renderPending() {
         <thead><tr>
           <th class="question-col">問題文</th>
           ${choiceHeaders()}
+          <th class="quality-col">会話品質</th>
           <th class="similar-col">類似候補</th>
           <th class="action-col">審査</th>
         </tr></thead>
@@ -114,6 +116,7 @@ function renderPending() {
   target.querySelectorAll('[data-reject]').forEach((button) => button.addEventListener('click', () => review(button.dataset.reject, 'rejected')));
   bindComparisonButtons(target);
   bindComparisonEditors(target);
+  bindQualityEditors(target);
 }
 
 function pendingRow(item) {
@@ -131,6 +134,7 @@ function pendingRow(item) {
         <input data-field="reviewNote" maxlength="300" placeholder="審査メモ（非公開）">
       </td>
       ${choiceCells(item)}
+      <td class="quality-col" data-quality-cell>${qualityCell(item, matches)}</td>
       <td>${similarityCell(item.id, matches)}</td>
       <td>
         <div class="row-actions">
@@ -139,7 +143,7 @@ function pendingRow(item) {
         </div>
       </td>
     </tr>
-    ${comparisonRow(item.id, item, matches)}
+    ${comparisonRow(item.id, item, matches, 9)}
   `;
 }
 
@@ -153,6 +157,7 @@ function renderAllQuestions() {
     const filterMatches = filter === 'all'
       || filter === item.status
       || filter === 'similar' && matches.length
+      || filter === 'quality' && assessQuestionQuality(item, { similarMatches: matches }).status !== 'ready'
       || filter === 'custom' && item.sourceKind === 'custom' && item.status === 'approved';
     return textMatches && filterMatches;
   });
@@ -160,8 +165,12 @@ function renderAllQuestions() {
   const heldCount = allQuestions.filter((item) => item.status === 'held').length;
   const disabledCount = allQuestions.filter((item) => item.status === 'disabled').length;
   const similarCount = allQuestions.filter((item) => (similarityMatches.get(String(item.id)) || []).length).length;
+  const qualityReviewCount = allQuestions.filter((item) => assessQuestionQuality(item, {
+    similarMatches: similarityMatches.get(String(item.id)) || [],
+  }).status !== 'ready').length;
   document.getElementById('questionCount').textContent = `${filtered.length}問を表示（採用${approvedCount}問／保留${heldCount}問／無効化${disabledCount}問／全${allQuestions.length}問）`;
   document.getElementById('similaritySummary').textContent = `類似候補：${similarCount}問`;
+  document.getElementById('qualitySummary').textContent = `品質要確認：${qualityReviewCount}問`;
   const target = document.getElementById('allQuestions');
   target.innerHTML = filtered.length ? `
     <div class="table-wrap">
@@ -173,6 +182,7 @@ function renderAllQuestions() {
           <th class="question-col">問題文</th>
           ${choiceHeaders()}
           <th class="skip-col">スキップ率<br>（低い順）</th>
+          <th class="quality-col">会話品質</th>
           <th class="similar-col">類似候補</th>
           <th class="action-col">保存</th>
         </tr></thead>
@@ -181,7 +191,11 @@ function renderAllQuestions() {
     </div>
   ` : '<div class="empty">条件に一致するお題はありません。</div>';
   target.querySelectorAll('[data-save]').forEach((button) => button.addEventListener('click', () => saveQuestion(button.dataset.save)));
-  target.querySelectorAll('input,textarea').forEach((control) => control.addEventListener('input', () => markDirty(control.closest('[data-catalog]'))));
+  target.querySelectorAll('input,textarea').forEach((control) => control.addEventListener('input', () => {
+    const row = control.closest('[data-catalog]');
+    markDirty(row);
+    updateQualityCell(row);
+  }));
   target.querySelectorAll('[data-status]').forEach((control) => control.addEventListener('change', () => {
     const row = control.closest('[data-catalog]');
     row.dataset.statusRow = control.value;
@@ -189,6 +203,7 @@ function renderAllQuestions() {
   }));
   bindComparisonButtons(target);
   bindComparisonEditors(target);
+  bindQualityEditors(target);
   updateBulkButton();
 }
 
@@ -211,6 +226,7 @@ function questionRow(item) {
       </td>
       ${choiceCells(item)}
       <td class="skip-col">${skipRateCell(item)}</td>
+      <td class="quality-col" data-quality-cell>${qualityCell(item, matches)}</td>
       <td>${similarityCell(id, matches)}</td>
       <td>
         <div class="row-actions">
@@ -219,7 +235,7 @@ function questionRow(item) {
         </div>
       </td>
     </tr>
-    ${comparisonRow(id, item, matches)}
+    ${comparisonRow(id, item, matches, 13)}
   `;
 }
 
@@ -233,6 +249,57 @@ function choiceCells(item) {
   `).join('');
 }
 
+function qualityCell(item, matches = []) {
+  const assessment = assessQuestionQuality(item, { similarMatches: matches });
+  const issueClass = assessment.status === 'needs-fix' ? 'critical' : assessment.status === 'review' ? 'warning' : 'good';
+  const issueSummary = assessment.issues.length
+    ? assessment.issues.map((issue) => `<span class="pill ${issue.severity === 'critical' ? 'critical' : 'warning'}">${html(issue.label)}</span>`).join('')
+    : '<span class="pill info">品質基準を満たす</span>';
+  const detail = assessment.issues.length
+    ? `
+      <details class="quality-detail">
+        <summary>修正点を見る</summary>
+        <ul>${assessment.issues.map((issue) => `
+          <li>
+            <strong>${html(issue.label)}</strong>
+            <span>${html(issue.detail)}</span>
+            <em>${html(issue.suggestion)}</em>
+          </li>
+        `).join('')}</ul>
+      </details>
+    `
+    : `<span class="meta">${html(assessment.strengths.join(' '))}</span>`;
+  return `
+    <strong class="quality-score ${issueClass}">${assessment.score}点・${html(assessment.statusLabel)}</strong>
+    <div>${issueSummary}</div>
+    ${detail}
+  `;
+}
+
+function updateQualityCell(row) {
+  if (!row) return;
+  const target = row.querySelector('[data-quality-cell]');
+  if (!target) return;
+  const id = String(row.dataset.catalog || row.dataset.submission || '');
+  const original = allQuestions.find((item) => String(item.id) === id)
+    || (overview.submissions || []).find((item) => String(item.id) === id)
+    || {};
+  const item = {
+    ...readQuestionRow(row),
+    id,
+    language: original.language,
+  };
+  target.innerHTML = qualityCell(item, topMatches(id));
+}
+
+function bindQualityEditors(container) {
+  container.querySelectorAll('[data-submission]').forEach((row) => {
+    row.querySelectorAll('[data-field="title"],[data-choice]').forEach((control) => {
+      control.addEventListener('input', () => updateQualityCell(row));
+    });
+  });
+}
+
 function similarityCell(id, matches) {
   if (!matches.length) return '<span class="meta">なし</span>';
   const first = matches[0];
@@ -243,11 +310,11 @@ function similarityCell(id, matches) {
   `;
 }
 
-function comparisonRow(id, item, matches) {
+function comparisonRow(id, item, matches, columnCount) {
   if (!matches.length) return '';
   return `
     <tr class="compare-row" data-comparison="${attr(id)}" hidden>
-      <td colspan="12">
+      <td colspan="${Number(columnCount) || 1}">
         <div class="comparison-grid">
           ${comparisonCard('この問題', item, id)}
           ${matches.map((match, index) => comparisonCard(`類似候補${index + 1}（${Math.round(match.score * 100)}%）`, match, id)).join('')}
@@ -336,12 +403,19 @@ async function review(id, decision) {
   const row = document.querySelector(`[data-submission="${CSS.escape(id)}"]`);
   if (!row) return;
   if (decision === 'rejected' && !confirm('この掲載候補を却下しますか？')) return;
-  if (decision === 'approved' && !confirm('編集内容を確認し、通常版・LIVE版の共通お題として採用しますか？')) return;
   try {
     const body = decision === 'approved' ? readQuestionRow(row) : {
       decision,
       reviewNote: row.querySelector('[data-field="reviewNote"]').value.trim(),
     };
+    if (decision === 'approved') {
+      const assessment = assessQuestionQuality(body, { similarMatches: topMatches(id) });
+      const issueNames = assessment.issues.map((issue) => issue.label).join('、');
+      const message = assessment.status === 'ready'
+        ? '品質基準を満たしています。通常版・LIVE版の共通お題として採用しますか？'
+        : `自動審査は「${assessment.statusLabel}（${assessment.score}点）」です。\n${issueNames}\n編集内容を確認したうえで採用しますか？`;
+      if (!confirm(message)) return;
+    }
     body.decision = decision;
     await adminApi(`/api/questions/admin/submissions/${id}/review`, { method: 'POST', body: JSON.stringify(body) });
     await loadOverview();
