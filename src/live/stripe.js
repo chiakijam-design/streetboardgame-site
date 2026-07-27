@@ -13,6 +13,7 @@ export async function createLiveCheckoutSession(env, input, now = Date.now()) {
   cancelUrl.searchParams.set('checkout', 'cancelled');
   const params = new URLSearchParams({
     mode: 'payment',
+    'managed_payments[enabled]': 'false',
     locale: 'ja',
     client_reference_id: input.orderId,
     success_url: successUrl.toString().replace('%7BCHECKOUT_SESSION_ID%7D', '{CHECKOUT_SESSION_ID}'),

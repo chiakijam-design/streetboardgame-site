@@ -34,6 +34,7 @@ test('CheckoutはJPY税込・カード限定・注文メタデータ・冪等キ
   assert.equal(captured.params.get('line_items[0][price_data][currency]'), 'jpy');
   assert.equal(captured.params.get('line_items[0][price_data][unit_amount]'), '980');
   assert.equal(captured.params.get('line_items[0][price_data][tax_behavior]'), 'inclusive');
+  assert.equal(captured.params.get('managed_payments[enabled]'), 'false');
   assert.equal(captured.params.get('line_items[0][price_data][product_data][name]'), `テストチャンネル ${LIVE_RESULT_IMAGE_SERVICE.name}`);
   assert.equal(captured.params.get('metadata[live_order_id]'), 'ord_test01');
   assert.equal(captured.params.get('metadata[live_terms_version]'), CHECKOUT_TERMS.version);
