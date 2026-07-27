@@ -704,8 +704,8 @@ function resultView() {
             <input type="checkbox" data-action="toggle-ranking"
               ${state.boardOptIn ? 'checked' : ''} ${state.boardPreferenceBusy ? 'disabled' : ''}>
             <span>
-              <strong>理解度ボードに載せる（共有・保存と同時）</strong>
-              <small>初期設定はオンです。チェックを外すと、理解度ボードへ載せずに共有・保存します。</small>
+              <strong>理解度ボードに載せる</strong>
+              <small>載せなくても、結果の保存・共有・再挑戦はできます</small>
             </span>
           </label>
           ${state.boardActionMessage
@@ -1448,7 +1448,7 @@ async function retryChallenge() {
       resultImageUrl: '',
       resultImageBusy: false,
       resultImageError: '',
-      boardOptIn: true,
+      boardOptIn: false,
       boardPreferenceBusy: false,
       mode: 'participant-answer',
       error: '',
@@ -2011,11 +2011,11 @@ function writeStorage(key, value) {
 }
 
 function readBoardOptIn(code) {
-  if (!code) return true;
+  if (!code) return false;
   try {
-    return localStorage.getItem(`${BOARD_OPT_IN_KEY_PREFIX}${code}`) !== '0';
+    return localStorage.getItem(`${BOARD_OPT_IN_KEY_PREFIX}${code}`) === '1';
   } catch (error) {
-    return true;
+    return false;
   }
 }
 

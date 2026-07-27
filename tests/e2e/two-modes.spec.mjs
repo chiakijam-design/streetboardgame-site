@@ -572,8 +572,9 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(resultShare).toHaveCSS('background-color', 'rgb(255, 227, 111)');
     await expect(resultShare.getByRole('heading', { name: 'この結果、友達に伝えよう' })).toBeVisible();
     const boardCheckbox = resultShare.getByRole('checkbox', { name: /理解度ボードに載せる/ });
-    await expect(boardCheckbox).toBeChecked();
+    await expect(boardCheckbox).not.toBeChecked();
     await expect(boardCheckbox).toBeEnabled();
+    await expect(resultShare.getByText('載せなくても、結果の保存・共有・再挑戦はできます')).toBeVisible();
     const boardOnlyButton = resultShare.getByRole('button', { name: '理解度ボードだけに載せる' });
     await expect(boardOnlyButton).toBeEnabled();
     await expect(resultShare.getByRole('button', { name: /Instagram用/ })).toBeEnabled();
@@ -696,9 +697,6 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
     await expect(participant.getByRole('heading', { name: '0/10問 正解' })).toHaveCount(1);
     const firstAttemptBoardCheckbox = participant.getByTestId('challenge-result-share')
       .getByRole('checkbox', { name: /理解度ボードに載せる/ });
-    await expect(firstAttemptBoardCheckbox).toBeChecked();
-    await expect(firstAttemptBoardCheckbox).toBeEnabled();
-    await firstAttemptBoardCheckbox.uncheck();
     await expect(firstAttemptBoardCheckbox).not.toBeChecked();
     await expect(firstAttemptBoardCheckbox).toBeEnabled();
     await participant.getByRole('button', { name: 'もう一度、答えを予想する' }).click();
@@ -709,7 +707,7 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
     await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toHaveCount(1);
     const secondAttemptBoardCheckbox = participant.getByTestId('challenge-result-share')
       .getByRole('checkbox', { name: /理解度ボードに載せる/ });
-    await expect(secondAttemptBoardCheckbox).toBeChecked();
+    await expect(secondAttemptBoardCheckbox).not.toBeChecked();
     await expect(secondAttemptBoardCheckbox).toBeEnabled();
     await participant.getByRole('button', { name: '理解度ボードだけに載せる' }).click();
     await participant.getByRole('link', { name: '理解度ボードを見る' }).click();

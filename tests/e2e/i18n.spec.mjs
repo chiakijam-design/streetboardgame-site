@@ -161,8 +161,9 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   const resultShare = page.getByTestId('challenge-result-share');
   await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();
   const boardCheckbox = resultShare.getByRole('checkbox', { name: /Add to Understanding Board/ });
-  await expect(boardCheckbox).toBeChecked();
+  await expect(boardCheckbox).not.toBeChecked();
   await expect(boardCheckbox).toBeEnabled();
+  await expect(resultShare.getByText('You can still save, share, and retry without adding your result.')).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'Add only to Understanding Board' })).toBeEnabled();
   await expect(resultShare.getByRole('button', { name: /For Instagram/ })).toBeEnabled();
   await expect(resultShare.getByRole('button', { name: 'Share on LINE' })).toBeVisible();
