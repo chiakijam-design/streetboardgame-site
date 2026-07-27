@@ -329,6 +329,12 @@ You know their tastes and choices inside out!`}]),wo=Object.freeze({opening:["{p
         </div>
         <small>\u56DE\u7B54\u5185\u5BB9\u3092\u3082\u3068\u306B\u7528\u610F\u3055\u308C\u305F\u6587\u7AE0\u304B\u3089\u7DCF\u8A55\u3092\u4F5C\u6210\u3057\u3066\u3044\u307E\u3059\u3002</small>
       </section>
+      <section class="challenge-role-swap" data-testid="challenge-role-swap">
+        <span class="challenge-section-label">NEXT TURN</span>
+        <h2>\u6B21\u306F\u3001\u3042\u306A\u305F\u304C\u51FA\u984C\u8005</h2>
+        <button class="challenge-primary" data-action="swap-roles">\u540C\u305810\u554F\u3067\u3001\u4ECA\u5EA6\u306F\u79C1\u304C\u51FA\u984C\u3059\u308B</button>
+        <p>\u554F\u984C\u3068\u9078\u629E\u80A2\u3060\u3051\u5F15\u304D\u7D99\u304E\u307E\u3059\u3002\u5143\u306E\u51FA\u984C\u8005\u306E\u6B63\u89E3\u306F\u5F15\u304D\u7D99\u304C\u308C\u307E\u305B\u3093\u3002</p>
+      </section>
       <div class="challenge-result-share-wrap">
         <section class="challenge-result-share" data-testid="challenge-result-share"
           aria-labelledby="challenge-result-share-title">
@@ -372,12 +378,6 @@ You know their tastes and choices inside out!`}]),wo=Object.freeze({opening:["{p
           </div>
         </section>
       </div>
-      <section class="challenge-role-swap" data-testid="challenge-role-swap">
-        <span class="challenge-section-label">NEXT TURN</span>
-        <h2>\u6B21\u306F\u3001\u3042\u306A\u305F\u304C\u51FA\u984C\u8005</h2>
-        <button class="challenge-primary" data-action="swap-roles">\u540C\u305810\u554F\u3067\u3001\u4ECA\u5EA6\u306F\u79C1\u304C\u51FA\u984C\u3059\u308B</button>
-        <p>\u554F\u984C\u3068\u9078\u629E\u80A2\u3060\u3051\u5F15\u304D\u7D99\u304E\u307E\u3059\u3002\u5143\u306E\u51FA\u984C\u8005\u306E\u6B63\u89E3\u306F\u5F15\u304D\u7D99\u304C\u308C\u307E\u305B\u3093\u3002</p>
-      </section>
       <button class="challenge-secondary" data-action="retry-challenge">\u3082\u3046\u4E00\u5EA6\u3001\u7B54\u3048\u3092\u4E88\u60F3\u3059\u308B</button>
       <p class="challenge-result-retry-note">\u3082\u3046\u4E00\u5EA6\u4E88\u60F3\u3059\u308B\u3068\u4ECA\u56DE\u306E\u56DE\u7B54\u306F\u4E0A\u66F8\u304D\u3055\u308C\u307E\u3059\u3002\u63B2\u8F09\u6E08\u307F\u306E\u5834\u5408\u306F\u3001\u73FE\u5728\u306E\u7406\u89E3\u5EA6\u30DC\u30FC\u30C9\u304B\u3089\u3044\u3063\u305F\u3093\u5916\u308C\u307E\u3059\u3002</p>
       <a class="challenge-secondary" href="/challenge">\u65B0\u3057\u3044\u304A\u984C\u3067\u3082\u3046\u4E00\u5EA6</a>

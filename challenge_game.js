@@ -566,6 +566,12 @@ function resultView() {
         </div>
         <small>回答内容をもとに用意された文章から総評を作成しています。</small>
       </section>
+      <section class="challenge-role-swap" data-testid="challenge-role-swap">
+        <span class="challenge-section-label">NEXT TURN</span>
+        <h2>次は、あなたが出題者</h2>
+        <button class="challenge-primary" data-action="swap-roles">同じ10問で、今度は私が出題する</button>
+        <p>問題と選択肢だけ引き継ぎます。元の出題者の正解は引き継がれません。</p>
+      </section>
       <div class="challenge-result-share-wrap">
         <section class="challenge-result-share" data-testid="challenge-result-share"
           aria-labelledby="challenge-result-share-title">
@@ -615,12 +621,6 @@ function resultView() {
           </div>
         </section>
       </div>
-      <section class="challenge-role-swap" data-testid="challenge-role-swap">
-        <span class="challenge-section-label">NEXT TURN</span>
-        <h2>次は、あなたが出題者</h2>
-        <button class="challenge-primary" data-action="swap-roles">同じ10問で、今度は私が出題する</button>
-        <p>問題と選択肢だけ引き継ぎます。元の出題者の正解は引き継がれません。</p>
-      </section>
       <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>
       <p class="challenge-result-retry-note">もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。</p>
       <a class="challenge-secondary" href="/challenge">新しいお題でもう一度</a>

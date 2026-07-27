@@ -732,12 +732,16 @@ test('参加者が結果画面から役割交代し、同じ10問の出題者に
     const retry = participant.getByRole('button', { name: 'もう一度、答えを予想する' });
     const newQuestions = participant.getByRole('link', { name: '新しいお題でもう一度' });
     expect(await participant.evaluate(() => {
+      const review = document.querySelector('[data-testid="challenge-ai-review"]');
       const swap = document.querySelector('[data-action="swap-roles"]');
+      const share = document.querySelector('[data-testid="challenge-result-share"]');
       const retryButton = document.querySelector('[data-action="retry-challenge"]');
       const newQuestionLink = Array.from(document.querySelectorAll('a'))
         .find((link) => link.textContent.trim() === '新しいお題でもう一度');
-      return Boolean(swap && retryButton && newQuestionLink
-        && (swap.compareDocumentPosition(retryButton) & Node.DOCUMENT_POSITION_FOLLOWING)
+      return Boolean(review && swap && share && retryButton && newQuestionLink
+        && (review.compareDocumentPosition(swap) & Node.DOCUMENT_POSITION_FOLLOWING)
+        && (swap.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING)
+        && (share.compareDocumentPosition(retryButton) & Node.DOCUMENT_POSITION_FOLLOWING)
         && (retryButton.compareDocumentPosition(newQuestionLink) & Node.DOCUMENT_POSITION_FOLLOWING));
     })).toBe(true);
     await expect(roleSwap).toHaveCSS('background-color', 'rgb(25, 25, 25)');
