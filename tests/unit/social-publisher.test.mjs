@@ -62,6 +62,7 @@ test('X投稿を署名して成功状態と利用額を記録する', async () =
   assert.equal(request.url, 'https://api.x.com/2/tweets');
   assert.match(request.init.headers.authorization, /^OAuth /);
   assert.match(JSON.parse(request.init.body).text, /streetboardgame\.com/);
+  assert.match(JSON.parse(request.init.body).text, /utm_source=x&utm_medium=social&utm_campaign=always_on/);
   const post = sqlite.prepare("SELECT status, external_id FROM social_posts WHERE status = 'published'").get();
   assert.equal(post.status, 'published');
   assert.equal(post.external_id, 'x-post-1');

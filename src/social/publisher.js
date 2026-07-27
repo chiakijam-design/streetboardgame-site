@@ -13,52 +13,52 @@ const CAMPAIGN_POSTS = Object.freeze([
   {
     locale: 'ja',
     text: '友達は、あなたの答えを何問当てられる？\n「わたし理解度診断」は、10問を作ってURLを送るだけ。再挑戦OK、結果公開は自分で選べます。',
-    linkUrl: 'https://www.streetboardgame.com/',
+    linkUrl: 'https://www.streetboardgame.com/?utm_source=x&utm_medium=social&utm_campaign=always_on',
   },
   {
     locale: 'ja',
     text: '当てることより、答え合わせから会話が始まる10問。\n学校・放課後・食べもの・SNSなど、好きなお題から「わたし理解度診断」を作れます。',
-    linkUrl: 'https://www.streetboardgame.com/challenge/library',
+    linkUrl: 'https://www.streetboardgame.com/challenge/library?utm_source=x&utm_medium=social&utm_campaign=always_on',
   },
   {
     locale: 'en',
     text: 'How well do your friends really know you?\nCreate 10 questions, share one link, and compare answers. Retakes are welcome, and sharing your score is always optional.',
-    linkUrl: 'https://www.streetboardgame.com/en/',
+    linkUrl: 'https://www.streetboardgame.com/en/?utm_source=x&utm_medium=social&utm_campaign=always_on',
   },
   {
     locale: 'ja',
     text: '配信者と視聴者が、同じ問題へ同時に回答。\n1問ずつ答え合わせできるLIVE版の「わたし理解度診断」は、小さな配信でも遊べます。',
-    linkUrl: 'https://www.streetboardgame.com/live-challenge',
+    linkUrl: 'https://www.streetboardgame.com/live-challenge?utm_source=x&utm_medium=social&utm_campaign=always_on',
   },
   {
     locale: 'en',
     text: 'A conversation-first quiz for friends and livestreams.\nAnswer the same 10 questions, reveal them one by one, and turn every mismatch into something new to talk about.',
-    linkUrl: 'https://www.streetboardgame.com/en/live-challenge',
+    linkUrl: 'https://www.streetboardgame.com/en/live-challenge?utm_source=x&utm_medium=social&utm_campaign=always_on',
   },
   {
     locale: 'ja',
     text: '低い点数でも大丈夫。知らなかった話が見つかったということ。\n結果を公開せずにもう一度挑戦することもできます。',
-    linkUrl: 'https://www.streetboardgame.com/',
+    linkUrl: 'https://www.streetboardgame.com/?utm_source=x&utm_medium=social&utm_campaign=always_on',
   },
   {
     locale: 'ja',
     text: '10問選ぶ時間がないときは、テーマ別の10問パックからすぐ作れます。\n初対面・学校・食べもの・意外な一面など、お題をまとめて選べます。',
-    linkUrl: 'https://www.streetboardgame.com/challenge/library',
+    linkUrl: 'https://www.streetboardgame.com/challenge/library?utm_source=x&utm_medium=social&utm_campaign=always_on',
   },
   {
     locale: 'en',
     text: 'Not just a score: see where your answers matched, discover the surprises, and get a conversation-ready answer check report.',
-    linkUrl: 'https://www.streetboardgame.com/en/',
+    linkUrl: 'https://www.streetboardgame.com/en/?utm_source=x&utm_medium=social&utm_campaign=always_on',
   },
   {
     locale: 'ja',
     text: '答え合わせのあと、同じ10問で役割交代。\n今度はあなたが出題者になって、相手に答えを予想してもらえます。',
-    linkUrl: 'https://www.streetboardgame.com/',
+    linkUrl: 'https://www.streetboardgame.com/?utm_source=x&utm_medium=social&utm_campaign=always_on',
   },
   {
     locale: 'en',
     text: 'Built for low-pressure sharing: retry anytime, keep your result private, or swap roles and make the same 10 questions your own.',
-    linkUrl: 'https://www.streetboardgame.com/en/',
+    linkUrl: 'https://www.streetboardgame.com/en/?utm_source=x&utm_medium=social&utm_campaign=always_on',
   },
 ]);
 
