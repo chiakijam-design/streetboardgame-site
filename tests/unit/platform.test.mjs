@@ -7,7 +7,11 @@ import {
   openLineShare,
   openXShare,
 } from '../../src/platform/share.js';
-import { fetchImageBlob, sharePreparedImage } from '../../src/platform/imageSave.js';
+import {
+  fetchImageBlob,
+  sharePreparedImage,
+  sharePreparedImageFileFirst,
+} from '../../src/platform/imageSave.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -127,5 +131,71 @@ test('スマホの共有APIが失敗しても結果画像の保存へフォー�
     urlRef: { createObjectURL: () => 'blob:test', revokeObjectURL() {} },
   });
   assert.equal(result, 'downloaded');
+  assert.equal(clicked, true);
+});
+
+test('LINE用共有は対応スマホでは本文だけでなく結果画像ファイルも渡す', async () => {
+  let sharedPayload;
+  let clicked = false;
+  const result = await sharePreparedImageFileFirst({
+    src: 'data:image/png;base64,aW1hZ2U=',
+    filename: 'result.png',
+    title: '結果画像',
+    text: '同じ10問に挑戦するURLはこちら',
+  }, {
+    navigatorRef: {
+      userAgent: 'iPhone',
+      canShare: ({ files }) => files?.length === 1,
+      share: async (payload) => { sharedPayload = payload; },
+    },
+    windowRef: { matchMedia: () => ({ matches: true }) },
+    FileRef: class MockFile {
+      constructor(parts, name, options) {
+        this.parts = parts;
+        this.name = name;
+        this.type = options.type;
+      }
+    },
+    documentRef: {
+      body: { appendChild() {}, removeChild() {} },
+      createElement: () => ({ click: () => { clicked = true; } }),
+    },
+    urlRef: { createObjectURL: () => 'blob:test', revokeObjectURL() {} },
+  });
+
+  assert.equal(result, 'shared');
+  assert.equal(sharedPayload.files.length, 1);
+  assert.equal(sharedPayload.files[0].name, 'result.png');
+  assert.match(sharedPayload.text, /同じ10問に挑戦するURL/);
+  assert.equal(clicked, false);
+});
+
+test('画像ファイル共有に非対応の端末では本文だけを送らず結果画像を保存する', async () => {
+  let shared = false;
+  let clicked = false;
+  const result = await sharePreparedImageFileFirst({
+    src: 'data:image/png;base64,aW1hZ2U=',
+    filename: 'result.png',
+    title: '結果画像',
+    text: '同じ10問に挑戦するURLはこちら',
+  }, {
+    navigatorRef: {
+      userAgent: 'iPhone',
+      canShare: () => false,
+      share: async () => { shared = true; },
+    },
+    windowRef: { matchMedia: () => ({ matches: true }) },
+    FileRef: class MockFile {},
+    documentRef: {
+      body: { appendChild() {}, removeChild() {} },
+      createElement: () => ({
+        click: () => { clicked = true; },
+      }),
+    },
+    urlRef: { createObjectURL: () => 'blob:test', revokeObjectURL() {} },
+  });
+
+  assert.equal(result, 'downloaded');
+  assert.equal(shared, false);
   assert.equal(clicked, true);
 });

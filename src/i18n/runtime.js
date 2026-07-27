@@ -214,6 +214,7 @@ const UI_TEXT = new Map(Object.entries({
   'QRコード': 'QR code',
   'シェアする': 'Share',
   'LINEで送る': 'Share on LINE',
+  '結果画像＋同じ10問への参加URL': 'Result image + join URL for the same 10 questions',
   'Xで投稿': 'Post on X',
   'Instagramで送る': 'Share on Instagram',
   '管理画面': 'Manage quiz',

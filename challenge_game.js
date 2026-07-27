@@ -16,7 +16,11 @@ import {
   openLineShare,
   openXShare,
 } from './src/platform/share.js';
-import { dataUrlToBlob, saveImageBlob } from './src/platform/imageSave.js';
+import {
+  dataUrlToBlob,
+  saveImageBlob,
+  sharePreparedImageFileFirst,
+} from './src/platform/imageSave.js';
 import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 import { buildQuestionConversationInsights } from './src/challenge/insights.js';
@@ -719,12 +723,14 @@ function resultView() {
               <small>ストーリー用：文章コピー＋画像保存</small>
             </button>
             <button type="button" class="challenge-result-share-button line" data-action="share-result-line"
-              ${state.boardPreferenceBusy ? 'disabled' : ''}>
+              ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
               <strong>LINEで送る</strong>
+              <small>結果画像＋同じ10問への参加URL</small>
             </button>
             <button type="button" class="challenge-result-share-button x" data-action="share-result-x"
-              ${state.boardPreferenceBusy ? 'disabled' : ''}>
+              ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
               <strong>Xで結果を投稿</strong>
+              <small>結果画像＋同じ10問への参加URL</small>
             </button>
             <button type="button" class="challenge-result-share-button image" data-action="save-result-image"
               ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
@@ -1871,20 +1877,67 @@ function resultShareText({ includeUrl = true } = {}) {
         '結果公開は任意・もう一度予想もOK',
         '#わたちゃん',
       ];
-  if (includeUrl) lines.push(shareUrl);
+  if (includeUrl) {
+    lines.push(
+      isEnglish ? 'Try the same 10 questions here:' : '同じ10問に挑戦するURLはこちら👇',
+      shareUrl,
+    );
+  }
   return lines.join('\n');
 }
 
 async function shareResultToLine() {
-  if (!state.result) return;
+  if (!state.result || !state.resultImageUrl) return;
   if (!await applySelectedBoardPreference()) return;
-  openLineShare(resultShareText());
+  const text = resultShareText();
+  try {
+    const outcome = await sharePreparedImageFileFirst({
+      src: state.resultImageUrl,
+      filename: 'watachan-challenge-score.png',
+      title: isEnglish
+        ? 'Know Me Quiz | Score result card'
+        : 'わたし理解度診断｜点数入り結果カード',
+      text,
+    });
+    if (outcome === 'shared') return;
+    window.alert(isEnglish
+      ? 'The result image was saved. LINE will open next; attach the saved image to your message.'
+      : '結果画像を保存しました。続けてLINEが開くので、保存した結果画像をトークへ添付してください。');
+    openLineShare(text);
+  } catch (error) {
+    if (error?.name !== 'AbortError') {
+      window.alert(isEnglish
+        ? 'The result image could not be prepared. Please try again.'
+        : '結果画像を準備できませんでした。もう一度お試しください。');
+    }
+  }
 }
 
 async function shareResultToX() {
-  if (!state.result) return;
+  if (!state.result || !state.resultImageUrl) return;
   if (!await applySelectedBoardPreference()) return;
-  openXShare(resultShareText());
+  const text = resultShareText();
+  try {
+    const outcome = await sharePreparedImageFileFirst({
+      src: state.resultImageUrl,
+      filename: 'watachan-challenge-score.png',
+      title: isEnglish
+        ? 'Know Me Quiz | Score result card'
+        : 'わたし理解度診断｜点数入り結果カード',
+      text,
+    });
+    if (outcome === 'shared') return;
+    window.alert(isEnglish
+      ? 'The result image was saved. X will open next; attach the saved image to your post.'
+      : '結果画像を保存しました。続けてXが開くので、保存した結果画像を投稿へ添付してください。');
+    openXShare(text);
+  } catch (error) {
+    if (error?.name !== 'AbortError') {
+      window.alert(isEnglish
+        ? 'The result image could not be prepared. Please try again.'
+        : '結果画像を準備できませんでした。もう一度お試しください。');
+    }
+  }
 }
 
 async function shareResultToInstagram() {

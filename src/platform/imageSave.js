@@ -88,3 +88,20 @@ export async function sharePreparedImage({ src, filename, title, text, url }, en
   if (!downloadBlob(blob, filename, env)) throw new Error('image-save-unavailable');
   return 'downloaded';
 }
+
+export async function sharePreparedImageFileFirst({ src, filename, title, text, url }, env = {}) {
+  const navigatorRef = env.navigatorRef || globalThis.navigator;
+  const windowRef = env.windowRef || globalThis.window;
+  const FileRef = env.FileRef || globalThis.File;
+  const blob = await fetchImageBlob(src, env.fetchRef || globalThis.fetch, env);
+  if (FileRef && shouldUseNativeShare(navigatorRef, windowRef)) {
+    const file = new FileRef([blob], filename, { type: blob.type || 'image/png' });
+    try {
+      if (await shareFiles({ files: [file], title, text, url }, navigatorRef)) return 'shared';
+    } catch (error) {
+      if (error?.name === 'AbortError') throw error;
+    }
+  }
+  if (!downloadBlob(blob, filename, env)) throw new Error('image-save-unavailable');
+  return 'downloaded';
+}
