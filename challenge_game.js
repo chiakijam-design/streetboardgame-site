@@ -423,18 +423,51 @@ function manageView() {
       </div>
       <p class="challenge-share-lead">${escapeHtml(shareLead)}</p>
       <div class="challenge-share-actions" aria-label="完成した理解度診断を共有・保存">
-        <button type="button" class="challenge-share-action line" data-action="share-line">LINEで送る</button>
+        <button type="button" class="challenge-share-action line" data-action="share-line" aria-label="LINEで送る">
+          <span class="challenge-share-action-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M27 15.2c0 5.8-5.1 10.5-11.4 10.5-.8 0-1.7-.1-2.5-.3-2.8 1.8-5.7 2.4-6.2 1.7-.3-.5.6-2.1 1.2-3.3-2.4-1.9-3.9-5-3.9-8.5C4.2 9.4 9.3 4.7 15.6 4.7S27 9.4 27 15.2Z"/><path d="M9.5 12.4v5.8h3.2m1.2-5.8v5.8m2.1-5.8v5.8m0-5.8 3.3 5.8v-5.8m2.2 0h3.1m-3.1 0v5.8h3.1m-3.1-3h2.7"/></svg>
+          </span>
+          <span class="challenge-share-action-copy"><strong>LINEで送る</strong><small>参加URLを友達へ送る</small></span>
+          <span class="challenge-share-action-arrow" aria-hidden="true">›</span>
+        </button>
         <button type="button" class="challenge-share-action copy" data-action="copy-url"
-          data-copy-value="${escapeHtml(shareUrl)}">URLをコピー</button>
+          data-copy-value="${escapeHtml(shareUrl)}" aria-label="URLをコピー">
+          <span class="challenge-share-action-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M12.5 10.5h-2A4.5 4.5 0 0 0 6 15v6.5a4.5 4.5 0 0 0 4.5 4.5H17a4.5 4.5 0 0 0 4.5-4.5v-2"/><path d="M15 6h6.5a4.5 4.5 0 0 1 4.5 4.5V17a4.5 4.5 0 0 1-4.5 4.5H15a4.5 4.5 0 0 1-4.5-4.5v-6.5A4.5 4.5 0 0 1 15 6Z"/></svg>
+          </span>
+          <span class="challenge-share-action-copy"><strong>URLをコピー</strong><small>参加URLをクリップボードへ</small></span>
+          <span class="challenge-share-action-arrow" aria-hidden="true">›</span>
+        </button>
         <div class="challenge-share-social-pair" role="group" aria-label="Instagram・X">
           <button type="button" class="challenge-share-action instagram" data-action="share-instagram"
-            aria-label="Instagramでシェア">Instagram</button>
+            aria-label="Instagramでシェア">
+            <span class="challenge-share-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 32 32"><rect x="5" y="5" width="22" height="22" rx="6"/><circle cx="16" cy="16" r="5"/><circle class="challenge-share-icon-fill" cx="23" cy="9" r="1.5"/></svg>
+            </span>
+            <span class="challenge-share-action-copy"><strong>Instagram</strong><small>リンクをコピーして投稿</small></span>
+          </button>
           <button type="button" class="challenge-share-action x" data-action="share-x"
-            aria-label="Xでシェア">X</button>
+            aria-label="Xでシェア">
+            <span class="challenge-share-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 32 32"><path d="M7 6.5h5.8l12.2 19h-5.8L7 6.5Z"/><path d="m8 25.5 8.1-9.4m7.9-9.6-7.4 8.6"/></svg>
+            </span>
+            <span class="challenge-share-action-copy"><strong>X</strong><small>参加URLつきで投稿</small></span>
+          </button>
         </div>
-        <a class="challenge-share-action board" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a>
-        <button type="button" class="challenge-share-action recent" data-action="save-recent-challenge">
-          最近作った診断へ保存
+        <a class="challenge-share-action board" href="/challenge/ranking?room=${room.code}" aria-label="理解度ボードを見る">
+          <span class="challenge-share-action-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M8 6h16a3 3 0 0 1 3 3v16H8a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3Z"/><path d="M10 11h12m-12 5h12m-12 5h7"/></svg>
+          </span>
+          <span class="challenge-share-action-copy"><strong>理解度ボードを見る</strong><small>回答状況と結果を確認</small></span>
+          <span class="challenge-share-action-arrow" aria-hidden="true">›</span>
+        </a>
+        <button type="button" class="challenge-share-action recent" data-action="save-recent-challenge"
+          aria-label="最近作った診断へ保存">
+          <span class="challenge-share-action-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M8 5.5h16a2 2 0 0 1 2 2v19l-10-5-10 5v-19a2 2 0 0 1 2-2Z"/><path d="M11 11h10"/></svg>
+          </span>
+          <span class="challenge-share-action-copy"><strong>最近作った診断へ保存</strong><small>この端末から開き直せる</small></span>
+          <span class="challenge-share-action-arrow" aria-hidden="true">›</span>
         </button>
         <p class="challenge-recent-save-message" data-testid="recent-challenge-save-message"
           role="status" aria-live="polite"></p>

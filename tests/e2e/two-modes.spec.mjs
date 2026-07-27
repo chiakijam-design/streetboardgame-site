@@ -75,11 +75,18 @@ test('作成完了後は共有と保存の6導線だけを指定順で表示す�
   ]);
   await expect(shareScreen.getByRole('button', { name: 'SMS・その他で送る' })).toHaveCount(0);
   await expect(shareScreen.locator('#challenge-qr')).toHaveCount(0);
+  await expect(shareScreen.locator('.challenge-share-action-icon')).toHaveCount(6);
+  await expect(shareScreen.locator('.challenge-share-action-copy small')).toHaveCount(6);
   expect(await shareScreen.locator('.challenge-share-action').evaluateAll((actions) => {
     const screen = actions[0]?.closest('[data-testid="challenge-share-screen"]')?.getBoundingClientRect();
     return Boolean(screen && actions.every((action) => {
       const rect = action.getBoundingClientRect();
-      return rect.height >= 44 && rect.left >= screen.left && rect.right <= screen.right;
+      const style = getComputedStyle(action);
+      return rect.height >= 44
+        && rect.left >= screen.left
+        && rect.right <= screen.right
+        && style.backgroundColor === 'rgb(255, 255, 255)'
+        && style.borderRadius === '17px';
     }));
   })).toBe(true);
 
