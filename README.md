@@ -1,5 +1,7 @@
 # streetboardgame.com
 
+広告を導入する場合の表示位置は [docs/ADVERTISING_PLACEMENT_POLICY.md](./docs/ADVERTISING_PLACEMENT_POLICY.md) の4場面だけに限定します。
+
 「わたし理解度診断｜私のこと、ちゃんと分かってるよね？」のWebサイトです。
 
 ## 現行モード
