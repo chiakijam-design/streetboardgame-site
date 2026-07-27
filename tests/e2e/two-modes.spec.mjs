@@ -86,22 +86,19 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
     getComputedStyle(element).fontFamily
   ));
   expect(topCardFont).toContain('HuiFontP29');
-  const challengeButton = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
-  const liveButton = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
-  await expect(page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true })).toHaveCount(1);
-  await expect(page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toHaveCount(1);
+  const challengeButton = page.getByRole('button', { name: '10問を作り始める', exact: true });
+  const liveButton = page.getByRole('button', { name: 'LIVE版で作る', exact: true });
+  await expect(challengeButton).toHaveCount(1);
+  await expect(liveButton).toHaveCount(1);
   await expect(page.getByText('わたし理解度診断', { exact: true })).toBeVisible();
   await expect(page.getByText('当てるより、話すための10問。', { exact: true })).toHaveCount(0);
   await expect(page.getByText('通常でも配信でも使える理解度診断メーカー', { exact: true })).toHaveCount(0);
   await expect(page.getByText('相手を理解できるまで、何度でも挑戦できる', { exact: true })).toHaveCount(0);
   await expect(page.getByTestId('top-result-card-previews')).toHaveCount(0);
   await expect(page.getByText('作る前に、結果カードを見てみよう', { exact: true })).toHaveCount(0);
-  await expect(page.getByTestId('top-mode-pillars')).toContainText('友達向け');
-  await expect(page.getByTestId('top-mode-pillars')).toContainText('URLを送って、好きな時間に回答');
-  await expect(page.getByTestId('top-mode-pillars')).toContainText('LIVE向け');
+  await expect(page.getByTestId('top-mode-pillars')).toContainText('通常版｜URLを送って、好きな時間に回答');
+  await expect(page.getByTestId('top-live-secondary')).toContainText('ライブ配信で使う方はこちら');
   await expect(page.getByTestId('top-mode-pillars')).toContainText('配信者と視聴者が同時回答し、1問ずつ答え合わせ');
-  await expect(page.getByTestId('top-mode-pillars')).toContainText('①10問を作る②自分の正解を登録③参加URLを送る');
-  await expect(page.getByTestId('top-mode-pillars')).toContainText('①10問を作る②配信で参加方法を案内③視聴者と同時回答');
   const titleLines = page.getByTestId('top-rules-title-line');
   await expect(titleLines).toHaveCount(2);
   await expect(titleLines.nth(0)).toHaveText('あなたの「わたし理解度診断」を');
@@ -113,10 +110,6 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
     }));
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
   }
-  const liveJoinStepParts = page.getByTestId('top-live-join-step').locator('span');
-  await expect(liveJoinStepParts).toHaveCount(2);
-  await expect(liveJoinStepParts.nth(0)).toHaveText('②配信で');
-  await expect(liveJoinStepParts.nth(1)).toHaveText('参加方法を案内');
   if (testInfo.project.name === 'mobile-chrome') {
     await page.setViewportSize({ width: 320, height: 568 });
     for (const line of await titleLines.all()) {
@@ -160,9 +153,10 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
       };
     }),
   ]);
-  expect(liveStyle).toEqual(challengeStyle);
-  expect(challengeStyle.backgroundColor).toBe('rgb(255, 255, 255)');
-  expect(challengeStyle.color).toBe('rgb(26, 26, 26)');
+  expect(challengeStyle.backgroundColor).toBe('rgb(26, 26, 26)');
+  expect(challengeStyle.color).toBe('rgb(255, 255, 255)');
+  expect(liveStyle.backgroundColor).toBe('rgb(255, 255, 255)');
+  expect(liveStyle.color).toBe('rgb(26, 26, 26)');
   await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
   await expect(page.locator('a[href="/love"]')).toHaveCount(0);
   await expect(page.getByText('メイン', { exact: true })).toHaveCount(0);
@@ -185,7 +179,7 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
 test('トップで名前を入力すると通常版の10問作成画面へ直接進む', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('あなたの名前（12文字まで）').fill('トップ通常');
-  await page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).click();
+  await page.getByRole('button', { name: '10問を作り始める', exact: true }).click();
   await expect(page).toHaveURL('/challenge');
   await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
   const beforeSkip = await page.locator('.challenge-builder-card h2').textContent();
@@ -198,7 +192,7 @@ test('トップで名前を入力すると通常版の10問作成画面へ直接
 test('トップで名前を入力するとライブ版の10問作成画面へ直接進む', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('あなたの名前（12文字まで）').fill('トップ配信');
-  await page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).click();
+  await page.getByRole('button', { name: 'LIVE版で作る', exact: true }).click();
   await expect(page).toHaveURL('/live-challenge');
   await expect(page.getByRole('heading', { name: '1問ずつクイズを作る' })).toBeVisible();
   await expect(page.getByLabel('配信者名（24文字まで）')).toHaveValue('トップ配信');
@@ -959,8 +953,8 @@ test('廃止した公開URLと遠隔APIは404になり、旧screen指定も開�
   }
   expect((await request.get('/api/remote/rooms/123456')).status()).toBe(404);
   await page.goto('/?screen=friendIntro');
-  await expect(page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '10問を作り始める', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'LIVE版で作る', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
   await expect(page.getByText('友達の友情判定ゲーム', { exact: true })).toHaveCount(0);
 });

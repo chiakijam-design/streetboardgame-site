@@ -144,31 +144,45 @@ function TopPage() {
           {error && <p id="top-name-error" role="alert" style={{ margin: 0, color: '#B81745', fontSize: 12, fontWeight: 900 }}>{error}</p>}
           <div data-testid="top-mode-pillars" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2,minmax(0,1fr))',
             gap: 10,
             marginTop: 8,
           }}>
-            <ModeStartChoice
-              type="submit"
-              ariaLabel="みんなに挑戦してもらう"
-              accent={theme.cyan}
-              label="通常版"
-              title="友達向け"
-              note={<>URLを送って、<br />好きな時間に回答</>}
-              steps={['10問を作る', '自分の正解を登録', '参加URLを送る']}
-            />
-            <ModeStartChoice
-              type="button"
-              ariaLabel="ライブ配信でみんなに挑戦してもらう"
-              accent={theme.yellow}
-              label="LIVE版"
-              title="LIVE向け"
-              note={<>配信者と視聴者が同時回答し、<br />1問ずつ答え合わせ</>}
-              steps={['10問を作る', '配信で参加方法を案内', '視聴者と同時回答']}
-              onClick={() => start('live')}
-            />
+            <button type="submit" aria-label="10問を作り始める" style={primaryButton()}>
+              10問を作り始める
+              <span aria-hidden="true">▶</span>
+            </button>
+            <p style={{
+              margin: '-2px 0 2px',
+              textAlign: 'center',
+              fontSize: 12,
+              fontWeight: 800,
+              lineHeight: 1.5,
+            }}>
+              通常版｜URLを送って、好きな時間に回答
+            </p>
+            <section data-testid="top-live-secondary" style={{
+              display: 'grid',
+              gap: 7,
+              marginTop: 4,
+              paddingTop: 12,
+              borderTop: `2px dashed ${theme.black}`,
+              textAlign: 'center',
+            }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 900 }}>ライブ配信で使う方はこちら</p>
+              <button
+                type="button"
+                aria-label="LIVE版で作る"
+                onClick={() => start('live')}
+                style={secondaryButton()}
+              >
+                LIVE版で作る
+              </button>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 800, lineHeight: 1.55 }}>
+                配信者と視聴者が同時回答し、1問ずつ答え合わせ
+              </p>
+              <p data-testid="live-age-notice" style={noticeStyle()}>⚠️ {LIVE_AGE_NOTICE}</p>
+            </section>
           </div>
-          <p data-testid="live-age-notice" style={noticeStyle()}>⚠️ {LIVE_AGE_NOTICE}</p>
         </form>
       </section>
 
@@ -225,100 +239,6 @@ function Rules() {
       ))}
     </ol>
   );
-}
-
-function modePillarStyle(accent) {
-  return {
-    display: 'grid',
-    alignContent: 'start',
-    gap: 6,
-    width: '100%',
-    minHeight: 126,
-    padding: '12px 9px',
-    border: `3px solid ${theme.black}`,
-    borderRadius: 14,
-    background: theme.white,
-    color: theme.black,
-    boxShadow: `3px 4px 0 ${accent}`,
-    fontFamily: theme.body,
-    textAlign: 'center',
-    cursor: 'pointer',
-  };
-}
-
-function modePillarLabelStyle() {
-  return {
-    justifySelf: 'center',
-    padding: '3px 9px',
-    borderRadius: 999,
-    background: theme.black,
-    color: theme.white,
-    fontFamily: theme.caption,
-    fontSize: 10,
-    letterSpacing: '.08em',
-  };
-}
-
-function modePillarNoteStyle() {
-  return {
-    margin: 0,
-    fontSize: 12,
-    fontWeight: 800,
-    lineHeight: 1.55,
-  };
-}
-
-function ModeStartChoice({
-  type,
-  ariaLabel,
-  accent,
-  label,
-  title,
-  note,
-  steps,
-  onClick,
-}) {
-  return (
-    <section style={{ display: 'grid', alignContent: 'start', gap: 10, minWidth: 0 }}>
-      <button type={type} aria-label={ariaLabel} onClick={onClick} style={modePillarStyle(accent)}>
-        <span style={modePillarLabelStyle()}>{label}</span>
-        <b style={{ fontSize: 16 }}>{title}</b>
-        <span style={modePillarNoteStyle()}>{note}</span>
-      </button>
-      <ol aria-label={`${label}の流れ`} style={{
-        display: 'grid',
-        gap: 2,
-        margin: 0,
-        padding: 0,
-        listStyle: 'none',
-        fontSize: 12,
-        fontWeight: 800,
-        lineHeight: 1.45,
-      }}>
-        {steps.map((step, index) => {
-          const segments = splitModeStep(step);
-          return (
-            <li
-              key={step}
-              data-testid={step === '配信で参加方法を案内' ? 'top-live-join-step' : undefined}
-              style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', minWidth: 0 }}
-            >
-              <span style={{ whiteSpace: 'nowrap' }}>{['①', '②', '③'][index]}{segments[0]}</span>
-              {segments.slice(1).map((segment) => (
-                <span key={segment} style={{ whiteSpace: 'nowrap' }}>{segment}</span>
-              ))}
-            </li>
-          );
-        })}
-      </ol>
-    </section>
-  );
-}
-
-function splitModeStep(step) {
-  if (step === '配信で参加方法を案内') return ['配信で', '参加方法を案内'];
-  if (step === '視聴者と同時回答') return ['視聴者と', '同時回答'];
-  return [step];
 }
 
 function CommonCardStack() {
@@ -1429,6 +1349,10 @@ function inputStyle() {
 
 function primaryButton() {
   return { width: '100%', minHeight: 60, padding: '14px 16px', alignItems: 'center', justifyContent: 'center', gap: 6, border: `2.5px solid ${theme.black}`, borderRadius: 14, background: theme.black, color: theme.white, boxShadow: `4px 4px 0 ${theme.cyan}`, fontFamily: theme.display, fontSize: 16, fontWeight: 800, lineHeight: 1.35, textAlign: 'center', cursor: 'pointer' };
+}
+
+function secondaryButton() {
+  return { width: '100%', minHeight: 48, padding: '10px 14px', border: `2.5px solid ${theme.black}`, borderRadius: 12, background: theme.white, color: theme.black, boxShadow: `3px 3px 0 ${theme.yellow}`, fontFamily: theme.body, fontSize: 14, fontWeight: 900, lineHeight: 1.35, textAlign: 'center', cursor: 'pointer' };
 }
 
 function noticeStyle() {

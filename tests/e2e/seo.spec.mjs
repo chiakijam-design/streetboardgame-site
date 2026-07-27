@@ -162,8 +162,8 @@ test('トップの内部リンクと構造化データに廃止モードを残�
   await expect(page.locator('footer a[href="/challenge"]')).toBeAttached();
   await expect(page.locator('footer a[href="/live-challenge"]')).toBeAttached();
   await expect(page.locator('footer a[href="/challenge-guide"]')).toBeAttached();
-  await expect(page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true })).toBeAttached();
-  await expect(page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true })).toBeAttached();
+  await expect(page.getByRole('button', { name: '10問を作り始める', exact: true })).toBeAttached();
+  await expect(page.getByRole('button', { name: 'LIVE版で作る', exact: true })).toBeAttached();
   await expect(page.locator('a[href="/challenge/library"]').first()).toContainText('人気のお題');
   await expect(page.locator('a[href="/privacy"]').first()).toBeAttached();
   await expect(page.locator('#retired-love-schema')).toHaveCount(0);

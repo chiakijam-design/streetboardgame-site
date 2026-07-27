@@ -65,10 +65,10 @@ test('英語トップから通常版とLIVE版の英語標準お題へ進める'
   await page.goto('/en/');
   await expect(page.getByText('A “Know Me” quiz maker for sharing or livestreaming')).toBeVisible();
   await expect(page.getByText('Try again as many times as it takes to understand each other')).toBeVisible();
-  await expect(page.getByText('For friends', { exact: true })).toBeVisible();
-  await expect(page.getByText('For livestreams', { exact: true })).toBeVisible();
+  await expect(page.getByText('Standard mode · Send one URL and answer anytime', { exact: true })).toBeVisible();
+  await expect(page.getByText('Using it on a livestream?', { exact: true })).toBeVisible();
   await page.getByRole('textbox', { name: /Your name/ }).fill('Mia');
-  await page.getByRole('link', { name: 'Challenge your friends ▶' }).click();
+  await page.getByRole('link', { name: 'Start building 10 questions ▶' }).click();
   await expect(page).toHaveURL(/\/en\/challenge$/);
   await expect(page.getByText('Q1/10')).toBeVisible();
   await expect(page.getByRole('button', { name: /^Choose / }).first()).toBeVisible();

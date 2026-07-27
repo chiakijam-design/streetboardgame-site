@@ -44,15 +44,15 @@ async function buildLiveQuestions(page, startIndex = 0) {
   }
 }
 
-test('top page exposes normal and live creator buttons with the same primary design', async ({ page }) => {
+test('top page prioritizes the normal creator button and keeps LIVE as a secondary route', async ({ page }) => {
   await page.goto('/');
   const duplicateIds = await page.evaluate(() => {
     const ids = [...document.querySelectorAll('[id]')].map((element) => element.id).filter(Boolean);
     return [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
   });
   expect(duplicateIds).toEqual([]);
-  const normal = page.getByRole('button', { name: 'みんなに挑戦してもらう', exact: true }).first();
-  const live = page.getByRole('button', { name: 'ライブ配信でみんなに挑戦してもらう', exact: true }).first();
+  const normal = page.getByRole('button', { name: '10問を作り始める', exact: true });
+  const live = page.getByRole('button', { name: 'LIVE版で作る', exact: true });
   const nameInput = page.getByLabel('あなたの名前（12文字まで）');
   const visual = page.getByTestId('top-character-visual');
   const character = visual.locator('img');
@@ -92,8 +92,7 @@ test('top page exposes normal and live creator buttons with the same primary des
   expect(visualBox?.y + visualBox?.height).toBeLessThanOrEqual(rulesBox?.y);
   expect(nameBox?.y).toBeGreaterThan(rulesBox?.y);
   expect(nameBox?.y + nameBox?.height).toBeLessThanOrEqual(normalBox?.y);
-  expect(Math.abs((normalBox?.y || 0) - (liveBox?.y || 0))).toBeLessThanOrEqual(2);
-  expect(normalBox?.y + normalBox?.height).toBeLessThanOrEqual(liveAgeNoticeBox?.y);
+  expect(normalBox?.y + normalBox?.height).toBeLessThanOrEqual(liveBox?.y);
   expect(liveBox?.y + liveBox?.height).toBeLessThanOrEqual(liveAgeNoticeBox?.y);
   expect(liveAgeNoticeBox?.y + liveAgeNoticeBox?.height).toBeLessThanOrEqual(rulesBox?.y + rulesBox?.height);
   const styles = await Promise.all([normal, live].map((locator) => locator.evaluate((element) => {
@@ -107,9 +106,10 @@ test('top page exposes normal and live creator buttons with the same primary des
       minHeight: style.minHeight,
     };
   })));
-  expect(styles[1]).toEqual(styles[0]);
-  expect(styles[0].backgroundColor).toBe('rgb(255, 255, 255)');
-  expect(styles[0].color).toBe('rgb(26, 26, 26)');
+  expect(styles[0].backgroundColor).toBe('rgb(26, 26, 26)');
+  expect(styles[0].color).toBe('rgb(255, 255, 255)');
+  expect(styles[1].backgroundColor).toBe('rgb(255, 255, 255)');
+  expect(styles[1].color).toBe('rgb(26, 26, 26)');
 });
 
 test('LIVE問題作成カードは縦長で整列し、前の問題と最初へ戻れる', async ({ page }) => {
