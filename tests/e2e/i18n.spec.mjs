@@ -152,7 +152,7 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByTestId('challenge-ai-review')).toContainText('Overall understanding');
   await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');
   await expect(page.getByTestId('challenge-result-image')).toBeVisible();
-  await expect(page.getByTestId('challenge-result-image')).toHaveAttribute('alt', /Certified Mind Reader/);
+  await expect(page.getByTestId('challenge-result-image')).toHaveAttribute('alt', /Perfectly in Sync/);
   const resultShare = page.getByTestId('challenge-result-share');
   await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();
   const boardCheckbox = resultShare.getByRole('checkbox', { name: /Add to Understanding Board/ });
