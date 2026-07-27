@@ -13,7 +13,7 @@ const rows = sourcePath.toLowerCase().endsWith('.json')
 validateRows(rows);
 
 const sql = [
-  '-- New 100-question candidates are intentionally hidden until an operator approves them.',
+  `-- New ${rows.length}-question candidates are intentionally hidden until an operator approves them.`,
   '-- Source references and editorial rationale are documented in the candidate workbook.',
   'INSERT OR IGNORE INTO question_catalog',
   '  (question_id, source_kind, source_ref, title, category, choices_json, status,',
@@ -72,8 +72,8 @@ function readLegacyCandidates(sourceText) {
 }
 
 function validateRows(rows) {
-  if (!Array.isArray(rows) || rows.length !== 100) {
-    throw new Error(`expected 100 candidates, received ${rows?.length ?? 0}`);
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error(`expected one or more candidates, received ${rows?.length ?? 0}`);
   }
   const ids = new Set();
   const sourceRefs = new Set();
