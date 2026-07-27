@@ -551,7 +551,7 @@ function statusLabel(value) {
 }
 
 function sourceKindLabel(value) {
-  return value === 'custom' ? '採用した自作' : value === 'candidate' ? '新規100問候補' : '標準のお題';
+  return value === 'custom' ? '採用した自作' : value === 'candidate' ? '新規候補' : '標準のお題';
 }
 
 async function adminApi(path, options = {}) {
