@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
+import { mergeChallengeCards } from '../../src/challenge/data.js';
 import {
   liveExclusiveQuestionPacks,
   liveQuestionPackBySlug,
@@ -20,21 +21,21 @@ function loadCards(filename, variableName) {
   return context.window[variableName];
 }
 
-const japaneseCards = loadCards('prototype_common_data.js', 'COMMON_QUESTION_CARDS');
-const englishCards = loadCards('prototype_english_common_data.js', 'ENGLISH_COMMON_QUESTION_CARDS');
+const japaneseCards = mergeChallengeCards(loadCards('prototype_common_data.js', 'COMMON_QUESTION_CARDS'));
+const englishCards = mergeChallengeCards(loadCards('prototype_english_common_data.js', 'ENGLISH_COMMON_QUESTION_CARDS'));
 
 const expectedJapanesePackTop10 = Object.freeze({
-  'unexpected-side': ['Q307', 'HLD134', 'HLD070', 'HLD071', 'HLD072', 'HLD075', 'HLD123', 'HLD129', 'HLD141', 'HLD112'],
-  'easy-first-meeting': ['HLD014', 'HLD079', 'HLD087', 'HLD090', 'HLD181', 'HLD182', 'HLD183', 'HLD188', 'HLD194', 'HLD197'],
-  'fandom-social': ['HLD127', 'HLD128', 'HLD132', 'HLD136', 'HLD046', 'Q067', 'HLD048', 'HLD112', 'HLD193', 'HLD194'],
-  'know-me-deeper': ['HLD162', 'HLD168', 'HLD167', 'HLD158', 'HLD157', 'HLD159', 'HLD150', 'HLD152', 'HLD147', 'HLD133'],
-  'live-party': ['HLD143', 'HLD144', 'HLD148', 'HLD149', 'HLD154', 'HLD155', 'HLD172', 'HLD174', 'HLD175', 'HLD188'],
-  'summer-vacation': ['HLD140', 'HLD139', 'HLD120', 'HLD189', 'HLD195', 'HLD111', 'HLD018', 'Q428', 'HLD149', 'HLD171'],
-  'oshi-life': ['HLD127', 'HLD128', 'HLD132', 'HLD112', 'HLD130', 'HLD136', 'HLD141', 'HLD145', 'HLD193', 'HLD194'],
-  'live-comment-split': ['HLD181', 'HLD182', 'HLD183', 'HLD184', 'HLD186', 'HLD187', 'HLD188', 'HLD192', 'HLD177', 'HLD176'],
-  'live-first-viewers': ['HLD101', 'HLD103', 'HLD105', 'HLD108', 'HLD109', 'HLD110', 'HLD111', 'HLD114', 'HLD176', 'HLD197'],
-  'live-streamer-surprises': ['Q307', 'HLD134', 'HLD123', 'HLD117', 'HLD118', 'HLD124', 'HLD125', 'HLD130', 'HLD138', 'HLD174'],
-  'live-small-stream': ['HLD156', 'HLD160', 'HLD161', 'HLD162', 'HLD165', 'HLD166', 'HLD167', 'HLD168', 'HLD169', 'HLD170'],
+  'easy-first-meeting': ['Q001', 'Q215', 'HLD087', 'HLD002', 'Q428', 'HLD086', 'Q427', 'HLD176', 'HLD046', 'Q013'],
+  'school-after-school': ['HLD032', 'Q209', 'HLD028', 'HLD200', 'HLD119', 'Q214', 'HLD010', 'HLD115', 'Q111', 'HLD135'],
+  'food-preferences': ['Q401', 'Q414', 'HLD014', 'Q007', 'HLD079', 'HLD181', 'Q018', 'Q507', 'HLD199', 'HLD184'],
+  'my-manual': ['HLD101', 'HLD004', 'HLD102', 'Q436', 'HLD008', 'HLD133', 'Q302', 'HLD060', 'HLD158', 'HLD162'],
+  'unexpected-side': ['Q307', 'HLD134', 'Q305', 'Q547', 'HLD071', 'HLD070', 'HLD072', 'Q289', 'Q298', 'HLD073'],
+  'holiday-outings': ['HLD055', 'HLD006', 'HLD145', 'HLD146', 'HLD188', 'HLD189', 'Q519', 'HLD111', 'HLD149', 'HLD113'],
+  'smartphone-social-fandom': ['Q416', 'Q045', 'Q067', 'Q079', 'Q549', 'HLD136', 'HLD127', 'HLD132', 'HLD194', 'HLD141'],
+  'values-future': ['Q150', 'HLD057', 'HLD168', 'HLD056', 'Q439', 'HLD063', 'HLD152', 'HLD174', 'HLD065', 'Q435'],
+  'memories-past': ['HLD120', 'HLD026', 'HLD117', 'HLD118', 'Q208', 'Q206', 'HLD124', 'HLD121', 'HLD116', 'HLD112'],
+  'live-comment-split': ['Q166', 'Q406', 'Q410', 'Q412', 'HLD144', 'Q434', 'Q167', 'HLD143', 'Q433', 'Q438'],
+  'live-first-viewers': ['HLD096', 'Q423', 'Q407', 'Q422', 'Q418', 'HLD085', 'Q293', 'Q432', 'HLD159', 'Q442'],
 });
 
 function cardsWithManagedPackCandidates(packs, cards) {
@@ -52,42 +53,57 @@ function cardsWithManagedPackCandidates(packs, cards) {
   ];
 }
 
-test('画像付き10問パックを7種類提供する', () => {
+test('通常版に画像付き10問パックを9種類提供する', () => {
   const packs = questionPacks(false);
   assert.deepEqual(
     packs.map(({ title }) => title),
     [
-      '意外な一面が分かる10問',
       '初対面でも答えやすい10問',
-      '推し・SNSについて話す10問',
-      'もっと深く知る10問',
-      'LIVEで盛り上がる10問',
-      '夏休みの10問',
-      '推し活の10問',
+      '学校・放課後の10問',
+      '食べものの好み10問',
+      'わたしのトリセツ10問',
+      '意外な一面が分かる10問',
+      '休日とおでかけの10問',
+      'スマホ・SNS・推しの10問',
+      '価値観と未来の10問',
+      '思い出と昔の自分10問',
     ],
   );
   assert.equal(packs.every(({ image }) => image.startsWith('/assets/question-packs/')), true);
 });
 
-test('LIVE版専用の画像付き10問パックを4種類提供する', () => {
+test('LIVE版専用の画像付き10問パックを2種類提供する', () => {
   const packs = liveExclusiveQuestionPacks(false);
   assert.deepEqual(
     packs.map(({ title }) => title),
     [
-      'コメント欄が割れそうな10問',
-      '初見視聴者も答えやすい10問',
-      '配信者の意外な一面が分かる10問',
-      '30人以下の配信向け10問',
+      'LIVEで答えが割れる10問',
+      'LIVE初見でも即答できる10問',
     ],
   );
   assert.equal(packs.every(({ image }) => image.startsWith('/assets/question-packs/live-')), true);
+});
+
+test('最初に表示する主力6パックを固定する', () => {
+  const featuredSlugs = [
+    ...questionPacks(false),
+    ...liveExclusiveQuestionPacks(false),
+  ].filter(({ featured }) => featured).map(({ slug }) => slug);
+  assert.deepEqual(featuredSlugs, [
+    'easy-first-meeting',
+    'school-after-school',
+    'food-preferences',
+    'my-manual',
+    'unexpected-side',
+    'live-comment-split',
+  ]);
 });
 
 for (const [language, cards, isEnglish] of [
   ['日本語', japaneseCards, false],
   ['英語', englishCards, true],
 ]) {
-  test(`${language}の各パックは重複のない有効な10問になる`, () => {
+  test(`${language}の通常版パックは重複のない有効な10問になる`, () => {
     for (const pack of questionPacks(isEnglish)) {
       const selected = questionPackCards(cards, pack.slug, isEnglish);
       assert.equal(selected.length, 10, pack.slug);
@@ -113,7 +129,7 @@ test('存在しないパックは選択しない', () => {
 
 test('LIVE専用パックは通常版から選べず、LIVE版からだけ選べる', () => {
   assert.equal(questionPackBySlug('live-comment-split', false), null);
-  assert.equal(liveQuestionPackBySlug('live-comment-split', false)?.title, 'コメント欄が割れそうな10問');
+  assert.equal(liveQuestionPackBySlug('live-comment-split', false)?.title, 'LIVEで答えが割れる10問');
   assert.deepEqual(questionPackCards(japaneseCards, 'live-comment-split', false), []);
   assert.equal(
     questionPackCards(japaneseCards, 'live-comment-split', false, 10, { includeLive: true }).length,
@@ -121,18 +137,12 @@ test('LIVE専用パックは通常版から選べず、LIVE版からだけ選べ
   );
 });
 
-test('日本語パックは採用済みの新規候補を含む先頭10問を優先する', () => {
+test('採用済みの管理問題がある場合は指定した先頭10問を優先する', () => {
   const packs = [...questionPacks(false), ...liveExclusiveQuestionPacks(false)];
   const cards = cardsWithManagedPackCandidates(packs, japaneseCards);
 
   for (const pack of packs) {
-    const selected = questionPackCards(
-      cards,
-      pack.slug,
-      false,
-      10,
-      { includeLive: true },
-    );
+    const selected = questionPackCards(cards, pack.slug, false, 10, { includeLive: true });
     assert.deepEqual(
       selected.map(({ id }) => id),
       pack.questionIds.slice(0, 10),
@@ -141,7 +151,7 @@ test('日本語パックは採用済みの新規候補を含む先頭10問を優
   }
 });
 
-test('Japanese pack top 10 selections stay fixed after the theme review', () => {
+test('11パックの先頭10問は重複のない110問に固定する', () => {
   const packs = [...questionPacks(false), ...liveExclusiveQuestionPacks(false)];
   assert.deepEqual(
     Object.fromEntries(packs.map((pack) => [pack.slug, pack.questionIds.slice(0, 10)])),
@@ -149,6 +159,6 @@ test('Japanese pack top 10 selections stay fixed after the theme review', () => 
   );
   assert.equal(
     new Set(Object.values(expectedJapanesePackTop10).flat()).size,
-    83,
+    110,
   );
 });

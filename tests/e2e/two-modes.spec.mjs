@@ -756,11 +756,14 @@ test('途中保存から再開し、画像付き10問パックでクイズ作成
 
   await page.goto('/challenge/library');
   await expect(page.getByRole('heading', { name: '人気のお題ライブラリ' })).toBeVisible();
-  await expect(page.getByTestId('question-library').locator('.challenge-pack-card')).toHaveCount(7);
-  await expect(page.getByTestId('question-library').locator('.challenge-pack-card img')).toHaveCount(7);
+  await expect(page.getByTestId('question-library').locator('.challenge-pack-card')).toHaveCount(9);
+  await expect(page.getByTestId('question-library').locator('.challenge-pack-card img')).toHaveCount(9);
+  await expect(page.getByTestId('question-library').locator('.challenge-pack-count', { hasText: '主力' })).toHaveCount(5);
+  await expect(page.getByRole('heading', { name: '初対面でも答えやすい10問' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '学校・放課後の10問' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '食べものの好み10問' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'わたしのトリセツ10問' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '意外な一面が分かる10問' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '夏休みの10問' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '推し活の10問' })).toBeVisible();
   await expect(page.getByTestId('question-library')).not.toContainText('回プレイ');
   await page.locator('[data-pack="unexpected-side"]').getByRole('link', { name: '通常版で作る' }).click();
   await expect(page.getByTestId('selected-question-pack')).toContainText('意外な一面が分かる10問');
@@ -770,36 +773,35 @@ test('途中保存から再開し、画像付き10問パックでクイズ作成
   await expect(page.locator('.challenge-builder-card')).toContainText('「第一印象」と本当の自分の違いに近いのは');
 });
 
-test('10問パックをLIVE版の作成画面でもそのまま使える', async ({ page }) => {
+test('共通10問パックをLIVE版の作成画面でもそのまま使える', async ({ page }) => {
   await page.goto('/challenge/library');
-  await page.locator('[data-pack="summer-vacation"]').getByRole('link', { name: 'LIVE版で作る' }).click();
-  await expect(page).toHaveURL('/live-challenge?pack=summer-vacation');
-  await expect(page.locator('.selected-live-pack')).toContainText('夏休みの10問');
+  await page.locator('[data-pack="holiday-outings"]').getByRole('link', { name: 'LIVE版で作る' }).click();
+  await expect(page).toHaveURL('/live-challenge?pack=holiday-outings');
+  await expect(page.locator('.selected-live-pack')).toContainText('休日とおでかけの10問');
   await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
   await expect(page.getByRole('heading', { name: '1問ずつクイズを作る' })).toBeVisible();
-  await expect(page.locator('.selected-live-pack')).toContainText('夏休みの10問');
-  await expect(page.getByTestId('live-builder-paper-card')).toContainText('行ってみたい都道府県');
+  await expect(page.locator('.selected-live-pack')).toContainText('休日とおでかけの10問');
+  await expect(page.getByTestId('live-builder-paper-card')).toBeVisible();
 });
 
-test('LIVE専用4パックを選べ、不要な案内文カードを表示しない', async ({ page }) => {
+test('LIVE専用2パックを選べ、不要な案内文カードを表示しない', async ({ page }) => {
   await page.goto('/live-challenge');
   const livePacks = page.getByTestId('live-exclusive-packs');
   await expect(page.getByTestId('live-intro-copy')).toHaveCount(0);
-  await expect(livePacks.locator('.live-pack-card')).toHaveCount(4);
-  await expect(livePacks.locator('.live-pack-card img')).toHaveCount(4);
-  await expect(livePacks).toContainText('コメント欄が割れそうな10問');
-  await expect(livePacks).toContainText('初見視聴者も答えやすい10問');
-  await expect(livePacks).toContainText('配信者の意外な一面が分かる10問');
-  await expect(livePacks).toContainText('30人以下の配信向け10問');
-  await expect(livePacks.getByRole('link', { name: '通常版と共通の7パックを見る' }))
+  await expect(livePacks.locator('.live-pack-card')).toHaveCount(2);
+  await expect(livePacks.locator('.live-pack-card img')).toHaveCount(2);
+  await expect(livePacks).toContainText('LIVEで答えが割れる10問');
+  await expect(livePacks).toContainText('LIVE初見でも即答できる10問');
+  await expect(livePacks.locator('.live-pack-card').first().locator('small')).toHaveText('主力・LIVE専用');
+  await expect(livePacks.getByRole('link', { name: '通常版と共通の9パックを見る' }))
     .toHaveAttribute('href', '/challenge/library');
 
   await page.locator('[data-live-pack="live-comment-split"]')
     .getByRole('link', { name: 'このパックでLIVEを作る' }).click();
   await expect(page).toHaveURL('/live-challenge?pack=live-comment-split');
-  await expect(page.locator('.selected-live-pack')).toContainText('コメント欄が割れそうな10問');
+  await expect(page.locator('.selected-live-pack')).toContainText('LIVEで答えが割れる10問');
   await page.getByRole('button', { name: /LIVEクイズを作る/ }).click();
-  await expect(page.getByTestId('live-builder-paper-card')).toContainText('目玉焼きにかけるのは');
+  await expect(page.getByTestId('live-builder-paper-card')).toContainText('1つだけ消せるなら');
 });
 
 test('正解は回答前の公開レスポンスへ出さず、51人目をサーバー側で拒否する', async ({ page, request }, testInfo) => {

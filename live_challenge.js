@@ -187,20 +187,20 @@ function landingView() {
   <section class="panel live-pack-section" data-testid="live-exclusive-packs">
     <span class="section-pill">LIVE PACKS</span>
     <h2>配信向け10問パック</h2>
-    <p>通常版と同じお題に加えて、配信でコメントが動きやすい4パックを用意しました。</p>
+    <p>通常版と同じお題に加えて、配信でコメントが動きやすい2パックを用意しました。</p>
     <div class="live-pack-grid">
       ${livePacks.map((pack) => `<article class="live-pack-card" data-live-pack="${escapeHtml(pack.slug)}">
         <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="lazy" decoding="async"
           alt="${escapeHtml(pack.title)}${isEnglish ? ' illustration' : 'のイメージ画像'}">
         <div>
-          <small>LIVE専用</small>
+          <small>${pack.featured ? '主力・LIVE専用' : 'LIVE専用'}</small>
           <h3>${escapeHtml(pack.title)}</h3>
           <p>${escapeHtml(pack.description)}</p>
           <a class="ghost" href="${languagePrefix}/live-challenge?pack=${encodeURIComponent(pack.slug)}">このパックでLIVEを作る</a>
         </div>
       </article>`).join('')}
     </div>
-    <a class="ghost live-common-packs-link" href="${languagePrefix}/challenge/library">通常版と共通の7パックを見る</a>
+    <a class="ghost live-common-packs-link" href="${languagePrefix}/challenge/library">通常版と共通の9パックを見る</a>
   </section>
   <section class="panel" style="margin-top:16px">
     <h2>小さな配信でも、すぐ遊べます</h2>

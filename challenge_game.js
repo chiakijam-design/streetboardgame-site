@@ -739,7 +739,7 @@ function libraryView() {
               <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="lazy" decoding="async"
                 alt="${escapeHtml(pack.title)}${isEnglish ? ' illustration' : 'のイメージ画像'}">
             <div class="challenge-pack-copy">
-              <span class="challenge-pack-count">10問パック</span>
+              <span class="challenge-pack-count">${pack.featured ? '主力・10問パック' : '10問パック'}</span>
               <h2>${escapeHtml(pack.title)}</h2>
               <p>${escapeHtml(pack.description)}</p>
               <details>

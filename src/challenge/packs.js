@@ -1,136 +1,165 @@
 const PACKS = Object.freeze([
   {
-    slug: 'unexpected-side',
-    title: { ja: '意外な一面が分かる10問', en: '10 questions that reveal a surprising side' },
-    description: {
-      ja: '第一印象だけでは分からない、得意・過去・一人時間の自分。',
-      en: 'Personality, quirks, and choices people may not expect.',
-    },
-    image: '/assets/question-packs/unexpected-side.svg',
-    ids: {
-      ja: [
-        'Q307', 'HLD134', 'HLD070', 'HLD071', 'HLD072',
-        'HLD075', 'HLD123', 'HLD129', 'HLD141', 'HLD112',
-        'HLD117', 'HLD118', 'HLD124', 'HLD125', 'HLD130',
-        'Q298', 'Q289', 'Q433', 'Q421', 'Q441',
-        'Q547', 'Q159', 'Q293', 'Q141',
-      ],
-      en: ['ENF031', 'ENF039', 'ENF037', 'ENF038', 'ENF035', 'ENF036', 'ENF029', 'ENF030', 'ENF034', 'ENF032'],
-    },
-  },
-  {
     slug: 'easy-first-meeting',
     title: { ja: '初対面でも答えやすい10問', en: '10 easy questions for new friends' },
     description: {
-      ja: '食べ物・休日・エンタメ中心。まだ詳しく知らなくても予想しやすい。',
-      en: 'Easy picks about food, free time, and entertainment.',
+      ja: '回答に迷いにくく、相手をあまり知らなくても予想できます。',
+      en: 'Simple choices that are easy to predict even when you have just met.',
     },
     image: '/assets/question-packs/easy-first-meeting.svg',
+    featured: true,
     ids: {
       ja: [
-        'HLD014', 'HLD079', 'HLD087', 'HLD090', 'HLD181',
-        'HLD182', 'HLD183', 'HLD188', 'HLD194', 'HLD197',
-        'HLD109', 'HLD176', 'HLD185', 'HLD186', 'HLD187',
-        'Q001', 'Q007', 'Q045', 'Q424', 'Q426',
-        'Q440', 'Q418', 'Q423', 'Q505', 'Q509',
+        'Q001', 'Q215', 'HLD087', 'HLD002', 'Q428',
+        'HLD086', 'Q427', 'HLD176', 'HLD046', 'Q013',
+        'Q007', 'Q045', 'Q424', 'Q426', 'Q440',
+        'Q418', 'Q423', 'Q509', 'Q091', 'Q013',
       ],
-      en: ['ENF001', 'ENF006', 'ENF005', 'ENF015', 'ENF025', 'ENF026', 'ENF004', 'ENF007', 'ENF008', 'ENF020'],
+      en: ['ENF001', 'ENF008', 'ENF025', 'ENF005', 'ENF015', 'ENF020', 'ENF014', 'ENF026', 'ENF027', 'ENF010'],
     },
   },
   {
-    slug: 'fandom-social',
-    title: { ja: '推し・SNSについて話す10問', en: '10 questions about fandoms and social media' },
+    slug: 'school-after-school',
+    title: { ja: '学校・放課後の10問', en: '10 school and after-school questions' },
     description: {
-      ja: '好きになったきっかけ・保存・スクショ・イベントまで、推しとSNSの楽しみ方。',
-      en: 'Saving, screenshots, messages, entertainment, and online habits.',
-    },
-    image: '/assets/question-packs/fandom-social.svg',
-    ids: {
-      ja: [
-        'HLD127', 'HLD128', 'HLD132', 'HLD136', 'HLD046',
-        'Q067', 'HLD048', 'HLD112', 'HLD193', 'HLD194',
-        'HLD130', 'HLD141', 'HLD145', 'HLD180', 'HLD086',
-        'Q431', 'Q304', 'Q099', 'Q079', 'Q301',
-        'Q416', 'Q208', 'Q150', 'Q137',
-      ],
-      en: ['ENF014', 'ENF015', 'ENF026', 'ENF027', 'ENF028', 'ENF032', 'ENF013', 'ENF017', 'ENF025', 'ENF006'],
-    },
-  },
-  {
-    slug: 'know-me-deeper',
-    title: { ja: 'もっと深く知る10問', en: '10 questions to know me better' },
-    description: {
-      ja: '大切にしていることや、落ち込んだ時にしてほしいことを答え合わせ。',
-      en: 'Values, support, trust, decisions, and what matters most.',
-    },
-    image: '/assets/question-packs/know-me-deeper.svg',
-    ids: {
-      ja: [
-        'HLD162', 'HLD168', 'HLD167', 'HLD158', 'HLD157',
-        'HLD159', 'HLD150', 'HLD152', 'HLD147', 'HLD133',
-        'HLD056', 'HLD057', 'HLD059', 'HLD060', 'HLD063',
-        'Q302', 'Q303', 'Q130', 'Q144',
-        'Q159', 'Q141', 'Q439', 'Q527', 'Q528',
-        'Q529',
-      ],
-      en: ['ENF012', 'ENF013', 'ENF010', 'ENF029', 'ENF030', 'ENF031', 'ENF032', 'ENF039', 'ENF023', 'ENF024'],
-    },
-  },
-  {
-    slug: 'live-party',
-    title: { ja: 'LIVEで盛り上がる10問', en: '10 questions for a lively stream' },
-    description: {
-      ja: '答えが割れやすく、配信者と視聴者が理由まで話したくなる10問。',
-      en: 'Fast, visual choices that invite reactions and conversation.',
+      ja: '13〜18歳のメインターゲットに最も直接的に合います。',
+      en: 'School life, after-school moments, and everyday student choices.',
     },
     image: '/assets/question-packs/live-party.svg',
+    featured: true,
     ids: {
       ja: [
-        'HLD143', 'HLD144', 'HLD148', 'HLD149', 'HLD154',
-        'HLD155', 'HLD172', 'HLD174', 'HLD175', 'HLD188',
-        'HLD171', 'HLD169', 'HLD189', 'HLD194', 'HLD180',
-        'Q267', 'Q403', 'Q408', 'Q412', 'Q434',
-        'Q057', 'Q289', 'Q293', 'Q276', 'Q169',
+        'HLD032', 'Q209', 'HLD028', 'HLD200', 'HLD119',
+        'Q214', 'HLD010', 'HLD115', 'Q111', 'HLD135',
+        'Q215', 'Q202', 'Q106', 'Q108', 'Q119', 'Q267', 'Q256',
       ],
-      en: ['ENF016', 'ENF019', 'ENF035', 'ENF036', 'ENF037', 'ENF038', 'ENF033', 'ENF034', 'ENF026', 'ENF040'],
+      en: ['ENF008', 'ENF040', 'ENF009', 'ENF010', 'ENF011', 'ENF018', 'ENF026', 'ENF017', 'ENF029', 'ENF030'],
     },
   },
   {
-    slug: 'summer-vacation',
-    title: { ja: '夏休みの10問', en: '10 summer vacation questions' },
+    slug: 'food-preferences',
+    title: { ja: '食べものの好み10問', en: '10 questions about food preferences' },
     description: {
-      ja: 'お祭り・旅行・自由時間。夏休みに一緒にしたいことが見えてくる。',
-      en: 'Festivals, trips, free time, and summer adventures.',
+      ja: '答えやすく、答え合わせ後の会話が発生しやすいパックです。',
+      en: 'Easy food choices that naturally lead to conversation after the answers are revealed.',
     },
     image: '/assets/question-packs/summer-vacation.svg',
+    featured: true,
     ids: {
       ja: [
-        'HLD140', 'HLD139', 'HLD120', 'HLD189', 'HLD195',
-        'HLD111', 'HLD018', 'Q428', 'HLD149', 'HLD171',
-        'HLD119', 'HLD113', 'HLD116', 'HLD138', 'HLD188',
-        'Q012', 'Q022', 'Q429', 'Q519', 'Q522',
-        'Q417', 'Q420', 'Q524', 'Q525',
+        'Q401', 'Q414', 'HLD014', 'Q007', 'HLD079',
+        'HLD181', 'Q018', 'Q507', 'HLD199', 'HLD184',
+        'Q001', 'Q013', 'Q012', 'Q003', 'Q002',
       ],
-      en: ['ENF004', 'ENF018', 'ENF019', 'ENF020', 'ENF036', 'ENF033', 'ENF034', 'ENF014', 'ENF027', 'ENF017'],
+      en: ['ENF001', 'ENF002', 'ENF003', 'ENF004', 'ENF005', 'ENF006', 'ENF007', 'ENF013', 'ENF014', 'ENF032'],
     },
   },
   {
-    slug: 'oshi-life',
-    title: { ja: '推し活の10問', en: '10 questions about fan life' },
+    slug: 'my-manual',
+    title: { ja: 'わたしのトリセツ10問', en: '10 questions for my personal manual' },
     description: {
-      ja: '推しの魅力、使いたいお金、友達と共有したい瞬間を答え合わせ。',
-      en: 'Favorites, fandom spending, memories, and what fans love to share.',
+      ja: 'サイトの「理解度診断」という位置づけに最も合う主力候補です。',
+      en: 'A personal guide to my energy, habits, support needs, and communication style.',
     },
-    image: '/assets/question-packs/oshi-life.svg',
+    image: '/assets/question-packs/know-me-deeper.svg',
+    featured: true,
     ids: {
       ja: [
-        'HLD127', 'HLD128', 'HLD132', 'HLD112', 'HLD130',
-        'HLD136', 'HLD141', 'HLD145', 'HLD193', 'HLD194',
-        'HLD046', 'Q067', 'HLD180', 'HLD178', 'HLD174',
-        'Q431', 'Q304', 'Q150', 'Q099', 'Q079',
-        'Q208', 'Q416', 'Q301', 'Q137',
+        'HLD101', 'HLD004', 'HLD102', 'Q436', 'HLD008',
+        'HLD133', 'Q302', 'HLD060', 'HLD158', 'HLD162',
+        'Q141', 'Q144', 'Q108', 'Q130', 'Q191', 'Q228', 'Q159', 'Q153',
       ],
-      en: ['ENF014', 'ENF026', 'ENF027', 'ENF028', 'ENF032', 'ENF013', 'ENF015', 'ENF017', 'ENF029', 'ENF006'],
+      en: ['ENF029', 'ENF030', 'ENF031', 'ENF039', 'ENF010', 'ENF012', 'ENF023', 'ENF024', 'ENF011', 'ENF021'],
+    },
+  },
+  {
+    slug: 'unexpected-side',
+    title: { ja: '意外な一面が分かる10問', en: '10 questions that reveal a surprising side' },
+    description: {
+      ja: '結果画面の答え合わせレポートと特に相性がよい構成です。',
+      en: 'Reveal personality, quirks, and choices that may not match a first impression.',
+    },
+    image: '/assets/question-packs/unexpected-side.svg',
+    featured: true,
+    ids: {
+      ja: [
+        'Q307', 'HLD134', 'Q305', 'Q547', 'HLD071',
+        'HLD070', 'HLD072', 'Q289', 'Q298', 'HLD073',
+        'Q421', 'Q441', 'Q433', 'Q293', 'Q159',
+      ],
+      en: ['ENF037', 'ENF038', 'ENF039', 'ENF029', 'ENF031', 'ENF035', 'ENF036', 'ENF026', 'ENF034', 'ENF017'],
+    },
+  },
+  {
+    slug: 'holiday-outings',
+    title: { ja: '休日とおでかけの10問', en: '10 questions about days off and outings' },
+    description: {
+      ja: '一緒に遊ぶ計画や、次の会話につながりやすい構成です。',
+      en: 'Questions that make it easy to plan an outing or start the next conversation.',
+    },
+    image: '/assets/question-packs/oshi-life.svg',
+    featured: false,
+    ids: {
+      ja: [
+        'HLD055', 'HLD006', 'HLD145', 'HLD146', 'HLD188',
+        'HLD189', 'Q519', 'HLD111', 'HLD149', 'HLD113',
+        'Q022', 'Q034', 'Q039', 'Q012', 'Q420', 'Q524', 'Q525', 'Q418', 'Q423',
+      ],
+      en: ['ENF015', 'ENF016', 'ENF017', 'ENF018', 'ENF019', 'ENF020', 'ENF025', 'ENF004', 'ENF034', 'ENF036'],
+    },
+  },
+  {
+    slug: 'smartphone-social-fandom',
+    title: { ja: 'スマホ・SNS・推しの10問', en: '10 questions about phones, social media, and fandoms' },
+    description: {
+      ja: '中高生の日常に近く、共有時の訴求にも使いやすいパックです。',
+      en: 'Everyday phone, social, video, and fandom choices that are easy to share.',
+    },
+    image: '/assets/question-packs/fandom-social.svg',
+    featured: false,
+    ids: {
+      ja: [
+        'Q416', 'Q045', 'Q067', 'Q079', 'Q549',
+        'HLD136', 'HLD127', 'HLD132', 'HLD194', 'HLD141',
+        'Q099', 'Q091', 'Q150', 'Q137', 'Q208',
+      ],
+      en: ['ENF015', 'ENF027', 'ENF028', 'ENF014', 'ENF025', 'ENF026', 'ENF013', 'ENF017', 'ENF020', 'ENF001'],
+    },
+  },
+  {
+    slug: 'values-future',
+    title: { ja: '価値観と未来の10問', en: '10 questions about values and the future' },
+    description: {
+      ja: '少し深く理解したい利用者向けです。初回より2回目以降に適しています。',
+      en: 'A deeper pack about priorities, decisions, skills, and the future.',
+    },
+    image: '/assets/question-packs/live-small-stream.svg',
+    featured: false,
+    ids: {
+      ja: [
+        'Q150', 'HLD057', 'HLD168', 'HLD056', 'Q439',
+        'HLD063', 'HLD152', 'HLD174', 'HLD065', 'Q435',
+        'Q141', 'Q144', 'Q159', 'Q130', 'Q153', 'Q302', 'Q303',
+      ],
+      en: ['ENF012', 'ENF013', 'ENF029', 'ENF030', 'ENF031', 'ENF032', 'ENF033', 'ENF034', 'ENF023', 'ENF010'],
+    },
+  },
+  {
+    slug: 'memories-past',
+    title: { ja: '思い出と昔の自分10問', en: '10 questions about memories and my younger self' },
+    description: {
+      ja: '正解・不正解に関係なく、その後にエピソードを話しやすいパックです。',
+      en: 'Memory prompts that naturally lead to stories after the answers are revealed.',
+    },
+    image: '/assets/question-packs/live-streamer-surprises.svg',
+    featured: false,
+    ids: {
+      ja: [
+        'HLD120', 'HLD026', 'HLD117', 'HLD118', 'Q208',
+        'Q206', 'HLD124', 'HLD121', 'HLD116', 'HLD112',
+        'Q202', 'Q209', 'Q215', 'Q219', 'Q214', 'Q137', 'Q099', 'Q013',
+      ],
+      en: ['ENF026', 'ENF040', 'ENF014', 'ENF005', 'ENF004', 'ENF008', 'ENF017', 'ENF018', 'ENF027', 'ENF029'],
     },
   },
 ]);
@@ -138,80 +167,38 @@ const PACKS = Object.freeze([
 const LIVE_PACKS = Object.freeze([
   {
     slug: 'live-comment-split',
-    title: { ja: 'コメント欄が割れそうな10問', en: '10 questions that split the chat' },
+    title: { ja: 'LIVEで答えが割れる10問', en: '10 live questions that split the answers' },
     description: {
-      ja: '好みが分かれやすい5択で、理由やツッコミまでコメントしたくなる。',
-      en: 'Five-way choices designed to spark opinions, reactions, and debate.',
+      ja: '選択人数を表示した時に、回答の偏りや分散を楽しみやすい構成です。',
+      en: 'Five-way choices designed to make divided answers and live reactions fun.',
     },
     image: '/assets/question-packs/live-comment-split.svg',
+    featured: true,
     ids: {
       ja: [
-        'HLD181', 'HLD182', 'HLD183', 'HLD184', 'HLD186',
-        'HLD187', 'HLD188', 'HLD192', 'HLD177', 'HLD176',
-        'HLD197', 'HLD199', 'HLD200', 'HLD079', 'HLD090',
-        'Q401', 'Q406', 'Q407', 'Q414',
-        'Q410', 'Q413', 'Q427', 'Q425', 'Q507',
-        'Q402',
+        'Q166', 'Q406', 'Q410', 'Q412', 'HLD144',
+        'Q434', 'Q167', 'HLD143', 'Q433', 'Q438',
+        'Q401', 'Q407', 'Q414', 'Q425', 'Q427',
       ],
-      en: ['ENF001', 'ENF002', 'ENF006', 'ENF007', 'ENF016', 'ENF019', 'ENF025', 'ENF037', 'ENF038', 'ENF040'],
+      en: ['ENF035', 'ENF033', 'ENF034', 'ENF036', 'ENF037', 'ENF038', 'ENF039', 'ENF016', 'ENF019', 'ENF032'],
     },
   },
   {
     slug: 'live-first-viewers',
-    title: { ja: '初見視聴者も答えやすい10問', en: '10 easy questions for first-time viewers' },
+    title: { ja: 'LIVE初見でも即答できる10問', en: '10 instant-answer questions for first-time viewers' },
     description: {
-      ja: '食べ物・休日・エンタメ中心で、配信を初めて見る人もすぐ参加できる。',
-      en: 'Easy food, free-time, and entertainment picks for brand-new viewers.',
+      ja: '配信者を詳しく知らない初見視聴者も参加しやすいパックです。',
+      en: 'Quick, visual choices that brand-new viewers can answer immediately.',
     },
     image: '/assets/question-packs/live-first-viewers.svg',
+    featured: false,
     ids: {
       ja: [
-        'HLD101', 'HLD103', 'HLD105', 'HLD108', 'HLD109',
-        'HLD110', 'HLD111', 'HLD114', 'HLD176', 'HLD197',
-        'HLD014', 'HLD079', 'HLD087', 'HLD090', 'HLD188',
-        'Q418', 'Q423',
+        'HLD096', 'Q423', 'Q407', 'Q422', 'Q418',
+        'HLD085', 'Q293', 'Q432', 'HLD159', 'Q442',
         'Q001', 'Q007', 'Q424', 'Q426', 'Q440',
-        'Q505', 'Q509', 'Q549',
       ],
-      en: ['ENF001', 'ENF004', 'ENF005', 'ENF006', 'ENF008', 'ENF015', 'ENF020', 'ENF025', 'ENF026', 'ENF017'],
-    },
-  },
-  {
-    slug: 'live-streamer-surprises',
-    title: { ja: '配信者の意外な一面が分かる10問', en: '10 questions that reveal the streamer' },
-    description: {
-      ja: '第一印象、弱点、もしもの選択から、配信だけでは見えない一面を答え合わせ。',
-      en: 'First impressions, weaknesses, and unexpected choices reveal another side.',
-    },
-    image: '/assets/question-packs/live-streamer-surprises.svg',
-    ids: {
-      ja: [
-        'Q307', 'HLD134', 'HLD123', 'HLD117', 'HLD118',
-        'HLD124', 'HLD125', 'HLD130', 'HLD138', 'HLD174',
-        'HLD070', 'HLD071', 'HLD072', 'HLD075', 'HLD112',
-        'Q298', 'Q421', 'Q441', 'Q547',
-        'Q289', 'Q293', 'Q159', 'Q304', 'Q306',
-      ],
-      en: ['ENF031', 'ENF039', 'ENF037', 'ENF038', 'ENF035', 'ENF036', 'ENF029', 'ENF030', 'ENF034', 'ENF032'],
-    },
-  },
-  {
-    slug: 'live-small-stream',
-    title: { ja: '30人以下の配信向け10問', en: '10 questions for streams under 30 viewers' },
-    description: {
-      ja: '少人数だからこそ一人ずつの反応を拾いやすく、会話を広げやすい10問。',
-      en: 'Conversation-friendly questions where every viewer reaction can be noticed.',
-    },
-    image: '/assets/question-packs/live-small-stream.svg',
-    ids: {
-      ja: [
-        'HLD156', 'HLD160', 'HLD161', 'HLD162', 'HLD165',
-        'HLD166', 'HLD167', 'HLD168', 'HLD169', 'HLD170',
-        'HLD157', 'HLD158', 'HLD159', 'HLD141', 'HLD164',
-        'Q111', 'Q305', 'Q137', 'Q130', 'Q141',
-        'Q150', 'Q153', 'Q256', 'Q301', 'Q302',
-      ],
-      en: ['ENF009', 'ENF010', 'ENF011', 'ENF012', 'ENF013', 'ENF014', 'ENF029', 'ENF030', 'ENF031', 'ENF039'],
+      en: ['ENF001', 'ENF005', 'ENF006', 'ENF008', 'ENF015', 'ENF016', 'ENF025', 'ENF031', 'ENF038', 'ENF010'],
     },
   },
 ]);
@@ -223,6 +210,7 @@ function localizePacks(packs, isEnglish = false) {
     title: pack.title[language],
     description: pack.description[language],
     image: pack.image,
+    featured: pack.featured === true,
     questionIds: pack.ids[language].slice(),
   }));
 }
