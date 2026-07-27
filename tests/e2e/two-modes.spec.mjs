@@ -581,6 +581,24 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(resultShare.getByRole('button', { name: /LINEで送る/ })).toContainText('結果画像＋同じ10問への参加URL');
     await expect(resultShare.getByRole('button', { name: /Xで結果を投稿/ })).toContainText('結果画像＋同じ10問への参加URL');
     await expect(resultShare.getByRole('button', { name: '画像だけ保存' })).toBeEnabled();
+    expect(await resultShare.locator('.challenge-result-share-button').evaluateAll((buttons) => {
+      const heights = buttons.map((button) => button.getBoundingClientRect().height);
+      return {
+        count: buttons.length,
+        whiteSurfaces: buttons.every((button) => getComputedStyle(button).backgroundColor === 'rgb(255, 255, 255)'),
+        equalHeights: Math.max(...heights) - Math.min(...heights) < 1,
+        iconsUniform: buttons.map((button) => {
+          const icon = button.querySelector('.challenge-result-share-icon');
+          const rect = icon?.getBoundingClientRect();
+          return rect ? [Math.round(rect.width), Math.round(rect.height)] : null;
+        }).every((size) => size && size[0] === size[1] && size[0] >= 42 && size[0] <= 46),
+      };
+    })).toEqual({
+      count: 4,
+      whiteSurfaces: true,
+      equalHeights: true,
+      iconsUniform: true,
+    });
     await expect(participant.getByRole('button', { name: '文章だけコピーする' })).toHaveCount(0);
     expect(await resultShare.evaluate((share) => {
       const shareRect = share.getBoundingClientRect();

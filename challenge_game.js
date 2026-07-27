@@ -719,22 +719,56 @@ function resultView() {
             <button type="button" class="challenge-result-share-button instagram"
               data-action="share-result-instagram"
               ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
-              <strong>Instagram用</strong>
-              <small>ストーリー用：文章コピー＋画像保存</small>
+              <span class="challenge-result-share-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect>
+                  <circle cx="12" cy="12" r="4"></circle>
+                  <circle class="is-filled" cx="17.5" cy="6.7" r="1.15"></circle>
+                </svg>
+              </span>
+              <span class="challenge-result-share-copy">
+                <strong>Instagram用</strong>
+                <small>ストーリーへ保存</small>
+              </span>
             </button>
             <button type="button" class="challenge-result-share-button line" data-action="share-result-line"
               ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
-              <strong>LINEで送る</strong>
-              <small>結果画像＋同じ10問への参加URL</small>
+              <span class="challenge-result-share-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M20.2 11.1c0-4-3.7-7.2-8.2-7.2s-8.2 3.2-8.2 7.2c0 3.6 3.1 6.7 7.2 7.2.3.1.7.2.8.5.1.3 0 .7-.1 1l-.2 1.1c0 .3-.2 1.1.9.6 1.2-.5 6.7-4 6.7-9.4z"></path>
+                  <path class="is-line-mark" d="M8 9v4.1h2.4M11.7 9v4.1M13.4 13.1V9l2.8 4.1V9M19 9h-2v4.1h2"></path>
+                </svg>
+              </span>
+              <span class="challenge-result-share-copy">
+                <strong>LINEで送る</strong>
+                <small><span>結果画像＋</span><span>同じ10問への参加URL</span></small>
+              </span>
             </button>
             <button type="button" class="challenge-result-share-button x" data-action="share-result-x"
               ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
-              <strong>Xで結果を投稿</strong>
-              <small>結果画像＋同じ10問への参加URL</small>
+              <span class="challenge-result-share-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5.2 4.5h3.6l10 15h-3.6l-10-15z"></path>
+                  <path d="M18.6 4.5 5.5 19.5"></path>
+                </svg>
+              </span>
+              <span class="challenge-result-share-copy">
+                <strong>Xで結果を投稿</strong>
+                <small><span>結果画像＋</span><span>同じ10問への参加URL</span></small>
+              </span>
             </button>
             <button type="button" class="challenge-result-share-button image" data-action="save-result-image"
               ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
-              <strong>${state.resultImageUrl ? '画像だけ保存' : '画像を準備中…'}</strong>
+              <span class="challenge-result-share-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M12 3.8v10.8M7.8 10.7 12 14.9l4.2-4.2"></path>
+                  <path d="M5 14.5v4.8h14v-4.8"></path>
+                </svg>
+              </span>
+              <span class="challenge-result-share-copy">
+                <strong>${state.resultImageUrl ? '画像だけ保存' : '画像を準備中…'}</strong>
+                <small>端末へダウンロード</small>
+              </span>
             </button>
           </div>
         </section>
