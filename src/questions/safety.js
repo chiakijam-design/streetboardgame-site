@@ -17,7 +17,7 @@ export const QUESTION_REVIEW_CRITERIA = '性的内容、いじめ、容姿攻撃
 export const QUESTION_PUBLICATION_NOTICE = '送信した内容は運営が編集し、他の利用者へ公開する可能性があります。';
 
 const PERSONAL_INFO_RULES = [
-  ['real-name', /(?:本名|氏名|フルネーム|名字と名前|苗字と名前)|(?:^|[\s、。・])[\p{Script=Han}]{1,5}[\s　]+[\p{Script=Han}]{1,5}(?:$|[\s、。・])/u],
+  ['real-name', /(?:本名|氏名|フルネーム|名字と名前|苗字と名前)|(?:^|[\n\r、。・ \t　])[\p{Script=Han}]{1,5}[ \t　]+[\p{Script=Han}]{1,5}(?=$|[\n\r、。・ \t　])/u],
   ['school-name', /(?:学校名|校名|通っている学校|在学中の学校|所属校)|[\p{Script=Han}\p{Script=Katakana}A-Za-z0-9]{2,24}(?:小学校|中学校|高等学校|高校|大学|専門学校|学園)/u],
   ['sns-id', /(?:^|[\s(（])@[A-Za-z0-9_.-]{2,30}\b|(?:LINE|Instagram|インスタ|Twitter|TikTok|SNS)\s*(?:ID|アカウント|ユーザー名)\s*[:：]?\s*[@A-Za-z0-9_.-]{2,30}/iu],
   ['phone-number', /(?:\+81[-\s]?\d{1,4}[-\s]?\d{1,4}[-\s]?\d{3,4}|0\d{1,4}[-‐‑‒–—―ー－\s]\d{1,4}[-‐‑‒–—―ー－\s]\d{3,4}|0[789]0\d{8})/u],

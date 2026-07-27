@@ -1,0 +1,926 @@
+{
+  "generatedAt": "2026-07-27",
+  "status": "held",
+  "sources": [
+    {
+      "key": "100MON",
+      "name": "100の質問ひろば",
+      "url": "https://100mon.jp/",
+      "count": 40
+    },
+    {
+      "key": "CSW",
+      "name": "Conversation Starters World",
+      "url": "https://conversationstartersworld.com/",
+      "count": 35
+    },
+    {
+      "key": "RANK",
+      "name": "みんなのランキング",
+      "url": "https://ranking.net/",
+      "count": 25
+    }
+  ],
+  "candidates": [
+    {
+      "id": "HLD101",
+      "sourceRef": "100MON-001",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4336",
+      "category": "日常・生活",
+      "title": "一日の中で一番元気なのは",
+      "choices": ["朝", "昼", "夕方", "夜", "深夜"]
+    },
+    {
+      "id": "HLD102",
+      "sourceRef": "100MON-002",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/2273",
+      "category": "日常・生活",
+      "title": "目覚ましが鳴った後の動きは",
+      "choices": ["すぐ起きる", "一度だけ止める", "何度も止める", "スマホを見る", "目覚ましを使わない"]
+    },
+    {
+      "id": "HLD103",
+      "sourceRef": "100MON-003",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4336",
+      "category": "日常・生活",
+      "title": "身支度で一番時間をかけるのは",
+      "choices": ["髪", "服", "スキンケア", "持ち物確認", "朝ごはん"]
+    },
+    {
+      "id": "HLD104",
+      "sourceRef": "100MON-004",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "日常・生活",
+      "title": "気分転換したくなるのは",
+      "choices": ["勉強の途中", "予定の合間", "帰宅した時", "夜ふかし中", "特に決まっていない"]
+    },
+    {
+      "id": "HLD105",
+      "sourceRef": "100MON-005",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3525",
+      "category": "日常・生活",
+      "title": "予定より早く着いたら",
+      "choices": ["周りを歩く", "お店に入る", "スマホを見る", "先に連絡する", "待つ場所を探す"]
+    },
+    {
+      "id": "HLD106",
+      "sourceRef": "100MON-006",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4336",
+      "category": "日常・生活",
+      "title": "机の上に残りがちなのは",
+      "choices": ["ペン", "飲み物", "お菓子", "紙やプリント", "何も残さない"]
+    },
+    {
+      "id": "HLD107",
+      "sourceRef": "100MON-007",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3901",
+      "category": "好み・持ち物",
+      "title": "新しい文房具で気になるのは",
+      "choices": ["ボールペン", "シャープペン", "ノート", "ふせん", "ペンケース"]
+    },
+    {
+      "id": "HLD108",
+      "sourceRef": "100MON-008",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "日常・生活",
+      "title": "5分だけ休めるなら",
+      "choices": ["スマホを見る", "飲み物を飲む", "目を閉じる", "誰かと話す", "体を伸ばす"]
+    },
+    {
+      "id": "HLD109",
+      "sourceRef": "100MON-009",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4336",
+      "category": "食べ物・飲み物",
+      "title": "初めてのお店で選ぶ基準は",
+      "choices": ["写真", "人気メニュー", "値段", "おすすめ表示", "直感"]
+    },
+    {
+      "id": "HLD110",
+      "sourceRef": "100MON-010",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "日常・生活",
+      "title": "落ち着いて座れる場所は",
+      "choices": ["窓ぎわ", "壁ぎわ", "部屋の隅", "真ん中", "外が見える所"]
+    },
+    {
+      "id": "HLD111",
+      "sourceRef": "100MON-011",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "おでかけ・移動",
+      "title": "長い移動時間の過ごし方は",
+      "choices": ["音楽", "動画", "睡眠", "景色を見る", "会話"]
+    },
+    {
+      "id": "HLD112",
+      "sourceRef": "100MON-012",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3525",
+      "category": "思い出・記録",
+      "title": "何度も見返したくなるのは",
+      "choices": ["昔の写真", "メッセージ", "推しの動画", "好きな作品", "あまり見返さない"]
+    },
+    {
+      "id": "HLD113",
+      "sourceRef": "100MON-013",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "予定・行動",
+      "title": "予定を立てる時に最初に決めるのは",
+      "choices": ["日にち", "場所", "予算", "一緒に行く人", "やりたいこと"]
+    },
+    {
+      "id": "HLD114",
+      "sourceRef": "100MON-014",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4336",
+      "category": "趣味・挑戦",
+      "title": "新しい趣味を選ぶポイントは",
+      "choices": ["一人でできる", "上達を感じる", "お金がかからない", "作品が残る", "外で楽しめる"]
+    },
+    {
+      "id": "HLD115",
+      "sourceRef": "100MON-015",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "勉強・集中",
+      "title": "集中が切れた時に戻る方法は",
+      "choices": ["飲み物", "音楽", "少し歩く", "時間を決め直す", "一度やめる"]
+    },
+    {
+      "id": "HLD116",
+      "sourceRef": "100MON-016",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3525",
+      "category": "思い出・記録",
+      "title": "思い出に残りやすい一日は",
+      "choices": ["大笑いした日", "挑戦した日", "ハプニングの日", "おいしい物を食べた日", "何気ない日"]
+    },
+    {
+      "id": "HLD117",
+      "sourceRef": "100MON-017",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3901",
+      "category": "思い出・過去",
+      "title": "子どもの頃に欲しかったのは",
+      "choices": ["ゲーム", "ペット", "秘密基地", "自分の部屋", "大人の自由"]
+    },
+    {
+      "id": "HLD118",
+      "sourceRef": "100MON-018",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3525",
+      "category": "思い出・過去",
+      "title": "昔よく描いていたのは",
+      "choices": ["人", "動物", "キャラクター", "風景", "意味のない落書き"]
+    },
+    {
+      "id": "HLD119",
+      "sourceRef": "100MON-019",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "思い出・過去",
+      "title": "遠足の前日に楽しみだったのは",
+      "choices": ["お菓子", "お弁当", "乗り物", "行き先", "自由時間"]
+    },
+    {
+      "id": "HLD120",
+      "sourceRef": "100MON-020",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3525",
+      "category": "思い出・過去",
+      "title": "懐かしいと感じる匂いは",
+      "choices": ["給食", "雨上がり", "プール", "文房具", "お祭り"]
+    },
+    {
+      "id": "HLD121",
+      "sourceRef": "100MON-021",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3525",
+      "category": "思い出・記録",
+      "title": "写真を見て最初に思い出すのは",
+      "choices": ["場所", "写っている人", "その時の会話", "その日の気分", "撮った理由"]
+    },
+    {
+      "id": "HLD122",
+      "sourceRef": "100MON-022",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3901",
+      "category": "食べ物・思い出",
+      "title": "もう一度食べたい懐かしい味は",
+      "choices": ["給食", "駄菓子", "家の料理", "旅先の料理", "昔あった店の味"]
+    },
+    {
+      "id": "HLD123",
+      "sourceRef": "100MON-023",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3525",
+      "category": "自分・変化",
+      "title": "昔の自分と一番変わったのは",
+      "choices": ["好み", "性格", "生活リズム", "考え方", "ほとんど変わらない"]
+    },
+    {
+      "id": "HLD124",
+      "sourceRef": "100MON-024",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3525",
+      "category": "思い出・記録",
+      "title": "今も手元に残しているのは",
+      "choices": ["写真", "手紙", "おもちゃ", "チケット", "ほとんど残していない"]
+    },
+    {
+      "id": "HLD125",
+      "sourceRef": "100MON-025",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/3901",
+      "category": "思い出・成長",
+      "title": "初めて一人でできて嬉しかったのは",
+      "choices": ["買い物", "料理", "電車やバス", "留守番", "人前での発表"]
+    },
+    {
+      "id": "HLD126",
+      "sourceRef": "100MON-026",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "自分・変化",
+      "title": "過去の自分に見せたいのは",
+      "choices": ["今の部屋", "今のスマホ", "作った作品", "かなえた目標", "今の日常"]
+    },
+    {
+      "id": "HLD127",
+      "sourceRef": "100MON-027",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4336",
+      "category": "趣味・きっかけ",
+      "title": "最近の好きが始まるきっかけは",
+      "choices": ["SNS", "おすすめ", "お店で発見", "偶然見つける", "昔から好き"]
+    },
+    {
+      "id": "HLD128",
+      "sourceRef": "100MON-028",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4336",
+      "category": "趣味・得意",
+      "title": "気づくと詳しくなっているのは",
+      "choices": ["音楽", "食べ物", "ゲーム", "美容", "雑学"]
+    },
+    {
+      "id": "HLD129",
+      "sourceRef": "100MON-029",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "趣味・得意",
+      "title": "人に説明しやすい得意分野は",
+      "choices": ["趣味", "得意教科", "地元の情報", "スマホの使い方", "日常の小技"]
+    },
+    {
+      "id": "HLD130",
+      "sourceRef": "100MON-030",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4336",
+      "category": "好み・持ち物",
+      "title": "一つだけ集めるなら",
+      "choices": ["文房具", "キーホルダー", "写真", "本", "服"]
+    },
+    {
+      "id": "HLD131",
+      "sourceRef": "100MON-031",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4336",
+      "category": "好み・新商品",
+      "title": "新商品で一番気になるのは",
+      "choices": ["期間限定のお菓子", "新しい飲み物", "コスメ", "文房具", "ガジェット"]
+    },
+    {
+      "id": "HLD132",
+      "sourceRef": "100MON-032",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4436",
+      "category": "SNS・推し",
+      "title": "一番テンションが上がる通知は",
+      "choices": ["推しの更新", "荷物の発送", "イベント当選", "待っていた返信", "セール開始"]
+    },
+    {
+      "id": "HLD133",
+      "sourceRef": "100MON-033",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "気分・本音",
+      "title": "自分の機嫌を直しやすいのは",
+      "choices": ["寝る", "食べる", "話す", "外に出る", "音楽を聴く"]
+    },
+    {
+      "id": "HLD134",
+      "sourceRef": "100MON-034",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "意外な一面",
+      "title": "意外と言われやすい過ごし方は",
+      "choices": ["一人で遠出", "休日も早起き", "無音で過ごす", "急に掃除する", "予定を詰める"]
+    },
+    {
+      "id": "HLD135",
+      "sourceRef": "100MON-035",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "日常・生活",
+      "title": "今の自分に足したい時間は",
+      "choices": ["睡眠", "趣味", "勉強", "運動", "ぼーっとする"]
+    },
+    {
+      "id": "HLD136",
+      "sourceRef": "100MON-036",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4436",
+      "category": "動画・SNS",
+      "title": "つい最後まで見てしまう動画は",
+      "choices": ["メイク", "料理", "検証", "動物", "ルーティン"]
+    },
+    {
+      "id": "HLD137",
+      "sourceRef": "100MON-037",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/4336",
+      "category": "好み・ギフト",
+      "title": "もらったら使い切れそうなのは",
+      "choices": ["コンビニ券", "カフェ券", "本の券", "音楽の券", "ゲームの券"]
+    },
+    {
+      "id": "HLD138",
+      "sourceRef": "100MON-038",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/5308",
+      "category": "日常・生活",
+      "title": "いつもより少し特別にするなら",
+      "choices": ["朝ごはん", "服", "帰り道", "お風呂", "夜の過ごし方"]
+    },
+    {
+      "id": "HLD139",
+      "sourceRef": "100MON-039",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/322",
+      "category": "季節・休日",
+      "title": "暑い日の帰り道に欲しいのは",
+      "choices": ["冷たい水", "アイス", "日かげ", "涼しい店", "早く帰る近道"]
+    },
+    {
+      "id": "HLD140",
+      "sourceRef": "100MON-040",
+      "sourceName": "100の質問ひろば",
+      "sourceUrl": "https://100mon.jp/q/322",
+      "category": "季節・夏",
+      "title": "夏の夜にしたいのは",
+      "choices": ["花火", "夜の散歩", "映画", "冷たいデザート", "早く寝る"]
+    },
+    {
+      "id": "HLD141",
+      "sourceRef": "CSW-001",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "会話・得意",
+      "title": "準備なしで長く話せるのは",
+      "choices": ["推し", "地元", "趣味", "食べ物", "学校生活"]
+    },
+    {
+      "id": "HLD142",
+      "sourceRef": "CSW-002",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "学び・挑戦",
+      "title": "何でも無料で習えるなら",
+      "choices": ["語学", "楽器", "料理", "動画編集", "スポーツ"]
+    },
+    {
+      "id": "HLD143",
+      "sourceRef": "CSW-003",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・時代",
+      "title": "一日だけ別の時代へ行くなら",
+      "choices": ["江戸時代", "昭和", "2000年代", "100年後", "恐竜の時代"]
+    },
+    {
+      "id": "HLD144",
+      "sourceRef": "CSW-004",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・空間",
+      "title": "部屋に秘密の扉をつけるなら行き先は",
+      "choices": ["海辺", "宇宙", "大きな図書館", "ライブ会場", "温泉"]
+    },
+    {
+      "id": "HLD145",
+      "sourceRef": "CSW-005",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "趣味・集中",
+      "title": "時間があっという間に過ぎるのは",
+      "choices": ["何かを作る", "動画を見る", "会話する", "ゲーム", "寝ている時"]
+    },
+    {
+      "id": "HLD146",
+      "sourceRef": "CSW-006",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "休日・おすすめ",
+      "title": "人におすすめしたい休日は",
+      "choices": ["朝から出かける", "街を歩く", "映画を見る", "食べ歩く", "家にこもる"]
+    },
+    {
+      "id": "HLD147",
+      "sourceRef": "CSW-007",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "挑戦・本音",
+      "title": "新しいことを始める時の壁は",
+      "choices": ["時間", "お金", "難しさ", "周りの目", "続けられるか"]
+    },
+    {
+      "id": "HLD148",
+      "sourceRef": "CSW-008",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・日常",
+      "title": "一つだけ日常の不便をなくすなら",
+      "choices": ["通学や移動", "充電", "待ち時間", "片付け", "忘れ物"]
+    },
+    {
+      "id": "HLD149",
+      "sourceRef": "CSW-009",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "おでかけ・冒険",
+      "title": "知らない街で一日過ごすなら",
+      "choices": ["地図どおりに歩く", "名物を食べる", "気になる店に入る", "写真を撮る", "目的を決めず歩く"]
+    },
+    {
+      "id": "HLD150",
+      "sourceRef": "CSW-010",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・未来",
+      "title": "未来の自分から届いてほしいのは",
+      "choices": ["手紙", "写真", "完成した作品", "おすすめの本", "未来の地図"]
+    },
+    {
+      "id": "HLD151",
+      "sourceRef": "CSW-011",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・学び",
+      "title": "どこでも授業を受けられるなら",
+      "choices": ["海辺", "博物館", "宇宙船", "森", "音楽スタジオ"]
+    },
+    {
+      "id": "HLD152",
+      "sourceRef": "CSW-012",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "将来・目標",
+      "title": "1年後にできていたいのは",
+      "choices": ["外国語で会話", "得意料理を作る", "体力をつける", "貯金を続ける", "作品を完成させる"]
+    },
+    {
+      "id": "HLD153",
+      "sourceRef": "CSW-013",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・部屋",
+      "title": "自分の部屋に追加するなら",
+      "choices": ["防音設備", "大画面", "大きな収納", "ミニ冷蔵庫", "自由に変わる照明"]
+    },
+    {
+      "id": "HLD154",
+      "sourceRef": "CSW-014",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・日常",
+      "title": "一つだけ毎日自動にするなら",
+      "choices": ["片付け", "洗濯", "食事の準備", "移動", "予定管理"]
+    },
+    {
+      "id": "HLD155",
+      "sourceRef": "CSW-015",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "将来・体験",
+      "title": "一週間だけ仕事を体験するなら",
+      "choices": ["人気店", "舞台の裏側", "動物に関わる仕事", "デザイン制作", "宇宙研究"]
+    },
+    {
+      "id": "HLD156",
+      "sourceRef": "CSW-016",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "会話・初対面",
+      "title": "初対面でも話しやすい話題は",
+      "choices": ["食べ物", "音楽", "休日", "地元", "最近の出来事"]
+    },
+    {
+      "id": "HLD157",
+      "sourceRef": "CSW-017",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "会話・価値観",
+      "title": "意見が違った時に最初にするのは",
+      "choices": ["理由を聞く", "自分の理由を話す", "共通点を探す", "一度保留する", "軽く笑いにする"]
+    },
+    {
+      "id": "HLD158",
+      "sourceRef": "CSW-018",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "会話・相談",
+      "title": "相談する時に求めているのは",
+      "choices": ["共感", "具体的な案", "考える質問", "背中を押す言葉", "静かに聞くこと"]
+    },
+    {
+      "id": "HLD159",
+      "sourceRef": "CSW-019",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "会話・ほめ言葉",
+      "title": "一番うれしいほめられ方は",
+      "choices": ["前より上達した", "よく頑張った", "発想がいい", "やさしい", "頼りになる"]
+    },
+    {
+      "id": "HLD160",
+      "sourceRef": "CSW-020",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "会話・本音",
+      "title": "会話が途切れた時の反応は",
+      "choices": ["新しい話題を出す", "質問する", "周りの話をする", "沈黙を気にしない", "スマホを見る"]
+    },
+    {
+      "id": "HLD161",
+      "sourceRef": "CSW-021",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "会話・興味",
+      "title": "会話でつい聞きたくなるのは",
+      "choices": ["最近ハマったもの", "好きになった理由", "始めたきっかけ", "一番のおすすめ", "次にやりたいこと"]
+    },
+    {
+      "id": "HLD162",
+      "sourceRef": "CSW-022",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "会話・理解",
+      "title": "理解してもらえたと感じるのは",
+      "choices": ["言葉を覚えている", "変化に気づく", "沈黙でも平気", "好みを分かっている", "無理を言わない"]
+    },
+    {
+      "id": "HLD163",
+      "sourceRef": "CSW-023",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・勇気",
+      "title": "10分だけ勇気が増えるなら",
+      "choices": ["発表する", "話しかける", "断る", "新しい挑戦", "素直に謝る"]
+    },
+    {
+      "id": "HLD164",
+      "sourceRef": "CSW-024",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "会話・初対面",
+      "title": "新しい集まりで最初に見るのは",
+      "choices": ["場の雰囲気", "人数", "知っている人", "座る場所", "進める人"]
+    },
+    {
+      "id": "HLD165",
+      "sourceRef": "CSW-025",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "会話・記憶",
+      "title": "人の話で覚えやすいのは",
+      "choices": ["結論", "エピソード", "その時の気持ち", "印象的な言葉", "身ぶり"]
+    },
+    {
+      "id": "HLD166",
+      "sourceRef": "CSW-026",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "予定・調整",
+      "title": "予定が合わない時に選ぶのは",
+      "choices": ["別の日", "短い時間だけ", "オンライン", "次の機会", "今回は見送る"]
+    },
+    {
+      "id": "HLD167",
+      "sourceRef": "CSW-027",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "会話・本音",
+      "title": "本音を伝えやすい方法は",
+      "choices": ["会って話す", "電話", "メッセージ", "夜に話す", "歩きながら話す"]
+    },
+    {
+      "id": "HLD168",
+      "sourceRef": "CSW-028",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/questions-to-get-to-know-someone/",
+      "category": "価値観・相性",
+      "title": "価値観が近いと感じるのは",
+      "choices": ["お金の使い方", "時間の感覚", "笑うポイント", "連絡のペース", "食の好み"]
+    },
+    {
+      "id": "HLD169",
+      "sourceRef": "CSW-029",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "会話・反応",
+      "title": "意外な答えを聞いた時に知りたいのは",
+      "choices": ["理由", "いつからか", "具体的な話", "自分との違い", "まず驚きを伝える"]
+    },
+    {
+      "id": "HLD170",
+      "sourceRef": "CSW-030",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/topics-to-talk-about/",
+      "category": "会話・説明",
+      "title": "理由を聞かれた時の答え方は",
+      "choices": ["すぐ説明", "少し考える", "例え話を使う", "感覚だと答える", "相手によって変える"]
+    },
+    {
+      "id": "HLD171",
+      "sourceRef": "CSW-031",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・冒険",
+      "title": "毎週できる小さな冒険は",
+      "choices": ["一駅前で降りる", "初めての店", "違う道で帰る", "新しい料理", "初めての体験"]
+    },
+    {
+      "id": "HLD172",
+      "sourceRef": "CSW-032",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・未来",
+      "title": "未来で広まりそうなのは",
+      "choices": ["AIの相棒", "仮想空間の学校", "宇宙旅行", "温度が変わる服", "家事ロボット"]
+    },
+    {
+      "id": "HLD173",
+      "sourceRef": "CSW-033",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・記憶",
+      "title": "思い出を一つの形で保存するなら",
+      "choices": ["音", "匂い", "景色", "会話", "その時の気持ち"]
+    },
+    {
+      "id": "HLD174",
+      "sourceRef": "CSW-034",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・能力",
+      "title": "一日だけ得られる才能は",
+      "choices": ["歌", "絵", "記憶力", "運動", "話す力"]
+    },
+    {
+      "id": "HLD175",
+      "sourceRef": "CSW-035",
+      "sourceName": "Conversation Starters World",
+      "sourceUrl": "https://conversationstartersworld.com/hypothetical-questions/",
+      "category": "もしも・道具",
+      "title": "自分専用ロボットに頼みたいのは",
+      "choices": ["片付け", "料理", "勉強の手伝い", "写真や記録", "動画編集"]
+    },
+    {
+      "id": "HLD176",
+      "sourceRef": "RANK-001",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "趣味・休日",
+      "title": "休みの日に長く楽しめそうな趣味は",
+      "choices": ["音楽鑑賞", "アニメ", "旅行", "読書", "ゲーム"]
+    },
+    {
+      "id": "HLD177",
+      "sourceRef": "RANK-002",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "趣味・作品",
+      "title": "物語を楽しむ方法は",
+      "choices": ["映画館", "動画配信", "小説", "漫画", "舞台"]
+    },
+    {
+      "id": "HLD178",
+      "sourceRef": "RANK-003",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "趣味・道具",
+      "title": "趣味の道具を一つ買うなら",
+      "choices": ["カメラ", "楽器", "調理器具", "スポーツ用品", "画材"]
+    },
+    {
+      "id": "HLD179",
+      "sourceRef": "RANK-004",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "趣味・運動",
+      "title": "体を動かして楽しむなら",
+      "choices": ["ダンス", "ランニング", "水泳", "球技", "ハイキング"]
+    },
+    {
+      "id": "HLD180",
+      "sourceRef": "RANK-005",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "趣味・ものづくり",
+      "title": "ものづくりを始めるなら",
+      "choices": ["お菓子", "アクセサリー", "動画", "イラスト", "DIY"]
+    },
+    {
+      "id": "HLD181",
+      "sourceRef": "RANK-006",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/most-favorite-food",
+      "category": "食べ物・主食",
+      "title": "ご飯ものを一つ頼むなら",
+      "choices": ["カレー", "オムライス", "チャーハン", "丼もの", "ドリア"]
+    },
+    {
+      "id": "HLD182",
+      "sourceRef": "RANK-007",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/most-favorite-food",
+      "category": "食べ物・揚げ物",
+      "title": "揚げたてで食べたいのは",
+      "choices": ["唐揚げ", "フライドポテト", "とんかつ", "天ぷら", "コロッケ"]
+    },
+    {
+      "id": "HLD183",
+      "sourceRef": "RANK-008",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/most-favorite-food",
+      "category": "食べ物・カフェ",
+      "title": "カフェで飲み物と一緒に頼むなら",
+      "choices": ["ケーキ", "パフェ", "パンケーキ", "プリン", "アイス"]
+    },
+    {
+      "id": "HLD184",
+      "sourceRef": "RANK-009",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/most-favorite-food",
+      "category": "食べ物・気分",
+      "title": "疲れた日に食べたくなるのは",
+      "choices": ["ラーメン", "カレー", "焼肉", "お茶漬け", "甘いもの"]
+    },
+    {
+      "id": "HLD185",
+      "sourceRef": "RANK-010",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/lifestyle/cooking",
+      "category": "食べ物・果物",
+      "title": "朝に食べたい果物は",
+      "choices": ["バナナ", "りんご", "みかん", "ぶどう", "キウイ"]
+    },
+    {
+      "id": "HLD186",
+      "sourceRef": "RANK-011",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/lifestyle/cooking",
+      "category": "飲み物・好み",
+      "title": "飲み物の温度の好みは",
+      "choices": ["常温", "冷たい", "熱い", "氷多め", "季節で変わる"]
+    },
+    {
+      "id": "HLD187",
+      "sourceRef": "RANK-012",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "おでかけ・街",
+      "title": "近所に新しくできてほしいのは",
+      "choices": ["カフェ", "本屋", "ゲームセンター", "100円ショップ", "食品のお店"]
+    },
+    {
+      "id": "HLD188",
+      "sourceRef": "RANK-013",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "おでかけ・施設",
+      "title": "一日いられそうな施設は",
+      "choices": ["水族館", "テーマパーク", "カラオケ", "美術館", "ショッピングモール"]
+    },
+    {
+      "id": "HLD189",
+      "sourceRef": "RANK-014",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "趣味・アウトドア",
+      "title": "外で一度やってみたいのは",
+      "choices": ["カヌー", "サイクリング", "ボルダリング", "スキー", "乗馬"]
+    },
+    {
+      "id": "HLD190",
+      "sourceRef": "RANK-015",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "ファッション・靴",
+      "title": "普段いちばん履きたい靴は",
+      "choices": ["スニーカー", "ローファー", "サンダル", "ブーツ", "スリッポン"]
+    },
+    {
+      "id": "HLD191",
+      "sourceRef": "RANK-016",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "ファッション・持ち物",
+      "title": "普段使いのバッグを選ぶなら",
+      "choices": ["小さめバッグ", "リュック", "トートバッグ", "ショルダーバッグ", "バッグを持たない"]
+    },
+    {
+      "id": "HLD192",
+      "sourceRef": "RANK-017",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "家・インテリア",
+      "title": "部屋の雰囲気で好きなのは",
+      "choices": ["シンプル", "ナチュラル", "カラフル", "レトロ", "未来的"]
+    },
+    {
+      "id": "HLD193",
+      "sourceRef": "RANK-018",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "イベント・席",
+      "title": "イベント会場で選びたい席は",
+      "choices": ["前の方", "中央", "通路側", "後ろでゆったり", "移動しやすい所"]
+    },
+    {
+      "id": "HLD194",
+      "sourceRef": "RANK-019",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "エンタメ・イベント",
+      "title": "生で見に行きたいものは",
+      "choices": ["音楽ライブ", "お笑い", "演劇", "スポーツ", "トークイベント"]
+    },
+    {
+      "id": "HLD195",
+      "sourceRef": "RANK-020",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "景色・空",
+      "title": "ずっと見ていられそうな空は",
+      "choices": ["快晴", "大きな雲", "夕焼け", "星空", "雨の空"]
+    },
+    {
+      "id": "HLD196",
+      "sourceRef": "RANK-021",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-hobbies",
+      "category": "音・リラックス",
+      "title": "落ち着く環境音は",
+      "choices": ["雨", "波", "たき火", "キーボード", "カフェ"]
+    },
+    {
+      "id": "HLD197",
+      "sourceRef": "RANK-022",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/lifestyle/cooking",
+      "category": "食べ物・朝食",
+      "title": "休日の朝ごはんにしたいのは",
+      "choices": ["パンケーキ", "和食", "パン屋のパン", "飲み物だけ", "遅めのブランチ"]
+    },
+    {
+      "id": "HLD198",
+      "sourceRef": "RANK-023",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/lifestyle/cooking",
+      "category": "飲み物・自販機",
+      "title": "自動販売機で選びがちなのは",
+      "choices": ["水", "お茶", "炭酸", "ジュース", "温かい飲み物"]
+    },
+    {
+      "id": "HLD199",
+      "sourceRef": "RANK-024",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/most-favorite-food",
+      "category": "食べ物・コンビニ",
+      "title": "コンビニスイーツで選ぶなら",
+      "choices": ["プリン", "アイス", "シュークリーム", "チョコ菓子", "期間限定"]
+    },
+    {
+      "id": "HLD200",
+      "sourceRef": "RANK-025",
+      "sourceName": "みんなのランキング",
+      "sourceUrl": "https://ranking.net/rankings/best-kyushoku",
+      "category": "食べ物・給食",
+      "title": "給食でおかわりしたくなるのは",
+      "choices": ["カレー", "揚げパン", "わかめご飯", "フルーツポンチ", "唐揚げ"]
+    }
+  ]
+}
