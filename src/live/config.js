@@ -63,3 +63,16 @@ export const LIVE_RESULT_IMAGE_SERVICE = Object.freeze({
   downloadDays: 30,
 });
 export const LIVE_SUPPORT_AMOUNTS = Object.freeze([180, 480, 980, 1980, 2980]);
+export const LIVE_SUPPORT_TIERS = Object.freeze([
+  Object.freeze({ amount: 180, tier: 1, colorName: '青' }),
+  Object.freeze({ amount: 480, tier: 2, colorName: '水色' }),
+  Object.freeze({ amount: 980, tier: 3, colorName: '緑' }),
+  Object.freeze({ amount: 1980, tier: 4, colorName: '黄' }),
+  Object.freeze({ amount: 2980, tier: 5, colorName: '橙' }),
+]);
+
+export function liveSupportTier(amount) {
+  const numericAmount = Number(amount) || 0;
+  return LIVE_SUPPORT_TIERS.find((item) => item.amount === numericAmount)
+    || LIVE_SUPPORT_TIERS[0];
+}

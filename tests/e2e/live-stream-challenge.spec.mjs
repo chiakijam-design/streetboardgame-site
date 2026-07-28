@@ -392,6 +392,57 @@ test('視聴者はLIVEチャットへ投稿でき、5段階の応援金額を選
   ]);
 });
 
+test('配信者には金額色付きの応援通知を確認するまで固定表示する', async ({ page }) => {
+  const hostToken = 'h'.repeat(48);
+  const supportMessage = {
+    id: 'support_paid_2980',
+    participantId: 'participant-supporter',
+    name: '応援する視聴者',
+    role: 'viewer',
+    text: '配信とても楽しかったです！',
+    type: 'support',
+    amount: 2980,
+    createdAt: Date.now(),
+  };
+  await page.route('**/api/live/games/123456', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: '123456',
+        game: {
+          mode: 'stream-challenge',
+          phase: 'lobby',
+          subjectName: '配信者',
+          subjectToken: 's'.repeat(48),
+          participantCount: 4,
+          participantLimit: 1000,
+          questionCount: 10,
+          realtime: false,
+          chatEnabled: true,
+          chatMessages: [supportMessage],
+          supportPaymentsEnabled: true,
+          supportAmounts: [180, 480, 980, 1980, 2980],
+        },
+      }),
+    });
+  });
+  await page.goto(`/live-challenge?room=123456#host=${hostToken}`);
+
+  const hostAlert = page.getByTestId('live-support-host-alert');
+  await expect(hostAlert).toBeVisible();
+  await expect(hostAlert).toContainText('応援する視聴者さん');
+  await expect(hostAlert).toContainText('2,980円');
+  await expect(hostAlert).toHaveClass(/support-tier-5/);
+  await expect(page.locator('[data-chat-message-id="support_paid_2980"]')).toHaveClass(/support-tier-5/);
+
+  await hostAlert.getByRole('button', { name: '確認した' }).click();
+  await expect(hostAlert).toBeHidden();
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(sessionStorage.getItem('live-challenge:support-ack:123456') || '[]')
+  ))).toContain('support_paid_2980');
+});
+
 test('streamer and viewer answer ten questions and viewer receives a result card', async ({ page, context }, testInfo) => {
   const activeViewport = testInfo.project.name.includes('mobile')
     ? { width: 375, height: 667 }

@@ -5,6 +5,8 @@ import {
   LIVE_RESULT_IMAGE_PRICES,
   LIVE_REVENUE_POLICY,
   LIVE_SUPPORT_AMOUNTS,
+  LIVE_SUPPORT_TIERS,
+  liveSupportTier,
 } from '../../src/live/config.js';
 import { calculateLiveRevenueAllocation } from '../../src/live/revenue.js';
 
@@ -45,6 +47,7 @@ test('応援金の候補金額でもYouTuber 70%と名目手数料30%を維持�
     [180, 126, 54],
     [480, 336, 144],
     [980, 686, 294],
+    [1980, 1386, 594],
     [2980, 2086, 894],
   ];
   for (const [grossAmount, creatorAmount, applicationFeeAmount] of cases) {
@@ -57,6 +60,20 @@ test('応援金の候補金額でもYouTuber 70%と名目手数料30%を維持�
 test('結果画像と応援機能は指定された税込価格だけを候補にする', () => {
   assert.deepEqual(LIVE_RESULT_IMAGE_PRICES, [480, 980, 2980]);
   assert.deepEqual(LIVE_SUPPORT_AMOUNTS, [180, 480, 980, 1980, 2980]);
+});
+
+test('応援金額はYouTube型の5段階カラーへ昇順で対応する', () => {
+  assert.deepEqual(
+    LIVE_SUPPORT_TIERS.map(({ amount, tier, colorName }) => ({ amount, tier, colorName })),
+    [
+      { amount: 180, tier: 1, colorName: '青' },
+      { amount: 480, tier: 2, colorName: '水色' },
+      { amount: 980, tier: 3, colorName: '緑' },
+      { amount: 1980, tier: 4, colorName: '黄' },
+      { amount: 2980, tier: 5, colorName: '橙' },
+    ],
+  );
+  assert.equal(liveSupportTier(1980).tier, 4);
 });
 
 test('円未満の端数はYouTuber分を切り捨て、決済前は運営純額を推測しない', () => {

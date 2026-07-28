@@ -11,6 +11,7 @@ import {
   LIVE_RESULT_IMAGE_PRICES,
   LIVE_RESULT_IMAGE_SERVICE,
   LIVE_SUPPORT_AMOUNTS,
+  liveSupportTier,
 } from './src/live/config.js';
 import { CHECKOUT_TERMS } from './src/live/checkout-terms-config.js';
 import {
@@ -38,6 +39,7 @@ const initialPackSlug = String(url.searchParams.get('pack') || '').trim();
 const initialHostToken = new URLSearchParams(location.hash.slice(1)).get('host') || '';
 const savedParticipant = initialCode ? readSession(`live-challenge:${initialCode}`) : null;
 const quickStart = readCreatorQuickStart('live');
+const defaultDocumentTitle = document.title;
 function initialQuestions(cards) {
   const packed = questionPackCards(cards, initialPackSlug, isEnglish, QUESTION_COUNT, { includeLive: true });
   return (packed.length === QUESTION_COUNT ? packed : pickChallengeCards(cards, QUESTION_COUNT))
@@ -106,6 +108,10 @@ let state = {
   chatSending: false,
   chatSupportOpen: false,
   supportMessage: '',
+  unacknowledgedSupportMessages: [],
+  acknowledgedSupportMessageIds: initialCode
+    ? readSession(`live-challenge:support-ack:${initialCode}`) || []
+    : [],
 };
 let questionCatalogReady = false;
 const trackedLiveBuilderQuestions = new WeakSet();
@@ -143,7 +149,7 @@ function render() {
   const content = !state.loading && ['host', 'viewer'].includes(state.view) && state.game
     ? `<div class="live-session-layout"><div class="live-session-main">${primaryContent}</div>${liveChatView()}</div>`
     : primaryContent;
-  app.innerHTML = `${state.error ? `<div class="error" role="alert">${escapeHtml(errorText(state.error))}</div>` : ''}${content}`;
+  app.innerHTML = `${state.error ? `<div class="error" role="alert">${escapeHtml(errorText(state.error))}</div>` : ''}${content}${liveSupportHostAlertView()}`;
   localizeDom(app);
   bindEvents();
   trackCurrentLiveBuilderQuestionShown();
@@ -178,16 +184,17 @@ function liveChatView() {
 
 function liveChatMessageView(message) {
   const paid = message.type === 'support';
+  const supportTier = paid ? liveSupportTier(message.amount) : null;
   const ownMessage = message.participantId && message.participantId === state.game?.participantId;
   const time = new Date(Number(message.createdAt) || Date.now()).toLocaleTimeString(isEnglish ? 'en-US' : 'ja-JP', {
     hour: '2-digit',
     minute: '2-digit',
   });
-  return `<article class="live-chat-message ${paid ? 'is-support' : ''}" data-chat-message-id="${escapeHtml(message.id)}">
+  return `<article class="live-chat-message ${paid ? `is-support support-tier-${supportTier.tier}` : ''}" data-chat-message-id="${escapeHtml(message.id)}">
     <div class="live-chat-meta">
       <b>${escapeHtml(message.name || '視聴者')}</b>
       ${message.role === 'host' ? '<span class="host-badge">配信者</span>' : ''}
-      ${paid ? `<span class="support-badge">♥ ${number(message.amount)}円</span>` : ''}
+      ${paid ? `<span class="support-badge" aria-label="${escapeHtml(supportTier.colorName)}の応援メッセージ">♥ ${number(message.amount)}円</span>` : ''}
       <time>${escapeHtml(time)}</time>
     </div>
     <p>${escapeHtml(message.text)}</p>
@@ -213,11 +220,99 @@ function liveChatSupportView(enabled) {
         <span><a href="/terms" target="_blank" rel="noopener noreferrer">利用規約</a>・<a href="/legal" target="_blank" rel="noopener noreferrer">販売条件</a>・<a href="/refund-policy" target="_blank" rel="noopener noreferrer">返金条件</a>を確認し、未成年の場合は保護者の同意を得ています。</span>
       </label>
       <div class="chat-support-amounts" role="group" aria-label="応援金額を選ぶ">
-        ${amounts.map((amount) => `<button data-chat-support-amount="${amount}" ${!enabled || state.checkoutBusy || !state.checkoutTermsAccepted ? 'disabled' : ''}>${number(amount)}円</button>`).join('')}
+        ${amounts.map((amount) => {
+          const supportTier = liveSupportTier(amount);
+          return `<button class="support-tier-${supportTier.tier}" data-chat-support-amount="${amount}" ${!enabled || state.checkoutBusy || !state.checkoutTermsAccepted ? 'disabled' : ''}>${number(amount)}円</button>`;
+        }).join('')}
       </div>
       <p>決済完了後にチャットへ表示され、売上の70%が配信者へ分配されます。</p>
     </div>` : ''}
   </section>`;
+}
+
+function liveSupportHostAlertView() {
+  if (state.view !== 'host' || !state.unacknowledgedSupportMessages.length) return '';
+  const message = state.unacknowledgedSupportMessages[0];
+  const supportTier = liveSupportTier(message.amount);
+  const unreadLabel = state.unacknowledgedSupportMessages.length > 1
+    ? (isEnglish
+      ? ` · ${number(state.unacknowledgedSupportMessages.length)} unconfirmed`
+      : `・未確認${number(state.unacknowledgedSupportMessages.length)}件`)
+    : '';
+  return `<section class="live-support-host-alert support-tier-${supportTier.tier}" role="alert" aria-live="assertive" data-testid="live-support-host-alert">
+    <div class="live-support-host-alert__pulse" aria-hidden="true">♥</div>
+    <div class="live-support-host-alert__body">
+      <small>${isEnglish ? 'Support received' : '応援が届きました'}${unreadLabel}</small>
+      <strong>${escapeHtml(message.name || (isEnglish ? 'Viewer' : '視聴者'))}${isEnglish ? '' : 'さん'}　${isEnglish ? `¥${number(message.amount)}` : `${number(message.amount)}円`}</strong>
+      <p>${escapeHtml(message.text)}</p>
+    </div>
+    <button data-action="acknowledge-live-support" data-message-id="${escapeHtml(message.id)}">${isEnglish ? 'Got it' : '確認した'}</button>
+  </section>`;
+}
+
+function syncHostSupportAlerts(game) {
+  if (state.view !== 'host') return [];
+  const acknowledged = new Set(state.acknowledgedSupportMessageIds || []);
+  const pendingIds = new Set(state.unacknowledgedSupportMessages.map((message) => message.id));
+  const visibleSupportMessages = (game?.chatMessages || [])
+    .filter((message) => message?.type === 'support' && message.id && !acknowledged.has(message.id));
+  const added = visibleSupportMessages.filter((message) => !pendingIds.has(message.id));
+  state.unacknowledgedSupportMessages = visibleSupportMessages;
+  return added;
+}
+
+function announceLiveSupportMessages(messages) {
+  if (!messages.length || state.view !== 'host') return;
+  const highestTier = Math.max(...messages.map((message) => liveSupportTier(message.amount).tier));
+  document.title = `♥ ${isEnglish ? 'Support received!' : '応援が届きました！'} | ${defaultDocumentTitle}`;
+  document.documentElement.dataset.liveSupportAlert = 'true';
+  try {
+    navigator.vibrate?.(highestTier >= 4 ? [180, 80, 180, 80, 280] : [160, 80, 220]);
+  } catch (error) {
+    // Vibration is optional and may be unavailable.
+  }
+  playLiveSupportAlertSound(highestTier);
+}
+
+function playLiveSupportAlertSound(tier) {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const now = context.currentTime;
+    const notes = tier >= 4 ? [659.25, 783.99, 1046.5] : [659.25, 880];
+    notes.forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const start = now + index * 0.14;
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.22, start + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.24);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start(start);
+      oscillator.stop(start + 0.25);
+    });
+    window.setTimeout(() => context.close().catch(() => {}), 1000);
+  } catch (error) {
+    // Visual acknowledgement remains available when autoplay/audio is blocked.
+  }
+}
+
+function acknowledgeLiveSupportMessage(messageId) {
+  if (!messageId) return;
+  const acknowledged = new Set(state.acknowledgedSupportMessageIds || []);
+  acknowledged.add(messageId);
+  state.acknowledgedSupportMessageIds = [...acknowledged].slice(-200);
+  state.unacknowledgedSupportMessages = state.unacknowledgedSupportMessages
+    .filter((message) => message.id !== messageId);
+  writeSession(`live-challenge:support-ack:${state.code}`, state.acknowledgedSupportMessageIds);
+  if (!state.unacknowledgedSupportMessages.length) {
+    document.title = defaultDocumentTitle;
+    delete document.documentElement.dataset.liveSupportAlert;
+  }
+  render();
 }
 
 function trackCurrentLiveBuilderQuestionShown() {
@@ -687,7 +782,10 @@ function liveCheckoutView() {
     ${resultEnabled ? `<div class="notice"><strong>${LIVE_RESULT_IMAGE_SERVICE.name}</strong><br>${LIVE_RESULT_IMAGE_SERVICE.resolution}の高画質画像を生成し、決済日から${LIVE_RESULT_IMAGE_SERVICE.downloadDays}日間ダウンロードできます。</div>
       <button class="primary" data-action="buy-result-image" ${state.checkoutBusy || !state.checkoutTermsAccepted || !price ? 'disabled' : ''}>${state.checkoutBusy ? 'Stripeへ接続中…' : `${number(price)}円（税込）で申し込む`}</button>` : ''}
     ${supportEnabled ? `<button class="secondary" data-action="toggle-support" aria-expanded="${state.supportPanelOpen}">♡ 配信者を応援する</button>
-      ${state.supportPanelOpen ? `<div class="support-amounts" role="group" aria-label="応援金額を選ぶ">${(game.supportAmounts || LIVE_SUPPORT_AMOUNTS).map((amount) => `<button class="ghost" data-support-amount="${amount}" ${state.checkoutBusy || !state.checkoutTermsAccepted ? 'disabled' : ''}>${number(amount)}円（税込）</button>`).join('')}<p class="help">決済はStreetboardgame運営者が受け付け、売上の70%を配信者へ分配します。</p></div>` : ''}` : ''}
+      ${state.supportPanelOpen ? `<div class="support-amounts" role="group" aria-label="応援金額を選ぶ">${(game.supportAmounts || LIVE_SUPPORT_AMOUNTS).map((amount) => {
+        const supportTier = liveSupportTier(amount);
+        return `<button class="ghost support-tier-${supportTier.tier}" data-support-amount="${amount}" ${state.checkoutBusy || !state.checkoutTermsAccepted ? 'disabled' : ''}>${number(amount)}円（税込）</button>`;
+      }).join('')}<p class="help">決済はStreetboardgame運営者が受け付け、売上の70%を配信者へ分配します。</p></div>` : ''}` : ''}
   </section>`;
 }
 
@@ -822,6 +920,9 @@ function bindEvents() {
   document.querySelectorAll('[data-action="hide-live-chat"]').forEach((button) => button.addEventListener('click', () => {
     moderateLiveChat('hide', button.dataset.messageId);
   }));
+  document.querySelector('[data-action="acknowledge-live-support"]')?.addEventListener('click', (event) => {
+    acknowledgeLiveSupportMessage(event.currentTarget.dataset.messageId);
+  });
   document.querySelector('[data-action="toggle-chat-support"]')?.addEventListener('click', () => {
     setState({ chatSupportOpen: !state.chatSupportOpen });
   });
@@ -1183,8 +1284,10 @@ async function loadRoom() {
   state.game = state.view === 'viewer'
     ? personalizeGame(mergeLiveGame(response.game))
     : mergeLiveGame(response.game);
+  const newSupportMessages = syncHostSupportAlerts(state.game);
   if (state.view === 'host') state.subjectToken = response.game.subjectToken || state.subjectToken;
   render();
+  announceLiveSupportMessages(newSupportMessages);
   resetLiveViewportWhenQuestionChanges(previousGame, state.game);
 }
 
