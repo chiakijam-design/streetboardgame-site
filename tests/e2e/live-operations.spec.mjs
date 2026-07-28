@@ -30,12 +30,13 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
     reservations: [{ code: '123456', title: 'テストLIVE', channelName: 'テスト', phase: 'lobby', scheduledAt: Date.now() + 3_600_000, participantLimit: 50, creatorImageModerationStatus: 'pending' }],
     activeSessions: [{ code: '654321', title: '配信中LIVE', channelName: '配信中', phase: 'voting', scheduledAt: Date.now() - 600_000, participantLimit: 50, creatorImageModerationStatus: 'approved' }],
     entitlements: [{ purchase_id: 'purchase_test_01', code: '123456', participant_id: 'p1', participant_name: '参加者', stripe_payment_intent_id: 'pi_test_01', status: 'active', purchased_at: Date.now(), available_until: Date.now() + 86_400_000, updated_at: Date.now() }],
-    checkouts: [{ order_id: 'ord_test_01', product_type: 'result_image', code: '123456', participant_name: '参加者', amount: 1000, currency: 'jpy', creator_amount: 700, platform_amount: 300, purchase_id: 'purchase_test_01', stripe_payment_intent_id: 'pi_test_01', stripe_refund_id: '', terms_version: CHECKOUT_TERMS.version, terms_document_sha256: CHECKOUT_TERMS.documentSha256, terms_accepted_at: Date.now(), status: 'paid', created_at: Date.now(), updated_at: Date.now() }],
+    checkouts: [{ order_id: 'ord_test_01', product_type: 'support', code: '123456', participant_name: '参加者', support_message: '配信応援しています！', amount: 980, currency: 'jpy', creator_amount: 686, platform_amount: 294, purchase_id: '', stripe_payment_intent_id: 'pi_test_01', stripe_refund_id: '', terms_version: CHECKOUT_TERMS.version, terms_document_sha256: CHECKOUT_TERMS.documentSha256, terms_accepted_at: Date.now(), status: 'paid', created_at: Date.now(), updated_at: Date.now() }],
     revenue: {
       policy: { creatorSharePercent: 70, holdDays: 14, payoutThreshold: 5000, defaultPeriod: '2026-06' },
       balances: [{ stripe_account_id: 'acct_creator123', channel_verification_id: 'a'.repeat(32), currency: 'jpy', holding_amount: 700, available_amount: 5600, offset_amount: 0, review_amount: 0, transferred_amount: 0, entry_count: 9, payable_amount: 5600, payout_eligible: true }],
       batches: [{ batch_id: `payout_${'b'.repeat(32)}`, period_key: '2026-06', stripe_account_id: 'acct_creator123', currency: 'jpy', gross_sales_amount: 8000, creator_sales_amount: 5600, offset_amount: 0, transfer_amount: 5600, order_count: 8, status: 'draft', stripe_transfer_id: '', failure_code: '', created_at: Date.now(), updated_at: Date.now() }],
-      ledger: [{ revenue_entry_id: 'rev_test_01', order_id: 'ord_test_01', stripe_account_id: 'acct_creator123', currency: 'jpy', gross_amount: 1000, creator_amount: 700, platform_amount: 300, stripe_fee_amount: 36, platform_net_amount: 264, status: 'available', paid_at: Date.now(), available_at: Date.now(), updated_at: Date.now() }],
+      support: { periodKey: '2026-07', totalOrderCount: 3, paidOrderCount: 2, paidGrossAmount: 1460, creatorAmount: 1022, platformAmount: 438, reviewOrderCount: 1, reviewGrossAmount: 1980, refundedOrderCount: 1, refundedGrossAmount: 2980, amountBreakdown: [{ amount: 480, orderCount: 1, grossAmount: 480 }, { amount: 980, orderCount: 1, grossAmount: 980 }] },
+      ledger: [{ revenue_entry_id: 'rev_test_01', order_id: 'ord_test_01', product_type: 'support', stripe_account_id: 'acct_creator123', currency: 'jpy', gross_amount: 980, creator_amount: 686, platform_amount: 294, stripe_fee_amount: 36, platform_net_amount: 258, status: 'available', paid_at: Date.now(), available_at: Date.now(), updated_at: Date.now() }],
     },
     events: [
       { event_id: '11111111-1111-4111-8111-111111111111', category: 'stripe', severity: 'critical', event_type: 'payment_intent.payment_failed', code: '123456', purchase_id: '', external_id: 'pi_test_01', message: 'カード決済失敗', metadata: {}, created_at: Date.now(), acknowledged_at: null, acknowledged_by: '' },
@@ -109,9 +110,17 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
   await expect(page.locator('#entitlements')).toContainText('purchase_test_01');
   await expect(page.locator('#checkouts')).toContainText('ord_test_01');
   await expect(page.locator('#checkouts')).toContainText(`規約同意: v${CHECKOUT_TERMS.version}`);
-  await expect(page.locator('#checkouts')).toContainText('配信者分配予定: 700円');
-  await expect(page.getByRole('heading', { name: '配信者70%分配・売上台帳' })).toBeVisible();
+  await expect(page.locator('#checkouts')).toContainText('有料応援メッセージ');
+  await expect(page.locator('#checkouts')).toContainText('配信応援しています！');
+  await expect(page.locator('#checkouts')).toContainText('配信者分配予定: 686円');
+  await expect(page.getByRole('heading', { name: '売上・配信者70%分配' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '有料応援メッセージ売上（今月）' })).toBeVisible();
+  await expect(page.locator('#supportRevenueSummary')).toContainText('1,460円');
+  await expect(page.locator('#supportRevenueSummary')).toContainText('返金・不正確認中');
+  await expect(page.locator('#supportRevenueSummary')).toContainText('2,980円');
+  await expect(page.locator('#supportAmountBreakdown')).toContainText('980円：1件');
   await expect(page.locator('#revenueBalances')).toContainText('送金可能: 5,600円');
+  await expect(page.locator('#revenueLedger')).toContainText('有料応援メッセージ');
   await expect(page.locator('#revenueLedger')).toContainText('Stripe実手数料: 36円');
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: '月次分配台帳を作成' }).click();

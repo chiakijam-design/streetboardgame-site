@@ -11,6 +11,7 @@ import {
   completePayoutBatch,
   defaultPayoutPeriod,
   getLiveRevenueOverview,
+  getLiveSupportRevenueSummary,
   getPayoutBatch,
   markPayoutBatchProcessing,
   payoutPeriodBounds,
@@ -37,6 +38,51 @@ test('YouTuber残高5,000円以上だけ送金し、返金確定分を相殺す�
   });
   assert.deepEqual(calculatePayoutEligibility(7000, 2100, 0), {
     eligible: false, reason: 'below-threshold', transferAmount: 4900,
+  });
+});
+
+test('今月の有料応援メッセージを結果画像と分けて売上・審査・返金別に集計する', async () => {
+  const sqlite = new DatabaseSync(':memory:');
+  sqlite.exec(readFileSync(new URL('../../migrations-purchases/0002_live_checkout_orders.sql', import.meta.url), 'utf8'));
+  const db = d1Adapter(sqlite);
+  const insert = sqlite.prepare(`
+    INSERT INTO live_checkout_orders (
+      order_id, checkout_request_id, product_type, code, participant_id, participant_name,
+      viewer_name, channel_verification_id, stripe_account_id, amount, currency,
+      creator_amount, platform_amount, status, paid_at, created_at, updated_at
+    ) VALUES (?, ?, ?, '123456', ?, '', '', ?, 'acct_creator123', ?, 'jpy', ?, ?, ?, ?, ?, ?)
+  `);
+  const july = Date.parse('2026-07-10T12:00:00+09:00');
+  const rows = [
+    ['support180', 'support', 180, 126, 54, 'paid', july],
+    ['support480', 'support', 480, 336, 144, 'paid', july + 1000],
+    ['support980', 'support', 980, 686, 294, 'refund_pending', july + 2000],
+    ['support1980', 'support', 1980, 1386, 594, 'refunded', july + 3000],
+    ['image2980', 'result_image', 2980, 2086, 894, 'paid', july + 4000],
+    ['oldSupport', 'support', 2980, 2086, 894, 'paid', Date.parse('2026-06-20T12:00:00+09:00')],
+  ];
+  for (const [id, product, amount, creator, platform, status, paidAt] of rows) {
+    insert.run(
+      `ord_${id}`, id.padEnd(32, 'x'), product, `p_${id}`, 'v'.repeat(32),
+      amount, creator, platform, status, paidAt, paidAt, paidAt,
+    );
+  }
+  const summary = await getLiveSupportRevenueSummary(db, Date.parse('2026-07-28T12:00:00+09:00'));
+  assert.deepEqual(summary, {
+    periodKey: '2026-07',
+    totalOrderCount: 4,
+    paidOrderCount: 2,
+    paidGrossAmount: 660,
+    creatorAmount: 462,
+    platformAmount: 198,
+    reviewOrderCount: 1,
+    reviewGrossAmount: 980,
+    refundedOrderCount: 1,
+    refundedGrossAmount: 1980,
+    amountBreakdown: [
+      { amount: 180, orderCount: 1, grossAmount: 180 },
+      { amount: 480, orderCount: 1, grossAmount: 480 },
+    ],
   });
 });
 

@@ -268,7 +268,8 @@ export async function getLiveOpsOverview(env) {
         SELECT o.order_id, o.product_type, o.code, o.participant_name, o.amount, o.currency,
           o.creator_amount, o.platform_amount, o.purchase_id, o.stripe_checkout_session_id,
           o.stripe_payment_intent_id, o.stripe_refund_id, c.terms_version, c.terms_document_sha256,
-          c.terms_accepted_at, o.status, o.paid_at, o.refunded_at, o.created_at, o.updated_at
+          c.terms_accepted_at, o.support_message, o.status, o.paid_at, o.refunded_at,
+          o.created_at, o.updated_at
         FROM live_checkout_orders o
         LEFT JOIN live_checkout_consents c ON c.order_id = o.order_id
         ORDER BY o.updated_at DESC LIMIT 100

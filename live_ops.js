@@ -184,6 +184,7 @@ function renderRevenue() {
   const revenue = overview.revenue || { policy: {}, balances: [], batches: [], ledger: [] };
   const periodInput = document.getElementById('payoutPeriod');
   if (!periodInput.value && revenue.policy.defaultPeriod) periodInput.value = revenue.policy.defaultPeriod;
+  renderSupportRevenue(revenue.support || {});
   const channelByAccount = new Map((overview.channelVerifications || [])
     .filter((item) => item.stripeAccountId)
     .map((item) => [item.stripeAccountId, item.channelName]));
@@ -197,7 +198,25 @@ function renderRevenue() {
     return `<article class="card"><strong>${escapeHtml(item.period_key)} ${yen(item.transfer_amount)} <span class="pill ${item.status === 'transferred' ? 'info' : item.status === 'transfer_failed' || item.status === 'reversed' ? 'critical' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">バッチ: <code>${escapeHtml(item.batch_id)}</code><br>Connect: <code>${escapeHtml(item.stripe_account_id)}</code><br>対象売上: ${yen(item.gross_sales_amount)} / 配信者70%: ${yen(item.creator_sales_amount)} / 返金等の相殺: ${yen(item.offset_amount)} / ${Number(item.order_count)}件${item.stripe_transfer_id ? `<br>Transfer: <code>${escapeHtml(item.stripe_transfer_id)}</code>` : ''}${item.failure_code ? `<br>失敗理由: ${escapeHtml(item.failure_code)}` : ''}</div><div class="actions"><button class="button good" data-payout-transfer="${escapeAttr(item.batch_id)}" ${canTransfer ? '' : 'disabled'}>Stripe Connectへ送金</button></div></article>`;
   }).join('') : empty('月次送金バッチはまだありません。');
   document.querySelectorAll('[data-payout-transfer]').forEach((button) => button.addEventListener('click', () => transferPayoutBatch(button.dataset.payoutTransfer)));
-  document.getElementById('revenueLedger').innerHTML = revenue.ledger?.length ? revenue.ledger.map((item) => `<article class="card"><strong>${yen(item.gross_amount)} <span class="pill ${['available','transferred'].includes(item.status) ? 'info' : ['refunded','offset_due','payout_reversed'].includes(item.status) ? 'critical' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">注文: <code>${escapeHtml(item.order_id)}</code> / Connect: <code>${escapeHtml(item.stripe_account_id)}</code><br>配信者70%: ${yen(item.creator_amount)} / 運営名目分: ${yen(item.platform_amount)} / Stripe実手数料: ${item.stripe_fee_amount === null || item.stripe_fee_amount === undefined ? '未取得' : yen(item.stripe_fee_amount)}<br>運営実残額: ${item.platform_net_amount === null || item.platform_net_amount === undefined ? '未確定' : yen(item.platform_net_amount)} / 売上確定: ${formatDate(item.paid_at)} / 保留解除: ${formatDate(item.available_at)}</div></article>`).join('') : empty('注文別売上はまだありません。');
+  document.getElementById('revenueLedger').innerHTML = revenue.ledger?.length ? revenue.ledger.map((item) => {
+    const product = item.product_type === 'support' ? '有料応援メッセージ' : item.product_type === 'result_image' ? '高画質結果画像' : '商品種別不明';
+    return `<article class="card"><strong>${escapeHtml(product)}・${yen(item.gross_amount)} <span class="pill ${['available','transferred'].includes(item.status) ? 'info' : ['refunded','offset_due','payout_reversed'].includes(item.status) ? 'critical' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">注文: <code>${escapeHtml(item.order_id)}</code> / Connect: <code>${escapeHtml(item.stripe_account_id)}</code><br>配信者70%: ${yen(item.creator_amount)} / 運営名目分: ${yen(item.platform_amount)} / Stripe実手数料: ${item.stripe_fee_amount === null || item.stripe_fee_amount === undefined ? '未取得' : yen(item.stripe_fee_amount)}<br>運営実残額: ${item.platform_net_amount === null || item.platform_net_amount === undefined ? '未確定' : yen(item.platform_net_amount)} / 売上確定: ${formatDate(item.paid_at)} / 保留解除: ${formatDate(item.available_at)}</div></article>`;
+  }).join('') : empty('注文別売上はまだありません。');
+}
+
+function renderSupportRevenue(support) {
+  const reviewTone = Number(support.reviewOrderCount || 0) > 0 ? 'warning' : '';
+  const refundTone = Number(support.refundedOrderCount || 0) > 0 ? 'critical' : '';
+  document.getElementById('supportRevenueSummary').innerHTML = [
+    metric('応援の確定売上', yen(support.paidGrossAmount), `${support.periodKey || '今月'}・${Number(support.paidOrderCount || 0).toLocaleString('ja-JP')}件`),
+    metric('配信者70%分', yen(support.creatorAmount), `運営名目分 ${yen(support.platformAmount)}`),
+    metric('返金・不正確認中', yen(support.reviewGrossAmount), `${Number(support.reviewOrderCount || 0).toLocaleString('ja-JP')}件`, reviewTone),
+    metric('返金・チャージバック', yen(support.refundedGrossAmount), `${Number(support.refundedOrderCount || 0).toLocaleString('ja-JP')}件`, refundTone),
+  ].join('');
+  const breakdown = Array.isArray(support.amountBreakdown) ? support.amountBreakdown : [];
+  document.getElementById('supportAmountBreakdown').innerHTML = breakdown.length
+    ? `<article class="card"><strong>確定売上の金額別内訳</strong><div class="meta">${breakdown.map((item) => `${yen(item.amount)}：${Number(item.orderCount || 0).toLocaleString('ja-JP')}件（${yen(item.grossAmount)}）`).join(' / ')}</div></article>`
+    : empty('今月の確定済み応援はまだありません。');
 }
 
 async function createPayoutBatches() {
@@ -255,16 +274,19 @@ function renderEntitlements() {
 function renderCheckouts() {
   if (!overview) return;
   const query = document.getElementById('purchaseSearch').value.trim().toLowerCase();
-  const rows = (overview.checkouts || []).filter((item) => !query || [item.order_id, item.purchase_id, item.stripe_payment_intent_id, item.code]
+  const rows = (overview.checkouts || []).filter((item) => !query || [item.order_id, item.purchase_id, item.stripe_payment_intent_id, item.code, item.participant_name, item.support_message]
     .some((value) => String(value || '').toLowerCase().includes(query)));
   document.getElementById('checkouts').innerHTML = rows.length ? rows.map((item) => {
     const canRequest = ['paid', 'fraud_review', 'refund_failed'].includes(item.status);
     const canExecute = ['refund_pending', 'refund_processing', 'refund_failed'].includes(item.status);
-    const product = item.product_type === 'result_image' ? '高画質結果画像' : '応援金';
+    const product = item.product_type === 'result_image' ? '高画質結果画像' : '有料応援メッセージ';
     const consent = item.terms_accepted_at
       ? `規約同意: v${escapeHtml(item.terms_version)} / ${formatDate(item.terms_accepted_at)} / SHA-256 <code>${escapeHtml(String(item.terms_document_sha256 || '').slice(0, 12))}…</code>`
       : '規約同意: 旧注文のため記録なし';
-    return `<article class="card"><strong>${escapeHtml(product)} ${Number(item.amount).toLocaleString('ja-JP')}円 <span class="pill ${item.status === 'paid' ? 'info' : item.status === 'refund_failed' ? 'critical' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">注文ID: <code>${escapeHtml(item.order_id)}</code><br>購入者: ${escapeHtml(item.participant_name)} / ルーム: ${escapeHtml(item.code)}<br>PaymentIntent: <code>${escapeHtml(item.stripe_payment_intent_id || '未確定')}</code><br>${consent}<br>配信者分配予定: ${Number(item.creator_amount).toLocaleString('ja-JP')}円 / 運営名目分: ${Number(item.platform_amount).toLocaleString('ja-JP')}円${item.stripe_refund_id ? `<br>Refund: <code>${escapeHtml(item.stripe_refund_id)}</code>` : ''}</div><div class="actions"><button class="button danger" data-checkout-refund="${escapeAttr(item.order_id)}" data-execute="false" ${canRequest ? '' : 'disabled'}>権限停止・返金待ち</button><button class="button secondary" data-checkout-refund="${escapeAttr(item.order_id)}" data-execute="true" ${canExecute ? '' : 'disabled'}>Stripeへ全額返金</button></div></article>`;
+    const supportMessage = item.product_type === 'support'
+      ? `<br>公開メッセージ: ${item.support_message ? escapeHtml(item.support_message) : 'なし'}`
+      : '';
+    return `<article class="card"><strong>${escapeHtml(product)} ${Number(item.amount).toLocaleString('ja-JP')}円 <span class="pill ${item.status === 'paid' ? 'info' : item.status === 'refund_failed' ? 'critical' : 'warning'}">${escapeHtml(item.status)}</span></strong><div class="meta">注文ID: <code>${escapeHtml(item.order_id)}</code><br>購入者: ${escapeHtml(item.participant_name)} / ルーム: ${escapeHtml(item.code)}${supportMessage}<br>PaymentIntent: <code>${escapeHtml(item.stripe_payment_intent_id || '未確定')}</code><br>${consent}<br>配信者分配予定: ${Number(item.creator_amount).toLocaleString('ja-JP')}円 / 運営名目分: ${Number(item.platform_amount).toLocaleString('ja-JP')}円${item.stripe_refund_id ? `<br>Refund: <code>${escapeHtml(item.stripe_refund_id)}</code>` : ''}</div><div class="actions"><button class="button danger" data-checkout-refund="${escapeAttr(item.order_id)}" data-execute="false" ${canRequest ? '' : 'disabled'}>権限停止・返金待ち</button><button class="button secondary" data-checkout-refund="${escapeAttr(item.order_id)}" data-execute="true" ${canExecute ? '' : 'disabled'}>Stripeへ全額返金</button></div></article>`;
   }).join('') : empty('該当するCheckout注文はありません。');
   document.querySelectorAll('[data-checkout-refund]').forEach((button) => button.addEventListener('click', () => refundCheckout(button.dataset.checkoutRefund, button.dataset.execute === 'true')));
 }

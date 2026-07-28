@@ -113,7 +113,7 @@ export async function syncRevenueLedgerFromOrders(db, now = Date.now()) {
 
 export async function getLiveRevenueOverview(db, now = Date.now()) {
   await syncRevenueLedgerFromOrders(db, now);
-  const [balances, ledger, batches] = await Promise.all([
+  const [balances, ledger, batches, support] = await Promise.all([
     db.prepare(`
       SELECT stripe_account_id, channel_verification_id, currency,
         SUM(CASE WHEN status = 'holding' THEN creator_amount ELSE 0 END) AS holding_amount,
@@ -127,11 +127,14 @@ export async function getLiveRevenueOverview(db, now = Date.now()) {
       ORDER BY stripe_account_id
     `).all(),
     db.prepare(`
-      SELECT revenue_entry_id, order_id, channel_verification_id, stripe_account_id,
-        currency, gross_amount, creator_amount, platform_amount, stripe_fee_amount,
-        platform_net_amount, status, paid_at, available_at, sale_payout_batch_id,
-        offset_payout_batch_id, stripe_transfer_id, updated_at
-      FROM live_revenue_entries ORDER BY paid_at DESC LIMIT 200
+      SELECT e.revenue_entry_id, e.order_id, e.channel_verification_id, e.stripe_account_id,
+        e.currency, e.gross_amount, e.creator_amount, e.platform_amount, e.stripe_fee_amount,
+        e.platform_net_amount, e.status, e.paid_at, e.available_at, e.sale_payout_batch_id,
+        e.offset_payout_batch_id, e.stripe_transfer_id, e.updated_at,
+        COALESCE(o.product_type, '') AS product_type
+      FROM live_revenue_entries e
+      LEFT JOIN live_checkout_orders o ON o.order_id = e.order_id
+      ORDER BY e.paid_at DESC LIMIT 200
     `).all(),
     db.prepare(`
       SELECT batch_id, period_key, stripe_account_id, currency, gross_sales_amount,
@@ -139,6 +142,7 @@ export async function getLiveRevenueOverview(db, now = Date.now()) {
         stripe_transfer_id, failure_code, created_at, transferred_at, updated_at
       FROM live_payout_batches ORDER BY created_at DESC LIMIT 100
     `).all(),
+    getLiveSupportRevenueSummary(db, now),
   ]);
   return {
     policy: {
@@ -166,6 +170,64 @@ export async function getLiveRevenueOverview(db, now = Date.now()) {
     }),
     ledger: ledger.results || [],
     batches: batches.results || [],
+    support,
+  };
+}
+
+export async function getLiveSupportRevenueSummary(db, now = Date.now()) {
+  const currentJst = new Date(now + JST_OFFSET_MS);
+  const periodKey = `${currentJst.getUTCFullYear()}-${String(currentJst.getUTCMonth() + 1).padStart(2, '0')}`;
+  const period = payoutPeriodBounds(periodKey);
+  const paidStatuses = ['paid'];
+  const reviewStatuses = ['refund_pending', 'refund_processing', 'refund_failed', 'fraud_review'];
+  const refundedStatuses = ['refunded', 'chargeback'];
+  const summary = await db.prepare(`
+    SELECT
+      COUNT(*) AS total_order_count,
+      SUM(CASE WHEN status IN (${paidStatuses.map(() => '?').join(',')}) THEN 1 ELSE 0 END) AS paid_order_count,
+      COALESCE(SUM(CASE WHEN status IN (${paidStatuses.map(() => '?').join(',')}) THEN amount ELSE 0 END), 0) AS paid_gross_amount,
+      COALESCE(SUM(CASE WHEN status IN (${paidStatuses.map(() => '?').join(',')}) THEN creator_amount ELSE 0 END), 0) AS creator_amount,
+      COALESCE(SUM(CASE WHEN status IN (${paidStatuses.map(() => '?').join(',')}) THEN platform_amount ELSE 0 END), 0) AS platform_amount,
+      SUM(CASE WHEN status IN (${reviewStatuses.map(() => '?').join(',')}) THEN 1 ELSE 0 END) AS review_order_count,
+      COALESCE(SUM(CASE WHEN status IN (${reviewStatuses.map(() => '?').join(',')}) THEN amount ELSE 0 END), 0) AS review_gross_amount,
+      SUM(CASE WHEN status IN (${refundedStatuses.map(() => '?').join(',')}) THEN 1 ELSE 0 END) AS refunded_order_count,
+      COALESCE(SUM(CASE WHEN status IN (${refundedStatuses.map(() => '?').join(',')}) THEN amount ELSE 0 END), 0) AS refunded_gross_amount
+    FROM live_checkout_orders
+    WHERE product_type = 'support' AND paid_at >= ? AND paid_at < ?
+  `).bind(
+    ...paidStatuses,
+    ...paidStatuses,
+    ...paidStatuses,
+    ...paidStatuses,
+    ...reviewStatuses,
+    ...reviewStatuses,
+    ...refundedStatuses,
+    ...refundedStatuses,
+    period.start,
+    period.end,
+  ).first();
+  const breakdown = await db.prepare(`
+    SELECT amount, COUNT(*) AS order_count, COALESCE(SUM(amount), 0) AS gross_amount
+    FROM live_checkout_orders
+    WHERE product_type = 'support' AND status = 'paid' AND paid_at >= ? AND paid_at < ?
+    GROUP BY amount ORDER BY amount
+  `).bind(period.start, period.end).all();
+  return {
+    periodKey,
+    totalOrderCount: Number(summary?.total_order_count) || 0,
+    paidOrderCount: Number(summary?.paid_order_count) || 0,
+    paidGrossAmount: Number(summary?.paid_gross_amount) || 0,
+    creatorAmount: Number(summary?.creator_amount) || 0,
+    platformAmount: Number(summary?.platform_amount) || 0,
+    reviewOrderCount: Number(summary?.review_order_count) || 0,
+    reviewGrossAmount: Number(summary?.review_gross_amount) || 0,
+    refundedOrderCount: Number(summary?.refunded_order_count) || 0,
+    refundedGrossAmount: Number(summary?.refunded_gross_amount) || 0,
+    amountBreakdown: (breakdown.results || []).map((row) => ({
+      amount: Number(row.amount) || 0,
+      orderCount: Number(row.order_count) || 0,
+      grossAmount: Number(row.gross_amount) || 0,
+    })),
   };
 }
 
