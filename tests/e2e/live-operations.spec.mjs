@@ -37,7 +37,10 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
       batches: [{ batch_id: `payout_${'b'.repeat(32)}`, period_key: '2026-06', stripe_account_id: 'acct_creator123', currency: 'jpy', gross_sales_amount: 8000, creator_sales_amount: 5600, offset_amount: 0, transfer_amount: 5600, order_count: 8, status: 'draft', stripe_transfer_id: '', failure_code: '', created_at: Date.now(), updated_at: Date.now() }],
       ledger: [{ revenue_entry_id: 'rev_test_01', order_id: 'ord_test_01', stripe_account_id: 'acct_creator123', currency: 'jpy', gross_amount: 1000, creator_amount: 700, platform_amount: 300, stripe_fee_amount: 36, platform_net_amount: 264, status: 'available', paid_at: Date.now(), available_at: Date.now(), updated_at: Date.now() }],
     },
-    events: [{ event_id: '11111111-1111-4111-8111-111111111111', category: 'stripe', severity: 'critical', event_type: 'payment_intent.payment_failed', code: '123456', purchase_id: '', external_id: 'pi_test_01', message: 'カード決済失敗', metadata: {}, created_at: Date.now(), acknowledged_at: null, acknowledged_by: '' }],
+    events: [
+      { event_id: '11111111-1111-4111-8111-111111111111', category: 'stripe', severity: 'critical', event_type: 'payment_intent.payment_failed', code: '123456', purchase_id: '', external_id: 'pi_test_01', message: 'カード決済失敗', metadata: {}, created_at: Date.now(), acknowledged_at: null, acknowledged_by: '' },
+      { event_id: '22222222-2222-4222-8222-222222222222', category: 'api', severity: 'warning', event_type: 'old_event', code: '', purchase_id: '', external_id: '', message: '対応履歴テスト', metadata: {}, created_at: Date.now() - 3_600_000, acknowledged_at: Date.now() - 3_000_000, acknowledged_by: 'admin' },
+    ],
     recentEventCounts: [{ category: 'stripe', severity: 'critical', event_count: 1 }],
     imageTransforms: {
       usageMonth: '2026-07', sourceImages: 2_000, successfulTransformations: 4_000,
@@ -106,8 +109,8 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
   await expect(page.locator('#entitlements')).toContainText('purchase_test_01');
   await expect(page.locator('#checkouts')).toContainText('ord_test_01');
   await expect(page.locator('#checkouts')).toContainText(`規約同意: v${CHECKOUT_TERMS.version}`);
-  await expect(page.locator('#checkouts')).toContainText('YouTuber分配予定: 700円');
-  await expect(page.getByRole('heading', { name: '70%分配・売上台帳' })).toBeVisible();
+  await expect(page.locator('#checkouts')).toContainText('配信者分配予定: 700円');
+  await expect(page.getByRole('heading', { name: '配信者70%分配・売上台帳' })).toBeVisible();
   await expect(page.locator('#revenueBalances')).toContainText('送金可能: 5,600円');
   await expect(page.locator('#revenueLedger')).toContainText('Stripe実手数料: 36円');
   page.once('dialog', (dialog) => dialog.accept());
@@ -122,11 +125,15 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
   await expect.poll(() => refundBodies.length).toBe(1);
   expect(refundBodies[0]).toEqual({ execute: false });
   await expect(page.locator('#events')).toContainText('カード決済失敗');
+  await expect(page.locator('#events')).toContainText('直近15分');
+  await expect(page.locator('#events')).toContainText('過去ログ');
   await expect(page.locator('#metrics')).toContainText('WebSocket予期せぬ切断率');
+  await expect(page.locator('#metrics')).toContainText('本番接続');
+  await expect(page.locator('#metrics')).toContainText('現在のWorker実行環境');
   await expect(page.locator('#metrics')).toContainText('非公開R2 / Images');
-  await expect(page.getByRole('heading', { name: 'YouTuber招待・手動審査' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'LIVE配信者の招待・販売登録審査' })).toBeVisible();
   await expect(page.locator('#creatorInvites')).toContainText('審査済みチャンネル');
-  await expect(page.getByRole('heading', { name: 'チャンネル所有・契約・Stripe名義確認' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '販売登録審査（YouTube・契約・Stripe）' })).toBeVisible();
   await expect(page.locator('#channelVerifications')).toContainText('所有確認チャンネル');
   await expect(page.locator('[data-review-field="stripeAccountId"]')).toHaveAttribute('placeholder', 'acct_...');
   await expect(page.getByRole('button', { name: '画像を承認' })).toBeVisible();

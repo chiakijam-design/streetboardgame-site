@@ -1,6 +1,6 @@
-# YouTuber向けLIVE 監視・障害対応手順書
+# LIVE配信者向け 監視・障害対応手順書
 
-最終更新: 2026-07-23
+最終更新: 2026-07-28
 
 ## 1. 運営コンソールと本番設定
 
@@ -26,16 +26,16 @@ npx wrangler d1 execute streetboardgame-live-purchases --remote --file migration
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0005_live_checkout_consent.sql
 ```
 
-荒らし・なりすまし・不適切画像・カード不正利用への対応は[`LIVE_ABUSE_PREVENTION.md`](LIVE_ABUSE_PREVENTION.md)を使用する。初期版の応援メッセージは公開せず、YouTuber招待は二要素認証済みの運営コンソールから手動審査後にだけ発行する。
+荒らし・なりすまし・不適切画像・カード不正利用への対応は[`LIVE_ABUSE_PREVENTION.md`](LIVE_ABUSE_PREVENTION.md)を使用する。初期版の応援メッセージは公開せず、LIVE配信者の招待コードは二要素認証済みの運営コンソールから手動審査後にだけ発行する。現行の販売登録ではYouTubeチャンネルを本人性・管理権限の確認対象にする。
 
 TOTP設定、購入履歴専用D1、Cron削除は`docs/PRIVACY_OPERATIONS.md`を参照する。個人データの漏えいまたはその疑いがある場合は、通常の障害対応より先に`docs/PRIVACY_INCIDENT_RESPONSE.md`を実行する。
 
 ### 1.1 チャンネル所有・Stripe名義審査
 
-1. YouTuber本人が秘密の確認URLからOAuthまたは概要欄コードで確認する。使えない場合だけ手動審査申請を受ける。
+1. LIVE配信者本人が秘密の確認URLからYouTube OAuthまたは概要欄コードで確認する。使えない場合だけ手動審査申請を受ける。
 2. `/live-ops`の「チャンネル所有・Stripe名義確認」で対象Channel IDと実際のチャンネルを照合する。
 3. 手動審査では、登録メールからの返信、チャンネル管理画面の一時的な証跡、所属事務所・法人からの委任資料のうち必要なものを別経路で確認する。資料そのものはLIVEのゲームD1へ保存しない。
-4. Stripe Connectの`acct_...`を登録後、YouTuber本人へ秘密URLから収益分配規約へ同意してもらう。同意記録ID、規約バージョン、契約者名、日時をコンソールで確認する。
+4. Stripe Connectの`acct_...`を登録後、LIVE配信者本人へ秘密URLから収益分配規約へ同意してもらう。同意記録ID、規約バージョン、契約者名、日時をコンソールで確認する。
 5. Stripe本人確認状態、Connect名義とチャンネル運営者の関係を照合する。
 6. 5条件が揃う場合だけ「確認済み・本人確認済み・関係確認済み」を保存する。画面が「有料販売可」になったことを再確認する。
 7. 不一致やなりすましの疑いがある場合は却下し、招待コードも失効する。有料販売は再審査完了まで開放しない。
@@ -84,7 +84,7 @@ pnpm run check:live-health
 5. D1 > `streetboardgame-remote` > Metricsでqueries、rows read/written、latency、storageを週1回確認する。行数の70%・90%はDashboardの自動通知と断定せず、契約枠との比較を運用記録へ残す。
 6. Durable Objectsの`LiveRoomCoordinator`と`LiveVoteShard`でrequests、errors、WebSocket messages、duration、storage、memory P90/P99を確認する。障害時は対象Object IDまたは名前へ絞り込む。
 7. R2 > `streetboardgame-live-private`でPublic Development URLが無効、Custom Domainsが0件、期限超過オブジェクトが0件であることを確認する。
-8. `/live-ops`の監視設定へ`非公開R2 / Images`が表示されることを確認する。表示されない環境では画像販売を開始しない。
+8. `/live-ops`の「本番接続」へ`非公開R2 / Images`が表示されることを確認する。表示されない環境では画像販売を開始しない。
 9. Pro以上ではHealth ChecksをHTTPS・host=`www.streetboardgame.com`・path=`/api/live/health`・期待HTTP=200で設定し、状態がhealthy/unhealthyのどちらへ変化した場合も通知する。複数リージョンを選択し、60秒間隔を初期値とする。
 10. FreeプランではCloudflare Health Checksを利用できない。別事業者の外形監視から同じURLを60秒間隔で確認し、5分中2回の503・タイムアウトで通知する。
 11. EnterpriseではAdvanced Error Rate Alertを`streetboardgame.com`のedge 5xxへ設定する。低トラフィックで高感度にすると単発5xxでも頻繁に通知されるため、初期はmedium sensitivityとする。
@@ -171,7 +171,7 @@ SEV1・SEV2では1名を対応責任者に固定する。調査担当が複数�
 
 ### 5.6 返金と購入権限
 
-- 返金対象を確認したら「権限停止・返金待ち」。ダウンロードとYouTuber分配を即時停止する。
+- 返金対象を確認したら「権限停止・返金待ち」。ダウンロードと配信者分配を即時停止する。
 - 注文・PaymentIntent・返金理由を照合後、「Stripeへ全額返金」を押す。WorkerがRefund APIを注文単位の冪等キー付きで呼ぶ。
 - `refund.updated`または`charge.refunded` Webhookで`refunded`へ同期されたことを確認する。
 - 購入者は`/live?recover=1`で、Stripe購入メールの`ord_...`注文番号と決済時メールを入力して再ダウンロードする。照合成功後の署名URLは10分間有効。
@@ -180,9 +180,9 @@ SEV1・SEV2では1名を対応責任者に固定する。調査担当が複数�
 
 ### 5.7 70%月次分配と売上台帳
 
-1. 毎月15日以降に運営コンソールの「70%分配・売上台帳」を開き、前月を選んで「月次分配台帳を作成」を押す。
+1. 毎月15日以降に運営コンソールの「配信者70%分配・売上台帳」を開き、前月を選んで「月次分配台帳を作成」を押す。
 2. 14日保留中、返金待ち、不正審査中の売上が送金対象に入っていないことを確認する。
-3. YouTuber70%残高から返金確定後の相殺額を引いた金額が5,000円未満なら翌月へ繰り越す。
+3. 配信者70%残高から返金確定後の相殺額を引いた金額が5,000円未満なら翌月へ繰り越す。
 4. バッチの対象売上、70%、相殺額、ConnectアカウントIDを契約記録と照合する。
 5. 確認後だけ「Stripe Connectへ送金」を押す。ボタンはStripe上の資金移動を発生させるため、二重操作せず結果を待つ。
 6. `tr_...`が表示され、状態が`transferred`になったことをStripe Dashboardと照合する。
