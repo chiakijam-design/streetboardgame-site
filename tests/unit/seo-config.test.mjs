@@ -56,7 +56,11 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
   ]) {
     const expectedDate = [
       'https://www.streetboardgame.com/challenge',
+      'https://www.streetboardgame.com/live-challenge',
+      'https://www.streetboardgame.com/terms',
       'https://www.streetboardgame.com/en/challenge',
+      'https://www.streetboardgame.com/en/live-challenge',
+      'https://www.streetboardgame.com/en/terms',
     ].includes(updatedUrl) ? '2026-07-28' : '2026-07-27';
     assert.equal(lastModifiedByUrl.get(updatedUrl), expectedDate, updatedUrl);
   }

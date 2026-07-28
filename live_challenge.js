@@ -102,6 +102,10 @@ let state = {
   checkoutStatusAttempts: 0,
   checkoutEntitlementUrl: '',
   supportPanelOpen: false,
+  chatDraft: '',
+  chatSending: false,
+  chatSupportOpen: false,
+  supportMessage: '',
 };
 let questionCatalogReady = false;
 const trackedLiveBuilderQuestions = new WeakSet();
@@ -124,21 +128,96 @@ if (state.view === 'host' || state.view === 'viewer') {
 
 function render() {
   if (!app) return;
+  const activeElement = document.activeElement;
+  if (activeElement?.id === 'live-chat-input') state.chatDraft = activeElement.value;
+  if (activeElement?.id === 'live-support-message') state.supportMessage = activeElement.value;
   document.documentElement.dataset.liveChallengeView = state.view;
   document.documentElement.dataset.liveChallengePhase = state.game?.phase || '';
-  const content = state.loading
+  const primaryContent = state.loading
     ? loadingView()
     : state.view === 'landing' ? landingView()
       : state.view === 'create' ? createView()
         : state.view === 'join' ? joinView()
           : state.view === 'host' ? hostView()
             : viewerView();
+  const content = !state.loading && ['host', 'viewer'].includes(state.view) && state.game
+    ? `<div class="live-session-layout"><div class="live-session-main">${primaryContent}</div>${liveChatView()}</div>`
+    : primaryContent;
   app.innerHTML = `${state.error ? `<div class="error" role="alert">${escapeHtml(errorText(state.error))}</div>` : ''}${content}`;
   localizeDom(app);
   bindEvents();
   trackCurrentLiveBuilderQuestionShown();
   const qr = document.getElementById('live-challenge-qr');
   if (qr) QRCode.toCanvas(qr, joinUrl(), { width: 188, margin: 1, errorCorrectionLevel: 'M' }).catch(() => {});
+  const chatMessages = document.querySelector('.live-chat-messages');
+  if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function liveChatView() {
+  const game = state.game || {};
+  const messages = Array.isArray(game.chatMessages) ? game.chatMessages : [];
+  const enabled = game.chatEnabled !== false;
+  const canSupport = state.view === 'viewer' && game.supportPaymentsEnabled === true;
+  return `<aside class="live-chat-panel" data-testid="live-chat-panel">
+    <div class="live-chat-heading">
+      <div><span class="live-dot" aria-hidden="true"></span><b>LIVEチャット</b><small>${number(messages.length)}件</small></div>
+      ${state.view === 'host' ? `<button class="chat-setting" data-action="toggle-live-chat" aria-pressed="${enabled}">${enabled ? '受付中' : '停止中'}</button>` : ''}
+    </div>
+    <div class="live-chat-messages" role="log" aria-live="polite" aria-relevant="additions">
+      ${messages.length ? messages.map(liveChatMessageView).join('') : '<p class="live-chat-empty">最初のメッセージを送ってみよう。</p>'}
+    </div>
+    ${enabled ? `<div class="live-chat-compose">
+      <label class="sr-only" for="live-chat-input">チャットメッセージ</label>
+      <textarea id="live-chat-input" maxlength="120" rows="2" placeholder="チャットを入力（120文字まで）">${escapeHtml(state.chatDraft)}</textarea>
+      <button class="chat-send" data-action="send-live-chat" ${state.chatSending || !state.chatDraft.trim() ? 'disabled' : ''} aria-label="チャットを送信">${state.chatSending ? '…' : '送信'}</button>
+    </div>` : '<p class="live-chat-paused">配信者がチャットを一時停止しています。</p>'}
+    ${canSupport ? liveChatSupportView(enabled) : ''}
+    <p class="live-chat-rule">個人情報・いじめ・性的内容・差別表現は投稿できません。通報された投稿はすぐ非公開になります。</p>
+  </aside>`;
+}
+
+function liveChatMessageView(message) {
+  const paid = message.type === 'support';
+  const ownMessage = message.participantId && message.participantId === state.game?.participantId;
+  const time = new Date(Number(message.createdAt) || Date.now()).toLocaleTimeString(isEnglish ? 'en-US' : 'ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return `<article class="live-chat-message ${paid ? 'is-support' : ''}" data-chat-message-id="${escapeHtml(message.id)}">
+    <div class="live-chat-meta">
+      <b>${escapeHtml(message.name || '視聴者')}</b>
+      ${message.role === 'host' ? '<span class="host-badge">配信者</span>' : ''}
+      ${paid ? `<span class="support-badge">♥ ${number(message.amount)}円</span>` : ''}
+      <time>${escapeHtml(time)}</time>
+    </div>
+    <p>${escapeHtml(message.text)}</p>
+    <div class="live-chat-tools">
+      ${state.view === 'host'
+        ? `<button data-action="hide-live-chat" data-message-id="${escapeHtml(message.id)}">非表示</button>`
+        : !ownMessage ? `<button data-action="report-live-chat" data-message-id="${escapeHtml(message.id)}">通報</button>` : ''}
+    </div>
+  </article>`;
+}
+
+function liveChatSupportView(enabled) {
+  const amounts = state.game?.supportAmounts || LIVE_SUPPORT_AMOUNTS;
+  return `<section class="live-chat-support">
+    <button class="support-toggle" data-action="toggle-chat-support" aria-expanded="${state.chatSupportOpen}" ${enabled ? '' : 'disabled'}>
+      <span>♥</span><b>応援メッセージを送る</b><small>180円から</small>
+    </button>
+    ${state.chatSupportOpen ? `<div class="live-chat-support-body">
+      <label for="live-support-message">公開する応援メッセージ（任意・120文字まで）</label>
+      <textarea id="live-support-message" maxlength="120" rows="3" placeholder="例：配信楽しかった！">${escapeHtml(state.supportMessage)}</textarea>
+      <label class="checkout-consent compact">
+        <input data-checkout-consent type="checkbox" ${state.checkoutTermsAccepted ? 'checked' : ''}>
+        <span><a href="/terms" target="_blank" rel="noopener noreferrer">利用規約</a>・<a href="/legal" target="_blank" rel="noopener noreferrer">販売条件</a>・<a href="/refund-policy" target="_blank" rel="noopener noreferrer">返金条件</a>を確認し、未成年の場合は保護者の同意を得ています。</span>
+      </label>
+      <div class="chat-support-amounts" role="group" aria-label="応援金額を選ぶ">
+        ${amounts.map((amount) => `<button data-chat-support-amount="${amount}" ${!enabled || state.checkoutBusy || !state.checkoutTermsAccepted ? 'disabled' : ''}>${number(amount)}円</button>`).join('')}
+      </div>
+      <p>決済完了後にチャットへ表示され、売上の70%が配信者へ分配されます。</p>
+    </div>` : ''}
+  </section>`;
 }
 
 function trackCurrentLiveBuilderQuestionShown() {
@@ -602,7 +681,7 @@ function liveCheckoutView() {
     <h3>配信者の販売・応援メニュー</h3>
     ${returnMessage}
     <label class="checkout-consent">
-      <input id="checkout-terms-consent" type="checkbox" ${state.checkoutTermsAccepted ? 'checked' : ''}>
+      <input data-checkout-consent type="checkbox" ${state.checkoutTermsAccepted ? 'checked' : ''}>
       <span><a href="/terms" target="_blank" rel="noopener noreferrer">利用規約</a>に同意し、<a href="/legal" target="_blank" rel="noopener noreferrer">特定商取引法に基づく表記</a>、<a href="/refund-policy" target="_blank" rel="noopener noreferrer">返金・キャンセルポリシー</a>、<a href="/privacy" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>を確認しました。未成年の場合は保護者の同意を得ています。</span>
     </label>
     ${resultEnabled ? `<div class="notice"><strong>${LIVE_RESULT_IMAGE_SERVICE.name}</strong><br>${LIVE_RESULT_IMAGE_SERVICE.resolution}の高画質画像を生成し、決済日から${LIVE_RESULT_IMAGE_SERVICE.downloadDays}日間ダウンロードできます。</div>
@@ -712,10 +791,10 @@ function bindEvents() {
   document.getElementById('result-image-price')?.addEventListener('change', (event) => {
     state.resultImagePrice = Number(event.target.value);
   });
-  document.getElementById('checkout-terms-consent')?.addEventListener('change', (event) => {
+  document.querySelectorAll('[data-checkout-consent]').forEach((input) => input.addEventListener('change', (event) => {
     state.checkoutTermsAccepted = event.target.checked === true;
     render();
-  });
+  }));
   document.querySelector('[data-action="buy-result-image"]')?.addEventListener('click', () => startLiveCheckout('result_image'));
   document.querySelector('[data-action="toggle-support"]')?.addEventListener('click', () => {
     setState({ supportPanelOpen: !state.supportPanelOpen });
@@ -723,8 +802,37 @@ function bindEvents() {
   document.querySelectorAll('[data-support-amount]').forEach((button) => button.addEventListener('click', () => {
     startLiveCheckout('support', Number(button.dataset.supportAmount));
   }));
+  const chatInput = document.getElementById('live-chat-input');
+  chatInput?.addEventListener('input', () => {
+    state.chatDraft = chatInput.value;
+    const sendButton = document.querySelector('[data-action="send-live-chat"]');
+    if (sendButton) sendButton.disabled = state.chatSending || !state.chatDraft.trim();
+  });
+  chatInput?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendLiveChatMessage();
+    }
+  });
+  document.querySelector('[data-action="send-live-chat"]')?.addEventListener('click', sendLiveChatMessage);
+  document.querySelector('[data-action="toggle-live-chat"]')?.addEventListener('click', toggleLiveChat);
+  document.querySelectorAll('[data-action="report-live-chat"]').forEach((button) => button.addEventListener('click', () => {
+    moderateLiveChat('report', button.dataset.messageId);
+  }));
+  document.querySelectorAll('[data-action="hide-live-chat"]').forEach((button) => button.addEventListener('click', () => {
+    moderateLiveChat('hide', button.dataset.messageId);
+  }));
+  document.querySelector('[data-action="toggle-chat-support"]')?.addEventListener('click', () => {
+    setState({ chatSupportOpen: !state.chatSupportOpen });
+  });
+  document.getElementById('live-support-message')?.addEventListener('input', (event) => {
+    state.supportMessage = event.target.value;
+  });
+  document.querySelectorAll('[data-chat-support-amount]').forEach((button) => button.addEventListener('click', () => {
+    startLiveCheckout('support', Number(button.dataset.chatSupportAmount), state.supportMessage);
+  }));
   document.querySelector('[data-action="download-paid-result"]')?.addEventListener('click', downloadPaidResult);
-  if (state.game?.phase === 'complete' && state.checkoutResult === 'success' && state.checkoutSessionId
+  if (state.checkoutResult === 'success' && state.checkoutSessionId
     && !state.checkoutStatusBusy && state.checkoutStatusAttempts === 0) {
     refreshLiveCheckoutStatus();
   }
@@ -849,7 +957,7 @@ async function createGame() {
     state.code = response.code;
     state.hostToken = response.hostToken;
     state.subjectToken = response.game.subjectToken || '';
-    state.game = response.game;
+    state.game = mergeLiveGame(response.game);
     history.replaceState(null, '', `/live-challenge?room=${state.code}#host=${state.hostToken}`);
     setState({
       view: 'host',
@@ -957,7 +1065,7 @@ async function joinGame() {
     });
     state.participantToken = response.participantToken;
     state.participantName = name;
-    state.game = response.game;
+    state.game = mergeLiveGame(response.game);
     writeSession(`live-challenge:${state.code}`, { token: state.participantToken, name });
     setState({ view: 'viewer', loading: false });
     startLiveUpdates();
@@ -966,14 +1074,118 @@ async function joinGame() {
   }
 }
 
+async function sendLiveChatMessage() {
+  const message = String(state.chatDraft || '').trim();
+  if (!message || state.chatSending) return;
+  state.chatSending = true;
+  state.error = '';
+  render();
+  try {
+    const headers = {};
+    if (state.view === 'host') headers['x-live-host-token'] = state.hostToken;
+    if (state.view === 'viewer') headers['x-live-participant-token'] = state.participantToken;
+    const response = await api(`/api/live/games/${state.code}/chat`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ message }),
+    });
+    state.chatDraft = '';
+    state.chatSending = false;
+    addLiveChatMessage(response.message);
+    render();
+  } catch (error) {
+    state.chatSending = false;
+    showError(error);
+  }
+}
+
+async function toggleLiveChat() {
+  if (state.view !== 'host') return;
+  try {
+    const response = await api(`/api/live/games/${state.code}/chat/settings`, {
+      method: 'POST',
+      headers: { 'x-live-host-token': state.hostToken },
+      body: JSON.stringify({ enabled: state.game?.chatEnabled === false }),
+    });
+    state.game = mergeLiveGame(response.game || { chatEnabled: response.enabled });
+    render();
+  } catch (error) {
+    showError(error);
+  }
+}
+
+async function moderateLiveChat(action, messageId) {
+  if (!messageId || !['report', 'hide'].includes(action)) return;
+  const question = action === 'report'
+    ? 'このメッセージを通報し、すぐ非公開にしますか？'
+    : 'このメッセージを非表示にしますか？';
+  if (!confirm(question)) return;
+  try {
+    const headers = action === 'hide'
+      ? { 'x-live-host-token': state.hostToken }
+      : { 'x-live-participant-token': state.participantToken };
+    await api(`/api/live/games/${state.code}/chat/${encodeURIComponent(messageId)}/${action}`, {
+      method: 'POST',
+      headers,
+      body: '{}',
+    });
+    removeLiveChatMessage(messageId);
+    render();
+  } catch (error) {
+    showError(error);
+  }
+}
+
+function addLiveChatMessage(message) {
+  if (!message?.id || !state.game) return;
+  const current = Array.isArray(state.game.chatMessages) ? state.game.chatMessages : [];
+  const messages = [...current.filter((item) => item.id !== message.id), message]
+    .sort((a, b) => Number(a.createdAt) - Number(b.createdAt))
+    .slice(-80);
+  state.game = { ...state.game, chatMessages: messages };
+}
+
+function removeLiveChatMessage(messageId) {
+  if (!state.game) return;
+  state.game = {
+    ...state.game,
+    chatMessages: (state.game.chatMessages || []).filter((item) => item.id !== messageId),
+  };
+}
+
+function mergeLiveGame(nextGame) {
+  if (!nextGame) return state.game;
+  const previous = state.game || {};
+  return {
+    ...previous,
+    ...nextGame,
+    chatMessages: Array.isArray(nextGame.chatMessages)
+      ? nextGame.chatMessages
+      : Array.isArray(previous.chatMessages) ? previous.chatMessages : [],
+    supportPaymentsEnabled: typeof nextGame.supportPaymentsEnabled === 'boolean'
+      ? nextGame.supportPaymentsEnabled
+      : previous.supportPaymentsEnabled,
+    resultImageSalesEnabled: typeof nextGame.resultImageSalesEnabled === 'boolean'
+      ? nextGame.resultImageSalesEnabled
+      : previous.resultImageSalesEnabled,
+    paidSalesEnabled: typeof nextGame.paidSalesEnabled === 'boolean'
+      ? nextGame.paidSalesEnabled
+      : previous.paidSalesEnabled,
+  };
+}
+
 async function loadRoom() {
   const headers = {};
   if (state.view === 'host') headers['x-live-host-token'] = state.hostToken;
   if (state.view === 'viewer') headers['x-live-participant-token'] = state.participantToken;
   const response = await api(`/api/live/games/${state.code}`, { headers });
-  state.game = state.view === 'viewer' ? personalizeGame(response.game) : response.game;
+  const previousGame = state.game;
+  state.game = state.view === 'viewer'
+    ? personalizeGame(mergeLiveGame(response.game))
+    : mergeLiveGame(response.game);
   if (state.view === 'host') state.subjectToken = response.game.subjectToken || state.subjectToken;
   render();
+  resetLiveViewportWhenQuestionChanges(previousGame, state.game);
 }
 
 async function hostAction(action) {
@@ -984,9 +1196,12 @@ async function hostAction(action) {
       headers: { 'x-live-host-token': state.hostToken },
       body: '{}',
     });
-    state.game = response.game;
+    state.game = mergeLiveGame(response.game);
     state.subjectToken = response.game.subjectToken || state.subjectToken;
     setState({ loading: false });
+    if (action === 'start' || action === 'next') {
+      requestAnimationFrame(() => window.scrollTo(0, 0));
+    }
     if (state.game.phase === 'complete') stopLiveUpdates();
   } catch (error) {
     setState({ loading: false, error: error.message });
@@ -1018,7 +1233,7 @@ async function toggleCounts(show) {
       headers: { 'x-live-host-token': state.hostToken },
       body: JSON.stringify({ show }),
     });
-    state.game = response.game;
+    state.game = mergeLiveGame(response.game);
     state.subjectToken = response.game.subjectToken || state.subjectToken;
     render();
   } catch (error) {
@@ -1040,7 +1255,7 @@ async function viewerAnswer(optionIndex) {
       body: JSON.stringify({ questionId: question.id, optionIndex }),
     });
     rememberAnswer(question.id, optionIndex);
-    state.game = personalizeGame(response.game);
+    state.game = personalizeGame(mergeLiveGame(response.game));
     render();
   } catch (error) {
     showError(error.message);
@@ -1081,19 +1296,25 @@ function connectSocket() {
     let message;
     try { message = JSON.parse(event.data); } catch (error) { return; }
     if ((message.type === 'ready' || message.type === 'state') && message.game) {
+      const previousGame = state.game;
       if (message.answers && typeof message.answers === 'object') {
         state.participantAnswers = { ...state.participantAnswers, ...message.answers };
         saveAnswers();
       }
-      state.game = personalizeGame(message.game);
+      state.game = personalizeGame(mergeLiveGame(message.game));
       if (message.participantName) state.participantName = message.participantName;
       if (state.game.phase === 'complete') stopLiveUpdates();
       render();
+      resetLiveViewportWhenQuestionChanges(previousGame, state.game);
     } else if (message.type === 'vote-accepted') {
       rememberAnswer(message.questionId, Number(message.optionIndex));
       render();
     } else if (message.type === 'vote-rejected') {
       showError(message.error || 'live-vote-error');
+    } else if (message.type === 'chat-event') {
+      if (message.action === 'created' && message.message) addLiveChatMessage(message.message);
+      if (message.action === 'removed' && message.messageId) removeLiveChatMessage(message.messageId);
+      render();
     }
   });
   socket.addEventListener('close', () => {
@@ -1105,6 +1326,16 @@ function connectSocket() {
     }
   });
   socket.addEventListener('error', () => socket.close());
+}
+
+function resetLiveViewportWhenQuestionChanges(previousGame, nextGame) {
+  const previousQuestionId = previousGame?.question?.id || '';
+  const nextQuestionId = nextGame?.question?.id || '';
+  const startedVoting = previousGame?.phase !== 'voting' && nextGame?.phase === 'voting';
+  const movedToAnotherQuestion = previousQuestionId && nextQuestionId && previousQuestionId !== nextQuestionId;
+  if (startedVoting || movedToAnotherQuestion) {
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+  }
 }
 
 function personalizeGame(game) {
@@ -1184,7 +1415,7 @@ function saveResultCard() {
   link.click();
 }
 
-async function startLiveCheckout(productType, amount = null) {
+async function startLiveCheckout(productType, amount = null, message = '') {
   if (state.checkoutBusy || !state.game || !state.checkoutTermsAccepted) return;
   state.checkoutBusy = true;
   state.error = '';
@@ -1199,6 +1430,7 @@ async function startLiveCheckout(productType, amount = null) {
       body: JSON.stringify({
         productType,
         amount,
+        message,
         viewerName: state.participantName || state.game.participantName || '視聴者',
         termsAccepted: true,
         termsVersion: CHECKOUT_TERMS.version,
@@ -1352,6 +1584,15 @@ function errorText(code) {
     'invalid-result-image-price': '結果画像の販売価格を選び直してください。',
     'result-image-not-for-sale': 'このLIVEでは結果画像を販売していません。',
     'invalid-support-amount': '応援金額を選び直してください。',
+    'chat-message-required': 'チャットメッセージを入力してください。',
+    'chat-message-too-long': 'チャットは120文字以内で入力してください。',
+    'chat-message-personal-information': '個人情報・URL・SNS IDらしい内容はチャットへ投稿できません。',
+    'chat-message-not-allowed': 'いじめ、性的内容、容姿攻撃、差別表現を含む内容は投稿できません。',
+    'chat-message-too-fast': '連続投稿はできません。4秒ほど待ってから送信してください。',
+    'chat-message-not-found': 'このメッセージはすでに非公開になっています。',
+    'live-chat-paused': '配信者がチャットを一時停止しています。',
+    'live-chat-closed': 'このLIVEのチャットは終了しています。',
+    'live-chat-storage-not-configured': 'LIVEチャットの保存先が設定されていません。',
     'checkout-terms-acceptance-required': '利用規約と決済条件への同意が必要です。',
     'live-support-checkout-not-configured': '応援決済の本番設定が完了していません。',
     'live-result-checkout-not-configured': '結果画像決済の本番設定が完了していません。',

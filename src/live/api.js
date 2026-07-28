@@ -10,6 +10,7 @@ import {
   LIVE_VIEWER_LIMIT,
 } from './config.js';
 import {
+  broadcastLiveRealtimeChat,
   broadcastLiveRealtimeState,
   connectLiveRealtime,
   hasLiveRealtime,
@@ -22,6 +23,15 @@ import {
   reserveLiveRealtimeParticipant,
   storeLiveRealtimeVote,
 } from './realtime.js';
+import {
+  createLiveChatMessage,
+  ensureLiveChatD1,
+  hideLiveChatMessage,
+  listLiveChatMessages,
+  normalizeLiveChatText,
+  publishPaidLiveChatMessage,
+  reportLiveChatMessage,
+} from './chat.js';
 import { fetchYouTubeDataProfile, normalizeYouTubeInput } from './youtube.js';
 import {
   createFreeResultPreview,
@@ -249,6 +259,29 @@ export async function handleLiveApi(request, env, path) {
       return await createStreamChallengeGame(request, env);
     }
 
+    const chatRoute = path.match(/^\/api\/live\/games\/([0-9]{6})\/chat(?:\/([A-Za-z0-9_-]{8,120})\/(report|hide)|\/settings)?$/);
+    if (chatRoute) {
+      const [, chatCode, messageId = '', chatAction = ''] = chatRoute;
+      if (request.method === 'GET' && !messageId && !path.endsWith('/settings')) {
+        return await getLiveChatResponse(request, env, chatCode);
+      }
+      if (request.method !== 'POST') return liveJson({ error: 'method-not-allowed' }, 405);
+      if (path.endsWith('/settings')) {
+        await enforceLiveRateLimit(request, env, `chat-settings:${chatCode}`, 60);
+        return await updateLiveChatSettings(request, env, chatCode);
+      }
+      if (chatAction === 'report') {
+        await enforceLiveRateLimit(request, env, `chat-report:${chatCode}`, 30);
+        return await reportLiveChat(request, env, chatCode, messageId);
+      }
+      if (chatAction === 'hide') {
+        await enforceLiveRateLimit(request, env, `chat-hide:${chatCode}`, 120);
+        return await hideLiveChat(request, env, chatCode, messageId);
+      }
+      await enforceLiveRateLimit(request, env, `chat-send:${chatCode}`, 80);
+      return await sendLiveChat(request, env, chatCode);
+    }
+
     const route = path.match(/^\/api\/live\/games\/([0-9]{6})(?:\/(join|start|answer|subject-answer|advance|vote|close|reveal|previous|next|socket|creator-image|result-preview|checkout|cancel|reschedule|rotate-links|vote-counts))?$/);
     if (!route) return liveJson({ error: 'not-found' }, 404);
     const [, code, action = ''] = route;
@@ -343,6 +376,7 @@ async function createLiveGame(request, env) {
     results: [],
     reviewedThroughIndex: -1,
     showVoteCount: validation.draft.showLiveVoteCounts,
+    chatEnabled: true,
     participantCount: 0,
     participantLimit: liveViewerLimit(env),
     realtime: hasLiveRealtime(env),
@@ -418,6 +452,7 @@ async function createStreamChallengeGame(request, env) {
     results: [],
     reviewedThroughIndex: -1,
     showVoteCount: validation.draft.showLiveVoteCounts,
+    chatEnabled: true,
     participantCount: 0,
     participantLimit: liveViewerLimit(env),
     realtime: hasLiveRealtime(env),
@@ -597,11 +632,17 @@ async function getLiveGameResponse(request, env, code) {
     subject,
     participantToken,
   });
-  if (participantToken && game.phase === 'complete') {
+  publicGame.chatMessages = await listLiveChatMessages(env, code);
+  if (participantToken) {
     try {
       await assertPaidChannelApproved(env, game.channelVerificationId, game.channelId);
-      publicGame.supportPaymentsEnabled = liveSupportCheckoutConfigured(env);
-      publicGame.resultImageSalesEnabled = liveResultImageCheckoutConfigured(env);
+      const paidCreator = Boolean(game.channelVerificationId && game.channelId && game.resultImagePrice);
+      publicGame.supportPaymentsEnabled = paidCreator
+        && !['cancelled', 'terminated'].includes(game.phase)
+        && liveSupportCheckoutConfigured(env);
+      publicGame.resultImageSalesEnabled = paidCreator
+        && game.phase === 'complete'
+        && liveResultImageCheckoutConfigured(env);
       publicGame.paidSalesEnabled = publicGame.supportPaymentsEnabled || publicGame.resultImageSalesEnabled;
     } catch (error) {
       publicGame.supportPaymentsEnabled = false;
@@ -613,6 +654,97 @@ async function getLiveGameResponse(request, env, code) {
     code,
     game: publicGame,
   });
+}
+
+async function getLiveChatResponse(request, env, code) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
+  const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
+  const host = Boolean(hostToken && hostToken === game.hostToken)
+    && await isLiveHostAuthorized(request, env, game);
+  const participant = participantToken
+    ? await loadLiveParticipant(env, code, participantToken)
+    : null;
+  if (!host && !participant) throw liveError('participant-forbidden', 403);
+  return liveJson({
+    code,
+    enabled: game.chatEnabled !== false,
+    messages: await listLiveChatMessages(env, code),
+  });
+}
+
+async function sendLiveChat(request, env, code) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  if (['cancelled', 'terminated'].includes(game.phase)) throw liveError('live-chat-closed', 409);
+  if (game.chatEnabled === false) throw liveError('live-chat-paused', 409);
+  const body = await readLiveJson(request);
+  const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
+  let sender;
+  if (hostToken && hostToken === game.hostToken) {
+    await requireLiveHost(request, env, game);
+    sender = {
+      id: `host:${code}`,
+      name: game.channelName || game.subjectName || '配信者',
+      role: 'host',
+    };
+  } else {
+    const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
+    const participant = await loadLiveParticipant(env, code, participantToken);
+    if (!participant) throw liveError('participant-forbidden', 403);
+    sender = { id: participant.id, name: participant.name, role: 'viewer' };
+  }
+  const message = await createLiveChatMessage(env, {
+    code,
+    participantId: sender.id,
+    participantName: sender.name,
+    senderRole: sender.role,
+    text: body.message,
+  });
+  if (hasLiveRealtime(env)) {
+    await broadcastLiveRealtimeChat(env, code, { action: 'created', message });
+  }
+  return liveJson({ code, message }, 201);
+}
+
+async function updateLiveChatSettings(request, env, code) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  await requireLiveHost(request, env, game);
+  const body = await readLiveJson(request);
+  game.chatEnabled = body.enabled === true;
+  touchLiveGame(game);
+  await putStoredLiveGame(env, code, game);
+  if (hasLiveRealtime(env)) await broadcastCurrentRealtimeState(env, code, game);
+  return liveJson({ code, enabled: game.chatEnabled, game: publicLiveGame(game, { host: true }) });
+}
+
+async function reportLiveChat(request, env, code, messageId) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
+  const participant = await loadLiveParticipant(env, code, participantToken);
+  if (!participant) throw liveError('participant-forbidden', 403);
+  const result = await reportLiveChatMessage(env, code, messageId);
+  if (hasLiveRealtime(env)) {
+    await broadcastLiveRealtimeChat(env, code, { action: 'removed', messageId });
+  }
+  await recordLiveOpsEvent(env, {
+    category: 'moderation',
+    severity: 'warning',
+    eventType: 'live-chat-message-reported',
+    code,
+    message: '視聴者の通報によりLIVEチャットを即時非公開にしました。',
+    metadata: { messageId, reporterParticipantId: participant.id },
+  });
+  return liveJson({ code, ...result });
+}
+
+async function hideLiveChat(request, env, code, messageId) {
+  const game = await requireLiveGame(env, code, { baseOnly: true });
+  await requireLiveHost(request, env, game);
+  const result = await hideLiveChatMessage(env, code, messageId);
+  if (hasLiveRealtime(env)) {
+    await broadcastLiveRealtimeChat(env, code, { action: 'removed', messageId });
+  }
+  return liveJson({ code, ...result });
 }
 
 async function uploadLiveCreatorImage(request, env, code) {
@@ -663,7 +795,13 @@ async function createLiveCheckout(request, env, code) {
     throw liveError('invalid-checkout-product', 400);
   }
   const game = await requireLiveGame(env, code, { polling: true, participantToken });
-  if (game.phase !== 'complete') throw liveError('result-not-ready', 409);
+  if (productType === 'result_image' && game.phase !== 'complete') throw liveError('result-not-ready', 409);
+  if (productType === 'support' && ['cancelled', 'terminated'].includes(game.phase)) {
+    throw liveError('live-chat-closed', 409);
+  }
+  if (productType === 'support' && game.phase !== 'complete' && game.chatEnabled === false) {
+    throw liveError('live-chat-paused', 409);
+  }
   const approval = await assertPaidChannelApproved(env, game.channelVerificationId, game.channelId);
   const participant = game.participants.find((item) => item.token === participantToken);
   if (!participant) throw liveError('participant-forbidden', 403);
@@ -679,13 +817,17 @@ async function createLiveCheckout(request, env, code) {
     productName = `${game.channelName || game.subjectName} LIVE応援`;
   }
   const viewerName = normalizeParticipantName(body.viewerName || participant.name);
+  const supportMessage = productType === 'support'
+    ? normalizeLiveChatText(body.message, { optional: true })
+    : '';
   const existing = await purchaseDb.prepare(`
     SELECT order_id, product_type, code, participant_id, amount, stripe_checkout_session_id, stripe_checkout_url,
-      stripe_checkout_expires_at, status
+      stripe_checkout_expires_at, status, support_message
     FROM live_checkout_orders WHERE checkout_request_id = ?
   `).bind(checkoutRequestId).first();
   if (existing && (existing.code !== code || existing.participant_id !== participant.id
-    || existing.product_type !== productType || Number(existing.amount) !== amount)) {
+    || existing.product_type !== productType || Number(existing.amount) !== amount
+    || String(existing.support_message || '') !== supportMessage)) {
     throw liveError('checkout-request-conflict', 409);
   }
   if (existing?.stripe_checkout_url && Number(existing.stripe_checkout_expires_at) > Date.now()
@@ -700,12 +842,12 @@ async function createLiveCheckout(request, env, code) {
       INSERT INTO live_checkout_orders (
         order_id, checkout_request_id, product_type, code, participant_id, participant_name,
         viewer_name, channel_verification_id, stripe_account_id, amount, currency,
-        creator_amount, platform_amount, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'jpy', ?, ?, 'creating', ?, ?)
+        creator_amount, platform_amount, support_message, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'jpy', ?, ?, ?, 'creating', ?, ?)
     `).bind(
       orderId, checkoutRequestId, productType, code, participant.id, participant.name,
       viewerName, game.channelVerificationId, approval.stripe_account_id, amount,
-      allocation.creatorAmount, allocation.applicationFeeAmount, now, now,
+      allocation.creatorAmount, allocation.applicationFeeAmount, supportMessage, now, now,
     ).run();
   }
   await purchaseDb.prepare(`
@@ -1244,7 +1386,11 @@ async function fulfillLiveCheckout(request, env, session) {
     WHERE order_id = ? OR stripe_checkout_session_id = ? LIMIT 1
   `).bind(orderId, String(session.id || '')).first();
   if (!row) throw liveError('checkout-order-not-found', 409);
-  if (row.status === 'paid' && (row.product_type !== 'result_image' || row.purchase_id)) return row;
+  if (row.status === 'paid' && row.product_type === 'support') {
+    await publishPaidSupportChatSafely(env, row);
+    return row;
+  }
+  if (row.status === 'paid' && row.product_type === 'result_image' && row.purchase_id) return row;
   if (String(session.id || '') !== String(row.stripe_checkout_session_id || '')
     || String(session.currency || '').toLowerCase() !== 'jpy'
     || Number(session.amount_total) !== Number(row.amount)
@@ -1287,6 +1433,9 @@ async function fulfillLiveCheckout(request, env, session) {
     WHERE order_id = ?
   `).bind(purchaseId, paymentIntentId, paidAt, paidAt, row.order_id).run();
   await recordPaidRevenue(purchaseDb, row, paidAt);
+  if (row.product_type === 'support') {
+    await publishPaidSupportChatSafely(env, row);
+  }
   await recordLiveOpsEvent(env, {
     category: 'purchase', severity: 'info', eventType: 'checkout-paid', code: row.code,
     purchaseId: purchaseId || '', externalId: paymentIntentId,
@@ -1294,6 +1443,33 @@ async function fulfillLiveCheckout(request, env, session) {
     metadata: { orderId: row.order_id, productType: row.product_type, amount: Number(row.amount), creatorAmount: Number(row.creator_amount) },
   });
   return { ...row, purchase_id: purchaseId, stripe_payment_intent_id: paymentIntentId, status: 'paid', paid_at: paidAt };
+}
+
+async function publishPaidSupportChatSafely(env, row) {
+  try {
+    const message = await publishPaidLiveChatMessage(env, {
+      orderId: row.order_id,
+      code: row.code,
+      participantId: row.participant_id,
+      participantName: row.viewer_name || row.participant_name,
+      text: row.support_message,
+      amount: row.amount,
+    });
+    if (message && hasLiveRealtime(env)) {
+      await broadcastLiveRealtimeChat(env, row.code, { action: 'created', message });
+    }
+    return message;
+  } catch (error) {
+    await recordLiveOpsEvent(env, {
+      category: 'purchase',
+      severity: 'warning',
+      eventType: 'paid-support-chat-publish-failed',
+      code: row.code,
+      message: '応援決済は完了しましたが、LIVEチャットへの表示に失敗しました。決済自体は取り消していません。',
+      metadata: { orderId: row.order_id, error: String(error?.message || error) },
+    }).catch(() => {});
+    return null;
+  }
 }
 
 async function loadParticipantById(env, code, participantId) {
@@ -1904,6 +2080,7 @@ export function publicLiveGame(game, access = {}) {
       : null,
     results: completedResults,
     showVoteCount: Boolean(game.showVoteCount),
+    chatEnabled: game.chatEnabled !== false,
     realtime: Boolean(game.realtime),
     scheduledAt: Number(game.scheduledAt) || undefined,
     channelName: game.channelName || game.subjectName,
@@ -1912,6 +2089,7 @@ export function publicLiveGame(game, access = {}) {
     hasCreatorImage: Boolean(game.creatorImage?.previewKey)
       && (!game.creatorImage.moderationStatus || game.creatorImage.moderationStatus === 'approved'),
     participantName: participant?.name,
+    participantId: participant?.id,
     host: Boolean(access.host),
     subject: Boolean(access.subject),
     questions: access.host ? game.questions.map(({ id, type, text, options }) => ({ id, type, text, options })) : undefined,
@@ -2587,6 +2765,8 @@ async function cleanupExpiredLiveData(env) {
   await env.REMOTE_DB.prepare('DELETE FROM live_reservations WHERE expires_at < ?').bind(now).run();
   await env.REMOTE_DB.prepare('DELETE FROM live_active_sessions WHERE expires_at < ?').bind(now).run();
   await env.REMOTE_DB.prepare('DELETE FROM live_youtube_caption_sources WHERE expires_at < ?').bind(now).run();
+  await ensureLiveChatD1(env);
+  await env.REMOTE_DB.prepare('DELETE FROM live_chat_messages WHERE created_at < ?').bind(now - LIVE_SAVED_TTL_SECONDS * 1000).run();
 }
 
 async function isLiveSlotAvailable(env, scheduledAt, excludeCode = '') {

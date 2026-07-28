@@ -56,7 +56,7 @@ test('応援金の候補金額でもYouTuber 70%と名目手数料30%を維持�
 
 test('結果画像と応援機能は指定された税込価格だけを候補にする', () => {
   assert.deepEqual(LIVE_RESULT_IMAGE_PRICES, [480, 980, 2980]);
-  assert.deepEqual(LIVE_SUPPORT_AMOUNTS, [180, 480, 980, 2980]);
+  assert.deepEqual(LIVE_SUPPORT_AMOUNTS, [180, 480, 980, 1980, 2980]);
 });
 
 test('円未満の端数はYouTuber分を切り捨て、決済前は運営純額を推測しない', () => {

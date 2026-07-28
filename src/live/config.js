@@ -62,4 +62,4 @@ export const LIVE_RESULT_IMAGE_SERVICE = Object.freeze({
   resolution: '2,160×2,700px',
   downloadDays: 30,
 });
-export const LIVE_SUPPORT_AMOUNTS = Object.freeze([180, 480, 980, 2980]);
+export const LIVE_SUPPORT_AMOUNTS = Object.freeze([180, 480, 980, 1980, 2980]);

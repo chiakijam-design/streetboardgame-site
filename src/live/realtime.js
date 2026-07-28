@@ -120,6 +120,12 @@ export async function broadcastLiveRealtimeState(env, code, game) {
   return true;
 }
 
+export async function broadcastLiveRealtimeChat(env, code, event) {
+  if (!hasLiveRealtime(env)) return false;
+  await coordinatorStub(env, code).fetch(`${INTERNAL_ORIGIN}/chat`, internalJson({ code, event }));
+  return true;
+}
+
 export function personalizeLiveRealtimeGame(game, answers = {}, participantName = '') {
   const personalized = structuredClone(game);
   const questionId = personalized?.question?.id;
@@ -235,6 +241,17 @@ export class LiveRoomCoordinator {
       await this.ctx.storage.put({ code, roomState: game, cleanupAt });
       await this.broadcastToShards(code, game);
       await scheduleDurableAlarm(this.ctx.storage, cleanupAt);
+      return json({ broadcast: true });
+    }
+    if (url.pathname === '/chat' && request.method === 'POST') {
+      const { code, event } = await request.json();
+      await Promise.all(Array.from({ length: LIVE_REALTIME_SHARD_COUNT }, (_, shardIndex) => (
+        voteShardStub(this.env, code, shardIndex).fetch(`${INTERNAL_ORIGIN}/chat`, internalJson({
+          code,
+          shardIndex,
+          event,
+        }))
+      )));
       return json({ broadcast: true });
     }
     if (url.pathname === '/counts' && request.method === 'POST') {
@@ -357,6 +374,12 @@ export class LiveVoteShard {
         socket.send(message);
       }
       await scheduleDurableAlarm(this.ctx.storage, cleanupAt);
+      return json({ broadcast: true });
+    }
+    if (url.pathname === '/chat' && request.method === 'POST') {
+      const { event } = await request.json();
+      const message = JSON.stringify({ type: 'chat-event', ...event });
+      for (const socket of this.ctx.getWebSockets()) socket.send(message);
       return json({ broadcast: true });
     }
     return json({ error: 'not-found' }, 404);

@@ -24,6 +24,8 @@ npx wrangler d1 execute streetboardgame-live-purchases --remote --file migration
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0003_live_revenue_ledger.sql
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0004_live_entitlement_recovery.sql
 npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0005_live_checkout_consent.sql
+npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0006_live_support_message.sql
+npx wrangler d1 migrations apply streetboardgame-remote --remote
 ```
 
 荒らし・なりすまし・不適切画像・カード不正利用への対応は[`LIVE_ABUSE_PREVENTION.md`](LIVE_ABUSE_PREVENTION.md)を使用する。初期版の応援メッセージは公開せず、LIVE配信者の招待コードは二要素認証済みの運営コンソールから手動審査後にだけ発行する。現行の販売登録ではYouTubeチャンネルを本人性・管理権限の確認対象にする。

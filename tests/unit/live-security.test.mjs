@@ -17,8 +17,8 @@ test('参加者名は正規化し、重大な攻撃語・URL・連絡先らし�
   assert.throws(() => normalizeParticipantName('09012345678'), /participant-name-not-allowed/);
 });
 
-test('初期版は応援メッセージを公開しない', () => {
-  assert.equal(LIVE_SUPPORT_MESSAGES_PUBLIC, false);
+test('決済済みの応援メッセージだけをLIVEチャットへ公開する', () => {
+  assert.equal(LIVE_SUPPORT_MESSAGES_PUBLIC, true);
 });
 
 test('Stripeの早期不正警告・異議申立て・高リスク判定を停止対象にする', () => {

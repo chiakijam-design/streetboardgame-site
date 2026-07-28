@@ -261,7 +261,7 @@ test('審査済み配信者は公開LIVEで結果画像価格と応援販売を�
   await expect(page.getByRole('heading', { name: '視聴者を招待する' })).toBeVisible();
 });
 
-test('公開LIVEの結果画面に有料結果画像と4段階の応援金額を表示する', async ({ page }) => {
+test('公開LIVEの結果画面に有料結果画像と5段階の応援金額を表示する', async ({ page }) => {
   const participantToken = 'e'.repeat(48);
   await page.addInitScript(({ token }) => {
     sessionStorage.setItem('live-challenge:123456', JSON.stringify({ token, name: '視聴者A' }));
@@ -290,7 +290,7 @@ test('公開LIVEの結果画面に有料結果画像と4段階の応援金額を
           resultImagePrice: 2980,
           resultImageSalesEnabled: true,
           supportPaymentsEnabled: true,
-          supportAmounts: [180, 480, 980, 2980],
+          supportAmounts: [180, 480, 980, 1980, 2980],
         },
       }),
     });
@@ -304,12 +304,91 @@ test('公開LIVEの結果画面に有料結果画像と4段階の応援金額を
   await expect(buy).toBeEnabled();
   await page.getByRole('button', { name: '♡ 配信者を応援する' }).click();
   const supportButtons = page.locator('[data-support-amount]');
-  await expect(supportButtons).toHaveCount(4);
+  await expect(supportButtons).toHaveCount(5);
   await expect(supportButtons).toHaveText([
     '180円（税込）',
     '480円（税込）',
     '980円（税込）',
+    '1,980円（税込）',
     '2,980円（税込）',
+  ]);
+});
+
+test('視聴者はLIVEチャットへ投稿でき、5段階の応援金額を選べる', async ({ page }) => {
+  const participantToken = 'f'.repeat(48);
+  let postedMessage = '';
+  await page.addInitScript(({ token }) => {
+    sessionStorage.setItem('live-challenge:123456', JSON.stringify({ token, name: '視聴者B' }));
+  }, { token: participantToken });
+  await page.route('**/api/live/games/123456/chat', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    postedMessage = JSON.parse(route.request().postData() || '{}').message || '';
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: '123456',
+        message: {
+          id: 'msg_test_12345678',
+          participantId: 'participant-b',
+          name: '視聴者B',
+          role: 'viewer',
+          text: postedMessage,
+          type: 'chat',
+          amount: 0,
+          createdAt: Date.now(),
+        },
+      }),
+    });
+  });
+  await page.route('**/api/live/games/123456', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: '123456',
+        game: {
+          mode: 'stream-challenge',
+          phase: 'lobby',
+          subjectName: '配信者',
+          participantName: '視聴者B',
+          participantId: 'participant-b',
+          participantCount: 4,
+          participantLimit: 1000,
+          questionCount: 10,
+          realtime: false,
+          chatEnabled: true,
+          chatMessages: [],
+          supportPaymentsEnabled: true,
+          supportAmounts: [180, 480, 980, 1980, 2980],
+        },
+      }),
+    });
+  });
+  await page.goto('/live-challenge?room=123456');
+  await expect(page.getByTestId('live-chat-panel')).toBeVisible();
+  const [mainBox, chatBox, viewportWidth] = await Promise.all([
+    page.locator('.live-session-main').boundingBox(),
+    page.getByTestId('live-chat-panel').boundingBox(),
+    page.evaluate(() => window.innerWidth),
+  ]);
+  if (viewportWidth >= 900) {
+    expect(chatBox?.x).toBeGreaterThan((mainBox?.x || 0) + (mainBox?.width || 0) - 1);
+  } else {
+    expect(chatBox?.y).toBeGreaterThan((mainBox?.y || 0) + (mainBox?.height || 0) - 1);
+  }
+  await page.getByPlaceholder('チャットを入力（120文字まで）').fill('配信楽しみ！');
+  await page.getByRole('button', { name: 'チャットを送信' }).click();
+  await expect(page.getByTestId('live-chat-panel')).toContainText('配信楽しみ！');
+  expect(postedMessage).toBe('配信楽しみ！');
+  await page.getByRole('button', { name: /応援メッセージを送る/ }).click();
+  await expect(page.locator('[data-chat-support-amount]')).toHaveCount(5);
+  await expect(page.locator('[data-chat-support-amount]')).toHaveText([
+    '180円',
+    '480円',
+    '980円',
+    '1,980円',
+    '2,980円',
   ]);
 });
 

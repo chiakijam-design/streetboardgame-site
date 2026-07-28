@@ -10,7 +10,7 @@ import { CHECKOUT_TERMS } from '../../src/live/checkout-terms-config.js';
 
 test('視聴者決済の規約バージョンとSHA-256を実際の利用規約全文へ固定する', async () => {
   const document = (await readFileAsync(new URL('../../terms.html', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-  assert.equal(CHECKOUT_TERMS.version, '1.13');
+  assert.equal(CHECKOUT_TERMS.version, '1.14');
   assert.equal(createHash('sha256').update(document).digest('hex'), CHECKOUT_TERMS.documentSha256);
 });
 
@@ -31,7 +31,7 @@ test('利用規約は現在の対象年齢・理解度ボード・投稿審査�
     '無料の結果カード保存機能',
     '変換前の元画像を用いる',
     '480円、980円、2,980円',
-    '180円、480円、980円、2,980円',
+    '180円、480円、980円、1,980円、2,980円',
   ]) assert.equal(document.includes(requiredText), true, requiredText);
 });
 
@@ -52,9 +52,9 @@ test('特商法表記は個人の住所・電話番号を公開せず、請求�
 test('特商法表記は現行LIVE版の料金・提供・キャンセル条件を表示する', async () => {
   const document = await readFileAsync(new URL('../../legal.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    '2026年7月26日',
+    '2026年7月28日',
     '480円、980円、2,980円',
-    '180円、480円、980円、2,980円',
+    '180円、480円、980円、1,980円、2,980円',
     '応援機能は寄付・贈与ではなく',
     'Stripeを利用したクレジットカード決済',
     '2,160×2,700px',
@@ -68,8 +68,8 @@ test('特商法表記は現行LIVE版の料金・提供・キャンセル条件�
 test('返金ポリシーは現行LIVE版の提供完了・代替提供・返金申請条件を表示する', async () => {
   const document = await readFileAsync(new URL('../../refund-policy.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    '2026年7月26日',
-    'バージョン：1.3',
+    '2026年7月28日',
+    'バージョン：1.4',
     '通信販売にクーリング・オフ制度は適用されず',
     '決済完了時に応援受付が完了',
     '応援受付の不具合',
@@ -149,9 +149,12 @@ test('購入D1マイグレーションは注文別の同意規約・全文ハッ
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync(new URL('../../migrations-purchases/0002_live_checkout_orders.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations-purchases/0005_live_checkout_consent.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations-purchases/0006_live_support_message.sql', import.meta.url), 'utf8'));
   const columns = sqlite.prepare('PRAGMA table_info(live_checkout_consents)').all().map((column) => column.name);
+  const orderColumns = sqlite.prepare('PRAGMA table_info(live_checkout_orders)').all().map((column) => column.name);
   assert.equal(columns.includes('order_id'), true);
   assert.equal(columns.includes('terms_version'), true);
   assert.equal(columns.includes('terms_document_sha256'), true);
   assert.equal(columns.includes('terms_accepted_at'), true);
+  assert.equal(orderColumns.includes('support_message'), true);
 });

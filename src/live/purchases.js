@@ -43,6 +43,7 @@ export async function ensureLivePurchaseD1(env) {
           channel_verification_id TEXT NOT NULL, stripe_account_id TEXT NOT NULL,
           amount INTEGER NOT NULL, currency TEXT NOT NULL DEFAULT 'jpy',
           creator_amount INTEGER NOT NULL, platform_amount INTEGER NOT NULL,
+          support_message TEXT NOT NULL DEFAULT '',
           purchase_id TEXT, stripe_checkout_session_id TEXT UNIQUE, stripe_checkout_url TEXT,
           stripe_checkout_expires_at INTEGER, stripe_payment_intent_id TEXT UNIQUE,
           stripe_charge_id TEXT, stripe_refund_id TEXT, status TEXT NOT NULL DEFAULT 'creating',
@@ -108,6 +109,7 @@ export async function ensureLivePurchaseD1(env) {
       `).run(),
     ]).then(async () => {
       await assertPurchaseRecoveryColumn(db);
+      await assertSupportMessageColumn(db);
       return Promise.all([
         db.prepare('CREATE INDEX IF NOT EXISTS idx_live_result_entitlements_participant ON live_result_entitlements (code, participant_id, status)').run(),
         db.prepare('CREATE INDEX IF NOT EXISTS idx_live_result_entitlements_expiry ON live_result_entitlements (available_until, status)').run(),
@@ -133,6 +135,14 @@ async function assertPurchaseRecoveryColumn(db) {
   const columns = await db.prepare('PRAGMA table_info(live_result_entitlements)').all();
   const results = columns?.results || [];
   if (results.length > 0 && !results.some((column) => column.name === 'purchaser_email_hash')) {
+    throw purchaseError('live-purchase-schema-outdated', 503);
+  }
+}
+
+async function assertSupportMessageColumn(db) {
+  const columns = await db.prepare('PRAGMA table_info(live_checkout_orders)').all();
+  const results = columns?.results || [];
+  if (results.length > 0 && !results.some((column) => column.name === 'support_message')) {
     throw purchaseError('live-purchase-schema-outdated', 503);
   }
 }

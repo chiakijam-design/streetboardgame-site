@@ -5,7 +5,7 @@ const NAME_BLOCK_PATTERNS = [
   /nigg(?:er|a)|chink|fagg?ot|retard/i,
 ];
 
-export const LIVE_SUPPORT_MESSAGES_PUBLIC = false;
+export const LIVE_SUPPORT_MESSAGES_PUBLIC = true;
 
 let readyDb = null;
 let readyPromise = null;
