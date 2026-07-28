@@ -10,7 +10,7 @@ import { CHECKOUT_TERMS } from '../../src/live/checkout-terms-config.js';
 
 test('視聴者決済の規約バージョンとSHA-256を実際の利用規約全文へ固定する', async () => {
   const document = (await readFileAsync(new URL('../../terms.html', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-  assert.equal(CHECKOUT_TERMS.version, '1.14');
+  assert.equal(CHECKOUT_TERMS.version, '1.15');
   assert.equal(createHash('sha256').update(document).digest('hex'), CHECKOUT_TERMS.documentSha256);
 });
 
@@ -32,6 +32,11 @@ test('利用規約は現在の対象年齢・理解度ボード・投稿審査�
     '変換前の元画像を用いる',
     '480円、980円、2,980円',
     '180円、480円、980円、1,980円、2,980円',
+    '金額に応じた色でLIVEチャットへ表示',
+    '配信者からの返答・読み上げ・お礼',
+    '決済完了後でもメッセージを事前通知なく非表示',
+    '売上の70%は、別途審査・登録・契約を完了した配信者へ',
+    '寄付、贈与、募金、クラウドファンディングまたは投資ではなく',
   ]) assert.equal(document.includes(requiredText), true, requiredText);
 });
 

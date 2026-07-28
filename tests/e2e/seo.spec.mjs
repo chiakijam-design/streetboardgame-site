@@ -79,7 +79,11 @@ test('サイトマップ掲載URLは200・自己canonical・index可能で統一
   ]) {
     const expectedDate = [
       `${ORIGIN}/challenge`,
+      `${ORIGIN}/live-challenge`,
+      `${ORIGIN}/terms`,
       `${ORIGIN}/en/challenge`,
+      `${ORIGIN}/en/live-challenge`,
+      `${ORIGIN}/en/terms`,
     ].includes(updatedUrl) ? '2026-07-28' : '2026-07-27';
     expect(sitemap).toContain(`<loc>${updatedUrl}</loc>\n    <lastmod>${expectedDate}</lastmod>`);
   }
