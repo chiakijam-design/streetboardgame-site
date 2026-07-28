@@ -11,14 +11,21 @@ const ACCESS_TOKEN = 'b'.repeat(48);
 
 test('収益分配規約のバージョンとSHA-256を実際の規約全文へ固定する', async () => {
   const document = (await readFile(new URL('../../creator-terms.html', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
-  assert.equal(CREATOR_TERMS.version, '1.6');
+  assert.equal(CREATOR_TERMS.version, '1.7');
   assert.equal(createHash('sha256').update(document).digest('hex'), CREATOR_TERMS.documentSha256);
   for (const requiredText of [
     'LIVE配信者向け収益分配規約',
     '無料LIVEの作成・参加だけを行う利用者',
     '現時点の販売登録では、YouTubeチャンネルの管理権限確認',
+    '有料応援メッセージ機能は寄付・贈与ではなく',
     '売上総額（税込）の70%',
     '1円未満の端数が生じる場合は切り捨て',
+    '結果画像売上と有料応援メッセージ売上は、売上明細上で区分して集計',
+    '返答・読み上げ・お礼、配信内容への影響、特別な権利または継続的な表示',
+    'その注文に対応する配信者分配額を保留または取り消し',
+    '非表示になっただけでは、その注文は当然には返金または分配取消しの対象になりません',
+    '応援受付、LIVEチャットへの表示または配信者への到着通知が完了せず',
+    '配信者には応援メッセージへの返答、読み上げまたはお礼を行う義務はありません',
     '日本時間の対象月終了から14日後以降',
     'Stripe Connectアカウントへの送金と、Stripe Connect残高から配信者の銀行口座等への入金は別',
   ]) assert.equal(document.includes(requiredText), true, requiredText);
@@ -51,7 +58,7 @@ test('Web同意は規約・日時・IP・端末・Connect IDを改変せず保�
   assert.equal(response.status, 201);
   const result = await response.json();
   assert.equal(result.accepted, true);
-  assert.equal(result.agreement.termsVersion, '1.6');
+  assert.equal(result.agreement.termsVersion, '1.7');
   assert.equal(result.agreement.contractingName, 'テスト株式会社');
   assert.equal(result.agreement.contactEmailMasked, 'cr•••••@example.com');
   assert.equal(db.agreements.length, 1);
