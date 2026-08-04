@@ -753,10 +753,10 @@ function AboutPage() {
         </a>
 
         <section id="contact-section" aria-labelledby="about-contact-title" style={{ scrollMarginTop: 20 }}>
-          <AboutSectionTitle id="about-contact-title">♡ お問い合わせ</AboutSectionTitle>
+          <AboutSectionTitle id="about-contact-title">♡ 感想・改善要望・お問い合わせ</AboutSectionTitle>
           <AboutCard>
             <p style={{ ...paragraph(), marginTop: 0 }}>
-              不具合・掲載内容・サービスについて、下のフォームから送信できます。
+              使ってみた感想や改善してほしいこと、不具合・ご質問を送れます。短い一言だけでも歓迎です。
             </p>
             <ContactForm />
           </AboutCard>
@@ -886,13 +886,14 @@ function ContactForm() {
   const isCreatorRegistration = contactTopic === 'live-creator-registration';
   const isCommerceDisclosure = contactTopic === 'commerce-disclosure';
   const isRefundRequest = contactTopic === 'refund-request';
+  const isSpecialRequest = isCreatorRegistration || isCommerceDisclosure || isRefundRequest;
   const contactSubject = isCreatorRegistration
     ? 'streetboardgame.com LIVE配信者登録申込み'
     : isCommerceDisclosure
       ? 'streetboardgame.com 特定商取引法第11条表示事項の開示請求'
       : isRefundRequest
         ? 'streetboardgame.com 返金・キャンセル申請'
-        : 'streetboardgame.com お問い合わせ';
+        : 'streetboardgame.com 感想・改善要望・お問い合わせ';
   const defaultMessage = isCreatorRegistration
     ? 'LIVE配信者登録を希望します。\n\n配信サービス：\n配信アカウント／チャンネルURL：\n利用予定：'
     : isCommerceDisclosure
@@ -977,24 +978,75 @@ function ContactForm() {
           返金・キャンセルの確認用フォームです。注文番号など、分かる範囲の購入情報を追記してください。カード番号全桁やセキュリティコードは入力しないでください。
         </p>
       )}
+      {!isSpecialRequest && (
+        <>
+          <div data-testid="feedback-prompt" style={{
+            display: 'grid',
+            gap: 8,
+            padding: 12,
+            border: `2px solid ${theme.black}`,
+            borderRadius: 12,
+            background: '#FFF4B8',
+            boxShadow: '2px 2px 0 #000',
+          }}>
+            <strong style={{ fontSize: 14, lineHeight: 1.5 }}>こんな声を聞かせてください</strong>
+            <ul style={{ display: 'grid', gap: 5, margin: 0, paddingLeft: 21, fontSize: 13, lineHeight: 1.55, fontWeight: 700 }}>
+              <li>どんなふうに遊んで、何が楽しかったか</li>
+              <li>困ったこと・分かりにくかったこと</li>
+              <li>こうなったらもっと使いたい、というアイデア</li>
+            </ul>
+          </div>
+          <label htmlFor="contact-kind" style={contactLabelStyle()}>
+            送りたい内容
+            <select id="contact-kind" name="feedback_type" defaultValue="感想" required style={{ ...inputStyle(), marginTop: 5 }} disabled={sending}>
+              <option value="感想">感想を送りたい</option>
+              <option value="改善要望">改善してほしいことがある</option>
+              <option value="不具合報告">困ったこと・不具合を知らせたい</option>
+              <option value="質問・その他">使い方・その他を問い合わせたい</option>
+            </select>
+          </label>
+          <label htmlFor="contact-scene" style={contactLabelStyle()}>
+            使った場面 <span style={{ fontSize: 12, color: '#6D5861' }}>（任意）</span>
+            <select id="contact-scene" name="usage_scene" defaultValue="" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending}>
+              <option value="">選ばなくても送れます</option>
+              <option value="問題を作った">自分の問題を作った</option>
+              <option value="問題に回答した">届いた問題に回答した</option>
+              <option value="結果・共有">結果・答え合わせ・共有を見た</option>
+              <option value="LIVE版">LIVE版を使った</option>
+              <option value="未利用">まだ使っていない</option>
+              <option value="その他">その他</option>
+            </select>
+          </label>
+        </>
+      )}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
         <label htmlFor="contact-company">入力しないでください</label>
         <input id="contact-company" name="_gotcha" tabIndex="-1" autoComplete="off" />
       </div>
       <label htmlFor="contact-name" style={contactLabelStyle()}>
-        お名前
-        <input id="contact-name" name="name" required maxLength={50} autoComplete="name" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending} />
+        お名前 {!isSpecialRequest && <span style={{ fontSize: 12, color: '#6D5861' }}>（任意）</span>}
+        <input id="contact-name" name="name" required={isSpecialRequest} maxLength={50} autoComplete="name" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending} />
       </label>
       <label htmlFor="contact-email" style={contactLabelStyle()}>
-        メールアドレス
-        <input id="contact-email" name="email" type="email" required maxLength={160} autoComplete="email" inputMode="email" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending} />
+        メールアドレス {!isSpecialRequest && <span style={{ fontSize: 12, color: '#6D5861' }}>（返信が必要な場合のみ）</span>}
+        <input id="contact-email" name="email" type="email" required={isSpecialRequest} maxLength={160} autoComplete="email" inputMode="email" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending} />
       </label>
       <label htmlFor="contact-message" style={contactLabelStyle()}>
-        お問い合わせ内容
-        <textarea id="contact-message" name="message" required maxLength={2000} rows={7} defaultValue={defaultMessage} style={{ ...inputStyle(), minHeight: 150, marginTop: 5, resize: 'vertical', lineHeight: 1.6 }} disabled={sending} />
+        {isSpecialRequest ? 'お問い合わせ内容' : '感想・改善してほしいこと'}
+        <textarea
+          id="contact-message"
+          name="message"
+          required
+          maxLength={2000}
+          rows={7}
+          defaultValue={defaultMessage}
+          placeholder={isSpecialRequest ? '' : '例：楽しかったところ、困ったところ、こうなったらもっと使いたい、など。短い一言だけでも大歓迎です。'}
+          style={{ ...inputStyle(), minHeight: 150, marginTop: 5, resize: 'vertical', lineHeight: 1.6 }}
+          disabled={sending}
+        />
       </label>
       <p style={{ margin: 0, fontSize: 12, lineHeight: 1.65, fontWeight: 700 }}>
-        送信内容はお問い合わせ対応に利用します。詳しくは<a href="/privacy">プライバシーポリシー</a>をご確認ください。
+        送信内容はサービス改善・不具合調査・お問い合わせ対応に利用します。個別の返信が必要な場合はメールアドレスをご入力ください。詳しくは<a href="/privacy">プライバシーポリシー</a>をご確認ください。
       </p>
       {status === 'error' && (
         <p role="alert" style={{ margin: 0, padding: 10, border: '2px solid #B81745', borderRadius: 10, background: '#FFE7EF', color: '#8E1237', fontSize: 13, lineHeight: 1.6, fontWeight: 900 }}>
@@ -1003,7 +1055,7 @@ function ContactForm() {
       )}
       {sent && (
         <p role="status" style={{ margin: 0, padding: 10, border: '2px solid #16805D', borderRadius: 10, background: '#DFF8EF', color: '#075940', fontSize: 13, lineHeight: 1.6, fontWeight: 900 }}>
-          送信しました。お問い合わせありがとうございます。
+          {isSpecialRequest ? '送信しました。お問い合わせありがとうございます。' : '送信しました。声を届けていただきありがとうございます。'}
         </p>
       )}
       <button type="submit" disabled={sending || sent} style={{ ...primaryButton(), opacity: sending ? .72 : 1 }}>

@@ -16,7 +16,7 @@ test('Aboutは旧来の立体カードデザインで現在の2モードと方�
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 });
 
-test('お問い合わせフォームをページ内からFormspreeへ送信できる', async ({ page }) => {
+test('感想・改善要望フォームをページ内からFormspreeへ送信できる', async ({ page }) => {
   const requests = [];
   await page.route('https://formspree.io/f/xrevejjr', async (route) => {
     requests.push(route.request());
@@ -29,19 +29,37 @@ test('お問い合わせフォームをページ内からFormspreeへ送信で�
 
   await page.goto('/about');
   await expect(page.locator('a[href*="docs.google.com/forms"]')).toHaveCount(0);
-  await page.getByLabel('お名前').fill('テスト利用者');
-  await page.getByLabel('メールアドレス').fill('contact-test@example.com');
-  await page.getByLabel('お問い合わせ内容').fill('お問い合わせフォームの動作確認です。');
+  await expect(page.getByTestId('feedback-prompt')).toContainText('何が楽しかったか');
+  await page.getByLabel('送りたい内容').selectOption('改善要望');
+  await page.getByLabel('使った場面').selectOption('問題に回答した');
+  await page.getByLabel('感想・改善してほしいこと').fill('結果画面が楽しかったです。共有をもっと簡単にしてほしいです。');
   await page.getByRole('button', { name: '送信する' }).click();
 
-  await expect(page.getByRole('status')).toContainText('送信しました');
+  await expect(page.getByRole('status')).toContainText('声を届けていただきありがとうございます');
   await expect.poll(() => requests.length).toBe(1);
   expect(requests[0].method()).toBe('POST');
   expect(requests[0].headers().accept).toBe('application/json');
   const body = requests[0].postData() || '';
-  expect(body).toContain('contact-test@example.com');
-  expect(body).toContain('お問い合わせフォームの動作確認です。');
+  expect(body).toContain('改善要望');
+  expect(body).toContain('問題に回答した');
+  expect(body).toContain('結果画面が楽しかったです。共有をもっと簡単にしてほしいです。');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  await expect(page.locator('input[name="_subject"]')).toHaveValue('streetboardgame.com 感想・改善要望・お問い合わせ');
+});
+
+test('通常の感想は名前とメールアドレスなしで送れる', async ({ page }) => {
+  await page.route('https://formspree.io/f/xrevejjr', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true }),
+  }));
+
+  await page.goto('/about');
+  await expect(page.getByLabel('お名前')).not.toHaveAttribute('required', '');
+  await expect(page.getByLabel('メールアドレス')).not.toHaveAttribute('required', '');
+  await page.getByLabel('感想・改善してほしいこと').fill('短い感想です。');
+  await page.getByRole('button', { name: '送信する' }).click();
+  await expect(page.getByRole('status')).toContainText('送信しました');
 });
 
 test('送信先がエラーを返した場合は再送できる案内を表示する', async ({ page }) => {
@@ -54,7 +72,7 @@ test('送信先がエラーを返した場合は再送できる案内を表示�
   await page.goto('/about');
   await page.getByLabel('お名前').fill('テスト利用者');
   await page.getByLabel('メールアドレス').fill('contact-test@example.com');
-  await page.getByLabel('お問い合わせ内容').fill('再送テストです。');
+  await page.getByLabel('感想・改善してほしいこと').fill('再送テストです。');
   await page.getByRole('button', { name: '送信する' }).click();
 
   await expect(page.getByRole('alert')).toContainText('入力内容を確認してください。');
@@ -68,6 +86,9 @@ test('特商法表示事項の開示請求は専用案内と入力ひな形を�
   await expect(page.getByLabel('お問い合わせ内容')).toHaveValue(/特定商取引法第11条に基づく表示事項/);
   await expect(page.locator('input[name="_subject"]')).toHaveValue('streetboardgame.com 特定商取引法第11条表示事項の開示請求');
   await expect(page.locator('input[name="topic"]')).toHaveValue('commerce-disclosure');
+  await expect(page.getByLabel('お名前')).toHaveAttribute('required', '');
+  await expect(page.getByLabel('メールアドレス')).toHaveAttribute('required', '');
+  await expect(page.getByLabel('送りたい内容')).toHaveCount(0);
 });
 
 test('返金申請は専用案内と注文情報の入力ひな形を表示する', async ({ page }) => {
