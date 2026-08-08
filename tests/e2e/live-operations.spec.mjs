@@ -2,20 +2,38 @@ import { test, expect } from './test.mjs';
 import { CHECKOUT_TERMS } from '../../src/live/checkout-terms-config.js';
 
 async function mockAdminLogin(page) {
+  let authenticated = false;
   await page.route('**/api/live/admin/session', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: authenticated ? 200 : 401,
+        contentType: 'application/json',
+        body: JSON.stringify(authenticated
+          ? { csrfToken: 'test-admin-csrf', expiresAt: Date.now() + 14 * 24 * 60 * 60 * 1000, trusted: true }
+          : { error: 'admin-session-required' }),
+      });
+      return;
+    }
     expect(route.request().headers()['x-live-admin-token']).toHaveLength(32);
     expect(route.request().headers()['x-live-admin-otp']).toBe('123456');
     expect(route.request().headers()['x-live-admin-remember']).toBe('1');
+    authenticated = true;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        sessionToken: 'test-admin-session',
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+        csrfToken: 'test-admin-csrf',
+        expiresAt: Date.now() + 14 * 24 * 60 * 60 * 1000,
         trusted: true,
       }),
     });
   });
+  await page.route('**/api/live/admin/sessions', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ sessions: [] }),
+  }));
+  await page.route('**/api/live/admin/chat-moderation', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ messages: [] }),
+  }));
 }
 
 test('LIVE運営コンソールで監視・予約・購入対応を確認できる', async ({ page }) => {
@@ -86,7 +104,8 @@ test('LIVE運営コンソールで監視・予約・購入対応を確認でき�
   await expect(page.locator('#adminToken')).toHaveValue('');
   expect(await page.evaluate(() => sessionStorage.getItem('live:admin-token'))).toBeNull();
   expect(await page.evaluate(() => sessionStorage.getItem('live:admin-session'))).toBeNull();
-  expect(await page.evaluate(() => localStorage.getItem('live:trusted-admin-session'))).toBe('test-admin-session');
+  expect(await page.evaluate(() => sessionStorage.getItem('live:admin-csrf'))).toBe('test-admin-csrf');
+  expect(await page.evaluate(() => localStorage.getItem('live:admin-trusted-hint'))).toBe('1');
   await expect(page.locator('#authPanel')).toBeHidden();
   await page.reload();
   await expect(page.locator('#dashboard')).toBeVisible();

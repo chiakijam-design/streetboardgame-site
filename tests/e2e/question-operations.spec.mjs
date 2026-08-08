@@ -61,7 +61,7 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
       title: '通報されたお題',
       category: 'みんなのお題',
       choices: ['1', '2', '3', '4', '5'],
-      status: 'disabled',
+      status: 'quarantined',
       useChallenge: false,
       useLive: false,
       reportCount: 1,
@@ -120,22 +120,34 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
     }],
   };
 
+  let authenticated = false;
   await page.route('**/api/live/admin/session', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: authenticated ? 200 : 401,
+        contentType: 'application/json',
+        body: JSON.stringify(authenticated
+          ? { csrfToken: 'question-admin-csrf', expiresAt: Date.now() + 14 * 24 * 60 * 60 * 1000, trusted: true }
+          : { error: 'admin-session-required' }),
+      });
+      return;
+    }
     expect(route.request().headers()['x-live-admin-token']).toHaveLength(32);
     expect(route.request().headers()['x-live-admin-otp']).toBe('123456');
     expect(route.request().headers()['x-live-admin-remember']).toBe('1');
+    authenticated = true;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        sessionToken: 'question-admin-session',
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+        csrfToken: 'question-admin-csrf',
+        expiresAt: Date.now() + 14 * 24 * 60 * 60 * 1000,
         trusted: true,
       }),
     });
   });
   await page.route('**/api/questions/admin/overview', async (route) => {
-    expect(route.request().headers()['x-live-admin-session']).toBe('question-admin-session');
+    expect(route.request().headers()['x-live-admin-session']).toBeUndefined();
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(overview) });
   });
   await page.route(`**/api/questions/admin/submissions/${pendingId}/review`, async (route) => {
@@ -168,7 +180,8 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   await expect(page.locator('#dashboard')).toBeVisible();
   await expect(page.locator('#adminToken')).toHaveValue('');
   expect(await page.evaluate(() => sessionStorage.getItem('live:admin-session'))).toBeNull();
-  expect(await page.evaluate(() => localStorage.getItem('live:trusted-admin-session'))).toBe('question-admin-session');
+  expect(await page.evaluate(() => sessionStorage.getItem('live:admin-csrf'))).toBe('question-admin-csrf');
+  expect(await page.evaluate(() => localStorage.getItem('live:admin-trusted-hint'))).toBe('1');
   await expect(page.locator('#authPanel')).toBeHidden();
   await page.reload();
   await expect(page.locator('#dashboard')).toBeVisible();
@@ -177,7 +190,8 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   await expect(page.locator('#pendingSubmissions')).toContainText('重点審査：いじめ・容姿攻撃');
   await expect(page.getByText('問題数ではなく「どの問題が出ても答え合わせで会話になる」を品質基準に、通常版・LIVE版で共通のお題を管理します。')).toBeVisible();
   await expect(page.getByText(/問題文の成立性、重複選択肢、誤字・意味不明/)).toBeVisible();
-  await expect(page.locator('#allQuestions')).toContainText('通報1件・即時非公開');
+  await expect(page.locator('#allQuestions')).toContainText('一時隔離中');
+  await expect(page.locator('#allQuestions')).toContainText('通報1件');
   await expect(page.locator('#allQuestions table')).toBeVisible();
   await expect(page.locator('#allQuestions thead')).toContainText('選択肢5');
   await expect(page.locator('#allQuestions thead')).toContainText('スキップ率');
@@ -197,7 +211,7 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   const csv = await readFile(await download.path(), 'utf8');
   expect(csv.charCodeAt(0)).toBe(0xFEFF);
   expect(csv).toContain('状態,問題ID,問題文,選択肢1,選択肢2,選択肢3,選択肢4,選択肢5');
-  expect(csv).toContain('無効化,CUSREPORTED123,通報されたお題,1,2,3,4,5');
+  expect(csv).toContain('一時隔離,CUSREPORTED123,通報されたお題,1,2,3,4,5');
   expect(csv.split('\r\n').length - 2).toBe(total);
   await expect(page.locator('#authStatus')).toContainText(`全${total}問`);
   const statusOrder = await page.locator('#allQuestions [data-catalog]').evaluateAll((rows) => rows.map((row) => row.dataset.statusRow));

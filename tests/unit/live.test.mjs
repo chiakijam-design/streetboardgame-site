@@ -164,12 +164,12 @@ test('リアルタイム入場制御は1万人目を受け入れ、1万1人目�
     async transaction(callback) { return callback(this); },
   };
   const coordinator = new LiveRoomCoordinator({ storage }, {});
-  const reserve = (participantToken) => coordinator.fetch(new Request('https://live.internal/reserve', {
-    method: 'POST', body: JSON.stringify({ code: '123456', shardIndex: 0, participantToken, viewerLimit: LIVE_VIEWER_LIMIT }),
+  const reserve = (participantTokenHash) => coordinator.fetch(new Request('https://live.internal/reserve', {
+    method: 'POST', body: JSON.stringify({ code: '123456', shardIndex: 0, participantTokenHash, viewerLimit: LIVE_VIEWER_LIMIT }),
   }));
-  assert.equal((await reserve('a'.repeat(48))).status, 200);
-  assert.equal((await reserve('a'.repeat(48))).status, 200, '同じ参加トークンの再試行は人数を増やさない');
-  assert.equal((await reserve('b'.repeat(48))).status, 409);
+  assert.equal((await reserve('a'.repeat(64))).status, 200);
+  assert.equal((await reserve('a'.repeat(64))).status, 200, '同じ参加トークンハッシュの再試行は人数を増やさない');
+  assert.equal((await reserve('b'.repeat(64))).status, 409);
   assert.equal(values.get('participantCount'), LIVE_VIEWER_LIMIT);
 });
 

@@ -10,6 +10,8 @@ import {
   clearAdminSessionToken,
   getAdminSessionToken,
   hasTrustedAdminSession,
+  restoreAdminSessionToken,
+  revokeAdminSession,
   saveAdminSessionToken,
 } from './src/live/admin-session-client.js';
 
@@ -35,11 +37,12 @@ document.getElementById('questionSearch').addEventListener('input', renderAllQue
 document.getElementById('questionFilter').addEventListener('change', renderAllQuestions);
 document.getElementById('saveAllQuestions').addEventListener('click', saveAllQuestions);
 document.getElementById('exportQuestionsCsv').addEventListener('click', exportQuestionsCsv);
-if (getAdminSessionToken()) void loadOverview();
+void restoreAdminSessionToken().then((restored) => { if (restored) void loadOverview(); });
 
 async function loadOverview() {
   try {
-    if (!getAdminSessionToken() || otpInput.value.trim()) await createAdminSession();
+    if (tokenInput.value.trim() || otpInput.value.trim()) await createAdminSession();
+    else if (!getAdminSessionToken() && !await restoreAdminSessionToken()) throw apiError('admin-session-required', 401);
     overview = await adminApi('/api/questions/admin/overview');
     allQuestions = sortQuestionsForOperations(mergeQuestionSelectionStats(
       mergeQuestionOverview(staticQuestions, overview.catalog),
@@ -75,7 +78,7 @@ async function createAdminSession() {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw apiError(data.error || 'request-failed', response.status);
-  saveAdminSessionToken(data.sessionToken, Boolean(data.trusted));
+  saveAdminSessionToken(data.csrfToken, Boolean(data.trusted));
   tokenInput.value = '';
   otpInput.value = '';
   showStatus(`二要素認証に成功しました。管理セッション有効期限：${formatDate(data.expiresAt)}`);
@@ -86,8 +89,8 @@ function setAuthenticatedUi(authenticated) {
   forgetTrustedDeviceButton.hidden = !authenticated || !hasTrustedAdminSession();
 }
 
-function forgetAdminSession() {
-  clearAdminSessionToken();
+async function forgetAdminSession() {
+  await revokeAdminSession();
   tokenInput.value = '';
   otpInput.value = '';
   dashboard.hidden = true;
@@ -164,11 +167,12 @@ function renderAllQuestions() {
   const approvedCount = allQuestions.filter((item) => item.status === 'approved').length;
   const heldCount = allQuestions.filter((item) => item.status === 'held').length;
   const disabledCount = allQuestions.filter((item) => item.status === 'disabled').length;
+  const quarantinedCount = allQuestions.filter((item) => item.status === 'quarantined').length;
   const similarCount = allQuestions.filter((item) => (similarityMatches.get(String(item.id)) || []).length).length;
   const qualityReviewCount = allQuestions.filter((item) => assessQuestionQuality(item, {
     similarMatches: similarityMatches.get(String(item.id)) || [],
   }).status !== 'ready').length;
-  document.getElementById('questionCount').textContent = `${filtered.length}問を表示（採用${approvedCount}問／保留${heldCount}問／無効化${disabledCount}問／全${allQuestions.length}問）`;
+  document.getElementById('questionCount').textContent = `${filtered.length}問を表示（採用${approvedCount}問／保留${heldCount}問／無効化${disabledCount}問／隔離${quarantinedCount}問／全${allQuestions.length}問）`;
   document.getElementById('similaritySummary').textContent = `類似候補：${similarCount}問`;
   document.getElementById('qualitySummary').textContent = `品質要確認：${qualityReviewCount}問`;
   const target = document.getElementById('allQuestions');
@@ -201,6 +205,7 @@ function renderAllQuestions() {
     row.dataset.statusRow = control.value;
     markDirty(row);
   }));
+  bindModerationActions(target);
   bindComparisonButtons(target);
   bindComparisonEditors(target);
   bindQualityEditors(target);
@@ -221,8 +226,11 @@ function questionRow(item) {
         <div class="meta">
           <span class="pill ${item.sourceKind === 'custom' ? 'info' : item.sourceKind === 'candidate' ? 'warning' : ''}">${sourceKindLabel(item.sourceKind)}</span>
           <span class="pill">${html(id)}</span>
-          ${item.reportCount ? `<span class="pill critical">通報${item.reportCount}件・即時非公開</span>` : ''}
+          ${item.status === 'quarantined' ? '<span class="pill critical">一時隔離中</span>' : ''}
+          ${item.reportCount ? `<span class="pill critical">通報${item.reportCount}件</span>` : ''}
         </div>
+        ${item.status === 'quarantined' ? `<div class="row-actions quarantine-actions"><button class="button compact good" data-quarantine-action="restore" data-question-id="${attr(id)}">隔離前の状態へ復元</button><button class="button compact danger" data-quarantine-action="disable" data-question-id="${attr(id)}">無効化を確定</button></div>` : ''}
+        ${reportsForQuestion(id).map((report) => `<div class="meta">${html(report.reason)}：${html(report.detail || '詳細なし')} <button class="button compact secondary" data-question-reporter-action="${report.reporterRestricted ? 'restore' : 'restrict'}" data-reporter-hash="${attr(report.reporterHash)}">${report.reporterRestricted ? '通報制限を解除' : '通報者を制限'}</button></div>`).join('')}
       </td>
       ${choiceCells(item)}
       <td class="skip-col">${skipRateCell(item)}</td>
@@ -298,6 +306,30 @@ function bindQualityEditors(container) {
       control.addEventListener('input', () => updateQualityCell(row));
     });
   });
+}
+
+function bindModerationActions(container) {
+  container.querySelectorAll('[data-quarantine-action]').forEach((button) => button.addEventListener('click', async () => {
+    const id = String(button.dataset.questionId || '');
+    const current = allQuestions.find((item) => String(item.id) === id);
+    const row = button.closest('[data-catalog]');
+    if (!current || !row) return;
+    const targetStatus = button.dataset.quarantineAction === 'disable'
+      ? 'disabled'
+      : ['approved', 'held', 'disabled'].includes(current.previousStatus) ? current.previousStatus : 'approved';
+    const radio = row.querySelector(`[data-status][value="${targetStatus}"]`);
+    if (radio) radio.checked = true;
+    row.dataset.statusRow = targetStatus;
+    await saveQuestion(id);
+  }));
+  container.querySelectorAll('[data-question-reporter-action]').forEach((button) => button.addEventListener('click', async () => {
+    const action = button.dataset.questionReporterAction === 'restore' ? 'restore' : 'restrict';
+    if (action === 'restrict' && !confirm('この通報者からの通報を30日間制限しますか？')) return;
+    await adminApi(`/api/questions/admin/reporters/${button.dataset.reporterHash}/${action}`, {
+      method: 'POST', body: JSON.stringify({ reason: '運営判断による通報制限' }),
+    });
+    await loadOverview();
+  }));
 }
 
 function similarityCell(id, matches) {
@@ -432,7 +464,7 @@ async function saveQuestion(id, { reload = true } = {}) {
     ...readQuestionRow(row),
     sourceKind: current.sourceKind,
     sourceRef: current.sourceRef || current.id,
-    status: normalizeCatalogStatus(row.querySelector('[data-status]:checked')?.value),
+    status: normalizeCatalogStatus(row.querySelector('[data-status]:checked')?.value || current.status),
   };
   await adminApi(`/api/questions/admin/catalog/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
   dirtyQuestionIds.delete(String(id));
@@ -452,7 +484,7 @@ async function saveComparisonQuestion(card) {
     ...readQuestionRow(card),
     sourceKind: current.sourceKind,
     sourceRef: current.sourceRef || current.id,
-    status: normalizeCatalogStatus(card.querySelector('[data-compare-status]:checked')?.value),
+    status: normalizeCatalogStatus(card.querySelector('[data-compare-status]:checked')?.value || current.status),
   };
   button.disabled = true;
   button.textContent = '保存中';
@@ -617,11 +649,15 @@ function formatPercent(rate) {
 }
 
 function normalizeCatalogStatus(value) {
-  return value === 'held' ? 'held' : value === 'disabled' ? 'disabled' : 'approved';
+  return value === 'held' ? 'held' : value === 'disabled' ? 'disabled' : value === 'quarantined' ? 'quarantined' : 'approved';
+}
+
+function reportsForQuestion(questionId) {
+  return (overview?.reports || []).filter((report) => String(report.questionId) === String(questionId));
 }
 
 function statusLabel(value) {
-  return value === 'held' ? '保留' : value === 'disabled' ? '無効化' : '採用';
+  return value === 'held' ? '保留' : value === 'disabled' ? '無効化' : value === 'quarantined' ? '一時隔離' : '採用';
 }
 
 function sourceKindLabel(value) {
@@ -629,11 +665,11 @@ function sourceKindLabel(value) {
 }
 
 async function adminApi(path, options = {}) {
-  const session = getAdminSessionToken();
+  const csrfToken = getAdminSessionToken();
   const headers = new Headers(options.headers || {});
-  headers.set('x-live-admin-session', session);
+  if (options.method && options.method !== 'GET') headers.set('x-admin-csrf', csrfToken);
   if (options.body) headers.set('content-type', 'application/json');
-  const response = await fetch(path, { ...options, headers, cache: 'no-store' });
+  const response = await fetch(path, { ...options, headers, credentials: 'same-origin', cache: 'no-store' });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw apiError(data.error || 'request-failed', response.status);
   return data;

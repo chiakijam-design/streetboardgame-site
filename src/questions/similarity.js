@@ -124,7 +124,7 @@ function roundScore(value) {
 }
 
 function statusRank(status) {
-  return status === 'held' ? 1 : status === 'disabled' ? 2 : 0;
+  return status === 'quarantined' ? 1 : status === 'held' ? 2 : status === 'disabled' ? 3 : 0;
 }
 
 function isCompleteQuestion(item) {

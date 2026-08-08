@@ -448,6 +448,7 @@ async function withSecurityHeaders(response, request) {
     "media-src 'none'",
     "manifest-src 'self'",
     "worker-src 'self'",
+    "report-uri /api/live/security/csp-report",
   ].join('; '));
   headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   headers.set('x-frame-options', 'DENY');

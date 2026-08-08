@@ -169,15 +169,21 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
     LIVE_ADMIN_TOTP_SECRET: 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
     LIVE_ADMIN_SESSION_SECRET: 'session-secret-which-is-longer-than-thirty-two-characters',
   };
+  const selectionSessionResponse = await handleQuestionApi(jsonRequest('/api/questions/selection-session', {
+    deviceId: 'test-device-0123456789',
+  }), env, '/api/questions/selection-session');
+  const selectionSession = await selectionSessionResponse.json();
   const shownResponse = await handleQuestionApi(jsonRequest('/api/questions/selection-events', {
     questionId: 'Q001',
     mode: 'challenge',
     event: 'shown',
+    sessionToken: selectionSession.sessionToken,
   }), env, '/api/questions/selection-events');
   const skippedResponse = await handleQuestionApi(jsonRequest('/api/questions/selection-events', {
     questionId: 'Q001',
     mode: 'challenge',
     event: 'skipped',
+    sessionToken: selectionSession.sessionToken,
   }), env, '/api/questions/selection-events');
   assert.equal(shownResponse.status, 200, await shownResponse.clone().text());
   assert.equal(skippedResponse.status, 200, await skippedResponse.clone().text());
@@ -252,15 +258,19 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
       'x-live-admin-otp': otp,
     },
   }), env);
-  const adminHeaders = { 'x-live-admin-session': session.sessionToken };
+  const adminHeaders = {
+    cookie: String(session.cookie).split(';', 1)[0],
+    origin: 'https://example.com',
+    'x-admin-csrf': session.csrfToken,
+  };
   const overviewResponse = await handleQuestionApi(new Request('https://example.com/api/questions/admin/overview', {
     headers: adminHeaders,
   }), env, '/api/questions/admin/overview');
   assert.equal(overviewResponse.status, 200);
   const overview = await overviewResponse.json();
   assert.equal(overview.submissions.length, 2);
-  assert.equal(overview.submissions[0].status, 'pending');
-  assert.deepEqual(overview.submissions[0].safetyFlags, ['bullying']);
+  assert.equal(overview.submissions.every((item) => item.status === 'pending'), true);
+  assert.deepEqual(overview.submissions.find((item) => item.safetyFlags.includes('bullying')).safetyFlags, ['bullying']);
   assert.deepEqual(overview.selectionStats, [{
     questionId: 'Q001',
     mode: 'challenge',
@@ -394,15 +404,37 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
     { reason: 'bullying', detail: '人を傷つける内容です' },
   ), env, `/api/questions/catalog/${approved.catalogId}/report`);
   assert.equal(reportResponse.status, 200);
-  assert.equal((await reportResponse.json()).hidden, true);
+  assert.equal((await reportResponse.json()).quarantined, true);
   assert.equal(sqlite.prepare('SELECT COUNT(*) AS count FROM question_reports').get().count, 1);
   const hiddenCatalog = sqlite.prepare(`
     SELECT status, use_challenge, use_live
     FROM question_catalog WHERE question_id = ?
   `).get(approved.catalogId);
-  assert.equal(hiddenCatalog.status, 'disabled');
+  assert.equal(hiddenCatalog.status, 'quarantined');
   assert.equal(hiddenCatalog.use_challenge, 0);
   assert.equal(hiddenCatalog.use_live, 0);
+
+  sqlite.prepare(`
+    INSERT INTO question_catalog
+      (question_id, source_kind, source_ref, title, category, choices_json, status,
+       use_challenge, use_live, created_at, updated_at)
+    VALUES ('CUSORDINARY123', 'custom', NULL, '普通カテゴリの通報テスト', 'みんなのお題',
+      '["1","2","3","4","5"]', 'approved', 1, 1, 1, 1)
+  `).run();
+  const firstOrdinaryReport = await handleQuestionApi(jsonRequest(
+    '/api/questions/catalog/CUSORDINARY123/report',
+    { reason: 'other', detail: '確認してほしい', deviceId: 'report-device-first-123456' },
+  ), env, '/api/questions/catalog/CUSORDINARY123/report');
+  assert.equal(firstOrdinaryReport.status, 200);
+  assert.equal((await firstOrdinaryReport.json()).quarantined, false);
+  assert.equal(sqlite.prepare("SELECT status FROM question_catalog WHERE question_id = 'CUSORDINARY123'").get().status, 'approved');
+  const secondOrdinaryReport = await handleQuestionApi(jsonRequest(
+    '/api/questions/catalog/CUSORDINARY123/report',
+    { reason: 'other', detail: '別の利用者から確認', deviceId: 'report-device-second-654321' },
+  ), env, '/api/questions/catalog/CUSORDINARY123/report');
+  assert.equal(secondOrdinaryReport.status, 200);
+  assert.equal((await secondOrdinaryReport.json()).quarantined, true);
+  assert.equal(sqlite.prepare("SELECT status FROM question_catalog WHERE question_id = 'CUSORDINARY123'").get().status, 'quarantined');
 
   const publicAfterReport = await (await handleQuestionApi(
     new Request('https://example.com/api/questions/catalog'),

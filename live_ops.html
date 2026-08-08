@@ -16,9 +16,9 @@
     <div class="top"><strong>Streetboardgame Operations</strong><div class="actions"><button class="button secondary" id="forgetTrustedDevice" hidden>この端末の認証を解除</button><a href="/">サイトへ</a></div></div>
     <section class="hero"><h1>LIVE運営コンソール</h1><p>LIVE配信者の販売登録審査、予約・強制終了、漏えいURL失効、売上・返金、障害告知、監視イベントを一か所で扱います。</p></section>
     <section class="panel" id="authPanel">
-      <h2>管理者二要素認証</h2><p class="help">管理トークンと認証アプリの6桁コードが必要です。このパソコンを信頼すると30日間、再認証を省略できます。認証コードは保存しません。</p>
+      <h2>管理者二要素認証</h2><p class="help">管理トークンと認証アプリの6桁コードが必要です。このパソコンを信頼すると14日間、再認証を省略できます。認証情報はHttpOnly Cookieで保護し、認証コードは保存しません。</p>
       <div class="grid two"><div class="field"><label for="adminToken">管理トークン</label><input id="adminToken" type="password" autocomplete="current-password" spellcheck="false"></div><div class="field"><label for="adminOtp">認証アプリの6桁コード</label><input id="adminOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" spellcheck="false"></div></div>
-      <label class="field"><span><input id="rememberDevice" type="checkbox" checked style="width:auto;min-height:auto"> このパソコンでは30日間、再認証を省略する</span></label>
+      <label class="field"><span><input id="rememberDevice" type="checkbox" checked style="width:auto;min-height:auto"> このパソコンでは14日間、再認証を省略する</span></label>
       <div class="actions"><button class="button" id="loadOps">二要素認証して読み込む</button><button class="button secondary" id="forgetToken">保存した認証情報を消す</button></div>
       <div id="authStatus" class="status" hidden></div>
     </section>
@@ -31,8 +31,10 @@
       <section class="panel"><h2>売上・配信者70%分配</h2><h3>有料応援メッセージ売上（今月）</h3><p class="help">結果画像とは分けて、今月の応援件数・売上・配信者70%分・返金状況を確認します。確定売上には状態がpaidの注文だけを含めます。</p><div class="grid two" id="supportRevenueSummary"></div><div class="cards" id="supportAmountBreakdown" style="margin-top:12px"></div><h3 style="margin-top:22px">結果画像・応援の合算分配</h3><p class="help">対象売上の配信者分70%を14日間保留し、返金・不正利用分を控除します。月次締めは対象月終了から14日後以降に作成でき、送金可能残高5,000円未満は翌月へ繰り越します。</p><div class="grid two"><div class="field"><label for="payoutPeriod">売上対象月（日本時間）</label><input id="payoutPeriod" type="month"></div><div class="actions" style="align-items:end"><button class="button" id="createPayoutBatches">月次分配台帳を作成</button></div></div><div id="payoutOutput"></div><h3>アカウント別残高</h3><div class="cards" id="revenueBalances"></div><h3 style="margin-top:18px">月次送金バッチ</h3><div class="cards" id="payoutBatches"></div><h3 style="margin-top:18px">注文別売上台帳</h3><div class="cards" id="revenueLedger"></div></section>
       <section class="panel"><h2>Checkout・購入権限・返金対応</h2><div class="field"><label for="purchaseSearch">注文ID・購入ID・決済ID・ルームコード・購入者・応援メッセージで絞り込み</label><input id="purchaseSearch" autocomplete="off"></div><h3>Stripe Checkout注文</h3><div class="cards" id="checkouts" style="margin-top:12px"></div><h3 style="margin-top:18px">高画質画像の購入権限</h3><div class="cards" id="entitlements" style="margin-top:12px"></div><div id="entitlementOutput"></div><p class="help">最初に「権限停止・返金待ち」でダウンロードを止め、内容確認後に「Stripeへ全額返金」を実行します。Stripe Webhookで最終状態を同期します。</p></section>
       <section class="panel"><h2>監視イベント・対応履歴</h2><p class="help">現在の状態は上の「直近15分」を優先してください。未確認の過去ログが残っていても、直近15分が0件なら現在の障害を意味しません。対応を確認したイベントは「確認済みにする」で整理してください。</p><div class="cards" id="events"></div></section>
+      <section class="panel"><h2>管理セッション</h2><p class="help">この端末を含む有効な管理セッションを確認し、端末ごとまたは全端末から失効できます。</p><div class="actions"><button class="button danger" id="logoutAllAdminSessions">全端末からログアウト</button></div><div class="cards" id="adminSessions" style="margin-top:12px"></div></section>
+      <section class="panel"><h2>LIVEチャット通報審査</h2><p class="help">一般チャットは通報で一時隔離されます。有料応援メッセージは通報だけでは消えず、配信者または運営が判断します。</p><div class="cards" id="chatModeration"></div></section>
     </div>
   </main>
-  <script data-build-entry="live_ops" src="/dist/live_ops-W5QTAFQ7.js"></script>
+  <script data-build-entry="live_ops" src="/dist/live_ops-GI4UYQOV.js"></script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 import { requireLiveAdminSession } from '../live/admin-auth.js';
+import { recordLiveOpsEvent } from '../live/ops.js';
 import { scanQuestionSafety } from './safety.js';
 import { getQuestionTrendMetrics } from './trends.js';
 
@@ -12,6 +13,8 @@ const REPORT_REASONS = new Set([
   'discrimination',
   'other',
 ]);
+const REPORT_RATE_LIMIT = 5;
+const REPORT_WINDOW_MS = 60 * 60 * 1000;
 const schemaReadyByDatabase = new WeakMap();
 
 export async function handleQuestionApi(request, env, path) {
@@ -34,6 +37,10 @@ export async function handleQuestionApi(request, env, path) {
       return json(await getQuestionTrendMetrics(env, language));
     }
 
+    if (path === '/api/questions/selection-session' && request.method === 'POST') {
+      return await createSelectionSession(request, env);
+    }
+
     if (path === '/api/questions/selection-events' && request.method === 'POST') {
       return await recordSelectionEvent(request, env);
     }
@@ -48,7 +55,7 @@ export async function handleQuestionApi(request, env, path) {
     }
 
     if (path.startsWith('/api/questions/admin/')) {
-      await requireLiveAdminSession(request, env);
+      await requireLiveAdminSession(request, env, Date.now(), { mutation: request.method !== 'GET' });
     }
 
     if (path === '/api/questions/admin/overview' && request.method === 'GET') {
@@ -65,12 +72,24 @@ export async function handleQuestionApi(request, env, path) {
       return await saveCatalogQuestion(request, env, catalogRoute[1]);
     }
 
+    const reporterRestrictionRoute = path.match(/^\/api\/questions\/admin\/reporters\/([a-f0-9]{64})\/(restrict|restore)$/i);
+    if (reporterRestrictionRoute && request.method === 'POST') {
+      return await updateReporterRestriction(request, env, reporterRestrictionRoute[1], reporterRestrictionRoute[2]);
+    }
+
     return json({ error: 'not-found' }, 404);
   } catch (error) {
-    return json({
-      error: error?.message || 'question-api-error',
-      ...(error?.details || {}),
-    }, Number(error?.status) || 500);
+    const status = Number(error?.status) || 500;
+    const traceId = crypto.randomUUID();
+    if (status >= 500) {
+      await recordLiveOpsEvent(env, {
+        category: 'application', severity: 'critical', eventType: 'question-api-error',
+        message: error?.message || 'question-api-error',
+        metadata: { path, method: request.method, status, traceId },
+      }).catch(() => {});
+      return json({ error: 'internal-error', traceId }, status);
+    }
+    return json({ error: error?.message || 'question-api-error', ...(error?.details || {}) }, status);
   }
 }
 
@@ -142,6 +161,7 @@ async function publicSelectionStats(env) {
 
 async function recordSelectionEvent(request, env) {
   const body = await readJson(request);
+  const selectionSession = await verifySelectionSession(body.sessionToken, env);
   const questionId = sanitizeShortText(body.questionId, 80);
   if (!/^[A-Za-z0-9_-]{2,80}$/.test(questionId)) {
     throw apiError('question-selection-id-invalid', 400);
@@ -151,6 +171,34 @@ async function recordSelectionEvent(request, env) {
   const event = body.event === 'shown' ? 'shown' : body.event === 'skipped' ? 'skipped' : '';
   if (!event) throw apiError('question-selection-event-invalid', 400);
   const now = Date.now();
+  const ipHash = await requestIpHash(request);
+  if (selectionSession.ipHash !== ipHash) throw apiError('question-selection-session-invalid', 403);
+  const recentIpCount = await env.REMOTE_DB.prepare(`
+    SELECT COUNT(*) AS count FROM question_selection_events
+    WHERE ip_hash = ? AND created_at > ?
+  `).bind(ipHash, now - REPORT_WINDOW_MS).first();
+  const recentDeviceCount = await env.REMOTE_DB.prepare(`
+    SELECT COUNT(*) AS count FROM question_selection_events
+    WHERE device_hash = ? AND created_at > ?
+  `).bind(selectionSession.deviceHash, now - REPORT_WINDOW_MS).first();
+  if (Number(recentIpCount?.count || 0) >= 1200 || Number(recentDeviceCount?.count || 0) >= 600) {
+    await recordLiveOpsEvent(env, {
+      category: 'security', severity: 'warning', eventType: 'question-selection-rate-limited',
+      message: '大量の問題選択イベントを制限しました。',
+      metadata: { ipHash, deviceHash: selectionSession.deviceHash },
+    }).catch(() => {});
+    throw apiError('question-selection-rate-limited', 429);
+  }
+  const eventKey = await sha256Hex([
+    selectionSession.sessionId, selectionSession.deviceHash, questionId, mode, event,
+  ].join(':'));
+  const inserted = await env.REMOTE_DB.prepare(`
+    INSERT OR IGNORE INTO question_selection_events
+      (event_key, session_id, device_hash, ip_hash, question_id, mode, event, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(eventKey, selectionSession.sessionId, selectionSession.deviceHash, ipHash,
+    questionId, mode, event, now).run();
+  if (Number(inserted?.meta?.changes || 0) !== 1) return json({ recorded: false, duplicate: true });
   const shownIncrement = event === 'shown' ? 1 : 0;
   const skipIncrement = event === 'skipped' ? 1 : 0;
   await env.REMOTE_DB.prepare(`
@@ -175,11 +223,63 @@ async function recordSelectionEvent(request, env) {
   return json({ recorded: true });
 }
 
+async function createSelectionSession(request, env) {
+  const body = await readJson(request);
+  const rawDeviceId = sanitizeShortText(body.deviceId, 120);
+  if (!/^[A-Za-z0-9_-]{16,120}$/.test(rawDeviceId)) {
+    throw apiError('question-selection-device-invalid', 400);
+  }
+  const now = Date.now();
+  const ipHash = await requestIpHash(request);
+  const deviceHash = await sha256Hex(`question-device:${rawDeviceId}`);
+  const payload = {
+    version: 1,
+    sessionId: crypto.randomUUID(),
+    deviceHash,
+    ipHash,
+    expiresAt: now + 2 * 60 * 60 * 1000,
+  };
+  const encoded = encodeBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+  const signature = await signSelectionPayload(encoded, env);
+  return json({ sessionToken: `${encoded}.${signature}`, expiresAt: payload.expiresAt }, 201);
+}
+
+async function verifySelectionSession(value, env, now = Date.now()) {
+  const [payload, signature, extra] = String(value || '').split('.');
+  if (!payload || !signature || extra) throw apiError('question-selection-session-required', 401);
+  const expected = await signSelectionPayload(payload, env);
+  if (!constantTimeEqual(signature, expected)) throw apiError('question-selection-session-invalid', 403);
+  let parsed;
+  try {
+    parsed = JSON.parse(new TextDecoder().decode(decodeBase64Url(payload)));
+  } catch (error) {
+    throw apiError('question-selection-session-invalid', 403);
+  }
+  if (parsed?.version !== 1 || !/^[a-f0-9-]{36}$/i.test(String(parsed.sessionId || ''))
+    || !/^[a-f0-9]{64}$/i.test(String(parsed.deviceHash || ''))
+    || !/^[a-f0-9]{64}$/i.test(String(parsed.ipHash || ''))
+    || Number(parsed.expiresAt) <= now || Number(parsed.expiresAt) > now + 2 * 60 * 60 * 1000) {
+    throw apiError('question-selection-session-expired', 401);
+  }
+  return parsed;
+}
+
+async function signSelectionPayload(payload, env) {
+  const secret = String(env?.QUESTION_EVENT_SIGNING_SECRET || env?.LIVE_ADMIN_SESSION_SECRET || '');
+  if (secret.length < 32) throw apiError('question-selection-signing-not-configured', 503);
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+  return encodeBase64Url(new Uint8Array(signature));
+}
+
 async function adminOverview(env) {
   const [catalogResult, submissionResult, selectionStatsResult] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT q.question_id, q.source_kind, q.source_ref, q.title, q.category, q.choices_json, q.status,
         q.use_challenge, q.use_live, q.created_at, q.updated_at,
+        q.quarantined_at, q.quarantine_reason, q.previous_status,
         (SELECT COUNT(*) FROM question_reports r WHERE r.question_id = q.question_id) AS report_count,
         (SELECT MAX(reported_at) FROM question_reports r WHERE r.question_id = q.question_id) AS last_reported_at
       FROM question_catalog q
@@ -204,6 +304,7 @@ async function adminOverview(env) {
     catalog: (catalogResult?.results || []).map(mapCatalogRow),
     submissions: (submissionResult?.results || []).map(mapSubmissionRow),
     selectionStats: (selectionStatsResult?.results || []).map(mapSelectionStatsRow),
+    reports: await listQuestionReports(env),
   };
 }
 
@@ -222,26 +323,115 @@ async function reportCatalogQuestion(request, env, questionId) {
 
   const now = Date.now();
   const ipHash = await requestIpHash(request);
-  await env.REMOTE_DB.batch([
-    env.REMOTE_DB.prepare(`
-      INSERT OR IGNORE INTO question_reports
-        (report_id, question_id, reason, detail, reported_at, ip_hash)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(
-      crypto.randomUUID(),
-      questionId,
-      reason,
-      sanitizeShortText(body.detail, 300),
-      now,
-      ipHash,
-    ),
-    env.REMOTE_DB.prepare(`
+  const rawDeviceId = sanitizeShortText(body.deviceId, 120);
+  const reporterHash = rawDeviceId
+    ? await sha256Hex(`question-reporter:${rawDeviceId}`)
+    : ipHash;
+  await assertReporterAllowed(env, reporterHash, now);
+  await consumeReportRateLimit(env, ipHash, now);
+  const insert = await env.REMOTE_DB.prepare(`
+    INSERT OR IGNORE INTO question_reports
+      (report_id, question_id, reason, detail, reported_at, ip_hash)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(
+    crypto.randomUUID(), questionId, reason, sanitizeShortText(body.detail, 300), now, reporterHash,
+  ).run();
+  const duplicate = Number(insert?.meta?.changes || 0) !== 1;
+  const counts = await env.REMOTE_DB.prepare(`
+    SELECT COUNT(DISTINCT ip_hash) AS report_count,
+      SUM(CASE WHEN reason IN ('personal-information','sexual-content','bullying','discrimination') THEN 1 ELSE 0 END) AS serious_count
+    FROM question_reports WHERE question_id = ?
+  `).bind(questionId).first();
+  const reportCount = Number(counts?.report_count || 0);
+  const seriousCount = Number(counts?.serious_count || 0);
+  const quarantine = seriousCount >= 1 || reportCount >= 2;
+  if (quarantine && current.status !== 'quarantined') {
+    await env.REMOTE_DB.prepare(`
       UPDATE question_catalog
-      SET status = 'disabled', use_challenge = 0, use_live = 0, updated_at = ?
+      SET previous_status = CASE WHEN status = 'quarantined' THEN previous_status ELSE status END,
+        status = 'quarantined', use_challenge = 0, use_live = 0,
+        quarantined_at = ?, quarantine_reason = ?, updated_at = ?
       WHERE question_id = ? AND source_kind = 'custom'
-    `).bind(now, questionId),
-  ]);
-  return json({ questionId, hidden: true });
+    `).bind(now, reason, now, questionId).run();
+    await recordLiveOpsEvent(env, {
+      category: 'moderation', severity: seriousCount ? 'critical' : 'warning',
+      eventType: 'question-auto-quarantined', code: questionId,
+      message: '通報しきい値に達した問題を一時隔離しました。',
+      metadata: { questionId, reason, reportCount, seriousCount },
+    }).catch(() => {});
+  }
+  return json({ questionId, duplicate, reportCount, quarantined: quarantine });
+}
+
+async function listQuestionReports(env) {
+  const result = await env.REMOTE_DB.prepare(`
+    SELECT r.report_id, r.question_id, r.reason, r.detail, r.reported_at, r.ip_hash,
+      CASE WHEN x.reporter_hash IS NULL OR x.revoked_at IS NOT NULL
+        OR (x.expires_at IS NOT NULL AND x.expires_at <= ?) THEN 0 ELSE 1 END AS reporter_restricted
+    FROM question_reports r
+    LEFT JOIN question_reporter_restrictions x ON x.reporter_hash = r.ip_hash
+    ORDER BY r.reported_at DESC
+    LIMIT 500
+  `).bind(Date.now()).all();
+  return (result?.results || []).map((row) => ({
+    id: row.report_id,
+    questionId: row.question_id,
+    reason: row.reason,
+    detail: row.detail || '',
+    reportedAt: Number(row.reported_at),
+    reporterHash: row.ip_hash,
+    reporterRestricted: Boolean(row.reporter_restricted),
+  }));
+}
+
+async function updateReporterRestriction(request, env, reporterHash, action) {
+  const body = await readJson(request);
+  const now = Date.now();
+  if (action === 'restore') {
+    await env.REMOTE_DB.prepare(`
+      UPDATE question_reporter_restrictions SET revoked_at = ? WHERE reporter_hash = ?
+    `).bind(now, reporterHash).run();
+    return json({ reporterHash, restricted: false });
+  }
+  const expiresAt = body.permanent === true ? null : now + 30 * 24 * 60 * 60 * 1000;
+  await env.REMOTE_DB.prepare(`
+    INSERT INTO question_reporter_restrictions
+      (reporter_hash, reason, created_at, expires_at, revoked_at)
+    VALUES (?, ?, ?, ?, NULL)
+    ON CONFLICT(reporter_hash) DO UPDATE SET reason = excluded.reason,
+      created_at = excluded.created_at, expires_at = excluded.expires_at, revoked_at = NULL
+  `).bind(reporterHash, sanitizeShortText(body.reason, 180), now, expiresAt).run();
+  return json({ reporterHash, restricted: true, expiresAt });
+}
+
+async function assertReporterAllowed(env, reporterHash, now) {
+  const row = await env.REMOTE_DB.prepare(`
+    SELECT reporter_hash FROM question_reporter_restrictions
+    WHERE reporter_hash = ? AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?)
+    LIMIT 1
+  `).bind(reporterHash, now).first();
+  if (row) throw apiError('question-reporter-restricted', 403);
+}
+
+async function consumeReportRateLimit(env, reporterHash, now) {
+  const windowStart = Math.floor(now / REPORT_WINDOW_MS) * REPORT_WINDOW_MS;
+  const rateKey = `${windowStart}:${reporterHash}`;
+  await env.REMOTE_DB.prepare('DELETE FROM question_report_rate_limits WHERE expires_at <= ?').bind(now).run();
+  const row = await env.REMOTE_DB.prepare(`
+    SELECT report_count FROM question_report_rate_limits WHERE rate_key = ?
+  `).bind(rateKey).first();
+  if (Number(row?.report_count || 0) >= REPORT_RATE_LIMIT) {
+    await recordLiveOpsEvent(env, {
+      category: 'security', severity: 'warning', eventType: 'question-report-rate-limited',
+      message: '同一送信元からの大量通報を制限しました。', metadata: { reporterHash },
+    }).catch(() => {});
+    throw apiError('question-report-rate-limited', 429);
+  }
+  await env.REMOTE_DB.prepare(`
+    INSERT INTO question_report_rate_limits (rate_key, window_start, report_count, expires_at)
+    VALUES (?, ?, 1, ?)
+    ON CONFLICT(rate_key) DO UPDATE SET report_count = report_count + 1
+  `).bind(rateKey, windowStart, windowStart + REPORT_WINDOW_MS).run();
 }
 
 async function reviewSubmission(request, env, submissionId) {
@@ -317,6 +507,9 @@ async function saveCatalogQuestion(request, env, questionId) {
       status = excluded.status,
       use_challenge = excluded.use_challenge,
       use_live = excluded.use_live,
+      quarantined_at = CASE WHEN excluded.status = 'quarantined' THEN question_catalog.quarantined_at ELSE NULL END,
+      quarantine_reason = CASE WHEN excluded.status = 'quarantined' THEN question_catalog.quarantine_reason ELSE '' END,
+      previous_status = CASE WHEN excluded.status = 'quarantined' THEN question_catalog.previous_status ELSE '' END,
       updated_at = excluded.updated_at
   `).bind(
     questionId,
@@ -382,7 +575,8 @@ function normalizeSourceMode(value) {
 }
 
 function normalizeCatalogStatus(value) {
-  return value === 'held' ? 'held' : value === 'disabled' ? 'disabled' : 'approved';
+  if (value === 'held' || value === 'disabled' || value === 'quarantined') return value;
+  return 'approved';
 }
 
 function sanitizeShortText(value, maxLength) {
@@ -404,6 +598,9 @@ function mapCatalogRow(row) {
     updatedAt: Number(row.updated_at || 0),
     reportCount: Number(row.report_count || 0),
     lastReportedAt: row.last_reported_at == null ? null : Number(row.last_reported_at),
+    quarantinedAt: row.quarantined_at == null ? null : Number(row.quarantined_at),
+    quarantineReason: row.quarantine_reason || '',
+    previousStatus: row.previous_status || '',
     language: String(row.question_id || '').startsWith('CUSEN') ? 'en' : 'ja',
   };
 }
@@ -495,13 +692,65 @@ async function ensureQuestionSchema(env) {
         last_shown_at INTEGER, last_skipped_at INTEGER,
         PRIMARY KEY (question_id, mode)
       )`),
+      env.REMOTE_DB.prepare(`CREATE TABLE IF NOT EXISTS question_report_rate_limits (
+        rate_key TEXT PRIMARY KEY, window_start INTEGER NOT NULL,
+        report_count INTEGER NOT NULL DEFAULT 0, expires_at INTEGER NOT NULL
+      )`),
+      env.REMOTE_DB.prepare(`CREATE TABLE IF NOT EXISTS question_reporter_restrictions (
+        reporter_hash TEXT PRIMARY KEY, reason TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL,
+        expires_at INTEGER, revoked_at INTEGER
+      )`),
+      env.REMOTE_DB.prepare(`CREATE TABLE IF NOT EXISTS question_selection_events (
+        event_key TEXT PRIMARY KEY, session_id TEXT NOT NULL, device_hash TEXT NOT NULL,
+        ip_hash TEXT NOT NULL, question_id TEXT NOT NULL, mode TEXT NOT NULL,
+        event TEXT NOT NULL, created_at INTEGER NOT NULL
+      )`),
     ]).catch((error) => {
       schemaReadyByDatabase.delete(env.REMOTE_DB);
       throw error;
     });
+    schemaReadyPromise = schemaReadyPromise.then(async () => {
+      const columns = await env.REMOTE_DB.prepare('PRAGMA table_info(question_catalog)').all();
+      const names = new Set((columns?.results || []).map((column) => column.name));
+      const additions = [];
+      if (!names.has('quarantined_at')) additions.push('ALTER TABLE question_catalog ADD COLUMN quarantined_at INTEGER');
+      if (!names.has('quarantine_reason')) additions.push("ALTER TABLE question_catalog ADD COLUMN quarantine_reason TEXT NOT NULL DEFAULT ''");
+      if (!names.has('previous_status')) additions.push("ALTER TABLE question_catalog ADD COLUMN previous_status TEXT NOT NULL DEFAULT ''");
+      for (const sql of additions) await env.REMOTE_DB.prepare(sql).run();
+    });
     schemaReadyByDatabase.set(env.REMOTE_DB, schemaReadyPromise);
   }
   return schemaReadyPromise;
+}
+
+async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value || '')));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function encodeBase64Url(bytes) {
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function decodeBase64Url(value) {
+  const base64 = String(value || '').replace(/-/g, '+').replace(/_/g, '/')
+    .padEnd(Math.ceil(String(value || '').length / 4) * 4, '=');
+  const binary = atob(base64);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+function constantTimeEqual(left, right) {
+  const leftBytes = new TextEncoder().encode(String(left || ''));
+  const rightBytes = new TextEncoder().encode(String(right || ''));
+  let difference = leftBytes.length ^ rightBytes.length;
+  for (let index = 0; index < Math.max(leftBytes.length, rightBytes.length); index += 1) {
+    difference |= (leftBytes[index] || 0) ^ (rightBytes[index] || 0);
+  }
+  return difference === 0;
 }
 
 async function readJson(request) {

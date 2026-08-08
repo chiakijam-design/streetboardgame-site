@@ -34,10 +34,11 @@ export async function initializeLiveRealtime(env, code) {
 export async function reserveLiveRealtimeParticipant(env, code, participantToken) {
   if (!hasLiveRealtime(env)) return null;
   const shardIndex = liveShardIndexForToken(participantToken);
+  const participantTokenHash = await hashRealtimeCapability(participantToken);
   const response = await coordinatorStub(env, code).fetch(`${INTERNAL_ORIGIN}/reserve`, internalJson({
     code,
     shardIndex,
-    participantToken,
+    participantTokenHash,
     viewerLimit: liveViewerLimit(env),
   }));
   const data = await response.json();
@@ -48,7 +49,8 @@ export async function reserveLiveRealtimeParticipant(env, code, participantToken
 export async function releaseLiveRealtimeParticipant(env, code, participantToken) {
   if (!hasLiveRealtime(env)) return;
   const shardIndex = liveShardIndexForToken(participantToken);
-  await coordinatorStub(env, code).fetch(`${INTERNAL_ORIGIN}/release`, internalJson({ code, shardIndex, participantToken }));
+  const participantTokenHash = await hashRealtimeCapability(participantToken);
+  await coordinatorStub(env, code).fetch(`${INTERNAL_ORIGIN}/release`, internalJson({ code, shardIndex, participantTokenHash }));
 }
 
 export async function connectLiveRealtime(request, env, code, participant) {
@@ -156,14 +158,14 @@ export class LiveRoomCoordinator {
       return json({ initialized: true });
     }
     if (url.pathname === '/reserve' && request.method === 'POST') {
-      const { code, shardIndex, participantToken, viewerLimit } = await request.json();
-      if (!/^[a-f0-9]{20,96}$/i.test(String(participantToken || ''))) return json({ error: 'participant-token-required' }, 400);
+      const { code, shardIndex, participantTokenHash, viewerLimit } = await request.json();
+      if (!/^[a-f0-9]{64}$/i.test(String(participantTokenHash || ''))) return json({ error: 'participant-token-required' }, 400);
       const operationalLimit = Math.min(
         LIVE_VIEWER_LIMIT,
         Math.max(1, Math.floor(Number(viewerLimit) || LIVE_FALLBACK_VIEWER_LIMIT)),
       );
       const result = await this.ctx.storage.transaction(async (storage) => {
-        const reservationKey = `reservation:${participantToken}`;
+        const reservationKey = `reservation:${participantTokenHash}`;
         const existingShard = await storage.get(reservationKey);
         const participantCount = Number(await storage.get('participantCount')) || 0;
         if (existingShard !== undefined) return participantCount;
@@ -178,9 +180,9 @@ export class LiveRoomCoordinator {
         : json({ participantCount: result });
     }
     if (url.pathname === '/release' && request.method === 'POST') {
-      const { shardIndex, participantToken } = await request.json();
+      const { shardIndex, participantTokenHash } = await request.json();
       await this.ctx.storage.transaction(async (storage) => {
-        const reservationKey = `reservation:${participantToken}`;
+        const reservationKey = `reservation:${participantTokenHash}`;
         const existingShard = await storage.get(reservationKey);
         if (existingShard === undefined) return;
         const participantCount = Number(await storage.get('participantCount')) || 0;
@@ -339,6 +341,11 @@ export class LiveRoomCoordinator {
   }
 }
 
+async function hashRealtimeCapability(value) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value || '')));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export class LiveVoteShard {
   constructor(ctx, env) {
     this.ctx = ctx;
@@ -354,7 +361,13 @@ export class LiveVoteShard {
         const result = await this.saveVote(body);
         return json(result);
       } catch (error) {
-        return json({ error: error.message || 'live-vote-error' }, Number(error.status) || 500);
+        const status = Number(error.status) || 500;
+        if (status >= 500) {
+          const traceId = crypto.randomUUID();
+          await recordRealtimeError(this.env, error, traceId).catch(() => {});
+          return json({ error: 'internal-error', traceId }, status);
+        }
+        return json({ error: error.message || 'live-vote-error' }, status);
       }
     }
     if (url.pathname === '/snapshot' && request.method === 'POST') {
@@ -509,6 +522,20 @@ export class LiveVoteShard {
     }
     if (cleanupAt) await scheduleDurableAlarm(this.ctx.storage, cleanupAt);
   }
+}
+
+async function recordRealtimeError(env, error, traceId) {
+  if (!env?.REMOTE_DB) return;
+  await env.REMOTE_DB.prepare(`
+    INSERT INTO live_ops_events
+      (event_id, category, severity, event_type, message, metadata, created_at)
+    VALUES (?, 'application', 'critical', 'live-vote-error', ?, ?, ?)
+  `).bind(
+    crypto.randomUUID(),
+    error?.message || 'live-vote-error',
+    JSON.stringify({ traceId }),
+    Date.now(),
+  ).run();
 }
 
 function personalizeResult(result, answers) {

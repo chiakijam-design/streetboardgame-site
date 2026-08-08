@@ -12,6 +12,8 @@
     .panel-export{flex:0 0 auto}.panel-export .button{white-space:nowrap}
     @media(max-width:1100px){.comparison-choices{grid-template-columns:1fr}}
     @media(max-width:760px){.shell{padding:10px 7px 60px}.panel{padding:11px}.panel-head{display:block}.panel-export{margin-top:10px}.panel-export .button{width:100%;white-space:normal}.toolbar{grid-template-columns:1fr 150px}.toolbar .button{grid-column:1/-1}.comparison-grid{grid-template-columns:1fr}.question-table{min-width:1475px}.question-table .question-col{width:220px}.question-table .choice-col{width:135px}.hero{padding:16px}.button{min-height:44px}}
+    tr[data-status-row="quarantined"]{background:#fff1f4;color:#8c1732}
+    tr[data-status-row="quarantined"] .sheet-input{background:#fff8fa}
   </style>
 </head>
 <body>
@@ -23,12 +25,12 @@
     </section>
     <section class="panel" id="authPanel">
       <h2>管理者二要素認証</h2>
-      <p class="help">LIVE運営コンソールと同じ管理トークン・認証アプリを使います。このパソコンを信頼すると30日間、再認証を省略できます。</p>
+      <p class="help">LIVE運営コンソールと同じ管理トークン・認証アプリを使います。このパソコンを信頼すると14日間、再認証を省略できます。認証情報はHttpOnly Cookieで保護します。</p>
       <div class="grid two">
         <div class="field"><label for="adminToken">管理トークン</label><input id="adminToken" type="password" autocomplete="current-password" spellcheck="false"></div>
         <div class="field"><label for="adminOtp">認証アプリの6桁コード</label><input id="adminOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"></div>
       </div>
-      <label class="field"><span><input id="rememberDevice" type="checkbox" checked style="width:auto;min-height:auto"> このパソコンでは30日間、再認証を省略する</span></label>
+      <label class="field"><span><input id="rememberDevice" type="checkbox" checked style="width:auto;min-height:auto"> このパソコンでは14日間、再認証を省略する</span></label>
       <div class="actions"><button class="button" id="loadQuestions">二要素認証して読み込む</button><button class="button secondary" id="forgetSession">保存した認証情報を消す</button></div>
       <div id="authStatus" class="status" hidden></div>
     </section>
@@ -78,6 +80,6 @@
     </div>
   </main>
 <script data-build-entry="prototype_common_data" src="/dist/prototype_common_data-6WKKYLSF.js"></script>
-  <script data-build-entry="question_ops" src="/dist/question_ops-52GPAHTH.js"></script>
+  <script data-build-entry="question_ops" src="/dist/question_ops-3OQEL4HB.js"></script>
 </body>
 </html>

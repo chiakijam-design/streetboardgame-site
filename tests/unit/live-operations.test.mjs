@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleLiveApi, verifyLiveStripeSignature } from '../../src/live/api.js';
-import { createLiveAdminSession, generateLiveAdminTotp, requireLiveAdminSession } from '../../src/live/admin-auth.js';
+import {
+  createLiveAdminSession,
+  generateLiveAdminTotp,
+  getLiveAdminSession,
+  requireLiveAdminSession,
+} from '../../src/live/admin-auth.js';
 
 test('Stripe Webhook署名は正しいv1署名だけを受理する', async () => {
   const secret = 'whsec_test_secret';
@@ -74,7 +79,7 @@ test('外形監視はWorker・D1・リアルタイム構成が正常な場合だ
   assert.equal((await maintenanceResponse.json()).state, 'maintenance');
 });
 
-test('管理画面は通常15分、信頼済み端末は30日間の二要素認証セッションを発行する', async () => {
+test('管理画面は通常15分、信頼済み端末は14日間の二要素認証セッションを発行する', async () => {
   assert.equal(await generateLiveAdminTotp('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', 59_000), '287082');
   const now = 1_800_000_000_000;
   const env = adminAuthEnv(memoryKv());
@@ -82,15 +87,45 @@ test('管理画面は通常15分、信頼済み端末は30日間の二要素認�
   const session = await createLiveAdminSession(new Request('https://example.com/api/live/admin/session', {
     method: 'POST', headers: { 'x-live-admin-token': env.LIVE_ADMIN_TOKEN, 'x-live-admin-otp': otp },
   }), env, now);
-  assert.match(session.sessionToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+  assert.match(session.sessionToken, /^[A-Za-z0-9_-]{32,}$/);
+  assert.match(session.cookie, /^sbg_admin_session=/);
+  assert.match(session.cookie, /; HttpOnly; Secure; SameSite=Strict$/);
   assert.equal(session.expiresAt, now + 15 * 60 * 1000);
   assert.equal(session.trusted, false);
-  assert.deepEqual(await requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
-    headers: { 'x-live-admin-session': session.sessionToken },
-  }), env, now + 14 * 60 * 1000), { expiresAt: session.expiresAt, trusted: false });
   await assert.rejects(
     requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
       headers: { 'x-live-admin-session': session.sessionToken },
+    }), env, now + 1000),
+    (error) => error.message === 'admin-session-required' && error.status === 401,
+  );
+  const authorizedSession = await requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
+    headers: { cookie: cookieHeader(session.cookie) },
+  }), env, now + 14 * 60 * 1000);
+  assert.equal(authorizedSession.expiresAt, session.expiresAt);
+  assert.equal(authorizedSession.trusted, false);
+  assert.match(authorizedSession.sessionIdHash, /^[a-f0-9]{64}$/);
+  const restoredSession = await getLiveAdminSession(new Request('https://example.com/api/live/admin/session', {
+    headers: { cookie: cookieHeader(session.cookie) },
+  }), env, now + 14 * 60 * 1000);
+  assert.equal(restoredSession.csrfToken, session.csrfToken);
+  await assert.rejects(
+    requireLiveAdminSession(new Request('https://example.com/api/live/admin/status', {
+      method: 'POST', headers: { cookie: cookieHeader(session.cookie), origin: 'https://example.com' },
+    }), env, now + 14 * 60 * 1000, { mutation: true }),
+    (error) => error.message === 'admin-csrf-invalid' && error.status === 403,
+  );
+  const mutationSession = await requireLiveAdminSession(new Request('https://example.com/api/live/admin/status', {
+    method: 'POST',
+    headers: {
+      cookie: cookieHeader(session.cookie),
+      origin: 'https://example.com',
+      'x-admin-csrf': session.csrfToken,
+    },
+  }), env, now + 14 * 60 * 1000, { mutation: true });
+  assert.equal(mutationSession.sessionIdHash, authorizedSession.sessionIdHash);
+  await assert.rejects(
+    requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
+      headers: { cookie: cookieHeader(session.cookie) },
     }), env, now + 16 * 60 * 1000),
     (error) => error.message === 'admin-session-expired' && error.status === 401,
   );
@@ -103,18 +138,18 @@ test('管理画面は通常15分、信頼済み端末は30日間の二要素認�
       'x-live-admin-remember': '1',
     },
   }), env, now);
-  assert.equal(trustedSession.expiresAt, now + 30 * 24 * 60 * 60 * 1000);
+  assert.equal(trustedSession.expiresAt, now + 14 * 24 * 60 * 60 * 1000);
   assert.equal(trustedSession.trusted, true);
-  assert.deepEqual(await requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
-    headers: { 'x-live-admin-session': trustedSession.sessionToken },
-  }), env, now + 29 * 24 * 60 * 60 * 1000), {
-    expiresAt: trustedSession.expiresAt,
-    trusted: true,
-  });
+  const trustedAuthorizedSession = await requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
+    headers: { cookie: cookieHeader(trustedSession.cookie) },
+  }), env, now + 13 * 24 * 60 * 60 * 1000);
+  assert.equal(trustedAuthorizedSession.expiresAt, trustedSession.expiresAt);
+  assert.equal(trustedAuthorizedSession.trusted, true);
+  assert.match(trustedAuthorizedSession.sessionIdHash, /^[a-f0-9]{64}$/);
   await assert.rejects(
     requireLiveAdminSession(new Request('https://example.com/api/live/admin/overview', {
-      headers: { 'x-live-admin-session': trustedSession.sessionToken },
-    }), env, now + 31 * 24 * 60 * 60 * 1000),
+      headers: { cookie: cookieHeader(trustedSession.cookie) },
+    }), env, now + 15 * 24 * 60 * 60 * 1000),
     (error) => error.message === 'admin-session-expired' && error.status === 401,
   );
 });
@@ -164,9 +199,16 @@ test('漏えいURLを再発行すると旧トークンを失効し、強制終�
     }, body: '{}',
   }), env, '/api/live/admin/session');
   assert.equal(sessionResponse.status, 200);
-  const sessionToken = (await sessionResponse.json()).sessionToken;
+  const sessionData = await sessionResponse.json();
+  const sessionCookie = cookieHeader(sessionResponse.headers.get('set-cookie'));
+  const adminHeaders = {
+    'content-type': 'application/json',
+    cookie: sessionCookie,
+    origin: 'https://example.com',
+    'x-admin-csrf': sessionData.csrfToken,
+  };
   const rotateResponse = await handleLiveApi(new Request('https://example.com/api/live/admin/games/123456/rotate-links', {
-    method: 'POST', headers: { 'content-type': 'application/json', 'x-live-admin-session': sessionToken },
+    method: 'POST', headers: adminHeaders,
     body: JSON.stringify({ host: true, subject: false }),
   }), env, '/api/live/admin/games/123456/rotate-links');
   assert.equal(rotateResponse.status, 200);
@@ -174,11 +216,13 @@ test('漏えいURLを再発行すると旧トークンを失効し、強制終�
   assert.match(rotated.hostUrl, /\/live-challenge\?room=123456#host=[a-f0-9]{48}$/);
   assert.equal(new URL(rotated.hostUrl).searchParams.has('host'), false);
   const storedAfterRotate = await kv.get('live:123456', { type: 'json' });
-  assert.notEqual(storedAfterRotate.hostToken, game.hostToken);
-  assert.equal(storedAfterRotate.subjectToken, game.subjectToken);
+  assert.equal(storedAfterRotate.hostToken, undefined);
+  assert.equal(storedAfterRotate.subjectToken, undefined);
+  assert.match(storedAfterRotate.hostTokenHash, /^[a-f0-9]{64}$/);
+  assert.match(storedAfterRotate.subjectTokenHash, /^[a-f0-9]{64}$/);
 
   const cancelResponse = await handleLiveApi(new Request('https://example.com/api/live/admin/games/654321/cancel', {
-    method: 'POST', headers: { 'content-type': 'application/json', 'x-live-admin-session': sessionToken },
+    method: 'POST', headers: adminHeaders,
     body: '{}',
   }), env, '/api/live/admin/games/654321/cancel');
   assert.equal(cancelResponse.status, 200);
@@ -186,7 +230,7 @@ test('漏えいURLを再発行すると旧トークンを失効し、強制終�
   assert.deepEqual((await kv.get('live:reservations', { type: 'json' })).map((item) => item.code), ['123456']);
 
   const terminateResponse = await handleLiveApi(new Request('https://example.com/api/live/admin/games/123456/terminate', {
-    method: 'POST', headers: { 'content-type': 'application/json', 'x-live-admin-session': sessionToken },
+    method: 'POST', headers: adminHeaders,
     body: JSON.stringify({ message: '安全のため終了します。' }),
   }), env, '/api/live/admin/games/123456/terminate');
   assert.equal(terminateResponse.status, 200);
@@ -297,6 +341,10 @@ function adminAuthEnv(kv) {
     LIVE_ADMIN_TOTP_SECRET: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',
     LIVE_ADMIN_SESSION_SECRET: 'session-secret-'.repeat(3),
   };
+}
+
+function cookieHeader(setCookie) {
+  return String(setCookie || '').split(';', 1)[0];
 }
 
 function healthD1() {

@@ -1,4 +1,5 @@
 import { recordQuestionSelections } from '../questions/trends.js';
+import { recordLiveOpsEvent } from '../live/ops.js';
 
 export const CHALLENGE_MAX_PARTICIPANTS = 50;
 export const CHALLENGE_ROOM_TTL_DAYS = 30;
@@ -11,7 +12,7 @@ const TOKEN_PATTERN = /^[a-f0-9]{48}$/i;
 export async function handleChallengeApi(request, env, path) {
   if (request.method === 'OPTIONS') return jsonResponse({});
   if (!env.REMOTE_DB && !env.CHALLENGE_KV) {
-    return jsonResponse({ error: 'challenge-storage-not-configured' }, 500);
+    return jsonResponse({ error: 'service-unavailable' }, 503);
   }
 
   try {
@@ -71,10 +72,17 @@ export async function handleChallengeApi(request, env, path) {
 
     return jsonResponse({ error: 'not-found' }, 404);
   } catch (error) {
-    return jsonResponse(
-      { error: error && error.message ? error.message : 'challenge-api-error' },
-      Number(error && error.status) || 500,
-    );
+    const status = Number(error && error.status) || 500;
+    if (status >= 500) {
+      const traceId = crypto.randomUUID();
+      await recordLiveOpsEvent(env, {
+        category: 'application', severity: 'critical', eventType: 'challenge-api-error',
+        message: error?.message || 'challenge-api-error',
+        metadata: { path, method: request.method, status, traceId },
+      }).catch(() => {});
+      return jsonResponse({ error: 'internal-error', traceId }, status);
+    }
+    return jsonResponse({ error: error?.message || 'challenge-api-error' }, status);
   }
 }
 

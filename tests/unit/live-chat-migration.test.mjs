@@ -28,7 +28,7 @@ test('LIVEチャットのD1マイグレーションは本文・種別・金額�
   ]) assert.equal(columns.includes(column), true, column);
 });
 
-test('無料投稿と決済済み応援を保存し、通報・非表示後は公開一覧から外す', async () => {
+test('無料投稿は通報で隔離し、決済済み応援は一般利用者1件では公開を続ける', async () => {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync(new URL('../../migrations/0025_live_chat.sql', import.meta.url), 'utf8'));
   const env = { REMOTE_DB: d1Adapter(sqlite) };
@@ -49,7 +49,14 @@ test('無料投稿と決済済み応援を保存し、通報・非表示後は�
   assert.deepEqual((await listLiveChatMessages(env, '123456')).map((message) => message.type), ['chat', 'support']);
   assert.equal(support.amount, 1980);
 
-  await reportLiveChatMessage(env, '123456', chat.id);
+  await reportLiveChatMessage(env, '123456', chat.id, { reporterHash: 'a'.repeat(64) });
+  assert.deepEqual((await listLiveChatMessages(env, '123456')).map((message) => message.id), [support.id]);
+  const supportReport = await reportLiveChatMessage(env, '123456', support.id, {
+    reporterHash: 'b'.repeat(64),
+    reason: 'other',
+  });
+  assert.equal(supportReport.quarantined, false);
+  assert.equal(supportReport.requiresHostReview, true);
   assert.deepEqual((await listLiveChatMessages(env, '123456')).map((message) => message.id), [support.id]);
   await hideLiveChatMessage(env, '123456', support.id);
   assert.deepEqual(await listLiveChatMessages(env, '123456'), []);

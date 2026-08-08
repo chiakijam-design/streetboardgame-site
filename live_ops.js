@@ -2,6 +2,8 @@ import {
   clearAdminSessionToken,
   getAdminSessionToken,
   hasTrustedAdminSession,
+  restoreAdminSessionToken,
+  revokeAdminSession,
   saveAdminSessionToken,
 } from './src/live/admin-session-client.js';
 
@@ -13,6 +15,8 @@ const forgetTrustedDeviceButton = document.getElementById('forgetTrustedDevice')
 const dashboard = document.getElementById('dashboard');
 const authStatus = document.getElementById('authStatus');
 let overview = null;
+let adminSessions = [];
+let chatModeration = [];
 
 sessionStorage.removeItem('live:admin-token');
 tokenInput.value = '';
@@ -23,12 +27,20 @@ document.getElementById('saveStatus').addEventListener('click', saveStatus);
 document.getElementById('issueInvite').addEventListener('click', issueCreatorInvite);
 document.getElementById('createPayoutBatches').addEventListener('click', createPayoutBatches);
 document.getElementById('purchaseSearch').addEventListener('input', () => { renderCheckouts(); renderEntitlements(); });
-if (getAdminSessionToken()) void loadOverview();
+document.getElementById('logoutAllAdminSessions').addEventListener('click', logoutAllAdminSessions);
+void restoreAdminSessionToken().then((restored) => { if (restored) void loadOverview(); });
 
 async function loadOverview() {
   try {
-    if (!getAdminSessionToken() || otpInput.value.trim()) await createAdminSession();
-    overview = await adminApi('/api/live/admin/overview');
+    if (tokenInput.value.trim() || otpInput.value.trim()) await createAdminSession();
+    else if (!getAdminSessionToken() && !await restoreAdminSessionToken()) {
+      const error = new Error('admin-session-required'); error.status = 401; throw error;
+    }
+    [overview, { sessions: adminSessions }, { messages: chatModeration }] = await Promise.all([
+      adminApi('/api/live/admin/overview'),
+      adminApi('/api/live/admin/sessions'),
+      adminApi('/api/live/admin/chat-moderation'),
+    ]);
     dashboard.hidden = false; setAuthenticatedUi(true); renderAll();
   } catch (error) {
     if (error.status === 401) clearAdminSessionToken();
@@ -53,7 +65,7 @@ async function createAdminSession() {
     error.status = response.status;
     throw error;
   }
-  saveAdminSessionToken(data.sessionToken, Boolean(data.trusted));
+  saveAdminSessionToken(data.csrfToken, Boolean(data.trusted));
   tokenInput.value = '';
   otpInput.value = '';
   showStatus(`二要素認証に成功しました。管理セッション有効期限：${formatDate(data.expiresAt)}`);
@@ -64,8 +76,8 @@ function setAuthenticatedUi(authenticated) {
   forgetTrustedDeviceButton.hidden = !authenticated || !hasTrustedAdminSession();
 }
 
-function forgetAdminSession() {
-  clearAdminSessionToken();
+async function forgetAdminSession() {
+  await revokeAdminSession();
   tokenInput.value = '';
   otpInput.value = '';
   dashboard.hidden = true;
@@ -78,7 +90,44 @@ function renderAll() {
   document.getElementById('statusMode').value = status.mode || 'normal';
   document.getElementById('statusTitle').value = status.title || '';
   document.getElementById('statusMessage').value = status.message || '';
-  renderMetrics(); renderCreatorInvites(); renderChannelVerifications(); renderSessions(); renderRevenue(); renderCheckouts(); renderEntitlements(); renderEvents();
+  renderMetrics(); renderCreatorInvites(); renderChannelVerifications(); renderSessions(); renderRevenue(); renderCheckouts(); renderEntitlements(); renderEvents(); renderAdminSessions(); renderChatModeration();
+}
+
+function renderAdminSessions() {
+  document.getElementById('adminSessions').innerHTML = adminSessions.length ? adminSessions.map((item) => `
+    <article class="card"><strong>${item.trusted ? '信頼済み端末' : '通常セッション'} <span class="pill ${item.revokedAt ? 'critical' : 'info'}">${item.revokedAt ? '失効済み' : '有効'}</span></strong>
+      <div class="meta">ID: <code>${escapeHtml(item.sessionId)}</code><br>最終利用: ${formatDate(item.lastSeenAt)} / 有効期限: ${formatDate(item.expiresAt)}</div>
+      <div class="actions"><button class="button danger" data-revoke-admin-session="${escapeAttr(item.sessionId)}" ${item.revokedAt ? 'disabled' : ''}>この端末を失効</button></div></article>
+  `).join('') : empty('有効な管理セッションはありません。');
+  document.querySelectorAll('[data-revoke-admin-session]').forEach((button) => button.addEventListener('click', async () => {
+    if (!confirm('この管理セッションを失効しますか？')) return;
+    await adminApi(`/api/live/admin/sessions/${button.dataset.revokeAdminSession}/revoke`, { method: 'POST', body: '{}' });
+    await loadOverview();
+  }));
+}
+
+function renderChatModeration() {
+  document.getElementById('chatModeration').innerHTML = chatModeration.length ? chatModeration.map((item) => `
+    <article class="card"><strong>room ${escapeHtml(item.code)} / ${escapeHtml(item.name)} <span class="pill ${item.type === 'support' ? 'warning' : item.status === 'quarantined' ? 'critical' : ''}">${item.type === 'support' ? `有料応援 ${yen(item.amount)}` : escapeHtml(item.status)}</span></strong>
+      <div>${escapeHtml(item.text)}</div><div class="meta">通報 ${item.reportCount}件 / 理由: ${escapeHtml((item.reportReasons || []).join('・') || '未指定')}</div>
+      <div class="actions"><button class="button good" data-chat-action="restore" data-chat-code="${escapeAttr(item.code)}" data-chat-id="${escapeAttr(item.id)}">復元</button><button class="button danger" data-chat-action="disable" data-chat-code="${escapeAttr(item.code)}" data-chat-id="${escapeAttr(item.id)}">無効化</button>${(item.reporterHashes || []).map((hash) => `<button class="button secondary" data-restrict-chat-reporter="${escapeAttr(hash)}">通報者を制限</button>`).join('')}</div></article>
+  `).join('') : empty('審査待ちのLIVEチャット通報はありません。');
+  document.querySelectorAll('[data-chat-action]').forEach((button) => button.addEventListener('click', async () => {
+    await adminApi(`/api/live/admin/chat/${button.dataset.chatCode}/${button.dataset.chatId}/${button.dataset.chatAction}`, { method: 'POST', body: '{}' });
+    await loadOverview();
+  }));
+  document.querySelectorAll('[data-restrict-chat-reporter]').forEach((button) => button.addEventListener('click', async () => {
+    if (!confirm('この通報者からの通報を制限しますか？')) return;
+    await adminApi(`/api/live/admin/chat-reporters/${button.dataset.restrictChatReporter}/restrict`, { method: 'POST', body: JSON.stringify({ reason: '運営判断による通報制限' }) });
+    await loadOverview();
+  }));
+}
+
+async function logoutAllAdminSessions() {
+  if (!confirm('全端末の管理セッションを失効しますか？')) return;
+  await adminApi('/api/live/admin/session/logout-all', { method: 'POST', body: '{}' });
+  clearAdminSessionToken();
+  location.reload();
 }
 
 function renderCreatorInvites() {
@@ -349,7 +398,7 @@ async function reissueEntitlement(purchaseId) {
 }
 
 async function acknowledgeEvent(eventId) { try { await adminApi(`/api/live/admin/ops-events/${eventId}/acknowledge`, { method: 'POST', body: '{}' }); await loadOverview(); } catch (error) { alert(humanError(error)); } }
-async function adminApi(path, options = {}) { const response = await fetch(path, { ...options, headers: { 'content-type': 'application/json', 'x-live-admin-session': getAdminSessionToken(), ...(options.headers || {}) } }); const data = await response.json().catch(() => ({})); if (!response.ok) { const error = new Error(data.error || 'request-failed'); error.status = response.status; throw error; } return data; }
+async function adminApi(path, options = {}) { const headers = { 'content-type': 'application/json', ...(options.headers || {}) }; if (options.method && options.method !== 'GET') headers['x-admin-csrf'] = getAdminSessionToken(); const response = await fetch(path, { ...options, credentials: 'same-origin', headers }); const data = await response.json().catch(() => ({})); if (!response.ok) { const error = new Error(data.error || 'request-failed'); error.status = response.status; throw error; } return data; }
 function metric(label, value, note, tone = '') { return `<div class="metric ${escapeAttr(tone)}"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b><small>${escapeHtml(note)}</small></div>`; }
 function empty(text) { return `<div class="empty">${escapeHtml(text)}</div>`; }
 function formatDate(value) { if (value === null || value === undefined || value === '' || Number(value) <= 0) return '未設定'; const date = new Date(Number(value)); return Number.isNaN(date.getTime()) ? '未設定' : date.toLocaleString('ja-JP'); }

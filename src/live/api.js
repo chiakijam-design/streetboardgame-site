@@ -27,10 +27,13 @@ import {
   createLiveChatMessage,
   ensureLiveChatD1,
   hideLiveChatMessage,
+  listLiveChatModerationQueue,
   listLiveChatMessages,
   normalizeLiveChatText,
   publishPaidLiveChatMessage,
   reportLiveChatMessage,
+  restoreLiveChatMessage,
+  setLiveReporterRestriction,
 } from './chat.js';
 import { fetchYouTubeDataProfile, normalizeYouTubeInput } from './youtube.js';
 import {
@@ -63,7 +66,14 @@ import {
   recordLiveOpsEvent,
   setLiveSystemStatus,
 } from './ops.js';
-import { createLiveAdminSession, requireLiveAdminSession } from './admin-auth.js';
+import {
+  createLiveAdminSession,
+  getLiveAdminSession,
+  listLiveAdminSessions,
+  requireLiveAdminSession,
+  revokeLiveAdminSession,
+  revokeLiveAdminSessionById,
+} from './admin-auth.js';
 import { getLivePurchaseDb, requireLivePurchaseDb } from './purchases.js';
 import { liveResultImageCheckoutConfigured, liveSupportCheckoutConfigured } from './checkout-config.js';
 import { calculateLiveRevenueAllocation } from './revenue.js';
@@ -112,6 +122,27 @@ export async function handleLiveApi(request, env, path) {
     if (path === '/api/live/stripe/webhook' && request.method === 'POST') {
       return await handleLiveStripeWebhook(request, env);
     }
+    if (path === '/api/live/security/csp-report' && request.method === 'POST') {
+      await enforceLiveRateLimit(request, env, 'csp-report', 30, 60 * 60 * 1000);
+      const raw = (await request.text()).slice(0, 12_000);
+      let report = {};
+      try { report = JSON.parse(raw || '{}'); } catch (error) { report = { invalid: true }; }
+      const payload = report['csp-report'] || report.body || report;
+      await recordLiveOpsEvent(env, {
+        category: 'security',
+        severity: 'warning',
+        eventType: 'csp-violation',
+        message: 'Content Security Policy違反を検知しました。',
+        metadata: {
+          documentUri: sanitizeLogValue(payload?.['document-uri'] || payload?.documentURL, 300),
+          violatedDirective: sanitizeLogValue(payload?.['violated-directive'] || payload?.effectiveDirective, 120),
+          blockedUri: sanitizeLogValue(payload?.['blocked-uri'] || payload?.blockedURL, 300),
+          sourceFile: sanitizeLogValue(payload?.['source-file'] || payload?.sourceFile, 300),
+          lineNumber: Number(payload?.['line-number'] || payload?.lineNumber) || null,
+        },
+      });
+      return new Response(null, { status: 204 });
+    }
     if (path === '/api/live/status' && request.method === 'GET') {
       return liveJson({ status: await getLiveSystemStatus(env) });
     }
@@ -121,11 +152,64 @@ export async function handleLiveApi(request, env, path) {
     }
     if (path === '/api/live/admin/session' && request.method === 'POST') {
       await enforceLiveRateLimit(request, env, 'admin-auth', 10);
-      return liveJson(await createLiveAdminSession(request, env));
+      const session = await createLiveAdminSession(request, env);
+      return liveJson({
+        csrfToken: session.csrfToken,
+        expiresAt: session.expiresAt,
+        trusted: session.trusted,
+      }, 200, { 'set-cookie': session.cookie });
+    }
+    if (path === '/api/live/admin/session' && request.method === 'GET') {
+      return liveJson(await getLiveAdminSession(request, env));
+    }
+    if (path === '/api/live/admin/session/logout' && request.method === 'POST') {
+      await requireLiveAdminSession(request, env, Date.now(), { mutation: true });
+      const result = await revokeLiveAdminSession(request, env);
+      return liveJson({ revoked: result.revoked }, 200, { 'set-cookie': result.cookie });
+    }
+    if (path === '/api/live/admin/session/logout-all' && request.method === 'POST') {
+      await requireLiveAdminSession(request, env, Date.now(), { mutation: true });
+      const result = await revokeLiveAdminSession(request, env, { all: true });
+      return liveJson({ revoked: result.revoked, all: true }, 200, { 'set-cookie': result.cookie });
     }
     if (path.startsWith('/api/live/admin/')) {
       await enforceLiveRateLimit(request, env, 'admin-api', 120);
-      await requireLiveAdminSession(request, env);
+      await requireLiveAdminSession(request, env, Date.now(), { mutation: request.method !== 'GET' });
+    }
+    if (path === '/api/live/admin/sessions' && request.method === 'GET') {
+      return liveJson({ sessions: await listLiveAdminSessions(env) });
+    }
+    if (path === '/api/live/admin/chat-moderation' && request.method === 'GET') {
+      return liveJson({ messages: await listLiveChatModerationQueue(env) });
+    }
+    const chatModerationRoute = path.match(/^\/api\/live\/admin\/chat\/([0-9]{6})\/([A-Za-z0-9_-]{8,120})\/(restore|disable)$/);
+    if (chatModerationRoute && request.method === 'POST') {
+      const [, code, messageId, action] = chatModerationRoute;
+      const result = action === 'restore'
+        ? await restoreLiveChatMessage(env, code, messageId)
+        : await hideLiveChatMessage(env, code, messageId);
+      if (hasLiveRealtime(env)) {
+        await broadcastLiveRealtimeChat(env, code, {
+          action: action === 'restore' ? 'created' : 'removed',
+          message: action === 'restore' ? (await listLiveChatMessages(env, code)).find((item) => item.id === messageId) : undefined,
+          messageId,
+        });
+      }
+      return liveJson({ code, ...result });
+    }
+    const chatReporterRoute = path.match(/^\/api\/live\/admin\/chat-reporters\/([a-f0-9]{64})\/(restrict|restore)$/i);
+    if (chatReporterRoute && request.method === 'POST') {
+      const body = await readLiveJson(request);
+      return liveJson(await setLiveReporterRestriction(
+        env,
+        chatReporterRoute[1].toLowerCase(),
+        chatReporterRoute[2] === 'restrict',
+        body.reason,
+      ));
+    }
+    const adminSessionRevokeRoute = path.match(/^\/api\/live\/admin\/sessions\/([a-f0-9]{8,64})\/revoke$/i);
+    if (adminSessionRevokeRoute && request.method === 'POST') {
+      return liveJson(await revokeLiveAdminSessionById(env, adminSessionRevokeRoute[1]));
     }
     if (path === '/api/live/admin/overview' && request.method === 'GET') {
       await ensureLiveD1(env);
@@ -242,7 +326,7 @@ export async function handleLiveApi(request, env, path) {
       return await downloadLiveResult(request, env, downloadRoute[1]);
     }
     if (!env.REMOTE_DB && !env.LIVE_KV) {
-      return liveJson({ error: 'live-storage-not-configured' }, 500);
+      return liveJson({ error: 'service-unavailable' }, 503);
     }
     if (path === '/api/live/reservations/availability' && request.method === 'GET') {
       await enforceLiveRateLimit(request, env, 'availability', 120);
@@ -271,7 +355,7 @@ export async function handleLiveApi(request, env, path) {
         return await updateLiveChatSettings(request, env, chatCode);
       }
       if (chatAction === 'report') {
-        await enforceLiveRateLimit(request, env, `chat-report:${chatCode}`, 30);
+        await enforceLiveRateLimit(request, env, `chat-report:${chatCode}`, 5, 60 * 60 * 1000);
         return await reportLiveChat(request, env, chatCode, messageId);
       }
       if (chatAction === 'hide') {
@@ -321,17 +405,33 @@ export async function handleLiveApi(request, env, path) {
     return liveJson({ error: 'not-found' }, 404);
   } catch (error) {
     const status = Number(error && error.status) || 500;
+    const traceId = crypto.randomUUID();
+    if (path === '/api/live/admin/session' && request.method === 'POST' && [401, 403, 429].includes(status)) {
+      await recordLiveOpsEvent(env, {
+        category: 'security',
+        severity: status === 429 ? 'critical' : 'warning',
+        eventType: 'admin-login-failed',
+        message: '管理画面へのログインに失敗しました。',
+        metadata: { status, traceId },
+      }).catch(() => {});
+    }
     if (status >= 500) {
       await recordLiveOpsEvent(env, {
         category: path === '/api/live/stripe/webhook' ? 'stripe' : 'application',
         severity: 'critical',
         eventType: path === '/api/live/stripe/webhook' ? 'stripe-webhook-processing-failed' : 'live-api-error',
         message: error && error.message ? error.message : 'live-api-error',
-        metadata: { path, method: request.method, status },
+        metadata: { path, method: request.method, status, traceId },
       }).catch(() => {});
     }
-    return liveJson({ error: error && error.message ? error.message : 'live-api-error' }, status);
+    return status === 500
+      ? liveJson({ error: 'internal-error', traceId }, status)
+      : liveJson({ error: error && error.message ? error.message : 'live-api-error' }, status);
   }
+}
+
+function sanitizeLogValue(value, maxLength) {
+  return String(value || '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, maxLength);
 }
 
 async function createLiveGame(request, env) {
@@ -623,9 +723,9 @@ async function getLiveGameResponse(request, env, code) {
   const game = await requireLiveGame(env, code, realtime
     ? { baseOnly: true }
     : { polling: true, participantToken });
-  const host = Boolean(hostToken && hostToken === game.hostToken)
+  const host = await liveCapabilityMatches(hostToken, game.hostTokenHash, game.hostToken)
     && await isLiveHostAuthorized(request, env, game);
-  const subject = Boolean(subjectToken && subjectToken === game.subjectToken);
+  const subject = await liveCapabilityMatches(subjectToken, game.subjectTokenHash, game.subjectToken);
   if (realtime) await enrichRealtimeGame(env, code, game, { host, participantToken });
   const publicGame = publicLiveGame(game, {
     host,
@@ -660,7 +760,7 @@ async function getLiveChatResponse(request, env, code) {
   const game = await requireLiveGame(env, code, { baseOnly: true });
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
   const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
-  const host = Boolean(hostToken && hostToken === game.hostToken)
+  const host = await liveCapabilityMatches(hostToken, game.hostTokenHash, game.hostToken)
     && await isLiveHostAuthorized(request, env, game);
   const participant = participantToken
     ? await loadLiveParticipant(env, code, participantToken)
@@ -680,7 +780,7 @@ async function sendLiveChat(request, env, code) {
   const body = await readLiveJson(request);
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
   let sender;
-  if (hostToken && hostToken === game.hostToken) {
+  if (await liveCapabilityMatches(hostToken, game.hostTokenHash, game.hostToken)) {
     await requireLiveHost(request, env, game);
     sender = {
       id: `host:${code}`,
@@ -722,8 +822,14 @@ async function reportLiveChat(request, env, code, messageId) {
   const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
   const participant = await loadLiveParticipant(env, code, participantToken);
   if (!participant) throw liveError('participant-forbidden', 403);
-  const result = await reportLiveChatMessage(env, code, messageId);
-  if (hasLiveRealtime(env)) {
+  const body = await readLiveJson(request);
+  const reporterHash = await hashLiveSecret(`${code}:${participant.id}`);
+  const result = await reportLiveChatMessage(env, code, messageId, {
+    reporterHash,
+    reason: body.reason,
+    detail: body.detail,
+  });
+  if (result.quarantined && hasLiveRealtime(env)) {
     await broadcastLiveRealtimeChat(env, code, { action: 'removed', messageId });
   }
   await recordLiveOpsEvent(env, {
@@ -732,7 +838,12 @@ async function reportLiveChat(request, env, code, messageId) {
     eventType: 'live-chat-message-reported',
     code,
     message: '視聴者の通報によりLIVEチャットを即時非公開にしました。',
-    metadata: { messageId, reporterParticipantId: participant.id },
+    metadata: {
+      messageId,
+      reporterParticipantId: participant.id,
+      paidSupportRequiresHostReview: result.requiresHostReview,
+      reportCount: result.reportCount,
+    },
   });
   return liveJson({ code, ...result });
 }
@@ -803,7 +914,7 @@ async function createLiveCheckout(request, env, code) {
     throw liveError('live-chat-paused', 409);
   }
   const approval = await assertPaidChannelApproved(env, game.channelVerificationId, game.channelId);
-  const participant = game.participants.find((item) => item.token === participantToken);
+  const participant = await loadLiveParticipant(env, code, participantToken);
   if (!participant) throw liveError('participant-forbidden', 403);
   let amount;
   let productName;
@@ -934,7 +1045,7 @@ async function grantLiveResultEntitlement(request, env) {
   await assertPaidChannelApproved(env, game.channelVerificationId, game.channelId);
   const participantGame = publicLiveGame(game, { participantToken });
   if (!participantGame.participantName) throw liveError('participant-forbidden', 403);
-  const participant = game.participants.find((item) => item.token === participantToken);
+  const participant = await loadLiveParticipant(env, code, participantToken);
   const accessToken = createLiveToken(32);
   const now = Date.now();
   const availableUntil = now + 30 * 24 * 60 * 60 * 1000;
@@ -1310,7 +1421,14 @@ async function handleLiveStripeWebhook(request, env) {
   if (!secret.startsWith('whsec_')) throw liveError('stripe-webhook-not-configured', 503);
   const payload = await request.text();
   const signatureHeader = String(request.headers.get('Stripe-Signature') || '');
-  if (!await verifyLiveStripeSignature(payload, signatureHeader, secret)) throw liveError('stripe-signature-invalid', 400);
+  if (!await verifyLiveStripeSignature(payload, signatureHeader, secret)) {
+    await recordLiveOpsEvent(env, {
+      category: 'stripe', severity: 'critical', eventType: 'stripe-signature-invalid',
+      message: 'Stripe Webhookの署名検証に失敗しました。',
+      metadata: { signaturePresent: Boolean(signatureHeader) },
+    }).catch(() => {});
+    throw liveError('stripe-signature-invalid', 400);
+  }
   let event;
   try { event = JSON.parse(payload); } catch (error) { throw liveError('stripe-payload-invalid', 400); }
   const type = String(event?.type || 'unknown');
@@ -1404,9 +1522,9 @@ async function fulfillLiveCheckout(request, env, session) {
   if (row.product_type === 'result_image') {
     const participant = await loadParticipantById(env, row.code, row.participant_id);
     if (!participant) throw liveError('participant-forbidden', 403);
-    const game = await requireLiveGame(env, row.code, { polling: true, participantToken: participant.token });
+    const game = await requireLiveGame(env, row.code);
     if (game.phase !== 'complete') throw liveError('result-not-ready', 409);
-    const participantGame = publicLiveGame(game, { participantToken: participant.token });
+    const participantGame = publicLiveGame(game, { participantId: participant.id });
     purchaseId = purchaseId || `purchase_${String(row.order_id).replace(/^ord_/, '')}`;
     const accessToken = await derivePurchaseAccessToken(env, row.order_id);
     const purchaserEmail = normalizePurchaseEmail(session?.customer_details?.email || session?.customer_email);
@@ -1475,10 +1593,10 @@ async function publishPaidSupportChatSafely(env, row) {
 async function loadParticipantById(env, code, participantId) {
   if (env.REMOTE_DB) {
     const row = await env.REMOTE_DB.prepare(`
-      SELECT participant_id, participant_token, name, joined_at
+      SELECT participant_id, participant_token_hash, name, joined_at
       FROM live_participants WHERE code = ? AND participant_id = ? LIMIT 1
     `).bind(code, participantId).first();
-    return row ? { id: row.participant_id, token: row.participant_token, name: row.name, joinedAt: Number(row.joined_at) } : null;
+    return row ? { id: row.participant_id, tokenHash: row.participant_token_hash || '', name: row.name, joinedAt: Number(row.joined_at) } : null;
   }
   const game = await getStoredLiveGame(env, code);
   return game?.participants?.find((item) => item.id === participantId) || null;
@@ -1713,16 +1831,19 @@ async function joinLiveGame(request, env, code) {
   const usesD1 = await ensureLiveD1(env);
   if (usesD1) {
     try {
+      const participantTokenHash = await hashLiveSecret(participant.token);
       const inserted = realtime
         ? await env.REMOTE_DB.prepare(`
-            INSERT INTO live_participants (code, participant_id, participant_token, name, joined_at)
-            VALUES (?, ?, ?, ?, ?)
-          `).bind(code, participant.id, participant.token, participant.name, participant.joinedAt).run()
+            INSERT INTO live_participants
+              (code, participant_id, participant_token, participant_token_hash, name, joined_at)
+            VALUES (?, ?, '', ?, ?, ?)
+          `).bind(code, participant.id, participantTokenHash, participant.name, participant.joinedAt).run()
         : await env.REMOTE_DB.prepare(`
-            INSERT INTO live_participants (code, participant_id, participant_token, name, joined_at)
-            SELECT ?, ?, ?, ?, ?
+            INSERT INTO live_participants
+              (code, participant_id, participant_token, participant_token_hash, name, joined_at)
+            SELECT ?, ?, '', ?, ?, ?
             WHERE (SELECT COUNT(*) FROM live_participants WHERE code = ?) < ?
-          `).bind(code, participant.id, participant.token, participant.name, participant.joinedAt, code, viewerLimit).run();
+          `).bind(code, participant.id, participantTokenHash, participant.name, participant.joinedAt, code, viewerLimit).run();
       if (Number(inserted?.meta?.changes || 0) !== 1) throw liveError('participant-limit-reached', 409);
     } catch (error) {
       if (realtime) await releaseLiveRealtimeParticipant(env, code, participant.token);
@@ -1753,9 +1874,7 @@ async function voteLiveGame(request, env, code) {
   const game = await requireLiveGame(env, code, { baseOnly: realtime });
   if (game.phase !== 'voting') throw liveError('voting-closed', 409);
   const participantToken = normalizeToken(request.headers.get('x-live-participant-token'));
-  const participant = realtime
-    ? await loadLiveParticipant(env, code, participantToken)
-    : game.participants.find((item) => item.token === participantToken);
+  const participant = await loadLiveParticipant(env, code, participantToken);
   if (!participant) throw liveError('participant-forbidden', 403);
   const body = await readLiveJson(request);
   const question = game.questions[game.currentQuestionIndex];
@@ -1798,9 +1917,11 @@ async function voteLiveGame(request, env, code) {
 async function answerLiveGameAsSubject(request, env, code) {
   const realtime = hasLiveRealtime(env);
   const game = await requireLiveGame(env, code, { baseOnly: realtime });
-  if (Number(game.version) < 4 || !game.subjectToken) throw liveError('subject-not-supported', 409);
+  if (Number(game.version) < 4 || (!game.subjectTokenHash && !game.subjectToken)) throw liveError('subject-not-supported', 409);
   const subjectToken = normalizeToken(request.headers.get('x-live-subject-token'));
-  if (!subjectToken || subjectToken !== game.subjectToken) throw liveError('subject-forbidden', 403);
+  if (!await liveCapabilityMatches(subjectToken, game.subjectTokenHash, game.subjectToken)) {
+    throw liveError('subject-forbidden', 403);
+  }
   if (game.phase !== 'voting') throw liveError('answer-not-open', 409);
   const question = game.questions[game.currentQuestionIndex];
   const body = await readLiveJson(request);
@@ -2026,9 +2147,11 @@ export function publicLiveGame(game, access = {}) {
   const currentVotes = question ? game.votes[question.id] || {} : {};
   const participants = Array.isArray(game.participants) ? game.participants : [];
   const flowVersion = Number(game.version) || 1;
-  const participant = access.participantToken
-    ? participants.find((item) => item.token === access.participantToken)
-    : null;
+  const participant = access.participantId
+    ? participants.find((item) => item.id === access.participantId)
+    : access.participantToken
+      ? participants.find((item) => item.token === access.participantToken)
+      : null;
   const storedRevealResult = question && ['reveal', 'review-answer', 'complete'].includes(game.phase)
     ? game.results.find((item) => item.questionId === question.id) || null
     : null;
@@ -2513,10 +2636,18 @@ async function ensureLiveD1(env) {
           PRIMARY KEY (channel_id, video_id)
         )
       `).run(),
-    ]).then(() => env.REMOTE_DB.prepare(`
-      CREATE INDEX IF NOT EXISTS idx_live_participants_token
-      ON live_participants (code, participant_token)
-    `).run()).catch((error) => {
+    ]).then(async () => {
+      const columns = await env.REMOTE_DB.prepare('PRAGMA table_info(live_participants)').all();
+      if (!(columns?.results || []).some((column) => column.name === 'participant_token_hash')) {
+        await env.REMOTE_DB.prepare('ALTER TABLE live_participants ADD COLUMN participant_token_hash TEXT').run();
+      }
+      await Promise.all([
+        env.REMOTE_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_live_participants_token
+          ON live_participants (code, participant_token)`).run(),
+        env.REMOTE_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_live_participants_token_hash
+          ON live_participants (code, participant_token_hash)`).run(),
+      ]);
+    }).catch((error) => {
       liveD1ReadyPromise = null;
       throw error;
     });
@@ -2535,7 +2666,7 @@ async function getStoredLiveGame(env, code, options = {}) {
     if (options.polling) return loadD1PollingSnapshot(env, code, game, options.participantToken);
     const [participantsResult, votesResult] = await Promise.all([
       env.REMOTE_DB.prepare(`
-        SELECT participant_id, participant_token, name, joined_at
+        SELECT participant_id, participant_token, participant_token_hash, name, joined_at
         FROM live_participants WHERE code = ? ORDER BY joined_at ASC
       `).bind(code).all(),
       env.REMOTE_DB.prepare(`
@@ -2545,7 +2676,8 @@ async function getStoredLiveGame(env, code, options = {}) {
     ]);
     game.participants = (participantsResult.results || []).map((item) => ({
       id: item.participant_id,
-      token: item.participant_token,
+      tokenHash: item.participant_token_hash || '',
+      legacyToken: item.participant_token || '',
       name: item.name,
       joinedAt: Number(item.joined_at),
     }));
@@ -2561,7 +2693,7 @@ async function getStoredLiveGame(env, code, options = {}) {
   const kv = env.LIVE_KV;
   const game = kv ? await kv.get(`live:${code}`, { type: 'json' }) : null;
   if (options.baseOnly && game) return { ...game, participants: [], votes: {} };
-  return options.polling ? createPollingSnapshot(game, options.participantToken) : game;
+  return options.polling ? await createPollingSnapshot(game, options.participantToken) : game;
 }
 
 async function loadD1PollingSnapshot(env, code, game, participantToken) {
@@ -2572,24 +2704,25 @@ async function loadD1PollingSnapshot(env, code, game, participantToken) {
         FROM live_votes v
         INNER JOIN live_participants p
           ON p.code = v.code AND p.participant_id = v.participant_id
-        WHERE v.code = ? AND p.participant_token = ?
-      `).bind(code, participantToken).all()
+        WHERE v.code = ? AND (p.participant_token_hash = ? OR p.participant_token = ?)
+      `).bind(code, await hashLiveSecret(participantToken), participantToken).all()
     : Promise.resolve({ results: [] });
   const currentSummaryQuery = game.phase !== 'complete' && question
     ? env.REMOTE_DB.prepare(`
         SELECT v.option_index, COUNT(*) AS vote_count,
-          MAX(CASE WHEN p.participant_token = ? THEN v.option_index ELSE NULL END) AS my_vote_index
+          MAX(CASE WHEN p.participant_token_hash = ? OR p.participant_token = ?
+            THEN v.option_index ELSE NULL END) AS my_vote_index
         FROM live_votes v
         LEFT JOIN live_participants p
           ON p.code = v.code AND p.participant_id = v.participant_id
         WHERE v.code = ? AND v.question_id = ?
         GROUP BY v.option_index
         ORDER BY v.option_index
-      `).bind(participantToken || '', code, question.id).all()
+      `).bind(participantToken ? await hashLiveSecret(participantToken) : '', participantToken || '', code, question.id).all()
     : Promise.resolve({ results: [] });
   const [participantsResult, currentSummaryResult, participantVotesResult] = await Promise.all([
     env.REMOTE_DB.prepare(`
-      SELECT participant_id, participant_token, name, joined_at
+      SELECT participant_id, participant_token, participant_token_hash, name, joined_at
       FROM live_participants WHERE code = ? ORDER BY joined_at ASC
     `).bind(code).all(),
     currentSummaryQuery,
@@ -2597,11 +2730,16 @@ async function loadD1PollingSnapshot(env, code, game, participantToken) {
   ]);
   game.participants = (participantsResult.results || []).map((item) => ({
     id: item.participant_id,
-    token: item.participant_token,
+    tokenHash: item.participant_token_hash || '',
+    legacyToken: item.participant_token || '',
     name: item.name,
     joinedAt: Number(item.joined_at),
   }));
   game.votes = {};
+  const participant = participantToken
+    ? await findParticipantByCapability(game.participants, participantToken)
+    : null;
+  if (participant) participant.token = participantToken;
   if (game.phase === 'complete') {
     for (const item of participantVotesResult.results || []) {
       game.votes[item.question_id] = {
@@ -2621,18 +2759,20 @@ async function loadD1PollingSnapshot(env, code, game, participantToken) {
     }
     if (item.my_vote_index !== null && item.my_vote_index !== undefined) myVoteIndex = Number(item.my_vote_index);
   }
-  const participant = participantToken ? game.participants.find((item) => item.token === participantToken) : null;
   if (question && participant && Number.isInteger(myVoteIndex)) {
     game.votes[question.id] = { [participant.id]: myVoteIndex };
   }
   return game;
 }
 
-function createPollingSnapshot(game, participantToken) {
+async function createPollingSnapshot(game, participantToken) {
   if (!game) return game;
   const question = game.questions[game.currentQuestionIndex] || null;
   const allVotes = game.votes || {};
-  const participant = participantToken ? game.participants.find((item) => item.token === participantToken) : null;
+  const participant = participantToken
+    ? await findParticipantByCapability(game.participants, participantToken)
+    : null;
+  if (participant) participant.token = participantToken;
   const snapshotVotes = {};
   if (game.phase === 'complete' && participant) {
     for (const [questionId, votes] of Object.entries(allVotes)) {
@@ -2659,22 +2799,25 @@ function resultVoteCounts(game, question) {
 async function loadLiveParticipant(env, code, participantToken) {
   if (!participantToken) return null;
   if (await ensureLiveD1(env)) {
+    const participantTokenHash = await hashLiveSecret(participantToken);
     const row = await env.REMOTE_DB.prepare(`
-      SELECT participant_id, participant_token, name, joined_at
+      SELECT participant_id, participant_token, participant_token_hash, name, joined_at
       FROM live_participants
-      WHERE code = ? AND participant_token = ?
+      WHERE code = ? AND (participant_token_hash = ? OR participant_token = ?)
       LIMIT 1
-    `).bind(code, participantToken).first();
+    `).bind(code, participantTokenHash, participantToken).first();
     return row ? {
       id: row.participant_id,
-      token: row.participant_token,
+      token: participantToken,
+      tokenHash: row.participant_token_hash || participantTokenHash,
       name: row.name,
       joinedAt: Number(row.joined_at),
     } : null;
   }
   const kv = env.LIVE_KV;
   const game = kv ? await kv.get(`live:${code}`, { type: 'json' }) : null;
-  return game?.participants?.find((item) => item.token === participantToken) || null;
+  const participant = await findParticipantByCapability(game?.participants || [], participantToken);
+  return participant ? { ...participant, token: participantToken } : null;
 }
 
 async function enrichRealtimeGame(env, code, game, access = {}) {
@@ -2684,7 +2827,7 @@ async function enrichRealtimeGame(env, code, game, access = {}) {
     : Promise.resolve(null);
   const hostParticipantsPromise = access.host && env.REMOTE_DB
     ? env.REMOTE_DB.prepare(`
-        SELECT participant_id, participant_token, name, joined_at
+        SELECT participant_id, participant_token, participant_token_hash, name, joined_at
         FROM live_participants
         WHERE code = ?
         ORDER BY joined_at ASC
@@ -2704,7 +2847,8 @@ async function enrichRealtimeGame(env, code, game, access = {}) {
     : [];
   game.participants = (hostParticipants.results || []).map((item) => ({
     id: item.participant_id,
-    token: item.participant_token,
+    tokenHash: item.participant_token_hash || '',
+    legacyToken: item.participant_token || '',
     name: item.name,
     joinedAt: Number(item.joined_at),
   }));
@@ -2736,20 +2880,35 @@ async function broadcastCurrentRealtimeState(env, code, game) {
 }
 
 async function putStoredLiveGame(env, code, game) {
+  const storedGame = await createStoredLiveGame(game);
   if (await ensureLiveD1(env)) {
-    const { participants, votes, ...storedGame } = game;
+    const { participants, votes, ...storedPayload } = storedGame;
     await env.REMOTE_DB.prepare(`
       INSERT INTO live_games (code, payload, created_at, updated_at, expires_at)
       VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(code) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at, expires_at = excluded.expires_at
-    `).bind(code, JSON.stringify(storedGame), game.createdAt, game.updatedAt, game.expiresAt).run();
+    `).bind(code, JSON.stringify(storedPayload), game.createdAt, game.updatedAt, game.expiresAt).run();
     return;
   }
   const kv = env.LIVE_KV;
   if (!kv) throw liveError('live-storage-not-configured', 500);
   const fallbackTtl = game.phase === 'lobby' ? LIVE_SAVED_TTL_SECONDS : LIVE_ACTIVE_TTL_SECONDS;
   const ttlSeconds = Math.max(60, Math.ceil((Number(game.expiresAt) - Date.now()) / 1000) || fallbackTtl);
-  await kv.put(`live:${code}`, JSON.stringify(game), { expirationTtl: ttlSeconds });
+  await kv.put(`live:${code}`, JSON.stringify(storedGame), { expirationTtl: ttlSeconds });
+}
+
+async function createStoredLiveGame(game) {
+  const stored = structuredClone(game);
+  if (stored.hostToken) stored.hostTokenHash = await hashLiveSecret(stored.hostToken);
+  if (stored.subjectToken) stored.subjectTokenHash = await hashLiveSecret(stored.subjectToken);
+  delete stored.hostToken;
+  delete stored.subjectToken;
+  stored.participants = await Promise.all((stored.participants || []).map(async (participant) => ({
+    ...participant,
+    tokenHash: participant.tokenHash || (participant.token ? await hashLiveSecret(participant.token) : ''),
+    token: undefined,
+  })));
+  return stored;
 }
 
 async function cleanupExpiredLiveData(env) {
@@ -2897,7 +3056,7 @@ async function getKvLiveReservations(kv) {
   return Array.isArray(value) ? value : [];
 }
 
-async function enforceLiveRateLimit(request, env, scope, limit) {
+async function enforceLiveRateLimit(request, env, scope, limit, windowMs = 10 * 60 * 1000) {
   if (!env.REMOTE_DB) return;
   if (!liveRateLimitReadyPromise) {
     liveRateLimitReadyPromise = env.REMOTE_DB.prepare(`
@@ -2914,7 +3073,6 @@ async function enforceLiveRateLimit(request, env, scope, limit) {
   }
   await liveRateLimitReadyPromise;
   const now = Date.now();
-  const windowMs = 10 * 60 * 1000;
   const windowStart = Math.floor(now / windowMs) * windowMs;
   const ip = String(request.headers.get('CF-Connecting-IP') || 'unknown');
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
@@ -2929,12 +3087,23 @@ async function enforceLiveRateLimit(request, env, scope, limit) {
       expires_at = excluded.expires_at
   `).bind(key, windowStart, windowStart + windowMs * 2).run();
   const row = await env.REMOTE_DB.prepare('SELECT request_count FROM live_rate_limits WHERE rate_key = ?').bind(key).first();
-  if (Number(row && row.request_count || 0) > limit) throw liveError('rate-limit-exceeded', 429);
+  if (Number(row && row.request_count || 0) > limit) {
+    if (/^(admin|chat-report|join|create|stream-create)/.test(scope)) {
+      await recordLiveOpsEvent(env, {
+        category: 'security', severity: 'critical', eventType: 'rate-limit-exceeded',
+        message: '同一接続元からのリクエストが上限を超えました。',
+        metadata: { scope, ipHash, limit, windowMs },
+      }).catch(() => {});
+    }
+    throw liveError('rate-limit-exceeded', 429);
+  }
 }
 
 async function requireLiveHost(request, env, game) {
   const hostToken = normalizeToken(request.headers.get('x-live-host-token'));
-  if (!hostToken || hostToken !== game.hostToken) throw liveError('host-forbidden', 403);
+  if (!await liveCapabilityMatches(hostToken, game.hostTokenHash, game.hostToken)) {
+    throw liveError('host-forbidden', 403);
+  }
   if (game.creatorInviteId) {
     await requireLiveCreatorInvite(request, env, game.channelId, game.creatorInviteId);
   }
@@ -3028,9 +3197,39 @@ function liveError(message, status) {
   return error;
 }
 
-function liveJson(data, status = 200) {
+function liveJson(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'content-type': 'application/json; charset=UTF-8', 'cache-control': 'no-store' },
+    headers: {
+      'content-type': 'application/json; charset=UTF-8',
+      'cache-control': 'no-store',
+      ...extraHeaders,
+    },
   });
+}
+
+async function liveCapabilityMatches(candidate, storedHash, legacyPlaintext) {
+  if (!candidate) return false;
+  if (storedHash) return secureTextEqual(await hashLiveSecret(candidate), storedHash);
+  return Boolean(legacyPlaintext && secureTextEqual(candidate, legacyPlaintext));
+}
+
+async function findParticipantByCapability(participants, participantToken) {
+  if (!participantToken) return null;
+  const tokenHash = await hashLiveSecret(participantToken);
+  return (participants || []).find((participant) => (
+    (participant.tokenHash && secureTextEqual(participant.tokenHash, tokenHash))
+    || (participant.legacyToken && secureTextEqual(participant.legacyToken, participantToken))
+    || (participant.token && secureTextEqual(participant.token, participantToken))
+  )) || null;
+}
+
+function secureTextEqual(left, right) {
+  const leftBytes = new TextEncoder().encode(String(left || ''));
+  const rightBytes = new TextEncoder().encode(String(right || ''));
+  let difference = leftBytes.length ^ rightBytes.length;
+  for (let index = 0; index < Math.max(leftBytes.length, rightBytes.length); index += 1) {
+    difference |= (leftBytes[index] || 0) ^ (rightBytes[index] || 0);
+  }
+  return difference === 0;
 }

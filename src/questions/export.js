@@ -55,10 +55,16 @@ export function downloadQuestionBackup(questions, options = {}) {
 
 function questionBackupRow(question) {
   const choices = Array.from({ length: 5 }, (_, index) => question?.choices?.[index] || '');
-  const status = question?.status === 'held' ? 'held' : question?.status === 'disabled' ? 'disabled' : 'approved';
+  const status = question?.status === 'held'
+    ? 'held'
+    : question?.status === 'disabled'
+      ? 'disabled'
+      : question?.status === 'quarantined'
+        ? 'quarantined'
+        : 'approved';
   const approved = status === 'approved';
   return [
-    status === 'held' ? '保留' : approved ? '採用' : '無効化',
+    status === 'held' ? '保留' : status === 'quarantined' ? '一時隔離' : approved ? '採用' : '無効化',
     question?.id || '',
     question?.title || '',
     ...choices,

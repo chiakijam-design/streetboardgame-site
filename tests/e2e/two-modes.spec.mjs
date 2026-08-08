@@ -227,6 +227,11 @@ test('トップで名前を入力するとライブ版の10問作成画面へ直
 
 test('通常版とLIVE版は表示・スキップを問題選出統計へ記録する', async ({ page }) => {
   const events = [];
+  await page.route('**/api/questions/selection-session', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ sessionToken: 'test-selection-session', expiresAt: Date.now() + 15 * 60 * 1000 }),
+  }));
   await page.route('**/api/questions/catalog', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -444,7 +449,11 @@ test('承認済み自作お題を理由付きで通報すると、即時非公�
   await page.getByRole('button', { name: 'このお題を通報する' }).click();
 
   await expect.poll(() => reportBodies.length).toBe(1);
-  expect(reportBodies[0]).toEqual({ reason: 'discrimination', detail: '' });
+  expect(reportBodies[0]).toEqual({
+    reason: 'discrimination',
+    detail: '',
+    deviceId: expect.stringMatching(/^[a-f0-9]{32}$/),
+  });
   await expect(page.locator('.challenge-builder-card h2')).not.toHaveText('通報テストのお題');
 });
 

@@ -1,5 +1,7 @@
 export const QUESTION_VIEW_HISTORY_KEY = 'watachan:question-view-history:v1';
 const MAX_QUESTION_VIEW_HISTORY = 500;
+const QUESTION_DEVICE_KEY = 'watachan:question-device:v1';
+const QUESTION_SELECTION_SESSION_KEY = 'watachan:selection-session:v1';
 
 export async function loadManagedQuestionCards(baseCards, series, language = 'ja') {
   try {
@@ -42,16 +44,68 @@ export function recordQuestionSelectionEvent(questionId, mode, event) {
   selectionEventQueue = selectionEventQueue
     .catch(() => false)
     .then(async () => {
+      const sessionToken = await ensureQuestionSelectionSession();
+      if (!sessionToken) return false;
       const response = await fetch('/api/questions/selection-events', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, sessionToken }),
         keepalive: true,
       });
       return response.ok;
     })
     .catch(() => false);
   return selectionEventQueue;
+}
+
+let selectionSessionPromise = null;
+async function ensureQuestionSelectionSession() {
+  const storage = availableSessionStorage();
+  const cached = readJsonStorage(storage, QUESTION_SELECTION_SESSION_KEY);
+  if (cached?.sessionToken && Number(cached.expiresAt) > Date.now() + 30_000) return cached.sessionToken;
+  if (selectionSessionPromise) return selectionSessionPromise;
+  selectionSessionPromise = (async () => {
+    const deviceId = getOrCreateQuestionDeviceId();
+    if (!deviceId) return '';
+    const response = await fetch('/api/questions/selection-session', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ deviceId }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.sessionToken) return '';
+    writeJsonStorage(storage, QUESTION_SELECTION_SESSION_KEY, data);
+    return data.sessionToken;
+  })().finally(() => { selectionSessionPromise = null; });
+  return selectionSessionPromise;
+}
+
+function getOrCreateQuestionDeviceId() {
+  const storage = availableLocalStorage();
+  if (!storage) return '';
+  try {
+    const current = storage.getItem(QUESTION_DEVICE_KEY);
+    if (/^[A-Za-z0-9_-]{16,120}$/.test(current || '')) return current;
+    const value = crypto.randomUUID().replace(/-/g, '');
+    storage.setItem(QUESTION_DEVICE_KEY, value);
+    return value;
+  } catch (error) {
+    return '';
+  }
+}
+
+function availableSessionStorage() {
+  try { return globalThis.sessionStorage || null; } catch (error) { return null; }
+}
+
+function readJsonStorage(storage, key) {
+  if (!storage) return null;
+  try { return JSON.parse(storage.getItem(key) || 'null'); } catch (error) { return null; }
+}
+
+function writeJsonStorage(storage, key, value) {
+  if (!storage) return;
+  try { storage.setItem(key, JSON.stringify(value)); } catch (error) { /* no-op */ }
 }
 
 export function applyQuestionViewHistory(cards, storage = availableLocalStorage()) {
@@ -186,10 +240,11 @@ export async function submitQuestionCandidates({ consent, sourceMode, questions 
 }
 
 export async function reportManagedQuestion(questionId, reason, detail = '') {
+  const deviceId = getOrCreateQuestionDeviceId();
   const response = await fetch(`/api/questions/catalog/${encodeURIComponent(questionId)}/report`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ reason, detail }),
+    body: JSON.stringify({ reason, detail, deviceId }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'question-report-failed');
