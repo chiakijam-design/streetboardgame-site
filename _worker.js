@@ -72,6 +72,23 @@ async function handleRequest(request, env) {
     const rawPath = decodeURIComponent(url.pathname);
     const path = rawPath.replace(/\/+$/, '');
 
+    // Cloudflare Access only protects the custom domain. Do not expose the
+    // management surface through the Worker preview hostname, which would
+    // otherwise bypass the Access policy applied to www.streetboardgame.com.
+    const isWorkersDevHost = url.hostname.endsWith('.workers.dev');
+    const isAdminSurface = /^\/(?:live-ops|question-ops)(?:\/|$)/.test(path)
+      || /^\/api\/(?:live|questions)\/admin(?:\/|$)/.test(path);
+    if (isWorkersDevHost && isAdminSurface) {
+      return new Response(request.method === 'HEAD' ? null : 'Not Found', {
+        status: 404,
+        headers: {
+          'content-type': 'text/plain; charset=UTF-8',
+          'cache-control': 'no-store',
+          'x-robots-tag': 'noindex, nofollow, noarchive',
+        },
+      });
+    }
+
     const cleanHtmlPaths = {
       '/index.html': '/',
       '/en/index.html': '/en/',
