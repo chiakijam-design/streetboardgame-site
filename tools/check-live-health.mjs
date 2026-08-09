@@ -7,7 +7,7 @@ try {
   const startedAt = Date.now();
   const [healthResponse, liveResponse] = await Promise.all([
     fetch(`${baseUrl}/api/live/health`, { signal: controller.signal, headers: { accept: 'application/json' } }),
-    fetch(`${baseUrl}/live`, { signal: controller.signal, headers: { accept: 'text/html' } }),
+    fetch(`${baseUrl}/live-challenge`, { signal: controller.signal, headers: { accept: 'text/html' } }),
   ]);
   const health = await readJson(healthResponse);
   const csp = liveResponse.headers.get('content-security-policy') || '';
