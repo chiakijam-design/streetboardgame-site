@@ -6,7 +6,7 @@ import { PRIVACY_RETENTION, runPrivacyCleanup } from '../../src/privacy/cleanup.
 test('プライバシーポリシーは現在の公開範囲・子ども・第三者提供・統計情報を明記する', async () => {
   const document = await readFile(new URL('../../privacy.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    'ポリシーバージョン：1.8',
+    'ポリシーバージョン：1.9',
     '理解度ボードへ載せるかは自分で選べます',
     '掲載候補として送信しない問題は、この目的では公開しません',
     '個人情報または統計情報を広告事業者、データ販売事業者、AI開発事業者へ販売しません',
@@ -14,6 +14,9 @@ test('プライバシーポリシーは現在の公開範囲・子ども・第�
     'LIVE配信者登録（有料販売を利用する場合）',
     '購入者メールHMAC',
     'Cloudflare Images',
+    'Microsoft Clarity',
+    'Cookieは無効化し、すべての画面テキストを厳密にマスクします',
+    'セッション再現データ30日',
     '10歳から12歳までの利用者',
     '国外で保存または処理される場合があります',
   ]) assert.equal(document.includes(requiredText), true, requiredText);
@@ -22,10 +25,11 @@ test('プライバシーポリシーは現在の公開範囲・子ども・第�
     assert.equal(document.includes(retiredText), false, retiredText);
   }
   const englishDocument = await readFile(new URL('../../en/privacy.html', import.meta.url), 'utf8');
-  assert.equal(englishDocument.includes('Version 1.8'), true);
+  assert.equal(englishDocument.includes('Version 1.9'), true);
   assert.equal(englishDocument.includes('optional selected or self-written comment'), false);
   assert.equal(englishDocument.includes('Answer content is not currently sent to an external AI service'), true);
   assert.equal(englishDocument.includes('Cloudflare Images'), true);
+  assert.equal(englishDocument.includes('Microsoft Clarity'), true);
 });
 
 test('プライバシー保存期間を固定し、Cron削除でD1匿名化とR2削除を同時に行う', async () => {
