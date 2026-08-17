@@ -58,7 +58,7 @@ function runAnalytics({ hostname, search = '', storedValue = null }) {
   return { windowObject, storage, appendedScripts, historyCalls, listeners };
 }
 
-test('127.0.0.1、::1、プレビュー環境ではGA4スクリプトを読み込まない', () => {
+test('127.0.0.1、::1、プレビュー環境ではGTMスクリプトを読み込まない', () => {
   for (const hostname of ['127.0.0.1', '::1', 'localhost', 'preview.pages.dev']) {
     const result = runAnalytics({ hostname });
     assert.equal(result.windowObject.__WATACHAN_ANALYTICS_DISABLED__, true);
@@ -66,16 +66,24 @@ test('127.0.0.1、::1、プレビュー環境ではGA4スクリプトを読み�
   }
 });
 
-test('本番ドメインだけでGA4スクリプトを読み込む', () => {
+test('本番ドメインだけでGTMを読み込み、URLのクエリをGA4設定へ渡さない', () => {
   for (const hostname of ['streetboardgame.com', 'www.streetboardgame.com']) {
     const result = runAnalytics({ hostname });
     assert.equal(result.windowObject.__WATACHAN_ANALYTICS_DISABLED__, false);
+    assert.equal(result.windowObject.__WATACHAN_GTM_CONTAINER_ID__, 'GTM-5VMKFTGP');
     assert.equal(result.appendedScripts.length, 1);
-    assert.match(result.appendedScripts[0].src, /^https:\/\/www\.googletagmanager\.com\/gtag\/js/);
+    assert.equal(
+      result.appendedScripts[0].src,
+      'https://www.googletagmanager.com/gtm.js?id=GTM-5VMKFTGP',
+    );
+    assert.equal(result.windowObject.dataLayer[0][0], 'set');
+    assert.equal(result.windowObject.dataLayer[0][1].page_location, `https://${hostname}/`);
+    assert.equal(result.windowObject.dataLayer[0][1].page_path, '/');
+    assert.equal(result.windowObject.dataLayer[1].event, 'gtm.js');
   }
 });
 
-test('計測除外を永続保存し、本番ドメインでもGA4を読み込まない', () => {
+test('計測除外を永続保存し、本番ドメインでもGTMを読み込まない', () => {
   const firstVisit = runAnalytics({
     hostname: 'www.streetboardgame.com',
     search: 'analytics=exclude&room=ABC123',
@@ -92,4 +100,35 @@ test('計測除外を永続保存し、本番ドメインでもGA4を読み込�
   });
   assert.equal(nextVisit.windowObject.__WATACHAN_ANALYTICS_DISABLED__, true);
   assert.equal(nextVisit.appendedScripts.length, 0);
+});
+
+test('主要HTMLはGTMローダーを読み込み、運用・法務画面は読み込まない', async () => {
+  const publicPages = [
+    'index.html',
+    'challenge.html',
+    'live_challenge.html',
+    'en/index.html',
+  ];
+  for (const page of publicPages) {
+    const html = await readFile(new URL(`../../${page}`, import.meta.url), 'utf8');
+    assert.match(html, /<script src="\/analytics\.js"><\/script>/, page);
+  }
+
+  const excludedPages = [
+    'live_ops.html',
+    'question_ops.html',
+    'terms.html',
+    'privacy.html',
+    'legal.html',
+    'creator-terms.html',
+    'refund-policy.html',
+    'content-guidelines.html',
+    'minor-policy.html',
+    'en/terms.html',
+    'en/privacy.html',
+  ];
+  for (const page of excludedPages) {
+    const html = await readFile(new URL(`../../${page}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(html, /<script src="\/analytics\.js"><\/script>/, page);
+  }
 });

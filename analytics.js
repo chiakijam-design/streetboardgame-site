@@ -1,7 +1,7 @@
 (function initializeAnalytics(windowObject, documentObject) {
   'use strict';
 
-  var measurementId = 'G-X07PVDQWYX';
+  var containerId = 'GTM-5VMKFTGP';
   var exclusionKey = 'watachan:analytics-excluded:v1';
   var productionHosts = ['streetboardgame.com', 'www.streetboardgame.com'];
   var preferenceParameter = 'analytics';
@@ -32,6 +32,7 @@
   var analyticsEnabled = isProductionHost && !isExcluded;
 
   windowObject.__WATACHAN_ANALYTICS_DISABLED__ = !analyticsEnabled;
+  windowObject.__WATACHAN_GTM_CONTAINER_ID__ = containerId;
   windowObject.analyticsEnabled = analyticsEnabled;
 
   if (analyticsEnabled) {
@@ -39,20 +40,22 @@
     windowObject.gtag = windowObject.gtag || function gtag() {
       windowObject.dataLayer.push(arguments);
     };
+    windowObject.gtag('set', {
+      page_location: windowObject.location.origin + windowObject.location.pathname,
+      page_path: windowObject.location.pathname
+    });
     windowObject.trackEvent = function trackEvent(name, params) {
       windowObject.gtag('event', name, params || {});
     };
 
-    windowObject.gtag('js', new Date());
-    windowObject.gtag('config', measurementId, {
-      page_location: windowObject.location.origin + windowObject.location.pathname,
-      page_path: windowObject.location.pathname,
-      send_page_view: true
+    windowObject.dataLayer.push({
+      'gtm.start': new Date().getTime(),
+      event: 'gtm.js'
     });
 
     var analyticsScript = documentObject.createElement('script');
     analyticsScript.async = true;
-    analyticsScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(measurementId);
+    analyticsScript.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(containerId);
     documentObject.head.appendChild(analyticsScript);
   } else {
     windowObject.gtag = function disabledGtag() {};
