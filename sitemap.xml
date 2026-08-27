@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.streetboardgame.com/</loc>
-    <lastmod>2026-07-27</lastmod>
+    <lastmod>2026-08-28</lastmod>
   </url>
   <url>
     <loc>https://www.streetboardgame.com/challenge</loc>
@@ -27,6 +27,10 @@
   <url>
     <loc>https://www.streetboardgame.com/product</loc>
     <lastmod>2026-07-26</lastmod>
+  </url>
+  <url>
+    <loc>https://www.streetboardgame.com/pricing</loc>
+    <lastmod>2026-08-28</lastmod>
   </url>
   <url>
     <loc>https://www.streetboardgame.com/terms</loc>

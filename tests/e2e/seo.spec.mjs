@@ -77,7 +77,7 @@ test('サイトマップ掲載URLは200・自己canonical・index可能で統一
     `${ORIGIN}/en/terms`,
     `${ORIGIN}/en/privacy`,
   ]) {
-    const expectedDate = [
+    const expectedDate = updatedUrl === `${ORIGIN}/` ? '2026-08-28' : [
       `${ORIGIN}/privacy`,
       `${ORIGIN}/en/privacy`,
     ].includes(updatedUrl) ? '2026-08-18' : [

@@ -38,6 +38,7 @@ const ENGLISH_CHALLENGE_PAGE_PATHS = new Set([
   '/en/challenge/library',
 ]);
 const LEGAL_PAGE_FILES = Object.freeze({
+  '/pricing': '/pricing.html',
   '/terms': '/terms.html',
   '/privacy': '/privacy.html',
   '/legal': '/legal.html',

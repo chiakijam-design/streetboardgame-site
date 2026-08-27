@@ -193,6 +193,11 @@ function TopPage() {
           <ModeLink href="/live-challenge" icon="🎙️" title="ライブ配信でみんなに挑戦してもらう" note="10問・最大1,000人" />
         </div>
       </nav>
+      <p style={{ margin: '16px 24px 0', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        <a data-testid="top-pricing-link" href="/pricing" style={{ color: theme.white, fontSize: 13, fontWeight: 800, lineHeight: 1.8 }}>
+          商品・料金を見る（通常版無料／LIVE版は任意購入）
+        </a>
+      </p>
       <SiteFooter />
     </main>
   );
@@ -1340,6 +1345,7 @@ function SiteFooter() {
     ['About', '/about'],
     ['人気のお題', '/challenge/library'],
     ['製品版', '/product'],
+    ['商品・料金', '/pricing'],
     ['利用規約', '/terms'],
     ['プライバシー', '/privacy'],
     ['特商法表記', '/legal'],

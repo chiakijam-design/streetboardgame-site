@@ -73,6 +73,9 @@ const HTML_STYLE_MAP = {
   'legal.html': [
     'legal',
   ],
+  'pricing.html': [
+    'legal',
+  ],
   'minor-policy.html': [
     'legal',
   ],
