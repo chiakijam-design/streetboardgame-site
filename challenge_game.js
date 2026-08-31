@@ -169,6 +169,8 @@ function render() {
                   : state.mode === 'library' ? libraryView()
                     : errorView();
   app.innerHTML = body;
+  app.classList.remove('is-booting');
+  app.removeAttribute('aria-busy');
   localizeDom(app);
   bindEvents();
   trackCurrentCreatorQuestionShown();

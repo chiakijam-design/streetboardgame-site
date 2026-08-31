@@ -35,6 +35,15 @@
     *{box-sizing:border-box}
     body{margin:0;background:var(--pink);color:var(--black);font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;font-weight:700}
     a{color:inherit}
+    #challenge-app.is-booting{height:760px;overflow:hidden}
+    .challenge-app-placeholder{display:grid;height:100%;grid-template-rows:190px 54px minmax(0,1fr);gap:20px}
+    .challenge-app-placeholder__hero,.challenge-app-placeholder__panel,.challenge-app-placeholder__nav span{border:3px solid #191919}
+    .challenge-app-placeholder__hero{display:grid;place-items:center;border-radius:24px;background:#191919;box-shadow:7px 8px 0 rgba(109,24,58,.55)}
+    .challenge-app-placeholder__hero::after{content:"";width:min(68%,320px);height:28px;border-radius:999px;background:#ffe36f}
+    .challenge-app-placeholder__nav{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .challenge-app-placeholder__nav span{border-radius:14px;background:#fff;box-shadow:3px 4px 0 #191919}
+    .challenge-app-placeholder__panel{border-radius:18px;background:#fff;box-shadow:var(--shadow)}
+    .challenge-app-loading-status{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
     .challenge-page{width:min(100%,640px);min-height:100dvh;margin:auto;padding:18px 14px 48px}
     .challenge-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;color:#fff}
     .challenge-top b{font-size:13px}.challenge-top a{background:#fff;color:#191919;border:2px solid #191919;border-radius:999px;padding:9px 16px;box-shadow:2px 3px 0 #191919;text-decoration:none}
@@ -159,11 +168,18 @@
 <body>
   <main class="challenge-page">
     <header class="challenge-top"><b>わたし理解度診断｜私のこと、ちゃんと分かってるよね？</b><a href="/">トップへ</a></header>
-    <div id="challenge-app"></div>
+    <div id="challenge-app" class="is-booting" aria-busy="true">
+      <div class="challenge-app-placeholder" aria-hidden="true">
+        <div class="challenge-app-placeholder__hero"></div>
+        <div class="challenge-app-placeholder__nav"><span></span><span></span></div>
+        <div class="challenge-app-placeholder__panel"></div>
+      </div>
+      <p class="challenge-app-loading-status" role="status">読み込み中です…</p>
+    </div>
   </main>
-  <noscript><section class="challenge-panel"><h1>わたし理解度診断｜私のこと、ちゃんと分かってるよね？</h1><p>当てるより、話すための10問。このゲームにはJavaScriptが必要です。</p><a href="/">トップへ戻る</a></section></noscript>
+  <noscript><style>#challenge-app{display:none}</style><section class="challenge-panel"><h1>わたし理解度診断｜私のこと、ちゃんと分かってるよね？</h1><p>当てるより、話すための10問。このゲームにはJavaScriptが必要です。</p><a href="/">トップへ戻る</a></section></noscript>
 <script data-build-entry="prototype_common_data" src="/dist/prototype_common_data-6WKKYLSF.js"></script>
 <script data-build-entry="prototype_english_common_data" src="/dist/prototype_english_common_data-YJTGVFG6.js"></script>
-  <script data-build-entry="challenge_game" src="/dist/challenge_game-7ZYOOHET.js"></script>
+  <script data-build-entry="challenge_game" src="/dist/challenge_game-3TMP6CTK.js"></script>
 </body>
 </html>
