@@ -1,0 +1,4 @@
+Contact: https://www.streetboardgame.com/contact
+Expires: 2027-08-31T00:00:00Z
+Preferred-Languages: ja, en
+Canonical: https://www.streetboardgame.com/.well-known/security.txt

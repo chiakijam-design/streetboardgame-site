@@ -46,6 +46,18 @@ test('サイトマップは2モードだけを掲載し、挑戦URLはnoindexに
   const managePage = await request.get('/challenge/manage?room=ABCDEFGH');
   expect(managePage.headers()['x-robots-tag']).toContain('noindex');
 });
+
+test('security.txtは標準パスで必須項目と正しいContent-Typeを返す', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPメタ情報は画面幅に依存しないためPCで1回検証');
+  const response = await request.get('/.well-known/security.txt');
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toContain('text/plain');
+  const body = await response.text();
+  expect(body).toContain('Contact: https://www.streetboardgame.com/contact');
+  expect(body).toContain('Expires: 2027-08-31T00:00:00Z');
+  expect(body).toContain('Preferred-Languages: ja, en');
+  expect(body).toContain('Canonical: https://www.streetboardgame.com/.well-known/security.txt');
+});
 test('廃止した6モードと遠隔APIは404を返す', async ({ request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTTP状態は画面幅に依存しないためPCで1回検証');
   for (const path of ['/love', '/friends', '/family', '/boardgame', '/remote', '/remote-boardgame']) {
