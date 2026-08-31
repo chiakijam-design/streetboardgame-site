@@ -64,7 +64,9 @@ export default {
 async function handleRequest(request, env) {
     const url = new URL(request.url);
 
-    if (url.hostname === 'streetboardgame.com') {
+    const isPublicHostname = url.hostname === 'streetboardgame.com'
+      || url.hostname === 'www.streetboardgame.com';
+    if (isPublicHostname && (url.protocol !== 'https:' || url.hostname !== 'www.streetboardgame.com')) {
       url.hostname = 'www.streetboardgame.com';
       url.protocol = 'https:';
       return Response.redirect(url.toString(), 301);
