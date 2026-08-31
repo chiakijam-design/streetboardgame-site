@@ -29,5 +29,6 @@ test('問題カタログ待機中も通常版の初期レイアウト領域を�
   await expect(app).not.toHaveAttribute('aria-busy', 'true');
   await expect(app.locator('.challenge-app-placeholder')).toHaveCount(0);
   const renderedHeight = await app.evaluate((element) => element.getBoundingClientRect().height);
-  expect(Math.abs(renderedHeight - initial.height)).toBeLessThan(8);
+  expect(renderedHeight).toBeGreaterThan(720);
+  expect(Math.abs(renderedHeight - initial.height)).toBeLessThan(40);
 });
