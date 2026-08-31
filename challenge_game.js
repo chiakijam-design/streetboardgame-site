@@ -31,6 +31,7 @@ import {
   getChallengeReviewLinesEnglish,
 } from './src/challenge/result.js';
 import { isEnglish, localizeDom } from './src/i18n/runtime.js';
+import { trackAnalyticsEvent } from './src/analytics/events.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -98,6 +99,16 @@ let state = {
 let lastQuestionViewportKey = '';
 let questionCatalogReady = false;
 const trackedCreatorQuestions = new WeakSet();
+
+function trackChallengeShare(method, contentType) {
+  trackAnalyticsEvent('share', {
+    method,
+    content_type: contentType,
+    item_id: contentType,
+    game_type: 'challenge',
+    play_mode: 'async',
+  });
+}
 let resultFeedbackKey = '';
 let resultFeedbackObserver = null;
 let resultFeedbackTimer = 0;
@@ -1053,11 +1064,13 @@ function bindEvents() {
     if (!state.room) return;
     const url = challengeUrl(state.room.code);
     openLineShare(shareText(state.room, url));
+    trackChallengeShare('line', 'challenge_invite');
   });
   document.querySelector('[data-action="share-x"]')?.addEventListener('click', () => {
     if (!state.room) return;
     const url = challengeUrl(state.room.code);
     openXShare(shareText(state.room, url));
+    trackChallengeShare('x', 'challenge_invite');
   });
   document.querySelector('[data-action="save-recent-challenge"]')?.addEventListener('click', saveRecentChallenge);
   document.querySelector('[data-action="refresh-manage"]')?.addEventListener('click', loadManageRoom);
@@ -1365,6 +1378,9 @@ async function copyValue(button) {
   const copied = await copyText(value);
   if (copied) {
     button.textContent = 'コピーしました';
+    trackChallengeShare('copy', button.dataset.action === 'copy-ranking'
+      ? 'challenge_board'
+      : 'challenge_invite');
     return;
   }
   const input = document.getElementById('share-url');
@@ -1376,6 +1392,7 @@ async function shareToInstagram() {
   if (!state.room) return;
   const copied = await copyText(challengeUrl(state.room.code));
   if (!copied) return setState({ error: 'copy-failed' });
+  trackChallengeShare('instagram', 'challenge_invite');
   window.alert('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
 }
 
@@ -1412,6 +1429,13 @@ async function joinRoom() {
     };
     setState(next);
     saveParticipantDraft(next);
+    trackAnalyticsEvent('game_start', {
+      game_type: 'challenge',
+      play_mode: 'async',
+      player_role: 'participant',
+      question_count: state.room.cards.length,
+      replay: false,
+    });
   } catch (error) {
     setState({ loading: false, mode: 'join', error: error.message });
   }
@@ -1528,6 +1552,13 @@ async function retryChallenge() {
     };
     saveParticipantDraft(next);
     setState(next);
+    trackAnalyticsEvent('game_start', {
+      game_type: 'challenge',
+      play_mode: 'async',
+      player_role: 'participant',
+      question_count: state.room.cards.length,
+      replay: true,
+    });
   } catch (error) {
     setState({ loading: false, mode: 'result', error: error.message });
   }
@@ -1673,6 +1704,13 @@ async function loadResult(token = state.participantToken) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'result-failed');
   const boardOptIn = readBoardOptIn(state.roomCode);
+  trackAnalyticsEvent('game_result', {
+    game_type: 'challenge',
+    play_mode: 'async',
+    player_role: 'participant',
+    question_count: Array.isArray(data.answers) ? data.answers.length : QUESTION_COUNT,
+    score: Number(data.score) || 0,
+  });
   setState({
     loading: false,
     answerPending: false,
@@ -1966,11 +2004,15 @@ async function shareResultToLine() {
         : 'わたし理解度診断｜点数入り結果カード',
       text,
     });
-    if (outcome === 'shared') return;
+    if (outcome === 'shared') {
+      trackChallengeShare('line', 'challenge_result');
+      return;
+    }
     window.alert(isEnglish
       ? 'The result image was saved. LINE will open next; attach the saved image to your message.'
       : '結果画像を保存しました。続けてLINEが開くので、保存した結果画像をトークへ添付してください。');
     openLineShare(text);
+    trackChallengeShare('line', 'challenge_result');
   } catch (error) {
     if (error?.name !== 'AbortError') {
       window.alert(isEnglish
@@ -1993,11 +2035,15 @@ async function shareResultToX() {
         : 'わたし理解度診断｜点数入り結果カード',
       text,
     });
-    if (outcome === 'shared') return;
+    if (outcome === 'shared') {
+      trackChallengeShare('x', 'challenge_result');
+      return;
+    }
     window.alert(isEnglish
       ? 'The result image was saved. X will open next; attach the saved image to your post.'
       : '結果画像を保存しました。続けてXが開くので、保存した結果画像を投稿へ添付してください。');
     openXShare(text);
+    trackChallengeShare('x', 'challenge_result');
   } catch (error) {
     if (error?.name !== 'AbortError') {
       window.alert(isEnglish
@@ -2014,6 +2060,7 @@ async function shareResultToInstagram() {
   if (!copied) return setState({ error: 'copy-failed' });
   const saveResult = await saveChallengeResultImage('share-result-instagram');
   if (!saveResult) return;
+  trackChallengeShare('instagram', 'challenge_result');
   window.alert(isEnglish
     ? 'The text was copied and the result image is ready. Choose Instagram Stories from the share sheet, or select the saved image in Instagram.'
     : '文章をコピーし、結果画像を用意しました。共有メニューからInstagramストーリーズを選ぶか、Instagramで保存した画像を選んでください。');
@@ -2022,7 +2069,8 @@ async function shareResultToInstagram() {
 async function saveResultImageOnly() {
   if (!state.result || !state.resultImageUrl) return;
   if (!await applySelectedBoardPreference()) return;
-  await saveChallengeResultImage();
+  const saveResult = await saveChallengeResultImage();
+  if (saveResult) trackChallengeShare('download', 'challenge_result');
 }
 
 function saveCurrentProgress(patch) {

@@ -24,6 +24,7 @@ import {
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 import { isEnglish, localizeDom } from './src/i18n/runtime.js';
+import { trackAnalyticsEvent, trackPurchaseFromCheckout } from './src/analytics/events.js';
 
 const QUESTION_COUNT = 10;
 const app = document.getElementById('live-challenge-app');
@@ -115,6 +116,38 @@ let state = {
 };
 let questionCatalogReady = false;
 const trackedLiveBuilderQuestions = new WeakSet();
+
+function liveQuestionCount() {
+  if (Array.isArray(state.game?.results) && state.game.results.length) return state.game.results.length;
+  return Number(state.game?.questionCount) || state.questions.length || QUESTION_COUNT;
+}
+
+function trackLiveResult(previousGame = null) {
+  if (state.game?.phase !== 'complete' || previousGame?.phase === 'complete') return;
+  const params = {
+    game_type: 'live_challenge',
+    play_mode: 'live',
+    player_role: state.view,
+    question_count: liveQuestionCount(),
+  };
+  if (state.view === 'viewer') {
+    params.score = (state.game.results || []).filter((result) => result.myIsCorrect === true).length;
+  }
+  trackAnalyticsEvent('game_result', params, {
+    onceKey: `live-result:${state.view}:${state.code}`,
+    persistSession: true,
+  });
+}
+
+function trackLiveShare(method, contentType) {
+  trackAnalyticsEvent('share', {
+    method,
+    content_type: contentType,
+    item_id: contentType,
+    game_type: 'live_challenge',
+    play_mode: 'live',
+  });
+}
 
 render();
 if (state.view === 'create') loadPaidCreatorProfiles();
@@ -1169,6 +1202,13 @@ async function joinGame() {
     state.game = mergeLiveGame(response.game);
     writeSession(`live-challenge:${state.code}`, { token: state.participantToken, name });
     setState({ view: 'viewer', loading: false });
+    trackAnalyticsEvent('game_start', {
+      game_type: 'live_challenge',
+      play_mode: 'live',
+      player_role: 'viewer',
+      question_count: liveQuestionCount(),
+    });
+    trackLiveResult();
     startLiveUpdates();
   } catch (error) {
     setState({ loading: false, error: error.message });
@@ -1286,6 +1326,7 @@ async function loadRoom() {
     : mergeLiveGame(response.game);
   const newSupportMessages = syncHostSupportAlerts(state.game);
   if (state.view === 'host') state.subjectToken = response.game.subjectToken || state.subjectToken;
+  trackLiveResult(previousGame);
   render();
   announceLiveSupportMessages(newSupportMessages);
   resetLiveViewportWhenQuestionChanges(previousGame, state.game);
@@ -1301,6 +1342,15 @@ async function hostAction(action) {
     });
     state.game = mergeLiveGame(response.game);
     state.subjectToken = response.game.subjectToken || state.subjectToken;
+    if (action === 'start') {
+      trackAnalyticsEvent('game_start', {
+        game_type: 'live_challenge',
+        play_mode: 'live',
+        player_role: 'host',
+        question_count: liveQuestionCount(),
+      });
+    }
+    trackLiveResult();
     setState({ loading: false });
     if (action === 'start' || action === 'next') {
       requestAnimationFrame(() => window.scrollTo(0, 0));
@@ -1406,6 +1456,7 @@ function connectSocket() {
       }
       state.game = personalizeGame(mergeLiveGame(message.game));
       if (message.participantName) state.participantName = message.participantName;
+      trackLiveResult(previousGame);
       if (state.game.phase === 'complete') stopLiveUpdates();
       render();
       resetLiveViewportWhenQuestionChanges(previousGame, state.game);
@@ -1477,6 +1528,7 @@ async function copyJoinLink() {
     await navigator.clipboard.writeText(joinUrl());
     const button = document.querySelector('[data-action="copy-link"]');
     if (button) button.textContent = 'コピーしました';
+    trackLiveShare('copy', 'live_challenge_invite');
   } catch (error) {
     showError('copy-failed');
   }
@@ -1516,6 +1568,7 @@ function saveResultCard() {
   link.download = `live-challenge-${state.code}-${correct}of10.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
+  trackLiveShare('download', 'live_challenge_result');
 }
 
 async function startLiveCheckout(productType, amount = null, message = '') {
@@ -1559,6 +1612,7 @@ async function refreshLiveCheckoutStatus() {
     });
     state.checkoutStatus = response;
     state.checkoutEntitlementUrl = response.entitlementUrl || '';
+    trackPurchaseFromCheckout(response);
     state.checkoutStatusAttempts += 1;
     state.checkoutStatusBusy = false;
     render();
