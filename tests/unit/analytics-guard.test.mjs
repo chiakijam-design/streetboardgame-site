@@ -135,6 +135,6 @@ test('主要HTMLはGTMローダーを読み込み、運用・法務画面は読�
 
 test('GA4が必要とする画像・計測送信先をCSPで許可する', async () => {
   const worker = await readFile(new URL('../../_worker.js', import.meta.url), 'utf8');
-  assert.match(worker, /img-src[^\n]+https:\/\/\*\.google-analytics\.com[^\n]+https:\/\/www\.googletagmanager\.com/);
-  assert.match(worker, /connect-src[^\n]+https:\/\/\*\.google-analytics\.com[^\n]+https:\/\/\*\.analytics\.google\.com[^\n]+https:\/\/www\.googletagmanager\.com/);
+  assert.match(worker, /img-src[^\n]+https:\/\/www\.google-analytics\.com[^\n]+https:\/\/region1\.google-analytics\.com[^\n]+https:\/\/www\.googletagmanager\.com/);
+  assert.match(worker, /connect-src[^\n]+https:\/\/www\.google-analytics\.com[^\n]+https:\/\/region1\.google-analytics\.com[^\n]+https:\/\/www\.googletagmanager\.com/);
 });
