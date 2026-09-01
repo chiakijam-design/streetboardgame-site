@@ -105,7 +105,7 @@ test('英語ルート・hreflang・専用OGP・初回言語案内を静的構成
     assert.match(html, /hreflang="en"/);
   }
   for (const page of ['index.html', 'en/index.html']) {
-    assert.match(text(page), /<script src="\/language_switch\.js/);
+    assert.match(text(page), /<script[^>]*\bsrc="\/language_switch\.js/);
   }
   for (const page of [
     'challenge.html',

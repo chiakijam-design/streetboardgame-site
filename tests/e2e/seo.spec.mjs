@@ -164,7 +164,9 @@ test('内容ハッシュ付きCSSを長期キャッシュする', async ({ reque
 test('手書きフォントは軽量WOFF2だけを参照し長期キャッシュする', async ({ request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPキャッシュは画面幅に依存しないためPCで1回検証');
   const fontPath = '/assets/fonts/HuiFontP29.woff2?v=20260727-font-1';
-  for (const path of ['/', '/challenge', '/live-challenge']) {
+  const topHtml = await (await request.get('/')).text();
+  expect(topHtml).not.toContain(fontPath);
+  for (const path of ['/challenge', '/live-challenge']) {
     const html = await (await request.get(path)).text();
     expect(html, path).toContain(fontPath);
     expect(html, path).not.toContain('HuiFontP29.ttf');

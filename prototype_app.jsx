@@ -4,6 +4,7 @@ import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 
 const { useEffect, useState } = React;
 const CREATOR_QUICK_START_KEY = 'watachan:creator-quick-start:v1';
+const HANDWRITTEN_FONT_URL = '/assets/fonts/HuiFontP29.woff2?v=20260727-font-1';
 
 const theme = {
   pink: '#EC4F88',
@@ -39,6 +40,31 @@ function App() {
 function TopPage() {
   const [creatorName, setCreatorName] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!('FontFace' in window) || !document.fonts) return undefined;
+    let cancelled = false;
+    const loadFont = () => {
+      const font = new FontFace('HuiFontP29', `url("${HANDWRITTEN_FONT_URL}")`, {
+        display: 'swap',
+        weight: '400',
+      });
+      font.load().then((loadedFont) => {
+        if (!cancelled) document.fonts.add(loadedFont);
+      }).catch(() => {});
+    };
+    let timeoutId;
+    const scheduleFont = () => {
+      timeoutId = window.setTimeout(loadFont, 1500);
+    };
+    if (document.readyState === 'complete') scheduleFont();
+    else window.addEventListener('load', scheduleFont, { once: true });
+    return () => {
+      cancelled = true;
+      window.removeEventListener('load', scheduleFont);
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
 
   const start = (mode) => {
     const name = creatorName.trim();

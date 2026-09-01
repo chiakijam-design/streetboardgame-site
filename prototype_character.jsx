@@ -13,7 +13,7 @@ const VARIANTS = {
   full:    {
     file: 'girl-full.png',
     webp: 'girl-full.webp',
-    webpSrcSet: 'girl-full-480.webp 326w, girl-full-960.webp 653w, girl-full.webp 2088w',
+    webpSrcSet: 'girl-full-480.webp 326w, girl-full-960.webp 652w, girl-full.webp 2088w',
     aspect: 3072/2088,
     intrinsicWidth: 2088,
     intrinsicHeight: 3072,
