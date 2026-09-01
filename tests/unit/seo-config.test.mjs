@@ -15,6 +15,9 @@ test('内容ハッシュ付き本番JavaScript・CSSだけを長期キャッシ�
   const buildScript = await readFile('tools/build-js.mjs', 'utf8');
   assert.match(buildScript, /const STYLE_ENTRIES = \{/);
   assert.match(buildScript, /data-build-style/);
+  const character = await readFile('prototype_character.jsx', 'utf8');
+  assert.match(character, /file: 'girl-full-960\.webp'/);
+  assert.doesNotMatch(character, /file: 'girl-full\.png'/);
   for (const [htmlPath, marker] of [
     ['index.html', 'accessibility'],
     ['challenge.html', 'question_card'],

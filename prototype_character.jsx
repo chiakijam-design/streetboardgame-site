@@ -11,7 +11,7 @@ const IMAGE_BASE = 'assets/character/';
 // 各バリアントの画像と自然なアスペクト比 (height / width)
 const VARIANTS = {
   full:    {
-    file: 'girl-full.png',
+    file: 'girl-full-960.webp',
     webp: 'girl-full.webp',
     webpSrcSet: 'girl-full-480.webp 326w, girl-full-960.webp 652w, girl-full.webp 2088w',
     aspect: 3072/2088,
