@@ -44,6 +44,10 @@ function dynamicQuestionCardSvg(card) {
   const titleLines = splitLine(title, 13);
   const titleSize = titleLines.length > 1 ? 38 : title.length >= 15 ? 40 : title.length >= 11 ? 44 : 50;
   const holes = Array.from({ length: 12 }, (_, index) => 30 + index * 63);
+  const holesPath = holes
+    .map((x) => `M ${x - 30} -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0`)
+    .join(' ');
+  const ruledLinesPath = LINE_YS.map((y) => `M 0 ${y} H ${CARD_WIDTH}`).join(' ');
   svgInstanceSerial += 1;
   const definitionPrefix = `notebook-card-${svgInstanceSerial.toString(36)}`;
   const dotShadowId = `${definitionPrefix}-dot-shadow`;
@@ -69,9 +73,9 @@ function dynamicQuestionCardSvg(card) {
       </linearGradient>
     </defs>
     <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="#FFFFFF"/>
-    ${holes.map((x) => `<circle cx="${x}" cy="-1" r="30" fill="#EF6E9B"/>`).join('')}
+    <path d="${holesPath}" fill="#EF6E9B"/>
     <line x1="137" y1="0" x2="137" y2="${CARD_HEIGHT}" stroke="#EFABB0" stroke-width="2"/>
-    ${LINE_YS.map((y) => `<line x1="0" y1="${y}" x2="${CARD_WIDTH}" y2="${y}" stroke="#9DD0E5" stroke-width="4"/>`).join('')}
+    <path d="${ruledLinesPath}" fill="none" stroke="#9DD0E5" stroke-width="4"/>
     <path d="M68 55 L690 55 L681 198 L66 198 Z" fill="#75C7E6" opacity=".9"/>
     <g class="notebook-question-card-copy" fill="#111111">
       ${textElement(titleLines, { x: 378, y: 132, size: titleSize, lineGap: 45, className: 'notebook-question-card-title' })}
