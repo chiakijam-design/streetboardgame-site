@@ -1498,18 +1498,30 @@ function personalizeGame(game) {
   const myVoteIndex = questionId && Object.prototype.hasOwnProperty.call(state.participantAnswers, questionId)
     ? Number(state.participantAnswers[questionId])
     : game.myVoteIndex;
+  const personalizeResult = (result) => {
+    if (!result) return result;
+    const hasAnswer = Object.prototype.hasOwnProperty.call(state.participantAnswers, result.questionId);
+    const answer = hasAnswer ? Number(state.participantAnswers[result.questionId]) : result.myVoteIndex;
+    const personalized = {
+      ...result,
+      myVoteIndex: Number.isInteger(answer) ? answer : null,
+    };
+    if (result.type === 'guess-person') {
+      personalized.myIsCorrect = Number.isInteger(answer) ? answer === result.subjectAnswerIndex : null;
+    }
+    if (result.type === 'guess-majority') {
+      personalized.myVoteWasPopular = Number.isInteger(answer) ? result.popularIndices?.includes(answer) === true : null;
+    }
+    return personalized;
+  };
   return {
     ...game,
     myVoteIndex,
-    results: Array.isArray(game.results) ? game.results.map((result) => {
-      const hasAnswer = Object.prototype.hasOwnProperty.call(state.participantAnswers, result.questionId);
-      const answer = hasAnswer ? Number(state.participantAnswers[result.questionId]) : result.myVoteIndex;
-      return {
-        ...result,
-        myVoteIndex: Number.isInteger(answer) ? answer : null,
-        myIsCorrect: Number.isInteger(answer) ? answer === result.subjectAnswerIndex : null,
-      };
-    }) : [],
+    question: game.question ? {
+      ...game.question,
+      result: personalizeResult(game.question.result),
+    } : game.question,
+    results: Array.isArray(game.results) ? game.results.map(personalizeResult) : [],
   };
 }
 

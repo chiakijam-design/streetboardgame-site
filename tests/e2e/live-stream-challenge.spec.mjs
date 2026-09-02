@@ -4,6 +4,51 @@ test.beforeEach(async ({ request }) => {
   await request.post('/__test/reset');
 });
 
+test('realtime reveal uses the viewer answer when the shared state has no personalized result', async ({ page }) => {
+  const participantToken = 'a'.repeat(48);
+  await page.addInitScript(({ token }) => {
+    sessionStorage.setItem('live-challenge:123456', JSON.stringify({ token, name: 'Viewer' }));
+    sessionStorage.setItem('live-challenge:answers:123456', JSON.stringify({ 'question-1': 0 }));
+  }, { token: participantToken });
+  await page.route('**/api/live/games/123456', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: '123456',
+        game: {
+          mode: 'stream-challenge',
+          phase: 'reveal',
+          subjectName: 'Host',
+          participantName: 'Viewer',
+          currentQuestionIndex: 0,
+          questionCount: 10,
+          realtime: true,
+          question: {
+            id: 'question-1',
+            text: 'Question 1',
+            options: ['A', 'B', 'C', 'D', 'E'],
+            voteCounts: [1, 0, 0, 0, 0],
+            result: {
+              questionId: 'question-1',
+              type: 'guess-person',
+              subjectAnswerIndex: 0,
+              options: ['A', 'B', 'C', 'D', 'E'].map((text, index) => ({ text, count: index === 0 ? 1 : 0 })),
+            },
+          },
+          results: [],
+        },
+      }),
+    });
+  });
+
+  await page.goto('/live-challenge?room=123456');
+  const reveal = page.getByTestId('live-viewer-reveal');
+  await expect(reveal).toBeVisible();
+  await expect(reveal.locator('.reveal-judgement')).toHaveClass(/ok/);
+  await expect(reveal.locator('.reveal-choice').first()).toHaveClass(/viewer-answer/);
+});
+
 async function buildLiveQuestions(page, startIndex = 0) {
   for (let index = startIndex; index < 10; index += 1) {
     await expect(page.getByTestId('live-question-builder')).toBeVisible();
