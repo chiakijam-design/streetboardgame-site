@@ -49,6 +49,56 @@ test('realtime reveal uses the viewer answer when the shared state has no person
   await expect(reveal.locator('.reveal-choice').first()).toHaveClass(/viewer-answer/);
 });
 
+test('host can answer after reload without restoring the separate subject token', async ({ page }) => {
+  const hostToken = 'b'.repeat(48);
+  let subjectAnswered = false;
+  let answerHeaders = null;
+  const game = () => ({
+    mode: 'stream-challenge',
+    phase: 'voting',
+    subjectName: 'Host',
+    currentQuestionIndex: 0,
+    questionCount: 10,
+    participantCount: 1,
+    participantLimit: 1000,
+    realtime: true,
+    showVoteCount: false,
+    question: {
+      id: 'question-1',
+      text: 'Question 1',
+      options: ['A', 'B', 'C', 'D', 'E'],
+      subjectAnswered,
+      voteCount: 1,
+      voteCounts: [1, 0, 0, 0, 0],
+      result: null,
+    },
+    results: [],
+    host: true,
+  });
+  await page.route('**/api/live/games/123456/subject-answer', async (route) => {
+    answerHeaders = route.request().headers();
+    subjectAnswered = true;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: '123456', accepted: true, game: game() }),
+    });
+  });
+  await page.route('**/api/live/games/123456', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: '123456', game: game() }),
+    });
+  });
+
+  await page.goto(`/live-challenge?room=123456#host=${hostToken}`);
+  await page.locator('[data-action="host-answer"]').first().click();
+  await expect.poll(() => answerHeaders?.['x-live-host-token']).toBe(hostToken);
+  expect(answerHeaders?.['x-live-subject-token']).toBeUndefined();
+  await expect(page.locator('[data-action="advance"]')).toBeEnabled();
+});
+
 async function buildLiveQuestions(page, startIndex = 0) {
   for (let index = startIndex; index < 10; index += 1) {
     await expect(page.getByTestId('live-question-builder')).toBeVisible();

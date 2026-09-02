@@ -1919,9 +1919,8 @@ async function answerLiveGameAsSubject(request, env, code) {
   const game = await requireLiveGame(env, code, { baseOnly: realtime });
   if (Number(game.version) < 4 || (!game.subjectTokenHash && !game.subjectToken)) throw liveError('subject-not-supported', 409);
   const subjectToken = normalizeToken(request.headers.get('x-live-subject-token'));
-  if (!await liveCapabilityMatches(subjectToken, game.subjectTokenHash, game.subjectToken)) {
-    throw liveError('subject-forbidden', 403);
-  }
+  const subject = await liveCapabilityMatches(subjectToken, game.subjectTokenHash, game.subjectToken);
+  if (!subject) await requireLiveHost(request, env, game);
   if (game.phase !== 'voting') throw liveError('answer-not-open', 409);
   const question = game.questions[game.currentQuestionIndex];
   const body = await readLiveJson(request);
@@ -1935,7 +1934,7 @@ async function answerLiveGameAsSubject(request, env, code) {
   touchLiveGame(game);
   await putStoredLiveGame(env, code, game);
   if (realtime) await broadcastCurrentRealtimeState(env, code, game);
-  return liveJson({ code, accepted: true, game: publicLiveGame(game, { subject: true }) });
+  return liveJson({ code, accepted: true, game: publicLiveGame(game, subject ? { subject: true } : { host: true }) });
 }
 
 async function updateLiveVoteCountVisibility(request, env, code) {

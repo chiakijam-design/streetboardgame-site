@@ -104,9 +104,17 @@ test('streamer and viewer complete ten simultaneous answers with a personalized 
   for (let index = 0; index < 10; index += 1) {
     const question = hostState.game.question;
     const optionIndex = index % 5;
+    if (index === 0) {
+      const unauthorizedSubjectResponse = await handleLiveApi(new Request(`https://example.com/api/live/games/${created.code}/subject-answer`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-live-host-token': 'f'.repeat(48) },
+        body: JSON.stringify({ questionId: question.id, optionIndex }),
+      }), env, `/api/live/games/${created.code}/subject-answer`);
+      assert.equal(unauthorizedSubjectResponse.status, 403);
+    }
     const subjectResponse = await handleLiveApi(new Request(`https://example.com/api/live/games/${created.code}/subject-answer`, {
       method: 'POST',
-      headers: subjectHeaders,
+      headers: index === 0 ? hostHeaders : subjectHeaders,
       body: JSON.stringify({ questionId: question.id, optionIndex }),
     }), env, `/api/live/games/${created.code}/subject-answer`);
     assert.equal(subjectResponse.status, 200);

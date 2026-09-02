@@ -1363,13 +1363,15 @@ async function hostAction(action) {
 
 async function hostAnswer(optionIndex) {
   const question = state.game?.question;
-  if (!question || !state.subjectToken) return;
+  if (!question || (!state.subjectToken && !state.hostToken)) return;
   state.hostAnswers = { ...state.hostAnswers, [question.id]: optionIndex };
   setState({ loading: true, error: '' });
   try {
     await api(`/api/live/games/${state.code}/subject-answer`, {
       method: 'POST',
-      headers: { 'x-live-subject-token': state.subjectToken },
+      headers: state.subjectToken
+        ? { 'x-live-subject-token': state.subjectToken }
+        : { 'x-live-host-token': state.hostToken },
       body: JSON.stringify({ questionId: question.id, optionIndex }),
     });
     await loadRoom();
