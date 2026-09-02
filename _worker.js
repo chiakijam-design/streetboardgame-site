@@ -530,7 +530,7 @@ function applySeoMeta(html, page) {
     .replace(/<meta name="twitter:image" content="[^"]*" \/>/, `<meta name="twitter:image" content="${ogImage}" />`)
     .replace(/<meta name="twitter:image:alt" content="[^"]*" \/>/, `<meta name="twitter:image:alt" content="${page.imageAlt || page.ogTitle}" />`)
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${JSON.stringify(buildStructuredData(page))}</script>`)
-    .replace(/<noscript>[\s\S]*?<\/noscript>/, buildNoscript(page));
+    .replace(/<noscript>\s*<main[\s\S]*?<\/main>\s*<\/noscript>/, buildNoscript(page));
 }
 
 function applyChallengeLibraryMeta(html) {

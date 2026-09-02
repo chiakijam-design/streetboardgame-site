@@ -197,7 +197,7 @@ test('トップの外部ブランドフォントは初期描画を妨げず読�
   const html = await (await request.get('/')).text();
   expect(html).toMatch(/<link[^>]+id="brand-font-styles"[^>]+rel="stylesheet"[^>]+media="print"/i);
   expect(html).toContain("brandFontStyles.media = 'all'");
-  expect(html).toMatch(/<noscript><link[^>]+fonts\.googleapis\.com[^>]+rel="stylesheet"><\/noscript>/i);
+  expect(html).toMatch(/<noscript[^>]+id="brand-font-fallback"[^>]*><link[^>]+fonts\.googleapis\.com[^>]+rel="stylesheet"><\/noscript>/i);
 });
 
 test('トップの内部リンクと構造化データに廃止モードを残さない', async ({ page }, testInfo) => {

@@ -9,7 +9,9 @@ import { assertCheckoutConsent } from '../../src/live/checkout-consent.js';
 import { CHECKOUT_TERMS } from '../../src/live/checkout-terms-config.js';
 
 test('視聴者決済の規約バージョンとSHA-256を実際の利用規約全文へ固定する', async () => {
-  const document = (await readFileAsync(new URL('../../terms.html', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const document = normalizeVersionedLegalDocument(
+    await readFileAsync(new URL('../../terms.html', import.meta.url), 'utf8'),
+  );
   assert.equal(CHECKOUT_TERMS.version, '1.15');
   assert.equal(createHash('sha256').update(document).digest('hex'), CHECKOUT_TERMS.documentSha256);
 });
@@ -39,6 +41,13 @@ test('利用規約は現在の対象年齢・理解度ボード・投稿審査�
     '寄付、贈与、募金、クラウドファンディングまたは投資ではなく',
   ]) assert.equal(document.includes(requiredText), true, requiredText);
 });
+
+function normalizeVersionedLegalDocument(document) {
+  // The build-generated stylesheet name is presentation metadata, not signed terms content.
+  return document
+    .replace(/\r\n/g, '\n')
+    .replace(/\/dist\/legal-[a-f0-9]{12}\.css/g, '/dist/legal-9975948de7b8.css');
+}
 
 test('特商法表記は個人の住所・電話番号を公開せず、請求時の開示方法を案内する', async () => {
   const document = await readFileAsync(new URL('../../legal.html', import.meta.url), 'utf8');

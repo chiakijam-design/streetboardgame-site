@@ -10,7 +10,9 @@ const VERIFICATION_ID = 'a'.repeat(32);
 const ACCESS_TOKEN = 'b'.repeat(48);
 
 test('収益分配規約のバージョンとSHA-256を実際の規約全文へ固定する', async () => {
-  const document = (await readFile(new URL('../../creator-terms.html', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const document = normalizeVersionedLegalDocument(
+    await readFile(new URL('../../creator-terms.html', import.meta.url), 'utf8'),
+  );
   assert.equal(CREATOR_TERMS.version, '1.7');
   assert.equal(createHash('sha256').update(document).digest('hex'), CREATOR_TERMS.documentSha256);
   for (const requiredText of [
@@ -161,4 +163,11 @@ class AgreementDb {
 async function sha256(value) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function normalizeVersionedLegalDocument(document) {
+  // The build-generated stylesheet name is presentation metadata, not signed terms content.
+  return document
+    .replace(/\r\n/g, '\n')
+    .replace(/\/dist\/legal-[a-f0-9]{12}\.css/g, '/dist/legal-9975948de7b8.css');
 }
