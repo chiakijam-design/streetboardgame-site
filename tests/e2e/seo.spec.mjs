@@ -164,8 +164,14 @@ test('内容ハッシュ付きCSSを長期キャッシュする', async ({ reque
 test('手書きフォントは軽量WOFF2だけを参照し長期キャッシュする', async ({ request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPキャッシュは画面幅に依存しないためPCで1回検証');
   const fontPath = '/assets/fonts/HuiFontP29.woff2?v=20260727-font-1';
+  const homeFontPath = '/assets/fonts/HuiFontP29-home.woff2?v=20260902-home-1';
   const topHtml = await (await request.get('/')).text();
   expect(topHtml).not.toContain(fontPath);
+  const topScriptPath = topHtml.match(/<script[^>]+data-build-entry="prototype_app"[^>]+src="([^"]+)"/i)?.[1];
+  expect(topScriptPath).toBeTruthy();
+  const topScript = await (await request.get(topScriptPath)).text();
+  expect(topScript).toContain(homeFontPath);
+  expect(topScript).not.toContain(fontPath);
   for (const path of ['/challenge', '/live-challenge']) {
     const html = await (await request.get(path)).text();
     expect(html, path).toContain(fontPath);
@@ -177,6 +183,21 @@ test('手書きフォントは軽量WOFF2だけを参照し長期キャッシュ
   expect(font.headers()['cache-control']).toContain('max-age=31536000');
   expect(font.headers()['cache-control']).toContain('immutable');
   expect((await font.body()).byteLength).toBeLessThan(2_000_000);
+
+  const homeFont = await request.get(homeFontPath);
+  expect(homeFont.status()).toBe(200);
+  expect(homeFont.headers()['content-type']).toContain('font/woff2');
+  expect(homeFont.headers()['cache-control']).toContain('max-age=31536000');
+  expect(homeFont.headers()['cache-control']).toContain('immutable');
+  expect((await homeFont.body()).byteLength).toBeLessThan(50_000);
+});
+
+test('トップの外部ブランドフォントは初期描画を妨げず読み込み後に適用する', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', '初期HTMLは画面幅に依存しないためPCで1回検証');
+  const html = await (await request.get('/')).text();
+  expect(html).toMatch(/<link[^>]+id="brand-font-styles"[^>]+rel="stylesheet"[^>]+media="print"/i);
+  expect(html).toContain("brandFontStyles.media = 'all'");
+  expect(html).toMatch(/<noscript><link[^>]+fonts\.googleapis\.com[^>]+rel="stylesheet"><\/noscript>/i);
 });
 
 test('トップの内部リンクと構造化データに廃止モードを残さない', async ({ page }, testInfo) => {

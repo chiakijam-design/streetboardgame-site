@@ -4,7 +4,10 @@ import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 
 const { useEffect, useState } = React;
 const CREATOR_QUICK_START_KEY = 'watachan:creator-quick-start:v1';
-const HANDWRITTEN_FONT_URL = '/assets/fonts/HuiFontP29.woff2?v=20260727-font-1';
+// The homepage only renders the three fixed preview cards below. Keep its
+// handwritten brand style without downloading the 1.9 MB full Japanese font
+// needed by the editable challenge screens.
+const HANDWRITTEN_FONT_URL = '/assets/fonts/HuiFontP29-home.woff2?v=20260902-home-1';
 
 const theme = {
   pink: '#EC4F88',
