@@ -103,7 +103,7 @@
       background: '#ffe26b',
       color: '#1a1a1a',
       boxShadow: '3px 3px 0 #1a1a1a',
-      fontFamily: '"Noto Serif JP", serif',
+      fontFamily: '"Noto Sans JP", sans-serif',
       fontSize: '14px',
       fontWeight: '900',
       lineHeight: '1.2',

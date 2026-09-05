@@ -1563,22 +1563,22 @@ async function saveResultCard() {
   context.fillStyle = '#191919';
   context.fillRect(75, 75, 930, 180);
   if (isEnglish) {
-    centerText(context, 'KNOW ME QUIZ · LIVE', 135, '900 38px "Noto Serif JP", serif', '#FFE26B');
-    centerText(context, 'How well do you know me?', 185, '900 34px "Noto Serif JP", serif', '#FFFFFF');
-    centerText(context, '10 questions made for conversation.', 225, '800 24px "Noto Serif JP", serif', '#FFFFFF');
+    centerText(context, 'KNOW ME QUIZ · LIVE', 135, '900 38px "Noto Sans JP", sans-serif', '#FFE26B');
+    centerText(context, 'How well do you know me?', 185, '900 34px "Noto Sans JP", sans-serif', '#FFFFFF');
+    centerText(context, '10 questions made for conversation.', 225, '800 24px "Noto Sans JP", sans-serif', '#FFFFFF');
   } else {
-    centerText(context, 'わたし理解度診断｜LIVE版', 130, '900 34px "Noto Serif JP", serif', '#FFE26B');
-    centerText(context, '私のこと、ちゃんと分かってるよね？', 180, '900 34px "Noto Serif JP", serif', '#FFFFFF');
-    centerText(context, '当てるより、話すための10問。', 225, '800 26px "Noto Serif JP", serif', '#FFFFFF');
+    centerText(context, 'わたし理解度診断｜LIVE版', 130, '900 34px "Noto Sans JP", sans-serif', '#FFE26B');
+    centerText(context, '私のこと、ちゃんと分かってるよね？', 180, '900 34px "Noto Sans JP", sans-serif', '#FFFFFF');
+    centerText(context, '当てるより、話すための10問。', 225, '800 26px "Noto Sans JP", sans-serif', '#FFFFFF');
   }
-  centerText(context, isEnglish ? `${state.participantName}’s result` : `${state.participantName}さんの結果`, 345, '900 44px "Noto Serif JP", serif', '#191919');
-  centerText(context, `${correct}/10`, 560, '900 164px "Noto Serif JP", serif', '#EC4F88');
-  centerText(context, resultMessage(correct), 680, '900 42px "Noto Serif JP", serif', '#191919');
+  centerText(context, isEnglish ? `${state.participantName}’s result` : `${state.participantName}さんの結果`, 345, '900 44px "Noto Sans JP", sans-serif', '#191919');
+  centerText(context, `${correct}/10`, 560, '900 164px "Noto Sans JP", sans-serif', '#EC4F88');
+  centerText(context, resultMessage(correct), 680, '900 42px "Noto Sans JP", sans-serif', '#191919');
   roundedRect(context, 145, 760, 790, 270, 30, '#FFE26B');
-  centerText(context, isEnglish ? '1 point for each streamer match' : '配信者と同じ答えなら1点', 850, '900 40px "Noto Serif JP", serif', '#191919');
-  centerText(context, isEnglish ? `${correct} of 10 answers matched!` : `10問中 ${correct}問 一致！`, 940, '900 58px "Noto Serif JP", serif', '#191919');
-  centerText(context, 'Instagram LIVE / YouTube LIVE', 1125, '800 30px "Noto Serif JP", serif', '#6F6267');
-  centerText(context, 'streetboardgame.com', 1200, '900 30px "Noto Serif JP", serif', '#191919');
+  centerText(context, isEnglish ? '1 point for each streamer match' : '配信者と同じ答えなら1点', 850, '900 40px "Noto Sans JP", sans-serif', '#191919');
+  centerText(context, isEnglish ? `${correct} of 10 answers matched!` : `10問中 ${correct}問 一致！`, 940, '900 58px "Noto Sans JP", sans-serif', '#191919');
+  centerText(context, 'Instagram LIVE / YouTube LIVE', 1125, '800 30px "Noto Sans JP", sans-serif', '#6F6267');
+  centerText(context, 'streetboardgame.com', 1200, '900 30px "Noto Sans JP", sans-serif', '#191919');
   const link = document.createElement('a');
   link.download = `live-challenge-${state.code}-${correct}of10.png`;
   link.href = canvas.toDataURL('image/png');

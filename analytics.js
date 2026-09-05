@@ -90,7 +90,7 @@
         'border-radius:14px',
         'background:#fff7c7',
         'color:#1a1a1a',
-        'font:700 14px/1.5 "Noto Serif JP",serif',
+        'font:700 14px/1.5 "Noto Sans JP",sans-serif',
         'text-align:center',
         'box-shadow:4px 4px 0 #1a1a1a'
       ].join(';');

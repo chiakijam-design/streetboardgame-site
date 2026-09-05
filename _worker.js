@@ -745,7 +745,7 @@ function applyChallengeShareMeta(html, requestUrl) {
 
 function buildNoscript(page) {
   return `<noscript>
-  <main style="max-width: 720px; margin: 32px auto; padding: 24px; font-family: 'Noto Serif JP', serif; line-height: 1.8; color: #1A1A1A; background: #FFFFFF;">
+  <main style="max-width: 720px; margin: 32px auto; padding: 24px; font-family: 'Noto Sans JP', sans-serif; line-height: 1.8; color: #1A1A1A; background: #FFFFFF;">
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>

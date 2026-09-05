@@ -31,11 +31,11 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root{--pink:#ec4683;--pink2:#f06e9f;--black:#191919;--white:#fff;--yellow:#ffe36f;--cyan:#55c9dd;--shadow:5px 7px 0 var(--black)}
     *{box-sizing:border-box}
-    body{margin:0;background:var(--pink);color:var(--black);font-family:"Noto Serif JP",serif;font-weight:700}
+    body{margin:0;background:var(--pink);color:var(--black);font-family:"Noto Sans JP",sans-serif;font-weight:700}
     a{color:inherit}
     #challenge-app.is-booting{height:760px;overflow:hidden}
     .challenge-app-placeholder{display:grid;height:100%;grid-template-rows:190px 54px minmax(0,1fr);gap:20px}
@@ -101,11 +101,11 @@
     @media(max-width:420px){.challenge-feature-nav,.challenge-button-row,.challenge-question-report,.challenge-insight-grid,.challenge-all-distribution-list{grid-template-columns:1fr}.challenge-question-report label,.challenge-question-report small{grid-column:1}.challenge-ranking-list li{grid-template-columns:1fr auto}.challenge-board-status{grid-column:1/-1;justify-self:start}.challenge-top b{max-width:210px}}
     html[data-challenge-mode$="-answer"] .challenge-page{width:min(100%,480px);padding-bottom:calc(158px + env(safe-area-inset-bottom))}
     html[data-challenge-mode$="-answer"] .challenge-top{margin-bottom:10px}
-    html[data-challenge-mode$="-answer"] .challenge-top b{max-width:260px;font-family:"Noto Serif JP",serif;font-size:15px}
+    html[data-challenge-mode$="-answer"] .challenge-top b{max-width:260px;font-family:"Noto Sans JP",sans-serif;font-size:15px}
     html[data-challenge-mode$="-answer"] .challenge-hero{padding:11px 14px;background:var(--yellow);color:var(--black);border:3px solid var(--black);border-radius:16px;box-shadow:4px 5px 0 var(--black)}
     html[data-challenge-mode="participant-answer"] .challenge-hero{background:var(--cyan)}
     html[data-challenge-mode$="-answer"] .challenge-pill{padding:3px 9px;background:var(--black);color:#fff;font-size:9px}
-    html[data-challenge-mode$="-answer"] .challenge-hero h1{margin:6px 0 3px;font-family:"Noto Serif JP",serif;font-size:clamp(19px,5.4vw,25px);line-height:1.25;text-shadow:none}
+    html[data-challenge-mode$="-answer"] .challenge-hero h1{margin:6px 0 3px;font-family:"Noto Sans JP",sans-serif;font-size:clamp(19px,5.4vw,25px);line-height:1.25;text-shadow:none}
     html[data-challenge-mode$="-answer"] .challenge-hero p{font-size:11px;line-height:1.5}
     .challenge-answer-screen{margin-top:14px;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none}
     .challenge-answer-screen .challenge-progress{margin:0 0 10px}
@@ -115,12 +115,12 @@
     .challenge-answer-screen .challenge-card,.challenge-builder-card{position:relative;min-height:528px;overflow:hidden;padding:49px 18px 23px 63px;background:repeating-linear-gradient(to bottom,#fff 0,#fff 47px,#a8d4e8 48px,#a8d4e8 50px);border:3px solid #fff;border-radius:18px;box-shadow:0 14px 30px rgba(69,16,40,.34)}
     .challenge-answer-screen .challenge-card::before,.challenge-builder-card::before{content:"";position:absolute;top:0;bottom:0;left:47px;width:2px;background:rgba(238,132,140,.58)}
     .challenge-answer-screen .challenge-card::after,.challenge-builder-card::after{content:"";position:absolute;right:-25px;bottom:-28px;width:74px;height:126px;background:linear-gradient(132deg,transparent 0 47%,rgba(205,205,205,.9) 49%,#fff 72%);filter:drop-shadow(-5px -3px 4px rgba(0,0,0,.18));transform:rotate(5deg);pointer-events:none}
-    .challenge-answer-screen .challenge-q-number,.challenge-builder-card .challenge-q-number{position:absolute;top:11px;left:12px;z-index:2;padding:5px 10px;font-family:"Noto Serif JP",serif;font-size:14px;line-height:1}
+    .challenge-answer-screen .challenge-q-number,.challenge-builder-card .challenge-q-number{position:absolute;top:11px;left:12px;z-index:2;padding:5px 10px;font-family:"Noto Sans JP",sans-serif;font-size:14px;line-height:1}
     .challenge-card-title{position:relative;z-index:1;margin:0 0 8px;padding:10px 7px;background:#75c7e6;transform:rotate(-.5deg)}
     .challenge-card-title::before{content:"";position:absolute;left:-2px;right:-2px;top:-11px;height:13px;background:radial-gradient(circle at 7px 13px,var(--pink) 0 6px,transparent 6.5px) 0 0/28px 13px repeat-x;opacity:.68}
-    .challenge-answer-screen .challenge-card h2,.challenge-builder-card h2{margin:0;font-family:"Noto Serif JP",serif;font-size:clamp(22px,6.6vw,30px);font-weight:400;line-height:1.25;text-align:center}
+    .challenge-answer-screen .challenge-card h2,.challenge-builder-card h2{margin:0;font-family:"Noto Sans JP",sans-serif;font-size:clamp(22px,6.6vw,30px);font-weight:400;line-height:1.25;text-align:center}
     .challenge-card-choices{position:relative;z-index:1;display:grid}
-    .challenge-card-choice{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:13px;min-height:68px;font-family:"Noto Serif JP",serif;font-size:clamp(21px,5.8vw,27px);font-weight:400;line-height:1.15}
+    .challenge-card-choice{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:13px;min-height:68px;font-family:"Noto Sans JP",sans-serif;font-size:clamp(21px,5.8vw,27px);font-weight:400;line-height:1.15}
     .challenge-card-choice i{display:block;width:31px;height:31px;border:1px solid rgba(0,0,0,.15);border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,.2),inset 0 2px 2px rgba(255,255,255,.35)}
     .challenge-builder-card{width:min(100%,500px);min-height:0;aspect-ratio:2/3;margin-inline:auto;padding:54px 20px 24px}.challenge-builder-card::before{left:19%}.challenge-builder-card .challenge-card-title{margin:5px 30px 12px;padding:14px 10px}.challenge-builder-card .challenge-card-choice{grid-template-columns:74px minmax(0,1fr);gap:0;min-height:clamp(54px,11vw,88px);padding-right:30px}.challenge-builder-card .challenge-card-choice i{justify-self:center}.challenge-builder-card .challenge-card-choice span{text-align:center}
     .challenge-answer-pad{position:fixed;left:50%;bottom:calc(3px + env(safe-area-inset-bottom));z-index:120;width:min(456px,calc(100vw - 24px));max-width:calc(100vw - 24px);transform:translateX(-50%);padding:8px 10px 7px;background:rgba(240,113,125,.96);border:3px solid var(--yellow);border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.22),inset 0 0 0 1px var(--yellow);backdrop-filter:blur(8px)}
@@ -162,7 +162,7 @@
     @media(max-width:380px){.challenge-builder-card{padding-inline:14px}.challenge-builder-card .challenge-card-title{margin-inline:22px}.challenge-builder-card .challenge-card-choice{grid-template-columns:66px minmax(0,1fr);padding-right:20px}.challenge-card-choice{min-height:63px}.challenge-color-choice i{width:34px;height:34px}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.challenge-loader,.challenge-result.is-feedback-revealed{animation:none}.challenge-result.is-feedback-awaiting{transform:none}}
   </style>
-  <link rel="stylesheet" data-build-style="question_card" href="/dist/question-card-f34b505697a4.css" />
+  <link rel="stylesheet" data-build-style="question_card" href="/dist/question-card-4b23ac1b6359.css" />
   <link rel="stylesheet" data-build-style="accessibility" href="/dist/accessibility-f853825a2972.css" />
   <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://www.streetboardgame.com/challenge#webpage","url":"https://www.streetboardgame.com/challenge","name":"通常版｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？","description":"当てるより、話すための10問。自分の答えを友達に予想してもらえる、再挑戦OK・結果公開は任意の無料ゲームです。","inLanguage":"ja","breadcrumb":{"@id":"https://www.streetboardgame.com/challenge#breadcrumb"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=20260726-ogp-2","width":1200,"height":630},"mainEntity":{"@id":"https://www.streetboardgame.com/challenge#challenge-game"}},{"@type":"BreadcrumbList","@id":"https://www.streetboardgame.com/challenge#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"わたし理解度診断","item":"https://www.streetboardgame.com/"},{"@type":"ListItem","position":2,"name":"通常版","item":"https://www.streetboardgame.com/challenge"}]},{"@type":["WebApplication","Game"],"@id":"https://www.streetboardgame.com/challenge#challenge-game","name":"わたし理解度診断｜私のこと、ちゃんと分かってるよね？ 通常版","description":"当てるより、話すための10問。","url":"https://www.streetboardgame.com/challenge","image":"https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=20260726-ogp-2","applicationCategory":"GameApplication","operatingSystem":"Any","isAccessibleForFree":true,"inLanguage":"ja","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"}}]}</script>
   <script src="/analytics.js"></script>
@@ -182,6 +182,6 @@
   <noscript><style>#challenge-app{display:none}</style><section class="challenge-panel"><h1>わたし理解度診断｜私のこと、ちゃんと分かってるよね？</h1><p>当てるより、話すための10問。このゲームにはJavaScriptが必要です。</p><a href="/">トップへ戻る</a></section></noscript>
 <script data-build-entry="prototype_common_data" src="/dist/prototype_common_data-6WKKYLSF.js"></script>
 <script data-build-entry="prototype_english_common_data" src="/dist/prototype_english_common_data-YJTGVFG6.js"></script>
-  <script data-build-entry="challenge_game" src="/dist/challenge_game-YUOAEIKN.js"></script>
+  <script data-build-entry="challenge_game" src="/dist/challenge_game-BKV3W7EU.js"></script>
 </body>
 </html>

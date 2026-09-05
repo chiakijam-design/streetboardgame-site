@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800;900&display=swap");
 
 :root {
   --pink: #ec4f88;
@@ -21,7 +21,7 @@ body {
     radial-gradient(circle at 10% 4%, rgba(255, 226, 107, .55), transparent 22rem),
     radial-gradient(circle at 95% 18%, rgba(91, 212, 232, .34), transparent 24rem),
     #fff1f6;
-  font-family: "Noto Serif JP", serif;
+  font-family: "Noto Sans JP", sans-serif;
   font-size: 14px;
   line-height: 1.85;
 }

@@ -211,30 +211,30 @@ function buildResultSvg(input) {
   <circle cx="${s(238)}" cy="${s(132)}" r="${s(4)}" fill="#EC4F88"/><circle cx="${s(270)}" cy="${s(125)}" r="${s(4)}" fill="#5BD4E8"/><circle cx="${s(302)}" cy="${s(132)}" r="${s(4)}" fill="#EC4F88"/>` : '';
   const perfectPanel = isPerfect ? `
   <rect x="${s(74)}" y="${s(497)}" width="${s(392)}" height="${s(70)}" rx="${s(14)}" fill="#FFE26B" stroke="#D89B00" stroke-width="${s(3)}"/>
-  <text x="${s(270)}" y="${s(527)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(perfectTitleSize)}" font-weight="900" font-family="Noto Serif JP, serif">${escapeXml(perfectTitle)}</text>
-  <text x="${s(270)}" y="${s(552)}" text-anchor="middle" fill="#7A5200" font-size="${s(11)}" font-weight="900" font-family="Noto Serif JP, serif">${escapeXml(date)}　全問正解記念</text>` : '';
+  <text x="${s(270)}" y="${s(527)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(perfectTitleSize)}" font-weight="900" font-family="Noto Sans JP, sans-serif">${escapeXml(perfectTitle)}</text>
+  <text x="${s(270)}" y="${s(552)}" text-anchor="middle" fill="#7A5200" font-size="${s(11)}" font-weight="900" font-family="Noto Sans JP, sans-serif">${escapeXml(date)}　全問正解記念</text>` : '';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${input.width}" height="${input.height}" viewBox="0 0 ${input.width} ${input.height}" role="img" aria-label="${escapeXml(isPerfect ? `LIVE結果画像 全問正解 ${perfectTitle}` : 'LIVE結果画像')}" data-perfect="${isPerfect}">
   <rect width="100%" height="100%" fill="${isPerfect ? '#F4B400' : '#EC4F88'}"/>
   <rect x="${s(28)}" y="${s(28)}" width="${s(484)}" height="${s(619)}" rx="${s(22)}" fill="#1A1A1A"/>
   <rect x="${s(38)}" y="${s(38)}" width="${s(464)}" height="${s(599)}" rx="${s(18)}" fill="${isPerfect ? '#FFF6D6' : '#FFF8F1'}"/>
   <path d="M${s(38)} ${s(56)}a${s(18)} ${s(18)} 0 0 1 ${s(18)} -${s(18)}h${s(428)}a${s(18)} ${s(18)} 0 0 1 ${s(18)} ${s(18)}v${s(70)}H${s(38)}z" fill="#1A1A1A"/>
-  <text x="${s(58)}" y="${s(59)}" fill="${isPerfect ? '#FFE26B' : '#5BD4E8'}" font-size="${s(9)}" font-weight="900" font-family="Noto Serif JP, serif">わたし理解度診断｜LIVE版</text>
-  <text x="${s(58)}" y="${s(78)}" fill="#fff" font-size="${s(12)}" font-weight="900" font-family="Noto Serif JP, serif">私のこと、ちゃんと分かってるよね？</text>
-  <text x="${s(58)}" y="${s(96)}" fill="#fff" font-size="${s(9)}" font-weight="800" font-family="Noto Serif JP, serif">当てるより、話すための10問。</text>
-  <text x="${s(58)}" y="${s(114)}" fill="${isPerfect ? '#FFE26B' : '#5BD4E8'}" font-size="${s(9)}" font-weight="900" font-family="Noto Serif JP, serif">${escapeXml(channelName)} · ${isPerfect ? 'PERFECT RESULT' : 'LIVE RESULT'}</text>
+  <text x="${s(58)}" y="${s(59)}" fill="${isPerfect ? '#FFE26B' : '#5BD4E8'}" font-size="${s(9)}" font-weight="900" font-family="Noto Sans JP, sans-serif">わたし理解度診断｜LIVE版</text>
+  <text x="${s(58)}" y="${s(78)}" fill="#fff" font-size="${s(12)}" font-weight="900" font-family="Noto Sans JP, sans-serif">私のこと、ちゃんと分かってるよね？</text>
+  <text x="${s(58)}" y="${s(96)}" fill="#fff" font-size="${s(9)}" font-weight="800" font-family="Noto Sans JP, sans-serif">当てるより、話すための10問。</text>
+  <text x="${s(58)}" y="${s(114)}" fill="${isPerfect ? '#FFE26B' : '#5BD4E8'}" font-size="${s(9)}" font-weight="900" font-family="Noto Sans JP, sans-serif">${escapeXml(channelName)} · ${isPerfect ? 'PERFECT RESULT' : 'LIVE RESULT'}</text>
   ${perfectDecor}
   <defs><clipPath id="portrait"><circle cx="${s(270)}" cy="${s(235)}" r="${s(92)}"/></clipPath></defs>
   <image href="${input.portrait}" x="${s(178)}" y="${s(143)}" width="${s(184)}" height="${s(184)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#portrait)"/>
   <circle cx="${s(270)}" cy="${s(235)}" r="${s(95)}" fill="none" stroke="${isPerfect ? '#D89B00' : '#1A1A1A'}" stroke-width="${s(6)}"/>
-  <text x="${s(270)}" y="${s(365)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(20)}" font-weight="900" font-family="Noto Serif JP, serif">${escapeXml(viewerName)} さんの結果</text>
-  <text x="${s(270)}" y="${s(443)}" text-anchor="middle" fill="${isPerfect ? '#D89B00' : '#EC4F88'}" font-size="${s(66)}" font-weight="900" font-family="Noto Serif JP, serif">${input.correctCount}/${input.questionCount}</text>
-  <text x="${s(270)}" y="${s(472)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(15)}" font-weight="900" font-family="Noto Serif JP, serif">問正解</text>
+  <text x="${s(270)}" y="${s(365)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(20)}" font-weight="900" font-family="Noto Sans JP, sans-serif">${escapeXml(viewerName)} さんの結果</text>
+  <text x="${s(270)}" y="${s(443)}" text-anchor="middle" fill="${isPerfect ? '#D89B00' : '#EC4F88'}" font-size="${s(66)}" font-weight="900" font-family="Noto Sans JP, sans-serif">${input.correctCount}/${input.questionCount}</text>
+  <text x="${s(270)}" y="${s(472)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(15)}" font-weight="900" font-family="Noto Sans JP, sans-serif">問正解</text>
   <rect x="${s(74)}" y="${s(497)}" width="${s(392)}" height="${s(70)}" rx="${s(14)}" fill="#FFE26B"/>
-  <text x="${s(270)}" y="${s(526)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(16)}" font-weight="900" font-family="Noto Serif JP, serif">${escapeXml(date)}</text>
-  <text x="${s(270)}" y="${s(550)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(12)}" font-weight="800" font-family="Noto Serif JP, serif">視聴者参加型LIVE 記念結果</text>
+  <text x="${s(270)}" y="${s(526)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(16)}" font-weight="900" font-family="Noto Sans JP, sans-serif">${escapeXml(date)}</text>
+  <text x="${s(270)}" y="${s(550)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(12)}" font-weight="800" font-family="Noto Sans JP, sans-serif">視聴者参加型LIVE 記念結果</text>
   ${perfectPanel}
-  ${input.sample ? `<text x="${s(270)}" y="${s(602)}" text-anchor="middle" fill="#D63A75" opacity="0.22" font-size="${s(42)}" font-weight="900" font-family="Noto Serif JP, serif" transform="rotate(-5 ${s(270)} ${s(594)})">SAMPLE</text>` : ''}
-  <text x="${s(270)}" y="${s(622)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(10)}" font-weight="700" font-family="Noto Serif JP, serif">streetboardgame.com</text>
+  ${input.sample ? `<text x="${s(270)}" y="${s(602)}" text-anchor="middle" fill="#D63A75" opacity="0.22" font-size="${s(42)}" font-weight="900" font-family="Noto Sans JP, sans-serif" transform="rotate(-5 ${s(270)} ${s(594)})">SAMPLE</text>` : ''}
+  <text x="${s(270)}" y="${s(622)}" text-anchor="middle" fill="#1A1A1A" font-size="${s(10)}" font-weight="700" font-family="Noto Sans JP, sans-serif">streetboardgame.com</text>
 </svg>`;
 }
 

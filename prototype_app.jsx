@@ -13,9 +13,9 @@ const theme = {
   black: '#1A1A1A',
   white: '#FFFFFF',
   cream: '#FFF8F1',
-  display: '"Noto Serif JP", serif',
-  body: '"Noto Serif JP", serif',
-  caption: '"Noto Serif JP", serif',
+  display: '"Noto Sans JP", sans-serif',
+  body: '"Noto Sans JP", sans-serif',
+  caption: '"Noto Sans JP", sans-serif',
 };
 
 function App() {

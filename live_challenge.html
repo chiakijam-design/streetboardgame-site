@@ -32,7 +32,7 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800;900&display=swap" rel="stylesheet">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -83,7 +83,7 @@
     *{box-sizing:border-box}
     [hidden]{display:none!important}
     html{background:var(--pink)}
-    body{margin:0;min-height:100dvh;background:var(--pink);color:var(--black);font-family:"Noto Serif JP",serif;-webkit-font-smoothing:antialiased}
+    body{margin:0;min-height:100dvh;background:var(--pink);color:var(--black);font-family:"Noto Sans JP",sans-serif;-webkit-font-smoothing:antialiased}
     button,input,select,textarea{font:inherit}
     button,a{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     button{cursor:pointer}
@@ -149,10 +149,10 @@
     .option-edit{display:grid;grid-template-columns:32px minmax(0,1fr);gap:8px;align-items:center;margin-top:7px}
     .option-edit b,.choice .number{display:grid;place-items:center;width:30px;height:30px;border:2px solid #000;border-radius:50%;background:var(--yellow);font-size:11px}
     .option-edit input{min-height:42px}
-    .room-code{margin:14px 0;color:var(--pink2);font:900 clamp(44px,15vw,74px)/1 "Noto Serif JP",serif;letter-spacing:.08em;text-align:center}
+    .room-code{margin:14px 0;color:var(--pink2);font:900 clamp(44px,15vw,74px)/1 "Noto Sans JP",sans-serif;letter-spacing:.08em;text-align:center}
     .share-grid{display:grid;gap:12px;align-items:center}
     .qr{display:grid;place-items:center;padding:10px;border:2px solid #000;border-radius:13px;background:#fff}
-    .share-url{padding:10px;border:2px solid #000;border-radius:10px;background:#fff9d7;overflow-wrap:anywhere;font:800 11px/1.55 "Noto Serif JP",serif}
+    .share-url{padding:10px;border:2px solid #000;border-radius:10px;background:#fff9d7;overflow-wrap:anywhere;font:800 11px/1.55 "Noto Sans JP",sans-serif}
     .stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
     .stat{padding:12px;border:2px solid #000;border-radius:12px;background:#fff;text-align:center}
     .stat b{display:block;font-size:24px}
@@ -177,7 +177,7 @@
     .reveal-judgement.ng{background:#ffe1e8}
     .reveal-judgement strong{font-size:21px}
     .reveal-judgement span{font-size:12px;font-weight:800}
-    .live-builder-card{margin-top:14px}.live-builder-paper{position:relative;width:min(100%,500px);aspect-ratio:2/3;margin-inline:auto;overflow:hidden;padding:54px 20px 24px;background:repeating-linear-gradient(to bottom,#fff 0,#fff 47px,#a8d4e8 48px,#a8d4e8 50px);border:3px solid #fff;border-radius:18px;box-shadow:0 14px 30px rgba(69,16,40,.34)}.live-builder-paper::before{content:"";position:absolute;top:0;bottom:0;left:19%;width:2px;background:rgba(238,132,140,.58)}.live-builder-paper::after{content:"";position:absolute;right:-25px;bottom:-28px;width:74px;height:126px;background:linear-gradient(132deg,transparent 0 47%,rgba(205,205,205,.9) 49%,#fff 72%);filter:drop-shadow(-5px -3px 4px rgba(0,0,0,.18));transform:rotate(5deg);pointer-events:none}.live-builder-paper .q-badge{position:absolute;top:11px;left:12px;z-index:2;background:#191919;color:#fff;font-family:"Noto Serif JP",serif;font-size:14px;line-height:1}.live-builder-title{position:relative;z-index:1;margin:5px 30px 12px;padding:14px 10px;background:#75c7e6;transform:rotate(-.5deg)}.live-builder-title::before{content:"";position:absolute;left:-2px;right:-2px;top:-11px;height:13px;background:radial-gradient(circle at 7px 13px,var(--pink) 0 6px,transparent 6.5px) 0 0/28px 13px repeat-x;opacity:.68}.live-builder-paper h3{margin:0;font-family:"Noto Serif JP",serif;font-size:clamp(22px,6.6vw,30px);font-weight:400;line-height:1.25;text-align:center}.live-builder-options{position:relative;z-index:1;display:grid}.live-builder-option{display:grid;grid-template-columns:74px minmax(0,1fr);align-items:center;min-height:clamp(54px,11vw,88px);padding-right:30px;font-family:"Noto Serif JP",serif;font-size:clamp(21px,5.8vw,27px);font-weight:400;line-height:1.15}.live-builder-option i{display:block;justify-self:center;width:31px;height:31px;border:1px solid rgba(0,0,0,.15);border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,.2),inset 0 2px 2px rgba(255,255,255,.35)}.live-builder-option span{text-align:center}.live-builder-footer{display:grid;grid-template-columns:1fr 1fr;gap:10px}.live-builder-footer .ghost,.live-builder-footer .secondary{min-width:0;margin-top:10px}
+    .live-builder-card{margin-top:14px}.live-builder-paper{position:relative;width:min(100%,500px);aspect-ratio:2/3;margin-inline:auto;overflow:hidden;padding:54px 20px 24px;background:repeating-linear-gradient(to bottom,#fff 0,#fff 47px,#a8d4e8 48px,#a8d4e8 50px);border:3px solid #fff;border-radius:18px;box-shadow:0 14px 30px rgba(69,16,40,.34)}.live-builder-paper::before{content:"";position:absolute;top:0;bottom:0;left:19%;width:2px;background:rgba(238,132,140,.58)}.live-builder-paper::after{content:"";position:absolute;right:-25px;bottom:-28px;width:74px;height:126px;background:linear-gradient(132deg,transparent 0 47%,rgba(205,205,205,.9) 49%,#fff 72%);filter:drop-shadow(-5px -3px 4px rgba(0,0,0,.18));transform:rotate(5deg);pointer-events:none}.live-builder-paper .q-badge{position:absolute;top:11px;left:12px;z-index:2;background:#191919;color:#fff;font-family:"Noto Sans JP",sans-serif;font-size:14px;line-height:1}.live-builder-title{position:relative;z-index:1;margin:5px 30px 12px;padding:14px 10px;background:#75c7e6;transform:rotate(-.5deg)}.live-builder-title::before{content:"";position:absolute;left:-2px;right:-2px;top:-11px;height:13px;background:radial-gradient(circle at 7px 13px,var(--pink) 0 6px,transparent 6.5px) 0 0/28px 13px repeat-x;opacity:.68}.live-builder-paper h3{margin:0;font-family:"Noto Sans JP",sans-serif;font-size:clamp(22px,6.6vw,30px);font-weight:400;line-height:1.25;text-align:center}.live-builder-options{position:relative;z-index:1;display:grid}.live-builder-option{display:grid;grid-template-columns:74px minmax(0,1fr);align-items:center;min-height:clamp(54px,11vw,88px);padding-right:30px;font-family:"Noto Sans JP",sans-serif;font-size:clamp(21px,5.8vw,27px);font-weight:400;line-height:1.15}.live-builder-option i{display:block;justify-self:center;width:31px;height:31px;border:1px solid rgba(0,0,0,.15);border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,.2),inset 0 2px 2px rgba(255,255,255,.35)}.live-builder-option span{text-align:center}.live-builder-footer{display:grid;grid-template-columns:1fr 1fr;gap:10px}.live-builder-footer .ghost,.live-builder-footer .secondary{min-width:0;margin-top:10px}
     .waiting{text-align:center}
     .pulse{width:52px;height:52px;margin:2px auto 13px;border:5px solid rgba(236,79,136,.25);border-top-color:var(--pink);border-radius:50%;animation:spin .9s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -260,9 +260,9 @@
       .chat-support-amounts button:last-child{grid-column:1/-1}
       .live-support-host-alert{grid-template-columns:38px minmax(0,1fr);gap:8px;padding:10px}.live-support-host-alert__pulse{width:36px;height:36px;font-size:19px}.live-support-host-alert button{grid-column:1/-1;width:100%}.live-support-host-alert strong{font-size:16px}
     }
-    body *,body *::before,body *::after{font-family:"Noto Serif JP",serif!important}
+    body *,body *::before,body *::after{font-family:"Noto Sans JP",sans-serif!important}
   </style>
-  <link rel="stylesheet" data-build-style="question_card" href="/dist/question-card-f34b505697a4.css" />
+  <link rel="stylesheet" data-build-style="question_card" href="/dist/question-card-4b23ac1b6359.css" />
   <link rel="stylesheet" data-build-style="accessibility" href="/dist/accessibility-f853825a2972.css" />
   <script src="/analytics.js"></script>
 </head>
@@ -283,6 +283,6 @@
   </main>
 <script data-build-entry="prototype_common_data" src="/dist/prototype_common_data-6WKKYLSF.js"></script>
 <script data-build-entry="prototype_english_common_data" src="/dist/prototype_english_common_data-YJTGVFG6.js"></script>
-  <script data-build-entry="live_challenge" src="/dist/live_challenge-JL643JV3.js"></script>
+  <script data-build-entry="live_challenge" src="/dist/live_challenge-SSJDRJQG.js"></script>
 </body>
 </html>
