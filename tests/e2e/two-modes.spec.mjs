@@ -112,7 +112,7 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   const topCardFont = await topCards.locator('.notebook-question-card-copy').first().evaluate((element) => (
     getComputedStyle(element).fontFamily
   ));
-  expect(topCardFont).toContain('HuiFontP29');
+  expect(topCardFont).toContain('Noto Serif JP');
   const challengeButton = page.getByRole('button', { name: '10問を作り始める', exact: true });
   const liveButton = page.getByRole('button', { name: 'LIVE版で作る', exact: true });
   await expect(challengeButton).toHaveCount(1);
@@ -182,8 +182,10 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   ]);
   expect(challengeStyle.backgroundColor).toBe('rgb(26, 26, 26)');
   expect(challengeStyle.color).toBe('rgb(255, 255, 255)');
+  expect(challengeStyle.fontFamily).toContain('Noto Serif JP');
   expect(liveStyle.backgroundColor).toBe('rgb(255, 255, 255)');
   expect(liveStyle.color).toBe('rgb(26, 26, 26)');
+  expect(liveStyle.fontFamily).toContain('Noto Serif JP');
   await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
   await expect(page.locator('a[href="/love"]')).toHaveCount(0);
   await expect(page.getByText('メイン', { exact: true })).toHaveCount(0);

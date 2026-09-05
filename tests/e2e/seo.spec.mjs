@@ -161,41 +161,35 @@ test('内容ハッシュ付きCSSを長期キャッシュする', async ({ reque
   }
 });
 
-test('手書きフォントは軽量WOFF2だけを参照し長期キャッシュする', async ({ request }, testInfo) => {
-  test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPキャッシュは画面幅に依存しないためPCで1回検証');
-  const fontPath = '/assets/fonts/HuiFontP29.woff2?v=20260727-font-1';
-  const homeFontPath = '/assets/fonts/HuiFontP29-home.woff2?v=20260902-home-1';
+test('表示フォントはNoto Serif JPに統一する', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', 'HTMLとCSSは画面幅に依存しないためPCで1回検証');
+  const fontStylesheet = 'family=Noto+Serif+JP';
   const topHtml = await (await request.get('/')).text();
-  expect(topHtml).not.toContain(fontPath);
+  expect(topHtml).toContain(fontStylesheet);
   const topScriptPath = topHtml.match(/<script[^>]+data-build-entry="prototype_app"[^>]+src="([^"]+)"/i)?.[1];
   expect(topScriptPath).toBeTruthy();
   const topScript = await (await request.get(topScriptPath)).text();
-  expect(topScript).toContain(homeFontPath);
-  expect(topScript).not.toContain(fontPath);
+  expect(topScript).toContain('Noto Serif JP');
+  expect(topScript).not.toMatch(/HuiFontP29|Zen Maru Gothic|RocknRoll One|DotGothic16/);
   for (const path of ['/challenge', '/live-challenge']) {
     const html = await (await request.get(path)).text();
-    expect(html, path).toContain(fontPath);
-    expect(html, path).not.toContain('HuiFontP29.ttf');
+    expect(html, path).toContain(fontStylesheet);
+    expect(html, path).toContain('Noto Serif JP');
+    expect(html, path).not.toMatch(/HuiFontP29|ふい字|Noto Sans JP/);
   }
-  const font = await request.get(fontPath);
-  expect(font.status()).toBe(200);
-  expect(font.headers()['content-type']).toContain('font/woff2');
-  expect(font.headers()['cache-control']).toContain('max-age=31536000');
-  expect(font.headers()['cache-control']).toContain('immutable');
-  expect((await font.body()).byteLength).toBeLessThan(2_000_000);
-
-  const homeFont = await request.get(homeFontPath);
-  expect(homeFont.status()).toBe(200);
-  expect(homeFont.headers()['content-type']).toContain('font/woff2');
-  expect(homeFont.headers()['cache-control']).toContain('max-age=31536000');
-  expect(homeFont.headers()['cache-control']).toContain('immutable');
-  expect((await homeFont.body()).byteLength).toBeLessThan(50_000);
+  const legalHtml = await (await request.get('/terms')).text();
+  const legalStylesheetPath = legalHtml.match(/<link[^>]+data-build-style="legal"[^>]+href="([^"]+)"/i)?.[1];
+  expect(legalStylesheetPath).toBeTruthy();
+  const legalStylesheet = await (await request.get(legalStylesheetPath)).text();
+  expect(legalStylesheet).toContain(fontStylesheet);
+  expect(legalStylesheet).toContain('Noto Serif JP');
 });
 
 test('トップの外部ブランドフォントは初期描画を妨げず読み込み後に適用する', async ({ request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', '初期HTMLは画面幅に依存しないためPCで1回検証');
   const html = await (await request.get('/')).text();
   expect(html).toMatch(/<link[^>]+id="brand-font-styles"[^>]+rel="stylesheet"[^>]+media="print"/i);
+  expect(html).toContain('family=Noto+Serif+JP');
   expect(html).toContain("brandFontStyles.media = 'all'");
   expect(html).toMatch(/<noscript[^>]+id="brand-font-fallback"[^>]*><link[^>]+fonts\.googleapis\.com[^>]+rel="stylesheet"><\/noscript>/i);
 });

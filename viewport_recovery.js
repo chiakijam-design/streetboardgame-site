@@ -103,7 +103,7 @@
       background: '#ffe26b',
       color: '#1a1a1a',
       boxShadow: '3px 3px 0 #1a1a1a',
-      fontFamily: '"Zen Maru Gothic", "Noto Sans JP", sans-serif',
+      fontFamily: '"Noto Serif JP", serif',
       fontSize: '14px',
       fontWeight: '900',
       lineHeight: '1.2',

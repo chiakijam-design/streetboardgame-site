@@ -4,10 +4,6 @@ import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 
 const { useEffect, useState } = React;
 const CREATOR_QUICK_START_KEY = 'watachan:creator-quick-start:v1';
-// The homepage only renders the three fixed preview cards below. Keep its
-// handwritten brand style without downloading the 1.9 MB full Japanese font
-// needed by the editable challenge screens.
-const HANDWRITTEN_FONT_URL = '/assets/fonts/HuiFontP29-home.woff2?v=20260902-home-1';
 
 const theme = {
   pink: '#EC4F88',
@@ -17,9 +13,9 @@ const theme = {
   black: '#1A1A1A',
   white: '#FFFFFF',
   cream: '#FFF8F1',
-  display: '"RocknRoll One", "Zen Maru Gothic", sans-serif',
-  body: '"Zen Maru Gothic", sans-serif',
-  caption: '"DotGothic16", monospace',
+  display: '"Noto Serif JP", serif',
+  body: '"Noto Serif JP", serif',
+  caption: '"Noto Serif JP", serif',
 };
 
 function App() {
@@ -43,31 +39,6 @@ function App() {
 function TopPage() {
   const [creatorName, setCreatorName] = useState('');
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!('FontFace' in window) || !document.fonts) return undefined;
-    let cancelled = false;
-    const loadFont = () => {
-      const font = new FontFace('HuiFontP29', `url("${HANDWRITTEN_FONT_URL}")`, {
-        display: 'swap',
-        weight: '400',
-      });
-      font.load().then((loadedFont) => {
-        if (!cancelled) document.fonts.add(loadedFont);
-      }).catch(() => {});
-    };
-    let timeoutId;
-    const scheduleFont = () => {
-      timeoutId = window.setTimeout(loadFont, 1500);
-    };
-    if (document.readyState === 'complete') scheduleFont();
-    else window.addEventListener('load', scheduleFont, { once: true });
-    return () => {
-      cancelled = true;
-      window.removeEventListener('load', scheduleFont);
-      window.clearTimeout(timeoutId);
-    };
-  }, []);
 
   const start = (mode) => {
     const name = creatorName.trim();

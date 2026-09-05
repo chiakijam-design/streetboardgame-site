@@ -1792,12 +1792,12 @@ async function createChallengeResultCanvas(result) {
   resultRoundRect(context, 88, 70, 904, 132, 34);
   context.fill();
   context.fillStyle = '#ffffff';
-  context.font = '900 22px "Yu Gothic", sans-serif';
+  context.font = '900 22px "Noto Serif JP", serif';
   context.textAlign = 'left';
   context.fillText(isEnglish ? 'KNOW ME QUIZ' : 'わたし理解度診断', 132, 112);
-  context.font = '700 25px "HuiFontP29", "Yu Gothic", sans-serif';
+  context.font = '700 25px "Noto Serif JP", serif';
   context.fillText(isEnglish ? `How well do you know ${creatorName}?` : '私のこと、ちゃんと分かってるよね？', 132, 151);
-  context.font = '700 19px "Yu Gothic", sans-serif';
+  context.font = '700 19px "Noto Serif JP", serif';
   context.fillStyle = '#ffe26b';
   context.fillText(isEnglish ? '10 questions made for conversation.' : '当てるより、話すための10問。', 132, 184);
 
@@ -1809,7 +1809,7 @@ async function createChallengeResultCanvas(result) {
   resultRoundRect(context, 760, 92, 176, 50, 25);
   context.stroke();
   context.fillStyle = tier.tagColor;
-  context.font = '900 21px "Yu Gothic", sans-serif';
+  context.font = '900 21px "Noto Serif JP", serif';
   context.textAlign = 'center';
   context.fillText(tier.tag, 848, 125);
 
@@ -1824,7 +1824,7 @@ async function createChallengeResultCanvas(result) {
   context.setLineDash([]);
 
   context.fillStyle = '#ec4683';
-  context.font = '700 31px "HuiFontP29", "Yu Gothic", sans-serif';
+  context.font = '700 31px "Noto Serif JP", serif';
   context.textAlign = 'left';
   const scoreLabelLines = splitResultText(
     isEnglish ? `${participantName} on\n${creatorName}’s quiz` : `${participantName}さんの\n${creatorName}さん理解度`,
@@ -1836,7 +1836,7 @@ async function createChallengeResultCanvas(result) {
   context.shadowColor = '#191919';
   context.shadowOffsetX = 8;
   context.shadowOffsetY = 8;
-  context.font = '900 116px "Arial Black", "Yu Gothic", sans-serif';
+  context.font = '900 116px "Noto Serif JP", serif';
   context.fillText(`${result.score}/10`, 202, 500);
   context.shadowOffsetX = 0;
   context.shadowOffsetY = 0;
@@ -1849,7 +1849,7 @@ async function createChallengeResultCanvas(result) {
   resultRoundRect(context, 210, 514, 148, 50, 25);
   context.stroke();
   context.fillStyle = '#191919';
-  context.font = '900 24px "Yu Gothic", sans-serif';
+  context.font = '900 24px "Noto Serif JP", serif';
   context.textAlign = 'center';
   context.fillText(isEnglish ? 'CORRECT' : '問正解', 284, 547);
 
@@ -1872,13 +1872,13 @@ async function createChallengeResultCanvas(result) {
   resultRoundRect(context, 408, 628, 264, 46, 23);
   context.fill();
   context.fillStyle = '#ffe36f';
-  context.font = '900 25px "Yu Gothic", sans-serif';
+  context.font = '900 25px "Noto Serif JP", serif';
   context.textAlign = 'center';
   context.fillText(isEnglish ? 'YOUR TITLE' : '今日の称号', 540, 660);
 
   context.fillStyle = '#ec4683';
   const titleLines = splitResultText(tier.title, 11, 2);
-  context.font = `900 ${titleLines.length > 1 ? 46 : 54}px "HuiFontP29", "Yu Gothic", sans-serif`;
+  context.font = `900 ${titleLines.length > 1 ? 46 : 54}px "Noto Serif JP", serif`;
   drawResultLines(context, titleLines, 540, 740, 58);
 
   context.fillStyle = '#ffffff';
@@ -1889,7 +1889,7 @@ async function createChallengeResultCanvas(result) {
   resultRoundRect(context, 150, 816, 780, 248, 26);
   context.stroke();
   context.fillStyle = '#191919';
-  context.font = '900 31px "HuiFontP29", "Yu Gothic", sans-serif';
+  context.font = '900 31px "Noto Serif JP", serif';
   const messageLines = splitResultText(tier.message, 20, 4);
   drawResultLines(context, messageLines, 540, 878, 47);
 
@@ -1901,13 +1901,13 @@ async function createChallengeResultCanvas(result) {
   resultRoundRect(context, 156, 1094, 768, 132, 26);
   context.stroke();
   context.fillStyle = '#191919';
-  context.font = '900 28px "Yu Gothic", sans-serif';
+  context.font = '900 28px "Noto Serif JP", serif';
   context.fillText(isEnglish ? 'Share this result' : 'この結果をシェアしよう', 448, 1134);
   context.fillStyle = '#d63a75';
-  context.font = '900 22px "Yu Gothic", sans-serif';
+  context.font = '900 22px "Noto Serif JP", serif';
   context.fillText(isEnglish ? 'Which answers matched?' : 'どこが当たった？', 448, 1168);
   context.fillStyle = '#191919';
-  context.font = '700 22px monospace';
+  context.font = '700 22px "Noto Serif JP", serif';
   context.fillText(isEnglish ? 'streetboardgame.com  /  #Watachan' : 'streetboardgame.com  /  #わたちゃん', 448, 1202);
   if (qrImage) {
     context.fillStyle = '#ffffff';
