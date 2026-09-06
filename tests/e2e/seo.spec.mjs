@@ -185,6 +185,35 @@ test('表示フォントはNoto Sans JPに統一する', async ({ request }, tes
   expect(legalStylesheet).toContain('Noto Sans JP');
 });
 
+test('ふい字はカードだけに限定しトップでは軽量サブセットを使う', async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chrome', '静的資産は画面幅に依存しないためPCで1回検証');
+  const fullFontPath = '/assets/fonts/HuiFontP29.woff2?v=20260727-font-1';
+  const homeFontPath = '/assets/fonts/HuiFontP29-home.woff2?v=20260902-home-1';
+  const topHtml = await (await request.get('/')).text();
+  const cardStylesheetPath = topHtml.match(/<link[^>]+data-build-style="question_card"[^>]+href="([^"]+)"/i)?.[1];
+  expect(cardStylesheetPath).toBeTruthy();
+  const cardStylesheet = await (await request.get(cardStylesheetPath)).text();
+  expect(cardStylesheet).toContain(fullFontPath);
+  expect(cardStylesheet).toContain(homeFontPath);
+  expect(cardStylesheet).toMatch(/\.notebook-question-card-copy\s*\{[^}]*HuiFontP29/);
+  expect(cardStylesheet).toMatch(/\.top-question-card \.notebook-question-card-copy\s*\{[^}]*HuiFontP29Home/);
+  expect(cardStylesheet).toMatch(/\.live-active-question[^{]*\{[^}]*HuiFontP29/);
+
+  const fullFont = await request.get(fullFontPath);
+  expect(fullFont.status()).toBe(200);
+  expect(fullFont.headers()['content-type']).toContain('font/woff2');
+  expect(fullFont.headers()['cache-control']).toContain('max-age=31536000');
+  expect(fullFont.headers()['cache-control']).toContain('immutable');
+  expect((await fullFont.body()).byteLength).toBeLessThan(2_000_000);
+
+  const homeFont = await request.get(homeFontPath);
+  expect(homeFont.status()).toBe(200);
+  expect(homeFont.headers()['content-type']).toContain('font/woff2');
+  expect(homeFont.headers()['cache-control']).toContain('max-age=31536000');
+  expect(homeFont.headers()['cache-control']).toContain('immutable');
+  expect((await homeFont.body()).byteLength).toBeLessThan(50_000);
+});
+
 test('トップの外部ブランドフォントは初期描画を妨げず読み込み後に適用する', async ({ request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', '初期HTMLは画面幅に依存しないためPCで1回検証');
   const html = await (await request.get('/')).text();

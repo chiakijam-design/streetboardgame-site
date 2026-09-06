@@ -22,6 +22,9 @@ async function buildChallengeQuestions(page, startIndex = 0) {
       await expect(paperCard).toBeVisible();
       await expect(paperCard.locator('.notebook-question-card-visual')).toHaveCount(1);
       await expect(paperCard.locator('.notebook-card-accessible-choices li')).toHaveCount(5);
+      expect(await paperCard.locator('.notebook-question-card-copy').evaluate((element) => (
+        getComputedStyle(element).fontFamily
+      ))).toContain('HuiFontP29');
       await expect(answerPad.locator('[data-action="builder-answer"]')).toHaveCount(5);
       await expect(page.getByRole('button', { name: /この問題をスキップ/ })).toBeVisible();
       await expect(page.getByRole('button', { name: /問題・選択肢を編集する/ })).toBeVisible();
@@ -103,6 +106,11 @@ test('作成完了後は共有と保存の6導線だけを指定順で表示す�
 });
 
 test('トップは作成者向けに通常版とライブ配信版の2本だけを案内する', async ({ page }, testInfo) => {
+  const localFontRequests = [];
+  page.on('request', (request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (pathname.startsWith('/assets/fonts/')) localFontRequests.push(pathname);
+  });
   await page.goto('/');
   const topCards = page.getByTestId('top-question-card');
   await expect(topCards).toHaveCount(3);
@@ -112,7 +120,9 @@ test('トップは作成者向けに通常版とライブ配信版の2本だけ�
   const topCardFont = await topCards.locator('.notebook-question-card-copy').first().evaluate((element) => (
     getComputedStyle(element).fontFamily
   ));
-  expect(topCardFont).toContain('Noto Sans JP');
+  expect(topCardFont).toContain('HuiFontP29Home');
+  await expect.poll(() => localFontRequests).toContain('/assets/fonts/HuiFontP29-home.woff2');
+  expect(localFontRequests).not.toContain('/assets/fonts/HuiFontP29.woff2');
   const challengeButton = page.getByRole('button', { name: '10問を作り始める', exact: true });
   const liveButton = page.getByRole('button', { name: 'LIVE版で作る', exact: true });
   await expect(challengeButton).toHaveCount(1);

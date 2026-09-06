@@ -45,6 +45,9 @@ test('realtime reveal uses the viewer answer when the shared state has no person
   await page.goto('/live-challenge?room=123456');
   const reveal = page.getByTestId('live-viewer-reveal');
   await expect(reveal).toBeVisible();
+  expect(await reveal.locator('h2').evaluate((element) => (
+    getComputedStyle(element).fontFamily
+  ))).toContain('HuiFontP29');
   await expect(reveal.locator('.reveal-judgement')).toHaveClass(/ok/);
   await expect(reveal.locator('.reveal-choice').first()).toHaveClass(/viewer-answer/);
 });
@@ -109,6 +112,9 @@ async function buildLiveQuestions(page, startIndex = 0) {
       const useButton = page.getByRole('button', { name: /この問題を使う.*答えは配信中に選択/ });
       await expect(page.getByTestId('live-builder-color-pad')).toHaveCount(0);
       await expect(useButton).toBeVisible();
+      expect(await paperCard.locator('.notebook-question-card-copy').evaluate((element) => (
+        getComputedStyle(element).fontFamily
+      ))).toContain('HuiFontP29');
       const [paperBox, buttonBox, buttonStyle] = await Promise.all([
         paperCard.boundingBox(),
         useButton.boundingBox(),
