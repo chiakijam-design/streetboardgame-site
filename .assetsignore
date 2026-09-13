@@ -1,5 +1,17 @@
+# Worker code is bundled from these files, but they must not be uploaded as
+# directly downloadable static assets.
 _worker.js
-*.map
+src/
+
+# Tests, operational documents, database definitions, source data and tools.
+tests/
+docs/
+tools/
+migrations/
+migrations-purchases/
+data/
+
+# Repository, deployment and local development configuration.
 **/.git
 **/.github
 **/.wrangler
@@ -9,5 +21,33 @@ _worker.js
 **/node_modules
 **/playwright-report
 **/test-results
+_headers
+_redirects
+wrangler.jsonc
+package*.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+playwright.config.*
+capacitor.config.*
 .test-worker.mjs
 *.log
+*.map
+*.md
+*.mjs
+*.jsx
+*.py
+*.sql
+*.toml
+*.yaml
+*.yml
+
+# Unbundled browser sources. Production pages use the hashed files in dist/.
+accessibility.css
+question-card.css
+challenge_game.js
+live_challenge.js
+live_ops.js
+question_ops.js
+prototype_common_data.js
+prototype_english_common_data.js
+viewport_recovery.js
