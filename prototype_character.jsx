@@ -13,7 +13,7 @@ const VARIANTS = {
   full:    {
     file: 'girl-full-960.webp',
     webp: 'girl-full.webp',
-    webpSrcSet: 'girl-full-480.webp 326w, girl-full-960.webp 652w, girl-full.webp 2088w',
+    webpSrcSet: 'girl-full-480.webp 326w, girl-full-422.webp 422w, girl-full-652.webp 652w, girl-full.webp 2088w',
     aspect: 3072/2088,
     intrinsicWidth: 2088,
     intrinsicHeight: 3072,
@@ -76,7 +76,7 @@ function Girl({
         height={typeof h === 'number' ? h : conf.intrinsicHeight}
         loading={loading}
         decoding="async"
-        fetchPriority={fetchPriority}
+        fetchpriority={fetchPriority}
         style={imageStyle}
         draggable={false}
       />

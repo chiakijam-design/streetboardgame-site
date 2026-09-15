@@ -1,9 +1,9 @@
 import { LIVE_AGE_NOTICE } from './src/live/age-notice.js';
 import { BOARD_GAME_PRODUCT } from './src/product/config.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
+import { startCreatorGame } from './src/home/start.js';
 
 const { useEffect, useState } = React;
-const CREATOR_QUICK_START_KEY = 'watachan:creator-quick-start:v1';
 
 const theme = {
   pink: '#EC4F88',
@@ -36,23 +36,12 @@ function App() {
   return <TopPage />;
 }
 
-function TopPage() {
+export function TopPage() {
   const [creatorName, setCreatorName] = useState('');
   const [error, setError] = useState('');
 
   const start = (mode) => {
-    const name = creatorName.trim();
-    if (!name) {
-      setError('名前を入力してください。');
-      return;
-    }
-    try {
-      sessionStorage.setItem(CREATOR_QUICK_START_KEY, JSON.stringify({ mode, name, createdAt: Date.now() }));
-    } catch (_) {
-      setError('ブラウザの一時保存を利用できません。設定を確認してください。');
-      return;
-    }
-    location.assign(mode === 'live' ? '/live-challenge' : '/challenge');
+    setError(startCreatorGame(mode, creatorName));
   };
 
   return (
@@ -171,6 +160,7 @@ function TopPage() {
               <p style={{ margin: 0, fontSize: 12, fontWeight: 900 }}>ライブ配信で使う方はこちら</p>
               <button
                 type="button"
+                data-home-mode="live"
                 aria-label="LIVE版で作る"
                 onClick={() => start('live')}
                 style={secondaryButton()}
@@ -1421,4 +1411,12 @@ function srOnly() {
   return { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 };
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+if (typeof document !== 'undefined') {
+  const root = document.getElementById('root');
+  if (root.dataset.prerendered === 'top' && (window.__INITIAL_SCREEN || 'top') === 'top') {
+    ReactDOM.hydrateRoot(root, <App />);
+  } else {
+    root.removeAttribute('data-prerendered');
+    ReactDOM.createRoot(root).render(<App />);
+  }
+}

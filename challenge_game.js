@@ -2247,8 +2247,20 @@ function errorMessage(code) {
 }
 
 async function bootChallenge() {
+  // The ordinary start screen does not need catalog data to paint. Keep its
+  // actions disabled until reviewed questions arrive, without replacing any
+  // name the visitor types while the request is pending.
+  const earlyStartScreen = state.mode === 'create' && !preferredCardId && !preferredPackSlug;
+  if (earlyStartScreen) {
+    render();
+    app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = true; });
+  }
   allCards = await loadManagedQuestionCards(allCards, 'challenge', isEnglish ? 'en' : 'ja');
   questionCatalogReady = true;
+  if (earlyStartScreen) {
+    app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = false; });
+    return;
+  }
   if (state.mode === 'library') {
     state.questionTrends = await loadQuestionTrendMetrics(isEnglish ? 'en' : 'ja');
   }

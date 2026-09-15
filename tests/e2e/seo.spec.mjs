@@ -150,7 +150,12 @@ test('内容ハッシュ付きCSSを長期キャッシュする', async ({ reque
     const html = await (await request.get(path)).text();
     const stylesheets = [...html.matchAll(/<link[^>]+data-build-style="[^"]+"[^>]+href="([^"]+)"/g)]
       .map((match) => match[1]);
-    expect(stylesheets.length, path).toBeGreaterThan(0);
+    if (['/', '/challenge', '/live-challenge'].includes(path)) {
+      expect(html).toContain('<style data-build-style="accessibility">');
+      expect(html).toContain('<style data-build-style="question_card">');
+      if (path === '/') stylesheets.push(html.match(/id="brand-font-styles" href="([^"]+)"/)[1]);
+    }
+    if (!['/challenge', '/live-challenge'].includes(path)) expect(stylesheets.length, path).toBeGreaterThan(0);
     for (const stylesheetPath of stylesheets) {
       expect(stylesheetPath, path).toMatch(/^\/dist\/[a-z0-9-]+-[a-f0-9]{12}\.css$/);
       const stylesheet = await request.get(stylesheetPath);
@@ -175,7 +180,8 @@ test('表示フォントはNoto Sans JPに統一する', async ({ request }, tes
     const html = await (await request.get(path)).text();
     expect(html, path).toContain(fontStylesheet);
     expect(html, path).toContain('Noto Sans JP');
-    expect(html, path).not.toMatch(/HuiFontP29|ふい字|Noto Serif JP/);
+    const markupWithoutStyles = html.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '');
+    expect(markupWithoutStyles, path).not.toMatch(/HuiFontP29|ふい字|Noto Serif JP/);
   }
   const legalHtml = await (await request.get('/terms')).text();
   const legalStylesheetPath = legalHtml.match(/<link[^>]+data-build-style="legal"[^>]+href="([^"]+)"/i)?.[1];
@@ -190,9 +196,8 @@ test('ふい字はカードだけに限定しトップでは軽量サブセッ�
   const fullFontPath = '/assets/fonts/HuiFontP29.woff2?v=20260727-font-1';
   const homeFontPath = '/assets/fonts/HuiFontP29-home.woff2?v=20260902-home-1';
   const topHtml = await (await request.get('/')).text();
-  const cardStylesheetPath = topHtml.match(/<link[^>]+data-build-style="question_card"[^>]+href="([^"]+)"/i)?.[1];
-  expect(cardStylesheetPath).toBeTruthy();
-  const cardStylesheet = await (await request.get(cardStylesheetPath)).text();
+  const cardStylesheet = topHtml.match(/<style data-build-style="question_card">([\s\S]*?)<\/style>/i)?.[1];
+  expect(cardStylesheet).toBeTruthy();
   expect(cardStylesheet).toContain(fullFontPath);
   expect(cardStylesheet).toContain(homeFontPath);
   expect(cardStylesheet).toMatch(/\.notebook-question-card-copy\s*\{[^}]*HuiFontP29/);
@@ -220,7 +225,12 @@ test('トップの外部ブランドフォントは初期描画を妨げず読�
   expect(html).toMatch(/<link[^>]+id="brand-font-styles"[^>]+rel="stylesheet"[^>]+media="print"/i);
   expect(html).toContain('family=Noto+Sans+JP');
   expect(html).toContain("brandFontStyles.media = 'all'");
-  expect(html).toMatch(/<noscript[^>]+id="brand-font-fallback"[^>]*><link[^>]+fonts\.googleapis\.com[^>]+rel="stylesheet"><\/noscript>/i);
+  expect(html).toMatch(/<noscript[^>]+id="brand-font-fallback"[^>]*><link[^>]+\/dist\/home-font-[a-f0-9]+\.css[^>]+rel="stylesheet"><\/noscript>/i);
+  const fontCssPath = html.match(/id="brand-font-styles" href="([^"]+)"/)[1];
+  const fontCss = await (await request.get(fontCssPath)).text();
+  expect(fontCss).toContain('font-weight:400 900');
+  expect(fontCss).toContain('font-display:swap');
+  expect(fontCss).toContain('/assets/fonts/NotoSansJP-home-');
 });
 
 test('トップの内部リンクと構造化データに廃止モードを残さない', async ({ page }, testInfo) => {

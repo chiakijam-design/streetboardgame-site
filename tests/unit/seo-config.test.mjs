@@ -26,7 +26,11 @@ test('内容ハッシュ付き本番JavaScript・CSSだけを長期キャッシ�
   ]) {
     const html = await readFile(htmlPath, 'utf8');
     assert.match(html, new RegExp(`data-build-style="${marker}"`), htmlPath);
-    assert.match(html, new RegExp(`href="/dist/[a-z0-9-]+-[a-f0-9]{12}\\.css"`), htmlPath);
+    if (htmlPath === 'challenge.html' || htmlPath === 'live_challenge.html') {
+      assert.match(html, /<style data-build-style="question_card">/, htmlPath);
+    } else {
+      assert.match(html, new RegExp(`href="/dist/[a-z0-9-]+-[a-f0-9]{12}\\.css"`), htmlPath);
+    }
   }
 });
 

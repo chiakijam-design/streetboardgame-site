@@ -63,6 +63,7 @@
       });
       windowObject.dataLayer.push(gtmEvent);
       windowObject.ga4Event('event', name, eventParams);
+      loadAnalytics();
     };
 
     var gtmLoaded = false;
@@ -79,14 +80,31 @@
       documentObject.head.appendChild(gtmScript);
     }
 
-    var eventScript = documentObject.createElement('script');
-    eventScript.async = true;
-    eventScript.src = 'https://www.googletagmanager.com/gtag/js?id='
-      + encodeURIComponent(measurementId)
-      + '&l=' + encodeURIComponent(eventLayerName);
-    eventScript.addEventListener('load', loadGtm, { once: true });
-    eventScript.addEventListener('error', loadGtm, { once: true });
-    documentObject.head.appendChild(eventScript);
+    var analyticsLoaded = false;
+    function loadAnalytics() {
+      if (analyticsLoaded) return;
+      analyticsLoaded = true;
+      var eventScript = documentObject.createElement('script');
+      eventScript.async = true;
+      eventScript.src = 'https://www.googletagmanager.com/gtag/js?id='
+        + encodeURIComponent(measurementId)
+        + '&l=' + encodeURIComponent(eventLayerName);
+      eventScript.addEventListener('load', loadGtm, { once: true });
+      eventScript.addEventListener('error', loadGtm, { once: true });
+      documentObject.head.appendChild(eventScript);
+    }
+    // Keep event queues ready immediately, but give page content the network
+    // first. Any interaction or explicit event starts delivery sooner.
+    function loadAfterPaint() {
+      if (typeof windowObject.requestAnimationFrame !== 'function') return loadAnalytics();
+      windowObject.requestAnimationFrame(function afterLayout() {
+        windowObject.requestAnimationFrame(loadAnalytics);
+      });
+    }
+    if (documentObject.readyState === 'complete') loadAfterPaint();
+    else windowObject.addEventListener('load', loadAfterPaint, { once: true });
+    windowObject.addEventListener('pointerdown', loadAnalytics, { once: true, passive: true });
+    windowObject.addEventListener('keydown', loadAnalytics, { once: true });
   } else {
     windowObject.gtag = function disabledGtag() {};
     windowObject.ga4Event = function disabledGa4Event() {};

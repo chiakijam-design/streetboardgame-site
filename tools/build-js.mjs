@@ -1,7 +1,10 @@
-import { build } from 'esbuild';
+import { build, transform } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { basename, extname } from 'node:path';
 import { copyFile, mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises';
+import vm from 'node:vm';
+import React from 'react';
+import { renderToString } from 'react-dom/server';
 
 const DIST_ENTRIES = {
   viewport_recovery: 'viewport_recovery.js',
@@ -13,6 +16,7 @@ const DIST_ENTRIES = {
   question_ops: 'question_ops.js',
   prototype_character: 'prototype_character.jsx',
   prototype_app: 'prototype_app.jsx',
+  home_entry: 'home_entry.js',
 };
 
 const STYLE_ENTRIES = {
@@ -28,6 +32,7 @@ const HTML_ENTRY_MAP = {
     'viewport_recovery',
     'prototype_character',
     'prototype_app',
+    'home_entry',
   ],
   'challenge.html': [
     'prototype_common_data',
@@ -93,7 +98,7 @@ const HTML_STYLE_MAP = {
 await mkdir('dist', { recursive: true });
 await mkdir('assets/vendor', { recursive: true });
 
-await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_common_data|prototype_english_common_data|challenge_game|live_challenge|live_ops|question_ops|prototype_character|prototype_app)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
+await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_common_data|prototype_english_common_data|challenge_game|live_challenge|live_ops|question_ops|prototype_character|prototype_app|home_entry)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
 await removeGeneratedFiles('dist', /^(accessibility|question-card|legal)-[a-f0-9]+\.css$/i);
 await removeGeneratedFiles('assets/vendor', /^react(?:-dom)?\.production\.min(?:-[a-f0-9]+)?\.js$/i);
 
@@ -163,10 +168,70 @@ for (const [htmlPath, entryNames] of Object.entries(HTML_STYLE_MAP)) {
   for (const entryName of entryNames) {
     const stylePath = stylePaths[entryName];
     if (!stylePath) throw new Error(`Missing generated stylesheet for ${entryName}`);
-    html = replaceTaggedAsset(html, 'link', 'data-build-style', entryName, 'href', stylePath);
+    if (['index.html', 'challenge.html', 'live_challenge.html'].includes(htmlPath)) {
+      const { code } = await transform(await readFile(STYLE_ENTRIES[entryName], 'utf8'), { loader: 'css', minify: true });
+      const styleMarker = new RegExp(`<link[^>]*data-build-style="${entryName}"[^>]*>|<style data-build-style="${entryName}">[\\s\\S]*?<\\/style>`);
+      if (!styleMarker.test(html)) throw new Error(`Missing inline style marker for ${entryName}`);
+      html = html.replace(styleMarker, `<style data-build-style="${entryName}">${code}</style>`);
+    } else {
+      html = replaceTaggedAsset(html, 'link', 'data-build-style', entryName, 'href', stylePath);
+    }
   }
   await writeFile(htmlPath, html);
 }
+
+// Render the existing homepage component at build time, so its LCP image and
+// text can paint before React and analytics finish loading on a slow phone.
+const prerenderBundle = await build({
+  stdin: {
+    contents: "import './prototype_character.jsx'; export { TopPage } from './prototype_app.jsx';",
+    resolveDir: process.cwd(),
+    loader: 'jsx',
+  },
+  bundle: true,
+  format: 'iife',
+  globalName: 'HomePrerender',
+  write: false,
+  platform: 'node',
+});
+const renderContext = vm.createContext({ React });
+renderContext.window = renderContext;
+vm.runInContext(prerenderBundle.outputFiles[0].text, renderContext);
+const homeMarkup = renderToString(React.createElement(renderContext.HomePrerender.TopPage));
+let homeHtml = await readFile('index.html', 'utf8');
+homeHtml = homeHtml.replace(
+  /<div id="root"[^>]*>[\s\S]*?<\/div>(?:<!-- \/home-prerender -->)?\s*(?=<script data-build-entry="viewport_recovery")/,
+  `<div id="root" aria-live="polite" data-prerendered="top">${homeMarkup}</div><!-- /home-prerender -->\n\n`,
+);
+const homeText = homeMarkup.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, '');
+const fontText = [...new Set([...homeText, ...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'])].sort().join('');
+const homeFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..900&display=swap&text=' + encodeURIComponent(fontText);
+const fontKey = createHash('sha256').update(homeFontUrl).digest('hex').slice(0, 12);
+const fontPath = `assets/fonts/NotoSansJP-home-${fontKey}.woff2`;
+try {
+  await readFile(fontPath);
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+  const cssResponse = await fetch(homeFontUrl, {
+    headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36' },
+  });
+  if (!cssResponse.ok) throw new Error(`Home font CSS: ${cssResponse.status}`);
+  const fontCss = await cssResponse.text();
+  const fontUrl = fontCss.match(/src:\s*url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/)?.[1];
+  if (!fontUrl) throw new Error('Home font source missing');
+  const fontResponse = await fetch(fontUrl);
+  if (!fontResponse.ok) throw new Error(`Home font: ${fontResponse.status}`);
+  const fontBytes = Buffer.from(await fontResponse.arrayBuffer());
+  if (fontBytes.subarray(0, 4).toString() !== 'wOF2') throw new Error('Home font must be WOFF2');
+  await writeFile(fontPath, fontBytes);
+}
+const homeFontCss = `@font-face{font-family:"Noto Sans JP";font-style:normal;font-weight:400 900;font-display:swap;src:url("/${fontPath}") format("woff2")}\n`;
+const homeFontCssHash = createHash('sha256').update(homeFontCss).digest('hex').slice(0, 12);
+const homeFontCssPath = `dist/home-font-${homeFontCssHash}.css`;
+await writeFile(homeFontCssPath, homeFontCss);
+homeHtml = homeHtml.replace(/(<link id="brand-font-styles" href=")[^"]+/, `$1/${homeFontCssPath}`);
+homeHtml = homeHtml.replace(/(<noscript id="brand-font-fallback"><link href=")[^"]+/, `$1/${homeFontCssPath}`);
+await writeFile('index.html', homeHtml);
 
 async function removeGeneratedFiles(directory, pattern) {
   const files = await readdir(directory);

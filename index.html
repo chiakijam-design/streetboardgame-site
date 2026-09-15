@@ -27,7 +27,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
 <link rel="manifest" href="/manifest.webmanifest" />
-<link rel="preload" as="image" href="/assets/character/girl-full-960.webp" imagesrcset="/assets/character/girl-full-480.webp 326w, /assets/character/girl-full-960.webp 652w, /assets/character/girl-full.webp 2088w" imagesizes="210px" type="image/webp" fetchpriority="high" />
+<link rel="preload" as="image" href="/assets/character/girl-full-422.webp" imagesrcset="/assets/character/girl-full-480.webp 326w, /assets/character/girl-full-422.webp 422w, /assets/character/girl-full-652.webp 652w, /assets/character/girl-full.webp 2088w" imagesizes="211px" type="image/webp" fetchpriority="high" />
 
 <!-- =========================
   OGP (SNSシェア用)
@@ -132,7 +132,7 @@
 </script>
 
 <!-- GTM経由のGA4は本番ドメインかつ、このブラウザが計測除外でない場合だけ読み込む -->
-<script src="/analytics.js"></script>
+<script defer src="/analytics.js"></script>
 
 <!-- 現行の共通ページだけを同じHTMLから描画する。 -->
 <script>
@@ -189,17 +189,29 @@
 ========================= -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link id="brand-font-styles" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800;900&display=swap" rel="stylesheet" media="print">
+<link id="brand-font-styles" href="/dist/home-font-e78f45bebc07.css" rel="stylesheet" media="print">
 <script>
   (function() {
     var brandFontStyles = document.getElementById('brand-font-styles');
     if (!brandFontStyles) return;
+    if (window.__INITIAL_SCREEN && window.__INITIAL_SCREEN !== 'top') {
+      document.documentElement.dataset.initialScreen = window.__INITIAL_SCREEN;
+      brandFontStyles.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..900&display=swap';
+    }
     var activateBrandFonts = function() { brandFontStyles.media = 'all'; };
-    if (brandFontStyles.sheet) activateBrandFonts();
-    else brandFontStyles.addEventListener('load', activateBrandFonts, { once: true });
+    var scheduleBrandFonts = function() {
+      if (window.__INITIAL_SCREEN && window.__INITIAL_SCREEN !== 'top') return activateBrandFonts();
+      var afterContent = function() {
+        requestAnimationFrame(function() { requestAnimationFrame(activateBrandFonts); });
+      };
+      if (document.readyState === 'complete') afterContent();
+      else window.addEventListener('load', afterContent, { once: true });
+    };
+    if (brandFontStyles.sheet) scheduleBrandFonts();
+    else brandFontStyles.addEventListener('load', scheduleBrandFonts, { once: true });
   })();
 </script>
-<noscript id="brand-font-fallback"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800;900&display=swap" rel="stylesheet"></noscript>
+<noscript id="brand-font-fallback"><link href="/dist/home-font-e78f45bebc07.css" rel="stylesheet"></noscript>
 
 <style>
   html, body { margin: 0; padding: 0; width: 100%; max-width: 100%; min-height: 100%; overflow-x: hidden; }
@@ -221,6 +233,7 @@
     touch-action: pan-y pinch-zoom;
     -webkit-overflow-scrolling: touch;
   }
+  html[data-initial-screen] #root[data-prerendered="top"] { visibility: hidden; }
   * { box-sizing: border-box; }
   img { max-width: 100%; }
   button, a {
@@ -234,28 +247,163 @@
     input, select, textarea { font-size: 16px !important; }
   }
 </style>
-<link rel="stylesheet" data-build-style="accessibility" href="/dist/accessibility-f853825a2972.css" />
-<link rel="stylesheet" data-build-style="question_card" href="/dist/question-card-c1f3d5073898.css" />
+<style data-build-style="accessibility">body{font-size:14px}body :where(p,li,label,summary,td,th,dd,dt){font-size:14px!important}body :where(small,.help,.note,.meta,.eyebrow,.badge,.pill,.hint,.caption,.disclaimer,.challenge-note,.challenge-builder-help,.challenge-pill,.challenge-q-number,.footer){font-size:12px!important}button,input[type=button],input[type=submit],input[type=reset],[role=button],.button,.btn,.primary,.secondary,.danger,.mini,.tab,.challenge-primary,.challenge-secondary,.challenge-share{min-height:44px!important;font-size:16px!important}input:not([type=checkbox]):not([type=radio]),select,textarea{min-height:44px;font-size:16px!important}input[type=checkbox],input[type=radio]{min-width:24px;min-height:24px}label:has(input[type=checkbox]),label:has(input[type=radio]){min-height:44px}:where(.home-link,.back,.challenge-top a,.challenge-feature-nav a,.legal-nav a,footer a){min-height:44px!important}:where(.home-link,.back,.challenge-top a,.challenge-feature-nav a){font-size:16px!important}footer a{display:inline-flex;align-items:center;justify-content:center}.challenge-color-choice span{font-size:16px!important}.challenge-answer-pad-heading small,.challenge-answer-pad>p,.challenge-choice small,.result-row,.invite-step p,.viewer-entry-heading p,.amazon-product-card small,.amazon-product-card .product-description{font-size:12px!important}@media (max-width: 420px){button,[role=button],.button,.btn,.primary,.secondary,.danger,.mini,.tab,.challenge-primary,.challenge-secondary,.challenge-share{line-height:1.35}}
+</style>
+<style data-build-style="question_card">@font-face{font-family:HuiFontP29;src:url(/assets/fonts/HuiFontP29.woff2?v=20260727-font-1) format("woff2");font-style:normal;font-weight:400;font-display:swap}@font-face{font-family:HuiFontP29Home;src:url(/assets/fonts/HuiFontP29-home.woff2?v=20260902-home-1) format("woff2");font-style:normal;font-weight:400;font-display:swap}.notebook-question-card{position:relative;display:block;width:min(100%,clamp(218px,34dvh,300px))!important;min-height:0!important;aspect-ratio:756 / 1122!important;margin-inline:auto;overflow:hidden;padding:0!important;border:3px solid #fff!important;border-radius:18px!important;background:#fff!important;box-shadow:0 14px 30px #45102857!important}.notebook-question-card:before,.notebook-question-card:after{content:none!important}.notebook-question-card-visual{display:block;width:100%;height:100%}.notebook-question-card-visual{object-fit:cover}.notebook-question-card-copy{font-family:HuiFontP29,Noto Sans JP,sans-serif!important;font-weight:400}.top-question-card .notebook-question-card-copy{font-family:HuiFontP29Home,Noto Sans JP,sans-serif!important}.live-active-question,.live-active-question *{font-family:HuiFontP29,Noto Sans JP,sans-serif!important}.notebook-card-accessible-title,.notebook-card-counter,.notebook-card-accessible-choices{position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;white-space:nowrap!important}@media (max-width: 380px){.notebook-question-card{width:100%!important}}
+</style>
 
 <!-- React runtime. JSX is precompiled into dist/*.js during development. -->
-<script data-build-entry="react" defer src="/assets/vendor/react.production.min-d949f1c3687a.js"></script>
-<script data-build-entry="react_dom" defer src="/assets/vendor/react-dom.production.min-35f4f974f4b2.js"></script>
+<script data-build-entry="react" type="application/x-page-script" src="/assets/vendor/react.production.min-d949f1c3687a.js"></script>
+<script data-build-entry="react_dom" type="application/x-page-script" src="/assets/vendor/react-dom.production.min-35f4f974f4b2.js"></script>
 </head>
 <body>
-<noscript>
-  <main style="max-width: 720px; margin: 32px auto; padding: 24px; font-family: 'Noto Sans JP', sans-serif; line-height: 1.8; color: #1A1A1A; background: #FFFFFF;">
-    <h1>わたし理解度診断｜私のこと、ちゃんと分かってるよね？</h1>
-    <p>自分で選んだ10問から「わたし理解度診断」を作れます。通常版とLIVE版の2つから選べます。</p>
-    <p>友達向けの通常版は、URLを送って好きな時間に回答。LIVE版は、配信者と視聴者が同じ問題へ同時回答し、1問ずつ答え合わせします。</p>
-    <p><a href="/challenge">みんなに挑戦してもらうクイズを作る</a> / <a href="/live-challenge">ライブ配信用クイズを作る</a> / <a href="/challenge-guide">遊び方を見る</a> / <a href="/about">About</a></p>
-    <p><a href="/pricing">商品・料金</a> / <a href="/terms">利用規約</a> / <a href="/legal">特定商取引法に基づく表記</a></p>
-  </main>
-</noscript>
-<div id="root" aria-live="polite"></div>
+<div id="root" aria-live="polite" data-prerendered="top"><main aria-labelledby="site-title" style="width:100%;max-width:600px;min-height:100dvh;margin:0 auto;background:#EC4F88;color:#1A1A1A;font-family:&quot;Noto Sans JP&quot;, sans-serif;position:relative;overflow:hidden"><div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 12% 10%,rgba(255,255,255,.2) 0 5px,transparent 6px),radial-gradient(circle at 88% 20%,rgba(255,255,255,.15) 0 4px,transparent 5px)"></div><h1 id="site-title" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">わたし理解度診断｜私のこと、ちゃんと分かってるよね？</h1><section style="padding:50px 20px 20px;text-align:center;position:relative;z-index:1"><span style="display:inline-flex;min-height:32px;align-items:center;padding:5px 14px;border-radius:999px;border:2px solid currentColor;color:#FFFFFF;font-family:&quot;Noto Sans JP&quot;, sans-serif;font-size:11px;letter-spacing:.12em;font-weight:900">わたし理解度診断</span><div style="margin-top:26px"><div style="color:#FFFFFF;font-family:&quot;Noto Sans JP&quot;, sans-serif;font-size:clamp(34px,10vw,48px);line-height:1.2;text-shadow:4px 4px 0 #5BD4E8">私のこと、</div><div style="color:#FFFFFF;font-family:&quot;Noto Sans JP&quot;, sans-serif;font-size:clamp(34px,10vw,48px);line-height:1.2;text-shadow:4px 4px 0 #5BD4E8">ちゃんと</div><div style="color:#FFFFFF;font-family:&quot;Noto Sans JP&quot;, sans-serif;font-size:clamp(34px,10vw,48px);line-height:1.2;text-shadow:4px 4px 0 #5BD4E8">分かってるよね？</div></div><p style="margin:14px 0 0;color:#FFFFFF;opacity:0.85;font-family:&quot;Noto Sans JP&quot;, sans-serif;font-size:10px;letter-spacing:.2em">STREET BOARD GAME / vol.01</p></section><div data-testid="top-character-visual" style="min-height:315px;padding:4px 14px 20px;display:flex;align-items:flex-end;justify-content:center;position:relative;z-index:1"><div style="width:42%;max-width:210px;margin-right:-42px;z-index:2"><picture style="display:block"><source srcSet="assets/character/girl-full-480.webp 326w, assets/character/girl-full-422.webp 422w, assets/character/girl-full-652.webp 652w, assets/character/girl-full.webp 2088w" sizes="211px" type="image/webp"/><img src="assets/character/girl-full-960.webp" alt="わたし理解度診断のメインキャラクター" width="211" height="310" loading="eager" decoding="async" fetchpriority="high" style="width:211px;height:310px;display:block;transform:none;pointer-events:none;user-select:none;max-width:none" draggable="false"/></picture></div><div aria-hidden="true" style="position:relative;width:58%;max-width:300px;height:215px"><div class="top-question-card" data-testid="top-question-card" style="position:absolute;top:22px;left:0;width:118px;aspect-ratio:756 / 1122;overflow:hidden;transform:rotate(-8deg);z-index:1;border:3px solid #fff;border-radius:10px;background:#fff;box-shadow:0 12px 24px rgba(0,0,0,.25);color:#1A1A1A"><svg
+    class="notebook-question-card-visual"
+    viewBox="0 0 756 1122"
+    width="756"
+    height="1122"
+    role="img"
+    aria-label="休日にしたいこと"
+  >
+    <title>休日にしたいこと</title>
+    <defs>
+      <filter id="notebook-card-1-dot-shadow" x="-35%" y="-35%" width="170%" height="170%">
+        <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity=".24"/>
+      </filter>
+      <linearGradient id="notebook-card-1-curl" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#D8D8D8"/>
+        <stop offset=".48" stop-color="#FFFFFF"/>
+        <stop offset="1" stop-color="#C8C8C8"/>
+      </linearGradient>
+    </defs>
+    <rect width="756" height="1122" fill="#FFFFFF"/>
+    <path d="M 0 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 63 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 126 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 189 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 252 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 315 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 378 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 441 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 504 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 567 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 630 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 693 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0" fill="#EF6E9B"/>
+    <line x1="137" y1="0" x2="137" y2="1122" stroke="#EFABB0" stroke-width="2"/>
+    <path d="M 0 40 H 756 M 0 113 H 756 M 0 186 H 756 M 0 260 H 756 M 0 333 H 756 M 0 407 H 756 M 0 480 H 756 M 0 553 H 756 M 0 627 H 756 M 0 701 H 756 M 0 773 H 756 M 0 848 H 756 M 0 922 H 756 M 0 996 H 756 M 0 1068 H 756" fill="none" stroke="#9DD0E5" stroke-width="4"/>
+    <path d="M68 55 L690 55 L681 198 L66 198 Z" fill="#75C7E6" opacity=".9"/>
+    <g class="notebook-question-card-copy" fill="#111111">
+      <text class="notebook-question-card-title" x="378" y="132" font-size="50" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="378" dy="0">休日にしたいこと</tspan>
+  </text>
+      <circle cx="76" cy="296" r="42" fill="#7BB661" filter="url(#notebook-card-1-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="296" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">動画を見る</tspan>
+  </text><circle cx="76" cy="444" r="42" fill="#3B6FB5" filter="url(#notebook-card-1-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="444" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">買い物</tspan>
+  </text><circle cx="76" cy="590" r="42" fill="#F0C53D" filter="url(#notebook-card-1-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="590" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">ゲーム</tspan>
+  </text><circle cx="76" cy="739" r="42" fill="#C8323C" filter="url(#notebook-card-1-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="739" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">外へ行く</tspan>
+  </text><circle cx="76" cy="885" r="42" fill="#E88A3C" filter="url(#notebook-card-1-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="885" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">のんびり</tspan>
+  </text>
+    </g>
+    <path d="M690 920 C726 932 750 1005 738 1122 L650 1122 C667 1055 677 982 690 920 Z" fill="url(#notebook-card-1-curl)" opacity=".94"/>
+    <path d="M681 932 C716 953 731 1015 725 1122" stroke="rgba(0,0,0,.12)" stroke-width="4" fill="none"/>
+  </svg><ol class="notebook-card-accessible-choices"><li>動画を見る</li><li>買い物</li><li>ゲーム</li><li>外へ行く</li><li>のんびり</li></ol></div><div class="top-question-card" data-testid="top-question-card" style="position:absolute;top:0;left:28%;width:118px;aspect-ratio:756 / 1122;overflow:hidden;transform:rotate(4deg);z-index:3;border:3px solid #fff;border-radius:10px;background:#fff;box-shadow:0 12px 24px rgba(0,0,0,.25);color:#1A1A1A"><svg
+    class="notebook-question-card-visual"
+    viewBox="0 0 756 1122"
+    width="756"
+    height="1122"
+    role="img"
+    aria-label="今ほしいもの"
+  >
+    <title>今ほしいもの</title>
+    <defs>
+      <filter id="notebook-card-2-dot-shadow" x="-35%" y="-35%" width="170%" height="170%">
+        <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity=".24"/>
+      </filter>
+      <linearGradient id="notebook-card-2-curl" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#D8D8D8"/>
+        <stop offset=".48" stop-color="#FFFFFF"/>
+        <stop offset="1" stop-color="#C8C8C8"/>
+      </linearGradient>
+    </defs>
+    <rect width="756" height="1122" fill="#FFFFFF"/>
+    <path d="M 0 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 63 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 126 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 189 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 252 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 315 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 378 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 441 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 504 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 567 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 630 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 693 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0" fill="#EF6E9B"/>
+    <line x1="137" y1="0" x2="137" y2="1122" stroke="#EFABB0" stroke-width="2"/>
+    <path d="M 0 40 H 756 M 0 113 H 756 M 0 186 H 756 M 0 260 H 756 M 0 333 H 756 M 0 407 H 756 M 0 480 H 756 M 0 553 H 756 M 0 627 H 756 M 0 701 H 756 M 0 773 H 756 M 0 848 H 756 M 0 922 H 756 M 0 996 H 756 M 0 1068 H 756" fill="none" stroke="#9DD0E5" stroke-width="4"/>
+    <path d="M68 55 L690 55 L681 198 L66 198 Z" fill="#75C7E6" opacity=".9"/>
+    <g class="notebook-question-card-copy" fill="#111111">
+      <text class="notebook-question-card-title" x="378" y="132" font-size="50" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="378" dy="0">今ほしいもの</tspan>
+  </text>
+      <circle cx="76" cy="296" r="42" fill="#7BB661" filter="url(#notebook-card-2-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="296" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">時間</tspan>
+  </text><circle cx="76" cy="444" r="42" fill="#3B6FB5" filter="url(#notebook-card-2-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="444" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">旅行</tspan>
+  </text><circle cx="76" cy="590" r="42" fill="#F0C53D" filter="url(#notebook-card-2-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="590" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">服</tspan>
+  </text><circle cx="76" cy="739" r="42" fill="#C8323C" filter="url(#notebook-card-2-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="739" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">ごほうび</tspan>
+  </text><circle cx="76" cy="885" r="42" fill="#E88A3C" filter="url(#notebook-card-2-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="885" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">睡眠</tspan>
+  </text>
+    </g>
+    <path d="M690 920 C726 932 750 1005 738 1122 L650 1122 C667 1055 677 982 690 920 Z" fill="url(#notebook-card-2-curl)" opacity=".94"/>
+    <path d="M681 932 C716 953 731 1015 725 1122" stroke="rgba(0,0,0,.12)" stroke-width="4" fill="none"/>
+  </svg><ol class="notebook-card-accessible-choices"><li>時間</li><li>旅行</li><li>服</li><li>ごほうび</li><li>睡眠</li></ol></div><div class="top-question-card" data-testid="top-question-card" style="position:absolute;top:30px;left:52%;width:118px;aspect-ratio:756 / 1122;overflow:hidden;transform:rotate(-3deg);z-index:2;border:3px solid #fff;border-radius:10px;background:#fff;box-shadow:0 12px 24px rgba(0,0,0,.25);color:#1A1A1A"><svg
+    class="notebook-question-card-visual"
+    viewBox="0 0 756 1122"
+    width="756"
+    height="1122"
+    role="img"
+    aria-label="好きな食べもの"
+  >
+    <title>好きな食べもの</title>
+    <defs>
+      <filter id="notebook-card-3-dot-shadow" x="-35%" y="-35%" width="170%" height="170%">
+        <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity=".24"/>
+      </filter>
+      <linearGradient id="notebook-card-3-curl" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#D8D8D8"/>
+        <stop offset=".48" stop-color="#FFFFFF"/>
+        <stop offset="1" stop-color="#C8C8C8"/>
+      </linearGradient>
+    </defs>
+    <rect width="756" height="1122" fill="#FFFFFF"/>
+    <path d="M 0 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 63 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 126 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 189 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 252 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 315 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 378 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 441 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 504 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 567 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 630 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 M 693 -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0" fill="#EF6E9B"/>
+    <line x1="137" y1="0" x2="137" y2="1122" stroke="#EFABB0" stroke-width="2"/>
+    <path d="M 0 40 H 756 M 0 113 H 756 M 0 186 H 756 M 0 260 H 756 M 0 333 H 756 M 0 407 H 756 M 0 480 H 756 M 0 553 H 756 M 0 627 H 756 M 0 701 H 756 M 0 773 H 756 M 0 848 H 756 M 0 922 H 756 M 0 996 H 756 M 0 1068 H 756" fill="none" stroke="#9DD0E5" stroke-width="4"/>
+    <path d="M68 55 L690 55 L681 198 L66 198 Z" fill="#75C7E6" opacity=".9"/>
+    <g class="notebook-question-card-copy" fill="#111111">
+      <text class="notebook-question-card-title" x="378" y="132" font-size="50" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="378" dy="0">好きな食べもの</tspan>
+  </text>
+      <circle cx="76" cy="296" r="42" fill="#7BB661" filter="url(#notebook-card-3-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="296" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">お寿司</tspan>
+  </text><circle cx="76" cy="444" r="42" fill="#3B6FB5" filter="url(#notebook-card-3-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="444" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">焼き肉</tspan>
+  </text><circle cx="76" cy="590" r="42" fill="#F0C53D" filter="url(#notebook-card-3-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="590" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">とんかつ</tspan>
+  </text><circle cx="76" cy="739" r="42" fill="#C8323C" filter="url(#notebook-card-3-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="739" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">ラーメン</tspan>
+  </text><circle cx="76" cy="885" r="42" fill="#E88A3C" filter="url(#notebook-card-3-dot-shadow)"/>
+          <text class="notebook-question-card-choice" x="406" y="885" font-size="42" text-anchor="middle" dominant-baseline="middle">
+    <tspan x="406" dy="0">パンケーキ</tspan>
+  </text>
+    </g>
+    <path d="M690 920 C726 932 750 1005 738 1122 L650 1122 C667 1055 677 982 690 920 Z" fill="url(#notebook-card-3-curl)" opacity=".94"/>
+    <path d="M681 932 C716 953 731 1015 725 1122" stroke="rgba(0,0,0,.12)" stroke-width="4" fill="none"/>
+  </svg><ol class="notebook-card-accessible-choices"><li>お寿司</li><li>焼き肉</li><li>とんかつ</li><li>ラーメン</li><li>パンケーキ</li></ol></div></div></div><section data-testid="top-common-rules" aria-labelledby="rules-title" style="margin:0 24px 22px;padding:18px 16px 16px;position:relative;z-index:1;background:linear-gradient(160deg, #FFD6E5 0%, #FFEAF1 100%);color:#1A1A1A;border:3px solid #1A1A1A;border-radius:18px;box-shadow:5px 5px 0 #D63A75"><h2 id="rules-title" style="margin:0;text-align:center;font-size:clamp(14px, 4.2vw, 18px);line-height:1.5"><span data-testid="top-rules-title-line" style="display:block;white-space:nowrap">あなたの「わたし理解度診断」を</span><span data-testid="top-rules-title-line" style="display:block;white-space:nowrap">作って、みんなに挑戦してもらおう</span></h2><ol style="display:grid;gap:8px;margin:14px 0 0;padding:0;list-style:none"><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#5BD4E8;color:#1A1A1A">1</b><span>あなたが、出題する10問を選ぶ・作る</span></li><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#EC4F88;color:#FFFFFF">2</b><span>自分の正解を選ぶ</span></li><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#FFE26B;color:#1A1A1A">3</b><span>URL・QRコードで友達に問題を送信</span></li><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#FFFFFF;color:#1A1A1A">4</b><span>何問正解かでみんなの理解度を診断</span></li></ol><form style="display:grid;gap:10px;margin-top:16px;padding-top:14px;border-top:2px dashed #1A1A1A"><label for="top-creator-name" style="font-size:12px;font-weight:900">あなたの名前（12文字まで）</label><input id="top-creator-name" maxLength="12" autoComplete="nickname" placeholder="例：ちあき" aria-invalid="false" style="width:100%;min-height:50px;padding:11px 14px;border:2.5px solid #1A1A1A;border-radius:12px;background:#FFFFFF;color:#1A1A1A;font-family:&quot;Noto Sans JP&quot;, sans-serif;font-size:16px;font-weight:800;box-shadow:2px 2px 0 #000;outline:none" value=""/><div data-testid="top-mode-pillars" style="display:grid;gap:10px;margin-top:8px"><button type="submit" aria-label="10問を作り始める" style="width:100%;min-height:60px;padding:14px 16px;align-items:center;justify-content:center;gap:6px;border:2.5px solid #1A1A1A;border-radius:14px;background:#1A1A1A;color:#FFFFFF;box-shadow:4px 4px 0 #5BD4E8;font-family:&quot;Noto Sans JP&quot;, sans-serif;font-size:16px;font-weight:800;line-height:1.35;text-align:center;cursor:pointer">10問を作り始める<span aria-hidden="true">▶</span></button><p style="margin:-2px 0 2px;text-align:center;font-size:12px;font-weight:800;line-height:1.5">通常版｜URLを送って、好きな時間に回答</p><section data-testid="top-live-secondary" style="display:grid;gap:7px;margin-top:4px;padding-top:12px;border-top:2px dashed #1A1A1A;text-align:center"><p style="margin:0;font-size:12px;font-weight:900">ライブ配信で使う方はこちら</p><button type="button" data-home-mode="live" aria-label="LIVE版で作る" style="width:100%;min-height:48px;padding:10px 14px;border:2.5px solid #1A1A1A;border-radius:12px;background:#FFFFFF;color:#1A1A1A;box-shadow:3px 3px 0 #FFE26B;font-family:&quot;Noto Sans JP&quot;, sans-serif;font-size:14px;font-weight:900;line-height:1.35;text-align:center;cursor:pointer">LIVE版で作る</button><p style="margin:0;font-size:12px;font-weight:800;line-height:1.55">配信者と視聴者が同時回答し、1問ずつ答え合わせ</p><p data-testid="live-age-notice" style="margin:8px 0 1px;padding:9px 10px;border:2px solid #1A1A1A;border-radius:10px;background:#FFF9D7;color:#1A1A1A;font-size:12px;line-height:1.6;text-align:left;font-weight:900">⚠️ <!-- -->配信サービスごとの年齢・保護者同意ルールを確認してください。YouTubeで配信を開始できるのは原則16歳以上です。</p></section></div></form></section><nav aria-label="ゲームシリーズの紹介ページ" style="padding:4px 24px 0;position:relative;z-index:1"><h2 style="margin:0 0 10px;color:#FFFFFF;font-size:14px">まずはどんなゲームか知りたい</h2><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><a href="/challenge-guide" style="min-height:112px;padding:12px;border-radius:14px;border:2px solid #FFE26B;box-shadow:3px 3px 0 #000;background:rgba(255,255,255,.2);color:#FFFFFF;text-align:center;text-decoration:none"><div style="font-size:28px">📣</div><div style="margin-top:4px;font-size:12px;font-weight:900;line-height:1.5">みんなに挑戦してもらう</div><span style="display:inline-block;margin-top:7px;padding:3px 8px;border-radius:999px;background:#FFE26B;color:#1A1A1A;font-size:10px;font-weight:900">10問・最大50人</span></a><a href="/live-challenge" style="min-height:112px;padding:12px;border-radius:14px;border:2px solid #FFE26B;box-shadow:3px 3px 0 #000;background:rgba(255,255,255,.2);color:#FFFFFF;text-align:center;text-decoration:none"><div style="font-size:28px">🎙️</div><div style="margin-top:4px;font-size:12px;font-weight:900;line-height:1.5">ライブ配信でみんなに挑戦してもらう</div><span style="display:inline-block;margin-top:7px;padding:3px 8px;border-radius:999px;background:#FFE26B;color:#1A1A1A;font-size:10px;font-weight:900">10問・最大1,000人</span></a></div></nav><p style="margin:16px 24px 0;text-align:center;position:relative;z-index:1"><a data-testid="top-pricing-link" href="/pricing" style="color:#FFFFFF;font-size:13px;font-weight:800;line-height:1.8">商品・料金を見る（通常版無料／LIVE版は任意購入）</a></p><footer style="padding:24px 20px 32px;display:flex;justify-content:center;flex-wrap:wrap;gap:10px 18px;position:relative;z-index:1"><a href="/challenge" style="color:#FFFFFF;font-size:12px;font-weight:800">通常版</a><a href="/live-challenge" style="color:#FFFFFF;font-size:12px;font-weight:800">LIVE版</a><a href="/challenge-guide" style="color:#FFFFFF;font-size:12px;font-weight:800">遊び方</a><a href="/about" style="color:#FFFFFF;font-size:12px;font-weight:800">About</a><a href="/challenge/library" style="color:#FFFFFF;font-size:12px;font-weight:800">人気のお題</a><a href="/product" style="color:#FFFFFF;font-size:12px;font-weight:800">製品版</a><a href="/pricing" style="color:#FFFFFF;font-size:12px;font-weight:800">商品・料金</a><a href="/terms" style="color:#FFFFFF;font-size:12px;font-weight:800">利用規約</a><a href="/privacy" style="color:#FFFFFF;font-size:12px;font-weight:800">プライバシー</a><a href="/legal" style="color:#FFFFFF;font-size:12px;font-weight:800">特商法表記</a></footer></main></div><!-- /home-prerender -->
 
-<script data-build-entry="viewport_recovery" src="/dist/viewport_recovery-HHI3ISN7.js"></script>
-<script data-build-entry="prototype_character" defer src="/dist/prototype_character-WFUWNFSZ.js"></script>
-<script data-build-entry="prototype_app" defer src="/dist/prototype_app-2CNID6MC.js"></script>
+<script data-build-entry="viewport_recovery" defer src="/dist/viewport_recovery-HHI3ISN7.js"></script>
+<script data-build-entry="prototype_character" type="application/x-page-script" src="/dist/prototype_character-5ECBWOAI.js"></script>
+<script data-build-entry="prototype_app" type="application/x-page-script" src="/dist/prototype_app-PUIWJ6YT.js"></script>
+<script data-build-entry="home_entry" defer src="/dist/home_entry-ZQ4TQRG4.js"></script>
 <script defer src="/language_switch.js?v=20260727-tap-1"></script>
 </body>
 </html>

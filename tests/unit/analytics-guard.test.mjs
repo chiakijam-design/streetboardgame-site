@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const analyticsSource = await readFile(new URL('../../analytics.js', import.meta.url), 'utf8');
 
-function runAnalytics({ hostname, search = '', storedValue = null }) {
+function runAnalytics({ hostname, search = '', storedValue = null, readyState = 'complete', requestAnimationFrame }) {
   const storage = new Map();
   if (storedValue !== null) storage.set('watachan:analytics-excluded:v1', storedValue);
   const appendedScripts = [];
@@ -15,6 +15,7 @@ function runAnalytics({ hostname, search = '', storedValue = null }) {
   const locationUrl = new URL(`https://${urlHostname}/${search ? `?${search}` : ''}`);
 
   const windowObject = {
+    requestAnimationFrame,
     location: {
       href: locationUrl.href,
       hostname,
@@ -34,6 +35,7 @@ function runAnalytics({ hostname, search = '', storedValue = null }) {
     setTimeout: () => 1,
   };
   const documentObject = {
+    readyState,
     head: {
       appendChild: (element) => appendedScripts.push(element),
     },
@@ -112,6 +114,40 @@ test('ゲームイベントはGTM用dataLayerと専用GA4レイヤーの両方�
   assert.equal(result.windowObject.ga4EventLayer[3][2].game_type, 'challenge');
 });
 
+test('初期描画中は外部タグを待機し、最初のイベントを失わず一度だけ起動する', () => {
+  const result = runAnalytics({ hostname: 'www.streetboardgame.com', readyState: 'loading' });
+  assert.equal(result.appendedScripts.length, 0);
+  result.windowObject.trackEvent('game_start', { game_type: 'challenge' });
+  assert.equal(result.appendedScripts.length, 1);
+  assert.equal(result.windowObject.ga4EventLayer[3][1], 'game_start');
+  result.listeners.get('load')();
+  result.listeners.get('pointerdown')();
+  assert.equal(result.appendedScripts.length, 1);
+});
+
+test('操作がなくてもページ読込完了後に計測を開始する', () => {
+  const result = runAnalytics({ hostname: 'www.streetboardgame.com', readyState: 'loading' });
+  result.listeners.get('load')();
+  assert.equal(result.appendedScripts.length, 1);
+});
+
+test('外部タグは最初の描画機会を挟んで読み込み、先行操作があっても重複しない', () => {
+  for (const earlyInteraction of [false, true]) {
+    const frames = [];
+    const result = runAnalytics({
+      hostname: 'www.streetboardgame.com',
+      requestAnimationFrame: (callback) => frames.push(callback),
+    });
+    assert.equal(result.appendedScripts.length, 0);
+    frames.shift()();
+    assert.equal(result.appendedScripts.length, 0);
+    if (earlyInteraction) result.listeners.get('pointerdown')();
+    frames.shift()();
+    assert.equal(result.appendedScripts.length, 1);
+    assert.equal(result.windowObject.ga4EventLayer[2][0], 'config');
+  }
+});
+
 test('計測除外を永続保存し、本番ドメインでもGTMを読み込まない', () => {
   const firstVisit = runAnalytics({
     hostname: 'www.streetboardgame.com',
@@ -140,7 +176,7 @@ test('主要HTMLはGTMローダーを読み込み、運用・法務画面は読�
   ];
   for (const page of publicPages) {
     const html = await readFile(new URL(`../../${page}`, import.meta.url), 'utf8');
-    assert.match(html, /<script src="\/analytics\.js"><\/script>/, page);
+    assert.match(html, /<script(?: defer)? src="\/analytics\.js"><\/script>/, page);
   }
 
   const excludedPages = [
