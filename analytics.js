@@ -2,6 +2,8 @@
   'use strict';
 
   var containerId = 'GTM-5VMKFTGP';
+  var measurementId = 'G-X07PVDQWYX';
+  var eventLayerName = 'ga4EventLayer';
   var exclusionKey = 'watachan:analytics-excluded:v1';
   var productionHosts = ['streetboardgame.com', 'www.streetboardgame.com'];
   var preferenceParameter = 'analytics';
@@ -33,6 +35,7 @@
 
   windowObject.__WATACHAN_ANALYTICS_DISABLED__ = !analyticsEnabled;
   windowObject.__WATACHAN_GTM_CONTAINER_ID__ = containerId;
+  windowObject.__WATACHAN_GA4_MEASUREMENT_ID__ = measurementId;
   windowObject.analyticsEnabled = analyticsEnabled;
 
   if (analyticsEnabled) {
@@ -40,25 +43,47 @@
     windowObject.gtag = windowObject.gtag || function gtag() {
       windowObject.dataLayer.push(arguments);
     };
-    windowObject.gtag('set', {
+    var pageContext = {
       page_location: windowObject.location.origin + windowObject.location.pathname,
       page_path: windowObject.location.pathname
-    });
+    };
+    windowObject.gtag('set', pageContext);
+    windowObject[eventLayerName] = windowObject[eventLayerName] || [];
+    windowObject.ga4Event = windowObject.ga4Event || function ga4Event() {
+      windowObject[eventLayerName].push(arguments);
+    };
+    windowObject.ga4Event('js', new Date());
+    windowObject.ga4Event('set', pageContext);
+    windowObject.ga4Event('config', measurementId);
     windowObject.trackEvent = function trackEvent(name, params) {
-      windowObject.gtag('event', name, params || {});
+      windowObject.ga4Event('event', name, params || {});
     };
 
-    windowObject.dataLayer.push({
-      'gtm.start': new Date().getTime(),
-      event: 'gtm.js'
-    });
+    var gtmLoaded = false;
+    function loadGtm() {
+      if (gtmLoaded) return;
+      gtmLoaded = true;
+      windowObject.dataLayer.push({
+        'gtm.start': new Date().getTime(),
+        event: 'gtm.js'
+      });
+      var gtmScript = documentObject.createElement('script');
+      gtmScript.async = true;
+      gtmScript.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(containerId);
+      documentObject.head.appendChild(gtmScript);
+    }
 
-    var analyticsScript = documentObject.createElement('script');
-    analyticsScript.async = true;
-    analyticsScript.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(containerId);
-    documentObject.head.appendChild(analyticsScript);
+    var eventScript = documentObject.createElement('script');
+    eventScript.async = true;
+    eventScript.src = 'https://www.googletagmanager.com/gtag/js?id='
+      + encodeURIComponent(measurementId)
+      + '&l=' + encodeURIComponent(eventLayerName);
+    eventScript.addEventListener('load', loadGtm, { once: true });
+    eventScript.addEventListener('error', loadGtm, { once: true });
+    documentObject.head.appendChild(eventScript);
   } else {
     windowObject.gtag = function disabledGtag() {};
+    windowObject.ga4Event = function disabledGa4Event() {};
     windowObject.trackEvent = function disabledTrackEvent() {};
   }
 

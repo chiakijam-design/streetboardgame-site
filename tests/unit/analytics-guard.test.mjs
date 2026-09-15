@@ -40,11 +40,16 @@ function runAnalytics({ hostname, search = '', storedValue = null }) {
     body: {
       appendChild: () => {},
     },
-    createElement: () => ({
-      setAttribute: () => {},
-      remove: () => {},
-      style: {},
-    }),
+    createElement: () => {
+      const elementListeners = new Map();
+      return {
+        setAttribute: () => {},
+        addEventListener: (type, listener) => elementListeners.set(type, listener),
+        remove: () => {},
+        style: {},
+        listeners: elementListeners,
+      };
+    },
   };
 
   vm.runInNewContext(analyticsSource, {
@@ -66,21 +71,43 @@ test('127.0.0.1、::1、プレビュー環境ではGTMスクリプトを読み�
   }
 });
 
-test('本番ドメインだけでGTMを読み込み、URLのクエリをGA4設定へ渡さない', () => {
+test('本番ドメインだけでGA4イベント送信とGTMを読み込み、URLのクエリを渡さない', () => {
   for (const hostname of ['streetboardgame.com', 'www.streetboardgame.com']) {
     const result = runAnalytics({ hostname });
     assert.equal(result.windowObject.__WATACHAN_ANALYTICS_DISABLED__, false);
     assert.equal(result.windowObject.__WATACHAN_GTM_CONTAINER_ID__, 'GTM-5VMKFTGP');
+    assert.equal(result.windowObject.__WATACHAN_GA4_MEASUREMENT_ID__, 'G-X07PVDQWYX');
     assert.equal(result.appendedScripts.length, 1);
     assert.equal(
       result.appendedScripts[0].src,
-      'https://www.googletagmanager.com/gtm.js?id=GTM-5VMKFTGP',
+      'https://www.googletagmanager.com/gtag/js?id=G-X07PVDQWYX&l=ga4EventLayer',
     );
     assert.equal(result.windowObject.dataLayer[0][0], 'set');
     assert.equal(result.windowObject.dataLayer[0][1].page_location, `https://${hostname}/`);
     assert.equal(result.windowObject.dataLayer[0][1].page_path, '/');
+    assert.equal(result.windowObject.ga4EventLayer[0][0], 'js');
+    assert.equal(result.windowObject.ga4EventLayer[1][0], 'set');
+    assert.equal(result.windowObject.ga4EventLayer[1][1].page_location, `https://${hostname}/`);
+    assert.equal(result.windowObject.ga4EventLayer[2][0], 'config');
+    assert.equal(result.windowObject.ga4EventLayer[2][1], 'G-X07PVDQWYX');
+
+    result.appendedScripts[0].listeners.get('load')();
+    assert.equal(result.appendedScripts.length, 2);
+    assert.equal(
+      result.appendedScripts[1].src,
+      'https://www.googletagmanager.com/gtm.js?id=GTM-5VMKFTGP',
+    );
     assert.equal(result.windowObject.dataLayer[1].event, 'gtm.js');
   }
+});
+
+test('ゲームイベントはGTM用dataLayerではなく専用GA4レイヤーへ送る', () => {
+  const result = runAnalytics({ hostname: 'www.streetboardgame.com' });
+  result.windowObject.trackEvent('game_start', { game_type: 'challenge' });
+  assert.equal(result.windowObject.dataLayer.length, 1);
+  assert.equal(result.windowObject.ga4EventLayer[3][0], 'event');
+  assert.equal(result.windowObject.ga4EventLayer[3][1], 'game_start');
+  assert.equal(result.windowObject.ga4EventLayer[3][2].game_type, 'challenge');
 });
 
 test('計測除外を永続保存し、本番ドメインでもGTMを読み込まない', () => {
