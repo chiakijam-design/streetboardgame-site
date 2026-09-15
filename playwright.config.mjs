@@ -18,6 +18,10 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 13'], browserName: 'webkit' },
+    },
+    {
       name: 'desktop-chrome',
       use: { ...devices['Desktop Chrome'], channel: process.env.CI ? undefined : 'chrome' },
     },

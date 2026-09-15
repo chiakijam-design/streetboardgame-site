@@ -3,6 +3,7 @@ import { handleChallengeApi } from './src/challenge/api.js';
 import { handleQuestionApi } from './src/questions/api.js';
 import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 import { runSocialPublishing } from './src/social/publisher.js';
+import { infoPageMarkup } from './src/generated/info-pages.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
@@ -397,7 +398,11 @@ async function handleRequest(request, env) {
       const html = await response.text();
       const headers = new Headers(response.headers);
       headers.set('content-type', 'text/html; charset=UTF-8');
-      return new Response(applySeoMeta(html, pageMap[path]), {
+      const rendered = html.replace(
+        /<div id="root"[^>]*>[\s\S]*?<\/div><!-- \/home-prerender -->/,
+        () => `<div id="root" aria-live="polite">${infoPageMarkup[path]}</div><!-- /home-prerender -->`,
+      );
+      return new Response(applySeoMeta(rendered, pageMap[path]), {
         status: 200,
         headers,
       });

@@ -271,7 +271,7 @@ function CommonCardStack() {
   );
 }
 
-function ChallengeGuide() {
+export function ChallengeGuide() {
   const steps = [
     '名前を入力して、出題する10問を選ぶ・作る',
     '自分の正解を選ぶ',
@@ -579,7 +579,7 @@ function guideCardStyle() {
   };
 }
 
-function AboutPage() {
+export function AboutPage() {
   return (
     <main data-testid="about-page" style={pageStyle()}>
       <Decor />
@@ -1064,7 +1064,7 @@ function contactLabelStyle() {
   return { display: 'grid', fontSize: 14, lineHeight: 1.5, fontWeight: 900 };
 }
 
-function ProductPage() {
+export function ProductPage() {
   const scenes = [
     ['🏫', '休み時間・放課後に', '友達同士でカードを囲んで、会話のきっかけに。'],
     ['🏠', 'おうち時間に', '友達と、スマホを置いてゆっくり答え合わせ。'],

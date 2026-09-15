@@ -215,7 +215,7 @@ function creatorEditView() {
       <article class="challenge-card challenge-builder-card notebook-question-card" data-testid="challenge-builder-paper-card">
         <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/10</div>
         <h2 class="notebook-card-accessible-title">${escapeHtml(card.title)}</h2>
-        ${renderNotebookQuestionCard(card)}
+        ${renderNotebookQuestionCard(card, { answerAction: 'builder-answer' })}
       </article>
       <div class="challenge-answer-pad challenge-builder-answer-pad" data-testid="challenge-builder-answer-pad">
         <div class="challenge-answer-pad-heading">
@@ -386,7 +386,7 @@ function questionView(isCreator) {
       <article class="challenge-card notebook-question-card" data-testid="challenge-paper-card">
         <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/10</div>
         <h2 class="notebook-card-accessible-title">${escapeHtml(card.title)}</h2>
-        ${renderNotebookQuestionCard(card)}
+        ${renderNotebookQuestionCard(card, { answerAction: 'answer', disabled: !isCreator && state.answerPending })}
       </article>
       <div class="challenge-answer-pad" data-testid="challenge-answer-pad">
         <div class="challenge-answer-pad-heading">

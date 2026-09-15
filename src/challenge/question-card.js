@@ -97,9 +97,14 @@ function dynamicQuestionCardSvg(card) {
   </svg>`;
 }
 
-export function renderNotebookQuestionCard(card) {
+export function renderNotebookQuestionCard(card, { answerAction = '', disabled = false } = {}) {
   const accessibleChoices = normalizedChoices(card)
     .map((choice) => `<li>${escapeMarkup(choice)}</li>`)
     .join('');
-  return `${dynamicQuestionCardSvg(card)}<ol class="notebook-card-accessible-choices">${accessibleChoices}</ol>`;
+  const choiceButtons = answerAction ? normalizedChoices(card).map((choice, index) => `
+    <button type="button" class="notebook-card-choice-button" data-action="${escapeMarkup(answerAction)}" data-choice="${index}"
+      style="top:calc(${CHOICE_YS[index] - 74} / ${CARD_HEIGHT} * 100%);height:calc(148 / ${CARD_HEIGHT} * 100%)"
+      aria-label="${escapeMarkup(choice)}${answerAction === 'builder-answer' ? 'を正解に選ぶ' : 'を選ぶ'}"
+      ${disabled ? 'disabled aria-busy="true"' : ''}></button>`).join('') : '';
+  return `${dynamicQuestionCardSvg(card)}<ol class="notebook-card-accessible-choices">${accessibleChoices}</ol>${choiceButtons}`;
 }
