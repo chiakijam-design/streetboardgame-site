@@ -56,7 +56,13 @@
     windowObject.ga4Event('set', pageContext);
     windowObject.ga4Event('config', measurementId);
     windowObject.trackEvent = function trackEvent(name, params) {
-      windowObject.ga4Event('event', name, params || {});
+      var eventParams = params || {};
+      var gtmEvent = { event: name };
+      Object.keys(eventParams).forEach(function copyEventParameter(key) {
+        gtmEvent[key] = eventParams[key];
+      });
+      windowObject.dataLayer.push(gtmEvent);
+      windowObject.ga4Event('event', name, eventParams);
     };
 
     var gtmLoaded = false;

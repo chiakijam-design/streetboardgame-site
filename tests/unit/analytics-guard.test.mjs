@@ -101,10 +101,12 @@ test('本番ドメインだけでGA4イベント送信とGTMを読み込み、UR
   }
 });
 
-test('ゲームイベントはGTM用dataLayerではなく専用GA4レイヤーへ送る', () => {
+test('ゲームイベントはGTM用dataLayerと専用GA4レイヤーの両方へ送る', () => {
   const result = runAnalytics({ hostname: 'www.streetboardgame.com' });
   result.windowObject.trackEvent('game_start', { game_type: 'challenge' });
-  assert.equal(result.windowObject.dataLayer.length, 1);
+  assert.equal(result.windowObject.dataLayer.length, 2);
+  assert.equal(result.windowObject.dataLayer[1].event, 'game_start');
+  assert.equal(result.windowObject.dataLayer[1].game_type, 'challenge');
   assert.equal(result.windowObject.ga4EventLayer[3][0], 'event');
   assert.equal(result.windowObject.ga4EventLayer[3][1], 'game_start');
   assert.equal(result.windowObject.ga4EventLayer[3][2].game_type, 'challenge');
