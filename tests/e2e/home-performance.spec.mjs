@@ -55,17 +55,21 @@ test('JavaScriptなしでもトップの主要内容とリンクは重複せず�
   }
 });
 
-test('トップのタイトルは太字の白文字で影がなく、狭い画面でも3行に収まる', async ({ page }) => {
+test('トップのタイトルは細い縁取りと装飾でも二重にならず、狭い画面でも3行に収まる', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => document.fonts.ready);
   const lines = page.getByTestId('top-title-line');
   await expect(lines).toHaveText(['私のこと、', 'ちゃんと', '分かってるよね？']);
+  await expect(page.getByTestId('top-title-accent')).toHaveCount(1);
+  await expect(page.getByTestId('top-title-accent')).toHaveAttribute('aria-hidden', 'true');
+  await expect(page.getByTestId('top-title-lockup').locator('svg[aria-hidden="true"]')).toHaveCount(2);
   for (const width of [320, 375, 430, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const line of await lines.all()) {
       await expect(line).toHaveCSS('font-weight', '800');
       await expect(line).toHaveCSS('text-shadow', 'none');
       await expect(line).toHaveCSS('color', 'rgb(255, 255, 255)');
+      await expect(line).toHaveCSS('-webkit-text-stroke-width', '1px');
       const geometry = await line.evaluate((element) => {
         const rect = element.getBoundingClientRect();
         const range = document.createRange();

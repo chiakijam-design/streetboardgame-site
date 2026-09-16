@@ -52,9 +52,11 @@ export function TopPage() {
       </h1>
       <section style={{ padding: '50px 20px 20px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <Pill>わたし理解度診断</Pill>
-        <div style={{ marginTop: 26 }}>
+        <div data-testid="top-title-lockup" style={{ margin: '26px auto 0', position: 'relative', width: 'fit-content', maxWidth: '100%' }}>
+          <TitleSpark style={{ top: 7, left: 4, width: 19, color: theme.yellow }} />
+          <TitleSpark style={{ top: 58, right: 8, width: 25, color: theme.cream }} />
           <Logo>私のこと、</Logo>
-          <Logo>ちゃんと</Logo>
+          <Logo accent>ちゃんと</Logo>
           <Logo>分かってるよね？</Logo>
         </div>
         <p style={{ margin: '14px 0 0', color: theme.white, opacity: .85, fontFamily: theme.caption, fontSize: 10, letterSpacing: '.2em' }}>
@@ -1361,8 +1363,17 @@ function Pill({ children }) {
   return <span style={{ display: 'inline-flex', minHeight: 32, alignItems: 'center', padding: '5px 14px', borderRadius: 999, border: '2px solid currentColor', color: theme.white, fontFamily: theme.caption, fontSize: 11, letterSpacing: '.12em', fontWeight: 900 }}>{children}</span>;
 }
 
-function Logo({ children }) {
-  return <div data-testid="top-title-line" style={{ color: theme.white, fontFamily: theme.display, fontSize: 'clamp(34px,10vw,48px)', fontWeight: 800, lineHeight: 1.3, textShadow: 'none' }}>{children}</div>;
+function TitleSpark({ style }) {
+  return <svg aria-hidden="true" focusable="false" viewBox="0 0 24 28" style={{ position: 'absolute', height: 'auto', pointerEvents: 'none', ...style }}><path d="M12 0C12 9 9 14 0 14c9 0 12 5 12 14 0-9 3-14 12-14C15 14 12 9 12 0Z" fill="currentColor" /></svg>;
+}
+
+function Logo({ children, accent = false }) {
+  return <div data-testid="top-title-line" style={{ color: theme.white, fontFamily: theme.display, fontSize: 'clamp(34px,10vw,48px)', fontWeight: 800, lineHeight: 1.3, textShadow: 'none', WebkitTextStroke: '1px #92284E', paintOrder: 'stroke fill' }}>
+    <span style={{ position: 'relative', display: 'inline-block', isolation: 'isolate' }}>
+      {accent && <span data-testid="top-title-accent" aria-hidden="true" style={{ position: 'absolute', left: '-2%', right: '-2%', bottom: '8%', height: '0.16em', borderRadius: '50% 35% 45% 30%', background: theme.yellow, transform: 'rotate(-2deg)', zIndex: -1, pointerEvents: 'none' }} />}
+      {children}
+    </span>
+  </div>;
 }
 
 function Decor() {
