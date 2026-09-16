@@ -1362,7 +1362,7 @@ function Pill({ children }) {
 }
 
 function Logo({ children }) {
-  return <div style={{ color: theme.white, fontFamily: theme.display, fontSize: 'clamp(34px,10vw,48px)', lineHeight: 1.2, textShadow: `4px 4px 0 ${theme.cyan}` }}>{children}</div>;
+  return <div data-testid="top-title-line" style={{ color: theme.white, fontFamily: theme.display, fontSize: 'clamp(34px,10vw,48px)', fontWeight: 800, lineHeight: 1.3, textShadow: 'none' }}>{children}</div>;
 }
 
 function Decor() {

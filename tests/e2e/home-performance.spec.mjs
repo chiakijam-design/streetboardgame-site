@@ -54,3 +54,35 @@ test('JavaScriptなしでもトップの主要内容とリンクは重複せず�
     await context.close();
   }
 });
+
+test('トップのタイトルは太字の白文字で影がなく、狭い画面でも3行に収まる', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => document.fonts.ready);
+  const lines = page.getByTestId('top-title-line');
+  await expect(lines).toHaveText(['私のこと、', 'ちゃんと', '分かってるよね？']);
+  for (const width of [320, 375, 430, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const line of await lines.all()) {
+      await expect(line).toHaveCSS('font-weight', '800');
+      await expect(line).toHaveCSS('text-shadow', 'none');
+      await expect(line).toHaveCSS('color', 'rgb(255, 255, 255)');
+      const geometry = await line.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const text = range.getBoundingClientRect();
+        return {
+          left: text.left,
+          right: text.right,
+          height: rect.height,
+          lineHeight: parseFloat(getComputedStyle(element).lineHeight),
+          overflow: element.scrollWidth > element.clientWidth,
+        };
+      });
+      expect(geometry.overflow).toBe(false);
+      expect(geometry.left).toBeGreaterThanOrEqual(0);
+      expect(geometry.right).toBeLessThanOrEqual(width);
+      expect(Math.abs(geometry.height - geometry.lineHeight)).toBeLessThan(1);
+    }
+  }
+});
