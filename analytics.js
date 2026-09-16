@@ -31,7 +31,8 @@
 
   var hostname = String(windowObject.location.hostname || '').toLowerCase();
   var isProductionHost = productionHosts.indexOf(hostname) !== -1;
-  var analyticsEnabled = isProductionHost && !isExcluded;
+  var isAutomatedBrowser = windowObject.navigator && windowObject.navigator.webdriver === true;
+  var analyticsEnabled = isProductionHost && !isExcluded && !isAutomatedBrowser;
 
   windowObject.__WATACHAN_ANALYTICS_DISABLED__ = !analyticsEnabled;
   windowObject.__WATACHAN_GTM_CONTAINER_ID__ = containerId;

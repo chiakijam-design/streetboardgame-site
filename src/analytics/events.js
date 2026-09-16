@@ -68,6 +68,26 @@ export function trackPurchaseFromCheckout(checkout) {
   });
 }
 
+// Count players, not visits: call only after an answer has been accepted.
+// GA4 Total users for game_play is the player metric; event count is not.
+export function trackGamePlay(gameType, playerRole) {
+  const roles = {
+    challenge: ['creator', 'participant'],
+    live_challenge: ['host', 'subject', 'viewer'],
+  };
+  if (!roles[gameType]?.includes(playerRole)) return false;
+  const day = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return trackAnalyticsEvent('game_play', {
+    game_type: gameType,
+    play_mode: gameType === 'challenge' ? 'async' : 'live',
+    player_role: playerRole,
+    play_criteria: 'accepted_answer',
+  }, {
+    onceKey: `game_play:${day}:${gameType}:${playerRole}`,
+    persistSession: true,
+  });
+}
+
 export function resetAnalyticsEventTrackingForTests() {
   trackedEvents.clear();
 }

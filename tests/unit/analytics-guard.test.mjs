@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const analyticsSource = await readFile(new URL('../../analytics.js', import.meta.url), 'utf8');
 
-function runAnalytics({ hostname, search = '', storedValue = null, readyState = 'complete', requestAnimationFrame }) {
+function runAnalytics({ hostname, search = '', storedValue = null, readyState = 'complete', requestAnimationFrame, webdriver = false }) {
   const storage = new Map();
   if (storedValue !== null) storage.set('watachan:analytics-excluded:v1', storedValue);
   const appendedScripts = [];
@@ -15,6 +15,7 @@ function runAnalytics({ hostname, search = '', storedValue = null, readyState = 
   const locationUrl = new URL(`https://${urlHostname}/${search ? `?${search}` : ''}`);
 
   const windowObject = {
+    navigator: { webdriver },
     requestAnimationFrame,
     location: {
       href: locationUrl.href,
@@ -71,6 +72,15 @@ test('127.0.0.1、::1、プレビュー環境ではGTMスクリプトを読み�
     assert.equal(result.windowObject.__WATACHAN_ANALYTICS_DISABLED__, true);
     assert.equal(result.appendedScripts.length, 0);
   }
+});
+
+test('自動ブラウザーの本番テストはinclude指定でもGA4とGTMへ送信しない', () => {
+  const result = runAnalytics({ hostname: 'www.streetboardgame.com', search: 'analytics=include', webdriver: true });
+  assert.equal(result.windowObject.analyticsEnabled, false);
+  result.windowObject.trackEvent('game_play', { game_type: 'challenge' });
+  assert.equal(result.appendedScripts.length, 0);
+  assert.equal(result.windowObject.ga4EventLayer, undefined);
+  assert.equal(result.windowObject.dataLayer, undefined);
 });
 
 test('本番ドメインだけでGA4イベント送信とGTMを読み込み、URLのクエリを渡さない', () => {

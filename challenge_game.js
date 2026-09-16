@@ -31,7 +31,7 @@ import {
   getChallengeReviewLinesEnglish,
 } from './src/challenge/result.js';
 import { isEnglish, localizeDom } from './src/i18n/runtime.js';
-import { trackAnalyticsEvent } from './src/analytics/events.js';
+import { trackAnalyticsEvent, trackGamePlay } from './src/analytics/events.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -1227,6 +1227,7 @@ function previousQuestion() {
 }
 
 async function answerQuestion(choice) {
+  if (!Number.isInteger(choice) || choice < 0 || choice > 4) return;
   if (state.mode === 'participant-answer') {
     return answerParticipantQuestion(choice);
   }
@@ -1239,9 +1240,11 @@ async function answerQuestion(choice) {
     if (state.questionIndex < QUESTION_COUNT - 1) {
       const questionIndex = state.questionIndex + 1;
       saveCreatorDraft({ ...state, answers, questionIndex });
+      trackGamePlay('challenge', 'creator');
       return setState({ answers, questionIndex, error: '' });
     }
     if (answers.length !== QUESTION_COUNT || answers.some((answer) => !Number.isInteger(answer))) return;
+    trackGamePlay('challenge', 'creator');
     return createChallengeRoom(answers);
   }
 }
@@ -1264,6 +1267,7 @@ async function answerParticipantQuestion(choice) {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'answer-failed');
+    trackGamePlay('challenge', 'participant');
     await quizFeedbackSoundPlayer.play(data.match === true);
 
     if (data.completed) {

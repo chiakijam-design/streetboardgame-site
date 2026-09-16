@@ -24,7 +24,7 @@ import {
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 import { isEnglish, localizeDom } from './src/i18n/runtime.js';
-import { trackAnalyticsEvent, trackPurchaseFromCheckout } from './src/analytics/events.js';
+import { trackAnalyticsEvent, trackGamePlay, trackPurchaseFromCheckout } from './src/analytics/events.js';
 
 const QUESTION_COUNT = 10;
 const app = document.getElementById('live-challenge-app');
@@ -1374,6 +1374,7 @@ async function hostAnswer(optionIndex) {
         : { 'x-live-host-token': state.hostToken },
       body: JSON.stringify({ questionId: question.id, optionIndex }),
     });
+    trackGamePlay('live_challenge', state.hostToken ? 'host' : 'subject');
     await loadRoom();
     setState({ loading: false });
   } catch (error) {
@@ -1530,6 +1531,7 @@ function personalizeGame(game) {
 function rememberAnswer(questionId, optionIndex) {
   state.participantAnswers = { ...state.participantAnswers, [questionId]: optionIndex };
   saveAnswers();
+  trackGamePlay('live_challenge', 'viewer');
   if (state.game?.question?.id === questionId) state.game = { ...state.game, myVoteIndex: optionIndex };
 }
 
