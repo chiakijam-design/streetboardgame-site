@@ -69,7 +69,7 @@ test('トップのタイトルは水色の縁取りでも白文字を保ち、�
       await expect(line).toHaveCSS('font-weight', '800');
       await expect(line).toHaveCSS('text-shadow', 'none');
       await expect(line).toHaveCSS('color', 'rgb(255, 255, 255)');
-      await expect(line).toHaveCSS('-webkit-text-stroke-width', '5px');
+      await expect(line).toHaveCSS('-webkit-text-stroke-width', '3px');
       await expect(line).toHaveCSS('-webkit-text-stroke-color', 'rgb(91, 212, 232)');
       await expect(line).toHaveCSS('paint-order', 'stroke');
       const geometry = await line.evaluate((element) => {

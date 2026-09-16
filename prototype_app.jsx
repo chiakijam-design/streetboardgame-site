@@ -1368,7 +1368,7 @@ function TitleSpark({ style }) {
 }
 
 function Logo({ children, accent = false }) {
-  return <div data-testid="top-title-line" style={{ color: theme.white, fontFamily: theme.display, fontSize: 'clamp(34px,10vw,48px)', fontWeight: 800, lineHeight: 1.3, textShadow: 'none', WebkitTextStroke: `5px ${theme.cyan}`, paintOrder: 'stroke fill' }}>
+  return <div data-testid="top-title-line" style={{ color: theme.white, fontFamily: theme.display, fontSize: 'clamp(34px,10vw,48px)', fontWeight: 800, lineHeight: 1.3, textShadow: 'none', WebkitTextStroke: `3px ${theme.cyan}`, paintOrder: 'stroke fill' }}>
     <span style={{ position: 'relative', display: 'inline-block', isolation: 'isolate' }}>
       {accent && <span data-testid="top-title-accent" aria-hidden="true" style={{ position: 'absolute', left: '-2%', right: '-2%', bottom: '8%', height: '0.16em', borderRadius: '50% 35% 45% 30%', background: theme.yellow, transform: 'rotate(-2deg)', zIndex: -1, pointerEvents: 'none' }} />}
       {children}
