@@ -55,7 +55,7 @@ test('JavaScriptなしでもトップの主要内容とリンクは重複せず�
   }
 });
 
-test('トップのタイトルは細い縁取りと装飾でも二重にならず、狭い画面でも3行に収まる', async ({ page }) => {
+test('トップのタイトルは水色の縁取りでも白文字を保ち、狭い画面でも3行に収まる', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => document.fonts.ready);
   const lines = page.getByTestId('top-title-line');
@@ -69,7 +69,9 @@ test('トップのタイトルは細い縁取りと装飾でも二重になら�
       await expect(line).toHaveCSS('font-weight', '800');
       await expect(line).toHaveCSS('text-shadow', 'none');
       await expect(line).toHaveCSS('color', 'rgb(255, 255, 255)');
-      await expect(line).toHaveCSS('-webkit-text-stroke-width', '1px');
+      await expect(line).toHaveCSS('-webkit-text-stroke-width', '5px');
+      await expect(line).toHaveCSS('-webkit-text-stroke-color', 'rgb(91, 212, 232)');
+      await expect(line).toHaveCSS('paint-order', 'stroke');
       const geometry = await line.evaluate((element) => {
         const rect = element.getBoundingClientRect();
         const range = document.createRange();
