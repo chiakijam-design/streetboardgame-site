@@ -1215,7 +1215,7 @@ function resumeCreate() {
 }
 
 function deleteCreatorDraft() {
-  localStorage.removeItem(CREATOR_DRAFT_KEY);
+  removeStorage(CREATOR_DRAFT_KEY);
   setState({ error: '' });
 }
 
@@ -1271,7 +1271,7 @@ async function answerParticipantQuestion(choice) {
     await quizFeedbackSoundPlayer.play(data.match === true);
 
     if (data.completed) {
-      localStorage.removeItem(participantDraftKey(state.roomCode));
+      removeStorage(participantDraftKey(state.roomCode));
       await loadResult();
       return;
     }
@@ -1315,7 +1315,7 @@ async function createChallengeRoom(answers) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'create-failed');
     saveManageRoom(data.code, data.manageToken, data.room.creatorName);
-    localStorage.removeItem(CREATOR_DRAFT_KEY);
+    removeStorage(CREATOR_DRAFT_KEY);
     history.replaceState(null, '', `${languagePrefix}/challenge/manage?room=${data.code}#manage=${data.manageToken}`);
     setState({
       loading: false,
@@ -1538,7 +1538,7 @@ async function retryChallenge() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'retry-failed');
-    localStorage.removeItem(participantDraftKey(state.roomCode));
+    removeStorage(participantDraftKey(state.roomCode));
     resetBoardOptIn(state.roomCode);
     const next = {
       loading: false,
@@ -2127,14 +2127,25 @@ function participantDraftKey(code) {
 }
 
 function participantToken(code) {
-  return localStorage.getItem(`watachan-challenge-token:${code}`)
-    || sessionStorage.getItem(`watachan-challenge-token:${code}`)
-    || '';
+  for (const storageName of ['localStorage', 'sessionStorage']) {
+    try {
+      const token = window[storageName].getItem(`watachan-challenge-token:${code}`);
+      if (token) return token;
+    } catch {
+      // Access to one storage area must not prevent trying the other.
+    }
+  }
+  return '';
 }
 
 function saveParticipantToken(code, token) {
-  localStorage.setItem(`watachan-challenge-token:${code}`, token);
-  sessionStorage.setItem(`watachan-challenge-token:${code}`, token);
+  for (const storageName of ['localStorage', 'sessionStorage']) {
+    try {
+      window[storageName].setItem(`watachan-challenge-token:${code}`, token);
+    } catch {
+      // The active game keeps its token in state even if neither store works.
+    }
+  }
 }
 
 function saveManageRoom(code, token, creatorName) {
@@ -2173,6 +2184,14 @@ function readStorage(key) {
     return JSON.parse(localStorage.getItem(key) || 'null');
   } catch (error) {
     return null;
+  }
+}
+
+function removeStorage(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Draft cleanup must not turn a successful server action into a UI error.
   }
 }
 
