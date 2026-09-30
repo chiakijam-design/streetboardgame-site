@@ -40,8 +40,11 @@ GA4・Stripe売上とも別定義。購入や決済設定には触れない。
 ## 月次診断での読み取り
 
 ```powershell
-pnpm dlx wrangler@latest d1 execute streetboardgame-remote --remote --file tools/query-play-daily.sql --json
+$dailyPlayQuery = (Get-Content -Encoding UTF8 tools/query-play-daily.sql | Where-Object { $_ -notmatch '^\s*--' }) -join ' '
+pnpm dlx wrangler@latest d1 execute streetboardgame-remote --remote --command "$dailyPlayQuery" --json
 ```
+
+`--file` はリモート一括実行の概要だけが返る場合があるため、集計結果の取得には `--command` を使う。
 
 指定期間（1日実行は暦月、16日実行は前月16日〜当月15日）で `day` を絞る。
 
