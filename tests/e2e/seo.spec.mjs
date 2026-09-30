@@ -377,6 +377,23 @@ test('挑戦モードと説明ページは専用OGP画像を配信する', async
   expect((await imageResponse.body()).byteLength).toBeGreaterThan(100_000);
 });
 
+test('Malformed URL paths return 400 without exposing errors or losing security headers', async ({ request, page }) => {
+  for (const path of ['/%C0', '/%C0/', '/challenge/%GG', '/api/live/%E0%A4%A']) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(400);
+    expect(await response.text(), path).toBe('Bad Request');
+    expect(response.headers()['cache-control'], path).toBe('no-store');
+    expect(response.headers()['x-content-type-options'], path).toBe('nosniff');
+    expect(response.headers()['content-security-policy'], path).toContain("frame-ancestors 'none'");
+    const head = await request.head(path);
+    expect(head.status(), path).toBe(400);
+    expect(await head.body(), path).toHaveLength(0);
+  }
+  const response = await page.goto('/challenge/%C0');
+  expect(response.status()).toBe(400);
+  await expect(page.locator('body')).toHaveText('Bad Request');
+});
+
 test('CSP・主要セキュリティヘッダーと404を維持する', async ({ request, page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chrome', 'HTTPヘッダーは画面幅に依存しないためPCで1回検証');
   for (const path of ['/', '/challenge-guide', '/challenge', '/live-challenge', '/privacy']) {

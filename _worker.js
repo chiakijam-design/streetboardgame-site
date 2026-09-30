@@ -77,7 +77,22 @@ async function handleRequest(request, env) {
       return Response.redirect(url.toString(), 301);
     }
 
-    const rawPath = decodeURIComponent(url.pathname);
+    let rawPath;
+    try {
+      rawPath = decodeURIComponent(url.pathname);
+    } catch (error) {
+      if (!(error instanceof URIError)) throw error;
+      // Invalid percent escapes / UTF-8 are client errors, not Worker failures.
+      // Do not reflect the request path or exception details in the response.
+      return new Response(request.method === 'HEAD' ? null : 'Bad Request', {
+        status: 400,
+        headers: {
+          'content-type': 'text/plain; charset=UTF-8',
+          'cache-control': 'no-store',
+          'x-robots-tag': 'noindex, nofollow, noarchive',
+        },
+      });
+    }
     const path = rawPath.replace(/\/+$/, '');
 
     // Cloudflare Access only protects the custom domain. Do not expose the
