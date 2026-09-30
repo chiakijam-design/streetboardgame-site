@@ -1844,7 +1844,9 @@ async function joinLiveGame(request, env, code) {
             SELECT ?, ?, '', ?, ?, ?
             WHERE (SELECT COUNT(*) FROM live_participants WHERE code = ?) < ?
           `).bind(code, participant.id, participantTokenHash, participant.name, participant.joinedAt, code, viewerLimit).run();
-      if (Number(inserted?.meta?.changes || 0) !== 1) throw liveError('participant-limit-reached', 409);
+      // Trigger writes are included in D1's changes count; a successful insert
+      // still creates exactly one participant (zero means the limit blocked it).
+      if (Number(inserted?.meta?.changes || 0) <= 0) throw liveError('participant-limit-reached', 409);
     } catch (error) {
       if (realtime) await releaseLiveRealtimeParticipant(env, code, participant.token);
       throw error;

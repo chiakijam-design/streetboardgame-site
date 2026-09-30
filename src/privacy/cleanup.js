@@ -71,6 +71,9 @@ async function cleanupGameDatabase(env, now, summary) {
     );
     summary.expiredChallengeRooms = changes(deletedRooms);
   }
+  // Numerical daily totals have no personal fields and deliberately survive.
+  // Only transient random per-shard retry cursors expire.
+  await safeRun(env.REMOTE_DB, 'DELETE FROM play_daily_live_streams WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_rate_limits WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_reservations WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM live_active_sessions WHERE expires_at < ?', [now]);

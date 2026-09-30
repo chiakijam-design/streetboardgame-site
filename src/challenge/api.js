@@ -480,7 +480,9 @@ async function insertRoom(env, code, room) {
       room.createdAt,
       room.expiresAt,
     ).run();
-    return Number(result?.meta?.changes || 0) === 1;
+    // D1 meta.changes includes anonymous counter trigger writes. The unique
+    // room/token predicate still limits the source operation to one row.
+    return Number(result?.meta?.changes || 0) > 0;
   }
   const key = `challenge:${code}`;
   if (await env.CHALLENGE_KV.get(key)) return false;
@@ -530,7 +532,9 @@ async function insertParticipant(env, code, participant, room) {
       code,
       CHALLENGE_MAX_PARTICIPANTS,
     ).run();
-    return Number(result?.meta?.changes || 0) === 1;
+    // D1 meta.changes includes anonymous counter trigger writes. The unique
+    // room/token predicate still limits the source operation to one row.
+    return Number(result?.meta?.changes || 0) > 0;
   }
   const next = { ...room, participants: Array.isArray(room.participants) ? room.participants.slice() : [] };
   if (next.participants.length >= CHALLENGE_MAX_PARTICIPANTS) return false;
@@ -569,7 +573,9 @@ async function saveParticipantAnswers(env, code, token, participant, answers, sc
       WHERE room_code = ? AND participant_token_hash = ?
         AND completed_at IS NULL AND answers_json IS NULL
     `).bind(JSON.stringify(answers), score, completedAt, code, await hashToken(token)).run();
-    return Number(result?.meta?.changes || 0) === 1;
+    // D1 meta.changes includes anonymous counter trigger writes. The unique
+    // room/token predicate still limits the source operation to one row.
+    return Number(result?.meta?.changes || 0) > 0;
   }
   const next = { ...room, participants: (room.participants || []).map((item) => (
     item.token === token ? { ...item, answers, score, completedAt } : item
@@ -604,7 +610,9 @@ async function saveParticipantProgress(
       previousJson,
       previousJson,
     ).run();
-    return Number(result?.meta?.changes || 0) === 1;
+    // D1 meta.changes includes anonymous counter trigger writes. The unique
+    // room/token predicate still limits the source operation to one row.
+    return Number(result?.meta?.changes || 0) > 0;
   }
 
   const participants = Array.isArray(room.participants) ? room.participants : [];
@@ -628,7 +636,9 @@ async function saveRankingRegistration(env, code, token, registeredAt, room) {
       SET ranking_consent_at = COALESCE(ranking_consent_at, ?), board_comment = NULL
       WHERE room_code = ? AND participant_token_hash = ? AND completed_at IS NOT NULL
     `).bind(registeredAt, code, await hashToken(token)).run();
-    return Number(result?.meta?.changes || 0) === 1;
+    // D1 meta.changes includes anonymous counter trigger writes. The unique
+    // room/token predicate still limits the source operation to one row.
+    return Number(result?.meta?.changes || 0) > 0;
   }
 
   const participants = Array.isArray(room.participants) ? room.participants : [];
@@ -651,7 +661,9 @@ async function removeRankingRegistration(env, code, token, room) {
       SET ranking_consent_at = NULL, board_comment = NULL
       WHERE room_code = ? AND participant_token_hash = ? AND completed_at IS NOT NULL
     `).bind(code, await hashToken(token)).run();
-    return Number(result?.meta?.changes || 0) === 1;
+    // D1 meta.changes includes anonymous counter trigger writes. The unique
+    // room/token predicate still limits the source operation to one row.
+    return Number(result?.meta?.changes || 0) > 0;
   }
 
   const participants = Array.isArray(room.participants) ? room.participants : [];
@@ -675,7 +687,9 @@ async function resetParticipantAttempt(env, code, token, room) {
         ranking_consent_at = NULL, board_comment = NULL
       WHERE room_code = ? AND participant_token_hash = ? AND completed_at IS NOT NULL
     `).bind(code, await hashToken(token)).run();
-    return Number(result?.meta?.changes || 0) === 1;
+    // D1 meta.changes includes anonymous counter trigger writes. The unique
+    // room/token predicate still limits the source operation to one row.
+    return Number(result?.meta?.changes || 0) > 0;
   }
 
   const participants = Array.isArray(room.participants) ? room.participants : [];

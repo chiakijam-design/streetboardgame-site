@@ -1,3 +1,4 @@
+import { addRealtimePlayCounts, flushRealtimePlayCounts, PLAY_FLUSH_INTERVAL_MS } from '../analytics/daily-play.js';
 import {
   LIVE_FALLBACK_VIEWER_LIMIT,
   LIVE_REALTIME_SHARD_CAPACITY,
@@ -486,6 +487,10 @@ export class LiveVoteShard {
         [`question:${questionId}:vote:${participantId}`]: optionIndex,
         pendingQuestionId: questionId,
       });
+      if (this.env.REMOTE_DB) {
+        const roomState = await storage.get('roomState');
+        await addRealtimePlayCounts(storage, Object.keys(answers).length, roomState?.questionCount, Date.now());
+      }
       return counts;
     });
     await scheduleDurableAlarm(this.ctx.storage, Date.now() + 500);
@@ -504,6 +509,19 @@ export class LiveVoteShard {
     const cleanupAt = Number(await this.ctx.storage.get('cleanupAt')) || 0;
     if (cleanupAt && cleanupAt <= Date.now()) {
       for (const socket of this.ctx.getWebSockets()) socket.close(1001, 'expired');
+      // Flush numerical totals before deleting the existing personal game data.
+      try {
+        await this.flushPlayCounts(true);
+      } catch (error) {
+        // A D1 outage must not prolong retention of names/answers/tokens.
+        // Retain only numerical pending totals and the random retry cursor.
+        const days = await this.ctx.storage.list({ prefix: 'play:day:' });
+        const streamId = await this.ctx.storage.get('play:stream');
+        await this.ctx.storage.deleteAll();
+        await this.ctx.storage.put({ ...Object.fromEntries(days), 'play:stream': streamId, cleanupAt });
+        await scheduleDurableAlarm(this.ctx.storage, Date.now() + PLAY_FLUSH_INTERVAL_MS);
+        throw error;
+      }
       await this.ctx.storage.deleteAll();
       return;
     }
@@ -520,7 +538,20 @@ export class LiveVoteShard {
       }));
       await this.ctx.storage.delete('pendingQuestionId');
     }
+    const nextPlayFlushAt = await this.flushPlayCounts(false);
+    if (nextPlayFlushAt) await scheduleDurableAlarm(this.ctx.storage, nextPlayFlushAt);
     if (cleanupAt) await scheduleDurableAlarm(this.ctx.storage, cleanupAt);
+  }
+
+  async flushPlayCounts(force) {
+    try {
+      return await flushRealtimePlayCounts(this.ctx.storage, this.env.REMOTE_DB, Date.now(), force);
+    } catch (error) {
+      // Continue retrying beyond the platform's finite automatic retry count.
+      // No names, answers, tokens or room IDs are logged.
+      await scheduleDurableAlarm(this.ctx.storage, Date.now() + PLAY_FLUSH_INTERVAL_MS);
+      throw error;
+    }
   }
 }
 
