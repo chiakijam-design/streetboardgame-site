@@ -12,6 +12,7 @@ const DIST_ENTRIES = {
   prototype_english_common_data: 'prototype_english_common_data.js',
   challenge_game: 'challenge_game.js',
   live_challenge: 'live_challenge.js',
+  'qr-code': 'src/live/qr-code.js',
   live_ops: 'live_ops.js',
   question_ops: 'question_ops.js',
   prototype_character: 'prototype_character.jsx',
@@ -95,10 +96,12 @@ const HTML_STYLE_MAP = {
   ],
 };
 
+const HTML_LAZY_ENTRY_MAP = { 'live_challenge.html': ['qr-code'] };
+
 await mkdir('dist', { recursive: true });
 await mkdir('assets/vendor', { recursive: true });
 
-await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_common_data|prototype_english_common_data|challenge_game|live_challenge|live_ops|question_ops|prototype_character|prototype_app|home_entry)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
+await removeGeneratedFiles('dist', /^(viewport_recovery|prototype_common_data|prototype_english_common_data|challenge_game|live_challenge|qr-code|live_ops|question_ops|prototype_character|prototype_app|home_entry)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
 await removeGeneratedFiles('dist', /^(accessibility|question-card|legal)-[a-f0-9]+\.css$/i);
 await removeGeneratedFiles('assets/vendor', /^react(?:-dom)?\.production\.min(?:-[a-f0-9]+)?\.js$/i);
 
@@ -159,6 +162,16 @@ for (const [htmlPath, entryNames] of Object.entries(HTML_ENTRY_MAP)) {
     if (!scriptPath) throw new Error(`Missing generated script for ${entryName}`);
     html = replaceTaggedAsset(html, 'script', 'data-build-entry', entryName, 'src', scriptPath);
     html = replaceTaggedAsset(html, 'link', 'data-build-preload', entryName, 'href', scriptPath, false);
+  }
+  await writeFile(htmlPath, html);
+}
+
+for (const [htmlPath, entryNames] of Object.entries(HTML_LAZY_ENTRY_MAP)) {
+  let html = await readFile(htmlPath, 'utf8');
+  for (const entryName of entryNames) {
+    const scriptPath = scriptPaths[entryName];
+    if (!scriptPath) throw new Error(`Missing lazy script for ${entryName}`);
+    html = replaceTaggedAsset(html, 'script', 'data-build-lazy', entryName, 'src', scriptPath);
   }
   await writeFile(htmlPath, html);
 }

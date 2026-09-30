@@ -79,6 +79,7 @@ let state = {
   ranking: [],
   library: [],
   questionTrends: { weeklySelections: [], recentApprovals: [], liveResponses: [] },
+  questionTrendsLoaded: false,
   result: null,
   resultImageUrl: '',
   resultImageBusy: false,
@@ -980,7 +981,7 @@ function recentQuestionTrendsView() {
     description: '直近のLIVEで、回答が複数の選択肢へ分かれたお題です。',
     items: groups.liveSplit,
   }];
-  return `<section class="challenge-recent-trends" data-testid="recent-question-trends" aria-labelledby="recent-question-trends-title">
+  return `<section class="challenge-recent-trends" data-testid="recent-question-trends" aria-labelledby="recent-question-trends-title" aria-busy="${!state.questionTrendsLoaded}">
     <div class="challenge-recent-heading">
       <span class="challenge-pack-count">採用済みのお題だけ</span>
       <h2 id="recent-question-trends-title">最近人気</h2>
@@ -1006,6 +1007,34 @@ function trendGroupView(section) {
       </li>`).join('')}
     </ul>` : '<p class="challenge-trend-empty">データが集まると表示します。</p>'}
   </article>`;
+}
+
+function scheduleLibraryTrends() {
+  const section = app.querySelector('[data-testid="recent-question-trends"]');
+  if (!section) return;
+  const load = async () => {
+    state.questionTrends = await loadQuestionTrendMetrics(isEnglish ? 'en' : 'ja');
+    state.questionTrendsLoaded = true;
+    if (state.mode !== 'library' || !section.isConnected) return;
+    // Update only the optional statistics. Do not rebuild packs or close a
+    // visitor's expanded question list when the background response arrives.
+    const template = document.createElement('template');
+    template.innerHTML = recentQuestionTrendsView();
+    const groups = section.querySelector('.challenge-trend-groups');
+    groups.innerHTML = template.content.querySelector('.challenge-trend-groups').innerHTML;
+    section.setAttribute('aria-busy', 'false');
+    localizeDom(groups);
+  };
+  if (!('IntersectionObserver' in window)) {
+    void load();
+    return;
+  }
+  const observer = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    observer.disconnect();
+    void load();
+  }, { rootMargin: '300px' });
+  observer.observe(section);
 }
 
 function errorView() {
@@ -2284,15 +2313,13 @@ async function bootChallenge() {
     app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = false; });
     return;
   }
-  if (state.mode === 'library') {
-    state.questionTrends = await loadQuestionTrendMetrics(isEnglish ? 'en' : 'ja');
-  }
   if (quickStart && state.mode === 'creator-edit') {
     state.cards = pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard);
   }
   if (state.mode === 'library') {
   document.title = isEnglish ? '10-question packs | How well do you know me?' : '人気の10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   render();
+  scheduleLibraryTrends();
   } else if (state.mode === 'ranking') {
   document.title = isEnglish ? 'Understanding Board | How well do you know me?' : '理解度ボード｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   loadRanking();

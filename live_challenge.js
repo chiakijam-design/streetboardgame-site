@@ -1,4 +1,4 @@
-import QRCode from 'qrcode';
+import { renderLiveInviteQr } from './src/live/invite-qr.js';
 import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
 import {
   liveExclusiveQuestionPacks,
@@ -187,7 +187,7 @@ function render() {
   bindEvents();
   trackCurrentLiveBuilderQuestionShown();
   const qr = document.getElementById('live-challenge-qr');
-  if (qr) QRCode.toCanvas(qr, joinUrl(), { width: 188, margin: 1, errorCorrectionLevel: 'M' }).catch(() => {});
+  if (qr) renderLiveInviteQr(qr, joinUrl()).catch(() => {});
   const chatMessages = document.querySelector('.live-chat-messages');
   if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
 }

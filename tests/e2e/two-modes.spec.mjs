@@ -958,6 +958,8 @@ test('採用済みのお題だけを4種類の最近人気として表示し、1
 
   await page.goto('/challenge/library');
   const trends = page.getByTestId('recent-question-trends');
+  await trends.scrollIntoViewIfNeeded();
+  await expect(trends).toHaveAttribute('aria-busy', 'false');
   await expect(trends).toBeVisible();
   await expect(trends.getByRole('heading', { name: '最近人気' })).toBeVisible();
   for (const heading of [
@@ -990,6 +992,8 @@ test('採用済みのお題だけを4種類の最近人気として表示し、1
   if (testInfo.project.name === 'mobile-chrome') {
     await page.goto('/en/challenge/library');
     const englishTrends = page.getByTestId('recent-question-trends');
+    await englishTrends.scrollIntoViewIfNeeded();
+    await expect(englishTrends).toHaveAttribute('aria-busy', 'false');
     await expect(englishTrends.getByRole('heading', { name: 'Popular now' })).toBeVisible();
     await expect(englishTrends.getByRole('heading', { name: 'Frequently chosen this week' })).toBeVisible();
   }
