@@ -13,6 +13,10 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 // 廃止したゲームURLとAPIは互換転送せず404を返す。
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
+// Clarity load-balances collection across a-z. Allow only HTTPS collection
+// paths, rather than every subdomain or every path on those hosts.
+const CLARITY_COLLECT_SOURCES = Array.from('abcdefghijklmnopqrstuvwxyz',
+  (letter) => `https://${letter}.clarity.ms/collect`).join(' ');
 const HASHED_BUILD_ASSET_PATH = /^\/(?:dist\/(?:[a-z0-9_]+-[a-z0-9]{8}\.js|[a-z0-9-]+-[a-f0-9]{12}\.css)|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12}\.js)$/i;
 const VERSIONED_STATIC_ASSET_PATH = /\.(?:css|js|png|jpe?g|svg|webp|woff2)$/i;
 const RETIRED_GAME_PATHS = new Set([
@@ -466,8 +470,8 @@ async function withSecurityHeaders(response, request) {
     "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://c.clarity.ms",
-    "connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://h.clarity.ms https://formspree.io",
+    "img-src 'self' data: blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://c.clarity.ms https://c.bing.com/c.gif",
+    `connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com ${CLARITY_COLLECT_SOURCES} https://formspree.io`,
     "form-action 'self' https://formspree.io",
     "frame-src 'none'",
     "media-src 'none'",

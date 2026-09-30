@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
+import worker from '../../_worker.js';
 
 const analyticsSource = await readFile(new URL('../../analytics.js', import.meta.url), 'utf8');
 
@@ -212,4 +213,37 @@ test('GA4が必要とする画像・計測送信先をCSPで許可する', async
   const worker = await readFile(new URL('../../_worker.js', import.meta.url), 'utf8');
   assert.match(worker, /img-src[^\n]+https:\/\/www\.google-analytics\.com[^\n]+https:\/\/region1\.google-analytics\.com[^\n]+https:\/\/www\.googletagmanager\.com/);
   assert.match(worker, /connect-src[^\n]+https:\/\/www\.google-analytics\.com[^\n]+https:\/\/region1\.google-analytics\.com[^\n]+https:\/\/www\.googletagmanager\.com/);
+});
+
+test('Clarityの全収集ホストをcollectパスだけ許可し、nonceと防御を維持する', async () => {
+  for (const path of ['/', '/challenge', '/live-challenge', '/en/']) {
+    const response = await worker.fetch(new Request(`https://www.streetboardgame.com${path}`), {
+      ASSETS: { fetch: async () => new Response('<html><script>void 0;</script></html>', {
+        headers: { 'content-type': 'text/html' },
+      }) },
+    });
+    const csp = response.headers.get('content-security-policy');
+    const directives = new Map(csp.split('; ').map((part) => {
+      const [name, ...sources] = part.split(' ');
+      return [name, sources];
+    }));
+    const collectSources = directives.get('connect-src').filter((source) => source.includes('clarity.ms'));
+    assert.deepEqual(collectSources, Array.from('abcdefghijklmnopqrstuvwxyz',
+      (letter) => `https://${letter}.clarity.ms/collect`), path);
+    assert.ok(directives.get('img-src').includes('https://c.bing.com/c.gif'), path);
+    assert.ok(directives.get('script-src').includes("'strict-dynamic'"), path);
+    const nonceSource = directives.get('script-src').find((source) => source.startsWith("'nonce-"));
+    assert.ok(nonceSource, path);
+    assert.ok((await response.text()).includes(`nonce="${nonceSource.slice(7, -1)}"`), path);
+    assert.deepEqual(directives.get('default-src'), ["'none'"], path);
+    assert.deepEqual(directives.get('frame-ancestors'), ["'none'"], path);
+    assert.deepEqual(directives.get('frame-src'), ["'none'"], path);
+    assert.equal(response.headers.get('x-frame-options'), 'DENY', path);
+    assert.ok(!csp.includes('*'), path);
+    for (const sources of [directives.get('connect-src'), directives.get('img-src')]) {
+      for (const source of sources.filter((value) => value.startsWith('https://'))) {
+        assert.ok(!source.startsWith('https://c.bing.com/') || source === 'https://c.bing.com/c.gif');
+      }
+    }
+  }
 });

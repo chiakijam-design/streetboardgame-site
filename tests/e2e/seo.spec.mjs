@@ -387,6 +387,11 @@ test('CSP・主要セキュリティヘッダーと404を維持する', async ({
     expect(csp, path).toContain('https://scripts.clarity.ms');
     expect(csp, path).toContain('https://c.clarity.ms');
     expect(csp, path).toContain('https://h.clarity.ms');
+    for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
+      expect(csp, path).toContain(`https://${letter}.clarity.ms/collect`);
+    }
+    expect(csp, path).toContain('https://c.bing.com/c.gif');
+    expect(csp, path).not.toContain('https://*.clarity.ms');
     expect(csp, path).toContain("frame-src 'none'");
     expect(response.headers()['x-content-type-options'], path).toBe('nosniff');
     expect(response.headers()['referrer-policy'], path).toBeTruthy();
