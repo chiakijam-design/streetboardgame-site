@@ -954,7 +954,7 @@ function libraryView() {
       <p class="challenge-library-status">気分や相手に合うパックを選んでください。選んだ10問ですぐにクイズを作れます。</p>
       <div class="challenge-library challenge-pack-library" data-testid="question-library">
         ${packs.map((pack, packIndex) => {
-          const cards = questionPackCards(allCards, pack.slug, isEnglish, QUESTION_COUNT);
+          const cards = questionCatalogReady ? questionPackCards(allCards, pack.slug, isEnglish, QUESTION_COUNT) : [];
           return `<article class="challenge-library-card challenge-pack-card" data-pack="${escapeHtml(pack.slug)}">
               <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="${packIndex === 0 ? 'eager' : 'lazy'}" fetchpriority="${packIndex === 0 ? 'high' : 'auto'}" decoding="async"
                 alt="${escapeHtml(pack.title)}${isEnglish ? ' illustration' : 'のイメージ画像'}">
@@ -962,7 +962,7 @@ function libraryView() {
               <span class="challenge-pack-count">${pack.featured ? '主力・10問パック' : '10問パック'}</span>
               <h2>${escapeHtml(pack.title)}</h2>
               <p>${escapeHtml(pack.description)}</p>
-              <details>
+              <details${questionCatalogReady ? '' : ' inert'}>
                 <summary>入っている10問を見る</summary>
                 <ol>${cards.map((card) => `<li>${escapeHtml(card.title)}</li>`).join('')}</ol>
               </details>
@@ -2330,6 +2330,9 @@ async function bootChallenge() {
   // actions disabled until reviewed questions arrive, without replacing any
   // name the visitor types while the request is pending.
   const earlyStartScreen = state.mode === 'create' && !preferredCardId && !preferredPackSlug;
+  // Static pack artwork/copy need not wait for the reviewed question catalog.
+  // Do not expose bundled question details before current review status arrives.
+  if (state.mode === 'library') render();
   if (earlyStartScreen) {
     render();
     app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = true; });

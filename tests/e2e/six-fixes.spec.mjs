@@ -79,6 +79,23 @@ test('initial library image and secondary page fonts are discoverable without JS
   expect(english).not.toContain('family=Noto+Sans+JP');
 });
 
+test('library artwork paints before the reviewed catalog arrives without exposing stale question details', async ({ page }) => {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  await page.route('**/api/questions/catalog', async route => {
+    await gate;
+    await route.continue();
+  });
+  await page.goto('/challenge/library');
+  const first = page.locator('.challenge-pack-card').first();
+  await expect(first.locator('img')).toBeVisible();
+  await expect(first.locator('details')).toHaveAttribute('inert', '');
+  await expect(first.locator('ol li')).toHaveCount(0);
+  release();
+  await expect(first.locator('details')).not.toHaveAttribute('inert', '');
+  await expect(first.locator('ol li')).toHaveCount(10);
+});
+
 test('completed normal play delivers image, report and role-swap actions without identity in the body', async ({ page, request }) => {
   // Simulate the OS accepting a file share; this is not a physical-device save test.
   await page.addInitScript(() => {
