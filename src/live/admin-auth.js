@@ -285,7 +285,16 @@ function readCookie(request, name) {
   const prefix = `${name}=`;
   for (const part of String(request.headers.get('cookie') || '').split(';')) {
     const value = part.trim();
-    if (value.startsWith(prefix)) return decodeURIComponent(value.slice(prefix.length));
+    if (value.startsWith(prefix)) {
+      try {
+        return decodeURIComponent(value.slice(prefix.length));
+      } catch (error) {
+        // Invalid cookie encoding is an authentication failure, not a server error.
+        // Reject the first matching cookie; do not fall through to another value.
+        if (error instanceof URIError) throw authError('admin-session-invalid', 401);
+        throw error;
+      }
+    }
   }
   return '';
 }
