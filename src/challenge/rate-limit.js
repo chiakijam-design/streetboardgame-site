@@ -1,4 +1,4 @@
-const ready = new WeakMap();
+const ready = new WeakSet();
 export const CHALLENGE_CREATE_LIMIT = 60;
 export const CHALLENGE_RATE_WINDOW_MS = 60_000;
 
@@ -7,11 +7,14 @@ export const CHALLENGE_RATE_WINDOW_MS = 60_000;
 export async function enforceChallengeRateLimit(env, identity, scope = 'create', limit = CHALLENGE_CREATE_LIMIT, now = Date.now()) {
   if (!identity || !env.REMOTE_DB) return;
   const db = env.REMOTE_DB;
-  if (!ready.has(db)) ready.set(db, db.prepare(`CREATE TABLE IF NOT EXISTS live_rate_limits (
-    rate_key TEXT PRIMARY KEY, window_start INTEGER NOT NULL,
-    request_count INTEGER NOT NULL, expires_at INTEGER NOT NULL
-  )`).run().catch(error => { ready.delete(db); throw error; }));
-  await ready.get(db);
+  if (!ready.has(db)) {
+    // Only cache completed setup, never another request's in-flight D1 IO.
+    await db.prepare(`CREATE TABLE IF NOT EXISTS live_rate_limits (
+      rate_key TEXT PRIMARY KEY, window_start INTEGER NOT NULL,
+      request_count INTEGER NOT NULL, expires_at INTEGER NOT NULL
+    )`).run();
+    ready.add(db);
+  }
   const start = Math.floor(now / CHALLENGE_RATE_WINDOW_MS) * CHALLENGE_RATE_WINDOW_MS;
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${start}:${identity}`));
   const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');

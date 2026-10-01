@@ -45,6 +45,33 @@ test('only normal POST creation is limited, returns Retry-After, never blocks GE
   assert.equal((await call('POST', undefined, '192.0.2.5')).status, 400);
   db.close();
 });
+test('concurrent limiter initialization does not share a failed request IO promise', async () => {
+  const db = database();
+  const base = adapter(db);
+  let rejectFirst;
+  let setupCalls = 0;
+  const binding = { prepare(sql) {
+    if (sql.startsWith('CREATE TABLE')) {
+      return { run() {
+        setupCalls += 1;
+        if (setupCalls === 1) return new Promise((_, reject) => { rejectFirst = reject; });
+        return base.prepare(sql).run();
+      } };
+    }
+    return base.prepare(sql);
+  } };
+  const env = { REMOTE_DB: binding };
+  const first = enforceChallengeRateLimit(env, '192.0.2.11');
+  const firstFailure = assert.rejects(first, /first-request-failed/);
+  const second = enforceChallengeRateLimit(env, '192.0.2.12');
+  // Attach a rejection handler immediately so an expected old-code failure is safe.
+  const secondResult = second.then(() => 'ok', error => error.message);
+  rejectFirst(new Error('first-request-failed'));
+  await firstFailure;
+  assert.equal(await secondResult, 'ok');
+  assert.equal(setupCalls, 2);
+  db.close();
+});
 test('detail endpoint authenticates completed players, validates actions/origin and only persists aggregate columns', async () => {
   const db = database(); const env = { REMOTE_DB: adapter(db) };
   const post = async (path, body, headers = {}) => handleChallengeApi(new Request(`https://example.com${path}`, {
