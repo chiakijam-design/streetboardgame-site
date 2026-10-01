@@ -1,5 +1,7 @@
 import { recordQuestionSelections } from '../questions/trends.js';
 import { recordLiveOpsEvent } from '../live/ops.js';
+import { enforceChallengeRateLimit } from './rate-limit.js';
+import { CHALLENGE_DAILY_ACTIONS, recordDailyAction } from '../analytics/daily-actions.js';
 
 export const CHALLENGE_MAX_PARTICIPANTS = 50;
 export const CHALLENGE_ROOM_TTL_DAYS = 30;
@@ -17,6 +19,7 @@ export async function handleChallengeApi(request, env, path) {
 
   try {
     if (path === '/api/challenge/rooms' && request.method === 'POST') {
+      await enforceChallengeRateLimit(env, request.headers.get('CF-Connecting-IP'));
       return await createRoom(request, env);
     }
 
@@ -65,6 +68,9 @@ export async function handleChallengeApi(request, env, path) {
       return await submitAnswers(request, env, submitMatch[1]);
     }
 
+    const actionMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/actions$/);
+    if (actionMatch && request.method === 'POST') return await recordParticipantAction(request, env, actionMatch[1]);
+
     const resultMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/result$/);
     if (resultMatch && request.method === 'GET') {
       return await getResult(request, env, resultMatch[1]);
@@ -82,7 +88,9 @@ export async function handleChallengeApi(request, env, path) {
       }).catch(() => {});
       return jsonResponse({ error: 'internal-error', traceId }, status);
     }
-    return jsonResponse({ error: error?.message || 'challenge-api-error' }, status);
+    const response = jsonResponse({ error: error?.message || 'challenge-api-error' }, status);
+    if (error.retryAfter) response.headers.set('retry-after', String(error.retryAfter));
+    return response;
   }
 }
 
@@ -368,6 +376,39 @@ async function submitAnswers(request, env, code) {
   if (!saved) return jsonResponse({ error: 'answers-already-submitted' }, 409);
   await recordQuestionPlays(env, room.cards, completedAt).catch(() => {});
   return jsonResponse({ score });
+}
+
+async function recordParticipantAction(request, env, code) {
+  const origin = request.headers.get('origin');
+  if (origin && origin !== new URL(request.url).origin) throw apiError('origin-forbidden', 403);
+  const room = await readRoom(env, code);
+  if (!room) throw apiError('room-not-found', 404);
+  const token = headerToken(request, 'x-challenge-participant-token');
+  const participant = token ? await readParticipant(env, code, token, room) : null;
+  if (!participant) throw apiError('participant-forbidden', 403);
+  if (participant.completedAt == null) throw apiError('answers-not-submitted', 409);
+  if (Number(request.headers.get('content-length')) > 128) throw apiError('invalid-action', 400);
+  const reader = request.body?.getReader();
+  let bytes = new Uint8Array();
+  if (reader) {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (bytes.length + value.length > 128) {
+        await reader.cancel();
+        throw apiError('invalid-action', 400);
+      }
+      const next = new Uint8Array(bytes.length + value.length);
+      next.set(bytes); next.set(value, bytes.length); bytes = next;
+    }
+  }
+  const text = new TextDecoder().decode(bytes);
+  if (text.length > 128) throw apiError('invalid-action', 400);
+  let metric;
+  try { metric = JSON.parse(text).metric; } catch { throw apiError('invalid-action', 400); }
+  if (!CHALLENGE_DAILY_ACTIONS.includes(metric)) throw apiError('invalid-action', 400);
+  await enforceChallengeRateLimit(env, token, 'actions', 12);
+  return jsonResponse({ stored: await recordDailyAction(env, 'challenge', metric) });
 }
 
 async function getResult(request, env, code) {

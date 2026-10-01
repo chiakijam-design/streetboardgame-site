@@ -196,7 +196,7 @@
     if (!brandFontStyles) return;
     if (window.__INITIAL_SCREEN && window.__INITIAL_SCREEN !== 'top') {
       document.documentElement.dataset.initialScreen = window.__INITIAL_SCREEN;
-      brandFontStyles.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..900&display=swap';
+      if (!brandFontStyles.dataset.pageSubset) brandFontStyles.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..900&display=swap';
     }
     var activateBrandFonts = function() { brandFontStyles.media = 'all'; };
     var scheduleBrandFonts = function() {

@@ -3,7 +3,8 @@ import { handleChallengeApi } from './src/challenge/api.js';
 import { handleQuestionApi } from './src/questions/api.js';
 import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 import { runSocialPublishing } from './src/social/publisher.js';
-import { infoPageMarkup } from './src/generated/info-pages.js';
+import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
+import { questionPacks } from './src/challenge/packs.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
@@ -397,7 +398,7 @@ async function handleRequest(request, env) {
         ogTitle: '製品版｜私のこと、ちゃんと分かってるよね？',
         imageAlt: 'ボードゲーム版 私のこと、ちゃんと分かってるよね？',
         pageId: CANONICAL_ORIGIN + '/product#webpage',
-        preloadImage: '/assets/character/girl-full-960.webp',
+        preloadImage: '/assets/product/board-game-package-photo.webp',
         noscriptTitle: '製品版｜私のこと、ちゃんと分かってるよね？',
         noscriptBody: 'Amazonで販売中のカードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、集まりや旅行、おうち時間でも遊べます。',
       },
@@ -417,10 +418,15 @@ async function handleRequest(request, env) {
       const html = await response.text();
       const headers = new Headers(response.headers);
       headers.set('content-type', 'text/html; charset=UTF-8');
-      const rendered = html.replace(
+      let rendered = html.replace(
         /<div id="root"[^>]*>[\s\S]*?<\/div><!-- \/home-prerender -->/,
         () => `<div id="root" aria-live="polite">${infoPageMarkup[path]}</div><!-- /home-prerender -->`,
       );
+      if (infoPageFontStyles[path]) {
+        rendered = rendered
+          .replace(/<link id="brand-font-styles" href="[^"]+"/, `<link id="brand-font-styles" data-page-subset="true" href="${infoPageFontStyles[path]}"`)
+          .replace(/(<noscript id="brand-font-fallback"><link href=")[^"]+/, `$1${infoPageFontStyles[path]}`);
+      }
       return new Response(applySeoMeta(rendered, pageMap[path]), {
         status: 200,
         headers,
@@ -558,6 +564,8 @@ function applySeoMeta(html, page) {
 }
 
 function applyChallengeLibraryMeta(html) {
+  const firstImage = questionPacks(false)[0]?.image;
+  if (firstImage) html = html.replace('</head>', `<link rel="preload" as="image" href="${firstImage}" fetchpriority="high"></head>`);
   const title = '人気の10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   const description = '意外な一面、初対面、推し・SNS、深く知る、LIVE、夏休み、推し活から選べる画像付き10問パックです。通常版・LIVE版のクイズをすぐ作れます。';
   const url = CANONICAL_ORIGIN + '/challenge/library';

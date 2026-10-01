@@ -116,6 +116,9 @@ let state = {
 };
 let questionCatalogReady = false;
 const trackedLiveBuilderQuestions = new WeakSet();
+let lastLiveMarkup = '';
+let lastBuilderFrameKey = '';
+let roomRequestPending = false;
 
 function liveQuestionCount() {
   if (Array.isArray(state.game?.results) && state.game.results.length) return state.game.results.length;
@@ -172,17 +175,42 @@ function render() {
   if (activeElement?.id === 'live-support-message') state.supportMessage = activeElement.value;
   document.documentElement.dataset.liveChallengeView = state.view;
   document.documentElement.dataset.liveChallengePhase = state.game?.phase || '';
-  const primaryContent = state.loading
+  const primaryContent = state.loading && !state.game
     ? loadingView()
     : state.view === 'landing' ? landingView()
       : state.view === 'create' ? createView()
         : state.view === 'join' ? joinView()
           : state.view === 'host' ? hostView()
             : viewerView();
-  const content = !state.loading && ['host', 'viewer'].includes(state.view) && state.game
+  const content = ['host', 'viewer'].includes(state.view) && state.game
     ? `<div class="live-session-layout"><div class="live-session-main">${primaryContent}</div>${liveChatView()}</div>`
     : primaryContent;
-  app.innerHTML = `${state.error ? `<div class="error" role="alert">${escapeHtml(errorText(state.error))}</div>` : ''}${content}${liveSupportHostAlertView()}`;
+  const markup = `${state.error ? `<div class="error" role="alert">${escapeHtml(errorText(state.error))}</div>` : ''}${content}${liveSupportHostAlertView()}`;
+  app.setAttribute('aria-busy', String(state.loading));
+  if (markup === lastLiveMarkup) return;
+  lastLiveMarkup = markup;
+  const frameKey = state.view === 'create' && !state.editingQuestion && !state.loading && !state.error
+    ? JSON.stringify([state.paidSalesEnabled,
+      state.paidCreatorVerificationId, state.paidCreatorProfilesLoading, state.paidCreatorProfilesLoaded,
+      state.paidCreatorProfiles, state.resultImagePrice]) : '';
+  if (frameKey && frameKey === lastBuilderFrameKey && app.querySelector('[data-testid="live-question-builder"]')) {
+    const template = document.createElement('template');
+    template.innerHTML = markup;
+    // Keep the input/settings DOM and its layout; replace only the question.
+    for (const selector of ['.progress', '[data-testid="live-question-builder"]', '.live-builder-footer']) {
+      const next = template.content.querySelector(selector);
+      app.querySelector(selector).replaceWith(next);
+      localizeDom(next);
+      bindEvents(next);
+    }
+    trackCurrentLiveBuilderQuestionShown();
+    return;
+  }
+  lastBuilderFrameKey = frameKey;
+  const focusId = activeElement?.id;
+  const selection = typeof activeElement?.selectionStart === 'number'
+    ? [activeElement.selectionStart, activeElement.selectionEnd] : null;
+  app.innerHTML = markup;
   localizeDom(app);
   bindEvents();
   trackCurrentLiveBuilderQuestionShown();
@@ -190,6 +218,11 @@ function render() {
   if (qr) renderLiveInviteQr(qr, joinUrl()).catch(() => {});
   const chatMessages = document.querySelector('.live-chat-messages');
   if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+  const replacement = focusId && document.getElementById(focusId);
+  if (replacement && app.contains(replacement)) {
+    replacement.focus({ preventScroll: true });
+    if (selection && replacement.setSelectionRange) replacement.setSelectionRange(...selection);
+  }
 }
 
 function liveChatView() {
@@ -856,12 +889,12 @@ function loadingView() {
   return '<section class="panel waiting"><div class="pulse"></div><h2>読み込み中</h2><p>少し待ってください。</p></section>';
 }
 
-function bindEvents() {
-  document.querySelector('[data-action="open-create"]')?.addEventListener('click', () => {
+function bindEvents(root = document) {
+  root.querySelector('[data-action="open-create"]')?.addEventListener('click', () => {
     setState({ view: 'create' });
     loadPaidCreatorProfiles();
   });
-  document.querySelectorAll('[data-action="back-landing"]').forEach((button) => button.addEventListener('click', () => {
+  root.querySelectorAll('[data-action="back-landing"]').forEach((button) => button.addEventListener('click', () => {
     history.replaceState(null, '', '/live-challenge');
     setState({
       view: 'landing',
@@ -872,13 +905,13 @@ function bindEvents() {
       error: '',
     });
   }));
-  document.querySelector('[data-action="go-code"]')?.addEventListener('click', goToCode);
-  document.getElementById('entry-code')?.addEventListener('keydown', (event) => {
+  root.querySelector('[data-action="go-code"]')?.addEventListener('click', goToCode);
+  root.querySelector('#entry-code')?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') goToCode();
   });
-  document.querySelector('[data-action="use-live-question"]')?.addEventListener('click', useLiveQuestion);
-  document.querySelector('[data-action="skip-live-question"]')?.addEventListener('click', skipLiveQuestion);
-  document.querySelector('[data-action="edit-live-question"]')?.addEventListener('click', () => {
+  root.querySelector('[data-action="use-live-question"]')?.addEventListener('click', useLiveQuestion);
+  root.querySelector('[data-action="skip-live-question"]')?.addEventListener('click', skipLiveQuestion);
+  root.querySelector('[data-action="edit-live-question"]')?.addEventListener('click', () => {
     captureDraft();
     setState({
       editingQuestion: true,
@@ -886,7 +919,7 @@ function bindEvents() {
       error: '',
     });
   });
-  document.querySelector('[data-action="custom-live-question"]')?.addEventListener('click', () => {
+  root.querySelector('[data-action="custom-live-question"]')?.addEventListener('click', () => {
     captureDraft();
     const questions = state.questions.slice();
     const original = structuredClone(questions[state.builderIndex]);
@@ -898,45 +931,45 @@ function bindEvents() {
     };
     setState({ questions, editingQuestion: true, editingOriginalQuestion: original, error: '' });
   });
-  document.querySelector('[data-action="save-live-question-edit"]')?.addEventListener('click', saveLiveQuestionEdit);
-  document.querySelector('[data-action="cancel-live-question-edit"]')?.addEventListener('click', cancelLiveQuestionEdit);
-  document.querySelector('[data-action="previous-live-question"]')?.addEventListener('click', previousLiveQuestion);
-  document.querySelector('[data-action="join-game"]')?.addEventListener('click', joinGame);
-  document.querySelector('[data-action="copy-link"]')?.addEventListener('click', copyJoinLink);
-  document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
-  document.querySelector('[data-action="report-question"]')?.addEventListener('click', (event) => reportQuestion(event.currentTarget));
-  document.querySelector('[data-action="start-game"]')?.addEventListener('click', () => hostAction('start'));
-  document.querySelectorAll('[data-action="host-answer"]').forEach((button) => button.addEventListener('click', () => hostAnswer(Number(button.dataset.index))));
-  document.querySelectorAll('[data-action="viewer-answer"]').forEach((button) => button.addEventListener('click', () => viewerAnswer(Number(button.dataset.index))));
-  document.querySelector('[data-action="advance"]')?.addEventListener('click', () => hostAction('advance'));
-  document.querySelector('[data-action="next"]')?.addEventListener('click', () => hostAction('next'));
-  document.querySelectorAll('[data-action="toggle-counts"]').forEach((input) => input.addEventListener('change', () => toggleCounts(input.checked)));
-  document.querySelector('[data-action="save-result"]')?.addEventListener('click', saveResultCard);
-  document.getElementById('enable-paid-sales')?.addEventListener('change', (event) => {
+  root.querySelector('[data-action="save-live-question-edit"]')?.addEventListener('click', saveLiveQuestionEdit);
+  root.querySelector('[data-action="cancel-live-question-edit"]')?.addEventListener('click', cancelLiveQuestionEdit);
+  root.querySelector('[data-action="previous-live-question"]')?.addEventListener('click', previousLiveQuestion);
+  root.querySelector('[data-action="join-game"]')?.addEventListener('click', joinGame);
+  root.querySelector('[data-action="copy-link"]')?.addEventListener('click', copyJoinLink);
+  root.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
+  root.querySelector('[data-action="report-question"]')?.addEventListener('click', (event) => reportQuestion(event.currentTarget));
+  root.querySelector('[data-action="start-game"]')?.addEventListener('click', () => hostAction('start'));
+  root.querySelectorAll('[data-action="host-answer"]').forEach((button) => button.addEventListener('click', () => hostAnswer(Number(button.dataset.index))));
+  root.querySelectorAll('[data-action="viewer-answer"]').forEach((button) => button.addEventListener('click', () => viewerAnswer(Number(button.dataset.index))));
+  root.querySelector('[data-action="advance"]')?.addEventListener('click', () => hostAction('advance'));
+  root.querySelector('[data-action="next"]')?.addEventListener('click', () => hostAction('next'));
+  root.querySelectorAll('[data-action="toggle-counts"]').forEach((input) => input.addEventListener('change', () => toggleCounts(input.checked)));
+  root.querySelector('[data-action="save-result"]')?.addEventListener('click', saveResultCard);
+  root.querySelector('#enable-paid-sales')?.addEventListener('change', (event) => {
     captureDraft();
     setState({ paidSalesEnabled: event.target.checked === true, error: '' });
   });
-  document.getElementById('paid-creator-profile')?.addEventListener('change', (event) => {
+  root.querySelector('#paid-creator-profile')?.addEventListener('change', (event) => {
     state.paidCreatorVerificationId = event.target.value;
   });
-  document.getElementById('result-image-price')?.addEventListener('change', (event) => {
+  root.querySelector('#result-image-price')?.addEventListener('change', (event) => {
     state.resultImagePrice = Number(event.target.value);
   });
-  document.querySelectorAll('[data-checkout-consent]').forEach((input) => input.addEventListener('change', (event) => {
+  root.querySelectorAll('[data-checkout-consent]').forEach((input) => input.addEventListener('change', (event) => {
     state.checkoutTermsAccepted = event.target.checked === true;
     render();
   }));
-  document.querySelector('[data-action="buy-result-image"]')?.addEventListener('click', () => startLiveCheckout('result_image'));
-  document.querySelector('[data-action="toggle-support"]')?.addEventListener('click', () => {
+  root.querySelector('[data-action="buy-result-image"]')?.addEventListener('click', () => startLiveCheckout('result_image'));
+  root.querySelector('[data-action="toggle-support"]')?.addEventListener('click', () => {
     setState({ supportPanelOpen: !state.supportPanelOpen });
   });
-  document.querySelectorAll('[data-support-amount]').forEach((button) => button.addEventListener('click', () => {
+  root.querySelectorAll('[data-support-amount]').forEach((button) => button.addEventListener('click', () => {
     startLiveCheckout('support', Number(button.dataset.supportAmount));
   }));
-  const chatInput = document.getElementById('live-chat-input');
+  const chatInput = root.querySelector('#live-chat-input');
   chatInput?.addEventListener('input', () => {
     state.chatDraft = chatInput.value;
-    const sendButton = document.querySelector('[data-action="send-live-chat"]');
+    const sendButton = root.querySelector('[data-action="send-live-chat"]');
     if (sendButton) sendButton.disabled = state.chatSending || !state.chatDraft.trim();
   });
   chatInput?.addEventListener('keydown', (event) => {
@@ -945,27 +978,27 @@ function bindEvents() {
       sendLiveChatMessage();
     }
   });
-  document.querySelector('[data-action="send-live-chat"]')?.addEventListener('click', sendLiveChatMessage);
-  document.querySelector('[data-action="toggle-live-chat"]')?.addEventListener('click', toggleLiveChat);
-  document.querySelectorAll('[data-action="report-live-chat"]').forEach((button) => button.addEventListener('click', () => {
+  root.querySelector('[data-action="send-live-chat"]')?.addEventListener('click', sendLiveChatMessage);
+  root.querySelector('[data-action="toggle-live-chat"]')?.addEventListener('click', toggleLiveChat);
+  root.querySelectorAll('[data-action="report-live-chat"]').forEach((button) => button.addEventListener('click', () => {
     moderateLiveChat('report', button.dataset.messageId);
   }));
-  document.querySelectorAll('[data-action="hide-live-chat"]').forEach((button) => button.addEventListener('click', () => {
+  root.querySelectorAll('[data-action="hide-live-chat"]').forEach((button) => button.addEventListener('click', () => {
     moderateLiveChat('hide', button.dataset.messageId);
   }));
-  document.querySelector('[data-action="acknowledge-live-support"]')?.addEventListener('click', (event) => {
+  root.querySelector('[data-action="acknowledge-live-support"]')?.addEventListener('click', (event) => {
     acknowledgeLiveSupportMessage(event.currentTarget.dataset.messageId);
   });
-  document.querySelector('[data-action="toggle-chat-support"]')?.addEventListener('click', () => {
+  root.querySelector('[data-action="toggle-chat-support"]')?.addEventListener('click', () => {
     setState({ chatSupportOpen: !state.chatSupportOpen });
   });
-  document.getElementById('live-support-message')?.addEventListener('input', (event) => {
+  root.querySelector('#live-support-message')?.addEventListener('input', (event) => {
     state.supportMessage = event.target.value;
   });
-  document.querySelectorAll('[data-chat-support-amount]').forEach((button) => button.addEventListener('click', () => {
+  root.querySelectorAll('[data-chat-support-amount]').forEach((button) => button.addEventListener('click', () => {
     startLiveCheckout('support', Number(button.dataset.chatSupportAmount), state.supportMessage);
   }));
-  document.querySelector('[data-action="download-paid-result"]')?.addEventListener('click', downloadPaidResult);
+  root.querySelector('[data-action="download-paid-result"]')?.addEventListener('click', downloadPaidResult);
   if (state.checkoutResult === 'success' && state.checkoutSessionId
     && !state.checkoutStatusBusy && state.checkoutStatusAttempts === 0) {
     refreshLiveCheckoutStatus();
@@ -1316,6 +1349,9 @@ function mergeLiveGame(nextGame) {
 }
 
 async function loadRoom() {
+  if (roomRequestPending) return;
+  roomRequestPending = true;
+  try {
   const headers = {};
   if (state.view === 'host') headers['x-live-host-token'] = state.hostToken;
   if (state.view === 'viewer') headers['x-live-participant-token'] = state.participantToken;
@@ -1327,12 +1363,16 @@ async function loadRoom() {
   const newSupportMessages = syncHostSupportAlerts(state.game);
   if (state.view === 'host') state.subjectToken = response.game.subjectToken || state.subjectToken;
   trackLiveResult(previousGame);
-  render();
+  if (JSON.stringify(previousGame) !== JSON.stringify(state.game) || newSupportMessages.length) render();
   announceLiveSupportMessages(newSupportMessages);
   resetLiveViewportWhenQuestionChanges(previousGame, state.game);
+  } finally {
+    roomRequestPending = false;
+  }
 }
 
 async function hostAction(action) {
+  if (state.loading) return;
   setState({ loading: true, error: '' });
   try {
     const response = await api(`/api/live/games/${state.code}/${action}`, {
@@ -1422,6 +1462,7 @@ function startLiveUpdates() {
   clearInterval(state.pollTimer);
   if (state.view === 'viewer' && state.game?.realtime) connectSocket();
   state.pollTimer = setInterval(() => {
+    if (state.loading) return;
     if (state.view === 'viewer' && state.socketConnected) return;
     loadRoom().catch(() => {});
   }, state.view === 'host' ? 2000 : LIVE_POLL_INTERVAL_MS);

@@ -32,6 +32,7 @@ import {
 } from './src/challenge/result.js';
 import { isEnglish, localizeDom } from './src/i18n/runtime.js';
 import { trackAnalyticsEvent, trackGamePlay } from './src/analytics/events.js';
+import { sendChallengeDailyAction } from './src/analytics/client-daily-actions.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -111,6 +112,8 @@ function trackChallengeShare(method, contentType) {
   });
 }
 let resultFeedbackKey = '';
+let dailyReportObserver = null;
+let dailyResultAttempt = 0;
 let resultFeedbackObserver = null;
 let resultFeedbackTimer = 0;
 let resultFeedbackQueue = [];
@@ -174,6 +177,7 @@ function render() {
   app.removeAttribute('aria-busy');
   localizeDom(app);
   bindEvents();
+  scheduleDailyReportView();
   trackCurrentCreatorQuestionShown();
   if (state.mode === 'result' && state.result && !state.resultImageUrl
     && !state.resultImageBusy && !state.resultImageError) {
@@ -188,6 +192,23 @@ function render() {
     requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
   }
   lastQuestionViewportKey = questionViewportKey;
+}
+
+function trackDailyResultAction(metric) {
+  sendChallengeDailyAction(state.result?.code, state.participantToken, dailyResultAttempt, metric);
+}
+
+function scheduleDailyReportView() {
+  dailyReportObserver?.disconnect();
+  const report = app.querySelector('[data-testid="challenge-ai-review"]');
+  if (!report || !state.result) return;
+  if (!('IntersectionObserver' in window)) return;
+  dailyReportObserver = new IntersectionObserver(entries => {
+    if (!entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= 0.25)) return;
+    dailyReportObserver.disconnect();
+    trackDailyResultAction('answer_report_viewed');
+  }, { threshold: 0.25 });
+  dailyReportObserver.observe(report);
 }
 
 function trackCurrentCreatorQuestionShown() {
@@ -932,10 +953,10 @@ function libraryView() {
     `<section class="challenge-panel">
       <p class="challenge-library-status">気分や相手に合うパックを選んでください。選んだ10問ですぐにクイズを作れます。</p>
       <div class="challenge-library challenge-pack-library" data-testid="question-library">
-        ${packs.map((pack) => {
+        ${packs.map((pack, packIndex) => {
           const cards = questionPackCards(allCards, pack.slug, isEnglish, QUESTION_COUNT);
           return `<article class="challenge-library-card challenge-pack-card" data-pack="${escapeHtml(pack.slug)}">
-              <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="lazy" decoding="async"
+              <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="${packIndex === 0 ? 'eager' : 'lazy'}" fetchpriority="${packIndex === 0 ? 'high' : 'auto'}" decoding="async"
                 alt="${escapeHtml(pack.title)}${isEnglish ? ' illustration' : 'のイメージ画像'}">
             <div class="challenge-pack-copy">
               <span class="challenge-pack-count">${pack.featured ? '主力・10問パック' : '10問パック'}</span>
@@ -1567,6 +1588,7 @@ async function retryChallenge() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'retry-failed');
+    dailyResultAttempt += 1;
     removeStorage(participantDraftKey(state.roomCode));
     resetBoardOptIn(state.roomCode);
     const next = {
@@ -1610,6 +1632,7 @@ function startRoleSwap() {
     setState({ error: 'questions-unavailable' });
     return;
   }
+  trackDailyResultAction('role_swap_started');
   const next = {
     mode: 'creator-edit',
     roomCode: '',
@@ -1957,8 +1980,10 @@ async function prepareResultImage() {
   state.resultImageBusy = true;
   try {
     const canvas = await createChallengeResultCanvas(state.result);
+    const imageUrl = canvas.toDataURL('image/png');
+    trackDailyResultAction('result_image_ready');
     setState({
-      resultImageUrl: canvas.toDataURL('image/png'),
+      resultImageUrl: imageUrl,
       resultImageBusy: false,
       resultImageError: '',
     });
@@ -1980,11 +2005,13 @@ async function saveChallengeResultImage(action = 'save-result-image') {
   }
   try {
     const blob = dataUrlToBlob(state.resultImageUrl);
-    return await saveImageBlob(
+    const saved = await saveImageBlob(
       blob,
       'watachan-challenge-score.png',
       isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード',
     );
+    if (saved) trackDailyResultAction('result_image_save_requested');
+    return saved;
   } catch (error) {
     if (error?.name !== 'AbortError') {
       alert(isEnglish
