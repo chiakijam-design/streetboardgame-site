@@ -134,7 +134,7 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await page.getByRole('textbox', { name: /Display name/ }).fill('Alex');
   await page.getByRole('button', { name: /Start the 10-question challenge/ }).click();
   for (let index = 0; index < 10; index += 1) {
-    await page.getByRole('button', { name: /^Guess One$/ }).click();
+    await page.getByTestId('challenge-answer-pad').getByRole('button', { name: /^Guess One$/ }).click();
   }
   await expect(page.getByRole('heading', { name: '10/10 correct' })).toHaveCount(1);
   await expect(page.locator('.challenge-hero')).toHaveCount(0);
