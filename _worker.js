@@ -5,6 +5,9 @@ import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 import { runSocialPublishing } from './src/social/publisher.js';
 import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
 import { questionPacks } from './src/challenge/packs.js';
+import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
+import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
+import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
@@ -56,7 +59,7 @@ const LEGAL_PAGE_FILES = Object.freeze({
 
 export default {
   async fetch(request, env) {
-    return withSecurityHeaders(await handleRequest(request, env), request);
+    return withSecurityHeaders(await handleRequest(request, env), request, env);
   },
   async scheduled(controller, env, context) {
     const scheduledAt = Number(controller?.scheduledTime) || Date.now();
@@ -163,6 +166,46 @@ async function handleRequest(request, env) {
       });
     }
 
+    const locale = localeFromPath(rawPath);
+    const extendedEnglishPage = locale === 'en' && PUBLIC_LOCALES.length > 2
+      && !['/en', '/en/', '/en/live-challenge', '/en/terms', '/en/privacy'].includes(path)
+      && !ENGLISH_CHALLENGE_PAGE_PATHS.has(path);
+    if (locale !== 'ja' && (locale !== 'en' || extendedEnglishPage)) {
+      if (!PUBLIC_LOCALES.includes(locale)) return new Response('Not Found', { status: 404, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } });
+      const assetRoute = localizedAssetRoute(rawPath);
+      if (!assetRoute) return new Response('Not Found', { status: 404 });
+      const dictionary = await env.ASSETS.fetch(new Request(new URL(`/locale-assets/${locale}.json`, url.origin), { method: 'GET' }));
+      if (!dictionary.ok) return new Response('Not Found', { status: 404, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } });
+      let data;
+      try { data = await dictionary.json(); }
+      catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
+      const baseUrl = new URL(assetRoute, url.origin);
+      // Reuse the existing public information-page renderer and game templates.
+      const baseRequest = new Request(baseUrl, { method: 'GET', headers: request.headers });
+      // Static .html aliases redirect to Japanese routes in handleRequest.
+      // Fetch the template directly so localized URLs do not lose their locale.
+      const response = assetRoute.endsWith('.html')
+        ? await env.ASSETS.fetch(baseRequest)
+        : await handleRequest(baseRequest, env);
+      if (!response.ok || !/text\/html/i.test(response.headers.get('content-type') || '')) return response;
+      const headers = new Headers(response.headers);
+      headers.delete('etag');
+      headers.delete('content-length');
+      headers.delete('content-encoding');
+      if (url.searchParams.has('room') || /\/(?:manage|ranking)$/.test(path)) {
+        headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+        headers.set('cache-control', 'no-store');
+      }
+      let rendered;
+      try {
+        let baseHtml = await response.text();
+        if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge/library') baseHtml = applyChallengeLibraryMeta(baseHtml);
+        rendered = localizePublicHtml(baseHtml, data, url, PUBLIC_LOCALES);
+      }
+      catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
+      return new Response(request.method === 'HEAD' ? null : rendered, { status: response.status, headers });
+    }
+
     if (path === '/en') {
       const pageUrl = new URL('/en/index.html', url.origin);
       const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
@@ -214,7 +257,9 @@ async function handleRequest(request, env) {
         headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       }
       const html = request.method === 'HEAD' ? null : await response.text();
-      return new Response(html ? applyEnglishGameMeta(html, 'challenge', url) : null, {
+      let rendered = html ? applyEnglishGameMeta(html, 'challenge', url) : null;
+      if (rendered && path === '/en/challenge/library') rendered = applyChallengeLibraryMeta(rendered);
+      return new Response(rendered, {
         status: response.status,
         headers,
       });
@@ -474,14 +519,14 @@ async function handleRequest(request, env) {
     return response;
 }
 
-async function withSecurityHeaders(response, request) {
+async function withSecurityHeaders(response, request, env) {
   if (response.status === 101 || response.webSocket) return response;
   const headers = new Headers(response.headers);
   const isHtml = /text\/html/i.test(headers.get('content-type') || '');
   if (isHtml) headers.set('content-type', 'text/html; charset=UTF-8');
   const nonce = isHtml ? createCspNonce() : '';
   const requestPath = request ? new URL(request.url).pathname : '';
-  const sensitivePath = /^\/(?:en\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|question-ops|api(?:\/|$))/.test(requestPath);
+  const sensitivePath = /^\/(?:[a-zA-Z-]+\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|question-ops|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
     "default-src 'none'",
     "base-uri 'self'",
@@ -513,10 +558,21 @@ async function withSecurityHeaders(response, request) {
   }
   let body = response.body;
   if (isHtml && response.body) {
-    body = (await response.text()).replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
+    body = await response.text();
     // Public account ownership verification only; this does not load ads.
     body = body.replace(/<meta\b(?=[^>]*\bname=["']google-adsense-account["'])[^>]*>/gi, '')
       .replace(/<\/head>/i, '<meta name="google-adsense-account" content="ca-pub-8959934584200203"></head>');
+    const locale = localeFromPath(requestPath);
+    if (PUBLIC_LOCALES.length > 2 && localizedAssetRoute(requestPath)) {
+      if (locale === 'ja') body = injectPublicLocaleShell(body, new URL(request.url), PUBLIC_LOCALES);
+      else if (locale === 'en' && !body.includes('window.__WATACHAN_I18N__=')) {
+        const dictionary = await env.ASSETS.fetch(new Request(new URL('/locale-assets/en.json', request.url), { method: 'GET' }));
+        if (!dictionary.ok) return new Response('Translation unavailable', { status: 503, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
+        try { body = localizePublicHtml(body, await dictionary.json(), new URL(request.url), PUBLIC_LOCALES); }
+        catch { return new Response('Translation unavailable', { status: 503, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } }); }
+      }
+    }
+    body = body.replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
     headers.delete('content-length');
     headers.delete('content-encoding');
   }

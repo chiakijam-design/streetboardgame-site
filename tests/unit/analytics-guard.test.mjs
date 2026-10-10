@@ -6,7 +6,7 @@ import worker from '../../_worker.js';
 
 const analyticsSource = await readFile(new URL('../../analytics.js', import.meta.url), 'utf8');
 
-function runAnalytics({ hostname, search = '', storedValue = null, readyState = 'complete', requestAnimationFrame, webdriver = false }) {
+function runAnalytics({ hostname, search = '', storedValue = null, readyState = 'complete', requestAnimationFrame, webdriver = false, localeReviewPending = false }) {
   const storage = new Map();
   if (storedValue !== null) storage.set('watachan:analytics-excluded:v1', storedValue);
   const appendedScripts = [];
@@ -16,6 +16,7 @@ function runAnalytics({ hostname, search = '', storedValue = null, readyState = 
   const locationUrl = new URL(`https://${urlHostname}/${search ? `?${search}` : ''}`);
 
   const windowObject = {
+    __WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__: localeReviewPending,
     navigator: { webdriver },
     requestAnimationFrame,
     location: {
@@ -77,6 +78,15 @@ test('127.0.0.1、::1、プレビュー環境ではGTMスクリプトを読み�
 
 test('自動ブラウザーの本番テストはinclude指定でもGA4とGTMへ送信しない', () => {
   const result = runAnalytics({ hostname: 'www.streetboardgame.com', search: 'analytics=include', webdriver: true });
+  assert.equal(result.windowObject.analyticsEnabled, false);
+  result.windowObject.trackEvent('game_play', { game_type: 'challenge' });
+  assert.equal(result.appendedScripts.length, 0);
+  assert.equal(result.windowObject.ga4EventLayer, undefined);
+  assert.equal(result.windowObject.dataLayer, undefined);
+});
+
+test('地域別同意が未確認の追加言語ではinclude指定や操作でも外部タグを有効化しない', () => {
+  const result = runAnalytics({ hostname: 'www.streetboardgame.com', search: 'analytics=include', localeReviewPending: true });
   assert.equal(result.windowObject.analyticsEnabled, false);
   result.windowObject.trackEvent('game_play', { game_type: 'challenge' });
   assert.equal(result.appendedScripts.length, 0);
@@ -218,7 +228,9 @@ test('GA4が必要とする画像・計測送信先をCSPで許可する', async
 test('Clarityの全収集ホストをcollectパスだけ許可し、nonceと防御を維持する', async () => {
   for (const path of ['/', '/challenge', '/live-challenge', '/en/']) {
     const response = await worker.fetch(new Request(`https://www.streetboardgame.com${path}`), {
-      ASSETS: { fetch: async () => new Response('<html><script>void 0;</script></html>', {
+      ASSETS: { fetch: async (request) => new URL(request.url).pathname === '/locale-assets/en.json'
+        ? new Response(await readFile(new URL('../../locale-assets/en.json', import.meta.url)), { headers: { 'content-type': 'application/json' } })
+        : new Response('<html><script>void 0;</script></html>', {
         headers: { 'content-type': 'text/html' },
       }) },
     });

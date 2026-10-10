@@ -23,6 +23,7 @@ import {
 } from './src/platform/imageSave.js';
 import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
+import { localizedQuestionCard, wrapLocalizedText, editedQuestionValue } from './src/i18n/display-copy.js';
 import { buildQuestionConversationInsights } from './src/challenge/insights.js';
 import {
   getChallengeResultTier,
@@ -30,7 +31,9 @@ import {
   getChallengeReviewLines,
   getChallengeReviewLinesEnglish,
 } from './src/challenge/result.js';
-import { isEnglish, localizeDom } from './src/i18n/runtime.js';
+import { isEnglish, localizeDom, languagePrefix, currentLocale, translateText, protectUserCopy, localizedAlert, localizedConfirm } from './src/i18n/runtime.js';
+import { stripLocalePrefix } from './src/i18n/locales.js';
+import { localizedCanvasContext, collectProtectedUserCopy } from './src/i18n/canvas-copy.js';
 import { trackAnalyticsEvent, trackGamePlay } from './src/analytics/events.js';
 import { sendChallengeDailyAction } from './src/analytics/client-daily-actions.js';
 
@@ -50,8 +53,7 @@ let allCards = isEnglish
   ? mergeChallengeCards(window.ENGLISH_COMMON_QUESTION_CARDS)
   : mergeChallengeCards(window.COMMON_QUESTION_CARDS);
 const currentUrl = new URL(location.href);
-const pagePath = currentUrl.pathname.replace(/^\/en(?=\/|$)/, '').replace(/\/+$/, '') || '/challenge';
-const languagePrefix = isEnglish ? '/en' : '';
+const pagePath = stripLocalePrefix(currentUrl.pathname).replace(/\/+$/, '') || '/challenge';
 const roomCode = currentUrl.searchParams.get('room')?.trim().toUpperCase() || '';
 const preferredCardId = currentUrl.searchParams.get('question')?.trim() || '';
 const preferredPackSlug = currentUrl.searchParams.get('pack')?.trim() || '';
@@ -155,6 +157,7 @@ function escapeHtml(value) {
 
 function render() {
   if (!app) return;
+  protectUserCopy(collectProtectedUserCopy(state, allCards));
   document.documentElement.dataset.challengeMode = state.mode;
   const questionViewportKey = !state.editingQuestion
     && ['creator-edit', 'creator-answer', 'participant-answer'].includes(state.mode)
@@ -236,8 +239,8 @@ function creatorEditView() {
       </div>
       <article class="challenge-card challenge-builder-card notebook-question-card" data-testid="challenge-builder-paper-card">
         <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/10</div>
-        <h2 class="notebook-card-accessible-title">${escapeHtml(card.title)}</h2>
-        ${renderNotebookQuestionCard(card, { answerAction: 'builder-answer' })}
+        <h2 class="notebook-card-accessible-title">${escapeHtml(translateText(card.title))}</h2>
+        ${renderNotebookQuestionCard(localizedQuestionCard(card, translateText), { answerAction: 'builder-answer', locale: currentLocale })}
       </article>
       <div class="challenge-answer-pad challenge-builder-answer-pad" data-testid="challenge-builder-answer-pad">
         <div class="challenge-answer-pad-heading">
@@ -290,10 +293,10 @@ function creatorQuestionEditView(card) {
     `<section class="challenge-panel challenge-single-editor" data-testid="challenge-question-edit-form">
       <label class="challenge-label" for="builder-question">問題文</label>
       <textarea id="builder-question" data-question="${index}" maxlength="180"
-        aria-label="Q${index + 1}の問題文">${escapeHtml(card.title)}</textarea>
+        aria-label="Q${index + 1}の問題文">${escapeHtml(translateText(card.title))}</textarea>
       ${card.choices.map((choice, choiceIndex) => `<label class="challenge-option-edit">
         <b>${choiceIndex + 1}</b>
-        <input data-option="${index}:${choiceIndex}" maxlength="60" value="${escapeHtml(choice)}"
+        <input data-option="${index}:${choiceIndex}" maxlength="60" value="${escapeHtml(translateText(choice))}"
           aria-label="Q${index + 1} 選択肢${choiceIndex + 1}">
       </label>`).join('')}
       <label class="challenge-consent">
@@ -407,8 +410,8 @@ function questionView(isCreator) {
       </div>
       <article class="challenge-card notebook-question-card" data-testid="challenge-paper-card">
         <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/10</div>
-        <h2 class="notebook-card-accessible-title">${escapeHtml(card.title)}</h2>
-        ${renderNotebookQuestionCard(card, { answerAction: 'answer', disabled: !isCreator && state.answerPending })}
+        <h2 class="notebook-card-accessible-title">${escapeHtml(translateText(card.title))}</h2>
+        ${renderNotebookQuestionCard(localizedQuestionCard(card, translateText), { answerAction: 'answer', disabled: !isCreator && state.answerPending, locale: currentLocale })}
       </article>
       <div class="challenge-answer-pad" data-testid="challenge-answer-pad">
         <div class="challenge-answer-pad-heading">
@@ -616,7 +619,7 @@ function insightCardView(highlight, copy) {
   const { question } = highlight;
   return `<article class="challenge-insight-card is-${highlight.kind}" data-insight-kind="${highlight.kind}">
     <span class="challenge-insight-label">${escapeHtml(highlight.label)}</span>
-    <h3>Q${question.index + 1} ${escapeHtml(question.card.title)}</h3>
+    <h3>Q${question.index + 1} ${escapeHtml(translateText(question.card.title))}</h3>
     <p>${escapeHtml(highlight.summary)}</p>
     ${choiceCountListView(question, copy)}
     <p class="challenge-conversation-prompt"><span aria-hidden="true">💬</span> ${copy.talk}</p>
@@ -625,7 +628,7 @@ function insightCardView(highlight, copy) {
 
 function questionDistributionView(question, copy) {
   return `<article class="challenge-question-distribution">
-    <h3>Q${question.index + 1} ${escapeHtml(question.card.title)}</h3>
+    <h3>Q${question.index + 1} ${escapeHtml(translateText(question.card.title))}</h3>
     ${choiceCountListView(question, copy)}
   </article>`;
 }
@@ -672,7 +675,7 @@ function participantDetail(participant, cards) {
     ${participant.submitted ? `<ol>
       ${participant.answers.map((answer, index) => `
         <li class="${answer.match ? 'is-correct' : ''}">
-          <span>Q${index + 1} ${escapeHtml(cards[index].title)}</span>
+          <span>Q${index + 1} ${escapeHtml(translateText(cards[index].title))}</span>
           <b>${escapeHtml(cards[index].choices[answer.selected])}</b>
           <small>${answer.match ? '正解' : `正解：${escapeHtml(cards[index].choices[answer.correct])}`}</small>
         </li>
@@ -714,7 +717,8 @@ function resultView() {
   const result = state.result;
   if (!result) return errorView();
   const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
-  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(result) : getChallengeReviewLines(result);
+  const displayResult = isEnglish ? { ...result, answers: result.answers.map((answer) => ({ ...answer, card: localizedQuestionCard(answer.card, translateText) })) } : result;
+  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(displayResult).map((line, index) => index === 0 ? line.replace(`“${tier.title}”`, `“${translateText(tier.title)}”`) : line) : getChallengeReviewLines(result);
   return `
     <section class="challenge-result-image-section" aria-labelledby="challenge-result-score-title">
       <h1 id="challenge-result-score-title" class="challenge-result-visually-hidden">${result.score}/10問 正解</h1>
@@ -735,7 +739,7 @@ function resultView() {
         ${result.answers.map((answer, index) => `
           <article class="challenge-result ${answer.match ? 'is-correct' : ''}"
             data-result-answer="${index}" data-result-feedback="${answer.match ? 'correct' : 'incorrect'}">
-            <header><b>Q${index + 1} ${escapeHtml(answer.card.title)}</b><span>${answer.match ? '当たり' : 'ハズレ'}</span></header>
+            <header><b>Q${index + 1} ${escapeHtml(translateText(answer.card.title))}</b><span>${answer.match ? '当たり' : 'ハズレ'}</span></header>
             <p>あなた：<i style="background:${COLORS[answer.selected]}"></i>${escapeHtml(answer.card.choices[answer.selected])}</p>
             <p>正解：<i style="background:${COLORS[answer.correct]}"></i>${escapeHtml(answer.card.choices[answer.correct])}</p>
           </article>
@@ -964,7 +968,7 @@ function libraryView() {
               <p>${escapeHtml(pack.description)}</p>
               <details${questionCatalogReady ? '' : ' inert'}>
                 <summary>入っている10問を見る</summary>
-                <ol>${cards.map((card) => `<li>${escapeHtml(card.title)}</li>`).join('')}</ol>
+                <ol>${cards.map((card) => `<li>${escapeHtml(translateText(card.title))}</li>`).join('')}</ol>
               </details>
             </div>
             <div class="challenge-pack-actions">
@@ -1022,7 +1026,7 @@ function trendGroupView(section) {
       ${section.items.map(({ card }) => `<li data-question-id="${escapeHtml(card.id)}">
         <div>
           <small>${escapeHtml(card.category || 'みんなのお題')}</small>
-          <b>${escapeHtml(card.title)}</b>
+          <b>${escapeHtml(translateText(card.title))}</b>
         </div>
         <a href="${languagePrefix}/challenge?question=${encodeURIComponent(card.id)}">このお題を入れて作る</a>
       </li>`).join('')}
@@ -1184,9 +1188,9 @@ function captureCreatorEdit() {
   captureCreatorConsent();
   state.cards = state.cards.map((card, index) => ({
     ...card,
-    title: document.querySelector(`[data-question="${index}"]`)?.value.trim() ?? card.title,
+    title: editedQuestionValue(document.querySelector(`[data-question="${index}"]`)?.value, card.title, translateText),
     choices: card.choices.map((choice, choiceIndex) => (
-      document.querySelector(`[data-option="${index}:${choiceIndex}"]`)?.value.trim() ?? choice
+      editedQuestionValue(document.querySelector(`[data-option="${index}:${choiceIndex}"]`)?.value, choice, translateText)
     )),
   }));
 }
@@ -1416,12 +1420,12 @@ async function reportQuestion(button) {
   const box = button?.closest('[data-report-box]');
   const reason = box?.querySelector('[data-report-reason]')?.value || '';
   if (!questionId || !reason) return;
-  if (!confirm('このお題を通報し、確認が終わるまで公開ライブラリから非公開にしますか？')) return;
+  if (!localizedConfirm('このお題を通報し、確認が終わるまで公開ライブラリから非公開にしますか？')) return;
   button.disabled = true;
   try {
     await reportManagedQuestion(questionId, reason);
     allCards = allCards.filter((card) => String(card.managedQuestionId || card.id) !== questionId);
-    alert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
+    localizedAlert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
     skipCreatorQuestion({ trackSkip: false });
   } catch (error) {
     button.disabled = false;
@@ -1449,7 +1453,7 @@ async function shareToInstagram() {
   const copied = await copyText(challengeUrl(state.room.code));
   if (!copied) return setState({ error: 'copy-failed' });
   trackChallengeShare('instagram', 'challenge_invite');
-  window.alert('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
+  localizedAlert('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
 }
 
 async function joinRoom() {
@@ -1579,7 +1583,7 @@ async function publishBoardOnly() {
 async function retryChallenge() {
   if (!state.result || !state.participantToken) return;
   if (state.result.participant?.rankingParticipating
-    && !confirm('もう一度予想すると、現在の理解度ボード掲載はいったん取り消されます。続けますか？')) return;
+    && !localizedConfirm('もう一度予想すると、現在の理解度ボード掲載はいったん取り消されます。続けますか？')) return;
   setState({ loading: true, error: '' });
   try {
     const response = await fetch(`/api/challenge/rooms/${state.roomCode}/retry`, {
@@ -1804,19 +1808,26 @@ function resultRoundRect(context, x, y, width, height, radius) {
 }
 
 function splitResultText(text, maxLength = 18, maxLines = 3) {
-  const value = String(text || '');
+  const value = translateText(String(text || ''));
   if (!value) return [];
+  if (!['ja', 'en'].includes(currentLocale)) return wrapLocalizedText(value, currentLocale, maxLines);
   const lines = [];
   value.split('\n').forEach((paragraph) => {
-    for (let index = 0; index < paragraph.length; index += maxLength) {
-      lines.push(paragraph.slice(index, index + maxLength));
+    const graphemes = typeof Intl.Segmenter === 'function'
+      ? [...new Intl.Segmenter(currentLocale, { granularity: 'grapheme' }).segment(paragraph)].map((part) => part.segment)
+      : Array.from(paragraph);
+    const length = currentLocale === 'ja' || currentLocale === 'en' ? maxLength : Math.max(maxLength, Math.ceil(graphemes.length / maxLines));
+    for (let index = 0; index < graphemes.length; index += length) {
+      lines.push(graphemes.slice(index, index + length).join(''));
     }
   });
   return lines.slice(0, maxLines);
 }
 
-function drawResultLines(context, lines, x, y, lineHeight) {
-  lines.forEach((line, index) => context.fillText(line, x, y + index * lineHeight));
+function drawResultLines(context, lines, x, y, lineHeight, maxWidth) {
+  lines.forEach((line, index) => maxWidth === undefined
+    ? context.fillText(line, x, y + index * lineHeight)
+    : context.fillText(line, x, y + index * lineHeight, maxWidth));
 }
 
 async function createChallengeResultCanvas(result) {
@@ -1831,7 +1842,9 @@ async function createChallengeResultCanvas(result) {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
-  const context = canvas.getContext('2d');
+  protectUserCopy([participantName, creatorName]);
+  const context = currentLocale === 'ja' || currentLocale === 'en' ? canvas.getContext('2d')
+    : localizedCanvasContext(canvas.getContext('2d'), translateText, document.documentElement.dir);
 
   context.fillStyle = '#ec4683';
   context.fillRect(0, 0, canvas.width, canvas.height);
@@ -1887,7 +1900,7 @@ async function createChallengeResultCanvas(result) {
     isEnglish ? 24 : 13,
     2,
   );
-  drawResultLines(context, scoreLabelLines, 202, 326, 42);
+  drawResultLines(context, scoreLabelLines, 202, 326, 42, !['ja', 'en'].includes(currentLocale) ? 420 : undefined);
 
   context.shadowColor = '#191919';
   context.shadowOffsetX = 8;
@@ -1935,7 +1948,7 @@ async function createChallengeResultCanvas(result) {
   context.fillStyle = '#ec4683';
   const titleLines = splitResultText(tier.title, 11, 2);
   context.font = `900 ${titleLines.length > 1 ? 46 : 54}px "Noto Sans JP", sans-serif`;
-  drawResultLines(context, titleLines, 540, 740, 58);
+  drawResultLines(context, titleLines, 540, 740, 58, !['ja', 'en'].includes(currentLocale) ? 760 : undefined);
 
   context.fillStyle = '#ffffff';
   resultRoundRect(context, 150, 816, 780, 248, 26);
@@ -1947,7 +1960,7 @@ async function createChallengeResultCanvas(result) {
   context.fillStyle = '#191919';
   context.font = '900 31px "Noto Sans JP", sans-serif';
   const messageLines = splitResultText(tier.message, 20, 4);
-  drawResultLines(context, messageLines, 540, 878, 47);
+  drawResultLines(context, messageLines, 540, 878, 47, !['ja', 'en'].includes(currentLocale) ? 730 : undefined);
 
   context.fillStyle = '#ffe36f';
   resultRoundRect(context, 156, 1094, 768, 132, 26);
@@ -2008,13 +2021,13 @@ async function saveChallengeResultImage(action = 'save-result-image') {
     const saved = await saveImageBlob(
       blob,
       'watachan-challenge-score.png',
-      isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード',
+      translateText(isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード'),
     );
     if (saved) trackDailyResultAction('result_image_save_requested');
     return saved;
   } catch (error) {
     if (error?.name !== 'AbortError') {
-      alert(isEnglish
+      localizedAlert(isEnglish
         ? 'The image could not be saved. Please try again.'
         : '画像を保存できませんでした。もう一度お試しください。');
     }
@@ -2034,7 +2047,7 @@ function resultShareText({ includeUrl = true } = {}) {
     ? [
         `I guessed ${state.result.creatorName}’s answers!`,
         'Which ones matched? Check the answers and try the same 10 questions.',
-        `My title: “${tier.title}”`,
+        `My title: “${translateText(tier.title)}”`,
         '#Watachan',
       ]
     : [
@@ -2050,7 +2063,7 @@ function resultShareText({ includeUrl = true } = {}) {
       shareUrl,
     );
   }
-  return lines.join('\n');
+  return lines.map((line) => translateText(line)).join('\n');
 }
 
 async function shareResultToLine() {
@@ -2061,23 +2074,23 @@ async function shareResultToLine() {
     const outcome = await sharePreparedImageFileFirst({
       src: state.resultImageUrl,
       filename: 'watachan-challenge-score.png',
-      title: isEnglish
+      title: translateText(isEnglish
         ? 'Know Me Quiz | Score result card'
-        : 'わたし理解度診断｜点数入り結果カード',
+        : 'わたし理解度診断｜点数入り結果カード'),
       text,
     });
     if (outcome === 'shared') {
       trackChallengeShare('line', 'challenge_result');
       return;
     }
-    window.alert(isEnglish
+    localizedAlert(isEnglish
       ? 'The result image was saved. LINE will open next; attach the saved image to your message.'
       : '結果画像を保存しました。続けてLINEが開くので、保存した結果画像をトークへ添付してください。');
     openLineShare(text);
     trackChallengeShare('line', 'challenge_result');
   } catch (error) {
     if (error?.name !== 'AbortError') {
-      window.alert(isEnglish
+      localizedAlert(isEnglish
         ? 'The result image could not be prepared. Please try again.'
         : '結果画像を準備できませんでした。もう一度お試しください。');
     }
@@ -2092,23 +2105,23 @@ async function shareResultToX() {
     const outcome = await sharePreparedImageFileFirst({
       src: state.resultImageUrl,
       filename: 'watachan-challenge-score.png',
-      title: isEnglish
+      title: translateText(isEnglish
         ? 'Know Me Quiz | Score result card'
-        : 'わたし理解度診断｜点数入り結果カード',
+        : 'わたし理解度診断｜点数入り結果カード'),
       text,
     });
     if (outcome === 'shared') {
       trackChallengeShare('x', 'challenge_result');
       return;
     }
-    window.alert(isEnglish
+    localizedAlert(isEnglish
       ? 'The result image was saved. X will open next; attach the saved image to your post.'
       : '結果画像を保存しました。続けてXが開くので、保存した結果画像を投稿へ添付してください。');
     openXShare(text);
     trackChallengeShare('x', 'challenge_result');
   } catch (error) {
     if (error?.name !== 'AbortError') {
-      window.alert(isEnglish
+      localizedAlert(isEnglish
         ? 'The result image could not be prepared. Please try again.'
         : '結果画像を準備できませんでした。もう一度お試しください。');
     }
@@ -2123,7 +2136,7 @@ async function shareResultToInstagram() {
   const saveResult = await saveChallengeResultImage('share-result-instagram');
   if (!saveResult) return;
   trackChallengeShare('instagram', 'challenge_result');
-  window.alert(isEnglish
+  localizedAlert(isEnglish
     ? 'The text was copied and the result image is ready. Choose Instagram Stories from the share sheet, or select the saved image in Instagram.'
     : '文章をコピーし、結果画像を用意しました。共有メニューからInstagramストーリーズを選ぶか、Instagramで保存した画像を選んでください。');
 }
@@ -2295,11 +2308,11 @@ function manageUrl(code, token) {
 }
 
 function shareText(room, url) {
-  return buildChallengeInviteText({
+  return translateText(buildChallengeInviteText({
     creatorName: room.creatorName,
     url,
     isEnglish,
-  });
+  }));
 }
 
 function errorMessage(code) {

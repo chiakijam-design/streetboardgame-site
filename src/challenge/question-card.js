@@ -1,3 +1,5 @@
+import { wrapLocalizedText } from '../i18n/display-copy.js';
+
 const CARD_WIDTH = 756;
 const CARD_HEIGHT = 1122;
 const LINE_YS = [40, 113, 186, 260, 333, 407, 480, 553, 627, 701, 773, 848, 922, 996, 1068];
@@ -24,24 +26,30 @@ function cardTitle(card) {
   return String(card?.title || card?.text || '');
 }
 
-function splitLine(value, limit) {
+function splitLine(value, limit, locale = 'ja') {
   const text = String(value || '').trim();
   if (text.length <= limit) return [text];
+  if (!['ja', 'en'].includes(locale)) return wrapLocalizedText(text, locale, 2);
   const preferredBreak = Math.ceil(text.length / 2);
   return [text.slice(0, preferredBreak), text.slice(preferredBreak)];
 }
 
-function textElement(lines, { x, y, size, lineGap = 44, className = '' }) {
+function textElement(lines, { x, y, size, lineGap = 44, className = '', locale = 'ja', fitWidth = 0 }) {
   const startY = y - ((lines.length - 1) * lineGap) / 2;
-  return `<text class="${className}" x="${x}" y="${startY}" font-size="${size}" text-anchor="middle" dominant-baseline="middle">
-    ${lines.map((line, index) => `<tspan x="${x}" dy="${index === 0 ? 0 : lineGap}">${escapeMarkup(line)}</tspan>`).join('')}
+  const rtl = ['ar', 'he'].includes(locale) ? ' direction="rtl" unicode-bidi="plaintext"' : '';
+  return `<text class="${className}" x="${x}" y="${startY}" font-size="${size}" text-anchor="middle" dominant-baseline="middle"${rtl}>
+    ${lines.map((line, index) => {
+      const estimatedWidth = Array.from(line).reduce((sum, char) => sum + (/\p{Script=Latin}/u.test(char) ? 0.65 : /\s/.test(char) ? 0.35 : 1), 0) * size;
+      const fit = fitWidth && estimatedWidth > fitWidth ? ` textLength="${fitWidth}" lengthAdjust="spacingAndGlyphs"` : '';
+      return `<tspan x="${x}" dy="${index === 0 ? 0 : lineGap}"${fit}>${escapeMarkup(line)}</tspan>`;
+    }).join('')}
   </text>`;
 }
 
-function dynamicQuestionCardSvg(card) {
+function dynamicQuestionCardSvg(card, locale = 'ja') {
   const title = cardTitle(card);
   const choices = normalizedChoices(card);
-  const titleLines = splitLine(title, 13);
+  const titleLines = splitLine(title, 13, locale);
   const titleSize = titleLines.length > 1 ? 38 : title.length >= 15 ? 40 : title.length >= 11 ? 44 : 50;
   const holes = Array.from({ length: 12 }, (_, index) => 30 + index * 63);
   const holesPath = holes
@@ -78,9 +86,9 @@ function dynamicQuestionCardSvg(card) {
     <path d="${ruledLinesPath}" fill="none" stroke="#9DD0E5" stroke-width="4"/>
     <path d="M68 55 L690 55 L681 198 L66 198 Z" fill="#75C7E6" opacity=".9"/>
     <g class="notebook-question-card-copy" fill="#111111">
-      ${textElement(titleLines, { x: 378, y: 132, size: titleSize, lineGap: 45, className: 'notebook-question-card-title' })}
+      ${textElement(titleLines, { x: 378, y: 132, size: titleSize, lineGap: 45, className: 'notebook-question-card-title', locale, fitWidth: !['ja', 'en'].includes(locale) ? 610 : 0 })}
       ${choices.map((choice, index) => {
-        const lines = splitLine(choice, 12);
+        const lines = splitLine(choice, 12, locale);
         const size = lines.length > 1 ? 34 : choice.length >= 14 ? 32 : choice.length >= 10 ? 36 : 42;
         return `<circle cx="76" cy="${CHOICE_YS[index]}" r="42" fill="${COLORS[index]}" filter="url(#${dotShadowId})"/>
           ${textElement(lines, {
@@ -89,6 +97,8 @@ function dynamicQuestionCardSvg(card) {
             size,
             lineGap: 38,
             className: 'notebook-question-card-choice',
+            locale,
+            fitWidth: !['ja', 'en'].includes(locale) ? 530 : 0,
           })}`;
       }).join('')}
     </g>
@@ -97,7 +107,7 @@ function dynamicQuestionCardSvg(card) {
   </svg>`;
 }
 
-export function renderNotebookQuestionCard(card, { answerAction = '', disabled = false } = {}) {
+export function renderNotebookQuestionCard(card, { answerAction = '', disabled = false, locale = 'ja' } = {}) {
   const accessibleChoices = normalizedChoices(card)
     .map((choice) => `<li>${escapeMarkup(choice)}</li>`)
     .join('');
@@ -106,5 +116,5 @@ export function renderNotebookQuestionCard(card, { answerAction = '', disabled =
       style="top:calc(${CHOICE_YS[index] - 74} / ${CARD_HEIGHT} * 100%);height:calc(148 / ${CARD_HEIGHT} * 100%)"
       aria-label="${escapeMarkup(choice)}${answerAction === 'builder-answer' ? 'を正解に選ぶ' : 'を選ぶ'}"
       ${disabled ? 'disabled aria-busy="true"' : ''}></button>`).join('') : '';
-  return `${dynamicQuestionCardSvg(card)}<ol class="notebook-card-accessible-choices">${accessibleChoices}</ol>${choiceButtons}`;
+  return `${dynamicQuestionCardSvg(card, locale)}<ol class="notebook-card-accessible-choices">${accessibleChoices}</ol>${choiceButtons}`;
 }

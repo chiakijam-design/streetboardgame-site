@@ -1,0 +1,550 @@
+{
+  "schemaVersion": 1,
+  "status": "public-fixed-source-only",
+  "entries": [
+    {
+      "id": "m43d0b79662c1b3",
+      "source": "クイズを作る人向けに、参加URLで最大50人へ出題する通常版と、視聴者と同時回答するライブ配信版を提供する無料ゲームサイトです。",
+      "contexts": [
+        "/:structured"
+      ]
+    },
+    {
+      "id": "m22c9a999b2a4bd",
+      "source": "当てるより、話すための10問。通常版とLIVE版で、自分の答えを友達や視聴者に予想してもらえる無料ゲームです。",
+      "contexts": [
+        "/:structured"
+      ]
+    },
+    {
+      "id": "mdc480587d6934d",
+      "source": "わたし理解度診断 通常版",
+      "contexts": [
+        "/:structured"
+      ]
+    },
+    {
+      "id": "m4c2677865c0e3c",
+      "source": "わたし理解度診断 LIVE版",
+      "contexts": [
+        "/:structured"
+      ]
+    },
+    {
+      "id": "md19cca455686e6",
+      "source": "わたし理解度診断｜私のこと、ちゃんと分かってるよね？ 通常版",
+      "contexts": [
+        "/:structured",
+        "/challenge:structured"
+      ]
+    },
+    {
+      "id": "m7ee0e070e828df",
+      "source": "当てるより、話すための10問。自分で選択・作成した10問へ先に回答し、参加URLを受け取った最大50人に自分の答えを予想してもらう通常版です。",
+      "contexts": [
+        "/:structured"
+      ]
+    },
+    {
+      "id": "m5c2e75fa472405",
+      "source": "わたし理解度診断｜私のこと、ちゃんと分かってるよね？ LIVE版",
+      "contexts": [
+        "/:structured",
+        "/live-challenge:structured"
+      ]
+    },
+    {
+      "id": "mb009bc074270c0",
+      "source": "当てるより、話すための10問。配信者が参加URL・QR・6桁コードで招待した視聴者と同時回答するLIVE版です。",
+      "contexts": [
+        "/:structured"
+      ]
+    },
+    {
+      "id": "m3d400fd9105e87",
+      "source": "当てるより、話すための10問。再挑戦OK・結果公開は自分で選べて、AI答え合わせレポート付き。",
+      "contexts": [
+        "/:metadata",
+        "/challenge:metadata",
+        "/challenge/library:metadata",
+        "/live-challenge:metadata"
+      ]
+    },
+    {
+      "id": "m9ce32e04af1ef4",
+      "source": "わたし理解度診断｜私のこと、ちゃんと分かってるよね？｜当てるより、話すための10問。",
+      "contexts": [
+        "/:metadata",
+        "/challenge:metadata",
+        "/challenge/library:metadata",
+        "/live-challenge:metadata",
+        "/challenge-guide:metadata"
+      ]
+    },
+    {
+      "id": "m4aaa58fdfc0462",
+      "source": "人気の10問パック",
+      "contexts": [
+        "/challenge/library:structured"
+      ]
+    },
+    {
+      "id": "m92706b0c61dfe5",
+      "source": "意外な一面、初対面、推し・SNS、深く知る、LIVE、夏休み、推し活から選べる画像付き10問パックです。通常版・LIVE版のクイズをすぐ作れます。",
+      "contexts": [
+        "/challenge/library:structured",
+        "/challenge/library:metadata"
+      ]
+    },
+    {
+      "id": "m390d895b2bc8f9",
+      "source": "当てるより、話すための10問。Instagram・YouTubeライブで、配信者と視聴者が同時回答するLIVE版です。",
+      "contexts": [
+        "/live-challenge:structured"
+      ]
+    },
+    {
+      "id": "m6a83b03f72071c",
+      "source": "当てるより、話すための10問。Instagram・YouTubeライブで配信者と視聴者が同時に回答するLIVE版です。",
+      "contexts": [
+        "/live-challenge:structured"
+      ]
+    },
+    {
+      "id": "m4b144f6fcd1081",
+      "source": "当てるより、話すための10問。配信者と視聴者が同時回答するLIVE版。",
+      "contexts": [
+        "/live-challenge:metadata"
+      ]
+    },
+    {
+      "id": "m1d669ffaa727a7",
+      "source": "自分の10問を最大50人へ出題する通常版と、視聴者と同時回答するライブ配信版を公開する無料クイズサイトです。",
+      "contexts": [
+        "/challenge-guide:structured",
+        "/about:structured",
+        "/product:structured"
+      ]
+    },
+    {
+      "id": "m1831ddd04348fb",
+      "source": "みんなに挑戦してもらう｜わたし理解度診断",
+      "contexts": [
+        "/challenge-guide:structured",
+        "/challenge-guide:metadata"
+      ]
+    },
+    {
+      "id": "mfba6e171282cfa",
+      "source": "みんなに挑戦してもらう｜10問クイズの遊び方・作り方",
+      "contexts": [
+        "/challenge-guide:structured",
+        "/challenge-guide:body"
+      ]
+    },
+    {
+      "id": "m018de5b5851a95",
+      "source": "自分が先に答えた10問をみんなに予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせと任意の理解度ボードを楽しめます。",
+      "contexts": [
+        "/challenge-guide:structured",
+        "/challenge-guide:metadata"
+      ]
+    },
+    {
+      "id": "m9dc0f9601e079e",
+      "source": "どうやってクイズを作りますか？",
+      "contexts": [
+        "/challenge-guide:structured"
+      ]
+    },
+    {
+      "id": "mf719922e923c91",
+      "source": "出題者名を入力して10問へ回答すると、挑戦者へ送る専用URLが発行されます。",
+      "contexts": [
+        "/challenge-guide:structured"
+      ]
+    },
+    {
+      "id": "m6ead6c8d6c8c5c",
+      "source": "1つのクイズに最大50人まで挑戦できます。",
+      "contexts": [
+        "/challenge-guide:structured"
+      ]
+    },
+    {
+      "id": "m53af98a1b91e59",
+      "source": "無料で遊べます。クイズ作成、専用URLの共有、答え合わせ、答え合わせレポート、任意の理解度ボードまで利用できます。",
+      "contexts": [
+        "/challenge-guide:structured"
+      ]
+    },
+    {
+      "id": "m98819220b55da9",
+      "source": "わたし理解度診断のキャラクター",
+      "contexts": [
+        "/challenge-guide:attribute",
+        "/about:attribute"
+      ]
+    },
+    {
+      "id": "m0916cc5fa2fbde",
+      "source": "About｜わたし理解度診断",
+      "contexts": [
+        "/about:structured",
+        "/about:metadata"
+      ]
+    },
+    {
+      "id": "m0d1cea48a161aa",
+      "source": "About｜わたし理解度診断・私のこと、ちゃんと分かってるよね？",
+      "contexts": [
+        "/about:structured",
+        "/about:body"
+      ]
+    },
+    {
+      "id": "m22a9cbf78937bb",
+      "source": "「わたし理解度診断」は、自分の10問を最大50人に予想してもらう通常版と、視聴者と同時回答するLIVE版を公開する無料ゲームサイトです。",
+      "contexts": [
+        "/about:structured",
+        "/about:metadata"
+      ]
+    },
+    {
+      "id": "m1bbe3aace3f989",
+      "source": "わたし理解度診断「私のこと、ちゃんと分かってるよね？」",
+      "contexts": [
+        "/about:metadata"
+      ]
+    },
+    {
+      "id": "mb7097beb230a04",
+      "source": "製品版｜私のこと、ちゃんと分かってるよね？",
+      "contexts": [
+        "/product:structured",
+        "/product:body",
+        "/product:metadata"
+      ]
+    },
+    {
+      "id": "m2cc582a67d38c3",
+      "source": "Amazonで販売中のカードゲーム版「私のこと、ちゃんと分かってるよね？」を紹介するページです。54問入りで、集まりや旅行、おうち時間でも遊べます。",
+      "contexts": [
+        "/product:structured",
+        "/product:metadata"
+      ]
+    },
+    {
+      "id": "m0ab6c525302f8a",
+      "source": "Web版で盛り上がったら、製品版でもう一度",
+      "contexts": [
+        "/product:body"
+      ]
+    },
+    {
+      "id": "m0bd0e5f71a43aa",
+      "source": "スマホを置いてカードを囲める製品版です。飲み会・旅行・おうち時間にも。",
+      "contexts": [
+        "/product:body"
+      ]
+    },
+    {
+      "id": "mee3f3f67086dec",
+      "source": "写真は製品版の実物パッケージです。Web版とは問題数・遊び方が異なります。",
+      "contexts": [
+        "/product:body"
+      ]
+    },
+    {
+      "id": "mf04e2334630f7a",
+      "source": "Amazonで製品版を見る →",
+      "contexts": [
+        "/product:body"
+      ]
+    },
+    {
+      "id": "m0410ac8d9715fd",
+      "source": "※ Amazonアフィリエイトを利用しています",
+      "contexts": [
+        "/product:body"
+      ]
+    },
+    {
+      "id": "m467a12b4eb92b5",
+      "source": "ピンクの製品版カードゲームパッケージの実物写真",
+      "contexts": [
+        "/product:attribute"
+      ]
+    },
+    {
+      "id": "m6876c2b601a71c",
+      "source": "ボードゲーム版 私のこと、ちゃんと分かってるよね？",
+      "contexts": [
+        "/product:metadata"
+      ]
+    },
+    {
+      "id": "m6e97da07aa5006",
+      "source": "商品・料金のご案内",
+      "contexts": [
+        "/pricing:attribute"
+      ]
+    },
+    {
+      "id": "m094c67a88ff177",
+      "source": "応援メッセージの税込価格と表示色",
+      "contexts": [
+        "/pricing:attribute"
+      ]
+    },
+    {
+      "id": "mcd767a84887843",
+      "source": "法務ページ",
+      "contexts": [
+        "/terms:attribute",
+        "/privacy:attribute",
+        "/legal:attribute",
+        "/creator-terms:attribute",
+        "/refund-policy:attribute",
+        "/content-guidelines:attribute",
+        "/minor-policy:attribute"
+      ]
+    },
+    {
+      "id": "mebacb5210d58b1",
+      "source": "CONTENT & PORTRAIT",
+      "contexts": [
+        "/content-guidelines:body"
+      ]
+    },
+    {
+      "id": "m27abcc2d4a94bf",
+      "source": "Understanding Quiz",
+      "contexts": [
+        "/en/:structured",
+        "/en/challenge:structured",
+        "/en/live-challenge:structured"
+      ]
+    },
+    {
+      "id": "m698d909d80f768",
+      "source": "How Well Do You Know Me?",
+      "contexts": [
+        "/en/:structured"
+      ]
+    },
+    {
+      "id": "m5fe5ea88375536",
+      "source": "Create a free 10-question quiz for friends or play live with viewers.",
+      "contexts": [
+        "/en/:structured"
+      ]
+    },
+    {
+      "id": "m9db2247bc7706f",
+      "source": "Create a free 10-question “How well do you know me?” quiz, share one link with friends, or play live with viewers on Instagram Live or YouTube Live.",
+      "contexts": [
+        "/en/:structured"
+      ]
+    },
+    {
+      "id": "m0f46d75181eeaf",
+      "source": "Challenge your livestream viewers",
+      "contexts": [
+        "/en/:structured"
+      ]
+    },
+    {
+      "id": "m7bed3c3863480a",
+      "source": "A girl holding a card",
+      "contexts": [
+        "/en/:attribute"
+      ]
+    },
+    {
+      "id": "mf4a68f04bf1838",
+      "source": "Colorful quiz cards",
+      "contexts": [
+        "/en/:attribute"
+      ]
+    },
+    {
+      "id": "m9c870aa6e5e932",
+      "source": "How it works",
+      "contexts": [
+        "/en/:attribute"
+      ]
+    },
+    {
+      "id": "m041b4c264fe44f",
+      "source": "Game modes",
+      "contexts": [
+        "/en/:attribute"
+      ]
+    },
+    {
+      "id": "m2486df098f5d8f",
+      "source": "How well do you know me? | Understanding Quiz",
+      "contexts": [
+        "/en/:metadata",
+        "/en/challenge:structured",
+        "/en/challenge:metadata"
+      ]
+    },
+    {
+      "id": "ma3426f090e3e58",
+      "source": "Make a 10-question quiz, share one link, compare answers, and start a conversation. Includes a live-stream version for viewers.",
+      "contexts": [
+        "/en/:metadata"
+      ]
+    },
+    {
+      "id": "ma08e79877fac12",
+      "source": "How well do you know me? Create a free 10-question quiz for up to 50 players.",
+      "contexts": [
+        "/en/:metadata"
+      ]
+    },
+    {
+      "id": "mc8681923763633",
+      "source": "Make a 10-question quiz and challenge your friends with one link.",
+      "contexts": [
+        "/en/:metadata"
+      ]
+    },
+    {
+      "id": "mb8f85d5a0d9e83",
+      "source": "Challenge Your Friends | How well do they know you?",
+      "contexts": [
+        "/en/challenge:structured",
+        "/en/challenge:body"
+      ]
+    },
+    {
+      "id": "mb08f8880269108",
+      "source": "Create a free 10-question quiz, share one link, and see how well up to 50 friends know your answers.",
+      "contexts": [
+        "/en/challenge:structured",
+        "/en/challenge:metadata"
+      ]
+    },
+    {
+      "id": "mf3a873b8f44ab7",
+      "source": "わたし理解度診断｜How well do you know me?",
+      "contexts": [
+        "/en/challenge:body"
+      ]
+    },
+    {
+      "id": "me40882ca8cb10a",
+      "source": "How well do you",
+      "contexts": [
+        "/en/challenge:body",
+        "/en/live-challenge:body"
+      ]
+    },
+    {
+      "id": "mf732eeb7e7884f",
+      "source": "know me?",
+      "contexts": [
+        "/en/challenge:body",
+        "/en/live-challenge:body"
+      ]
+    },
+    {
+      "id": "me70a0a0e1a6285",
+      "source": "Livestream Challenge | Play with Instagram or YouTube viewers",
+      "contexts": [
+        "/en/live-challenge:structured",
+        "/en/live-challenge:body"
+      ]
+    },
+    {
+      "id": "md1082e8daa5203",
+      "source": "Answer the same 10 questions with your livestream viewers. Earn one point for every match and give each viewer a personal result card.",
+      "contexts": [
+        "/en/live-challenge:structured",
+        "/en/live-challenge:metadata"
+      ]
+    },
+    {
+      "id": "mdaa7c94b8677f4",
+      "source": "Challenge your livestream viewers | Understanding Quiz",
+      "contexts": [
+        "/en/live-challenge:structured",
+        "/en/live-challenge:metadata"
+      ]
+    },
+    {
+      "id": "mdd92a5efb8a88f",
+      "source": "← Home",
+      "contexts": [
+        "/en/live-challenge:body"
+      ]
+    },
+    {
+      "id": "madc7353d6bb9bd",
+      "source": "Know Me Quiz | Live",
+      "contexts": [
+        "/en/live-challenge:body"
+      ]
+    },
+    {
+      "id": "mb5ffff26971c88",
+      "source": "The streamer and viewers answer together. Earn one point for every match and get a personal result card.",
+      "contexts": [
+        "/en/live-challenge:body"
+      ]
+    },
+    {
+      "id": "me368119bd3d720",
+      "source": "Legal pages",
+      "contexts": [
+        "/en/terms:attribute",
+        "/en/privacy:attribute"
+      ]
+    },
+    {
+      "id": "m6e0146a79d4a7d",
+      "source": "表示を復元中…",
+      "contexts": [
+        "viewport_recovery.js:control"
+      ]
+    },
+    {
+      "id": "m48a17172cca2ed",
+      "source": "再読み込みして復元中…",
+      "contexts": [
+        "viewport_recovery.js:control"
+      ]
+    },
+    {
+      "id": "m41c779e16522d3",
+      "source": "表示を元に戻す",
+      "contexts": [
+        "viewport_recovery.js:control"
+      ]
+    },
+    {
+      "id": "mc80e2f994a8964",
+      "source": "拡大表示を元の大きさに戻す",
+      "contexts": [
+        "viewport_recovery.js:control"
+      ]
+    },
+    {
+      "id": "mf4e7ddbdea4265",
+      "source": "このブラウザをアクセス解析の対象外に設定しました。",
+      "contexts": [
+        "analytics.js:preference-notice"
+      ]
+    },
+    {
+      "id": "m77220f5429c106",
+      "source": "このブラウザのアクセス解析除外を解除しました。",
+      "contexts": [
+        "analytics.js:preference-notice"
+      ]
+    }
+  ]
+}

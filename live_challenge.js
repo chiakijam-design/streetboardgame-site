@@ -23,7 +23,9 @@ import {
 } from './src/questions/catalog.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
-import { isEnglish, localizeDom } from './src/i18n/runtime.js';
+import { localizedQuestionCard, editedQuestionValue } from './src/i18n/display-copy.js';
+import { isEnglish, localizeDom, languagePrefix, currentLocale, translateText, protectUserCopy, localizedAlert, localizedConfirm } from './src/i18n/runtime.js';
+import { localizedCanvasContext, collectProtectedUserCopy } from './src/i18n/canvas-copy.js';
 import { trackAnalyticsEvent, trackGamePlay, trackPurchaseFromCheckout } from './src/analytics/events.js';
 
 const QUESTION_COUNT = 10;
@@ -31,7 +33,6 @@ const app = document.getElementById('live-challenge-app');
 let allCards = isEnglish
   ? mergeChallengeCards(window.ENGLISH_COMMON_QUESTION_CARDS)
   : mergeChallengeCards(window.COMMON_QUESTION_CARDS);
-const languagePrefix = isEnglish ? '/en' : '';
 const url = new URL(location.href);
 const initialCode = (url.searchParams.get('room') || '').replace(/\D/g, '').slice(0, 6);
 const initialCheckoutResult = String(url.searchParams.get('checkout') || '');
@@ -170,6 +171,7 @@ if (state.view === 'host' || state.view === 'viewer') {
 
 function render() {
   if (!app) return;
+  protectUserCopy(collectProtectedUserCopy(state, allCards));
   const activeElement = document.activeElement;
   if (activeElement?.id === 'live-chat-input') state.chatDraft = activeElement.value;
   if (activeElement?.id === 'live-support-message') state.supportMessage = activeElement.value;
@@ -252,7 +254,7 @@ function liveChatMessageView(message) {
   const paid = message.type === 'support';
   const supportTier = paid ? liveSupportTier(message.amount) : null;
   const ownMessage = message.participantId && message.participantId === state.game?.participantId;
-  const time = new Date(Number(message.createdAt) || Date.now()).toLocaleTimeString(isEnglish ? 'en-US' : 'ja-JP', {
+  const time = new Date(Number(message.createdAt) || Date.now()).toLocaleTimeString(currentLocale === 'ja' ? 'ja-JP' : currentLocale === 'en' ? 'en-US' : currentLocale, {
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -263,7 +265,7 @@ function liveChatMessageView(message) {
       ${paid ? `<span class="support-badge" aria-label="${escapeHtml(supportTier.colorName)}の応援メッセージ">♥ ${number(message.amount)}円</span>` : ''}
       <time>${escapeHtml(time)}</time>
     </div>
-    <p>${escapeHtml(message.text)}</p>
+    <p data-user-copy>${escapeHtml(message.text)}</p>
     <div class="live-chat-tools">
       ${state.view === 'host'
         ? `<button data-action="hide-live-chat" data-message-id="${escapeHtml(message.id)}">非表示</button>`
@@ -472,7 +474,7 @@ function createView() {
       <div class="live-builder-paper notebook-question-card" data-testid="live-builder-paper-card">
         <span class="q-badge notebook-card-counter">Q${state.builderIndex + 1}/10</span>
         <h3 class="notebook-card-accessible-title">${escapeHtml(question.text)}</h3>
-        ${renderNotebookQuestionCard(question)}
+        ${renderNotebookQuestionCard(localizedQuestionCard(question, translateText), { locale: currentLocale })}
       </div>
       <button class="primary live-use-question" data-action="use-live-question">
         <span>この問題を使う<small>（答えは配信中に選択）</small></span>
@@ -544,11 +546,11 @@ function liveQuestionEditView(question) {
     <div class="field">
       <label for="live-builder-question">問題文</label>
       <textarea id="live-builder-question" data-question="${index}" maxlength="180"
-        aria-label="Q${index + 1}の問題文">${escapeHtml(question.text)}</textarea>
+        aria-label="Q${index + 1}の問題文">${escapeHtml(translateText(question.text))}</textarea>
     </div>
     ${question.options.map((option, optionIndex) => `<label class="option-edit">
       <b>${optionIndex + 1}</b>
-      <input data-option="${index}:${optionIndex}" maxlength="60" value="${escapeHtml(option)}"
+      <input data-option="${index}:${optionIndex}" maxlength="60" value="${escapeHtml(translateText(option))}"
         aria-label="Q${index + 1} 選択肢${optionIndex + 1}">
     </label>`).join('')}
     <label class="check">
@@ -895,7 +897,7 @@ function bindEvents(root = document) {
     loadPaidCreatorProfiles();
   });
   root.querySelectorAll('[data-action="back-landing"]').forEach((button) => button.addEventListener('click', () => {
-    history.replaceState(null, '', '/live-challenge');
+    history.replaceState(null, '', `${languagePrefix}/live-challenge`);
     setState({
       view: 'landing',
       code: '',
@@ -1008,7 +1010,7 @@ function bindEvents(root = document) {
 function goToCode() {
   const code = (document.getElementById('entry-code')?.value || '').replace(/\D/g, '').slice(0, 6);
   if (code.length !== 6) return showError('invalid-code');
-  location.href = `/live-challenge?room=${code}`;
+  location.href = `${languagePrefix}/live-challenge?room=${code}`;
 }
 
 function captureDraft() {
@@ -1025,9 +1027,9 @@ function captureDraft() {
   if (resultPrice) state.resultImagePrice = Number(resultPrice.value);
   state.questions = state.questions.map((question, index) => ({
     ...question,
-    text: document.querySelector(`[data-question="${index}"]`)?.value.trim() ?? question.text,
+    text: editedQuestionValue(document.querySelector(`[data-question="${index}"]`)?.value, question.text, translateText),
     options: question.options.map((option, optionIndex) => (
-      document.querySelector(`[data-option="${index}:${optionIndex}"]`)?.value.trim() ?? option
+      editedQuestionValue(document.querySelector(`[data-option="${index}:${optionIndex}"]`)?.value, option, translateText)
     )),
   }));
 }
@@ -1125,7 +1127,7 @@ async function createGame() {
     state.hostToken = response.hostToken;
     state.subjectToken = response.game.subjectToken || '';
     state.game = mergeLiveGame(response.game);
-    history.replaceState(null, '', `/live-challenge?room=${state.code}#host=${state.hostToken}`);
+    history.replaceState(null, '', `${languagePrefix}/live-challenge?room=${state.code}#host=${state.hostToken}`);
     setState({
       view: 'host',
       loading: false,
@@ -1208,12 +1210,12 @@ async function reportQuestion(button) {
   const box = button?.closest('[data-report-box]');
   const reason = box?.querySelector('[data-report-reason]')?.value || '';
   if (!questionId || !reason) return;
-  if (!confirm('このお題を通報し、確認が終わるまで公開ライブラリから非公開にしますか？')) return;
+  if (!localizedConfirm('このお題を通報し、確認が終わるまで公開ライブラリから非公開にしますか？')) return;
   button.disabled = true;
   try {
     await reportManagedQuestion(questionId, reason);
     allCards = allCards.filter((card) => String(card.managedQuestionId || card.id) !== questionId);
-    alert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
+    localizedAlert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
     skipLiveQuestion({ trackSkip: false });
   } catch (error) {
     button.disabled = false;
@@ -1293,7 +1295,7 @@ async function moderateLiveChat(action, messageId) {
   const question = action === 'report'
     ? 'このメッセージを通報し、すぐ非公開にしますか？'
     : 'このメッセージを非表示にしますか？';
-  if (!confirm(question)) return;
+  if (!localizedConfirm(question)) return;
   try {
     const headers = action === 'hide'
       ? { 'x-live-host-token': state.hostToken }
@@ -1598,7 +1600,9 @@ async function saveResultCard() {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
-  const context = canvas.getContext('2d');
+  protectUserCopy(collectProtectedUserCopy(state, allCards));
+  const context = currentLocale === 'ja' || currentLocale === 'en' ? canvas.getContext('2d')
+    : localizedCanvasContext(canvas.getContext('2d'), translateText, document.documentElement.dir);
   context.fillStyle = '#EC4F88';
   context.fillRect(0, 0, canvas.width, canvas.height);
   roundedRect(context, 55, 55, 970, 1240, 42, '#191919');
@@ -1618,8 +1622,8 @@ async function saveResultCard() {
   centerText(context, `${correct}/10`, 560, '900 164px "Noto Sans JP", sans-serif', '#EC4F88');
   centerText(context, resultMessage(correct), 680, '900 42px "Noto Sans JP", sans-serif', '#191919');
   roundedRect(context, 145, 760, 790, 270, 30, '#FFE26B');
-  centerText(context, isEnglish ? '1 point for each streamer match' : '配信者と同じ答えなら1点', 850, '900 40px "Noto Sans JP", sans-serif', '#191919');
-  centerText(context, isEnglish ? `${correct} of 10 answers matched!` : `10問中 ${correct}問 一致！`, 940, '900 58px "Noto Sans JP", sans-serif', '#191919');
+  centerText(context, isEnglish ? '1 point for each streamer match' : '配信者と同じ答えなら1点', 850, '900 40px "Noto Sans JP", sans-serif', '#191919', 730);
+  centerText(context, isEnglish ? `${correct} of 10 answers matched!` : `10問中 ${correct}問 一致！`, 940, '900 58px "Noto Sans JP", sans-serif', '#191919', 730);
   centerText(context, 'Instagram LIVE / YouTube LIVE', 1125, '800 30px "Noto Sans JP", sans-serif', '#6F6267');
   centerText(context, 'streetboardgame.com', 1200, '900 30px "Noto Sans JP", sans-serif', '#191919');
   const link = document.createElement('a');
@@ -1712,12 +1716,13 @@ function roundedRect(context, x, y, width, height, radius, fill) {
   context.fill();
 }
 
-function centerText(context, text, y, font, fill) {
+function centerText(context, text, y, font, fill, maxWidth = 850) {
   context.font = font;
   context.fillStyle = fill;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.fillText(text, 540, y);
+  if (['ja', 'en'].includes(currentLocale)) context.fillText(text, 540, y);
+  else context.fillText(text, 540, y, maxWidth);
 }
 
 async function api(path, options = {}) {
@@ -1827,7 +1832,7 @@ function escapeHtml(value) {
 localizeDom(document);
 
 function number(value) {
-  return Math.max(0, Number(value) || 0).toLocaleString(isEnglish ? 'en-US' : 'ja-JP');
+  return Math.max(0, Number(value) || 0).toLocaleString(currentLocale === 'ja' ? 'ja-JP' : currentLocale === 'en' ? 'en-US' : currentLocale);
 }
 
 function readSession(key) {

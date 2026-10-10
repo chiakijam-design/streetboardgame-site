@@ -1,6 +1,8 @@
 import { expect, test } from './test.mjs';
+import { PUBLIC_LOCALES } from '../../src/generated/public-locales.js';
 
 const ORIGIN = 'https://www.streetboardgame.com';
+const expanded = PUBLIC_LOCALES.length === 34;
 
 test('日本語トップを維持し、英語端末には初回だけ英語版を案内する', async ({ page }) => {
   await page.addInitScript(() => {
@@ -8,8 +10,11 @@ test('日本語トップを維持し、英語端末には初回だけ英語版�
   });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
-  await expect(page.getByRole('dialog', { name: 'English version available' })).toBeVisible();
-  await page.getByRole('button', { name: 'View in English' }).click();
+  if (expanded) await page.locator('[data-locale-switcher]').selectOption('en');
+  else {
+    await expect(page.getByRole('dialog', { name: 'English version available' })).toBeVisible();
+    await page.getByRole('button', { name: 'View in English' }).click();
+  }
   await expect(page).toHaveURL(/\/en\/$/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   expect(((await page.getByRole('heading', { level: 1 }).textContent()) || '').replace(/\s+/g, ''))
@@ -19,9 +24,9 @@ test('日本語トップを維持し、英語端末には初回だけ英語版�
 test('言語切替はページ上部にだけ表示し、スクロールへ追従しない', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('watachan:language:v1', 'ja'));
   await page.goto('/');
-  const switcher = page.locator('.site-language-switch');
+  const switcher = page.locator(expanded ? '[data-locale-switcher]' : '.site-language-switch');
   await expect(switcher).toBeVisible();
-  await expect(switcher).toHaveCSS('position', 'absolute');
+  await expect(switcher).toHaveCSS('position', expanded ? 'relative' : 'absolute');
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect.poll(async () => (await switcher.boundingBox())?.y ?? 0).toBeLessThan(0);
 });
@@ -42,7 +47,9 @@ test('英語の主要ページは専用SEO・hreflangを持ち、言語切替は
     await expect(page).toHaveTitle(title);
     expect(((await page.locator('h1').textContent()) || '').replace(/\s+/g, ''), path)
       .toContain(h1.replace(/\s+/g, ''));
-    if (path === '/en/') {
+    if (expanded) {
+      await expect(page.locator('[data-locale-switcher]')).toBeVisible();
+    } else if (path === '/en/') {
       await expect(page.getByRole('navigation', { name: 'Language' })).toBeVisible();
     } else {
       await expect(page.locator('.site-language-switch'), path).toHaveCount(0);
@@ -110,11 +117,12 @@ test('日本語と英語の下層ページに言語切替を表示しない', as
     '/en/privacy',
   ]) {
     await page.goto(path);
-    await expect(page.locator('.site-language-switch'), path).toHaveCount(0);
+    if (expanded) await expect(page.locator('[data-locale-switcher]'), path).toBeVisible();
+    else await expect(page.locator('.site-language-switch'), path).toHaveCount(0);
   }
   for (const removedPath of ['/en/challenge-guide', '/en/about', '/en/product']) {
     const response = await request.get(removedPath);
-    expect(response.status(), removedPath).toBe(404);
+    expect(response.status(), removedPath).toBe(expanded ? 200 : 404);
   }
 });
 
