@@ -13,6 +13,13 @@ const french = {
   score: 'Au quiz de {2}, {0} a obtenu {1}/10.',
 };
 
+test('specific public templates win over a generic suffix and retain interpolation values', () => {
+  const entries = [{ id: 'count', source: '{0}人' }, { id: 'joined', source: '人参加 ／ 上限{6}人' }];
+  const { translate } = createCatalogTranslator(entries, { count: '{0} people', joined: 'joined / limit {6}' });
+  assert.equal(translate('人参加 ／ 上限50人'), 'joined / limit 50');
+  assert.equal(translate('10人'), '10 people');
+});
+
 test('catalog coverage rejects missing entries, extra keys and changed interpolation placeholders', () => {
   assert.equal(validateCatalog(source, french).complete, true);
   assert.deepEqual(validateCatalog(source, { heading: french.heading }).missing, ['invite', 'score']);

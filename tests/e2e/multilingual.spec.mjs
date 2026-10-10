@@ -6,6 +6,9 @@ const oldJapaneseCards = JSON.parse(readFileSync(new URL('../../data/i18n-source
 
 const ready = PUBLIC_LOCALES.length === 34;
 test.describe('completed multilingual release', () => {
+  // Each case owns a fresh browser context and unique in-memory room; none
+  // resets shared test storage. This matrix can use two local workers safely.
+  test.describe.configure({ mode: 'parallel' });
   test.skip(!ready, 'All catalogs must pass strict packaging before multilingual runtime checks run.');
   for (const locale of PUBLIC_LOCALES) {
     test(`${locale}: public HTML, navigation, mobile width and both game entries`, async ({ page, request }) => {

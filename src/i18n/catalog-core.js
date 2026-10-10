@@ -45,8 +45,9 @@ export function createCatalogTranslator(sourceEntries, translations, { protected
       cursor = match.index + match[0].length;
     }
     pattern += escapeRegex(entry.source.slice(cursor));
-    return { regex: new RegExp('^' + pattern + '$'), captures, translated: translations[entry.id] };
-  });
+    return { regex: new RegExp('^' + pattern + '$'), captures, translated: translations[entry.id],
+      specificity: entry.source.replace(/\{\d+\}/g, '').length };
+  }).sort((a, b) => b.specificity - a.specificity);
 
   function translate(value) {
     const raw = String(value ?? '');

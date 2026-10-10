@@ -531,6 +531,20 @@
       "contexts": [
         "viewport_recovery.js:control"
       ]
+    },
+    {
+      "id": "mf4e7ddbdea4265",
+      "source": "このブラウザをアクセス解析の対象外に設定しました。",
+      "contexts": [
+        "analytics.js:preference-notice"
+      ]
+    },
+    {
+      "id": "m77220f5429c106",
+      "source": "このブラウザのアクセス解析除外を解除しました。",
+      "contexts": [
+        "analytics.js:preference-notice"
+      ]
     }
   ]
 }
