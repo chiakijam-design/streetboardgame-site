@@ -134,3 +134,5 @@ GA4 property540993260を既存Chromeで読取確認できました。集計エ�
 D1の追加保全を2026-10-10 22:41〜22:42 UTCに `/Users/apple/Streetboardgame-private-backups/20261010T2242Z-pre-multilingual/` へ新規保存。両SQLは600・フォルダ700。メモリ内SQLite importとintegrity_checkはok（41/10 tables）、私有MANIFEST.jsonへ時刻・SHA256を保存。既存朝の保全は残しています。2DB同時点・R2・外部設定・秘密情報はこの保全の範囲外です。
 
 CIでは既存の共有模擬storageをresetする回帰テストを1workerで完了した後、resetなし・部屋とcontextが独立する34ロケール行列だけを2workersで実行します。回帰群との同時実行は行わず、Chrome/Safari系全projectを保持しています。
+
+Cloudflare dry-runでrun_worker_firstの105件が上限100件を超えることを検出。すでに/en/*で覆われる英語の重複だけを整理し96件へ削減、34ロケールを維持する回帰テストを追加、unit266件とdry-run成功。Macの2worker連続project試験はPCケース実行後の終了待機が止まり中断したため、成功したスペイン語mobile単独PNG受け渡し試験と混同しません。PC/mobileの別実行、最新CI、merge・本番公開・検証が残件です。
