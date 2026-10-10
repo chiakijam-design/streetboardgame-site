@@ -30,7 +30,9 @@ import {
   getChallengeReviewLines,
   getChallengeReviewLinesEnglish,
 } from './src/challenge/result.js';
-import { isEnglish, localizeDom } from './src/i18n/runtime.js';
+import { isEnglish, localizeDom, languagePrefix, currentLocale, translateText, protectUserCopy, localizedAlert, localizedConfirm } from './src/i18n/runtime.js';
+import { stripLocalePrefix } from './src/i18n/locales.js';
+import { localizedCanvasContext, collectProtectedUserCopy } from './src/i18n/canvas-copy.js';
 import { trackAnalyticsEvent, trackGamePlay } from './src/analytics/events.js';
 import { sendChallengeDailyAction } from './src/analytics/client-daily-actions.js';
 
@@ -50,8 +52,7 @@ let allCards = isEnglish
   ? mergeChallengeCards(window.ENGLISH_COMMON_QUESTION_CARDS)
   : mergeChallengeCards(window.COMMON_QUESTION_CARDS);
 const currentUrl = new URL(location.href);
-const pagePath = currentUrl.pathname.replace(/^\/en(?=\/|$)/, '').replace(/\/+$/, '') || '/challenge';
-const languagePrefix = isEnglish ? '/en' : '';
+const pagePath = stripLocalePrefix(currentUrl.pathname).replace(/\/+$/, '') || '/challenge';
 const roomCode = currentUrl.searchParams.get('room')?.trim().toUpperCase() || '';
 const preferredCardId = currentUrl.searchParams.get('question')?.trim() || '';
 const preferredPackSlug = currentUrl.searchParams.get('pack')?.trim() || '';
@@ -172,6 +173,7 @@ function render() {
                 : state.mode === 'ranking' ? rankingView()
                   : state.mode === 'library' ? libraryView()
                     : errorView();
+  protectUserCopy(collectProtectedUserCopy(state));
   app.innerHTML = body;
   app.classList.remove('is-booting');
   app.removeAttribute('aria-busy');
@@ -1416,12 +1418,12 @@ async function reportQuestion(button) {
   const box = button?.closest('[data-report-box]');
   const reason = box?.querySelector('[data-report-reason]')?.value || '';
   if (!questionId || !reason) return;
-  if (!confirm('このお題を通報し、確認が終わるまで公開ライブラリから非公開にしますか？')) return;
+  if (!localizedConfirm('このお題を通報し、確認が終わるまで公開ライブラリから非公開にしますか？')) return;
   button.disabled = true;
   try {
     await reportManagedQuestion(questionId, reason);
     allCards = allCards.filter((card) => String(card.managedQuestionId || card.id) !== questionId);
-    alert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
+    localizedAlert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
     skipCreatorQuestion({ trackSkip: false });
   } catch (error) {
     button.disabled = false;
@@ -1449,7 +1451,7 @@ async function shareToInstagram() {
   const copied = await copyText(challengeUrl(state.room.code));
   if (!copied) return setState({ error: 'copy-failed' });
   trackChallengeShare('instagram', 'challenge_invite');
-  window.alert('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
+  localizedAlert('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
 }
 
 async function joinRoom() {
@@ -1579,7 +1581,7 @@ async function publishBoardOnly() {
 async function retryChallenge() {
   if (!state.result || !state.participantToken) return;
   if (state.result.participant?.rankingParticipating
-    && !confirm('もう一度予想すると、現在の理解度ボード掲載はいったん取り消されます。続けますか？')) return;
+    && !localizedConfirm('もう一度予想すると、現在の理解度ボード掲載はいったん取り消されます。続けますか？')) return;
   setState({ loading: true, error: '' });
   try {
     const response = await fetch(`/api/challenge/rooms/${state.roomCode}/retry`, {
@@ -1804,12 +1806,16 @@ function resultRoundRect(context, x, y, width, height, radius) {
 }
 
 function splitResultText(text, maxLength = 18, maxLines = 3) {
-  const value = String(text || '');
+  const value = translateText(String(text || ''));
   if (!value) return [];
   const lines = [];
   value.split('\n').forEach((paragraph) => {
-    for (let index = 0; index < paragraph.length; index += maxLength) {
-      lines.push(paragraph.slice(index, index + maxLength));
+    const graphemes = typeof Intl.Segmenter === 'function'
+      ? [...new Intl.Segmenter(currentLocale, { granularity: 'grapheme' }).segment(paragraph)].map((part) => part.segment)
+      : Array.from(paragraph);
+    const length = currentLocale === 'ja' || currentLocale === 'en' ? maxLength : Math.max(maxLength, Math.ceil(graphemes.length / maxLines));
+    for (let index = 0; index < graphemes.length; index += length) {
+      lines.push(graphemes.slice(index, index + length).join(''));
     }
   });
   return lines.slice(0, maxLines);
@@ -1831,7 +1837,9 @@ async function createChallengeResultCanvas(result) {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
-  const context = canvas.getContext('2d');
+  protectUserCopy([participantName, creatorName]);
+  const context = currentLocale === 'ja' || currentLocale === 'en' ? canvas.getContext('2d')
+    : localizedCanvasContext(canvas.getContext('2d'), translateText, document.documentElement.dir);
 
   context.fillStyle = '#ec4683';
   context.fillRect(0, 0, canvas.width, canvas.height);
@@ -2014,7 +2022,7 @@ async function saveChallengeResultImage(action = 'save-result-image') {
     return saved;
   } catch (error) {
     if (error?.name !== 'AbortError') {
-      alert(isEnglish
+      localizedAlert(isEnglish
         ? 'The image could not be saved. Please try again.'
         : '画像を保存できませんでした。もう一度お試しください。');
     }
@@ -2034,7 +2042,7 @@ function resultShareText({ includeUrl = true } = {}) {
     ? [
         `I guessed ${state.result.creatorName}’s answers!`,
         'Which ones matched? Check the answers and try the same 10 questions.',
-        `My title: “${tier.title}”`,
+        `My title: “${translateText(tier.title)}”`,
         '#Watachan',
       ]
     : [
@@ -2050,7 +2058,7 @@ function resultShareText({ includeUrl = true } = {}) {
       shareUrl,
     );
   }
-  return lines.join('\n');
+  return lines.map((line) => translateText(line)).join('\n');
 }
 
 async function shareResultToLine() {
@@ -2070,14 +2078,14 @@ async function shareResultToLine() {
       trackChallengeShare('line', 'challenge_result');
       return;
     }
-    window.alert(isEnglish
+    localizedAlert(isEnglish
       ? 'The result image was saved. LINE will open next; attach the saved image to your message.'
       : '結果画像を保存しました。続けてLINEが開くので、保存した結果画像をトークへ添付してください。');
     openLineShare(text);
     trackChallengeShare('line', 'challenge_result');
   } catch (error) {
     if (error?.name !== 'AbortError') {
-      window.alert(isEnglish
+      localizedAlert(isEnglish
         ? 'The result image could not be prepared. Please try again.'
         : '結果画像を準備できませんでした。もう一度お試しください。');
     }
@@ -2101,14 +2109,14 @@ async function shareResultToX() {
       trackChallengeShare('x', 'challenge_result');
       return;
     }
-    window.alert(isEnglish
+    localizedAlert(isEnglish
       ? 'The result image was saved. X will open next; attach the saved image to your post.'
       : '結果画像を保存しました。続けてXが開くので、保存した結果画像を投稿へ添付してください。');
     openXShare(text);
     trackChallengeShare('x', 'challenge_result');
   } catch (error) {
     if (error?.name !== 'AbortError') {
-      window.alert(isEnglish
+      localizedAlert(isEnglish
         ? 'The result image could not be prepared. Please try again.'
         : '結果画像を準備できませんでした。もう一度お試しください。');
     }
@@ -2123,7 +2131,7 @@ async function shareResultToInstagram() {
   const saveResult = await saveChallengeResultImage('share-result-instagram');
   if (!saveResult) return;
   trackChallengeShare('instagram', 'challenge_result');
-  window.alert(isEnglish
+  localizedAlert(isEnglish
     ? 'The text was copied and the result image is ready. Choose Instagram Stories from the share sheet, or select the saved image in Instagram.'
     : '文章をコピーし、結果画像を用意しました。共有メニューからInstagramストーリーズを選ぶか、Instagramで保存した画像を選んでください。');
 }
@@ -2295,11 +2303,11 @@ function manageUrl(code, token) {
 }
 
 function shareText(room, url) {
-  return buildChallengeInviteText({
+  return translateText(buildChallengeInviteText({
     creatorName: room.creatorName,
     url,
     isEnglish,
-  });
+  }));
 }
 
 function errorMessage(code) {

@@ -1,5 +1,9 @@
 # 34ロケール化の監査・引継ぎ（2026-10-10）
 
+## R2保全対象の更新（本人最新指示）
+
+2026-10-10、本人判断で非公開バケット `streetboardgame-live-private` の素材取得・バックアップ調査・追加権限設定を中止し、今回はバックアップ対象外とした。バケット・既存素材は削除していない。Chrome調査待ちは解除。保存済みZIPとD1バックアップは保持する。この対象外素材を含むサイト全体の復元はGitHub・ZIP・D1だけで保証しない。
+
 ## 基準と保全
 
 - 正規origin: `https://github.com/chiakijam-design/streetboardgame-site.git`。

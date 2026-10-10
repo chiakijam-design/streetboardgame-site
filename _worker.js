@@ -5,6 +5,9 @@ import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 import { runSocialPublishing } from './src/social/publisher.js';
 import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
 import { questionPacks } from './src/challenge/packs.js';
+import { localeFromPath } from './src/i18n/locales.js';
+import { localizePublicHtml, localizedAssetRoute } from './src/i18n/public-html.js';
+import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
@@ -161,6 +164,34 @@ async function handleRequest(request, env) {
           'x-robots-tag': 'noindex, nofollow, noarchive',
         },
       });
+    }
+
+    const locale = localeFromPath(rawPath);
+    if (locale !== 'ja' && locale !== 'en') {
+      if (!PUBLIC_LOCALES.includes(locale)) return new Response('Not Found', { status: 404, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } });
+      const assetRoute = localizedAssetRoute(rawPath);
+      if (!assetRoute) return new Response('Not Found', { status: 404 });
+      const dictionary = await env.ASSETS.fetch(new Request(new URL(`/locale-assets/${locale}.json`, url.origin), { method: 'GET' }));
+      if (!dictionary.ok) return new Response('Not Found', { status: 404, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } });
+      let data;
+      try { data = await dictionary.json(); }
+      catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
+      const baseUrl = new URL(assetRoute, url.origin);
+      // Reuse the existing public information-page renderer and game templates.
+      const response = await handleRequest(new Request(baseUrl, { method: 'GET', headers: request.headers }), env);
+      if (!response.ok || !/text\/html/i.test(response.headers.get('content-type') || '')) return response;
+      const headers = new Headers(response.headers);
+      headers.delete('etag');
+      headers.delete('content-length');
+      headers.delete('content-encoding');
+      if (url.searchParams.has('room') || /\/(?:manage|ranking)$/.test(path)) {
+        headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+        headers.set('cache-control', 'no-store');
+      }
+      let rendered;
+      try { rendered = localizePublicHtml(await response.text(), data, url); }
+      catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
+      return new Response(request.method === 'HEAD' ? null : rendered, { status: response.status, headers });
     }
 
     if (path === '/en') {
@@ -481,7 +512,7 @@ async function withSecurityHeaders(response, request) {
   if (isHtml) headers.set('content-type', 'text/html; charset=UTF-8');
   const nonce = isHtml ? createCspNonce() : '';
   const requestPath = request ? new URL(request.url).pathname : '';
-  const sensitivePath = /^\/(?:en\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|question-ops|api(?:\/|$))/.test(requestPath);
+  const sensitivePath = /^\/(?:[a-zA-Z-]+\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|question-ops|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
     "default-src 'none'",
     "base-uri 'self'",

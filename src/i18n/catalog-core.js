@@ -68,7 +68,8 @@ export function createCatalogTranslator(sourceEntries, translations, { protected
     return raw.slice(0, offset) + translated + raw.slice(offset + text.length);
   }
 
-  return { translate, protect: (values) => values.forEach((value) => protectedValues.add(String(value))) };
+  return { translate, isProtected: (value) => protectedValues.has(String(value).trim()),
+    protect: (values) => values.forEach((value) => protectedValues.add(String(value).trim())) };
 }
 
 // Release callers must use this gate before serving a translated locale. An

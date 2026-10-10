@@ -5,7 +5,7 @@ import { TARGET_LOCALES } from '../src/i18n/locales.js';
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
-const runtime = await read('src/i18n/runtime.js');
+const runtime = await read('src/i18n/legacy-copy.js');
 const context = vm.createContext({ window: { location: { pathname: '/' } } });
 vm.runInContext(runtime.replace(/^export /gm, '') + '\nthis.uiMessages = Object.fromEntries(UI_TEXT);', context);
 

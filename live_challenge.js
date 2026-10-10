@@ -23,7 +23,8 @@ import {
 } from './src/questions/catalog.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
-import { isEnglish, localizeDom } from './src/i18n/runtime.js';
+import { isEnglish, localizeDom, languagePrefix, currentLocale, translateText, protectUserCopy, localizedAlert, localizedConfirm } from './src/i18n/runtime.js';
+import { localizedCanvasContext, collectProtectedUserCopy } from './src/i18n/canvas-copy.js';
 import { trackAnalyticsEvent, trackGamePlay, trackPurchaseFromCheckout } from './src/analytics/events.js';
 
 const QUESTION_COUNT = 10;
@@ -31,7 +32,6 @@ const app = document.getElementById('live-challenge-app');
 let allCards = isEnglish
   ? mergeChallengeCards(window.ENGLISH_COMMON_QUESTION_CARDS)
   : mergeChallengeCards(window.COMMON_QUESTION_CARDS);
-const languagePrefix = isEnglish ? '/en' : '';
 const url = new URL(location.href);
 const initialCode = (url.searchParams.get('room') || '').replace(/\D/g, '').slice(0, 6);
 const initialCheckoutResult = String(url.searchParams.get('checkout') || '');
@@ -210,6 +210,7 @@ function render() {
   const focusId = activeElement?.id;
   const selection = typeof activeElement?.selectionStart === 'number'
     ? [activeElement.selectionStart, activeElement.selectionEnd] : null;
+  protectUserCopy(collectProtectedUserCopy(state));
   app.innerHTML = markup;
   localizeDom(app);
   bindEvents();
@@ -252,7 +253,7 @@ function liveChatMessageView(message) {
   const paid = message.type === 'support';
   const supportTier = paid ? liveSupportTier(message.amount) : null;
   const ownMessage = message.participantId && message.participantId === state.game?.participantId;
-  const time = new Date(Number(message.createdAt) || Date.now()).toLocaleTimeString(isEnglish ? 'en-US' : 'ja-JP', {
+  const time = new Date(Number(message.createdAt) || Date.now()).toLocaleTimeString(currentLocale === 'ja' ? 'ja-JP' : currentLocale === 'en' ? 'en-US' : currentLocale, {
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -263,7 +264,7 @@ function liveChatMessageView(message) {
       ${paid ? `<span class="support-badge" aria-label="${escapeHtml(supportTier.colorName)}の応援メッセージ">♥ ${number(message.amount)}円</span>` : ''}
       <time>${escapeHtml(time)}</time>
     </div>
-    <p>${escapeHtml(message.text)}</p>
+    <p data-user-copy>${escapeHtml(message.text)}</p>
     <div class="live-chat-tools">
       ${state.view === 'host'
         ? `<button data-action="hide-live-chat" data-message-id="${escapeHtml(message.id)}">非表示</button>`
@@ -1208,12 +1209,12 @@ async function reportQuestion(button) {
   const box = button?.closest('[data-report-box]');
   const reason = box?.querySelector('[data-report-reason]')?.value || '';
   if (!questionId || !reason) return;
-  if (!confirm('このお題を通報し、確認が終わるまで公開ライブラリから非公開にしますか？')) return;
+  if (!localizedConfirm('このお題を通報し、確認が終わるまで公開ライブラリから非公開にしますか？')) return;
   button.disabled = true;
   try {
     await reportManagedQuestion(questionId, reason);
     allCards = allCards.filter((card) => String(card.managedQuestionId || card.id) !== questionId);
-    alert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
+    localizedAlert('通報を受け付けました。このお題は公開ライブラリから非公開になりました。');
     skipLiveQuestion({ trackSkip: false });
   } catch (error) {
     button.disabled = false;
@@ -1293,7 +1294,7 @@ async function moderateLiveChat(action, messageId) {
   const question = action === 'report'
     ? 'このメッセージを通報し、すぐ非公開にしますか？'
     : 'このメッセージを非表示にしますか？';
-  if (!confirm(question)) return;
+  if (!localizedConfirm(question)) return;
   try {
     const headers = action === 'hide'
       ? { 'x-live-host-token': state.hostToken }
@@ -1598,7 +1599,9 @@ async function saveResultCard() {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
-  const context = canvas.getContext('2d');
+  protectUserCopy(collectProtectedUserCopy(state));
+  const context = currentLocale === 'ja' || currentLocale === 'en' ? canvas.getContext('2d')
+    : localizedCanvasContext(canvas.getContext('2d'), translateText, document.documentElement.dir);
   context.fillStyle = '#EC4F88';
   context.fillRect(0, 0, canvas.width, canvas.height);
   roundedRect(context, 55, 55, 970, 1240, 42, '#191919');
@@ -1827,7 +1830,7 @@ function escapeHtml(value) {
 localizeDom(document);
 
 function number(value) {
-  return Math.max(0, Number(value) || 0).toLocaleString(isEnglish ? 'en-US' : 'ja-JP');
+  return Math.max(0, Number(value) || 0).toLocaleString(currentLocale === 'ja' ? 'ja-JP' : currentLocale === 'en' ? 'en-US' : currentLocale);
 }
 
 function readSession(key) {
