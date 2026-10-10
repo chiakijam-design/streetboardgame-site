@@ -31,6 +31,7 @@
     // HTMLだけWorkerを先に通し、nonce付きCSPを適用する。JS・CSS・画像はAssetsの直配信を維持する。
     "run_worker_first": [
       "/",
+      "/locale-pages/*",
       "/en", "/en/*",
       "/es", "/es/*", "/fr", "/fr/*", "/de", "/de/*", "/it", "/it/*",
       "/pt", "/pt/*", "/ru", "/ru/*", "/uk", "/uk/*", "/pl", "/pl/*",

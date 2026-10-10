@@ -8,6 +8,7 @@ import { questionPacks } from './src/challenge/packs.js';
 import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
+import { PUBLIC_LOCALE_PAGES } from './src/generated/public-locale-pages.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
@@ -98,6 +99,9 @@ async function handleRequest(request, env) {
       });
     }
     const path = rawPath.replace(/\/+$/, '');
+    // These build artifacts are fetched internally; stable locale URLs are
+    // the public entry points, including historical invitation query strings.
+    if (path.startsWith('/locale-pages/')) return new Response('Not Found', { status: 404 });
 
     // Cloudflare Access only protects the custom domain. Do not expose the
     // management surface through the Worker preview hostname, which would
@@ -167,6 +171,21 @@ async function handleRequest(request, env) {
     }
 
     const locale = localeFromPath(rawPath);
+    const preparedPath = rawPath !== '/en' && PUBLIC_LOCALE_PAGES[path];
+    if (preparedPath) {
+      const prepared = await env.ASSETS.fetch(new Request(new URL(preparedPath, url.origin), { method: 'GET' }));
+      if (prepared.ok) {
+        const headers = new Headers(prepared.headers);
+        headers.set('content-type', 'text/html; charset=UTF-8');
+        headers.set('cache-control', 'public, max-age=0, must-revalidate');
+        headers.delete('etag');
+        if (url.searchParams.has('room') || /\/(?:manage|ranking)$/.test(path)) {
+          headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+          if (locale !== 'en') headers.set('cache-control', 'no-store');
+        }
+        return new Response(prepared.body, { status: 200, headers });
+      }
+    }
     const extendedEnglishPage = locale === 'en' && PUBLIC_LOCALES.length > 2
       && !['/en', '/en/', '/en/live-challenge', '/en/terms', '/en/privacy'].includes(path)
       && !ENGLISH_CHALLENGE_PAGE_PATHS.has(path);
@@ -565,7 +584,7 @@ async function withSecurityHeaders(response, request, env) {
     const locale = localeFromPath(requestPath);
     if (PUBLIC_LOCALES.length > 2 && localizedAssetRoute(requestPath)) {
       if (locale === 'ja') body = injectPublicLocaleShell(body, new URL(request.url), PUBLIC_LOCALES);
-      else if (locale === 'en' && !body.includes('window.__WATACHAN_I18N__=')) {
+      else if (locale === 'en' && !body.includes('window.__WATACHAN_I18N__=') && !body.includes('data-watachan-locale-catalog')) {
         const dictionary = await env.ASSETS.fetch(new Request(new URL('/locale-assets/en.json', request.url), { method: 'GET' }));
         if (!dictionary.ok) return new Response('Translation unavailable', { status: 503, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
         try { body = localizePublicHtml(body, await dictionary.json(), new URL(request.url), PUBLIC_LOCALES); }
