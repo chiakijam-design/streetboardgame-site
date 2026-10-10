@@ -1,4 +1,5 @@
 import { expect, test } from './test.mjs';
+import { localeFromPath } from '../../src/i18n/locales.js';
 
 const ORIGIN = 'https://www.streetboardgame.com';
 
@@ -116,10 +117,13 @@ test('サイトマップ掲載URLは200・自己canonical・index可能で統一
     const description = html.match(/<meta name="description" content="([^"]+)"/i)?.[1]?.trim() || '';
     expect(title.length, `${url} title`).toBeGreaterThan(10);
     expect(description.length, `${url} description`).toBeGreaterThan(30);
-    expect(titles.has(title), `${url} duplicate title: ${title}`).toBe(false);
-    expect(descriptions.has(description), `${url} duplicate description: ${description}`).toBe(false);
-    titles.add(title);
-    descriptions.add(description);
+    const locale = localeFromPath(new URL(url).pathname);
+    const localizedTitle = `${locale}:${title}`;
+    const localizedDescription = `${locale}:${description}`;
+    expect(titles.has(localizedTitle), `${url} duplicate title in ${locale}: ${title}`).toBe(false);
+    expect(descriptions.has(localizedDescription), `${url} duplicate description in ${locale}: ${description}`).toBe(false);
+    titles.add(localizedTitle);
+    descriptions.add(localizedDescription);
     const robots = html.match(/<meta name="robots" content="([^"]*)"/i)?.[1] || '';
     expect(robots, url).not.toContain('noindex');
   }
@@ -283,7 +287,8 @@ test('ゲームページはパンくず構造化データ、専用canonical、�
   }
   await page.goto('/challenge/library');
   await expect(page.locator('link[rel="alternate"][hreflang="ja"]')).toHaveAttribute('href', `${ORIGIN}/challenge/library`);
-  await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveCount(0);
+  await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute('href', `${ORIGIN}/en/challenge/library`);
+  await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(35);
 });
 
 test('日英の主要ページは共有先へブランド名・言語・安全なOGP画像URLを渡す', async ({ page }) => {

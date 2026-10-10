@@ -37,6 +37,10 @@ export function translateText(value) {
   if (!isEnglish) return raw;
   if (!translator) return translateLegacyEnglish(raw);
   if (translator.isProtected(raw)) return raw;
+  if (currentLocale === 'en') {
+    const legacy = translateLegacyEnglish(raw);
+    if (legacy !== raw) return translator.translate(legacy);
+  }
   const direct = translator.translate(raw);
   return direct !== raw ? direct : translator.translate(translateLegacyEnglish(raw));
 }

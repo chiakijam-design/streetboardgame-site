@@ -21,6 +21,8 @@ const env = { ASSETS: { async fetch(request) {
 test('all 510 stable locale pages render SEO HTML without room or capability URLs', async () => {
   assert.equal(PUBLIC_LOCALES.length, 34);
   const sitemap = await readFile(new URL('../../sitemap.xml', import.meta.url), 'utf8');
+  const titles = new Set();
+  const descriptions = new Set();
   for (const locale of PUBLIC_LOCALES) for (const path of publicPages) {
     const route = switchLocalePath(path, locale);
     const response = await worker.fetch(new Request('https://www.streetboardgame.com' + route), env);
@@ -32,6 +34,12 @@ test('all 510 stable locale pages render SEO HTML without room or capability URL
     assert.equal((html.match(/hreflang="/g) || []).length, 35, route);
     assert.match(html, /<title>[^<]+<\/title>/, route);
     assert.match(html, /name="description" content="[^"]+"/, route);
+    const title = html.match(/<title>([^<]+)<\/title>/)[1];
+    const description = html.match(/name="description" content="([^"]+)"/)[1];
+    assert.ok(!titles.has(`${locale}:${title}`), route + ' unique page title within locale');
+    assert.ok(!descriptions.has(`${locale}:${description}`), route + ' unique description within locale');
+    titles.add(`${locale}:${title}`);
+    descriptions.add(`${locale}:${description}`);
     assert.equal((html.match(/name="google-adsense-account"/g) || []).length, 1, route);
     assert.ok(sitemap.includes(`<loc>https://www.streetboardgame.com${route}</loc>`), route);
   }

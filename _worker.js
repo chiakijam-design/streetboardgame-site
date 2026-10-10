@@ -257,7 +257,9 @@ async function handleRequest(request, env) {
         headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
       }
       const html = request.method === 'HEAD' ? null : await response.text();
-      return new Response(html ? applyEnglishGameMeta(html, 'challenge', url) : null, {
+      let rendered = html ? applyEnglishGameMeta(html, 'challenge', url) : null;
+      if (rendered && path === '/en/challenge/library') rendered = applyChallengeLibraryMeta(rendered);
+      return new Response(rendered, {
         status: response.status,
         headers,
       });

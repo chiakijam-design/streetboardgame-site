@@ -136,3 +136,11 @@ D1の追加保全を2026-10-10 22:41〜22:42 UTCに `/Users/apple/Streetboardgam
 CIでは既存の共有模擬storageをresetする回帰テストを1workerで完了した後、resetなし・部屋とcontextが独立する34ロケール行列だけを2workersで実行します。回帰群との同時実行は行わず、Chrome/Safari系全projectを保持しています。
 
 Cloudflare dry-runでrun_worker_firstの105件が上限100件を超えることを検出。すでに/en/*で覆われる英語の重複だけを整理し96件へ削減、34ロケールを維持する回帰テストを追加、unit266件とdry-run成功。Macの2worker連続project試験はPCケース実行後の終了待機が止まり中断したため、成功したスペイン語mobile単独PNG受け渡し試験と混同しません。PC/mobileの別実行、最新CI、merge・本番公開・検証が残件です。
+
+## 23:14 UTC CI回収と公開前修正
+
+HEAD dc59ddeのPC/mobile別実行はそれぞれ68件成功・exit 0（合計136件）。一方、CI38092951966は既存機能278成功・22skip・15失敗で終了し、全ロケールmatrixは未実行。未完・失敗を成功扱いせずmerge/公開は保留した。失敗は6種類で、全画面プレイを押し下げる言語切替、英語の既存回答ボタン文言、英語ライブラリmetadataの重複、追加言語をまだ存在しないとする旧hreflang期待などを確認した。
+
+言語切替は既存の全画面回答/編集とLIVE host/viewerではゲーム本文の後へ移し、元の操作領域を保つ。切替時のquery/hash・途中状態の文脈維持は同じ経路を使う。英語は既存pivot表現を優先し、英語ライブラリは専用metadataを翻訳する。metadataの一意性は言語内で検証し、JAライブラリから全34ロケールへhreflangを確認する。510ページunitへtitle/description重複検証を追加。CIは既存機能失敗時もlocale matrixを実行するが、失敗を許容/成功扱いする設定は追加しない。
+
+修正後の最新CI合格、通常merge、Cloudflare公開、本番HTTP/配信asset照合とPC/mobile確認が完了するまで公開済みとは報告しない。翻訳の母語校閲、LINE/X実投稿・SNS cache、追加地域の解析同意は未確認のまま。
