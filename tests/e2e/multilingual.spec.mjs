@@ -23,7 +23,7 @@ test.describe('completed multilingual release', () => {
         const geometry = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
         expect(geometry.scroll, route).toBeLessThanOrEqual(geometry.client + 1);
         if (path === '/') {
-          const images = page.locator('img[src*="/assets/"]');
+          const images = page.locator('img[src*="assets/"]');
           await expect(images.first()).toBeVisible();
           await expect.poll(() => images.evaluateAll((elements) => elements.filter((image) => !image.complete || image.naturalWidth === 0).length)).toBe(0);
           const titleLines = page.locator('[data-testid="top-rules-title-line"]');
@@ -42,8 +42,11 @@ test.describe('completed multilingual release', () => {
       }
       await page.goto(prefix + '/challenge?room=TEST_COMPAT#manage=TEST_CAPABILITY');
       const target = locale === 'ja' ? 'ar' : 'ja';
+      await expect(page).toHaveURL(/#manage=TEST_CAPABILITY$/);
+      const beforeSwitch = new URL(page.url());
+      const expectedPath = switchLocalePath(beforeSwitch.pathname + beforeSwitch.search + beforeSwitch.hash, target);
       await page.locator('[data-locale-switcher]').selectOption(target);
-      await expect(page).toHaveURL(new RegExp(`${LOCALE_DETAILS[target].prefix}/challenge\\?room=TEST_COMPAT#manage=TEST_CAPABILITY$`));
+      await expect(page).toHaveURL(beforeSwitch.origin + expectedPath);
     });
     test(`${locale}: old Japanese invitation, private copy, ten answers and result PNG`, async ({ page, request }) => {
       const cards = [...oldJapaneseCards, { id: 'custom-i18n-fixture', sourceKind: 'custom', category: 'Fixture', title: 'Fixture private question', choices: ['Home', 'Next', 'Three', 'Four', 'Five'] }];
@@ -54,9 +57,10 @@ test.describe('completed multilingual release', () => {
       await page.locator('#participant-name').fill('Next');
       await page.locator('[data-action="join"]').click();
       for (let index = 0; index < 10; index++) {
+        await expect(page.locator('.challenge-q-number')).toHaveText(`Q${index + 1}/10`);
         await expect(page.locator('[data-testid="challenge-answer-pad"]')).toBeVisible();
         if (index === 9) {
-          await expect(page.locator('[data-testid="challenge-answer-pad"]')).toContainText('Home');
+          await expect(page.locator('[data-testid="challenge-answer-pad"] [data-action="answer"]').first()).toHaveAttribute('aria-label', /Home/);
           await expect(page.locator('body')).toContainText('Fixture private question');
         }
         await page.locator('[data-testid="challenge-answer-pad"] [data-action="answer"]').first().click();

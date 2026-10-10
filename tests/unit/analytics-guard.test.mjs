@@ -228,7 +228,9 @@ test('GA4が必要とする画像・計測送信先をCSPで許可する', async
 test('Clarityの全収集ホストをcollectパスだけ許可し、nonceと防御を維持する', async () => {
   for (const path of ['/', '/challenge', '/live-challenge', '/en/']) {
     const response = await worker.fetch(new Request(`https://www.streetboardgame.com${path}`), {
-      ASSETS: { fetch: async () => new Response('<html><script>void 0;</script></html>', {
+      ASSETS: { fetch: async (request) => new URL(request.url).pathname === '/locale-assets/en.json'
+        ? new Response(await readFile(new URL('../../locale-assets/en.json', import.meta.url)), { headers: { 'content-type': 'application/json' } })
+        : new Response('<html><script>void 0;</script></html>', {
         headers: { 'content-type': 'text/html' },
       }) },
     });

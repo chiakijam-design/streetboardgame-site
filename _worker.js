@@ -557,6 +557,9 @@ async function withSecurityHeaders(response, request, env) {
   let body = response.body;
   if (isHtml && response.body) {
     body = await response.text();
+    // Public account ownership verification only; this does not load ads.
+    body = body.replace(/<meta\b(?=[^>]*\bname=["']google-adsense-account["'])[^>]*>/gi, '')
+      .replace(/<\/head>/i, '<meta name="google-adsense-account" content="ca-pub-8959934584200203"></head>');
     const locale = localeFromPath(requestPath);
     if (PUBLIC_LOCALES.length > 2 && localizedAssetRoute(requestPath)) {
       if (locale === 'ja') body = injectPublicLocaleShell(body, new URL(request.url), PUBLIC_LOCALES);

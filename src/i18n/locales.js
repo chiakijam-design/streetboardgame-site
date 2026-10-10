@@ -1,13 +1,13 @@
 // Target list read from minna-web-shindan/content/build-locales.json on 2026-10-10.
-// A target is not a claim of translated or production-ready content.
+// Public coverage is generated only after strict catalog validation.
+import { PUBLIC_LOCALES } from '../generated/public-locales.js';
 export const TARGET_LOCALES = Object.freeze([
   'ja', 'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'uk', 'pl', 'nl', 'sv',
   'da', 'no', 'fi', 'cs', 'el', 'ro', 'hu', 'bg', 'hr', 'sk', 'tr', 'ar',
   'he', 'hi', 'bn', 'id', 'ms', 'th', 'vi', 'ko', 'zh-Hans', 'zh-Hant',
 ]);
 
-// Keep this separate from TARGET_LOCALES until every release check passes.
-export const CURRENT_PUBLIC_LOCALES = Object.freeze(['ja', 'en']);
+export const CURRENT_PUBLIC_LOCALES = PUBLIC_LOCALES;
 
 const nativeNames = [
   '日本語', 'English', 'Español', 'Français', 'Deutsch', 'Italiano',
@@ -27,7 +27,7 @@ export const LOCALE_DETAILS = Object.freeze(Object.fromEntries(TARGET_LOCALES.ma
     direction: ['ar', 'he'].includes(locale) ? 'rtl' : 'ltr',
     prefix: locale === 'ja' ? '' : `/${locale}`,
     openGraphLocale: openGraphLocales[index],
-    translationStatus: ['ja', 'en'].includes(locale) ? 'existing-unverified-coverage' : 'not-translated',
+    translationStatus: locale === 'ja' ? 'original' : 'machine-generated-native-review-unverified',
     nativeReview: 'not-verified',
   }),
 ])));
