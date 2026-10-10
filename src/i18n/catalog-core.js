@@ -26,8 +26,9 @@ export function validateCatalog(sourceEntries, translations) {
   return { complete: !missing.length && !invalidPlaceholders.length && !unknown.length, missing, invalidPlaceholders, unknown };
 }
 
-export function createCatalogTranslator(sourceEntries, translations, { protectedText = [], aliases = {} } = {}) {
-  const protectedValues = new Set(protectedText.filter((value) => value != null).map(String));
+export function createCatalogTranslator(sourceEntries, translations, { protectedText = [], sharedProtectedText, aliases = {} } = {}) {
+  const protectedValues = sharedProtectedText instanceof Set ? sharedProtectedText : new Set();
+  protectedText.filter((value) => value != null).forEach((value) => protectedValues.add(String(value).trim()));
   const bySource = new Map(sourceEntries.map((entry) => [entry.source.trim(), translations[entry.id]]));
   // Japanese fixed labels can retain their existing English pivot without
   // changing stored question IDs, invitation capabilities or answer snapshots.

@@ -8,10 +8,14 @@ export const currentLocale = localeFromPath(window.location.pathname);
 export const languagePrefix = LOCALE_DETAILS[currentLocale].prefix;
 export const isEnglish = currentLocale !== 'ja'; // Existing English question IDs are the international source library.
 let translator = null;
+// Bundled game and shell modules share only this in-memory protection set.
+// Private copy is never added to the serialized public translation catalog.
+const protectedCopyKey = Symbol.for('watachan.protected-copy');
+const sharedProtectedText = window[protectedCopyKey] ||= new Set();
 if (currentLocale !== 'ja' && window.__WATACHAN_I18N__) {
   const data = window.__WATACHAN_I18N__;
   requireCompleteCatalog(data.entries, data.catalog, currentLocale);
-  translator = createCatalogTranslator(data.entries, data.catalog.messages, { aliases: data.aliases });
+  translator = createCatalogTranslator(data.entries, data.catalog.messages, { aliases: data.aliases, sharedProtectedText });
 }
 
 const ATTRIBUTE_NAMES = ['aria-label', 'placeholder', 'title', 'alt'];

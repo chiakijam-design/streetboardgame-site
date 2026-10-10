@@ -44,6 +44,16 @@ test('public release gate rejects incomplete catalogs and missing provenance', (
   assert.throws(() => requireCompleteCatalog(source, { ...catalog, provenance: {} }, 'fr'), /provenance/);
 });
 
+test('separate game and shell translators share private-copy protection without affecting isolated renderers', () => {
+  const sharedProtectedText = new Set();
+  const game = createCatalogTranslator(source, french, { sharedProtectedText });
+  const shell = createCatalogTranslator(source, french, { sharedProtectedText });
+  assert.equal(shell.translate(source[0].source), french.heading);
+  game.protect([source[0].source]);
+  assert.equal(shell.translate(source[0].source), source[0].source);
+  assert.equal(createCatalogTranslator(source, french).translate(source[0].source), french.heading);
+});
+
 test('fixed Japanese aliases use the same catalog and never override protected names', () => {
   const translator = createCatalogTranslator(source, french, { aliases: { '私のこと、ちゃんと分かってるよね？': source[0].source } });
   assert.equal(translator.translate('私のこと、ちゃんと分かってるよね？'), french.heading);
