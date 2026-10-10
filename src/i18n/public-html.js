@@ -54,6 +54,8 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
       });
   });
   const details = LOCALE_DETAILS[locale];
+  const localizedShareImage = !['ja', 'en'].includes(locale) ? `${origin}/assets/locale-share/${locale}.png?v=20261010-i18n-1` : null;
+  if (localizedShareImage) output = output.replace(/(<meta\b[^>]*\b(?:property|name)=["'](?:og:image(?::secure_url)?|twitter:image)["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${localizedShareImage}"`);
   // New locale traffic must not silently expand the existing analytics tags
   // before regional consent and cookie policy have been reviewed. This flag
   // precedes the legacy synchronous analytics script in the game template.
@@ -65,6 +67,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
         if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, localizeValue(item, name)]));
         if (key === 'inLanguage') return locale;
         if (typeof value !== 'string') return value;
+        if (localizedShareImage && value.startsWith(origin + '/assets/ogp')) return localizedShareImage;
         if (value.startsWith(origin)) {
           try {
             const url = new URL(value);
@@ -77,7 +80,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
     } catch { return whole; }
   });
   output = output.replace(/<html\b[^>]*>/i, `<html lang="${locale}" dir="${details.direction}">`);
-  output = output.replace(/(<meta\b[^>]*\bproperty=["']og:locale["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${locale.replace('-', '_')}"`);
+  output = output.replace(/(<meta\b[^>]*\bproperty=["']og:locale["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${details.openGraphLocale}"`);
   const canonical = origin + localeCanonicalPath(requestUrl.pathname, locale);
   output = output.replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
     .replace(/(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${canonical}"`);

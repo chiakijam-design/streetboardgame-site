@@ -14,3 +14,9 @@ test('protection collects names, chat and custom questions without suppressing p
   const state = { creatorName: 'Home', chat: { messages: [{ text: 'Create quiz', name: 'LIVE' }] }, cards: [{ id: 'EN001', title: 'Public question', choices: ['A'] }, { id: 'CUS001', title: 'Custom question', choices: ['Back'] }], liveQuestions: [{ id: 'Q1', sourceId: 'CUS002', text: 'Live custom question', options: ['Next'] }] };
   assert.deepEqual(new Set(collectProtectedUserCopy(state)), new Set(['Home', 'Create quiz', 'LIVE', 'Custom question', 'Back', 'Live custom question', 'Next']));
 });
+
+test('user edits and LIVE custom drafts remain protected while unchanged official choices can translate', () => {
+  const source = { id: 'EN001', title: 'Official question', choices: ['Tea', 'Coffee'] };
+  const state = { questions: [{ sourceId: 'EN001', text: 'My own question', options: ['Tea', 'Home'] }, { id: 'custom-123-0', sourceId: '', text: 'Create quiz', options: ['Next'] }] };
+  assert.deepEqual(new Set(collectProtectedUserCopy(state, [source])), new Set(['My own question', 'Home', 'Create quiz', 'Next']));
+});

@@ -1,4 +1,4 @@
-import { localeFromPath, LOCALE_DETAILS, stripLocalePrefix } from './locales.js';
+import { localeFromPath, LOCALE_DETAILS, switchLocalePath } from './locales.js';
 import { createCatalogTranslator, requireCompleteCatalog } from './catalog-core.js';
 import { translateLegacyEnglish } from './legacy-copy.js';
 import { rootPublicResource, rootPublicSourceSet } from './resource-paths.js';
@@ -17,10 +17,8 @@ if (currentLocale !== 'ja' && window.__WATACHAN_I18N__) {
 const ATTRIBUTE_NAMES = ['aria-label', 'placeholder', 'title', 'alt'];
 
 export function localizedPath(path = window.location.pathname) {
-  const url = new URL(path, window.location.origin);
-  const clean = stripLocalePrefix(url.pathname);
-  url.pathname = languagePrefix + (clean === '/' ? '/' : clean);
-  return `${url.pathname}${url.search}${url.hash}`;
+  try { return switchLocalePath(path, currentLocale); }
+  catch { return path; }
 }
 
 export function protectUserCopy(values) {

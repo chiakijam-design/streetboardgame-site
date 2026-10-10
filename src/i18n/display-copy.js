@@ -1,9 +1,16 @@
 export function localizedQuestionCard(card, translate) {
-  if (!card || card.sourceKind === 'custom' || card.custom === true || /^CUS/.test(String(card.sourceId || card.id || ''))) return card;
+  if (!card || card.sourceKind === 'custom' || card.custom === true || /^(?:CUS|custom-)/.test(String(card.sourceId || card.id || ''))) return card;
   const copy = { ...card };
   for (const key of ['title', 'text', 'category']) if (typeof card[key] === 'string') copy[key] = translate(card[key]);
   for (const key of ['choices', 'options']) if (Array.isArray(card[key])) copy[key] = card[key].map(translate);
   return copy;
+}
+
+// Editing a translated display must not silently rewrite the saved snapshot.
+export function editedQuestionValue(value, original, translate) {
+  if (value === undefined) return original;
+  const edited = String(value).trim();
+  return edited === String(translate(original)).trim() ? original : edited;
 }
 
 // Preserve all copy while choosing word boundaries for scripts that have them.

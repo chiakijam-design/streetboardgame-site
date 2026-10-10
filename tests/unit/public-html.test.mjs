@@ -48,3 +48,11 @@ test('structured metadata follows the actual URL locale and a mismatched catalog
   assert.match(output, /"url":"https:\/\/www.streetboardgame.com\/ar\/challenge"/);
   assert.throws(() => localizePublicHtml('<html></html>', data, new URL('https://www.streetboardgame.com/fr/')), /locale mismatch/);
 });
+
+test('localized social metadata and structured images use the same language-specific public artwork', () => {
+  const image = 'https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=old';
+  const html = `<html><head><meta property="og:image" content="${image}"><meta property="og:image:secure_url" content="${image}"><meta name="twitter:image" content="${image}"><script type="application/ld+json">{"image":"${image}"}</script></head><body></body></html>`;
+  const output = localizePublicHtml(html, data, new URL('https://www.streetboardgame.com/ar/challenge?room=TEST'), ['ja', 'ar']);
+  assert.equal((output.match(/assets\/locale-share\/ar\.png\?v=20261010-i18n-1/g) || []).length, 4);
+  assert.doesNotMatch(output, /assets\/ogp-challenge-v3/);
+});

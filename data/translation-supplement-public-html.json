@@ -503,6 +503,34 @@
         "/en/terms:attribute",
         "/en/privacy:attribute"
       ]
+    },
+    {
+      "id": "m6e0146a79d4a7d",
+      "source": "表示を復元中…",
+      "contexts": [
+        "viewport_recovery.js:control"
+      ]
+    },
+    {
+      "id": "m48a17172cca2ed",
+      "source": "再読み込みして復元中…",
+      "contexts": [
+        "viewport_recovery.js:control"
+      ]
+    },
+    {
+      "id": "m41c779e16522d3",
+      "source": "表示を元に戻す",
+      "contexts": [
+        "viewport_recovery.js:control"
+      ]
+    },
+    {
+      "id": "mc80e2f994a8964",
+      "source": "拡大表示を元の大きさに戻す",
+      "contexts": [
+        "viewport_recovery.js:control"
+      ]
     }
   ]
 }

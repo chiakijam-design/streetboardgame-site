@@ -23,7 +23,7 @@ import {
 } from './src/questions/catalog.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
-import { localizedQuestionCard } from './src/i18n/display-copy.js';
+import { localizedQuestionCard, editedQuestionValue } from './src/i18n/display-copy.js';
 import { isEnglish, localizeDom, languagePrefix, currentLocale, translateText, protectUserCopy, localizedAlert, localizedConfirm } from './src/i18n/runtime.js';
 import { localizedCanvasContext, collectProtectedUserCopy } from './src/i18n/canvas-copy.js';
 import { trackAnalyticsEvent, trackGamePlay, trackPurchaseFromCheckout } from './src/analytics/events.js';
@@ -171,6 +171,7 @@ if (state.view === 'host' || state.view === 'viewer') {
 
 function render() {
   if (!app) return;
+  protectUserCopy(collectProtectedUserCopy(state, allCards));
   const activeElement = document.activeElement;
   if (activeElement?.id === 'live-chat-input') state.chatDraft = activeElement.value;
   if (activeElement?.id === 'live-support-message') state.supportMessage = activeElement.value;
@@ -211,7 +212,6 @@ function render() {
   const focusId = activeElement?.id;
   const selection = typeof activeElement?.selectionStart === 'number'
     ? [activeElement.selectionStart, activeElement.selectionEnd] : null;
-  protectUserCopy(collectProtectedUserCopy(state));
   app.innerHTML = markup;
   localizeDom(app);
   bindEvents();
@@ -546,11 +546,11 @@ function liveQuestionEditView(question) {
     <div class="field">
       <label for="live-builder-question">問題文</label>
       <textarea id="live-builder-question" data-question="${index}" maxlength="180"
-        aria-label="Q${index + 1}の問題文">${escapeHtml(question.text)}</textarea>
+        aria-label="Q${index + 1}の問題文">${escapeHtml(translateText(question.text))}</textarea>
     </div>
     ${question.options.map((option, optionIndex) => `<label class="option-edit">
       <b>${optionIndex + 1}</b>
-      <input data-option="${index}:${optionIndex}" maxlength="60" value="${escapeHtml(option)}"
+      <input data-option="${index}:${optionIndex}" maxlength="60" value="${escapeHtml(translateText(option))}"
         aria-label="Q${index + 1} 選択肢${optionIndex + 1}">
     </label>`).join('')}
     <label class="check">
@@ -1027,9 +1027,9 @@ function captureDraft() {
   if (resultPrice) state.resultImagePrice = Number(resultPrice.value);
   state.questions = state.questions.map((question, index) => ({
     ...question,
-    text: document.querySelector(`[data-question="${index}"]`)?.value.trim() ?? question.text,
+    text: editedQuestionValue(document.querySelector(`[data-question="${index}"]`)?.value, question.text, translateText),
     options: question.options.map((option, optionIndex) => (
-      document.querySelector(`[data-option="${index}:${optionIndex}"]`)?.value.trim() ?? option
+      editedQuestionValue(document.querySelector(`[data-option="${index}:${optionIndex}"]`)?.value, option, translateText)
     )),
   }));
 }
@@ -1600,7 +1600,7 @@ async function saveResultCard() {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
-  protectUserCopy(collectProtectedUserCopy(state));
+  protectUserCopy(collectProtectedUserCopy(state, allCards));
   const context = currentLocale === 'ja' || currentLocale === 'en' ? canvas.getContext('2d')
     : localizedCanvasContext(canvas.getContext('2d'), translateText, document.documentElement.dir);
   context.fillStyle = '#EC4F88';
@@ -1622,8 +1622,8 @@ async function saveResultCard() {
   centerText(context, `${correct}/10`, 560, '900 164px "Noto Sans JP", sans-serif', '#EC4F88');
   centerText(context, resultMessage(correct), 680, '900 42px "Noto Sans JP", sans-serif', '#191919');
   roundedRect(context, 145, 760, 790, 270, 30, '#FFE26B');
-  centerText(context, isEnglish ? '1 point for each streamer match' : '配信者と同じ答えなら1点', 850, '900 40px "Noto Sans JP", sans-serif', '#191919');
-  centerText(context, isEnglish ? `${correct} of 10 answers matched!` : `10問中 ${correct}問 一致！`, 940, '900 58px "Noto Sans JP", sans-serif', '#191919');
+  centerText(context, isEnglish ? '1 point for each streamer match' : '配信者と同じ答えなら1点', 850, '900 40px "Noto Sans JP", sans-serif', '#191919', 730);
+  centerText(context, isEnglish ? `${correct} of 10 answers matched!` : `10問中 ${correct}問 一致！`, 940, '900 58px "Noto Sans JP", sans-serif', '#191919', 730);
   centerText(context, 'Instagram LIVE / YouTube LIVE', 1125, '800 30px "Noto Sans JP", sans-serif', '#6F6267');
   centerText(context, 'streetboardgame.com', 1200, '900 30px "Noto Sans JP", sans-serif', '#191919');
   const link = document.createElement('a');
@@ -1716,12 +1716,13 @@ function roundedRect(context, x, y, width, height, radius, fill) {
   context.fill();
 }
 
-function centerText(context, text, y, font, fill) {
+function centerText(context, text, y, font, fill, maxWidth = 850) {
   context.font = font;
   context.fillStyle = fill;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.fillText(text, 540, y);
+  if (['ja', 'en'].includes(currentLocale)) context.fillText(text, 540, y);
+  else context.fillText(text, 540, y, maxWidth);
 }
 
 async function api(path, options = {}) {

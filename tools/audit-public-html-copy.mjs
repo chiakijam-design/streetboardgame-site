@@ -53,6 +53,9 @@ for (const path of paths) {
     if (value && /^(?:description|og:(?:title|description|image:alt)|twitter:(?:title|description|image:alt))$/.test(field || '')) add(value, path + ':metadata');
   }
 }
+// This shared control is created after load and is absent from server HTML.
+const viewportRecovery = await readFile(new URL('viewport_recovery.js', root), 'utf8');
+for (const [, value] of viewportRecovery.matchAll(/(?:textContent\s*=\s*|setAttribute\('aria-label',\s*)'([^']+)'/g)) add(value, 'viewport_recovery.js:control');
 const entries = [...missing].map(([source, contexts]) => ({ id: 'm' + createHash('sha256').update(source).digest('hex').slice(0, 14), source, contexts: [...contexts] }));
 await writeFile(new URL('data/translation-supplement-public-html.json', root), JSON.stringify({ schemaVersion: 1, status: 'public-fixed-source-only', entries }, null, 2) + '\n');
 console.log(JSON.stringify({ publicPages: paths.length, supplementalEntries: entries.length }));

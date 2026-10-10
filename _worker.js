@@ -560,7 +560,7 @@ async function withSecurityHeaders(response, request, env) {
     const locale = localeFromPath(requestPath);
     if (PUBLIC_LOCALES.length > 2 && localizedAssetRoute(requestPath)) {
       if (locale === 'ja') body = injectPublicLocaleShell(body, new URL(request.url), PUBLIC_LOCALES);
-      else if (locale === 'en') {
+      else if (locale === 'en' && !body.includes('window.__WATACHAN_I18N__=')) {
         const dictionary = await env.ASSETS.fetch(new Request(new URL('/locale-assets/en.json', request.url), { method: 'GET' }));
         if (!dictionary.ok) return new Response('Translation unavailable', { status: 503, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
         try { body = localizePublicHtml(body, await dictionary.json(), new URL(request.url), PUBLIC_LOCALES); }

@@ -23,7 +23,7 @@ import {
 } from './src/platform/imageSave.js';
 import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
-import { localizedQuestionCard, wrapLocalizedText } from './src/i18n/display-copy.js';
+import { localizedQuestionCard, wrapLocalizedText, editedQuestionValue } from './src/i18n/display-copy.js';
 import { buildQuestionConversationInsights } from './src/challenge/insights.js';
 import {
   getChallengeResultTier,
@@ -157,6 +157,7 @@ function escapeHtml(value) {
 
 function render() {
   if (!app) return;
+  protectUserCopy(collectProtectedUserCopy(state, allCards));
   document.documentElement.dataset.challengeMode = state.mode;
   const questionViewportKey = !state.editingQuestion
     && ['creator-edit', 'creator-answer', 'participant-answer'].includes(state.mode)
@@ -174,7 +175,6 @@ function render() {
                 : state.mode === 'ranking' ? rankingView()
                   : state.mode === 'library' ? libraryView()
                     : errorView();
-  protectUserCopy(collectProtectedUserCopy(state));
   app.innerHTML = body;
   app.classList.remove('is-booting');
   app.removeAttribute('aria-busy');
@@ -296,7 +296,7 @@ function creatorQuestionEditView(card) {
         aria-label="Q${index + 1}の問題文">${escapeHtml(translateText(card.title))}</textarea>
       ${card.choices.map((choice, choiceIndex) => `<label class="challenge-option-edit">
         <b>${choiceIndex + 1}</b>
-        <input data-option="${index}:${choiceIndex}" maxlength="60" value="${escapeHtml(choice)}"
+        <input data-option="${index}:${choiceIndex}" maxlength="60" value="${escapeHtml(translateText(choice))}"
           aria-label="Q${index + 1} 選択肢${choiceIndex + 1}">
       </label>`).join('')}
       <label class="challenge-consent">
@@ -1188,9 +1188,9 @@ function captureCreatorEdit() {
   captureCreatorConsent();
   state.cards = state.cards.map((card, index) => ({
     ...card,
-    title: document.querySelector(`[data-question="${index}"]`)?.value.trim() ?? card.title,
+    title: editedQuestionValue(document.querySelector(`[data-question="${index}"]`)?.value, card.title, translateText),
     choices: card.choices.map((choice, choiceIndex) => (
-      document.querySelector(`[data-option="${index}:${choiceIndex}"]`)?.value.trim() ?? choice
+      editedQuestionValue(document.querySelector(`[data-option="${index}:${choiceIndex}"]`)?.value, choice, translateText)
     )),
   }));
 }
