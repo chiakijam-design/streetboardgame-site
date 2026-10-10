@@ -2021,7 +2021,7 @@ async function saveChallengeResultImage(action = 'save-result-image') {
     const saved = await saveImageBlob(
       blob,
       'watachan-challenge-score.png',
-      isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード',
+      translateText(isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード'),
     );
     if (saved) trackDailyResultAction('result_image_save_requested');
     return saved;
@@ -2074,9 +2074,9 @@ async function shareResultToLine() {
     const outcome = await sharePreparedImageFileFirst({
       src: state.resultImageUrl,
       filename: 'watachan-challenge-score.png',
-      title: isEnglish
+      title: translateText(isEnglish
         ? 'Know Me Quiz | Score result card'
-        : 'わたし理解度診断｜点数入り結果カード',
+        : 'わたし理解度診断｜点数入り結果カード'),
       text,
     });
     if (outcome === 'shared') {
@@ -2105,9 +2105,9 @@ async function shareResultToX() {
     const outcome = await sharePreparedImageFileFirst({
       src: state.resultImageUrl,
       filename: 'watachan-challenge-score.png',
-      title: isEnglish
+      title: translateText(isEnglish
         ? 'Know Me Quiz | Score result card'
-        : 'わたし理解度診断｜点数入り結果カード',
+        : 'わたし理解度診断｜点数入り結果カード'),
       text,
     });
     if (outcome === 'shared') {

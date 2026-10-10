@@ -51,7 +51,16 @@ test.describe('completed multilingual release', () => {
       await page.locator('[data-locale-switcher]').selectOption(target);
       await expect(page).toHaveURL(beforeSwitch.origin + expectedPath);
     });
-    test(`${locale}: old Japanese invitation, private copy, ten answers and result PNG`, async ({ page, request }) => {
+    test(`${locale}: old Japanese invitation, private copy, ten answers and result PNG`, async ({ page, request, isMobile }) => {
+      // Mobile save hands the PNG to an OS sheet rather than a download. Keep
+      // this acceptance deterministic without opening a real sharing app.
+      await page.addInitScript(() => {
+        window.__WATACHAN_TEST_SHARED_FILES__ = [];
+        Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+        Object.defineProperty(navigator, 'share', { configurable: true, value: async ({ files, title }) => {
+          window.__WATACHAN_TEST_SHARED_FILES__.push({ title, files: files.map(file => ({ name: file.name, type: file.type, size: file.size })) });
+        } });
+      });
       const cards = [...oldJapaneseCards, { id: 'custom-i18n-fixture', sourceKind: 'custom', category: 'Fixture', title: 'Fixture private question', choices: ['Home', 'Next', 'Three', 'Four', 'Five'] }];
       const created = await request.post('/api/challenge/rooms', { data: { creatorName: 'Home', cards, answers: Array(10).fill(0) } });
       expect(created.status()).toBe(201);
@@ -75,9 +84,19 @@ test.describe('completed multilingual release', () => {
       await expect(page.locator('body')).toContainText('Next');
       const geometry = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
       expect(geometry.scroll).toBeLessThanOrEqual(geometry.client + 1);
-      const download = page.waitForEvent('download');
-      await page.locator('[data-action="save-result-image"]').click();
-      expect((await download).suggestedFilename()).toMatch(/\.png$/);
+      if (isMobile) {
+        await page.locator('[data-action="save-result-image"]').click();
+        await expect.poll(() => page.evaluate(() => window.__WATACHAN_TEST_SHARED_FILES__.length)).toBe(1);
+        const shared = await page.evaluate(() => window.__WATACHAN_TEST_SHARED_FILES__[0]);
+        expect(shared.files[0].name).toMatch(/\.png$/);
+        expect(shared.files[0].type).toBe('image/png');
+        expect(shared.files[0].size).toBeGreaterThan(2000);
+        if (!['ja', 'en'].includes(locale)) expect(shared.title).not.toBe('Know Me Quiz | Score result card');
+      } else {
+        const download = page.waitForEvent('download');
+        await page.locator('[data-action="save-result-image"]').click();
+        expect((await download).suggestedFilename()).toMatch(/\.png$/);
+      }
     });
   }
 });
