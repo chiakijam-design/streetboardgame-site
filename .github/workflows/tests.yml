@@ -23,7 +23,10 @@ jobs:
       - run: pnpm run build
       - run: pnpm run check:translations
       - run: pnpm run test:unit
-      - run: pnpm run test:e2e
+      - name: Existing game and site regressions
+        run: pnpm exec playwright test --grep-invert 'completed multilingual release'
+      - name: All locale desktop and mobile flows
+        run: pnpm exec playwright test tests/e2e/multilingual.spec.mjs --workers=2
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
