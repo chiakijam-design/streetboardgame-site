@@ -20,6 +20,15 @@ export function safeScriptJson(value) {
   return JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (char) => '\\u' + char.charCodeAt(0).toString(16).padStart(4, '0'));
 }
 
+export function injectPublicLocaleShell(html, requestUrl, publicLocales) {
+  const locale = localeFromPath(requestUrl.pathname);
+  const canonical = origin + localeCanonicalPath(requestUrl.pathname, locale);
+  const links = publicLocales.map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('');
+  const data = { publicLocales, entries: [], aliases: {}, catalog: { locale, messages: {}, provenance: { method: 'original', nativeReview: false } } };
+  return html.replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
+    .replace(/<\/head>/i, `<link rel="canonical" href="${canonical}">${links}<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}"><script>window.__WATACHAN_I18N__=${safeScriptJson(data)};</script><script defer src="${LOCALE_SHELL_ASSET}"></script></head>`);
+}
+
 // Input is the site's own static HTML, never submitted names or answer data.
 // Script/style blocks remain byte-for-byte untouched. Translation is escaped
 // as text, and query/hash capabilities are excluded from public metadata.

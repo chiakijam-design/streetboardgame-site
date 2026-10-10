@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { localizePublicHtml, localizedAssetRoute, safeScriptJson } from '../../src/i18n/public-html.js';
+import { localizePublicHtml, localizedAssetRoute, safeScriptJson, injectPublicLocaleShell } from '../../src/i18n/public-html.js';
 
 const data = { entries: [{ id: 'greeting', source: 'Welcome' }], aliases: {}, catalog: {
   locale: 'ar', provenance: { method: 'machine-generated', nativeReview: false }, messages: { greeting: 'أهلاً <script>evil()</script>' },
@@ -23,6 +23,14 @@ test('route selection never localizes APIs, management tools or retired games', 
 });
 test('serialized public catalog cannot close its script element', () => {
   assert.doesNotMatch(safeScriptJson({ copy: '</script><script>alert(1)</script>' }), /</);
+});
+
+test('Japanese navigation exposes completed locales without changing original copy or leaking capabilities', () => {
+  const html = '<html lang="ja"><head><link rel="canonical" href="https://old.example/"></head><body>元の日本語</body></html>';
+  const output = injectPublicLocaleShell(html, new URL('https://www.streetboardgame.com/challenge?room=TEST#manage=TEST'), ['ja', 'en', 'ar']);
+  assert.match(output, /元の日本語/);
+  assert.match(output, /hreflang="ar" href="https:\/\/www.streetboardgame.com\/ar\/challenge"/);
+  assert.doesNotMatch(output, /room=TEST|manage=TEST/);
 });
 
 test('structured metadata follows the actual URL locale and a mismatched catalog is rejected', () => {

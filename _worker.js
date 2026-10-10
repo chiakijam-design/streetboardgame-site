@@ -5,8 +5,8 @@ import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 import { runSocialPublishing } from './src/social/publisher.js';
 import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
 import { questionPacks } from './src/challenge/packs.js';
-import { localeFromPath } from './src/i18n/locales.js';
-import { localizePublicHtml, localizedAssetRoute } from './src/i18n/public-html.js';
+import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
+import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
@@ -59,7 +59,7 @@ const LEGAL_PAGE_FILES = Object.freeze({
 
 export default {
   async fetch(request, env) {
-    return withSecurityHeaders(await handleRequest(request, env), request);
+    return withSecurityHeaders(await handleRequest(request, env), request, env);
   },
   async scheduled(controller, env, context) {
     const scheduledAt = Number(controller?.scheduledTime) || Date.now();
@@ -167,7 +167,10 @@ async function handleRequest(request, env) {
     }
 
     const locale = localeFromPath(rawPath);
-    if (locale !== 'ja' && locale !== 'en') {
+    const extendedEnglishPage = locale === 'en' && PUBLIC_LOCALES.length > 2
+      && !['/en', '/en/', '/en/live-challenge', '/en/terms', '/en/privacy'].includes(path)
+      && !ENGLISH_CHALLENGE_PAGE_PATHS.has(path);
+    if (locale !== 'ja' && (locale !== 'en' || extendedEnglishPage)) {
       if (!PUBLIC_LOCALES.includes(locale)) return new Response('Not Found', { status: 404, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } });
       const assetRoute = localizedAssetRoute(rawPath);
       if (!assetRoute) return new Response('Not Found', { status: 404 });
@@ -189,7 +192,11 @@ async function handleRequest(request, env) {
         headers.set('cache-control', 'no-store');
       }
       let rendered;
-      try { rendered = localizePublicHtml(await response.text(), data, url); }
+      try {
+        let baseHtml = await response.text();
+        if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge/library') baseHtml = applyChallengeLibraryMeta(baseHtml);
+        rendered = localizePublicHtml(baseHtml, data, url);
+      }
       catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
       return new Response(request.method === 'HEAD' ? null : rendered, { status: response.status, headers });
     }
@@ -505,7 +512,7 @@ async function handleRequest(request, env) {
     return response;
 }
 
-async function withSecurityHeaders(response, request) {
+async function withSecurityHeaders(response, request, env) {
   if (response.status === 101 || response.webSocket) return response;
   const headers = new Headers(response.headers);
   const isHtml = /text\/html/i.test(headers.get('content-type') || '');
@@ -544,7 +551,18 @@ async function withSecurityHeaders(response, request) {
   }
   let body = response.body;
   if (isHtml && response.body) {
-    body = (await response.text()).replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
+    body = await response.text();
+    const locale = localeFromPath(requestPath);
+    if (PUBLIC_LOCALES.length > 2 && localizedAssetRoute(requestPath)) {
+      if (locale === 'ja') body = injectPublicLocaleShell(body, new URL(request.url), PUBLIC_LOCALES);
+      else if (locale === 'en') {
+        const dictionary = await env.ASSETS.fetch(new Request(new URL('/locale-assets/en.json', request.url), { method: 'GET' }));
+        if (!dictionary.ok) return new Response('Translation unavailable', { status: 503, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
+        try { body = localizePublicHtml(body, await dictionary.json(), new URL(request.url), PUBLIC_LOCALES); }
+        catch { return new Response('Translation unavailable', { status: 503, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } }); }
+      }
+    }
+    body = body.replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
     headers.delete('content-length');
     headers.delete('content-encoding');
   }

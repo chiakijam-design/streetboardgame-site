@@ -1,4 +1,5 @@
 (function languageSwitch() {
+  if (window.__WATACHAN_I18N__) return; // The complete locale shell owns this control.
   const KEY = 'watachan:language:v1';
   const path = window.location.pathname;
   const topPage = path === '/' || path === '/en' || path === '/en/';

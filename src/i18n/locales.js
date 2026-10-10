@@ -70,7 +70,7 @@ export function switchLocalePath(value, targetLocale) {
 export function localeCanonicalPath(value, locale) {
   const url = new URL(switchLocalePath(value, locale), internalOrigin);
   const page = stripLocalePrefix(url.pathname);
-  if (page.startsWith('/challenge/')) {
+  if (['/challenge/manage', '/challenge/ranking'].includes(page)) {
     url.pathname = LOCALE_DETAILS[normalizeLocale(locale)].prefix + '/challenge';
   }
   return url.pathname;

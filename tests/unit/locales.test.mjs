@@ -33,6 +33,7 @@ test('switching every locale preserves invite and management context and the Jap
   const live = '/live-challenge?room=123456#host=PRIVATE_TEST_HOST';
   assert.equal(switchLocalePath(live, 'ar'), '/ar' + live);
   assert.equal(localeCanonicalPath(live, 'ar'), '/ar/live-challenge');
+  assert.equal(localeCanonicalPath('/ar/challenge/library?pack=friends', 'ar'), '/ar/challenge/library');
 });
 
 test('locale matching preserves Chinese script, stable root and rejects unsafe routes', () => {
