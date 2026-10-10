@@ -25,11 +25,11 @@ export function collectProtectedUserCopy(state) {
   function visit(value, inChat = false) {
     if (!value || typeof value !== 'object' || seen.has(value)) return;
     seen.add(value);
-    const custom = value.sourceKind === 'custom' || value.custom === true || /^CUS/.test(String(value.id || ''));
+    const custom = value.sourceKind === 'custom' || value.custom === true || /^CUS/.test(String(value.sourceId || value.id || ''));
     for (const [key, item] of Object.entries(value)) {
       if (typeof item === 'string' && (/^(?:name|creatorName|participantName|hostName|subjectName|viewerName|playerName|displayName)$/.test(key)
-        || inChat && /^(?:text|message|body|content)$/.test(key) || custom && key === 'title')) values.push(item);
-      if (custom && key === 'choices' && Array.isArray(item)) values.push(...item.filter((choice) => typeof choice === 'string'));
+        || inChat && /^(?:text|message|body|content)$/.test(key) || custom && ['title', 'text'].includes(key))) values.push(item);
+      if (custom && ['choices', 'options'].includes(key) && Array.isArray(item)) values.push(...item.filter((choice) => typeof choice === 'string'));
       visit(item, inChat || /chat|messages/i.test(key));
     }
   }

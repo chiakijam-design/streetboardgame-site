@@ -23,6 +23,7 @@ import {
 } from './src/questions/catalog.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
+import { localizedQuestionCard } from './src/i18n/display-copy.js';
 import { isEnglish, localizeDom, languagePrefix, currentLocale, translateText, protectUserCopy, localizedAlert, localizedConfirm } from './src/i18n/runtime.js';
 import { localizedCanvasContext, collectProtectedUserCopy } from './src/i18n/canvas-copy.js';
 import { trackAnalyticsEvent, trackGamePlay, trackPurchaseFromCheckout } from './src/analytics/events.js';
@@ -473,7 +474,7 @@ function createView() {
       <div class="live-builder-paper notebook-question-card" data-testid="live-builder-paper-card">
         <span class="q-badge notebook-card-counter">Q${state.builderIndex + 1}/10</span>
         <h3 class="notebook-card-accessible-title">${escapeHtml(question.text)}</h3>
-        ${renderNotebookQuestionCard(question)}
+        ${renderNotebookQuestionCard(localizedQuestionCard(question, translateText), { locale: currentLocale })}
       </div>
       <button class="primary live-use-question" data-action="use-live-question">
         <span>この問題を使う<small>（答えは配信中に選択）</small></span>
@@ -896,7 +897,7 @@ function bindEvents(root = document) {
     loadPaidCreatorProfiles();
   });
   root.querySelectorAll('[data-action="back-landing"]').forEach((button) => button.addEventListener('click', () => {
-    history.replaceState(null, '', '/live-challenge');
+    history.replaceState(null, '', `${languagePrefix}/live-challenge`);
     setState({
       view: 'landing',
       code: '',
@@ -1009,7 +1010,7 @@ function bindEvents(root = document) {
 function goToCode() {
   const code = (document.getElementById('entry-code')?.value || '').replace(/\D/g, '').slice(0, 6);
   if (code.length !== 6) return showError('invalid-code');
-  location.href = `/live-challenge?room=${code}`;
+  location.href = `${languagePrefix}/live-challenge?room=${code}`;
 }
 
 function captureDraft() {
@@ -1126,7 +1127,7 @@ async function createGame() {
     state.hostToken = response.hostToken;
     state.subjectToken = response.game.subjectToken || '';
     state.game = mergeLiveGame(response.game);
-    history.replaceState(null, '', `/live-challenge?room=${state.code}#host=${state.hostToken}`);
+    history.replaceState(null, '', `${languagePrefix}/live-challenge?room=${state.code}#host=${state.hostToken}`);
     setState({
       view: 'host',
       loading: false,

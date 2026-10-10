@@ -23,6 +23,7 @@ import {
 } from './src/platform/imageSave.js';
 import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
+import { localizedQuestionCard, wrapLocalizedText } from './src/i18n/display-copy.js';
 import { buildQuestionConversationInsights } from './src/challenge/insights.js';
 import {
   getChallengeResultTier,
@@ -238,8 +239,8 @@ function creatorEditView() {
       </div>
       <article class="challenge-card challenge-builder-card notebook-question-card" data-testid="challenge-builder-paper-card">
         <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/10</div>
-        <h2 class="notebook-card-accessible-title">${escapeHtml(card.title)}</h2>
-        ${renderNotebookQuestionCard(card, { answerAction: 'builder-answer' })}
+        <h2 class="notebook-card-accessible-title">${escapeHtml(translateText(card.title))}</h2>
+        ${renderNotebookQuestionCard(localizedQuestionCard(card, translateText), { answerAction: 'builder-answer', locale: currentLocale })}
       </article>
       <div class="challenge-answer-pad challenge-builder-answer-pad" data-testid="challenge-builder-answer-pad">
         <div class="challenge-answer-pad-heading">
@@ -292,7 +293,7 @@ function creatorQuestionEditView(card) {
     `<section class="challenge-panel challenge-single-editor" data-testid="challenge-question-edit-form">
       <label class="challenge-label" for="builder-question">問題文</label>
       <textarea id="builder-question" data-question="${index}" maxlength="180"
-        aria-label="Q${index + 1}の問題文">${escapeHtml(card.title)}</textarea>
+        aria-label="Q${index + 1}の問題文">${escapeHtml(translateText(card.title))}</textarea>
       ${card.choices.map((choice, choiceIndex) => `<label class="challenge-option-edit">
         <b>${choiceIndex + 1}</b>
         <input data-option="${index}:${choiceIndex}" maxlength="60" value="${escapeHtml(choice)}"
@@ -409,8 +410,8 @@ function questionView(isCreator) {
       </div>
       <article class="challenge-card notebook-question-card" data-testid="challenge-paper-card">
         <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/10</div>
-        <h2 class="notebook-card-accessible-title">${escapeHtml(card.title)}</h2>
-        ${renderNotebookQuestionCard(card, { answerAction: 'answer', disabled: !isCreator && state.answerPending })}
+        <h2 class="notebook-card-accessible-title">${escapeHtml(translateText(card.title))}</h2>
+        ${renderNotebookQuestionCard(localizedQuestionCard(card, translateText), { answerAction: 'answer', disabled: !isCreator && state.answerPending, locale: currentLocale })}
       </article>
       <div class="challenge-answer-pad" data-testid="challenge-answer-pad">
         <div class="challenge-answer-pad-heading">
@@ -618,7 +619,7 @@ function insightCardView(highlight, copy) {
   const { question } = highlight;
   return `<article class="challenge-insight-card is-${highlight.kind}" data-insight-kind="${highlight.kind}">
     <span class="challenge-insight-label">${escapeHtml(highlight.label)}</span>
-    <h3>Q${question.index + 1} ${escapeHtml(question.card.title)}</h3>
+    <h3>Q${question.index + 1} ${escapeHtml(translateText(question.card.title))}</h3>
     <p>${escapeHtml(highlight.summary)}</p>
     ${choiceCountListView(question, copy)}
     <p class="challenge-conversation-prompt"><span aria-hidden="true">💬</span> ${copy.talk}</p>
@@ -627,7 +628,7 @@ function insightCardView(highlight, copy) {
 
 function questionDistributionView(question, copy) {
   return `<article class="challenge-question-distribution">
-    <h3>Q${question.index + 1} ${escapeHtml(question.card.title)}</h3>
+    <h3>Q${question.index + 1} ${escapeHtml(translateText(question.card.title))}</h3>
     ${choiceCountListView(question, copy)}
   </article>`;
 }
@@ -674,7 +675,7 @@ function participantDetail(participant, cards) {
     ${participant.submitted ? `<ol>
       ${participant.answers.map((answer, index) => `
         <li class="${answer.match ? 'is-correct' : ''}">
-          <span>Q${index + 1} ${escapeHtml(cards[index].title)}</span>
+          <span>Q${index + 1} ${escapeHtml(translateText(cards[index].title))}</span>
           <b>${escapeHtml(cards[index].choices[answer.selected])}</b>
           <small>${answer.match ? '正解' : `正解：${escapeHtml(cards[index].choices[answer.correct])}`}</small>
         </li>
@@ -716,7 +717,8 @@ function resultView() {
   const result = state.result;
   if (!result) return errorView();
   const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
-  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(result) : getChallengeReviewLines(result);
+  const displayResult = isEnglish ? { ...result, answers: result.answers.map((answer) => ({ ...answer, card: localizedQuestionCard(answer.card, translateText) })) } : result;
+  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(displayResult).map((line, index) => index === 0 ? line.replace(`“${tier.title}”`, `“${translateText(tier.title)}”`) : line) : getChallengeReviewLines(result);
   return `
     <section class="challenge-result-image-section" aria-labelledby="challenge-result-score-title">
       <h1 id="challenge-result-score-title" class="challenge-result-visually-hidden">${result.score}/10問 正解</h1>
@@ -737,7 +739,7 @@ function resultView() {
         ${result.answers.map((answer, index) => `
           <article class="challenge-result ${answer.match ? 'is-correct' : ''}"
             data-result-answer="${index}" data-result-feedback="${answer.match ? 'correct' : 'incorrect'}">
-            <header><b>Q${index + 1} ${escapeHtml(answer.card.title)}</b><span>${answer.match ? '当たり' : 'ハズレ'}</span></header>
+            <header><b>Q${index + 1} ${escapeHtml(translateText(answer.card.title))}</b><span>${answer.match ? '当たり' : 'ハズレ'}</span></header>
             <p>あなた：<i style="background:${COLORS[answer.selected]}"></i>${escapeHtml(answer.card.choices[answer.selected])}</p>
             <p>正解：<i style="background:${COLORS[answer.correct]}"></i>${escapeHtml(answer.card.choices[answer.correct])}</p>
           </article>
@@ -966,7 +968,7 @@ function libraryView() {
               <p>${escapeHtml(pack.description)}</p>
               <details${questionCatalogReady ? '' : ' inert'}>
                 <summary>入っている10問を見る</summary>
-                <ol>${cards.map((card) => `<li>${escapeHtml(card.title)}</li>`).join('')}</ol>
+                <ol>${cards.map((card) => `<li>${escapeHtml(translateText(card.title))}</li>`).join('')}</ol>
               </details>
             </div>
             <div class="challenge-pack-actions">
@@ -1024,7 +1026,7 @@ function trendGroupView(section) {
       ${section.items.map(({ card }) => `<li data-question-id="${escapeHtml(card.id)}">
         <div>
           <small>${escapeHtml(card.category || 'みんなのお題')}</small>
-          <b>${escapeHtml(card.title)}</b>
+          <b>${escapeHtml(translateText(card.title))}</b>
         </div>
         <a href="${languagePrefix}/challenge?question=${encodeURIComponent(card.id)}">このお題を入れて作る</a>
       </li>`).join('')}
@@ -1808,6 +1810,7 @@ function resultRoundRect(context, x, y, width, height, radius) {
 function splitResultText(text, maxLength = 18, maxLines = 3) {
   const value = translateText(String(text || ''));
   if (!value) return [];
+  if (!['ja', 'en'].includes(currentLocale)) return wrapLocalizedText(value, currentLocale, maxLines);
   const lines = [];
   value.split('\n').forEach((paragraph) => {
     const graphemes = typeof Intl.Segmenter === 'function'
@@ -1821,8 +1824,10 @@ function splitResultText(text, maxLength = 18, maxLines = 3) {
   return lines.slice(0, maxLines);
 }
 
-function drawResultLines(context, lines, x, y, lineHeight) {
-  lines.forEach((line, index) => context.fillText(line, x, y + index * lineHeight));
+function drawResultLines(context, lines, x, y, lineHeight, maxWidth) {
+  lines.forEach((line, index) => maxWidth === undefined
+    ? context.fillText(line, x, y + index * lineHeight)
+    : context.fillText(line, x, y + index * lineHeight, maxWidth));
 }
 
 async function createChallengeResultCanvas(result) {
@@ -1895,7 +1900,7 @@ async function createChallengeResultCanvas(result) {
     isEnglish ? 24 : 13,
     2,
   );
-  drawResultLines(context, scoreLabelLines, 202, 326, 42);
+  drawResultLines(context, scoreLabelLines, 202, 326, 42, !['ja', 'en'].includes(currentLocale) ? 420 : undefined);
 
   context.shadowColor = '#191919';
   context.shadowOffsetX = 8;
@@ -1943,7 +1948,7 @@ async function createChallengeResultCanvas(result) {
   context.fillStyle = '#ec4683';
   const titleLines = splitResultText(tier.title, 11, 2);
   context.font = `900 ${titleLines.length > 1 ? 46 : 54}px "Noto Sans JP", sans-serif`;
-  drawResultLines(context, titleLines, 540, 740, 58);
+  drawResultLines(context, titleLines, 540, 740, 58, !['ja', 'en'].includes(currentLocale) ? 760 : undefined);
 
   context.fillStyle = '#ffffff';
   resultRoundRect(context, 150, 816, 780, 248, 26);
@@ -1955,7 +1960,7 @@ async function createChallengeResultCanvas(result) {
   context.fillStyle = '#191919';
   context.font = '900 31px "Noto Sans JP", sans-serif';
   const messageLines = splitResultText(tier.message, 20, 4);
-  drawResultLines(context, messageLines, 540, 878, 47);
+  drawResultLines(context, messageLines, 540, 878, 47, !['ja', 'en'].includes(currentLocale) ? 730 : undefined);
 
   context.fillStyle = '#ffe36f';
   resultRoundRect(context, 156, 1094, 768, 132, 26);

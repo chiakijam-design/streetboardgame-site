@@ -11,6 +11,6 @@ test('canvas translates measured/drawn labels and constrains long copy to the ca
   assert.equal(context.direction, 'rtl');
 });
 test('protection collects names, chat and custom questions without suppressing public question labels', () => {
-  const state = { creatorName: 'Home', chat: { messages: [{ text: 'Create quiz', name: 'LIVE' }] }, cards: [{ id: 'EN001', title: 'Public question', choices: ['A'] }, { id: 'CUS001', title: 'Custom question', choices: ['Back'] }] };
-  assert.deepEqual(new Set(collectProtectedUserCopy(state)), new Set(['Home', 'Create quiz', 'LIVE', 'Custom question', 'Back']));
+  const state = { creatorName: 'Home', chat: { messages: [{ text: 'Create quiz', name: 'LIVE' }] }, cards: [{ id: 'EN001', title: 'Public question', choices: ['A'] }, { id: 'CUS001', title: 'Custom question', choices: ['Back'] }], liveQuestions: [{ id: 'Q1', sourceId: 'CUS002', text: 'Live custom question', options: ['Next'] }] };
+  assert.deepEqual(new Set(collectProtectedUserCopy(state)), new Set(['Home', 'Create quiz', 'LIVE', 'Custom question', 'Back', 'Live custom question', 'Next']));
 });

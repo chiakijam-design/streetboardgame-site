@@ -6,7 +6,7 @@ import { validateCatalog } from '../src/i18n/catalog-core.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const corpus = JSON.parse(await fs.readFile(path.join(root, 'data/translation-corpus.json'), 'utf8'));
-if (process.argv.includes('--include-supplement')) {
+if (!process.argv.includes('--base-only')) {
   const supplement = JSON.parse(await fs.readFile(path.join(root, 'data/translation-supplement-public-html.json'), 'utf8'));
   corpus.entries.push(...supplement.entries);
 }

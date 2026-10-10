@@ -181,7 +181,12 @@ async function handleRequest(request, env) {
       catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
       const baseUrl = new URL(assetRoute, url.origin);
       // Reuse the existing public information-page renderer and game templates.
-      const response = await handleRequest(new Request(baseUrl, { method: 'GET', headers: request.headers }), env);
+      const baseRequest = new Request(baseUrl, { method: 'GET', headers: request.headers });
+      // Static .html aliases redirect to Japanese routes in handleRequest.
+      // Fetch the template directly so localized URLs do not lose their locale.
+      const response = assetRoute.endsWith('.html')
+        ? await env.ASSETS.fetch(baseRequest)
+        : await handleRequest(baseRequest, env);
       if (!response.ok || !/text\/html/i.test(response.headers.get('content-type') || '')) return response;
       const headers = new Headers(response.headers);
       headers.delete('etag');
@@ -195,7 +200,7 @@ async function handleRequest(request, env) {
       try {
         let baseHtml = await response.text();
         if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge/library') baseHtml = applyChallengeLibraryMeta(baseHtml);
-        rendered = localizePublicHtml(baseHtml, data, url);
+        rendered = localizePublicHtml(baseHtml, data, url, PUBLIC_LOCALES);
       }
       catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
       return new Response(request.method === 'HEAD' ? null : rendered, { status: response.status, headers });

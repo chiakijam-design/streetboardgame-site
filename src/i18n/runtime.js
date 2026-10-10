@@ -1,6 +1,7 @@
 import { localeFromPath, LOCALE_DETAILS, stripLocalePrefix } from './locales.js';
 import { createCatalogTranslator, requireCompleteCatalog } from './catalog-core.js';
 import { translateLegacyEnglish } from './legacy-copy.js';
+import { rootPublicResource, rootPublicSourceSet } from './resource-paths.js';
 
 export const SITE_LANGUAGE_KEY = 'watachan:language:v1';
 export const currentLocale = localeFromPath(window.location.pathname);
@@ -52,6 +53,12 @@ export function localizeDom(root = document) {
     if (translated !== node.nodeValue) node.nodeValue = translated;
   });
   root.querySelectorAll?.('*').forEach((element) => {
+    for (const name of ['src', 'srcset']) {
+      const value = element.getAttribute(name);
+      if (!value) continue;
+      const normalized = name === 'srcset' ? rootPublicSourceSet(value) : rootPublicResource(value);
+      if (normalized !== value) element.setAttribute(name, normalized);
+    }
     ATTRIBUTE_NAMES.forEach((name) => {
       if (element.hasAttribute(name)) {
         const value = element.getAttribute(name);

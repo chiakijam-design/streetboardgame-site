@@ -1,6 +1,7 @@
 import { createCatalogTranslator, requireCompleteCatalog } from './catalog-core.js';
 import { LOCALE_DETAILS, TARGET_LOCALES, localeCanonicalPath, localeFromPath, switchLocalePath, stripLocalePrefix } from './locales.js';
 import { LOCALE_SHELL_ASSET } from '../generated/locale-assets.js';
+import { rootPublicResource, rootPublicSourceSet } from './resource-paths.js';
 
 const origin = 'https://www.streetboardgame.com';
 const entityValues = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0', ndash: '–', mdash: '—' };
@@ -40,7 +41,10 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   let output = html.replace(/(<script\b[\s\S]*?<\/script\s*>|<style\b[\s\S]*?<\/style\s*>|<!--[\s\S]*?-->)|(<[^>]+>)|([^<]+)/gi, (whole, protectedBlock, tag, text) => {
     if (protectedBlock) return protectedBlock;
     if (text) return copy(text);
-    return tag.replace(/\b(aria-label|placeholder|alt|title|content)=(['"])([\s\S]*?)\2/gi,
+    return tag.replace(/\b(src|srcset)=(['"])([\s\S]*?)\2/gi, (attribute, name, quote, value) => {
+      const normalized = name.toLowerCase() === 'srcset' ? rootPublicSourceSet(value) : rootPublicResource(value);
+      return normalized === value ? attribute : `${name}=${quote}${normalized}${quote}`;
+    }).replace(/\b(aria-label|placeholder|alt|title|content)=(['"])([\s\S]*?)\2/gi,
       (attribute, name, quote, value) => {
         if (/^https?:\/\//.test(value) || !value.trim()) return attribute;
         return `${name}=${quote}${copy(value)}${quote}`;
@@ -50,6 +54,10 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
       });
   });
   const details = LOCALE_DETAILS[locale];
+  // New locale traffic must not silently expand the existing analytics tags
+  // before regional consent and cookie policy have been reviewed. This flag
+  // precedes the legacy synchronous analytics script in the game template.
+  if (!['ja', 'en'].includes(locale)) output = output.replace(/<head\b[^>]*>/i, '$&<script>window.__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__=true;</script>');
   output = output.replace(/(<script\b[^>]*\btype=["']application\/ld\+json["'][^>]*>)([\s\S]*?)(<\/script>)/gi, (whole, open, json, close) => {
     try {
       function localizeValue(value, key = '') {
@@ -76,7 +84,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   const alternate = publicLocales.map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('');
   const publicData = { entries: data.entries, aliases: data.aliases, catalog: data.catalog, publicLocales };
   const additions = `<link rel="canonical" href="${canonical}">${alternate}<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}">`
-    + `<style>html[lang="${locale}"] body{font-family:system-ui,sans-serif}html[dir=rtl] input,html[dir=rtl] textarea{direction:rtl}html[dir=rtl] [data-user-copy]{unicode-bidi:plaintext}button,a,p,h1,h2,h3{overflow-wrap:anywhere}</style>`
+    + `<style>html[lang="${locale}"] body{font-family:system-ui,sans-serif}html[dir=rtl] input,html[dir=rtl] textarea{direction:rtl}html[dir=rtl] [data-user-copy]{unicode-bidi:plaintext}button,a,p,h1,h2,h3{overflow-wrap:anywhere}html[lang="${locale}"] [data-testid=top-rules-title-line]{white-space:normal!important;overflow-wrap:anywhere}.challenge-result-share-button small span,.challenge-result-share-divider span{white-space:normal}.challenge-result-share-copy{max-width:100%}</style>`
     + `<script>window.__WATACHAN_I18N__=${safeScriptJson(publicData)};</script>`
     + (LOCALE_SHELL_ASSET ? `<script defer src="${LOCALE_SHELL_ASSET}"></script>` : '');
   output = output.replace(/<\/head>/i, additions + '</head>');
@@ -88,7 +96,7 @@ export function localizedAssetRoute(pathname) {
   const page = stripLocalePrefix(pathname).replace(/\/+$/, '') || '/';
   try { switchLocalePath(page, 'ja'); } catch { return null; }
   if (page === '/') return '/index.html';
-  if (page.startsWith('/challenge')) return '/challenge.html';
+  if (page === '/challenge' || page.startsWith('/challenge/')) return '/challenge.html';
   if (page === '/live-challenge') return '/live_challenge.html';
   return page;
 }

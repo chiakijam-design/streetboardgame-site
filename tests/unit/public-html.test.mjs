@@ -15,14 +15,23 @@ test('server copy is escaped, scripts preserved and room capabilities absent fro
   assert.match(output, /rel="canonical" href="https:\/\/www.streetboardgame.com\/ar\/challenge"/);
   assert.doesNotMatch(output.match(/<head>[\s\S]*?<\/head>/)[0], /public-code|#manage/);
   assert.match(output, /hreflang="ja"/);
+  assert.ok(output.indexOf('__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__') < output.indexOf('<title>'));
 });
 test('route selection never localizes APIs, management tools or retired games', () => {
   assert.equal(localizedAssetRoute('/ar/challenge/manage'), '/challenge.html');
   assert.equal(localizedAssetRoute('/zh-Hant/live-challenge'), '/live_challenge.html');
+  assert.equal(localizedAssetRoute('/es/challenge-guide'), '/challenge-guide');
   for (const path of ['/ar/api/live', '/ar/live-ops', '/ar/remote', '/ar/love']) assert.equal(localizedAssetRoute(path), null);
 });
 test('serialized public catalog cannot close its script element', () => {
   assert.doesNotMatch(safeScriptJson({ copy: '</script><script>alert(1)</script>' }), /</);
+});
+
+test('localized HTML preserves root asset locations while retaining responsive image descriptors', () => {
+  const output = localizePublicHtml('<html><head></head><body><img src="assets/girl.webp"><source srcSet="assets/girl-320.webp 320w, ./assets/girl-640.webp 640w"><img src="https://example.com/photo.webp"></body></html>', data, new URL('https://www.streetboardgame.com/ar/'), ['ja', 'ar']);
+  assert.match(output, /src="\/assets\/girl.webp"/);
+  assert.match(output, /srcSet="\/assets\/girl-320.webp 320w, \/assets\/girl-640.webp 640w"/);
+  assert.match(output, /src="https:\/\/example.com\/photo.webp"/);
 });
 
 test('Japanese navigation exposes completed locales without changing original copy or leaking capabilities', () => {
