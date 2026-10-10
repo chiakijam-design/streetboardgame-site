@@ -514,6 +514,9 @@ async function withSecurityHeaders(response, request) {
   let body = response.body;
   if (isHtml && response.body) {
     body = (await response.text()).replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
+    // Public account ownership verification only; this does not load ads.
+    body = body.replace(/<meta\b(?=[^>]*\bname=["']google-adsense-account["'])[^>]*>/gi, '')
+      .replace(/<\/head>/i, '<meta name="google-adsense-account" content="ca-pub-8959934584200203"></head>');
     headers.delete('content-length');
     headers.delete('content-encoding');
   }
