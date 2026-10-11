@@ -5,6 +5,7 @@ import { copyFile, mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/p
 import vm from 'node:vm';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
+import { execFileSync } from 'node:child_process';
 
 const DIST_ENTRIES = {
   locale_shell: 'src/i18n/shell.js',
@@ -235,6 +236,8 @@ let englishHtml = await readFile('en/index.html', 'utf8');
 const englishFont = await buildPageFont(englishHtml.replace(/<head>[\s\S]*?<\/head>/, '').replace(/<script[\s\S]*?<\/script>/g, ''), 'english');
 englishHtml = englishHtml.replace(/<link[^>]*(?:data-build-font="english"|href="https:\/\/fonts.googleapis.com\/css2[^\"]+")[^>]*>/, `<link data-build-font="english" href="${englishFont}" rel="stylesheet">`);
 await writeFile('en/index.html', englishHtml);
+// Compile fixed translated HTML outside Workers' per-request CPU budget.
+execFileSync(process.execPath, ['tools/build-public-locale-pages.mjs'], { stdio: 'inherit' });
 
 async function buildPageFont(markup, name) {
   const homeText = markup.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, '');

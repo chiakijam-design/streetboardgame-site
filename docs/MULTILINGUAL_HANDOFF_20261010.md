@@ -144,3 +144,11 @@ HEAD dc59ddeのPC/mobile別実行はそれぞれ68件成功・exit 0（合計136
 言語切替は既存の全画面回答/編集とLIVE host/viewerではゲーム本文の後へ移し、元の操作領域を保つ。切替時のquery/hash・途中状態の文脈維持は同じ経路を使う。英語は既存pivot表現を優先し、英語ライブラリは専用metadataを翻訳する。metadataの一意性は言語内で検証し、JAライブラリから全34ロケールへhreflangを確認する。510ページunitへtitle/description重複検証を追加。CIは既存機能失敗時もlocale matrixを実行するが、失敗を許容/成功扱いする設定は追加しない。
 
 修正後の最新CI合格、通常merge、Cloudflare公開、本番HTTP/配信asset照合とPC/mobile確認が完了するまで公開済みとは報告しない。翻訳の母語校閲、LINE/X実投稿・SNS cache、追加地域の解析同意は未確認のまま。
+
+## 本番CPU制限の修正（2026-10-11 UTC）
+
+HEAD d2cd187のCI38094723065はunit266、既存回帰293成功/22想定skip、全locale操作204成功で完了。PR #16を通常mergeしてmain 4d31f5d2へ保存。Cloudflareのmainビルド2a671a69は既存 `npx wrangler deploy` で成功し、version 2bea14b1を100%配信した（手動二重公開なし）。branchのbot成功は `versions upload` で、本番配信ではなかった。
+
+本番の全ページ照合では503が複数発生。同じ公開URLの低負荷再確認でも `error code: 1102` を取得し、配信直後の一時応答ではなくWorker CPU制限を確認した。合格済みCIと、本番確認失敗を区別する。追加費用やCPU上限変更は行わない。
+
+翻訳済みHTMLをビルド時に固定素材から生成し、561画面（33非日本語×公開15＋管理/ランキング2）を静的配信する修正を分離ブランチへ作成。公開辞書は内容hash付き静的JSとしてゲームより先に読み込む。最大HTMLは約55KBで、リクエスト中の辞書解析・全件検証・翻訳と大きな辞書の埋込を避ける。CSP nonceは各リクエストで新規付与、内部HTMLパスは404、安定URL・query/hash・人数・採点・利用者データ形式・解析保留を維持する。新unitは辞書取得なしでの配信、CSP nonce更新とnoindexを確認する。修正後CI・通常merge・既存自動公開・本番全件検証の確定結果は修正PRと完了報告を参照。
