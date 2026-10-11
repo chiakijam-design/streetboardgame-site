@@ -183,7 +183,7 @@ async function handleRequest(request, env) {
           headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
           if (locale !== 'en') headers.set('cache-control', 'no-store');
         }
-        return new Response(prepared.body, { status: 200, headers });
+        return new Response(request.method === 'HEAD' ? null : prepared.body, { status: 200, headers });
       }
     }
     const extendedEnglishPage = locale === 'en' && PUBLIC_LOCALES.length > 2

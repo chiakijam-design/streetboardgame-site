@@ -28,7 +28,11 @@ test('localized requests serve bounded precompiled HTML without parsing catalogs
     assert.notEqual(again.headers.get('content-security-policy'), response.headers.get('content-security-policy'));
   }
   assert.equal(requests.length, 12);
+  const head = await worker.fetch(new Request('https://www.streetboardgame.com/ar/challenge?room=TEST_COMPAT', { method: 'HEAD' }), env);
+  assert.equal(head.status, 200);
+  assert.equal(await head.text(), '');
+  assert.match(head.headers.get('x-robots-tag'), /noindex/);
   const internal = await worker.fetch(new Request('https://www.streetboardgame.com' + Object.values(PUBLIC_LOCALE_PAGES)[0]), env);
   assert.equal(internal.status, 404);
-  assert.equal(requests.length, 12);
+  assert.equal(requests.length, 13);
 });
