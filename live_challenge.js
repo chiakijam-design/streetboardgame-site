@@ -433,7 +433,7 @@ function landingView() {
     <div class="live-pack-grid">
       ${livePacks.map((pack) => `<article class="live-pack-card" data-live-pack="${escapeHtml(pack.slug)}">
         <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="lazy" decoding="async"
-          alt="${escapeHtml(pack.title)}${isEnglish ? ' illustration' : 'のイメージ画像'}">
+          alt="${escapeHtml(isEnglish ? currentLocale === 'en' ? pack.title + ' illustration' : translateText(pack.title) : pack.title + 'のイメージ画像')}">
         <div>
           <small>${pack.featured ? '主力・LIVE専用' : 'LIVE専用'}</small>
           <h3>${escapeHtml(pack.title)}</h3>
