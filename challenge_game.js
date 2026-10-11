@@ -961,7 +961,7 @@ function libraryView() {
           const cards = questionCatalogReady ? questionPackCards(allCards, pack.slug, isEnglish, QUESTION_COUNT) : [];
           return `<article class="challenge-library-card challenge-pack-card" data-pack="${escapeHtml(pack.slug)}">
               <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="${packIndex === 0 ? 'eager' : 'lazy'}" fetchpriority="${packIndex === 0 ? 'high' : 'auto'}" decoding="async"
-                alt="${escapeHtml(pack.title)}${isEnglish ? ' illustration' : 'のイメージ画像'}">
+                alt="${escapeHtml(isEnglish ? currentLocale === 'en' ? pack.title + ' illustration' : translateText(pack.title) : pack.title + 'のイメージ画像')}">
             <div class="challenge-pack-copy">
               <span class="challenge-pack-count">${pack.featured ? '主力・10問パック' : '10問パック'}</span>
               <h2>${escapeHtml(pack.title)}</h2>
