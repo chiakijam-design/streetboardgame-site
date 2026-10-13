@@ -829,7 +829,7 @@ function viewerResultView() {
       }).join('')}
     </div>
     <div class="result-actions">
-      ${resultShareMarkup({ translate: translateText, escape: escapeHtml, ready: Boolean(liveResultImage?.src) && liveResultImage?.key === liveResultKey(), saveAction: 'save-result' })}
+      ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(liveResultImage?.src) && liveResultImage?.key === liveResultKey(), saveAction: 'save-result' })}
       ${liveCheckoutView()}
       <a class="ghost" href="/live-challenge" style="text-decoration:none">トップへ戻る</a>
     </div>
