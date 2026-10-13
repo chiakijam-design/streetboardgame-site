@@ -17,10 +17,10 @@ test('every invitation locale exposes only the public participation URL and invi
     assert.equal(labels.length, 2);
     assert.ok(labels.every(value => value.trim()));
     if (locale !== 'ja') assert.doesNotMatch(labels.join(''), /[ぁ-んァ-ン]/);
-    const html = resultShareMarkup({ translate: value => value, escape: value => value, nativeLabel: labels[0], saveLabel: labels[1] });
+    const html = resultShareMarkup({ locale, translate: value => value, escape: value => value, nativeLabel: labels[0], saveLabel: labels[1] });
     assert.ok(html.includes(labels[0]) && html.includes(labels[1]));
     assert.ok(!html.includes('結果を共有') && !html.includes('結果画像を保存'));
-    for (const action of ['native', 'copy', 'save', 'x', 'line', 'whatsapp', 'instagram']) assert.ok(html.includes(`data-result-share="${action}"`));
+    for (const action of ['native', 'copy', 'save', 'x', 'line', 'whatsapp', 'instagram-link', 'instagram']) assert.ok(html.includes(`data-result-share="${action}"`));
     for (const action of ['x', 'line', 'whatsapp']) assert.doesNotMatch(decodeURIComponent(resultSocialUrl(action, payload.text)), /PRIVATE_|\/manage/);
     let received;
     assert.equal(await shareResult(payload, { navigatorRef: { canShare: () => true, share: async value => { received = value; } }, windowRef: { isSecureContext: true }, FileRef: File }), 'handed-off-image');

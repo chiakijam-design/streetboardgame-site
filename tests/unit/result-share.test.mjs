@@ -64,11 +64,26 @@ test('all 34 locales include natural share controls and attachment guidance', as
   const source = JSON.parse(await readFile(new URL('data/result-share-translations.json', root)));
   for (const locale of TARGET_LOCALES) {
     const translate = locale === 'ja' ? (value) => value : createCatalogTranslator([...corpus.entries, ...supplement.entries], JSON.parse(await readFile(new URL(`src/i18n/catalogs/${locale}.json`, root))).messages, { aliases: corpus.aliases }).translate;
-    const html = resultShareMarkup({ translate, escape: (value) => value });
+    const html = resultShareMarkup({ locale, translate, escape: (value) => value });
     for (const message of source.sources.slice(0, 5)) {
       if (locale !== 'ja') assert.notEqual(translate(message), message, locale);
       assert.ok(html.includes(translate(message)), locale);
     }
-    for (const action of ['native', 'copy', 'save', 'x', 'line', 'whatsapp', 'instagram']) assert.ok(html.includes(`data-result-share="${action}"`), locale);
+    for (const action of ['native', 'copy', 'save', 'x', 'line', 'whatsapp', 'instagram-link', 'instagram']) assert.ok(html.includes(`data-result-share="${action}"`), locale);
   }
+});
+
+test('all locales distinguish Instagram link copy from image preparation without direct posting URLs', async()=>{
+ const { SHARE_CARD_COPY, shareCardCopy } = await import('../../src/platform/shareCardCopy.js');
+ assert.deepEqual(Object.keys(SHARE_CARD_COPY).sort(), [...TARGET_LOCALES].sort());
+ for(const locale of TARGET_LOCALES){
+  const copy=shareCardCopy(locale);assert.ok(Object.values(copy).every(v=>v.trim()));
+  if(locale!=='ja')assert.doesNotMatch(Object.values(copy).join(''),/[ぁ-んァ-ン]/);
+  const html=resultShareMarkup({locale,translate:v=>v,escape:v=>v});
+  assert.ok(html.includes('data-result-share="instagram-link"'));
+  assert.ok(html.includes('data-result-share="instagram"'));
+  assert.ok(html.includes(copy.imageSummary));
+  assert.doesNotMatch(html,/instagram\.com|投稿済み/);
+  assert.throws(()=>resultSocialUrl('instagram-link','private'),/unsupported-share-action/);
+ }
 });
