@@ -608,32 +608,14 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(resultShare.getByText('載せなくても、結果の保存・共有・再挑戦はできます')).toBeVisible();
     const boardOnlyButton = resultShare.getByRole('button', { name: '理解度ボードだけに載せる' });
     await expect(boardOnlyButton).toBeEnabled();
-    await expect(resultShare.getByRole('button', { name: /Instagram用/ })).toBeEnabled();
-    await expect(resultShare.getByRole('button', { name: /LINEで送る/ })).toContainText('結果画像＋同じ10問への参加URL');
-    await expect(resultShare.getByRole('button', { name: /Xで結果を投稿/ })).toContainText('結果画像＋同じ10問への参加URL');
-    await expect(resultShare.getByRole('button', { name: '画像だけ保存' })).toBeEnabled();
-    expect(await resultShare.locator('.challenge-result-share-button').evaluateAll((buttons) => {
-      const heights = buttons.map((button) => button.getBoundingClientRect().height);
-      return {
-        count: buttons.length,
-        whiteSurfaces: buttons.every((button) => getComputedStyle(button).backgroundColor === 'rgb(255, 255, 255)'),
-        equalHeights: Math.max(...heights) - Math.min(...heights) < 1,
-        iconsUniform: buttons.map((button) => {
-          const icon = button.querySelector('.challenge-result-share-icon');
-          const rect = icon?.getBoundingClientRect();
-          return rect ? [Math.round(rect.width), Math.round(rect.height)] : null;
-        }).every((size) => size && size[0] === size[1] && size[0] >= 42 && size[0] <= 46),
-      };
-    })).toEqual({
-      count: 4,
-      whiteSurfaces: true,
-      equalHeights: true,
-      iconsUniform: true,
-    });
+    await expect(resultShare.getByRole('button', { name: '結果を共有', exact: true })).toBeEnabled();
+    await expect(resultShare.getByRole('button', { name: 'リンクをコピー', exact: true })).toBeVisible();
+    await expect(resultShare.getByRole('button', { name: '結果画像を保存', exact: true })).toBeEnabled();
+    for (const label of ['LINE', 'X', 'WhatsApp']) await expect(resultShare.getByRole('button', { name: label, exact: true })).toBeVisible();
     await expect(participant.getByRole('button', { name: '文章だけコピーする' })).toHaveCount(0);
     expect(await resultShare.evaluate((share) => {
       const shareRect = share.getBoundingClientRect();
-      const buttons = Array.from(share.querySelectorAll('button')).map((button) => {
+      const buttons = Array.from(share.querySelectorAll('button')).filter(button => button.getClientRects().length).map((button) => {
         const rect = button.getBoundingClientRect();
         return {
           left: rect.left,
@@ -665,32 +647,23 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(resultShare.getByRole('button', { name: '理解度ボードに掲載済み' })).toBeDisabled();
     if (testInfo.project.name === 'desktop-chrome') {
       await boardCheckbox.uncheck();
-      const xDownloadPromise = participant.waitForEvent('download');
-      const xDialogPromise = participant.waitForEvent('dialog');
-      const xClick = resultShare.getByRole('button', { name: /Xで結果を投稿/ }).click();
-      await xDownloadPromise;
-      const xDialog = await xDialogPromise;
-      expect(xDialog.message()).toContain('保存した結果画像を投稿へ添付');
-      await xDialog.accept();
-      await xClick;
+      await resultShare.getByRole('button', { name: 'X', exact: true }).click();
+      await expect(resultShare.locator('.challenge-result-board-message')).toContainText('設定を更新しました');
+      await resultShare.getByRole('button', { name: 'X', exact: true }).click();
       expect(await participant.evaluate(() => window.__openedResultShareUrl)).toMatch(/^https:\/\/x\.com\/intent\/post\?text=/);
-      expect(decodeURIComponent(await participant.evaluate(() => window.__openedResultShareUrl)))
-        .toContain('/challenge?room=');
-      expect(decodeURIComponent(await participant.evaluate(() => window.__openedResultShareUrl)))
-        .toContain('同じ10問に挑戦するURLはこちら');
+      expect(decodeURIComponent(await participant.evaluate(() => window.__openedResultShareUrl))).toContain('/challenge?room=');
       await boardCheckbox.check();
+      await resultShare.locator('summary').click();
+      await resultShare.locator('[data-result-share="instagram"]').click();
+      await expect(resultShare.locator('.challenge-result-board-message')).toContainText('設定を更新しました');
       const downloadPromise = participant.waitForEvent('download');
-      const dialogPromise = participant.waitForEvent('dialog');
-      const instagramClick = resultShare.getByRole('button', { name: /Instagram用/ }).click();
+      await resultShare.locator('summary').click();
+      await resultShare.locator('[data-result-share="instagram"]').click();
       await downloadPromise;
-      const dialog = await dialogPromise;
-      expect(dialog.message()).toContain('文章をコピーし、結果画像を用意しました');
-      await dialog.accept();
-      await instagramClick;
       expect(await participant.evaluate(() => window.__copiedResultText)).toContain('称号は「');
       expect(await participant.evaluate(() => window.__copiedResultText.includes(location.origin))).toBe(false);
       const imageDownloadPromise = participant.waitForEvent('download');
-      await resultShare.getByRole('button', { name: '画像だけ保存' }).click();
+      await resultShare.getByRole('button', { name: '結果画像を保存', exact: true }).click();
       await imageDownloadPromise;
     }
     const feedbackToneCount = await participant.evaluate(

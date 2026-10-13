@@ -80,7 +80,7 @@ export async function copyText(text, { navigatorRef = globalThis.navigator, docu
 
 export async function shareFiles({ files, title, text, url }, navigatorRef = globalThis.navigator) {
   if (!navigatorRef?.share) return false;
-  if (files?.length && navigatorRef.canShare && !navigatorRef.canShare({ files })) return false;
+  if (files?.length && (typeof navigatorRef.canShare !== 'function' || !navigatorRef.canShare({ files }))) return false;
   await navigatorRef.share({ title, text, url, ...(files?.length ? { files } : {}) });
   return true;
 }
