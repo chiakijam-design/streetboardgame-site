@@ -545,6 +545,48 @@
       "contexts": [
         "analytics.js:preference-notice"
       ]
+    },
+    {
+      "id": "md4edaf73d82c0c",
+      "source": "結果を共有",
+      "contexts": [
+        "result-share:challenge-and-live"
+      ]
+    },
+    {
+      "id": "mdf4979c686ae82",
+      "source": "結果画像を保存",
+      "contexts": [
+        "result-share:challenge-and-live"
+      ]
+    },
+    {
+      "id": "m49e19a53ed0455",
+      "source": "共有先によって画像やリンクが届かない場合は、リンクをコピーするか画像を保存してください。",
+      "contexts": [
+        "result-share:challenge-and-live"
+      ]
+    },
+    {
+      "id": "m8aee7a753c1c53",
+      "source": "WhatsAppでは本文とリンクを共有します。画像は別途添付してください。",
+      "contexts": [
+        "result-share:challenge-and-live"
+      ]
+    },
+    {
+      "id": "m206bb1a35220e9",
+      "source": "Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。",
+      "contexts": [
+        "result-share:challenge-and-live"
+      ]
+    },
+    {
+      "id": "m6354dfc814a1f5",
+      "source": "設定を更新しました。もう一度ボタンを押してください。",
+      "contexts": [
+        "result-share:challenge-and-live"
+      ]
     }
   ]
 }
