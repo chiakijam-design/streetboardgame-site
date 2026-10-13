@@ -48,7 +48,7 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await expect(controls.getByRole('button', { name: 'リンクをコピー', exact: true })).toBeVisible();
   await expect(controls.getByRole('button', { name: '招待画像を保存', exact: true })).toBeEnabled();
   for (const name of ['X', 'LINE', 'WhatsApp']) await expect(controls.getByRole('button', { name, exact: true })).toBeVisible();
-  await expect(controls.locator('summary')).toHaveText('Instagram');
+  await expect(controls.locator('summary')).toHaveText('Instagram · 画像とストーリー');
   await expect(controls.locator('[data-result-share="instagram"]')).toBeHidden();
   await expect(page.getByRole('link', { name: '理解度ボードを見る' })).toBeVisible();
   await expect(page.getByRole('button', { name: '最近作った診断へ保存' })).toBeVisible();
@@ -69,7 +69,7 @@ test.beforeEach(async ({ page, request }) => {
   await preparePage(page);
 });
 
-test('作成完了後は共通共有パネルの7操作と2つの管理導線を指定順で表示する', async ({ page }) => {
+test('作成完了後は共通共有パネルの8操作と2つの管理導線を指定順で表示する', async ({ page }) => {
   await createChallenge(page, 'ちあき');
   const shareScreen = page.getByTestId('challenge-share-screen');
   const controls = shareScreen.locator('[data-result-share-controls]');
@@ -79,10 +79,10 @@ test('作成完了後は共通共有パネルの7操作と2つの管理導線を
     element.getAttribute('data-result-share') || element.getAttribute('data-action') || 'ranking'
   )));
   expect(orderedActions).toEqual([
-    'native', 'copy', 'save', 'x', 'line', 'whatsapp', 'instagram', 'ranking', 'save-recent-challenge',
+    'native', 'copy', 'save', 'x', 'line', 'whatsapp', 'instagram-link', 'instagram', 'ranking', 'save-recent-challenge',
   ]);
   await expect(controls.locator('[data-result-share-row]')).toHaveCount(2);
-  await expect(controls.locator('button')).toHaveCount(7);
+  await expect(controls.locator('button')).toHaveCount(8);
   await controls.locator('summary').click();
   await expect(controls.getByRole('button', { name: 'ストーリー用：文章コピー＋画像保存' })).toBeVisible();
   expect(await controls.locator('button').evaluateAll((buttons) => {
@@ -96,7 +96,7 @@ test('作成完了後は共通共有パネルの7操作と2つの管理導線を
   expect(await controls.locator('[data-result-share="native"]').evaluate(button => {
     const style = getComputedStyle(button);
     return { background: style.backgroundColor, color: style.color };
-  })).toEqual({ background: 'rgb(25, 25, 25)', color: 'rgb(255, 255, 255)' });
+  })).toEqual({ background: 'rgb(255, 255, 255)', color: 'rgb(25, 25, 25)' });
   await expect(shareScreen.locator('.challenge-share-action-icon')).toHaveCount(2);
   await expect(shareScreen.locator('.challenge-share-action-copy small')).toHaveCount(2);
   expect(await shareScreen.locator('.challenge-share-action-copy small').evaluateAll(labels => (

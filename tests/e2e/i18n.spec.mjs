@@ -223,7 +223,7 @@ test('英語の作成完了画面も共有と保存の導線を英語で表示�
   await expect(controls.locator('[data-result-share-row]')).toHaveCount(2);
   await controls.locator('summary').click();
   await expect(controls.getByRole('button', { name: 'For Stories: copy text + save image', exact: true })).toBeVisible();
-  expect(await controls.locator('button').allTextContents()).toHaveLength(7);
+  expect(await controls.locator('button').allTextContents()).toHaveLength(8);
   expect((await controls.locator('button').allTextContents()).join('')).not.toMatch(/[ぁ-んァ-ン一-龯]/);
   const invitationUrl = new URL(page.url()).origin + `/en/challenge?room=${created.code}`;
   await expect(controls.locator('[data-result-share-url]')).toHaveValue(invitationUrl);

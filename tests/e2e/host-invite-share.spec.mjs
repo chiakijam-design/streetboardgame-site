@@ -34,8 +34,8 @@ test.describe('host invitation panel in all locales', () => {
     await page.goto(`${prefix}/challenge/manage?room=${code}&analytics=exclude#manage=${manageToken}`);
     const controls = page.locator('[data-result-share-controls]');
     await expect(controls.locator('[data-result-share=save]')).toBeEnabled({ timeout: 30000 });
-    await expect(controls.locator('[data-result-share=native]')).toHaveText(INVITE_SHARE_LABELS[locale][0]);
-    await expect(controls.locator('[data-result-share=save]')).toHaveText(INVITE_SHARE_LABELS[locale][1]);
+    await expect(controls.locator('[data-result-share=native] .share-card-copy strong')).toHaveText(INVITE_SHARE_LABELS[locale][0]);
+    await expect(controls.locator('[data-result-share=save] .share-card-copy strong')).toHaveText(INVITE_SHARE_LABELS[locale][1]);
     const publicUrl = new URL(page.url()).origin + `${prefix}/challenge?room=${code}`;
     await expect(controls.locator('[data-result-share-url]')).toHaveValue(publicUrl);
     await controls.locator('[data-result-share=native]').click();
