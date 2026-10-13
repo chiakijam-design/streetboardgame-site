@@ -456,7 +456,7 @@ function manageView() {
         <h2>理解度診断ができました</h2>
       </div>
       <p class="challenge-share-lead">${escapeHtml(shareLead)}</p>
-      ${resultShareMarkup({ translate: translateText, escape: escapeHtml,
+      ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml,
         ready: invitationImage.key === invitationKey() && Boolean(invitationImage.src),
         nativeLabel: INVITE_SHARE_LABELS[currentLocale][0], saveLabel: INVITE_SHARE_LABELS[currentLocale][1], saveAction: 'save-invitation-image' })}
       ${invitationImage.key === invitationKey() && invitationImage.error ? `<p role="status">${escapeHtml(translateText('画像を保存できませんでした。もう一度お試しください。'))}</p>` : ''}
@@ -756,7 +756,7 @@ function resultView() {
           ${state.boardActionMessage
             ? `<p class="challenge-result-board-message" role="status">${escapeHtml(state.boardActionMessage)}</p>`
             : ''}
-          ${resultShareMarkup({ translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) && !state.boardPreferenceBusy })}
+          ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) && !state.boardPreferenceBusy })}
         </section>
       </div>
       <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>

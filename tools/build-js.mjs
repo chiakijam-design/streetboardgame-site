@@ -26,6 +26,7 @@ const STYLE_ENTRIES = {
   accessibility: 'accessibility.css',
   question_card: 'question-card.css',
   legal: 'legal.css',
+  result_share: 'result-share.css',
 };
 
 const HTML_ENTRY_MAP = {
@@ -64,10 +65,12 @@ const HTML_STYLE_MAP = {
   'challenge.html': [
     'question_card',
     'accessibility',
+    'result_share',
   ],
   'live_challenge.html': [
     'question_card',
     'accessibility',
+    'result_share',
   ],
   '404.html': [
     'accessibility',
@@ -104,7 +107,7 @@ await mkdir('dist', { recursive: true });
 await mkdir('assets/vendor', { recursive: true });
 
 await removeGeneratedFiles('dist', /^(locale_shell|viewport_recovery|prototype_common_data|prototype_english_common_data|challenge_game|live_challenge|qr-code|live_ops|question_ops|prototype_character|prototype_app|home_entry)(?:-[A-Z0-9]+)?\.js(?:\.map)?$/i);
-await removeGeneratedFiles('dist', /^(accessibility|question-card|legal)-[a-f0-9]+\.css$/i);
+await removeGeneratedFiles('dist', /^(accessibility|question-card|legal|result-share)-[a-f0-9]+\.css$/i);
 await removeGeneratedFiles('assets/vendor', /^react(?:-dom)?\.production\.min(?:-[a-f0-9]+)?\.js$/i);
 
 const runtimeSources = {
