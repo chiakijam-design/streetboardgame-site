@@ -4,6 +4,7 @@ import { LOCALE_DETAILS, switchLocalePath } from '../../src/i18n/locales.js';
 import { readFileSync } from 'node:fs';
 const oldJapaneseCards = JSON.parse(readFileSync(new URL('../../data/i18n-source-inventory.json', import.meta.url), 'utf8')).questions.japanese.slice(0, 9);
 
+const prefixForLocale = locale => LOCALE_DETAILS[locale].prefix;
 const ready = PUBLIC_LOCALES.length === 34;
 test.describe('completed multilingual release', () => {
   // Each case owns a fresh browser context and unique in-memory room; none
@@ -63,8 +64,12 @@ test.describe('completed multilingual release', () => {
       // this acceptance deterministic without opening a real sharing app.
       await page.addInitScript(() => {
         window.__WATACHAN_TEST_SHARED_FILES__ = [];
+        window.__WATACHAN_TEST_SHARED_URLS__ = [];
+        window.open = (url) => { window.__WATACHAN_TEST_OPENED__ = url; };
+        Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.__WATACHAN_TEST_COPIED__ = text; } } });
         Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
-        Object.defineProperty(navigator, 'share', { configurable: true, value: async ({ files, title }) => {
+        Object.defineProperty(navigator, 'share', { configurable: true, value: async ({ files, title, url }) => {
+          window.__WATACHAN_TEST_SHARED_URLS__.push(url);
           window.__WATACHAN_TEST_SHARED_FILES__.push({ title, files: files.map(file => ({ name: file.name, type: file.type, size: file.size })) });
         } });
       });
@@ -91,9 +96,21 @@ test.describe('completed multilingual release', () => {
       await expect(page.locator('body')).toContainText('Next');
       const geometry = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
       expect(geometry.scroll).toBeLessThanOrEqual(geometry.client + 1);
+      const controls = page.locator('[data-result-share-controls]');
+      await expect(controls.locator('[data-result-share="native"]')).toBeEnabled();
+      await controls.locator('[data-result-share="native"]').click();
+      await expect.poll(() => page.evaluate(() => window.__WATACHAN_TEST_SHARED_FILES__.length)).toBe(1);
+      expect(await page.evaluate(() => window.__WATACHAN_TEST_SHARED_URLS__[0])).toBe(new URL(page.url()).origin + prefixForLocale(locale) + '/challenge?room=' + code);
+      await controls.locator('[data-result-share="copy"]').click();
+      expect(await page.evaluate(() => window.__WATACHAN_TEST_COPIED__)).toBe(new URL(page.url()).origin + prefixForLocale(locale) + '/challenge?room=' + code);
+      await controls.locator('[data-result-share="whatsapp"]').click();
+      const whatsapp = new URL(await page.evaluate(() => window.__WATACHAN_TEST_OPENED__));
+      expect(whatsapp.origin + whatsapp.pathname).toBe('https://wa.me/');
+      expect(whatsapp.searchParams.get('text')).toContain(prefixForLocale(locale) + '/challenge?room=' + code);
+      if (['ja', 'ar', 'de', 'hi'].includes(locale)) await controls.screenshot({ path: `/tmp/wata-global-share-${locale}-${isMobile ? 'mobile' : 'pc'}.png` });
       if (isMobile) {
         await page.locator('[data-action="save-result-image"]').click();
-        await expect.poll(() => page.evaluate(() => window.__WATACHAN_TEST_SHARED_FILES__.length)).toBe(1);
+        await expect.poll(() => page.evaluate(() => window.__WATACHAN_TEST_SHARED_FILES__.length)).toBe(2);
         const shared = await page.evaluate(() => window.__WATACHAN_TEST_SHARED_FILES__[0]);
         expect(shared.files[0].name).toMatch(/\.png$/);
         expect(shared.files[0].type).toBe('image/png');

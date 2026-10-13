@@ -173,10 +173,12 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(boardCheckbox).toBeEnabled();
   await expect(resultShare.getByText('You can still save, share, and retry without adding your result.')).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'Add only to Understanding Board' })).toBeEnabled();
-  await expect(resultShare.getByRole('button', { name: /For Instagram/ })).toBeEnabled();
-  await expect(resultShare.getByRole('button', { name: 'Share on LINE' })).toBeVisible();
-  await expect(resultShare.getByRole('button', { name: 'Post result on X' })).toBeVisible();
-  await expect(resultShare.getByRole('button', { name: 'Save image only' })).toBeEnabled();
+  await expect(resultShare.getByRole('button', { name: 'Share result', exact: true })).toBeEnabled();
+  await expect(resultShare.getByRole('button', { name: 'Copy link', exact: true })).toBeVisible();
+  await expect(resultShare.getByRole('button', { name: 'Save result image', exact: true })).toBeEnabled();
+  await expect(resultShare.getByRole('button', { name: 'LINE', exact: true })).toBeVisible();
+  await expect(resultShare.getByRole('button', { name: 'X', exact: true })).toBeVisible();
+  await expect(resultShare.getByRole('button', { name: 'WhatsApp', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Create with new questions' })).toBeVisible();
   expect(await page.evaluate(() => {
     const review = document.querySelector('[data-testid="challenge-ai-review"]');

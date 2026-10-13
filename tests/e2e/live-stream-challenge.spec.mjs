@@ -634,6 +634,21 @@ test('streamer and viewer answer ten questions and viewer receives a result card
   await expect(viewer.getByTestId('live-result-card')).toBeVisible();
   await expect(viewer.getByText('9/10', { exact: true })).toBeVisible();
   await expect(viewer.locator('.result-row')).toHaveCount(10);
+  const controls = viewer.locator('[data-result-share-controls]');
+  await expect(controls.locator('[data-result-share="save"]')).toBeEnabled();
+  await viewer.evaluate(() => {
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+    Object.defineProperty(navigator, 'share', { configurable: true, value: async payload => {
+      window.__TEST_LIVE_SHARE__ = { url: payload.url, count: payload.files.length, size: payload.files[0].size };
+    } });
+  });
+  await controls.locator('[data-result-share="native"]').click();
+  const shared = await viewer.evaluate(() => window.__TEST_LIVE_SHARE__);
+  expect(shared.url).toContain('/live-challenge?room=');
+  expect(shared.url).not.toMatch(/host|token|manage/);
+  expect(shared.count).toBe(1);
+  expect(shared.size).toBeGreaterThan(2000);
+
 });
 
 test('ライブ版も初期同意で、外したくない人はそのまま自作お題を運営へ送信する', async ({ page }) => {
