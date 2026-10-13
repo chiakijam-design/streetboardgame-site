@@ -1,4 +1,5 @@
 import { resultShareMarkup, bindResultShare } from './src/platform/resultShare.js';
+import { INVITE_SHARE_LABELS, challengeInvitePayload, createChallengeInviteCanvas } from './src/platform/inviteShare.js';
 import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
 import { questionPackBySlug, questionPackCards, questionPacks } from './src/challenge/packs.js';
 import {
@@ -12,10 +13,7 @@ import {
 import { buildRecentQuestionGroups } from './src/questions/trends.js';
 import { QUESTION_PUBLICATION_NOTICE, QUESTION_REVIEW_CRITERIA } from './src/questions/safety.js';
 import {
-  buildChallengeInviteText,
   copyText,
-  openLineShare,
-  openXShare,
 } from './src/platform/share.js';
 import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
@@ -98,6 +96,8 @@ let state = {
 };
 let lastQuestionViewportKey = '';
 let questionCatalogReady = false;
+let invitationImage = { key: '', src: '', busy: false, error: false };
+function invitationKey() { return state.room ? JSON.stringify([currentLocale, state.room.code, state.room.creatorName]) : ''; }
 const trackedCreatorQuestions = new WeakSet();
 
 function trackChallengeShare(method, contentType) {
@@ -178,6 +178,7 @@ function render() {
   bindEvents();
   scheduleDailyReportView();
   trackCurrentCreatorQuestionShown();
+  if (state.mode === 'manage' && state.room && invitationImage.key !== invitationKey()) prepareInvitationImage();
   if (state.mode === 'result' && state.result && !state.resultImageUrl
     && !state.resultImageBusy && !state.resultImageError) {
     prepareResultImage();
@@ -440,7 +441,6 @@ function questionView(isCreator) {
 function manageView() {
   const room = state.room;
   if (!room) return errorView();
-  const shareUrl = challengeUrl(room.code);
   const hasCompletedResponses = state.participants.some((participant) => participant?.submitted);
   const conversationInsights = hostConversationInsightsView(state.participants, room.cards);
   const shareLead = isEnglish
@@ -456,38 +456,11 @@ function manageView() {
         <h2>理解度診断ができました</h2>
       </div>
       <p class="challenge-share-lead">${escapeHtml(shareLead)}</p>
+      ${resultShareMarkup({ translate: translateText, escape: escapeHtml,
+        ready: invitationImage.key === invitationKey() && Boolean(invitationImage.src),
+        nativeLabel: INVITE_SHARE_LABELS[currentLocale][0], saveLabel: INVITE_SHARE_LABELS[currentLocale][1], saveAction: 'save-invitation-image' })}
+      ${invitationImage.key === invitationKey() && invitationImage.error ? `<p role="status">${escapeHtml(translateText('画像を保存できませんでした。もう一度お試しください。'))}</p>` : ''}
       <div class="challenge-share-actions" aria-label="完成した理解度診断を共有・保存">
-        <button type="button" class="challenge-share-action line" data-action="share-line" aria-label="LINEで送る">
-          <span class="challenge-share-action-icon" aria-hidden="true">
-            <svg viewBox="0 0 32 32"><path d="M27 15.2c0 5.8-5.1 10.5-11.4 10.5-.8 0-1.7-.1-2.5-.3-2.8 1.8-5.7 2.4-6.2 1.7-.3-.5.6-2.1 1.2-3.3-2.4-1.9-3.9-5-3.9-8.5C4.2 9.4 9.3 4.7 15.6 4.7S27 9.4 27 15.2Z"/><path d="M9.5 12.4v5.8h3.2m1.2-5.8v5.8m2.1-5.8v5.8m0-5.8 3.3 5.8v-5.8m2.2 0h3.1m-3.1 0v5.8h3.1m-3.1-3h2.7"/></svg>
-          </span>
-          <span class="challenge-share-action-copy"><strong>LINEで送る</strong><small>参加URLを友達へ送る</small></span>
-          <span class="challenge-share-action-arrow" aria-hidden="true">›</span>
-        </button>
-        <button type="button" class="challenge-share-action copy" data-action="copy-url"
-          data-copy-value="${escapeHtml(shareUrl)}" aria-label="URLをコピー">
-          <span class="challenge-share-action-icon" aria-hidden="true">
-            <svg viewBox="0 0 32 32"><path d="M12.5 10.5h-2A4.5 4.5 0 0 0 6 15v6.5a4.5 4.5 0 0 0 4.5 4.5H17a4.5 4.5 0 0 0 4.5-4.5v-2"/><path d="M15 6h6.5a4.5 4.5 0 0 1 4.5 4.5V17a4.5 4.5 0 0 1-4.5 4.5H15a4.5 4.5 0 0 1-4.5-4.5v-6.5A4.5 4.5 0 0 1 15 6Z"/></svg>
-          </span>
-          <span class="challenge-share-action-copy"><strong>URLをコピー</strong><small>参加URLをクリップボードへ</small></span>
-          <span class="challenge-share-action-arrow" aria-hidden="true">›</span>
-        </button>
-        <div class="challenge-share-social-pair" role="group" aria-label="Instagram・X">
-          <button type="button" class="challenge-share-action instagram" data-action="share-instagram"
-            aria-label="Instagramでシェア">
-            <span class="challenge-share-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 32 32"><rect x="5" y="5" width="22" height="22" rx="6"/><circle cx="16" cy="16" r="5"/><circle class="challenge-share-icon-fill" cx="23" cy="9" r="1.5"/></svg>
-            </span>
-            <span class="challenge-share-action-copy"><strong>Instagram</strong><small>リンクをコピーして投稿</small></span>
-          </button>
-          <button type="button" class="challenge-share-action x" data-action="share-x"
-            aria-label="Xでシェア">
-            <span class="challenge-share-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 32 32"><path d="M7 6.5h5.8l12.2 19h-5.8L7 6.5Z"/><path d="m8 25.5 8.1-9.4m7.9-9.6-7.4 8.6"/></svg>
-            </span>
-            <span class="challenge-share-action-copy"><strong>X</strong><small>参加URLつきで投稿</small></span>
-          </button>
-        </div>
         <a class="challenge-share-action board" href="/challenge/ranking?room=${room.code}" aria-label="理解度ボードを見る">
           <span class="challenge-share-action-icon" aria-hidden="true">
             <svg viewBox="0 0 32 32"><path d="M8 6h16a3 3 0 0 1 3 3v16H8a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3Z"/><path d="M10 11h12m-12 5h12m-12 5h7"/></svg>
@@ -1056,19 +1029,6 @@ function bindEvents() {
   document.querySelectorAll('[data-action="copy-url"], [data-action="copy-ranking"]').forEach((button) => {
     button.addEventListener('click', () => copyValue(button));
   });
-  document.querySelector('[data-action="share-instagram"]')?.addEventListener('click', shareToInstagram);
-  document.querySelector('[data-action="share-line"]')?.addEventListener('click', () => {
-    if (!state.room) return;
-    const url = challengeUrl(state.room.code);
-    openLineShare(shareText(state.room, url));
-    trackChallengeShare('line', 'challenge_invite');
-  });
-  document.querySelector('[data-action="share-x"]')?.addEventListener('click', () => {
-    if (!state.room) return;
-    const url = challengeUrl(state.room.code);
-    openXShare(shareText(state.room, url));
-    trackChallengeShare('x', 'challenge_invite');
-  });
   document.querySelector('[data-action="save-recent-challenge"]')?.addEventListener('click', saveRecentChallenge);
   document.querySelector('[data-action="refresh-manage"]')?.addEventListener('click', loadManageRoom);
   document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
@@ -1084,6 +1044,7 @@ function bindEvents() {
   bindResultShare(app, {
     translate: translateText,
     beforeAction: () => {
+      if (state.mode === 'manage') return Boolean(state.room);
       if (!state.result || state.boardPreferenceBusy) return false;
       if (state.boardOptIn === (state.result.participant?.rankingParticipating === true)) return true;
       updateBoardPreference(state.boardOptIn).then((updated) => {
@@ -1091,7 +1052,10 @@ function bindEvents() {
       });
       return false;
     },
-    getPayload: () => state.result ? {
+    getPayload: () => state.mode === 'manage' && state.room
+      ? challengeInvitePayload({ origin: location.origin, locale: currentLocale, room: state.room,
+        src: invitationImage.key === invitationKey() ? invitationImage.src : '', translate: translateText })
+      : state.result ? {
       src: state.resultImageUrl,
       filename: 'watachan-challenge-score.png',
       title: translateText(isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード'),
@@ -1099,6 +1063,10 @@ function bindEvents() {
       url: `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`,
     } : null,
     track: (action, outcome) => {
+      if (state.mode === 'manage') {
+        if (['handed-off-image', 'handed-off-link', 'copied', 'open-requested'].includes(outcome)) trackChallengeShare(action, 'challenge_invite');
+        return;
+      }
       trackAnalyticsEvent('result_share_action', { game_type: 'challenge', action, outcome });
       if (['download-requested', 'handed-off-save'].includes(outcome)) trackDailyResultAction('result_image_save_requested');
     },
@@ -1405,12 +1373,20 @@ async function copyValue(button) {
   setState({ error: 'copy-failed' });
 }
 
-async function shareToInstagram() {
-  if (!state.room) return;
-  const copied = await copyText(challengeUrl(state.room.code));
-  if (!copied) return setState({ error: 'copy-failed' });
-  trackChallengeShare('instagram', 'challenge_invite');
-  localizedAlert('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
+async function prepareInvitationImage() {
+  const key = invitationKey();
+  const room = { code: state.room.code, creatorName: state.room.creatorName };
+  const image = invitationImage = { key, src: '', busy: true, error: false };
+  try {
+    await document.fonts?.ready?.catch(() => {});
+    const girlImage = await loadResultImage(RESULT_GIRL_IMAGE_SRC);
+    const payload = challengeInvitePayload({ origin: location.origin, locale: currentLocale, room, translate: translateText });
+    const canvas = await createChallengeInviteCanvas({ payload, creatorName: room.creatorName,
+      locale: currentLocale, translate: translateText, girlImage });
+    image.src = canvas.toDataURL('image/png');
+  } catch { image.error = true; }
+  image.busy = false;
+  if (state.mode === 'manage' && invitationImage === image && invitationKey() === key) render();
 }
 
 async function joinRoom() {
@@ -2143,14 +2119,6 @@ function challengeUrl(code) {
 
 function manageUrl(code, token) {
   return `${languagePrefix}/challenge/manage?room=${code}#manage=${token}`;
-}
-
-function shareText(room, url) {
-  return translateText(buildChallengeInviteText({
-    creatorName: room.creatorName,
-    url,
-    isEnglish,
-  }));
 }
 
 function errorMessage(code) {
