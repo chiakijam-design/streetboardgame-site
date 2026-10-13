@@ -43,14 +43,24 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await buildChallengeQuestions(page);
   await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
   await expect(page.getByTestId('challenge-share-screen')).toContainText('理解度診断ができました');
-  await expect(page.getByRole('button', { name: 'URLをコピー' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Instagramでシェア' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Xでシェア' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'LINEで送る' })).toBeVisible();
+  const controls = page.getByTestId('challenge-share-screen').locator('[data-result-share-controls]');
+  await expect(controls.getByRole('button', { name: '診断を共有', exact: true })).toBeVisible();
+  await expect(controls.getByRole('button', { name: 'リンクをコピー', exact: true })).toBeVisible();
+  await expect(controls.getByRole('button', { name: '招待画像を保存', exact: true })).toBeEnabled();
+  for (const name of ['X', 'LINE', 'WhatsApp']) await expect(controls.getByRole('button', { name, exact: true })).toBeVisible();
+  await expect(controls.locator('summary')).toHaveText('Instagram');
+  await expect(controls.locator('[data-result-share="instagram"]')).toBeHidden();
   await expect(page.getByRole('link', { name: '理解度ボードを見る' })).toBeVisible();
   await expect(page.getByRole('button', { name: '最近作った診断へ保存' })).toBeVisible();
-  const url = await page.getByRole('button', { name: 'URLをコピー' }).getAttribute('data-copy-value');
-  expect(url).toMatch(/\/challenge\?room=[A-Z2-9]{8}&share=challenge-20260726-1$/);
+  const inviteInput = controls.locator('[data-result-share-url]');
+  await expect(inviteInput).toHaveAttribute('readonly', '');
+  const url = await inviteInput.inputValue();
+  const invitation = new URL(url);
+  expect(invitation.origin).toBe(new URL(page.url()).origin);
+  expect(invitation.pathname).toBe('/challenge');
+  expect([...invitation.searchParams.keys()]).toEqual(['room']);
+  expect(invitation.searchParams.get('room')).toMatch(/^[A-Z2-9]{8}$/);
+  expect(invitation.hash).toBe('');
   return url;
 }
 
@@ -59,29 +69,38 @@ test.beforeEach(async ({ page, request }) => {
   await preparePage(page);
 });
 
-test('作成完了後は共有と保存の6導線だけを指定順で表示する', async ({ page }) => {
+test('作成完了後は共通共有パネルの7操作と2つの管理導線を指定順で表示する', async ({ page }) => {
   await createChallenge(page, 'ちあき');
   const shareScreen = page.getByTestId('challenge-share-screen');
+  const controls = shareScreen.locator('[data-result-share-controls]');
   const orderedActions = await shareScreen.locator(
-    '[data-action="share-line"],[data-action="copy-url"],[data-action="share-instagram"],'
-      + '[data-action="share-x"],a[href*="/challenge/ranking"],[data-action="save-recent-challenge"]',
+    '[data-result-share],a[href*="/challenge/ranking"],[data-action="save-recent-challenge"]',
   ).evaluateAll((elements) => elements.map((element) => (
-    element.getAttribute('data-action') || 'ranking'
+    element.getAttribute('data-result-share') || element.getAttribute('data-action') || 'ranking'
   )));
   expect(orderedActions).toEqual([
-    'share-line',
-    'copy-url',
-    'share-instagram',
-    'share-x',
-    'ranking',
-    'save-recent-challenge',
+    'native', 'copy', 'save', 'x', 'line', 'whatsapp', 'instagram', 'ranking', 'save-recent-challenge',
   ]);
-  await expect(shareScreen.getByRole('button', { name: 'SMS・その他で送る' })).toHaveCount(0);
-  await expect(shareScreen.locator('#challenge-qr')).toHaveCount(0);
-  await expect(shareScreen.locator('.challenge-share-action-icon')).toHaveCount(6);
-  await expect(shareScreen.locator('.challenge-share-action-copy small')).toHaveCount(6);
-  expect(await shareScreen.locator('.challenge-share-action-copy small').evaluateAll((labels) => (
-    labels.every((label) => Number.parseFloat(getComputedStyle(label).fontSize) >= 12)
+  await expect(controls.locator('[data-result-share-row]')).toHaveCount(2);
+  await expect(controls.locator('button')).toHaveCount(7);
+  await controls.locator('summary').click();
+  await expect(controls.getByRole('button', { name: 'ストーリー用：文章コピー＋画像保存' })).toBeVisible();
+  expect(await controls.locator('button').evaluateAll((buttons) => {
+    const panel = buttons[0].closest('[data-result-share-controls]').getBoundingClientRect();
+    return buttons.every(button => {
+      const rect = button.getBoundingClientRect();
+      return rect.height >= 44 && rect.left >= panel.left && rect.right <= panel.right
+        && button.scrollWidth <= button.clientWidth + 1;
+    });
+  })).toBe(true);
+  expect(await controls.locator('[data-result-share="native"]').evaluate(button => {
+    const style = getComputedStyle(button);
+    return { background: style.backgroundColor, color: style.color };
+  })).toEqual({ background: 'rgb(25, 25, 25)', color: 'rgb(255, 255, 255)' });
+  await expect(shareScreen.locator('.challenge-share-action-icon')).toHaveCount(2);
+  await expect(shareScreen.locator('.challenge-share-action-copy small')).toHaveCount(2);
+  expect(await shareScreen.locator('.challenge-share-action-copy small').evaluateAll(labels => (
+    labels.every(label => Number.parseFloat(getComputedStyle(label).fontSize) >= 12)
   ))).toBe(true);
   expect(await shareScreen.locator('.challenge-share-action').evaluateAll((actions) => {
     const screen = actions[0]?.closest('[data-testid="challenge-share-screen"]')?.getBoundingClientRect();
@@ -502,13 +521,19 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       value: { writeText: async (text) => { window.__instagramCopiedUrl = text; } },
     });
   });
-  const dialogPromise = page.waitForEvent('dialog');
-  const instagramClick = page.getByRole('button', { name: 'Instagramでシェア' }).click();
-  const dialog = await dialogPromise;
-  expect(dialog.message()).toBe('あなたのクイズのリンクをコピーしました。\nInstagramストーリーズにシェアしてください！');
-  await dialog.accept();
-  await instagramClick;
-  await expect.poll(() => page.evaluate(() => window.__instagramCopiedUrl)).toBe(challengeUrl);
+  // Exercise the real Instagram preparation flow without invoking an OS/SNS app.
+  await page.evaluate(() => Object.defineProperty(navigator, 'share', { configurable: true, value: undefined }));
+  const hostShare = page.getByTestId('challenge-share-screen').locator('[data-result-share-controls]');
+  await hostShare.locator('summary').click();
+  const invitationDownload = page.waitForEvent('download');
+  await hostShare.locator('[data-result-share="instagram"]').click();
+  expect((await invitationDownload).suggestedFilename()).toBe('watachan-challenge-invitation.png');
+  await expect(hostShare.locator('[data-result-share-status]')).toHaveText('Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。');
+  const invitationCaption = await page.evaluate(() => window.__instagramCopiedUrl);
+  expect(invitationCaption).toContain('ちあき');
+  expect(invitationCaption.split('\n').at(-1)).toBe(challengeUrl);
+  expect(invitationCaption).not.toContain('/manage');
+  expect(invitationCaption).not.toContain(new URL(page.url()).hash);
 
   const participantContext = await browser.newContext();
   const participant = await participantContext.newPage();

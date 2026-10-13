@@ -9,7 +9,7 @@ async function captureAnalyticsEvents(page) {
     };
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
-      value: { writeText: async () => undefined },
+      value: { writeText: async text => { window.__WATACHAN_TEST_COPIED_TEXT__ = text; } },
     });
   });
 }
@@ -110,7 +110,10 @@ test('LIVE host accepted answer counts as play without counting room entry', asy
 });
 
 test('通常版の実プレイ操作で game_start、game_result、share が発火する', async ({ browser, page }) => {
-  await page.goto('/challenge');
+  await page.goto('/challenge?analytics=exclude');
+  expect(await page.evaluate(() => localStorage.getItem('watachan:analytics-excluded:v1'))).toBe('1');
+  expect(await page.evaluate(() => window.analyticsEnabled)).toBe(false);
+  // Capture semantic events locally; this spy never sends analytics requests.
   await captureAnalyticsEvents(page);
 
   await page.locator('#creator-name').fill('計測確認');
@@ -121,11 +124,17 @@ test('通常版の実プレイ操作で game_start、game_result、share が発�
     await page.locator('[data-action="builder-answer"]').first().click();
   }
 
-  const copyButton = page.locator('[data-action="copy-url"]').first();
+  const shareControls = page.locator('[data-result-share-controls]');
+  const copyButton = shareControls.getByRole('button', { name: 'リンクをコピー', exact: true });
   await expect(copyButton).toBeVisible();
-  const challengeUrl = await copyButton.getAttribute('data-copy-value');
-  expect(challengeUrl).toMatch(/\/challenge\?room=[A-Z2-9]{8}/);
+  const challengeUrl = await shareControls.locator('[data-result-share-url]').inputValue();
+  const invitation = new URL(challengeUrl);
+  expect(invitation.pathname).toBe('/challenge');
+  expect([...invitation.searchParams.keys()]).toEqual(['room']);
+  expect(invitation.searchParams.get('room')).toMatch(/^[A-Z2-9]{8}$/);
+  expect(invitation.hash).toBe('');
   await copyButton.click();
+  expect(await page.evaluate(() => window.__WATACHAN_TEST_COPIED_TEXT__)).toBe(challengeUrl);
   await expect.poll(async () => (await capturedEvents(page)).map(({ name }) => name)).toContain('share');
 
   const creatorEvents = await capturedEvents(page);
@@ -133,15 +142,31 @@ test('通常版の実プレイ操作で game_start、game_result、share が発�
     name: 'game_play',
     params: { game_type: 'challenge', play_mode: 'async', player_role: 'creator', play_criteria: 'accepted_answer' },
   }]);
-  expect(creatorEvents.find(({ name }) => name === 'share')).toMatchObject({
+  const inviteEvents = creatorEvents.filter(({ name }) => name === 'share');
+  expect(inviteEvents).toEqual([{
     name: 'share',
-    params: { method: 'copy', content_type: 'challenge_invite' },
+    params: { method: 'copy', content_type: 'challenge_invite', item_id: 'challenge_invite', game_type: 'challenge', play_mode: 'async' },
+  }]);
+  expect(JSON.stringify(inviteEvents)).not.toContain(invitation.searchParams.get('room'));
+  expect(JSON.stringify(inviteEvents)).not.toContain('計測確認');
+  const eventCount = creatorEvents.length;
+  await page.evaluate(() => { window.analyticsEnabled = false; });
+  await copyButton.click();
+  expect(await page.evaluate(() => window.__WATACHAN_TEST_COPIED_TEXT__)).toBe(challengeUrl);
+  expect(await capturedEvents(page)).toHaveLength(eventCount);
+  await page.evaluate(() => {
+    window.analyticsEnabled = true;
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('blocked'); } } });
+    document.execCommand = () => false;
   });
+  await copyButton.click();
+  await expect(shareControls.locator('[data-result-share-status]')).toContainText('コピーできませんでした');
+  expect(await capturedEvents(page)).toHaveLength(eventCount);
 
   const participantContext = await browser.newContext({ viewport: page.viewportSize() });
   const participant = await participantContext.newPage();
   try {
-    await participant.goto(challengeUrl);
+    await participant.goto(challengeUrl + '&analytics=exclude');
     await captureAnalyticsEvents(participant);
     await participant.locator('#participant-name').fill('回答確認');
     await participant.locator('[data-action="join"]').click();
