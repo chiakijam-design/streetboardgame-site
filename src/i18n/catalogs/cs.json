@@ -3168,6 +3168,12 @@
     "m63408ac1a878ed": "Cookies, localStorage a sessionStorage podporují stav hry, obnovení, analýzu a zlepšování kvality. Jejich vypnutí může narušit obnovení či účast. GA4 dostává informace o stránce, zdroji návštěvy, zařízení, prohlížeči a interakcích; jména, e-maily, texty otázek ani obsah odpovědí se neposílají jako parametry událostí GA4. Microsoft Clarity dostává informace o stránce, zařízení, prohlížeči, kliknutí, posouvání a interakcích pro tvorbu tepelných map a rekonstrukcí relací. Cookies Clarity jsou vypnuté a veškerý text obrazovky je důsledně maskován, takže jména, e-maily, texty otázek ani obsah odpovědí do Clarity nejdou. Viz",
     "ma4129f73c9c8d9": "Když uživatel aktivně souhlasí s odesláním otázky k možnému zveřejnění, poskytuje provozovateli nevýhradní bezplatnou licenci ke kontrole, úpravě, rozmnožování, zobrazení, distribuci a použití obsahu pouze v rozsahu nutném k provozu, zabezpečení, moderaci, zveřejnění ve společné knihovně a opravě problémů. Úpravy mohou zahrnovat bezpečnost, čitelnost, jednotný zápis a zabránění duplicitám. Licence nedovoluje provozovateli prodávat uživatelský obsah třetím stranám ani jej neomezeně využívat k trénování generativní AI nesouvisející s poskytováním služby. Otázky neodeslané ke zveřejnění se ve společné knihovně nezveřejňují.",
     "mf4e7ddbdea4265": "Tento prohlížeč byl vyloučen z analýzy návštěvnosti.",
-    "m77220f5429c106": "Vyloučení tohoto prohlížeče z analýzy návštěvnosti bylo zrušeno."
+    "m77220f5429c106": "Vyloučení tohoto prohlížeče z analýzy návštěvnosti bylo zrušeno.",
+    "md4edaf73d82c0c": "Sdílet výsledek",
+    "mdf4979c686ae82": "Uložit obrázek výsledku",
+    "m49e19a53ed0455": "Pokud chybí obrázek nebo odkaz, zkopírujte odkaz nebo uložte obrázek.",
+    "m8aee7a753c1c53": "WhatsApp sdílí text a odkaz. Obrázek přiložte zvlášť.",
+    "m206bb1a35220e9": "Zveřejněte uložený obrázek na Instagramu a vložte zkopírovaný text.",
+    "m6354dfc814a1f5": "Nastavení aktualizováno. Stiskněte tlačítko znovu."
   }
 }

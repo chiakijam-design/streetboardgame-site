@@ -3168,6 +3168,12 @@
     "mf09d6dcd3cef47": "YouTube integracija koristi javne kanale/videe za provjeru i kandidatska pitanja. Uz Google autentifikaciju voditelja uzimaju se titlovi do 8 njegovih javnih videa prošle godine, prvenstveno prema pregledima pa novosti, za pitanja o stvarnim izjavama/scenama. Google tokeni opozivaju se nakon obrade. Prijave, lozinke, pristupni i obnovni tokeni ne spremaju se. Funkcije YouTubea podliježu",
     "m91fe309b82eb15": "Voditelji surađuju u Stripe Connect provjeri identiteta, odredištu plaćanja i dokumentima. Kod lažnog predstavljanja, kršenja prava, prijevare, manipulacije glasovima, curenja kodova ili URL-ova voditelja/osoblja ili drugih briga operator može obustaviti pozive, LIVE, prodaju, raspodjele ili račune do kraja istrage. Plaćene poruke objavljuju se nakon plaćanja, a voditelj/operator ih može sakriti radi sigurnosti ili rada. Voditelji nisu obvezni odgovoriti, pročitati ili zahvaliti.",
     "mf4e7ddbdea4265": "Ovaj je preglednik isključen iz analize posjeta.",
-    "m77220f5429c106": "Ukinuto je isključenje ovog preglednika iz analize posjeta."
+    "m77220f5429c106": "Ukinuto je isključenje ovog preglednika iz analize posjeta.",
+    "md4edaf73d82c0c": "Podijeli rezultat",
+    "mdf4979c686ae82": "Spremi sliku rezultata",
+    "m49e19a53ed0455": "Ako nedostaje slika ili poveznica, kopiraj poveznicu ili spremi sliku.",
+    "m8aee7a753c1c53": "WhatsApp dijeli tekst i poveznicu. Sliku priloži zasebno.",
+    "m206bb1a35220e9": "Objavi spremljenu sliku na Instagramu i zalijepi kopirani tekst.",
+    "m6354dfc814a1f5": "Postavke su ažurirane. Ponovno pritisni gumb."
   }
 }
