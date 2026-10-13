@@ -41,7 +41,17 @@ test('カード内タップと5色ボタンで通常版を完走し、二重送�
     await card.locator('.notebook-card-choice-button').nth(index % 5).tap();
   }
   await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
-  const url = await page.getByRole('button', { name: 'URLをコピー' }).getAttribute('data-copy-value');
+  const shareControls = page.locator('[data-result-share-controls]');
+  const url = await shareControls.locator('[data-result-share-url]').inputValue();
+  const invitation = new URL(url);
+  expect(invitation.pathname).toBe('/challenge');
+  expect([...invitation.searchParams.keys()]).toEqual(['room']);
+  expect(invitation.hash).toBe('');
+  await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
+    configurable: true, value: { writeText: async text => { window.__HOST_INVITATION_COPIED__ = text; } },
+  }));
+  await shareControls.getByRole('button', { name: 'リンクをコピー', exact: true }).click();
+  expect(await page.evaluate(() => window.__HOST_INVITATION_COPIED__)).toBe(url);
   const playerContext = await browser.newContext({
     viewport: page.viewportSize(), hasTouch: true,
     isMobile: testInfo.project.name.startsWith('mobile-'),
