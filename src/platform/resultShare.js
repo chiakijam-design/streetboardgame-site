@@ -1,4 +1,5 @@
 import { copyText } from './share.js';
+import { shareCardCopy } from './shareCardCopy.js';
 import { dataUrlToBlob, saveImageBlob } from './imageSave.js';
 
 // Outcomes describe a browser action, never a successful SNS post or chosen app.
@@ -40,25 +41,41 @@ export async function shareResult({ src, filename, title, text, url }, {
   }
 }
 
-export function resultShareMarkup({ translate, escape, ready = true, saveAction = 'save-result-image', nativeLabel = '結果を共有', saveLabel = '結果画像を保存' }) {
+const SHARE_ICONS = {
+  native: '<circle cx="8" cy="16" r="3"/><circle cx="24" cy="7" r="3"/><circle cx="24" cy="25" r="3"/><path d="m11 14 10-5m-10 9 10 5"/>',
+  copy: '<rect x="12" y="5" width="14" height="17" rx="4"/><path d="M9 11H7a3 3 0 0 0-3 3v11a3 3 0 0 0 3 3h11a3 3 0 0 0 3-3v-1"/>',
+  save: '<path d="M16 4v16m-6-6 6 6 6-6M5 23v5h22v-5"/>',
+  x: '<path d="M6 5h6l14 22h-6L6 5Zm1 22L25 5"/>',
+  line: '<path d="M27 14c0 6-5 10-11 10h-3l-6 3 1-6c-3-2-4-4-4-7C4 8 9 4 16 4s11 4 11 10Z"/><path d="M9 11v7h3m2-7v7m3-7v7m0-7 4 7v-7m3 0h3m-3 0v7h3m-3-3h2" stroke-width="1.3"/>',
+  whatsapp: '<path d="M27 15a12 12 0 0 1-18 10l-6 2 2-6A12 12 0 1 1 27 15Z"/><path d="m10 9 3 4-2 2c2 3 3 4 6 5l2-3 4 2c0 5-4 5-8 3-5-2-9-8-5-13Z"/>',
+  instagram: '<rect x="4" y="4" width="24" height="24" rx="7"/><circle cx="16" cy="16" r="6"/><circle cx="23" cy="9" r="1"/>',
+};
+export function resultShareMarkup({ translate, escape, locale = 'ja', ready = true, saveAction = 'save-result-image', nativeLabel = '結果を共有', saveLabel = '結果画像を保存' }) {
   const t = (text) => escape(translate(text));
-  return `<div data-result-share-controls>
-    <button type="button" class="challenge-primary primary" data-result-share="native">${t(nativeLabel)}</button>
+  const copy = shareCardCopy(locale);
+  const card = (action, label, hint, icon, attributes = '', arrow = false, accessibleLabel = label) => `<button type="button" class="share-card" data-result-share="${action}" aria-label="${t(accessibleLabel)}" aria-describedby="result-share-${action}-hint" ${attributes}>
+    <span class="share-card-icon" aria-hidden="true"><svg viewBox="0 0 32 32">${SHARE_ICONS[icon]}</svg></span>
+    <span class="share-card-copy"><strong>${t(label)}</strong><small id="result-share-${action}-hint">${t(hint)}</small></span>
+    ${arrow ? '<span class="share-card-arrow" aria-hidden="true">›</span>' : ''}
+  </button>`;
+  return `<div data-result-share-controls data-result-share-locale="${escape(locale)}">
+    ${card('native', nativeLabel, '参加URLを友達へ送る', 'native', '', true)}
     <div class="challenge-result-share-buttons" data-result-share-row>
-      <button type="button" class="challenge-secondary ghost" data-result-share="copy">${t('リンクをコピー')}</button>
-      <button type="button" class="challenge-secondary ghost" data-result-share="save" data-action="${saveAction}" ${ready ? '' : 'disabled'}>${t(saveLabel)}</button>
+      ${card('copy', 'リンクをコピー', '参加URLをクリップボードへ', 'copy')}
+      ${card('save', saveLabel, copy.saveHint, 'save', `data-action="${saveAction}" ${ready ? '' : 'disabled'}`)}
     </div>
     <input type="text" readonly dir="ltr" aria-label="${t('参加URL')}" data-result-share-url>
     <p>${t('共有先によって画像やリンクが届かない場合は、リンクをコピーするか画像を保存してください。')}</p>
-    <div class="challenge-result-share-buttons" data-result-share-row>
-      <button type="button" class="challenge-secondary ghost" data-result-share="x" data-action="share-result-x">X</button>
-      <button type="button" class="challenge-secondary ghost" data-result-share="line" data-action="share-result-line">LINE</button>
-      <button type="button" class="challenge-secondary ghost" data-result-share="whatsapp">WhatsApp</button>
+    <div class="challenge-result-share-buttons" data-result-share-row data-result-share-social>
+      ${card('x', 'X', '参加URLつきで投稿', 'x', 'data-action="share-result-x"')}
+      ${card('line', 'LINE', '参加URLを友達へ送る', 'line', 'data-action="share-result-line"')}
+      ${card('whatsapp', 'WhatsApp', '参加URLを友達へ送る', 'whatsapp')}
+      ${card('instagram-link', 'Instagram', 'リンクをコピーして投稿', 'instagram', '', false, `Instagram: ${translate('リンクをコピー')}`)}
     </div>
     <p>${t('WhatsAppでは本文とリンクを共有します。画像は別途添付してください。')}</p>
-    <details><summary>Instagram</summary>
+    <details><summary>${t(copy.imageSummary)}</summary>
       <p>${t('Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。')}</p>
-      <button type="button" class="challenge-secondary ghost" data-result-share="instagram" data-action="share-result-instagram" ${ready ? '' : 'disabled'}>${t('ストーリー用：文章コピー＋画像保存')}</button>
+      ${card('instagram', 'ストーリー用：文章コピー＋画像保存', copy.saveHint, 'instagram', `data-action="share-result-instagram" ${ready ? '' : 'disabled'}`, true)}
     </details>
     <p role="status" aria-live="polite" data-result-share-status></p>
   </div>`;
@@ -102,6 +119,11 @@ export function bindResultShare(root, { getPayload, translate, beforeAction = ()
         const outcome = await shareResult(payload);
         record(outcome);
         if (outcome === 'unavailable') say('共有先によって画像やリンクが届かない場合は、リンクをコピーするか画像を保存してください。');
+      } else if (action === 'instagram-link') {
+        const copied = await copyText(payload.url);
+        record(copied ? 'copied' : 'failed');
+        say(copied ? shareCardCopy(controls.dataset.resultShareLocale).instagramInstruction
+          : 'コピーできませんでした。参加URLを長押ししてコピーしてください。');
       } else if (action === 'copy') {
         const copied = await copyText(payload.url);
         record(copied ? 'copied' : 'failed');
