@@ -1,3 +1,4 @@
+import { resultShareMarkup, bindResultShare } from './src/platform/resultShare.js';
 import { renderLiveInviteQr } from './src/live/invite-qr.js';
 import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
 import {
@@ -169,6 +170,23 @@ if (state.view === 'host' || state.view === 'viewer') {
   loadRoom().then(startLiveUpdates).catch(showError);
 }
 
+let liveResultImage = null;
+let liveResultImagePreparing = '';
+function liveResultKey() {
+  return JSON.stringify([state.code, state.participantName, state.game?.results, currentLocale]);
+}
+function prepareLiveResultImage() {
+  if (state.view !== 'viewer' || state.game?.phase !== 'complete') return;
+  const key = liveResultKey();
+  if (liveResultImage?.key === key || liveResultImagePreparing === key) return;
+  liveResultImagePreparing = key;
+  Promise.resolve(document.fonts?.ready).then(() => {
+    if (state.view !== 'viewer' || state.game?.phase !== 'complete' || liveResultKey() !== key) return;
+    liveResultImage = { key, src: createResultCardCanvas().toDataURL('image/png') };
+    render();
+  }).catch(() => {}).finally(() => { if (liveResultImagePreparing === key) liveResultImagePreparing = ''; });
+}
+
 function render() {
   if (!app) return;
   protectUserCopy(collectProtectedUserCopy(state, allCards));
@@ -215,6 +233,7 @@ function render() {
   app.innerHTML = markup;
   localizeDom(app);
   bindEvents();
+  prepareLiveResultImage();
   trackCurrentLiveBuilderQuestionShown();
   const qr = document.getElementById('live-challenge-qr');
   if (qr) renderLiveInviteQr(qr, joinUrl()).catch(() => {});
@@ -810,7 +829,7 @@ function viewerResultView() {
       }).join('')}
     </div>
     <div class="result-actions">
-      <button class="primary" data-action="save-result">結果カードを画像で保存 <span>↓</span></button>
+      ${resultShareMarkup({ translate: translateText, escape: escapeHtml, ready: Boolean(liveResultImage?.src) && liveResultImage?.key === liveResultKey(), saveAction: 'save-result' })}
       ${liveCheckoutView()}
       <a class="ghost" href="/live-challenge" style="text-decoration:none">トップへ戻る</a>
     </div>
@@ -946,7 +965,18 @@ function bindEvents(root = document) {
   root.querySelector('[data-action="advance"]')?.addEventListener('click', () => hostAction('advance'));
   root.querySelector('[data-action="next"]')?.addEventListener('click', () => hostAction('next'));
   root.querySelectorAll('[data-action="toggle-counts"]').forEach((input) => input.addEventListener('change', () => toggleCounts(input.checked)));
-  root.querySelector('[data-action="save-result"]')?.addEventListener('click', saveResultCard);
+  bindResultShare(root, {
+    translate: translateText,
+    getPayload: () => state.game?.phase === 'complete' ? {
+      src: liveResultImage?.key === liveResultKey() ? liveResultImage.src : '',
+      filename: `live-challenge-${state.code}.png`,
+      title: translateText(isEnglish ? 'KNOW ME QUIZ · LIVE' : 'わたし理解度診断｜LIVE版'),
+      text: `${translateText(resultMessage((state.game.results || []).filter(result => result.myIsCorrect === true).length))}\n${joinUrl()}`,
+      caption: translateText(resultMessage((state.game.results || []).filter(result => result.myIsCorrect === true).length)),
+      url: joinUrl(),
+    } : null,
+    track: (action, outcome) => trackAnalyticsEvent('result_share_action', { game_type: 'live_challenge', action, outcome }),
+  });
   root.querySelector('#enable-paid-sales')?.addEventListener('change', (event) => {
     captureDraft();
     setState({ paidSalesEnabled: event.target.checked === true, error: '' });
@@ -1593,8 +1623,7 @@ async function copyJoinLink() {
   }
 }
 
-async function saveResultCard() {
-  await document.fonts?.ready?.catch(() => {});
+function createResultCardCanvas() {
   const results = Array.isArray(state.game?.results) ? state.game.results : [];
   const correct = results.filter((result) => result.myIsCorrect === true).length;
   const canvas = document.createElement('canvas');
@@ -1626,11 +1655,7 @@ async function saveResultCard() {
   centerText(context, isEnglish ? `${correct} of 10 answers matched!` : `10問中 ${correct}問 一致！`, 940, '900 58px "Noto Sans JP", sans-serif', '#191919', 730);
   centerText(context, 'Instagram LIVE / YouTube LIVE', 1125, '800 30px "Noto Sans JP", sans-serif', '#6F6267');
   centerText(context, 'streetboardgame.com', 1200, '900 30px "Noto Sans JP", sans-serif', '#191919');
-  const link = document.createElement('a');
-  link.download = `live-challenge-${state.code}-${correct}of10.png`;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-  trackLiveShare('download', 'live_challenge_result');
+  return canvas;
 }
 
 async function startLiveCheckout(productType, amount = null, message = '') {

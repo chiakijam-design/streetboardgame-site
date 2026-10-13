@@ -1,3 +1,4 @@
+import { resultShareMarkup, bindResultShare } from './src/platform/resultShare.js';
 import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
 import { questionPackBySlug, questionPackCards, questionPacks } from './src/challenge/packs.js';
 import {
@@ -16,11 +17,6 @@ import {
   openLineShare,
   openXShare,
 } from './src/platform/share.js';
-import {
-  dataUrlToBlob,
-  saveImageBlob,
-  sharePreparedImageFileFirst,
-} from './src/platform/imageSave.js';
 import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 import { localizedQuestionCard, wrapLocalizedText, editedQuestionValue } from './src/i18n/display-copy.js';
@@ -787,62 +783,7 @@ function resultView() {
           ${state.boardActionMessage
             ? `<p class="challenge-result-board-message" role="status">${escapeHtml(state.boardActionMessage)}</p>`
             : ''}
-          <div class="challenge-result-share-buttons">
-            <button type="button" class="challenge-result-share-button instagram"
-              data-action="share-result-instagram"
-              ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
-              <span class="challenge-result-share-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect>
-                  <circle cx="12" cy="12" r="4"></circle>
-                  <circle class="is-filled" cx="17.5" cy="6.7" r="1.15"></circle>
-                </svg>
-              </span>
-              <span class="challenge-result-share-copy">
-                <strong>Instagram用</strong>
-                <small>ストーリーへ保存</small>
-              </span>
-            </button>
-            <button type="button" class="challenge-result-share-button line" data-action="share-result-line"
-              ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
-              <span class="challenge-result-share-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path d="M20.2 11.1c0-4-3.7-7.2-8.2-7.2s-8.2 3.2-8.2 7.2c0 3.6 3.1 6.7 7.2 7.2.3.1.7.2.8.5.1.3 0 .7-.1 1l-.2 1.1c0 .3-.2 1.1.9.6 1.2-.5 6.7-4 6.7-9.4z"></path>
-                  <path class="is-line-mark" d="M8 9v4.1h2.4M11.7 9v4.1M13.4 13.1V9l2.8 4.1V9M19 9h-2v4.1h2"></path>
-                </svg>
-              </span>
-              <span class="challenge-result-share-copy">
-                <strong>LINEで送る</strong>
-                <small><span>結果画像＋</span><span>同じ10問への参加URL</span></small>
-              </span>
-            </button>
-            <button type="button" class="challenge-result-share-button x" data-action="share-result-x"
-              ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
-              <span class="challenge-result-share-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path d="M5.2 4.5h3.6l10 15h-3.6l-10-15z"></path>
-                  <path d="M18.6 4.5 5.5 19.5"></path>
-                </svg>
-              </span>
-              <span class="challenge-result-share-copy">
-                <strong>Xで結果を投稿</strong>
-                <small><span>結果画像＋</span><span>同じ10問への参加URL</span></small>
-              </span>
-            </button>
-            <button type="button" class="challenge-result-share-button image" data-action="save-result-image"
-              ${state.resultImageUrl && !state.boardPreferenceBusy ? '' : 'disabled'}>
-              <span class="challenge-result-share-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path d="M12 3.8v10.8M7.8 10.7 12 14.9l4.2-4.2"></path>
-                  <path d="M5 14.5v4.8h14v-4.8"></path>
-                </svg>
-              </span>
-              <span class="challenge-result-share-copy">
-                <strong>${state.resultImageUrl ? '画像だけ保存' : '画像を準備中…'}</strong>
-                <small>端末へダウンロード</small>
-              </span>
-            </button>
-          </div>
+          ${resultShareMarkup({ translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) && !state.boardPreferenceBusy })}
         </section>
       </div>
       <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>
@@ -1140,11 +1081,27 @@ function bindEvents() {
   document.querySelector('[data-action="publish-board-only"]')?.addEventListener('click', publishBoardOnly);
   document.querySelector('[data-action="retry-challenge"]')?.addEventListener('click', retryChallenge);
   document.querySelector('[data-action="swap-roles"]')?.addEventListener('click', startRoleSwap);
-  document.querySelector('[data-action="share-result-line"]')?.addEventListener('click', shareResultToLine);
-  document.querySelector('[data-action="share-result-x"]')?.addEventListener('click', shareResultToX);
-  document.querySelector('[data-action="share-result-instagram"]')?.addEventListener('click', shareResultToInstagram);
-  document.querySelector('[data-action="save-result-image"]')?.addEventListener('click', () => {
-    saveResultImageOnly();
+  bindResultShare(app, {
+    translate: translateText,
+    beforeAction: () => {
+      if (!state.result || state.boardPreferenceBusy) return false;
+      if (state.boardOptIn === (state.result.participant?.rankingParticipating === true)) return true;
+      updateBoardPreference(state.boardOptIn).then((updated) => {
+        if (updated && state.mode === 'result') setState({ boardActionMessage: translateText('設定を更新しました。もう一度ボタンを押してください。') });
+      });
+      return false;
+    },
+    getPayload: () => state.result ? {
+      src: state.resultImageUrl,
+      filename: 'watachan-challenge-score.png',
+      title: translateText(isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード'),
+      text: resultShareText(), caption: resultShareText({ includeUrl: false }),
+      url: `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`,
+    } : null,
+    track: (action, outcome) => {
+      trackAnalyticsEvent('result_share_action', { game_type: 'challenge', action, outcome });
+      if (['download-requested', 'handed-off-save'].includes(outcome)) trackDailyResultAction('result_image_save_requested');
+    },
   });
 }
 
@@ -1561,11 +1518,6 @@ async function updateBoardPreference(enabled) {
     });
     return false;
   }
-}
-
-async function applySelectedBoardPreference() {
-  if (state.boardPreferenceBusy) return false;
-  return updateBoardPreference(state.boardOptIn);
 }
 
 async function publishBoardOnly() {
@@ -2008,38 +1960,6 @@ async function prepareResultImage() {
   }
 }
 
-async function saveChallengeResultImage(action = 'save-result-image') {
-  if (!state.resultImageUrl || !state.result) return '';
-  const button = document.querySelector(`[data-action="${action}"]`);
-  const previousText = button?.textContent || '';
-  if (button) {
-    button.disabled = true;
-    button.textContent = isEnglish ? 'Saving image…' : '画像を保存しています…';
-  }
-  try {
-    const blob = dataUrlToBlob(state.resultImageUrl);
-    const saved = await saveImageBlob(
-      blob,
-      'watachan-challenge-score.png',
-      translateText(isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード'),
-    );
-    if (saved) trackDailyResultAction('result_image_save_requested');
-    return saved;
-  } catch (error) {
-    if (error?.name !== 'AbortError') {
-      localizedAlert(isEnglish
-        ? 'The image could not be saved. Please try again.'
-        : '画像を保存できませんでした。もう一度お試しください。');
-    }
-    return '';
-  } finally {
-    if (button) {
-      button.disabled = false;
-      button.textContent = previousText;
-    }
-  }
-}
-
 function resultShareText({ includeUrl = true } = {}) {
   const tier = isEnglish ? getChallengeResultTierEnglish(state.result.score) : getChallengeResultTier(state.result.score);
   const shareUrl = `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`;
@@ -2064,88 +1984,6 @@ function resultShareText({ includeUrl = true } = {}) {
     );
   }
   return lines.map((line) => translateText(line)).join('\n');
-}
-
-async function shareResultToLine() {
-  if (!state.result || !state.resultImageUrl) return;
-  if (!await applySelectedBoardPreference()) return;
-  const text = resultShareText();
-  try {
-    const outcome = await sharePreparedImageFileFirst({
-      src: state.resultImageUrl,
-      filename: 'watachan-challenge-score.png',
-      title: translateText(isEnglish
-        ? 'Know Me Quiz | Score result card'
-        : 'わたし理解度診断｜点数入り結果カード'),
-      text,
-    });
-    if (outcome === 'shared') {
-      trackChallengeShare('line', 'challenge_result');
-      return;
-    }
-    localizedAlert(isEnglish
-      ? 'The result image was saved. LINE will open next; attach the saved image to your message.'
-      : '結果画像を保存しました。続けてLINEが開くので、保存した結果画像をトークへ添付してください。');
-    openLineShare(text);
-    trackChallengeShare('line', 'challenge_result');
-  } catch (error) {
-    if (error?.name !== 'AbortError') {
-      localizedAlert(isEnglish
-        ? 'The result image could not be prepared. Please try again.'
-        : '結果画像を準備できませんでした。もう一度お試しください。');
-    }
-  }
-}
-
-async function shareResultToX() {
-  if (!state.result || !state.resultImageUrl) return;
-  if (!await applySelectedBoardPreference()) return;
-  const text = resultShareText();
-  try {
-    const outcome = await sharePreparedImageFileFirst({
-      src: state.resultImageUrl,
-      filename: 'watachan-challenge-score.png',
-      title: translateText(isEnglish
-        ? 'Know Me Quiz | Score result card'
-        : 'わたし理解度診断｜点数入り結果カード'),
-      text,
-    });
-    if (outcome === 'shared') {
-      trackChallengeShare('x', 'challenge_result');
-      return;
-    }
-    localizedAlert(isEnglish
-      ? 'The result image was saved. X will open next; attach the saved image to your post.'
-      : '結果画像を保存しました。続けてXが開くので、保存した結果画像を投稿へ添付してください。');
-    openXShare(text);
-    trackChallengeShare('x', 'challenge_result');
-  } catch (error) {
-    if (error?.name !== 'AbortError') {
-      localizedAlert(isEnglish
-        ? 'The result image could not be prepared. Please try again.'
-        : '結果画像を準備できませんでした。もう一度お試しください。');
-    }
-  }
-}
-
-async function shareResultToInstagram() {
-  if (!state.result || !state.resultImageUrl) return;
-  if (!await applySelectedBoardPreference()) return;
-  const copied = await copyText(resultShareText({ includeUrl: false }));
-  if (!copied) return setState({ error: 'copy-failed' });
-  const saveResult = await saveChallengeResultImage('share-result-instagram');
-  if (!saveResult) return;
-  trackChallengeShare('instagram', 'challenge_result');
-  localizedAlert(isEnglish
-    ? 'The text was copied and the result image is ready. Choose Instagram Stories from the share sheet, or select the saved image in Instagram.'
-    : '文章をコピーし、結果画像を用意しました。共有メニューからInstagramストーリーズを選ぶか、Instagramで保存した画像を選んでください。');
-}
-
-async function saveResultImageOnly() {
-  if (!state.result || !state.resultImageUrl) return;
-  if (!await applySelectedBoardPreference()) return;
-  const saveResult = await saveChallengeResultImage();
-  if (saveResult) trackChallengeShare('download', 'challenge_result');
 }
 
 function saveCurrentProgress(patch) {
