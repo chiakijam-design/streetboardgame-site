@@ -40,13 +40,13 @@ export async function shareResult({ src, filename, title, text, url }, {
   }
 }
 
-export function resultShareMarkup({ translate, escape, ready = true, saveAction = 'save-result-image' }) {
+export function resultShareMarkup({ translate, escape, ready = true, saveAction = 'save-result-image', nativeLabel = '結果を共有', saveLabel = '結果画像を保存' }) {
   const t = (text) => escape(translate(text));
   return `<div data-result-share-controls>
-    <button type="button" class="challenge-primary primary" data-result-share="native">${t('結果を共有')}</button>
+    <button type="button" class="challenge-primary primary" data-result-share="native">${t(nativeLabel)}</button>
     <div class="challenge-result-share-buttons" data-result-share-row>
       <button type="button" class="challenge-secondary ghost" data-result-share="copy">${t('リンクをコピー')}</button>
-      <button type="button" class="challenge-secondary ghost" data-result-share="save" data-action="${saveAction}" ${ready ? '' : 'disabled'}>${t('結果画像を保存')}</button>
+      <button type="button" class="challenge-secondary ghost" data-result-share="save" data-action="${saveAction}" ${ready ? '' : 'disabled'}>${t(saveLabel)}</button>
     </div>
     <input type="text" readonly dir="ltr" aria-label="${t('参加URL')}" data-result-share-url>
     <p>${t('共有先によって画像やリンクが届かない場合は、リンクをコピーするか画像を保存してください。')}</p>
