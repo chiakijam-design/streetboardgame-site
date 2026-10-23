@@ -866,12 +866,23 @@ test('採用済みのお題だけを実データのある最近人気として�
   await expect(page.locator('.challenge-builder-card')).toContainText('暇つぶしで開くのは');
 
   if (testInfo.project.name === 'mobile-chrome') {
+    // English base cards use ENF IDs; Japanese Q IDs are correctly filtered out.
+    await page.route('**/api/questions/trends?lang=en', route => route.fulfill({
+      json: {
+        weeklySelections: [{ questionId: 'DISABLED', selectedCount: 99 }, { questionId: 'ENF001', selectedCount: 8 }],
+        recentApprovals: [],
+        liveResponses: [],
+      },
+    }));
     await page.goto('/en/challenge/library');
     const englishTrends = page.getByTestId('recent-question-trends');
     await page.getByTestId('public-question-examples').scrollIntoViewIfNeeded();
     await expect(englishTrends).toHaveAttribute('aria-busy', 'false');
     await expect(englishTrends.getByRole('heading', { name: 'Popular now' })).toBeVisible();
     await expect(englishTrends.getByRole('heading', { name: 'Frequently chosen this week' })).toBeVisible();
+    await expect(englishTrends.locator('[data-question-id="ENF001"]')).toHaveCount(1);
+    await expect(englishTrends.locator('[data-question-id="DISABLED"]')).toHaveCount(0);
+    await expect(englishTrends.locator('[data-trend-group="recent"]')).toHaveCount(0);
   }
 });
 

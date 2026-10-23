@@ -1,5 +1,24 @@
 import { expect, test } from './test.mjs';
 
+test('current legal pages explain the free quiz and keep historical purchase conditions separate', async ({ page }, testInfo) => {
+  for (const path of ['/legal', '/terms', '/privacy', '/minor-policy', '/content-guidelines']) {
+    await page.goto(path + '?analytics=exclude');
+    const history = page.getByTestId('historical-provisions');
+    await expect(history).not.toHaveAttribute('open', '');
+    const visible = await page.locator('main').innerText();
+    expect(visible).not.toMatch(/LIVE版の有料サービスの内容をご案内|お金がかかる機能|出題者または配信者|有料販売を行う場合は|選択したコメントまたは|Googleセキュリティ設定|上記目的/);
+    if (path === '/terms' || path === '/content-guidelines') {
+      expect(visible).toContain('掲載候補の送信に同意した利用者コンテンツ');
+      expect(visible).toContain('無償かつ非独占的');
+    }
+    if (path !== '/legal') expect(visible).toContain('掲載候補として送信しない問題は、この目的では公開しません');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(path.slice(1) + '-current.png'), fullPage: true });
+  }
+  await page.goto('/en/terms?analytics=exclude');
+  await expect(page.locator('main')).toContainText("These terms apply to Streetboardgame's free standard quiz");
+});
+
 test('library shows real questions and choices before game creation and hides empty metrics', async ({ page }, testInfo) => {
   const writes = [];
   await page.route('**/api/**', async route => {

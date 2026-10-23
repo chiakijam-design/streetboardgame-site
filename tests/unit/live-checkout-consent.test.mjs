@@ -128,11 +128,12 @@ test('コンテンツ・肖像権ガイドラインは現行2モード・投稿�
   assert.equal(document.includes('YouTubeチャンネル情報から自動生成された問題候補'), false);
 });
 
-test('未成年者利用規定は現行の年齢区分・通常版・LIVE版・購入・販売登録条件を表示する', async () => {
-  const document = await readFileAsync(new URL('../../minor-policy.html', import.meta.url), 'utf8');
+test('未成年者利用規定は通常版の同意・公開範囲と過去の購入条件を分離する', async () => {
+  const current = (await readFileAsync(new URL('../../minor-policy.html', import.meta.url), 'utf8')).split('<details class="legal-card"')[0];
+  for (const text of ['18歳未満', '10〜12歳', '理解度ボード掲載は任意', 'コメントなし', '掲載候補への送信に同意した問題文と選択肢']) assert.equal(current.includes(text), true, text);
+  assert.doesNotMatch(current, /有料販売を行う場合は|選択したコメントまたは|お金がかかる機能/);
+  const document = await readFileAsync(new URL('../../legal-history/minor-policy.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    '2026-10-23',
-    '過去のLIVE取引と既存データ',
     '13歳から18歳までの中高生を主な対象',
     '19歳から20歳までの大学生・専門学生を副次的な対象',
     '10歳から12歳までの小学生を制限付きの対象',

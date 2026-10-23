@@ -685,6 +685,202 @@
       "contexts": [
         "current-public-metadata"
       ]
+    },
+    {
+      "id": "m97aaaf7e27b3b0",
+      "source": "本規約は、Streetboardgameの無料の通常版クイズと関連機能（以下「本サービス」）に適用します。利用者は、本規約に同意したうえで本サービスを利用してください。",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "maeb659f4ac4124",
+      "source": "本ポリシーは、Streetboardgameの無料の通常版クイズと関連機能における利用者情報の取扱いに適用します。",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m092878a5692a0c",
+      "source": "第9条（個人情報等の取扱い）",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m5a074dd21f7c80",
+      "source": "第10条（サービスの変更・中断・終了）",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m6765d630b1f193",
+      "source": "第11条（保証・責任の範囲）",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "md7e7c98923b656",
+      "source": "第12条（規約の変更）",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m7687f48ca2f496",
+      "source": "第13条（分離可能性）",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "mc30e2040d9bf1c",
+      "source": "第14条（準拠法・管轄）",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m95129d06deb71e",
+      "source": "第15条（お問い合わせ）",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m431e2bda50e206",
+      "source": "5. 外部サービス・委託先",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "mf05ce3682d43cd",
+      "source": "6. 第三者提供",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m56f46c7a0a574b",
+      "source": "7. 統計情報",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "mddcb32bd7c507c",
+      "source": "8. 保存期間",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m033e06ba66f3e7",
+      "source": "9. Cookie・アクセス解析",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "mbed4353116b6d3",
+      "source": "10. 安全管理",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m0cd53abfb46ed2",
+      "source": "11. 開示・訂正・利用停止・削除等",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m42eb0f62d974cf",
+      "source": "12. 未成年者",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "mb40330420f1859",
+      "source": "13. 改定・準拠法",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "maf8b44d92256ca",
+      "source": "14. お問い合わせ窓口",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "mc2f3893eba1956",
+      "source": "4. 外部サービスと規定の優先関係",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m7f1cf6bb768d1f",
+      "source": "3. 運営者への利用許諾",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "md2bba452a213c2",
+      "source": "4. 個人情報・安全審査",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m701a555227b897",
+      "source": "5. 禁止コンテンツ",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m06be1b7e2f68d2",
+      "source": "6. 自動生成・外部情報から作られた候補",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m27ffbf145a34ef",
+      "source": "7. 審査・通報・即時非公開",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m258ccc282e8084",
+      "source": "8. 権利侵害・削除の申立て",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "me8f2d1b5fe304b",
+      "source": "9. 外部サービスとの関係",
+      "contexts": [
+        "2026-10-23:legal-consistency-followup"
+      ]
+    },
+    {
+      "id": "m89ce884e7bc656",
+      "source": "6. 答え合わせレポート",
+      "contexts": [
+        "2026-10-23:normal-report-heading"
+      ]
     }
   ]
 }
