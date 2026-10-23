@@ -8,6 +8,6 @@ export function startCreatorGame(mode, rawName) {
   } catch {
     return translateText('ブラウザの一時保存を利用できません。設定を確認してください。');
   }
-  location.assign(localizedPath(mode === 'live' ? '/live-challenge' : '/challenge'));
+  location.assign(localizedPath('/challenge'));
   return '';
 }

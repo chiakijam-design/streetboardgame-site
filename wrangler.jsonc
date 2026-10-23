@@ -43,7 +43,7 @@
       "/vi", "/vi/*", "/ko", "/ko/*", "/zh-Hans", "/zh-Hans/*", "/zh-Hant", "/zh-Hant/*",
       "/*.html",
       "/challenge", "/challenge/",
-      "/live-challenge", "/live-challenge/",
+      "/live-challenge", "/live-challenge/*", "/live", "/live/*", "/live-guide",
       "/about", "/about/",
       "/product", "/product/",
       "/pricing", "/pricing/",

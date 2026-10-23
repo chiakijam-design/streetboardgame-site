@@ -14,7 +14,7 @@ test.describe('completed multilingual release', () => {
   for (const locale of PUBLIC_LOCALES) {
     test(`${locale}: public HTML, navigation, mobile width and both game entries`, async ({ page, request }) => {
       const prefix = LOCALE_DETAILS[locale].prefix;
-      for (const path of ['/', '/challenge', '/live-challenge', '/challenge/library']) {
+      for (const path of ['/', '/challenge', '/challenge/library']) {
         const route = switchLocalePath(path, locale);
         const response = await page.goto(route + '?analytics=exclude');
         expect(response?.status()).toBe(200);

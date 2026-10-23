@@ -11,7 +11,7 @@ const ACCESS_TOKEN = 'b'.repeat(48);
 
 test('収益分配規約のバージョンとSHA-256を実際の規約全文へ固定する', async () => {
   const document = normalizeVersionedLegalDocument(
-    await readFile(new URL('../../creator-terms.html', import.meta.url), 'utf8'),
+    await readFile(new URL('../../legal-history/creator-terms.html', import.meta.url), 'utf8'),
   );
   assert.equal(CREATOR_TERMS.version, '1.7');
   assert.equal(createHash('sha256').update(document).digest('hex'), CREATOR_TERMS.documentSha256);

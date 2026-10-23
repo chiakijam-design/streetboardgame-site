@@ -12,7 +12,7 @@ try {
   const health = await readJson(healthResponse);
   const csp = liveResponse.headers.get('content-security-policy') || '';
   const result = {
-    ok: healthResponse.ok && health?.ok === true && liveResponse.ok
+    ok: healthResponse.ok && health?.ok === true && liveResponse.status === 410
       && csp.includes("default-src 'none'") && csp.includes("'strict-dynamic'"),
     checkedAt: new Date().toISOString(),
     elapsedMs: Date.now() - startedAt,

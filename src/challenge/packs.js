@@ -22,7 +22,7 @@ const PACKS = Object.freeze([
     slug: 'school-after-school',
     title: { ja: '学校・放課後の10問', en: '10 school and after-school questions' },
     description: {
-      ja: '13〜18歳のメインターゲットに最も直接的に合います。',
+      ja: '授業や放課後の過ごし方を予想して、学校の思い出を話せます。',
       en: 'School life, after-school moments, and everyday student choices.',
     },
     image: '/assets/question-packs/live-party.svg',
@@ -58,7 +58,7 @@ const PACKS = Object.freeze([
     slug: 'my-manual',
     title: { ja: 'わたしのトリセツ10問', en: '10 questions for my personal manual' },
     description: {
-      ja: 'サイトの「理解度診断」という位置づけに最も合う主力候補です。',
+      ja: '元気が出ることや助けてほしいときを予想して、自分との付き合い方を伝えられます。',
       en: 'A personal guide to my energy, habits, support needs, and communication style.',
     },
     image: '/assets/question-packs/know-me-deeper.svg',
@@ -76,7 +76,7 @@ const PACKS = Object.freeze([
     slug: 'unexpected-side',
     title: { ja: '意外な一面が分かる10問', en: '10 questions that reveal a surprising side' },
     description: {
-      ja: '結果画面の答え合わせレポートと特に相性がよい構成です。',
+      ja: 'いつもと違う選択や意外な好みを予想して、第一印象との違いを話せます。',
       en: 'Reveal personality, quirks, and choices that may not match a first impression.',
     },
     image: '/assets/question-packs/unexpected-side.svg',
@@ -112,7 +112,7 @@ const PACKS = Object.freeze([
     slug: 'smartphone-social-fandom',
     title: { ja: 'スマホ・SNS・推しの10問', en: '10 questions about phones, social media, and fandoms' },
     description: {
-      ja: '中高生の日常に近く、共有時の訴求にも使いやすいパックです。',
+      ja: 'よく開くアプリや推しの楽しみ方を予想して、普段は話さない好みを知れます。',
       en: 'Everyday phone, social, video, and fandom choices that are easy to share.',
     },
     image: '/assets/question-packs/fandom-social.svg',

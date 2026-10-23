@@ -21,7 +21,7 @@ test('通常版はカタログの応答前に表示し、入力した名前を�
 });
 
 test('ゲーム画面の可変フォントCSSは初期描画後に適用される', async ({ page }) => {
-  for (const path of ['/challenge', '/live-challenge']) {
+  for (const path of ['/challenge']) {
     await page.goto(path);
     await expect(page.locator('#game-font-styles')).toHaveAttribute('href', /wght@400\.\.900/);
     await expect(page.locator('#game-font-styles')).toHaveAttribute('media', 'all');

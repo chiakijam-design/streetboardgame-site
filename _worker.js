@@ -1,3 +1,4 @@
+import { isRetiredLivePage, isLiveHistoryRequest, liveRetiredResponse } from './src/live/retirement.js';
 import { handleLiveApi } from './src/live/api.js';
 import { handleChallengeApi } from './src/challenge/api.js';
 import { handleQuestionApi } from './src/questions/api.js';
@@ -99,9 +100,24 @@ async function handleRequest(request, env) {
       });
     }
     const path = rawPath.replace(/\/+$/, '');
+    if (isRetiredLivePage(path, url.searchParams)) return liveRetiredResponse(request);
+    if (path.startsWith('/api/live') && !isLiveHistoryRequest(path, request.method)) return liveRetiredResponse(request, true);
     // These build artifacts are fetched internally; stable locale URLs are
     // the public entry points, including historical invitation query strings.
     if (path.startsWith('/locale-pages/')) return new Response('Not Found', { status: 404 });
+
+    if (path.startsWith('/legal-history/')) {
+      const response = await env.ASSETS.fetch(new Request(url, { method: 'GET' }));
+      const headers = new Headers(response.headers);
+      headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+      headers.set('cache-control', 'no-store');
+      let body = response.body;
+      if (response.ok && /text\/html/i.test(headers.get('content-type') || '')) {
+        const notice = '<aside style="max-width:68rem;margin:1rem auto;padding:1rem;background:#fff5d0;border:2px solid #333;line-height:1.8;font-family:sans-serif"><strong>過去のLIVE取引と既存データ</strong><p>LIVE版は終了しました。新規の有料販売・配信者登録は受け付けていません。過去の購入・返金の権利と既存データの保存条件は変わりません。</p><a href="/pricing">現在の商品・料金</a> / <a href="/contact">お問い合わせフォーム</a></aside>';
+        body = (await response.text()).replace(/<body\b[^>]*>/i, '$&' + notice);
+      }
+      return new Response(request.method === 'HEAD' ? null : body, { status: response.status, headers });
+    }
 
     // Cloudflare Access only protects the custom domain. Do not expose the
     // management surface through the Worker preview hostname, which would
@@ -189,7 +205,7 @@ async function handleRequest(request, env) {
     const extendedEnglishPage = locale === 'en' && PUBLIC_LOCALES.length > 2
       && !['/en', '/en/', '/en/live-challenge', '/en/terms', '/en/privacy'].includes(path)
       && !ENGLISH_CHALLENGE_PAGE_PATHS.has(path);
-    if (locale !== 'ja' && (locale !== 'en' || extendedEnglishPage)) {
+    if (locale !== 'ja') {
       if (!PUBLIC_LOCALES.includes(locale)) return new Response('Not Found', { status: 404, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } });
       const assetRoute = localizedAssetRoute(rawPath);
       if (!assetRoute) return new Response('Not Found', { status: 404 });
@@ -248,21 +264,6 @@ async function handleRequest(request, env) {
       return Response.redirect(url.origin + path + url.search, 301);
     }
 
-    if (path === '/en/live-challenge') {
-      const pageUrl = new URL('/live_challenge.html', url.origin);
-      const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
-        method: 'GET',
-        headers: request.headers,
-      }));
-      const headers = new Headers(response.headers);
-      headers.set('content-type', 'text/html; charset=UTF-8');
-      if (url.searchParams.has('room')) headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
-      const html = request.method === 'HEAD' ? null : await response.text();
-      return new Response(html ? applyEnglishGameMeta(html, 'live', url) : null, {
-        status: response.status,
-        headers,
-      });
-    }
 
     if (ENGLISH_CHALLENGE_PAGE_PATHS.has(path)) {
       const pageUrl = new URL('/challenge.html', url.origin);
@@ -302,21 +303,6 @@ async function handleRequest(request, env) {
       return Response.redirect(url.origin + path + url.search, 301);
     }
 
-    if (path === LIVE_CHALLENGE_PATH) {
-      const pageUrl = new URL('/live_challenge.html', url.origin);
-      const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
-        method: 'GET',
-        headers: request.headers,
-      }));
-      const headers = new Headers(response.headers);
-      headers.set('content-type', 'text/html; charset=UTF-8');
-      if (url.searchParams.has('room')) headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
-      const html = request.method === 'HEAD' ? null : await response.text();
-      return new Response(html ? selectQuestionDataScript(html, 'ja') : null, {
-        status: response.status,
-        headers,
-      });
-    }
 
     if (rawPath !== '/' && rawPath.endsWith('/') && CHALLENGE_PAGE_PATHS.has(path)) {
       return Response.redirect(url.origin + path + url.search, 301);
@@ -447,13 +433,13 @@ async function handleRequest(request, env) {
       },
       '/about': {
         title: 'About｜わたし理解度診断・私のこと、ちゃんと分かってるよね？',
-        description: '「わたし理解度診断」は、自分の10問を最大50人に予想してもらう通常版と、視聴者と同時回答するLIVE版を公開する無料ゲームサイトです。',
+        description: '点数が気になっても、結果を載せる前に同じ10問へ再挑戦できます。',
         url: CANONICAL_ORIGIN + '/about',
         ogTitle: 'About｜わたし理解度診断',
         imageAlt: 'わたし理解度診断「私のこと、ちゃんと分かってるよね？」',
         pageId: CANONICAL_ORIGIN + '/about#webpage',
         noscriptTitle: 'About｜わたし理解度診断',
-        noscriptBody: '「わたし理解度診断」は、10問を作って参加URLを送る通常版と、視聴者と同時回答するLIVE版を公開しています。',
+        noscriptBody: '点数が気になっても、結果を載せる前に同じ10問へ再挑戦できます。',
       },
       '/product': {
         title: '製品版｜私のこと、ちゃんと分かってるよね？',
@@ -582,7 +568,7 @@ async function withSecurityHeaders(response, request, env) {
     body = body.replace(/<meta\b(?=[^>]*\bname=["']google-adsense-account["'])[^>]*>/gi, '')
       .replace(/<\/head>/i, '<meta name="google-adsense-account" content="ca-pub-8959934584200203"></head>');
     const locale = localeFromPath(requestPath);
-    if (PUBLIC_LOCALES.length > 2 && localizedAssetRoute(requestPath)) {
+    if (response.ok && PUBLIC_LOCALES.length > 2 && localizedAssetRoute(requestPath)) {
       if (locale === 'ja') body = injectPublicLocaleShell(body, new URL(request.url), PUBLIC_LOCALES);
       else if (locale === 'en' && !body.includes('window.__WATACHAN_I18N__=') && !body.includes('data-watachan-locale-catalog')) {
         const dictionary = await env.ASSETS.fetch(new Request(new URL('/locale-assets/en.json', request.url), { method: 'GET' }));
@@ -644,8 +630,8 @@ function applySeoMeta(html, page) {
 function applyChallengeLibraryMeta(html) {
   const firstImage = questionPacks(false)[0]?.image;
   if (firstImage) html = html.replace('</head>', `<link rel="preload" as="image" href="${firstImage}" fetchpriority="high"></head>`);
-  const title = '人気の10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
-  const description = '意外な一面、初対面、推し・SNS、深く知る、LIVE、夏休み、推し活から選べる画像付き10問パックです。通常版・LIVE版のクイズをすぐ作れます。';
+  const title = '10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
+  const description = '気分や相手に合うパックを選んでください。選んだ10問ですぐにクイズを作れます。';
   const url = CANONICAL_ORIGIN + '/challenge/library';
   const breadcrumbId = url + '#breadcrumb';
   return html
@@ -666,7 +652,7 @@ function applyChallengeLibraryMeta(html) {
           {
             '@type': 'CollectionPage',
             '@id': url + '#webpage',
-            name: '人気の10問パック',
+            name: '10問パック',
             url,
             description,
             inLanguage: 'ja',
@@ -692,7 +678,7 @@ function applyChallengeLibraryMeta(html) {
               {
                 '@type': 'ListItem',
                 position: 2,
-                name: '人気の10問パック',
+                name: '10問パック',
                 item: url,
               },
             ],
@@ -859,7 +845,7 @@ function buildNoscript(page) {
     <h1>${page.noscriptTitle || page.title}</h1>
     <p>${page.noscriptBody || page.description}</p>
     <p>JavaScriptを有効にすると、ゲーム本編とSNSでシェアできる診断結果を表示できます。</p>
-    <p><a href="/challenge">みんなに挑戦してもらうクイズを作る</a> / <a href="/live-challenge">ライブ配信用クイズを作る</a> / <a href="/challenge-guide">遊び方を見る</a></p>
+    <p><a href="/challenge">みんなに挑戦してもらうクイズを作る</a> / <a href="/challenge-guide">遊び方を見る</a></p>
   </main>
 </noscript>`;
 }
@@ -905,7 +891,7 @@ function buildStructuredData(page) {
       name: 'わたし理解度診断',
       alternateName: '私のこと、ちゃんと分かってるよね？',
       inLanguage: 'ja',
-      description: '自分の10問を最大50人へ出題する通常版と、視聴者と同時回答するライブ配信版を公開する無料クイズサイトです。',
+      description: '当てるより、話すための10問。先に自分が回答し、できたURLを送ると最大50人が挑戦できます。',
       publisher: {
         '@id': organizationId,
       },
@@ -913,9 +899,7 @@ function buildStructuredData(page) {
         {
           '@id': 'https://www.streetboardgame.com/challenge#challenge-game',
         },
-        {
-          '@id': 'https://www.streetboardgame.com/live-challenge#game',
-        },
+
       ],
     },
     {
@@ -923,12 +907,10 @@ function buildStructuredData(page) {
       '@id': 'https://www.streetboardgame.com/#site-navigation',
       name: [
         'みんなに挑戦してもらう',
-        'ライブ配信でみんなに挑戦してもらう',
         'About',
       ],
       url: [
         'https://www.streetboardgame.com/challenge',
-        'https://www.streetboardgame.com/live-challenge',
         'https://www.streetboardgame.com/about',
       ],
     },

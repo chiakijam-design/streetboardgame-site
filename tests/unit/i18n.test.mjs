@@ -88,7 +88,7 @@ test('英語ルート・hreflang・専用OGP・初回言語案内を静的構成
   const worker = text('_worker.js');
   const switchSource = text('language_switch.js');
   const sitemap = text('sitemap.xml');
-  for (const route of ['/en/', '/en/challenge', '/en/live-challenge', '/en/terms', '/en/privacy']) {
+  for (const route of ['/en/', '/en/challenge', '/en/terms', '/en/privacy']) {
     assert.ok(worker.includes(route.replace(/\/$/, '') || '/en'), route);
     assert.ok(sitemap.includes(`<loc>https://www.streetboardgame.com${route}</loc>`), route);
   }

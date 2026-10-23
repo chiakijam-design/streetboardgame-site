@@ -28,7 +28,7 @@ async function fixture(page,scene,locale){
  await expect(page.locator('[data-result-share=save]')).toBeEnabled({timeout:30000});
  return new URL(page.url()).origin+`${prefix}${scene==='live'?'/live-challenge':'/challenge'}?room=${code}`;
 }
-for(const scene of ['host','result','live'])for(const locale of ['ja','en','ar'])for(const width of [320,360,390,1365]){
+for(const scene of ['host','result'])for(const locale of ['ja','en','ar'])for(const width of [320,360,390,1365]){
  test(`${scene}/${locale}/${width}: Instagram copies the public link, preserves image flow and card accessibility`,async({page},testInfo)=>{
   await page.setViewportSize({width,height:900});const publicUrl=await fixture(page,scene,locale);
   const controls=page.locator('[data-result-share-controls]');const social=controls.locator('[data-result-share-social]');const instagram=social.locator('[data-result-share=instagram-link]');
@@ -53,7 +53,7 @@ for(const scene of ['host','result','live'])for(const locale of ['ja','en','ar']
   }
  });
 }
-for(const scene of ['host','result','live'])test(`${scene}: clipboard denial, fallback, rapid clicks and returning do not post or leak`,async({page})=>{
+for(const scene of ['host','result'])test(`${scene}: clipboard denial, fallback, rapid clicks and returning do not post or leak`,async({page})=>{
  const publicUrl=await fixture(page,scene,'ja');const controls=page.locator('[data-result-share-controls]');const button=controls.locator('[data-result-share=instagram-link]');
  await page.evaluate(()=>{
   Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__COPY_CALLS__++;window.__COPIED__=text;return new Promise(resolve=>{window.__COPY_RESOLVE__=resolve;});}}});

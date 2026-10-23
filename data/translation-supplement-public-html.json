@@ -587,6 +587,104 @@
       "contexts": [
         "result-share:challenge-and-live"
       ]
+    },
+    {
+      "id": "m038c5e6e619869",
+      "source": "LIVE版は終了しました。新規の有料販売・配信者登録は受け付けていません。過去の購入・返金の権利と既存データの保存条件は変わりません。",
+      "contexts": [
+        "2026-10-23:public-retirement-and-quality"
+      ]
+    },
+    {
+      "id": "m401f35e85b958a",
+      "source": "過去のLIVE取引と既存データ",
+      "contexts": [
+        "2026-10-23:public-retirement-and-quality"
+      ]
+    },
+    {
+      "id": "m0cd31280fd2268",
+      "source": "Googleなどの第三者配信事業者は、当サイトや他サイトへのアクセスに基づくCookieを使用する場合があります。Googleの広告Cookieにより、Googleとそのパートナーは広告をパーソナライズできます。Google Ads Settingsまたはaboutads.infoでパーソナライズ広告を無効にできます。",
+      "contexts": [
+        "2026-10-23:public-retirement-and-quality"
+      ]
+    },
+    {
+      "id": "m7815f1bfa436be",
+      "source": "遊び方の見本です。実際の回答・利用実績ではありません。",
+      "contexts": [
+        "2026-10-23:public-retirement-and-quality"
+      ]
+    },
+    {
+      "id": "m5364a596180922",
+      "source": "答え合わせの例：出題者と同じ選択肢を選ぶと1問正解です。",
+      "contexts": [
+        "2026-10-23:public-retirement-and-quality"
+      ]
+    },
+    {
+      "id": "m1428d0fbfa4731",
+      "source": "お題ライブラリ",
+      "contexts": [
+        "2026-10-23:public-retirement-and-quality"
+      ]
+    },
+    {
+      "id": "mf5cc31a09c5fe7",
+      "source": "過去のLIVE取引と既存データ｜特定商取引法に基づく表記",
+      "contexts": [
+        "historical-legal-summary"
+      ]
+    },
+    {
+      "id": "m319d5a14a69268",
+      "source": "過去のLIVE取引と既存データ｜返金・キャンセルポリシー",
+      "contexts": [
+        "historical-legal-summary"
+      ]
+    },
+    {
+      "id": "mffec5a4340ba02",
+      "source": "過去のLIVE取引と既存データ｜LIVE配信者向け収益分配規約",
+      "contexts": [
+        "historical-legal-summary"
+      ]
+    },
+    {
+      "id": "ma8612d8c790cec",
+      "source": "通常版のクイズ作成・回答は無料です。",
+      "contexts": [
+        "current-public-metadata"
+      ]
+    },
+    {
+      "id": "m6b661cce3a1caf",
+      "source": "10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？",
+      "contexts": [
+        "current-public-metadata"
+      ]
+    },
+    {
+      "id": "m38f7ec9cff7863",
+      "source": "利用規約：通常版のクイズ作成・回答は無料です。",
+      "contexts": [
+        "current-public-metadata"
+      ]
+    },
+    {
+      "id": "m866d468dbb8b14",
+      "source": "未成年者利用規定：通常版のクイズ作成・回答は無料です。",
+      "contexts": [
+        "current-public-metadata"
+      ]
+    },
+    {
+      "id": "m66e827fd9a3409",
+      "source": "コンテンツ・肖像権ガイドライン：通常版のクイズ作成・回答は無料です。",
+      "contexts": [
+        "current-public-metadata"
+      ]
     }
   ]
 }

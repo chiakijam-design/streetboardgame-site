@@ -5,7 +5,7 @@ import worker from '../../_worker.js';
 import { PUBLIC_LOCALE_PAGES } from '../../src/generated/public-locale-pages.js';
 
 test('localized requests serve bounded precompiled HTML without parsing catalogs and receive fresh CSP nonces', async () => {
-  assert.equal(Object.keys(PUBLIC_LOCALE_PAGES).length, 561);
+  assert.equal(Object.keys(PUBLIC_LOCALE_PAGES).length, 528);
   const requests = [];
   const env = { ASSETS: { async fetch(request) {
     const path = new URL(request.url).pathname;
@@ -13,7 +13,7 @@ test('localized requests serve bounded precompiled HTML without parsing catalogs
     assert.ok(path.startsWith('/locale-pages/'), 'no request-time dictionary or template reads');
     return new Response(await readFile(new URL('../..' + path, import.meta.url)), { headers: { 'content-type': 'text/html' } });
   } } };
-  for (const path of ['/en/challenge', '/fi/', '/he/terms', '/hi/refund-policy', '/bn/live-challenge', '/zh-Hans/challenge/manage']) {
+  for (const path of ['/en/challenge', '/fi/', '/he/terms', '/hi/refund-policy', '/bn/challenge/library', '/zh-Hans/challenge/manage']) {
     const response = await worker.fetch(new Request('https://www.streetboardgame.com' + path + '?room=TEST_COMPAT'), env);
     assert.equal(response.status, 200, path);
     assert.match(response.headers.get('x-robots-tag'), /noindex/);

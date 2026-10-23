@@ -26,9 +26,7 @@ if ((window.__INITIAL_SCREEN || 'top') === 'top') {
     event.preventDefault();
     showError(startCreatorGame('challenge', input.value));
   });
-  form.querySelector('[data-home-mode="live"]').addEventListener('click', () => {
-    showError(startCreatorGame('live', input.value));
-  });
+
 } else {
   // Only secondary information pages need the existing React application.
   for (const source of document.querySelectorAll('script[type="application/x-page-script"]')) {

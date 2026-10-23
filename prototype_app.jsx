@@ -1,4 +1,3 @@
-import { LIVE_AGE_NOTICE } from './src/live/age-notice.js';
 import { BOARD_GAME_PRODUCT } from './src/product/config.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 import { startCreatorGame } from './src/home/start.js';
@@ -151,29 +150,7 @@ export function TopPage() {
             }}>
               通常版｜URLを送って、好きな時間に回答
             </p>
-            <section data-testid="top-live-secondary" style={{
-              display: 'grid',
-              gap: 7,
-              marginTop: 4,
-              paddingTop: 12,
-              borderTop: `2px dashed ${theme.black}`,
-              textAlign: 'center',
-            }}>
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 900 }}>ライブ配信で使う方はこちら</p>
-              <button
-                type="button"
-                data-home-mode="live"
-                aria-label="LIVE版で作る"
-                onClick={() => start('live')}
-                style={secondaryButton()}
-              >
-                LIVE版で作る
-              </button>
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 800, lineHeight: 1.55 }}>
-                配信者と視聴者が同時回答し、1問ずつ答え合わせ
-              </p>
-              <p data-testid="live-age-notice" style={noticeStyle()}>⚠️ {LIVE_AGE_NOTICE}</p>
-            </section>
+
           </div>
         </form>
       </section>
@@ -182,12 +159,11 @@ export function TopPage() {
         <h2 style={{ margin: '0 0 10px', color: theme.white, fontSize: 14 }}>まずはどんなゲームか知りたい</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 10 }}>
           <ModeLink href="/challenge-guide" icon="📣" title="みんなに挑戦してもらう" note="10問・最大50人" />
-          <ModeLink href="/live-challenge" icon="🎙️" title="ライブ配信でみんなに挑戦してもらう" note="10問・最大1,000人" />
         </div>
       </nav>
       <p style={{ margin: '16px 24px 0', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <a data-testid="top-pricing-link" href="/pricing" style={{ color: theme.white, fontSize: 13, fontWeight: 800, lineHeight: 1.8 }}>
-          商品・料金を見る（通常版無料／LIVE版は任意購入）
+          通常版のクイズ作成・回答は無料です。
         </a>
       </p>
       <SiteFooter />
@@ -541,29 +517,6 @@ export function ChallengeGuide() {
           </div>
         </section>
 
-        <a href="/live-challenge" style={{
-          minHeight: 62,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '11px 14px',
-          border: `2.5px solid ${theme.black}`,
-          borderRadius: 13,
-          background: theme.white,
-          color: theme.black,
-          boxShadow: '3px 3px 0 #000',
-          textDecoration: 'none',
-        }}>
-          <span aria-hidden="true" style={{ fontSize: 27 }}>🎙️</span>
-          <span style={{ flex: 1 }}>
-            <strong style={{ display: 'block', fontSize: 14 }}>LIVE版もあります</strong>
-            <span style={{ display: 'block', marginTop: 3, fontSize: 12, lineHeight: 1.55, fontWeight: 700 }}>
-              配信者と視聴者が同時回答し、1問ずつ答え合わせ
-            </span>
-          </span>
-          <span aria-hidden="true">›</span>
-        </a>
-
         <HomeLink />
       </div>
       <SiteFooter />
@@ -705,8 +658,8 @@ export function AboutPage() {
         </section>
 
         <section aria-labelledby="about-modes-title">
-          <AboutSectionTitle id="about-modes-title">♡ 2つの遊び方</AboutSectionTitle>
-          <nav aria-label="現在遊べる2つのモード" style={{ display: 'grid', gap: 10 }}>
+          <AboutSectionTitle id="about-modes-title">♡ 遊び方</AboutSectionTitle>
+          <nav aria-label="遊び方" style={{ display: 'grid', gap: 10 }}>
             <AboutMode
               href="/challenge"
               icon="📣"
@@ -714,14 +667,6 @@ export function AboutPage() {
               title="みんなに挑戦してもらう"
               text="URLを送って、好きな時間に回答"
               color={theme.cyan}
-            />
-            <AboutMode
-              href="/live-challenge"
-              icon="🎙️"
-              label="LIVE版"
-              title="ライブ配信でみんなに挑戦してもらう"
-              text="配信者と視聴者が同時回答し、1問ずつ答え合わせ"
-              color={theme.yellow}
             />
           </nav>
         </section>
@@ -880,7 +825,7 @@ function ContactForm() {
   const sending = status === 'sending';
   const sent = status === 'sent';
   const contactTopic = new URLSearchParams(location.search).get('topic') || '';
-  const isCreatorRegistration = contactTopic === 'live-creator-registration';
+  const isCreatorRegistration = false;
   const isCommerceDisclosure = contactTopic === 'commerce-disclosure';
   const isRefundRequest = contactTopic === 'refund-request';
   const isSpecialRequest = isCreatorRegistration || isCommerceDisclosure || isRefundRequest;
@@ -1009,7 +954,6 @@ function ContactForm() {
               <option value="問題を作った">自分の問題を作った</option>
               <option value="問題に回答した">届いた問題に回答した</option>
               <option value="結果・共有">結果・答え合わせ・共有を見た</option>
-              <option value="LIVE版">LIVE版を使った</option>
               <option value="未利用">まだ使っていない</option>
               <option value="その他">その他</option>
             </select>
@@ -1147,7 +1091,7 @@ export function ProductPage() {
             </h2>
             <p style={paragraph()}>{BOARD_GAME_PRODUCT.description}</p>
             <p style={paragraph()}>
-              Web版の「通常版」「LIVE版」と同じく、正解数を競うより、答え合わせから会話が生まれることを大切にしたカードゲームです。
+              当てるより、話すための10問。
             </p>
             <p style={{
               margin: '9px 0 0',
@@ -1213,11 +1157,10 @@ export function ProductPage() {
           boxShadow: '4px 4px 0 #000',
         }}>
           <h2 id="product-ways-title" style={{ margin: 0, fontSize: 19, textAlign: 'center' }}>
-            遊ぶ場面に合わせて、3つの楽しみ方
+            遊び方
           </h2>
           <div style={{ display: 'grid', gap: 9, marginTop: 14 }}>
             <ProductWay label="通常版" title="URLを送って、好きな時間に回答" href="/challenge" />
-            <ProductWay label="LIVE版" title="配信者と視聴者が同時回答" href="/live-challenge" />
             <ProductWay label="製品版" title="スマホを置いて、その場でカードを囲む" />
           </div>
           <p style={{ ...paragraph(), marginBottom: 0, textAlign: 'center' }}>
@@ -1332,10 +1275,9 @@ function HomeLink() {
 function SiteFooter() {
   const links = [
     ['通常版', '/challenge'],
-    ['LIVE版', '/live-challenge'],
     ['遊び方', '/challenge-guide'],
     ['About', '/about'],
-    ['人気のお題', '/challenge/library'],
+    ['お題ライブラリ', '/challenge/library'],
     ['製品版', '/product'],
     ['商品・料金', '/pricing'],
     ['利用規約', '/terms'],

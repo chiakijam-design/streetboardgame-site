@@ -13,7 +13,6 @@ const DIST_ENTRIES = {
   prototype_common_data: 'prototype_common_data.js',
   prototype_english_common_data: 'prototype_english_common_data.js',
   challenge_game: 'challenge_game.js',
-  live_challenge: 'live_challenge.js',
   'qr-code': 'src/live/qr-code.js',
   live_ops: 'live_ops.js',
   question_ops: 'question_ops.js',
@@ -43,11 +42,6 @@ const HTML_ENTRY_MAP = {
     'prototype_english_common_data',
     'challenge_game',
   ],
-  'live_challenge.html': [
-    'prototype_common_data',
-    'prototype_english_common_data',
-    'live_challenge',
-  ],
   'live_ops.html': [
     'live_ops',
   ],
@@ -63,11 +57,6 @@ const HTML_STYLE_MAP = {
     'question_card',
   ],
   'challenge.html': [
-    'question_card',
-    'accessibility',
-    'result_share',
-  ],
-  'live_challenge.html': [
     'question_card',
     'accessibility',
     'result_share',
@@ -101,7 +90,7 @@ const HTML_STYLE_MAP = {
   ],
 };
 
-const HTML_LAZY_ENTRY_MAP = { 'live_challenge.html': ['qr-code'] };
+const HTML_LAZY_ENTRY_MAP = {};
 
 await mkdir('dist', { recursive: true });
 await mkdir('assets/vendor', { recursive: true });

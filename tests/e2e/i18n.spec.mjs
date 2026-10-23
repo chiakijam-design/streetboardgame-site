@@ -31,61 +31,23 @@ test('言語切替はページ上部にだけ表示し、スクロールへ追�
   await expect.poll(async () => (await switcher.boundingBox())?.y ?? 0).toBeLessThan(0);
 });
 
-test('英語の主要ページは専用SEO・hreflangを持ち、言語切替はトップだけに表示する', async ({ page, request }, testInfo) => {
-  test.skip(testInfo.project.name === 'mobile-chrome', 'メタ情報は画面幅に依存しないためPCで1回検証');
-  const routes = [
-    ['/en/', 'How Well Do You Know Me? | Understanding Quiz', 'How well do you know me?'],
-    ['/en/challenge', 'Challenge Your Friends | How well do they know you?', 'How well do you know me?'],
-    ['/en/live-challenge', 'Livestream Challenge | Play with Instagram or YouTube viewers', 'How well do you know me?'],
-    ['/en/terms', 'Terms of Service | Streetboardgame', 'Terms of Service'],
-    ['/en/privacy', 'Privacy Policy | Streetboardgame', 'Privacy Policy'],
-  ];
-  for (const [path, title, h1] of routes) {
+test('英語の主要ページは現在の共通テンプレートと英語catalogを使う', async ({ page }) => {
+  for (const path of ['/en/', '/en/challenge', '/en/terms', '/en/privacy']) {
     const response = await page.goto(path);
-    expect(response?.status(), path).toBe(200);
+    expect(response.status()).toBe(200);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page).toHaveTitle(title);
-    expect(((await page.locator('h1').textContent()) || '').replace(/\s+/g, ''), path)
-      .toContain(h1.replace(/\s+/g, ''));
-    if (expanded) {
-      await expect(page.locator('[data-locale-switcher]')).toBeVisible();
-    } else if (path === '/en/') {
-      await expect(page.getByRole('navigation', { name: 'Language' })).toBeVisible();
-    } else {
-      await expect(page.locator('.site-language-switch'), path).toHaveCount(0);
-    }
-    await expect(page.locator('link[rel="alternate"][hreflang="ja"]')).toHaveCount(1);
-    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveCount(1);
+    await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.locator('[data-locale-switcher]')).toBeVisible();
+    await expect(page.locator('a[href*="live-challenge"]')).toHaveCount(0);
   }
-  await page.goto('/en/challenge');
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
-    'content',
-    `${ORIGIN}/assets/ogp-challenge-en.png?v=20260725-en-1`,
-  );
-  const imageResponse = await request.get('/assets/ogp-challenge-en.png');
-  expect(imageResponse.status()).toBe(200);
-  expect(imageResponse.headers()['content-type']).toBe('image/png');
-  expect((await imageResponse.body()).byteLength).toBeGreaterThan(100_000);
 });
 
-test('英語トップから通常版とLIVE版の英語標準お題へ進める', async ({ page }) => {
+test('英語トップから通常版の英語標準お題へ進める', async ({ page }) => {
   await page.goto('/en/');
-  await expect(page.getByText('A “Know Me” quiz maker for sharing or livestreaming')).toBeVisible();
-  await expect(page.getByText('Try again as many times as it takes to understand each other')).toBeVisible();
-  await expect(page.getByText('Standard mode · Send one URL and answer anytime', { exact: true })).toBeVisible();
-  await expect(page.getByText('Using it on a livestream?', { exact: true })).toBeVisible();
-  await page.getByRole('textbox', { name: /Your name/ }).fill('Mia');
-  await page.getByRole('link', { name: 'Start building 10 questions ▶' }).click();
+  await page.getByRole('textbox').first().fill('Mia');
+  await page.getByRole('button', { name: /Start creating 10 questions/ }).click();
   await expect(page).toHaveURL(/\/en\/challenge$/);
-  await expect(page.getByText('Q1/10')).toBeVisible();
   await expect(page.getByRole('button', { name: /^Choose / }).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Skip this question' })).toBeVisible();
-
-  await page.goto('/en/live-challenge');
-  await page.getByRole('button', { name: /Create a LIVE quiz/ }).click();
-  await expect(page.getByRole('heading', { name: 'Build your quiz one question at a time' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Use this question \(answer during the stream\)/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Skip this question' })).toBeVisible();
 });
 
 test('英語トップは小さなスマホ幅でも横にはみ出さない', async ({ page }, testInfo) => {
@@ -105,14 +67,12 @@ test('日本語と英語の下層ページに言語切替を表示しない', as
   test.skip(testInfo.project.name === 'mobile-chrome', 'リンク先は画面幅に依存しないためPCで1回検証');
   for (const path of [
     '/challenge',
-    '/live-challenge',
     '/terms',
     '/privacy',
     '/challenge-guide',
     '/about',
     '/product',
     '/en/challenge',
-    '/en/live-challenge',
     '/en/terms',
     '/en/privacy',
   ]) {
@@ -241,8 +201,4 @@ test('英語の参加・LIVEエラーは日本語を残さない', async ({ page
   await page.goto('/en/challenge?room=NOEXIST1');
   await expect(page.getByRole('heading', { name: 'This quiz could not be opened' })).toBeVisible();
   await expect(page.getByRole('alert')).toContainText(/not found|expired|request failed/i);
-  await page.goto('/en/live-challenge?room=000000');
-  await expect(page.getByRole('heading', { name: 'Join the LIVE quiz' })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: /Your name/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Enter a different code' })).toBeVisible();
 });

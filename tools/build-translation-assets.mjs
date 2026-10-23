@@ -26,11 +26,12 @@ await writeFile(new URL('src/generated/public-locales.js', root), `// Generated 
 const sitemapPath = new URL('sitemap.xml', root);
 const sitemap = await readFile(sitemapPath, 'utf8');
 const existing = new Map([...sitemap.matchAll(/<url>\s*<loc>([^<]+)<\/loc>\s*<lastmod>([^<]+)<\/lastmod>\s*<\/url>/g)].map(([, location, date]) => [location, date]));
-const publicPages = ['/', '/challenge', '/challenge/library', '/live-challenge', '/challenge-guide', '/about', '/product', '/pricing', '/terms', '/privacy', '/legal', '/creator-terms', '/refund-policy', '/content-guidelines', '/minor-policy'];
+for (const location of existing.keys()) if (/\/(?:live-challenge|creator-terms)(?:\/|$)/.test(new URL(location).pathname)) existing.delete(location);
+const publicPages = ['/', '/challenge', '/challenge/library', '/challenge-guide', '/about', '/product', '/pricing', '/terms', '/privacy', '/legal', '/refund-policy', '/content-guidelines', '/minor-policy'];
 const date = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo' }).format(new Date());
 for (const locale of TARGET_LOCALES) for (const page of publicPages) {
   const location = 'https://www.streetboardgame.com' + switchLocalePath(page, locale);
-  if (!existing.has(location)) existing.set(location, date);
+  existing.set(location, date);
 }
 await writeFile(sitemapPath, '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + [...existing].map(([location, date]) => `  <url>\n    <loc>${location}</loc>\n    <lastmod>${date}</lastmod>\n  </url>`).join('\n') + '\n</urlset>\n');
 console.log(`Validated and packaged ${catalogs.length} catalogs. Runtime/SEO/visual checks still required before deployment.`);

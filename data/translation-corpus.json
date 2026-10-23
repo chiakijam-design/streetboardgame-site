@@ -430,7 +430,12 @@
     "案内文をコピーできませんでした。文章を選択してコピーしてください。": "The opening message could not be copied. Select the text and copy it manually.",
     "操作が集中しています。少し待ってから試してください。": "The service is busy. Wait a moment and try again.",
     "通信に失敗しました。接続を確認してください。": "The request failed. Check your connection.",
-    "通信に失敗しました。少し待ってから試してください。": "The request failed. Wait a moment and try again."
+    "通信に失敗しました。少し待ってから試してください。": "The request failed. Wait a moment and try again.",
+    "授業や放課後の過ごし方を予想して、学校の思い出を話せます。": "School life, after-school moments, and everyday student choices.",
+    "元気が出ることや助けてほしいときを予想して、自分との付き合い方を伝えられます。": "A personal guide to my energy, habits, support needs, and communication style.",
+    "よく開くアプリや推しの楽しみ方を予想して、普段は話さない好みを知れます。": "Everyday phone, social, video, and fandom choices that are easy to share.",
+    "いつもと違う選択や意外な好みを予想して、第一印象との違いを話せます。": "Reveal personality, quirks, and choices that may not match a first impression.",
+    "♡ 遊び方": "遊び方"
   },
   "instructions": "Translate every source. Preserve {N} placeholders, numbers, URLs, product names and identifiers. Do not edit policy meaning. Machine-generated; no native review claim.",
   "entries": [

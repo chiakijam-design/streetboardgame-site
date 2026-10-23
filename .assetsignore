@@ -52,3 +52,10 @@ prototype_common_data.js
 home_entry.js
 prototype_english_common_data.js
 viewport_recovery.js
+
+# Retired public LIVE entry; history is served by dedicated signed APIs.
+live_challenge.html
+
+en/index.html
+en/terms.html
+en/privacy.html

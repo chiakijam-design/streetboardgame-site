@@ -98,8 +98,8 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
 export function localizedAssetRoute(pathname) {
   const page = stripLocalePrefix(pathname).replace(/\/+$/, '') || '/';
   try { switchLocalePath(page, 'ja'); } catch { return null; }
+  if (page === '/live-challenge') return null;
   if (page === '/') return '/index.html';
   if (page === '/challenge' || page.startsWith('/challenge/')) return '/challenge.html';
-  if (page === '/live-challenge') return '/live_challenge.html';
   return page;
 }

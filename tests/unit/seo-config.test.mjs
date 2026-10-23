@@ -53,25 +53,13 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
     'https://www.streetboardgame.com/',
     'https://www.streetboardgame.com/challenge',
     'https://www.streetboardgame.com/challenge/library',
-    'https://www.streetboardgame.com/live-challenge',
     'https://www.streetboardgame.com/terms',
     'https://www.streetboardgame.com/privacy',
     'https://www.streetboardgame.com/en/challenge',
-    'https://www.streetboardgame.com/en/live-challenge',
     'https://www.streetboardgame.com/en/terms',
     'https://www.streetboardgame.com/en/privacy',
   ]) {
-    const expectedDate = ['https://www.streetboardgame.com/', 'https://www.streetboardgame.com/challenge', 'https://www.streetboardgame.com/en/challenge'].includes(updatedUrl) ? '2026-09-16' : [
-      'https://www.streetboardgame.com/privacy',
-      'https://www.streetboardgame.com/en/privacy',
-    ].includes(updatedUrl) ? '2026-08-18' : [
-      'https://www.streetboardgame.com/challenge',
-      'https://www.streetboardgame.com/live-challenge',
-      'https://www.streetboardgame.com/terms',
-      'https://www.streetboardgame.com/en/challenge',
-      'https://www.streetboardgame.com/en/live-challenge',
-      'https://www.streetboardgame.com/en/terms',
-    ].includes(updatedUrl) ? '2026-07-28' : '2026-07-27';
+    const expectedDate = '2026-10-23';
     assert.equal(lastModifiedByUrl.get(updatedUrl), expectedDate, updatedUrl);
   }
 });

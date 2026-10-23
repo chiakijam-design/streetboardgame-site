@@ -1,3 +1,4 @@
+import { publicQuestionExamples } from './src/challenge/examples.js';
 import { resultShareMarkup, bindResultShare } from './src/platform/resultShare.js';
 import { INVITE_SHARE_LABELS, challengeInvitePayload, createChallengeInviteCanvas } from './src/platform/inviteShare.js';
 import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
@@ -352,7 +353,7 @@ function createStartView() {
     '私のこと、ちゃんと分かってるよね？',
     '当てるより、話すための10問。先に自分が回答し、できたURLを送ると最大50人が挑戦できます。',
     `<nav class="challenge-feature-nav" aria-label="挑戦モードのメニュー">
-      <a href="/challenge/library">人気のお題ライブラリ</a>
+      <a href="/challenge/library">お題ライブラリ</a>
       ${historyItems[0] ? `<a href="${manageUrl(historyItems[0].code, historyItems[0].token)}">主催者用回答管理</a>` : ''}
     </nav>
     ${draft ? `<section class="challenge-panel challenge-resume" data-testid="creator-resume">
@@ -866,7 +867,7 @@ function libraryView() {
   const packs = questionPacks(isEnglish);
   return shell(
     '10 QUESTION PACKS',
-    '人気のお題ライブラリ',
+    'お題ライブラリ',
     'テーマを選ぶだけで、10問をまとめてクイズにできます。',
     `<section class="challenge-panel">
       <p class="challenge-library-status">気分や相手に合うパックを選んでください。選んだ10問ですぐにクイズを作れます。</p>
@@ -877,7 +878,7 @@ function libraryView() {
               <img src="${escapeHtml(pack.image)}" width="640" height="360" loading="${packIndex === 0 ? 'eager' : 'lazy'}" fetchpriority="${packIndex === 0 ? 'high' : 'auto'}" decoding="async"
                 alt="${escapeHtml(isEnglish ? currentLocale === 'en' ? pack.title + ' illustration' : translateText(pack.title) : pack.title + 'のイメージ画像')}">
             <div class="challenge-pack-copy">
-              <span class="challenge-pack-count">${pack.featured ? '主力・10問パック' : '10問パック'}</span>
+              <span class="challenge-pack-count">10問パック</span>
               <h2>${escapeHtml(pack.title)}</h2>
               <p>${escapeHtml(pack.description)}</p>
               <details${questionCatalogReady ? '' : ' inert'}>
@@ -891,10 +892,15 @@ function libraryView() {
           </article>`;
         }).join('')}
       </div>
+      ${publicQuestionExamplesView()}
       ${recentQuestionTrendsView()}
       <a class="challenge-primary" href="${languagePrefix}/challenge">パックを使わず1問ずつ選ぶ</a>
     </section>`,
   );
+}
+
+function publicQuestionExamplesView() {
+  return '<section class="challenge-library-examples" data-testid="public-question-examples"><h2>遊び方</h2><p>遊び方の見本です。実際の回答・利用実績ではありません。</p>' + publicQuestionExamples(allCards, isEnglish).map(card => '<article class="challenge-trend-group"><h3>' + escapeHtml(translateText(card.title)) + '</h3><ol>' + card.choices.map(choice => '<li>' + escapeHtml(translateText(choice)) + '</li>').join('') + '</ol><p><strong>' + escapeHtml(translateText(card.choices[0])) + '</strong> = <strong>' + escapeHtml(translateText(card.choices[0])) + '</strong> → ○</p><p>答え合わせの例：出題者と同じ選択肢を選ぶと1問正解です。</p></article>').join('') + '</section>';
 }
 
 function recentQuestionTrendsView() {
@@ -914,13 +920,8 @@ function recentQuestionTrendsView() {
     title: '最近追加されたお題',
     description: '管理画面で最近採用された新しいお題です。',
     items: groups.recent,
-  }, {
-    key: 'live-split',
-    title: 'LIVEで回答が割れたお題',
-    description: '直近のLIVEで、回答が複数の選択肢へ分かれたお題です。',
-    items: groups.liveSplit,
-  }];
-  return `<section class="challenge-recent-trends" data-testid="recent-question-trends" aria-labelledby="recent-question-trends-title" aria-busy="${!state.questionTrendsLoaded}">
+  }].filter(section => section.items.length > 0);
+  return `<section class="challenge-recent-trends" data-testid="recent-question-trends" ${sections.length ? '' : 'hidden'} aria-labelledby="recent-question-trends-title" aria-busy="${!state.questionTrendsLoaded}">
     <div class="challenge-recent-heading">
       <span class="challenge-pack-count">採用済みのお題だけ</span>
       <h2 id="recent-question-trends-title">最近人気</h2>
@@ -959,21 +960,18 @@ function scheduleLibraryTrends() {
     // visitor's expanded question list when the background response arrives.
     const template = document.createElement('template');
     template.innerHTML = recentQuestionTrendsView();
-    const groups = section.querySelector('.challenge-trend-groups');
-    groups.innerHTML = template.content.querySelector('.challenge-trend-groups').innerHTML;
-    section.setAttribute('aria-busy', 'false');
-    localizeDom(groups);
+    const updated = template.content.firstElementChild;
+    section.replaceWith(updated);
+    localizeDom(updated);
   };
-  if (!('IntersectionObserver' in window)) {
-    void load();
-    return;
-  }
-  const observer = new IntersectionObserver((entries) => {
-    if (!entries.some((entry) => entry.isIntersecting)) return;
+  const anchor = app.querySelector('[data-testid="public-question-examples"]');
+  if (typeof window.IntersectionObserver !== 'function' || !anchor) { void load(); return; }
+  const observer = new IntersectionObserver(entries => {
+    if (!entries.some(entry => entry.isIntersecting)) return;
     observer.disconnect();
     void load();
   }, { rootMargin: '300px' });
-  observer.observe(section);
+  observer.observe(anchor);
 }
 
 function errorView() {

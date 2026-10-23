@@ -10,7 +10,7 @@ import { CHECKOUT_TERMS } from '../../src/live/checkout-terms-config.js';
 
 test('視聴者決済の規約バージョンとSHA-256を実際の利用規約全文へ固定する', async () => {
   const document = normalizeVersionedLegalDocument(
-    await readFileAsync(new URL('../../terms.html', import.meta.url), 'utf8'),
+    await readFileAsync(new URL('../../legal-history/terms.html', import.meta.url), 'utf8'),
   );
   assert.equal(CHECKOUT_TERMS.version, '1.15');
   assert.equal(createHash('sha256').update(document).digest('hex'), CHECKOUT_TERMS.documentSha256);
@@ -66,7 +66,7 @@ test('特商法表記は個人の住所・電話番号を公開せず、請求�
 test('特商法表記は現行LIVE版の料金・提供・キャンセル条件を表示する', async () => {
   const document = await readFileAsync(new URL('../../legal.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    '2026年7月28日',
+    '2026-10-23',
     '480円、980円、2,980円',
     '180円、480円、980円、1,980円、2,980円',
     '有料応援メッセージ機能は寄付・贈与ではなく',
@@ -87,8 +87,8 @@ test('特商法表記は現行LIVE版の料金・提供・キャンセル条件�
 test('返金ポリシーは現行LIVE版の提供完了・代替提供・返金申請条件を表示する', async () => {
   const document = await readFileAsync(new URL('../../refund-policy.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    '2026年7月28日',
-    'バージョン：1.5',
+    '2026-10-23',
+    '過去のLIVE取引と既存データ',
     '通信販売にクーリング・オフ制度は適用されず',
     '決済完了時に応援受付が完了',
     '有料応援メッセージの不具合',
@@ -109,8 +109,8 @@ test('返金ポリシーは現行LIVE版の提供完了・代替提供・返金�
 test('コンテンツ・肖像権ガイドラインは現行2モード・投稿審査・画像利用条件を表示する', async () => {
   const document = await readFileAsync(new URL('../../content-guidelines.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    '最終改定日：2026年7月26日',
-    'バージョン：1.2',
+    '2026-10-23',
+    '過去のLIVE取引と既存データ',
     '「みんなに挑戦してもらう」通常版',
     '「ライブ配信でみんなに挑戦してもらう」LIVE版',
     '問題文、5個の選択肢',
@@ -131,8 +131,8 @@ test('コンテンツ・肖像権ガイドラインは現行2モード・投稿�
 test('未成年者利用規定は現行の年齢区分・通常版・LIVE版・購入・販売登録条件を表示する', async () => {
   const document = await readFileAsync(new URL('../../minor-policy.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    '最終改定日：2026年7月26日',
-    'バージョン：1.2',
+    '2026-10-23',
+    '過去のLIVE取引と既存データ',
     '13歳から18歳までの中高生を主な対象',
     '19歳から20歳までの大学生・専門学生を副次的な対象',
     '10歳から12歳までの小学生を制限付きの対象',

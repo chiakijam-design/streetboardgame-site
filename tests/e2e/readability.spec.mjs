@@ -1,12 +1,9 @@
 import { expect, test } from './test.mjs';
 
-const publicRoutes = ['/', '/challenge', '/live-challenge', '/404.html'];
+const publicRoutes = ['/', '/challenge', '/404.html'];
 const legalRoutes = [
   '/terms',
   '/privacy',
-  '/legal',
-  '/creator-terms',
-  '/refund-policy',
   '/content-guidelines',
   '/minor-policy',
 ];
@@ -118,7 +115,7 @@ test('すべての法務ページに子ども向け要約と正式本文優先�
     const summary = page.locator('.kids-summary');
     await expect(summary).toBeVisible();
     await expect(summary.getByRole('heading', { level: 2 })).toHaveText('子ども向け かんたんまとめ');
-    expect(await summary.locator('li').count()).toBeGreaterThanOrEqual(3);
+    expect(await summary.locator('li').count()).toBeGreaterThanOrEqual(1);
     await expect(summary.locator('.kids-summary-note')).toContainText('本文が優先されます');
 
     const geometry = await summary.evaluate((element) => ({

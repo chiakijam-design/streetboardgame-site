@@ -19,7 +19,7 @@ test('server copy is escaped, scripts preserved and room capabilities absent fro
 });
 test('route selection never localizes APIs, management tools or retired games', () => {
   assert.equal(localizedAssetRoute('/ar/challenge/manage'), '/challenge.html');
-  assert.equal(localizedAssetRoute('/zh-Hant/live-challenge'), '/live_challenge.html');
+  assert.equal(localizedAssetRoute('/zh-Hant/live-challenge'), null);
   assert.equal(localizedAssetRoute('/es/challenge-guide'), '/challenge-guide');
   for (const path of ['/ar/api/live', '/ar/live-ops', '/ar/remote', '/ar/love']) assert.equal(localizedAssetRoute(path), null);
 });

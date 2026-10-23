@@ -1,6 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /*?screen=
+# Crawlers must be able to observe the permanent retirement response.
+Allow: /*?screen=live
 Disallow: /api/
 Disallow: /live-ops
 Disallow: /question-ops

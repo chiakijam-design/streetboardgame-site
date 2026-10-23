@@ -10,7 +10,6 @@ test('Aboutは旧来の立体カードデザインで現在の2モードと方�
   await expect(page.getByText('結果公開は自分で選べる', { exact: true })).toBeVisible();
   await expect(page.getByText('点数による順位づけもしません。')).toBeVisible();
   await expect(page.getByRole('link', { name: /通常版.*みんなに挑戦してもらう/ })).toHaveAttribute('href', '/challenge');
-  await expect(page.getByRole('link', { name: /LIVE版.*ライブ配信でみんなに挑戦してもらう/ })).toHaveAttribute('href', '/live-challenge');
   await expect(page.getByRole('link', { name: /カードで遊べる製品版/ })).toHaveAttribute('href', '/product');
   await expect(page.getByTestId('about-page')).toHaveCSS('max-width', '600px');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);

@@ -17,7 +17,7 @@ test('ライブラリは最近人気の取得を初期表示から外し、開�
     await details.locator('summary').click();
     await expect(details).toHaveAttribute('open', '');
     const trends = page.getByTestId('recent-question-trends');
-    await trends.scrollIntoViewIfNeeded();
+    await page.getByTestId('public-question-examples').scrollIntoViewIfNeeded();
     await expect.poll(() => trendsRequests).toBe(1);
     await expect(trends).toHaveAttribute('aria-busy', 'true');
     release();
@@ -34,37 +34,5 @@ test('IntersectionObserverなしでもライブラリの最近人気を取得で
   await page.goto('/en/challenge/library');
   const trends = page.getByTestId('recent-question-trends');
   await expect(trends).toHaveAttribute('aria-busy', 'false');
-  await expect(trends.getByRole('heading', { name: 'Popular now' })).toBeVisible();
-});
-
-test('LIVEは招待画面が必要になるまでQR生成コードを取得しない', async ({ page }) => {
-  const qrRequests = [];
-  page.on('request', (request) => {
-    if (/\/dist\/qr-code-[A-Z0-9]+\.js/.test(request.url())) qrRequests.push(request.url());
-  });
-  await page.goto('/live-challenge');
-  await expect(page.locator('h1')).toBeVisible();
-  expect(qrRequests).toEqual([]);
-  const lazyScript = page.locator('script[data-build-lazy="qr-code"]');
-  await expect(lazyScript).toHaveAttribute('type', 'application/x-page-script');
-  // A local host-room fixture exercises the actual render/loader path.
-  await page.route('**/api/live/games/123456', (route) => route.fulfill({ json: {
-    code: '123456',
-    game: {
-      mode: 'stream-challenge', phase: 'lobby', subjectName: 'QRテスト',
-      currentQuestionIndex: 0, questionCount: 10, participantCount: 0,
-      participantLimit: 1000, realtime: false, results: [], host: true,
-    },
-  } }));
-  await page.goto('/live-challenge?room=123456#host=' + 'b'.repeat(48));
-  await expect(page.locator('#live-challenge-qr')).toBeVisible();
-  await expect.poll(() => page.evaluate(() => Boolean(window.WatachanLiveQrCode))).toBe(true);
-  expect(qrRequests).toHaveLength(1);
-  const colors = () => page.evaluate(() => {
-    const canvas = document.getElementById('live-challenge-qr');
-    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-    return [...new Set(Array.from(pixels))];
-  });
-  await expect.poll(colors).toContain(0);
-  await expect.poll(colors).toContain(255);
+  await expect(trends).toBeHidden();
 });
