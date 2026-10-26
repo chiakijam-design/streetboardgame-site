@@ -2,6 +2,7 @@ import { recordQuestionSelections } from '../questions/trends.js';
 import { recordLiveOpsEvent } from '../live/ops.js';
 import { enforceChallengeRateLimit } from './rate-limit.js';
 import { CHALLENGE_DAILY_ACTIONS, recordDailyAction } from '../analytics/daily-actions.js';
+import { validQuizLength } from './length.js';
 
 export const CHALLENGE_MAX_PARTICIPANTS = 50;
 export const CHALLENGE_ROOM_TTL_DAYS = 30;
@@ -99,7 +100,7 @@ async function createRoom(request, env) {
   const creatorName = sanitizeName(body.creatorName, '出題者');
   const cards = sanitizeCards(body.cards);
   const answerKey = sanitizeAnswers(body.answers);
-  if (cards.length !== CHALLENGE_QUESTION_COUNT || answerKey.length !== CHALLENGE_QUESTION_COUNT) {
+  if (!validQuizLength(cards.length) || answerKey.length !== cards.length) {
     throw apiError('ten-questions-required', 400);
   }
 
@@ -158,6 +159,7 @@ async function getRanking(env, code) {
     room: {
       code,
       creatorName: record.creatorName,
+      questionCount: record.cards.length,
       completedParticipants: counts.completed,
       maxParticipants: CHALLENGE_MAX_PARTICIPANTS,
       expiresAt: record.expiresAt,
@@ -283,7 +285,7 @@ async function submitAnswer(request, env, code) {
   const body = await readJson(request);
   const questionIndex = Number(body.questionIndex);
   const choice = Number(body.choice);
-  if (!Number.isInteger(questionIndex) || questionIndex < 0 || questionIndex >= CHALLENGE_QUESTION_COUNT) {
+  if (!Number.isInteger(questionIndex) || questionIndex < 0 || questionIndex >= room.cards.length) {
     return jsonResponse({ error: 'invalid-question-index' }, 400);
   }
   if (!Number.isInteger(choice) || choice < 0 || choice >= 5) {
@@ -308,7 +310,7 @@ async function submitAnswer(request, env, code) {
   const score = answers.reduce((total, answer, index) => (
     total + (answer === room.answerKey[index] ? 1 : 0)
   ), 0);
-  const completedAt = answers.length === CHALLENGE_QUESTION_COUNT ? Date.now() : null;
+  const completedAt = answers.length === room.cards.length ? Date.now() : null;
   const saved = await saveParticipantProgress(
     env,
     code,
@@ -339,7 +341,7 @@ async function submitAnswer(request, env, code) {
 
 function answerProgress(room, participant, questionIndex) {
   const answers = Array.isArray(participant.answers) ? participant.answers : [];
-  const completed = participant.completedAt != null && answers.length === CHALLENGE_QUESTION_COUNT;
+  const completed = participant.completedAt != null && answers.length === room.cards.length;
   return {
     questionIndex,
     match: answers[questionIndex] === room.answerKey[questionIndex],
@@ -365,7 +367,7 @@ async function submitAnswers(request, env, code) {
 
   const body = await readJson(request);
   const answers = sanitizeAnswers(body.answers);
-  if (answers.length !== CHALLENGE_QUESTION_COUNT) {
+  if (answers.length !== room.cards.length) {
     return jsonResponse({ error: 'ten-answers-required' }, 400);
   }
   const score = answers.reduce((total, answer, index) => (
@@ -420,7 +422,7 @@ async function getResult(request, env, code) {
   if (!participant) return jsonResponse({ error: 'participant-forbidden' }, 403);
   if (participant.completedAt == null
     || !Array.isArray(participant.answers)
-    || participant.answers.length !== CHALLENGE_QUESTION_COUNT
+    || participant.answers.length !== room.cards.length
     || !Number.isInteger(participant.score)) {
     return jsonResponse({ error: 'answers-not-submitted' }, 409);
   }
@@ -443,8 +445,8 @@ async function getResult(request, env, code) {
 }
 
 function sanitizeCards(value) {
-  if (!Array.isArray(value)) return [];
-  return value.slice(0, CHALLENGE_QUESTION_COUNT).map((card) => {
+  if (!Array.isArray(value) || !validQuizLength(value.length)) return [];
+  return Array.from(value).map((card) => {
     const choices = Array.isArray(card && card.choices)
       ? card.choices.slice(0, 5).map((choice) => String(choice || '').trim().slice(0, 40))
       : [];
@@ -465,10 +467,10 @@ function sanitizeCards(value) {
 }
 
 function sanitizeAnswers(value) {
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value) || !validQuizLength(value.length)) return [];
   const answers = value.slice(0, CHALLENGE_QUESTION_COUNT).map(Number);
-  return answers.length === CHALLENGE_QUESTION_COUNT
-    && answers.every((answer) => Number.isInteger(answer) && answer >= 0 && answer <= 4)
+  return Array.from({ length: answers.length }, (_, index) => answers[index])
+    .every((answer) => Number.isInteger(answer) && answer >= 0 && answer <= 4)
     ? answers
     : [];
 }

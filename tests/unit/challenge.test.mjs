@@ -65,6 +65,34 @@ function d1Adapter(sqlite) {
   };
 }
 
+for (const count of [1, 2, 9, 10]) test(`D1: ${count} questions preserve completion, privacy and retry`, async () => {
+  const sqlite = new DatabaseSync(':memory:');
+  for (const migration of ['0010_challenge_rooms.sql','0011_challenge_ranking_library.sql','0018_challenge_board_comments.sql']) {
+    sqlite.exec(readFileSync(new URL('../../migrations/' + migration, import.meta.url), 'utf8'));
+  }
+  try {
+    const env = { REMOTE_DB: d1Adapter(sqlite) };
+    const post = (path, body, token) => api(env,path,{method:'POST',headers:{'content-type':'application/json',...(token?{'x-challenge-participant-token':token}:{})},body:JSON.stringify(body)});
+    const created = await post('/api/challenge/rooms',{creatorName:'Local creator',cards:cards.slice(0,count),answers:Array(count).fill(0)});
+    assert.equal(created.status,201); const room = await created.json(); const path = `/api/challenge/rooms/${room.code}`;
+    assert.equal(room.room.answerKey,undefined); assert.equal(room.room.cards.length,count);
+    const joined = await (await post(path+'/join',{name:'Local player'})).json(); const token=joined.participantToken;
+    for(let i=0;i<count;i++) {
+      const progress = await (await post(path+'/answer',{questionIndex:i,choice:0},token)).json();
+      assert.equal(progress.completed,i===count-1);
+    }
+    assert.equal((await post(path+'/answer',{questionIndex:count-1,choice:0},token)).status,200);
+    const result = await (await api(env,path+'/result',{headers:{'x-challenge-participant-token':token}})).json();
+    assert.equal(result.score,count); assert.equal(result.answers.length,count);
+    const board = await (await api(env,path+'/ranking')).json(); assert.equal(board.participants.length,0);
+    assert.equal(board.room.questionCount,count);
+    assert.equal((await post(path+'/retry',{},token)).status,200);
+    assert.equal((await post(path+'/submit',{answers:Array(count).fill(1)},token)).status,200);
+    const retried = await (await api(env,path+'/result',{headers:{'x-challenge-participant-token':token}})).json();
+    assert.equal(retried.score,0);
+  } finally { sqlite.close(); }
+});
+
 test('共通お題データは題名を正規化して重複を除ける', () => {
   const merged = mergeChallengeCards(
     [{ title: '同じ 問題', choices: ['1', '2', '3', '4', '5'] }, { title: '問題A', choices: ['1', '2', '3', '4', '5'] }],

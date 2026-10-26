@@ -219,6 +219,21 @@ export function questionPacks(isEnglish = false) {
   return localizePacks(PACKS, isEnglish);
 }
 
+// A deterministic Monday-to-Sunday rotation in JST, using only approved packs.
+// This is editorial selection, not a popularity or usage claim.
+export function weeklyQuestionPacks(isEnglish = false, now = Date.now()) {
+  const dayMs = 86400000;
+  const shifted = new Date(Number(now) + 9 * 3600000);
+  if (!Number.isFinite(shifted.getTime())) throw new RangeError('Invalid weekly date');
+  const day = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate());
+  const monday = day - ((shifted.getUTCDay() + 6) % 7) * dayMs;
+  const week = Math.floor((monday - Date.UTC(2026, 0, 5)) / (7 * dayMs));
+  const packs = questionPacks(isEnglish);
+  const start = ((week * 3) % packs.length + packs.length) % packs.length;
+  return { weekStart: new Date(monday).toISOString().slice(0, 10),
+    packs: Array.from({ length: Math.min(3, packs.length) }, (_, index) => packs[(start + index) % packs.length]) };
+}
+
 export function liveExclusiveQuestionPacks(isEnglish = false) {
   return localizePacks(LIVE_PACKS, isEnglish);
 }

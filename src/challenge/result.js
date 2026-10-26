@@ -137,18 +137,21 @@ const REVIEW_VARIANTS = Object.freeze({
   },
 });
 
-export function getChallengeResultTier(score) {
+export function getChallengeResultTier(score, total = 10) {
+  if (Number.isInteger(total) && total > 0 && total < 10) return shortQuizTier(score, total, CHALLENGE_RESULT_TIERS);
   const safeScore = Math.max(0, Math.min(10, Math.trunc(Number(score) || 0)));
   return CHALLENGE_RESULT_TIERS[safeScore];
 }
 
-export function getChallengeResultTierEnglish(score) {
+export function getChallengeResultTierEnglish(score, total = 10) {
+  if (Number.isInteger(total) && total > 0 && total < 10) return shortQuizTier(score, total, CHALLENGE_RESULT_TIERS_EN);
   const safeScore = Math.max(0, Math.min(10, Math.trunc(Number(score) || 0)));
   return CHALLENGE_RESULT_TIERS_EN[safeScore];
 }
 
 export function getChallengeReviewLinesEnglish(result = {}) {
   const answers = Array.isArray(result.answers) ? result.answers : [];
+  if (answers.length > 0 && answers.length < 10) return shortQuizReview(result, answers);
   const score = Math.max(0, Math.min(10, Math.trunc(Number(result.score) || 0)));
   const participant = String(result.participant?.name || 'This player').trim() || 'This player';
   const creator = String(result.creatorName || 'the creator').trim() || 'the creator';
@@ -173,6 +176,7 @@ export function getChallengeReviewLinesEnglish(result = {}) {
 
 export function getChallengeReviewLines(result = {}) {
   const answers = Array.isArray(result.answers) ? result.answers : [];
+  if (answers.length > 0 && answers.length < 10) return shortQuizReview(result, answers);
   const cards = answers.map((answer) => answer?.card || {});
   const context = createReviewContext(answers, cards);
   const tier = getChallengeResultTier(result.score);
@@ -205,4 +209,19 @@ export function getChallengeReviewLines(result = {}) {
     `意外にズレた分野：${missLine}`,
     `次に話すと楽しそうな話題：「${nextTopic}」。選んだ理由を聞いてみよう。`,
   ];
+}
+
+function shortQuizTier(score, total, tiers) {
+  const safeScore = Math.max(0, Math.min(total, Math.trunc(Number(score) || 0)));
+  return { ...tiers[safeScore === total ? 10 : 4], score: safeScore,
+    tag: `${safeScore}/${total}`, message: tiers[10].message.split('\n')[1] };
+}
+
+function shortQuizReview(result, answers) {
+  const score = Math.max(0, Math.min(answers.length, Math.trunc(Number(result.score) || 0)));
+  const correct = answers.filter(answer => answer.match === true || answer.isCorrect === true);
+  const missed = answers.filter(answer => answer.match !== true && answer.isCorrect !== true);
+  const titles = items => items.map(answer => String(answer.card?.title || '')).filter(Boolean).join(' · ') || '—';
+  return [`${score}/${answers.length}`, `✓ ${titles(correct)}`, `× ${titles(missed)}`,
+    String((missed[0] || correct[0])?.card?.title || '—')];
 }

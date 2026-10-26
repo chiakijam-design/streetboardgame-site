@@ -1,3 +1,6 @@
+import { validQuizLength, answeredQuestionCount, completedCreatorQuiz } from './src/challenge/length.js';
+import { challengeCopy } from './src/i18n/challenge-copy.js';
+import { weeklyQuestionPacks } from './src/challenge/packs.js';
 import { publicQuestionExamples } from './src/challenge/examples.js';
 import { resultShareMarkup, bindResultShare } from './src/platform/resultShare.js';
 import { INVITE_SHARE_LABELS, challengeInvitePayload, createChallengeInviteCanvas } from './src/platform/inviteShare.js';
@@ -64,6 +67,7 @@ if (pagePath === '/challenge' && roomCode && hashManageToken) {
 
 let state = {
   mode: initialMode(),
+  finishCount: 0,
   roomCode,
   room: null,
   cards: quickStart ? pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard) : [],
@@ -222,7 +226,28 @@ function trackCurrentCreatorQuestionShown() {
   recordQuestionSelectionEvent(questionId, 'challenge', 'shown');
 }
 
+function finishEarlyControls() {
+  const count = answeredQuestionCount(state.cards, state.answers);
+  return `<button class="challenge-secondary" data-action="finish-early" ${!count || state.loading ? 'disabled' : ''}>${escapeHtml(challengeCopy(currentLocale, 'finish'))} (${count}/${state.cards.length})</button>`;
+}
+
+function finishConfirmationView() {
+  const count = answeredQuestionCount(state.cards, state.answers);
+  return shell('QUIZ MAKER', challengeCopy(currentLocale, 'confirm'), '',
+    `<section class="challenge-panel" data-testid="finish-quiz-confirmation">
+      <p>${escapeHtml(challengeCopy(currentLocale, 'confirm'))}</p>
+      <h2>${count}/${state.cards.length}</h2>
+      <button class="challenge-primary" data-action="confirm-finish" ${!count || state.loading ? 'disabled' : ''}>${escapeHtml(challengeCopy(currentLocale, 'create'))} (${count})</button>
+      <button class="challenge-secondary" data-action="cancel-finish">${escapeHtml(translateText('キャンセル'))}</button>
+    </section>`);
+}
+
+function numberedCopy(source, count) {
+  return translateText(source).replaceAll('10', String(count));
+}
+
 function creatorEditView() {
+  if (state.finishCount) return finishConfirmationView();
   const card = state.cards[state.questionIndex];
   if (!card) return errorView();
   if (state.editingQuestion) return creatorQuestionEditView(card);
@@ -232,11 +257,11 @@ function creatorEditView() {
     `${state.creatorName}さんのクイズを作成`,
     '自分の答えを1つ選ぶと、その問題がクイズに追加されて次へ進みます。',
     `<section class="challenge-question-wrap challenge-builder" data-testid="challenge-question-editor">
-      <div class="challenge-progress" aria-label="${state.questionIndex + 1}問目、全10問">
-        ${Array.from({ length: QUESTION_COUNT }, (_, index) => `<span class="${index <= state.questionIndex ? 'is-active' : ''}"></span>`).join('')}
+      <div class="challenge-progress" aria-label="${state.questionIndex + 1}問目、全${state.cards.length}問">
+        ${Array.from({ length: state.cards.length }, (_, index) => `<span class="${index <= state.questionIndex ? 'is-active' : ''}"></span>`).join('')}
       </div>
       <article class="challenge-card challenge-builder-card notebook-question-card" data-testid="challenge-builder-paper-card">
-        <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/10</div>
+        <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/${state.cards.length}</div>
         <h2 class="notebook-card-accessible-title">${escapeHtml(translateText(card.title))}</h2>
         ${renderNotebookQuestionCard(localizedQuestionCard(card, translateText), { answerAction: 'builder-answer', locale: currentLocale })}
       </article>
@@ -267,6 +292,7 @@ function creatorEditView() {
         <button class="challenge-secondary" data-action="edit-question">✎ 問題・選択肢を編集する</button>
         <button class="challenge-secondary" data-action="custom-question">＋ 自分で問題を作る</button>
       </div>
+      ${finishEarlyControls()}
       ${questionReportControls(card)}
       <label class="challenge-consent">
         <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
@@ -359,7 +385,7 @@ function createStartView() {
     ${draft ? `<section class="challenge-panel challenge-resume" data-testid="creator-resume">
       <span class="challenge-section-label">途中保存あり</span>
       <h2>${escapeHtml(draft.creatorName)}さんのクイズ</h2>
-      <p>Q${Math.min(Number(draft.questionIndex) + 1, QUESTION_COUNT)}/10から再開できます。この端末だけに保存されています。</p>
+      <p>Q${Math.min(Number(draft.questionIndex) + 1, draft.cards.length)}/${draft.cards.length}から再開できます。この端末だけに保存されています。</p>
       <div class="challenge-button-row">
         <button class="challenge-primary" data-action="resume-create">途中から再開</button>
         <button class="challenge-secondary" data-action="delete-draft">削除</button>
@@ -386,8 +412,8 @@ function createStartView() {
       <label class="challenge-label" for="creator-name">出題者の名前（12文字まで）</label>
       <input id="creator-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ちあき" value="${escapeHtml(state.creatorName)}">
-      <button class="challenge-primary" data-action="start-create">10問に答えてクイズを作る <span>▶</span></button>
-      <p class="challenge-note">共通のお題ライブラリから出題します。回答途中はこの端末へ自動保存されます。</p>
+      <button class="challenge-primary" data-action="start-create">${escapeHtml(translateText('クイズを作る'))} <span>▶</span></button>
+      <p class="challenge-note">共通のお題ライブラリから出題します。回答途中はこの端末へ自動保存されます。</p><p>${escapeHtml(challengeCopy(currentLocale, 'finish'))} (1–10)</p>
     </section>`,
   );
 }
@@ -400,14 +426,14 @@ function questionView(isCreator) {
     isCreator ? 'QUIZ MAKER' : 'CHALLENGE',
     isCreator ? `${actor}さんの答えを登録` : `${state.room.creatorName}さんの答えを予想`,
     isCreator
-      ? '選んだ答えは、挑戦者が10問すべて回答するまで公開されません。'
+      ? numberedCopy('選んだ答えは、挑戦者が10問すべて回答するまで公開されません。', state.cards.length)
       : '出題者が選んだ答えを予想してください。',
     `<section class="challenge-question-wrap challenge-answer-screen ${isCreator ? 'is-creator' : 'is-participant'}" data-testid="${isCreator ? 'creator-question' : 'participant-question'}">
-      <div class="challenge-progress" aria-label="${state.questionIndex + 1}問目、全10問">
-        ${Array.from({ length: QUESTION_COUNT }, (_, index) => `<span class="${index <= state.questionIndex ? 'is-active' : ''}"></span>`).join('')}
+      <div class="challenge-progress" aria-label="${state.questionIndex + 1}問目、全${state.cards.length}問">
+        ${Array.from({ length: state.cards.length }, (_, index) => `<span class="${index <= state.questionIndex ? 'is-active' : ''}"></span>`).join('')}
       </div>
       <article class="challenge-card notebook-question-card" data-testid="challenge-paper-card">
-        <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/10</div>
+        <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/${state.cards.length}</div>
         <h2 class="notebook-card-accessible-title">${escapeHtml(translateText(card.title))}</h2>
         ${renderNotebookQuestionCard(localizedQuestionCard(card, translateText), { answerAction: 'answer', disabled: !isCreator && state.answerPending, locale: currentLocale })}
       </article>
@@ -448,15 +474,16 @@ function manageView() {
     ? `Send ${room.creatorName}'s quiz to friends.`
     : `${room.creatorName}さんの診断を友達へ送りましょう。`;
   return shell(
-    'HOST DASHBOARD',
-    '主催者用回答管理',
-    `${room.creatorName}さんのクイズを共有し、参加状況と一人ずつの回答を確認できます。`,
-    `${hasCompletedResponses ? conversationInsights : ''}
-    <section class="challenge-panel challenge-share-screen" data-testid="challenge-share-screen">
+    'SHARE YOUR QUIZ',
+    challengeCopy(currentLocale, 'send'),
+    shareLead,
+    `<section class="challenge-panel challenge-share-screen" data-testid="challenge-share-screen">
       <div class="challenge-created-heading">
         <h2>理解度診断ができました</h2>
       </div>
       <p class="challenge-share-lead">${escapeHtml(shareLead)}</p>
+      ${!room.participantCount ? `<p data-testid="first-friend-prompt">${escapeHtml(challengeCopy(currentLocale, 'first'))}</p>` : ''}
+      <button class="challenge-primary" data-action="copy-url" data-copy-value="${escapeHtml(challengeUrl(room.code))}">${escapeHtml(translateText('共有用URLをコピー'))}</button>
       ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml,
         ready: invitationImage.key === invitationKey() && Boolean(invitationImage.src),
         nativeLabel: INVITE_SHARE_LABELS[currentLocale][0], saveLabel: INVITE_SHARE_LABELS[currentLocale][1], saveAction: 'save-invitation-image' })}
@@ -480,6 +507,7 @@ function manageView() {
         <p class="challenge-recent-save-message" data-testid="recent-challenge-save-message"
           role="status" aria-live="polite"></p>
       </div>
+      ${hasCompletedResponses ? conversationInsights : ''}
       <div class="challenge-manage-divider"><span>回答管理</span></div>
       <div class="challenge-count" data-testid="participant-count">
         <b>${room.completedParticipants}</b>人回答済み ／ <b>${room.participantCount}</b>人参加 ／ 上限${room.maxParticipants}人
@@ -508,8 +536,8 @@ function hostConversationInsightsView(participants, cards) {
       title: 'Conversation starters from the answer review',
       lead: 'No rankings. Use the answer patterns to start the next conversation.',
       count: `${insights.completedCount} completed responses`,
-      waiting: 'Highlights appear after at least two people finish all 10 questions.',
-      all: 'View counts and percentages for all 10 questions',
+      waiting: numberedCopy('Highlights appear after at least two people finish all 10 questions.', cards.length),
+      all: numberedCopy('View counts and percentages for all 10 questions', cards.length),
       talk: 'Talk about this answer',
       correct: 'Creator’s answer',
       choiceStat: (count, total) => `${count} (${choicePercentage(count, total)})`,
@@ -528,8 +556,8 @@ function hostConversationInsightsView(participants, cards) {
       title: '答え合わせから、会話のきっかけ',
       lead: '順位ではなく、みんなの答え合わせを次の会話のきっかけに。',
       count: `${insights.completedCount}人の回答を集計`,
-      waiting: '2人以上が10問を答え終えると、会話のきっかけになる問題を表示します。',
-      all: '10問すべての人数・割合を見る',
+      waiting: numberedCopy('2人以上が10問を答え終えると、会話のきっかけになる問題を表示します。', cards.length),
+      all: numberedCopy('10問すべての人数・割合を見る', cards.length),
       talk: 'この答えについて話してみよう',
       correct: '出題者の答え',
       choiceStat: (count, total) => `${count}人（${choicePercentage(count, total)}）`,
@@ -640,7 +668,7 @@ function participantDetail(participant, cards) {
   return `<details class="challenge-participant">
     <summary>
       <span>${escapeHtml(participant.name)}<small>${participant.rankingParticipating ? '理解度ボード掲載' : '理解度ボード非掲載'}</small></span>
-      <b>${participant.submitted ? `${participant.score}/10問` : '回答中'}</b>
+      <b>${participant.submitted ? `${participant.score}/${cards.length}問` : '回答中'}</b>
     </summary>
     ${participant.submitted ? `<ol>
       ${participant.answers.map((answer, index) => `
@@ -650,7 +678,7 @@ function participantDetail(participant, cards) {
           <small>${answer.match ? '正解' : `正解：${escapeHtml(cards[index].choices[answer.correct])}`}</small>
         </li>
       `).join('')}
-    </ol>` : '<p>まだ10問の回答を終えていません。</p>'}
+    </ol>` : `<p>${escapeHtml(numberedCopy('まだ10問の回答を終えていません。', cards.length))}</p>`}
   </details>`;
 }
 
@@ -668,34 +696,41 @@ function joinView() {
   return shell(
     'CHALLENGE',
     `${room.creatorName}さんからの挑戦`,
-    '10問に答えて、出題者のことをどれだけ分かっているか確かめよう。',
+    numberedCopy('10問に答えて、出題者のことをどれだけ分かっているか確かめよう。', room.cards.length),
     `<section class="challenge-panel">
       <p class="challenge-brand-promise">相手を理解できるまで、何度でも挑戦できる</p>
       <div class="challenge-count"><b>${room.completedParticipants}</b>人が回答済み ／ 上限${room.maxParticipants}人</div>
       <label class="challenge-label" for="participant-name">表示名（12文字まで）</label>
       <input id="participant-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ゆう（本名は避けてください）" value="${escapeHtml(state.participantName)}">
-      <button class="challenge-primary" data-action="join">10問の答え当てに挑戦する <span>▶</span></button>
+      <button class="challenge-primary" data-action="join">${escapeHtml(numberedCopy('10問の答え当てに挑戦する', room.cards.length))} <span>▶</span></button>
       <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a>
-      <p class="challenge-note">回答後に、理解度ボードへ載せるかを結果画面で選べます。同じ10問へもう一度挑戦することもできます。</p>
+      <p class="challenge-note">${escapeHtml(numberedCopy('回答後に、理解度ボードへ載せるかを結果画面で選べます。同じ10問へもう一度挑戦することもできます。', room.cards.length))}</p>
       <p class="challenge-note">回答内容は答え合わせと主催者の回答確認に使用されます。本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。</p>
     </section>`,
   );
 }
 
+function localizedResultTier(result) {
+  const total = result.answers.length;
+  const tier = isEnglish ? getChallengeResultTierEnglish(result.score, total) : getChallengeResultTier(result.score, total);
+  return total < QUESTION_COUNT ? { ...tier, message: challengeCopy(currentLocale, 'talk') } : tier;
+}
+
 function resultView() {
   const result = state.result;
   if (!result) return errorView();
-  const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
+  const tier = localizedResultTier(result);
   const displayResult = isEnglish ? { ...result, answers: result.answers.map((answer) => ({ ...answer, card: localizedQuestionCard(answer.card, translateText) })) } : result;
   const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(displayResult).map((line, index) => index === 0 ? line.replace(`“${tier.title}”`, `“${translateText(tier.title)}”`) : line) : getChallengeReviewLines(result);
+  if (result.answers.length < QUESTION_COUNT) reviewLines[3] = `${reviewLines[3]} — ${challengeCopy(currentLocale, 'talk')}`;
   return `
     <section class="challenge-result-image-section" aria-labelledby="challenge-result-score-title">
-      <h1 id="challenge-result-score-title" class="challenge-result-visually-hidden">${result.score}/10問 正解</h1>
+      <h1 id="challenge-result-score-title" class="challenge-result-visually-hidden">${result.score}/${result.answers.length}問 正解</h1>
       ${state.resultImageUrl
         ? `<img class="challenge-result-image" data-testid="challenge-result-image"
             src="${state.resultImageUrl}" width="1080" height="1350"
-            alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${result.score}/10問正解、称号は${escapeHtml(tier.title)}">`
+            alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${result.score}/${result.answers.length}問正解、称号は${escapeHtml(tier.title)}">`
         : `<div class="challenge-result-image-loading" role="status">
             ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
           </div>`}
@@ -718,7 +753,7 @@ function resultView() {
       <section class="challenge-ai-review" data-testid="challenge-ai-review" aria-labelledby="challenge-ai-review-title">
         <span class="challenge-section-label">REVIEW</span>
         <h2 id="challenge-ai-review-title">答え合わせレポート</h2>
-        <p class="challenge-ai-review-lead">10問の一致・すれ違いから作成</p>
+        <p class="challenge-ai-review-lead">${escapeHtml(numberedCopy('10問の一致・すれ違いから作成', result.answers.length))}</p>
         <div>
           ${reviewLines.map((line) => `<p>${escapeHtml(line)}</p>`).join('')}
         </div>
@@ -727,7 +762,8 @@ function resultView() {
       <section class="challenge-role-swap" data-testid="challenge-role-swap">
         <span class="challenge-section-label">おすすめ</span>
         <h2>次は、あなたが出題者</h2>
-        <button class="challenge-primary" data-action="swap-roles">同じ10問で、今度は私が出題する</button>
+        <button class="challenge-primary" data-action="swap-roles">${escapeHtml(challengeCopy(currentLocale, 'swap'))}</button>
+        <p>${escapeHtml(numberedCopy('同じ10問で、今度は私が出題する', result.answers.length))}</p>
         <p>問題と選択肢だけ引き継ぎます。元の出題者の正解は引き継がれません。</p>
       </section>
       <div class="challenge-result-share-wrap">
@@ -842,15 +878,16 @@ function rankingView() {
   return shell(
     'UNDERSTANDING BOARD',
     '理解度ボード',
-    '載せるかは自分で選べます。掲載された回答は、10問を回答し終えた順に表示します。',
+    numberedCopy('載せるかは自分で選べます。掲載された回答は、10問を回答し終えた順に表示します。', room.questionCount || QUESTION_COUNT),
     `<section class="challenge-panel" data-testid="understanding-board">
       <div class="challenge-count"><b>${room.completedParticipants}</b>人が回答済み ／ 上限${room.maxParticipants}人</div>
+      ${!room.completedParticipants ? `<p data-testid="board-first-friend-prompt">${escapeHtml(challengeCopy(currentLocale, 'first'))}</p>` : ''}
       ${state.ranking.length ? `<ul class="challenge-ranking-list">
         ${state.ranking.map((participant) => `
           <li>
             <span class="challenge-board-status">答え合わせ済み</span>
             <b>${escapeHtml(participant.name)}</b>
-            <strong>${participant.score}/10問一致</strong>
+            <strong>${participant.score}/${room.questionCount || QUESTION_COUNT}問一致</strong>
           </li>
         `).join('')}
       </ul>` : '<p class="challenge-empty">理解度ボードに載せた回答者はまだいません。</p>'}
@@ -863,13 +900,22 @@ function rankingView() {
   );
 }
 
+function weeklyPacksView() {
+  const week = weeklyQuestionPacks(isEnglish);
+  const packs = questionCatalogReady ? week.packs.filter(pack => questionPackCards(allCards, pack.slug, isEnglish, QUESTION_COUNT).length === QUESTION_COUNT) : [];
+  return `<section class="challenge-panel" data-testid="weekly-question-packs">
+    <h2>${escapeHtml(challengeCopy(currentLocale, 'weekly'))}</h2><time datetime="${week.weekStart}">${week.weekStart}</time>
+    ${packs.length ? `<div class="challenge-library">${packs.map(pack => `<article><h3>${escapeHtml(translateText(pack.title))}</h3><p>${escapeHtml(translateText(pack.description))}</p><a class="challenge-secondary" href="${languagePrefix}/challenge?pack=${encodeURIComponent(pack.slug)}">${escapeHtml(translateText('この10問で作る'))}</a></article>`).join('')}</div>` : `<p>${escapeHtml(challengeCopy(currentLocale, 'empty'))}</p>`}
+  </section>`;
+}
+
 function libraryView() {
   const packs = questionPacks(isEnglish);
   return shell(
     '10 QUESTION PACKS',
     'お題ライブラリ',
     'テーマを選ぶだけで、10問をまとめてクイズにできます。',
-    `<section class="challenge-panel">
+    `${weeklyPacksView()}<section class="challenge-panel">
       <p class="challenge-library-status">気分や相手に合うパックを選んでください。選んだ10問ですぐにクイズを作れます。</p>
       <div class="challenge-library challenge-pack-library" data-testid="question-library">
         ${packs.map((pack, packIndex) => {
@@ -1016,7 +1062,20 @@ function bindEvents() {
   document.querySelector('[data-action="cancel-question-edit"]')?.addEventListener('click', cancelCreatorQuestionEdit);
   document.querySelector('[data-action="previous-builder-question"]')?.addEventListener('click', previousBuilderQuestion);
   document.querySelectorAll('[data-action="builder-answer"]').forEach((button) => {
-    button.addEventListener('click', () => answerQuestion(Number(button.dataset.choice)));
+    const questionIndex = state.questionIndex;
+    button.addEventListener('click', (event) => {
+      if (event.detail > 1 || state.questionIndex !== questionIndex) return;
+      answerQuestion(Number(button.dataset.choice));
+    });
+  });
+  document.querySelector('[data-action="finish-early"]')?.addEventListener('click', () => {
+    const count = answeredQuestionCount(state.cards, state.answers);
+    if (!state.loading && count) { captureCreatorConsent(); setState({ finishCount: count, error: '' }); }
+  });
+  document.querySelector('[data-action="cancel-finish"]')?.addEventListener('click', () => setState({ finishCount: 0 }));
+  document.querySelector('[data-action="confirm-finish"]')?.addEventListener('click', () => {
+    const count = answeredQuestionCount(state.cards, state.answers);
+    if (count && count === state.finishCount) createChallengeRoom(state.answers.slice(0, count));
   });
   document.querySelector('[data-action="resume-create"]')?.addEventListener('click', resumeCreate);
   document.querySelector('[data-action="delete-draft"]')?.addEventListener('click', deleteCreatorDraft);
@@ -1184,7 +1243,7 @@ function resumeCreate() {
     creatorName: draft.creatorName,
     cards: draft.cards,
     answers: draft.answers,
-    questionIndex: Math.min(Math.max(Number(draft.questionIndex) || 0, 0), QUESTION_COUNT - 1),
+    questionIndex: Math.min(Math.max(Number(draft.questionIndex) || 0, 0), draft.cards.length - 1),
     questionSubmissionConsent: draft.questionSubmissionConsent !== false,
     editingQuestion: false,
     error: '',
@@ -1204,7 +1263,7 @@ function previousQuestion() {
 }
 
 async function answerQuestion(choice) {
-  if (!Number.isInteger(choice) || choice < 0 || choice > 4) return;
+  if (state.loading || state.finishCount || !Number.isInteger(choice) || choice < 0 || choice > 4) return;
   if (state.mode === 'participant-answer') {
     return answerParticipantQuestion(choice);
   }
@@ -1214,13 +1273,13 @@ async function answerQuestion(choice) {
 
   if (state.mode === 'creator-edit') {
     captureCreatorConsent();
-    if (state.questionIndex < QUESTION_COUNT - 1) {
+    if (state.questionIndex < state.cards.length - 1) {
       const questionIndex = state.questionIndex + 1;
       saveCreatorDraft({ ...state, answers, questionIndex });
       trackGamePlay('challenge', 'creator');
       return setState({ answers, questionIndex, error: '' });
     }
-    if (answers.length !== QUESTION_COUNT || answers.some((answer) => !Number.isInteger(answer))) return;
+    if (answers.length !== state.cards.length || answers.some((answer) => !Number.isInteger(answer))) return;
     trackGamePlay('challenge', 'creator');
     return createChallengeRoom(answers);
   }
@@ -1258,7 +1317,7 @@ async function answerParticipantQuestion(choice) {
       : questionIndex + 1;
     const next = {
       answers,
-      questionIndex: Math.min(nextQuestionIndex, QUESTION_COUNT - 1),
+      questionIndex: Math.min(nextQuestionIndex, state.cards.length - 1),
       answerPending: false,
       error: '',
     };
@@ -1274,7 +1333,9 @@ async function answerParticipantQuestion(choice) {
 }
 
 async function createChallengeRoom(answers) {
-  const cards = state.cards.map((card, index) => {
+  const completed = completedCreatorQuiz(state.cards, answers);
+  if (state.loading || !completed || completed.answers.length !== answers.length) return;
+  const cards = completed.cards.map((card, index) => {
     const source = allCards.find((item) => String(item.id) === String(card.sourceId || ''));
     const changed = !source || card.title !== source.title
       || card.choices.some((choice, choiceIndex) => choice !== source.choices[choiceIndex]);
@@ -1302,6 +1363,7 @@ async function createChallengeRoom(answers) {
       manageToken: data.manageToken,
       participants: [],
       mode: 'manage',
+      finishCount: 0,
       answers,
       questionSubmissionStatus: submissionConsent
         ? (candidates.length ? 'sending' : 'empty')
@@ -1373,14 +1435,14 @@ async function copyValue(button) {
 
 async function prepareInvitationImage() {
   const key = invitationKey();
-  const room = { code: state.room.code, creatorName: state.room.creatorName };
+  const room = { code: state.room.code, creatorName: state.room.creatorName, cards: state.room.cards };
   const image = invitationImage = { key, src: '', busy: true, error: false };
   try {
     await document.fonts?.ready?.catch(() => {});
     const girlImage = await loadResultImage(RESULT_GIRL_IMAGE_SRC);
     const payload = challengeInvitePayload({ origin: location.origin, locale: currentLocale, room, translate: translateText });
     const canvas = await createChallengeInviteCanvas({ payload, creatorName: room.creatorName,
-      locale: currentLocale, translate: translateText, girlImage });
+      locale: currentLocale, translate: translateText, girlImage, questionCount: room.cards.length });
     image.src = canvas.toDataURL('image/png');
   } catch { image.error = true; }
   image.busy = false;
@@ -1415,7 +1477,7 @@ async function joinRoom() {
       participantName: data.participant.name,
       cards: state.room.cards,
       answers: [],
-      questionIndex: Math.min(Number(data.participant.answerCount) || 0, QUESTION_COUNT - 1),
+      questionIndex: Math.min(Number(data.participant.answerCount) || 0, state.room.cards.length - 1),
       mode: 'participant-answer',
     };
     setState(next);
@@ -1558,13 +1620,14 @@ function startRoleSwap() {
     .filter((card) => card?.title && Array.isArray(card.choices) && card.choices.length >= 5)
     .slice(0, QUESTION_COUNT)
     .map(toCreatorDraftCard);
-  if (cards.length !== QUESTION_COUNT) {
+  if (!validQuizLength(cards.length)) {
     setState({ error: 'questions-unavailable' });
     return;
   }
   trackDailyResultAction('role_swap_started');
   const next = {
     mode: 'creator-edit',
+    finishCount: 0,
     roomCode: '',
     room: null,
     creatorName: String(state.result.participant?.name || state.participantName || '').slice(0, 12),
@@ -1616,7 +1679,7 @@ async function loadRoom() {
     const draft = participantDraft(roomCode);
     const answerCount = Math.min(
       Math.max(Number(resumeData.participant.answerCount) || 0, 0),
-      QUESTION_COUNT - 1,
+      state.room.cards.length - 1,
     );
     setState({
       participantName: resumeData.participant.name,
@@ -1762,7 +1825,7 @@ async function createChallengeResultCanvas(result) {
     loadResultImage(RESULT_GIRL_IMAGE_SRC),
     loadResultImage(RESULT_QR_IMAGE_SRC),
   ]);
-  const tier = isEnglish ? getChallengeResultTierEnglish(result.score) : getChallengeResultTier(result.score);
+  const tier = localizedResultTier(result);
   const participantName = String(result.participant?.name || (isEnglish ? 'Player' : '回答者'));
   const creatorName = String(result.creatorName || (isEnglish ? 'Creator' : '出題者'));
   const canvas = document.createElement('canvas');
@@ -1794,7 +1857,7 @@ async function createChallengeResultCanvas(result) {
   context.fillText(isEnglish ? `How well do you know ${creatorName}?` : '私のこと、ちゃんと分かってるよね？', 132, 151);
   context.font = '700 19px "Noto Sans JP", sans-serif';
   context.fillStyle = '#ffe26b';
-  context.fillText(isEnglish ? '10 questions made for conversation.' : '当てるより、話すための10問。', 132, 184);
+  context.fillText(numberedCopy(isEnglish ? '10 questions made for conversation.' : '当てるより、話すための10問。', result.answers.length), 132, 184);
 
   context.fillStyle = tier.tagBg;
   resultRoundRect(context, 760, 92, 176, 50, 25);
@@ -1832,7 +1895,7 @@ async function createChallengeResultCanvas(result) {
   context.shadowOffsetX = 8;
   context.shadowOffsetY = 8;
   context.font = '900 116px "Noto Sans JP", sans-serif';
-  context.fillText(`${result.score}/10`, 202, 500);
+  context.fillText(`${result.score}/${result.answers.length}`, 202, 500);
   context.shadowOffsetX = 0;
   context.shadowOffsetY = 0;
 
@@ -1935,12 +1998,12 @@ async function prepareResultImage() {
 }
 
 function resultShareText({ includeUrl = true } = {}) {
-  const tier = isEnglish ? getChallengeResultTierEnglish(state.result.score) : getChallengeResultTier(state.result.score);
+  const tier = localizedResultTier(state.result);
   const shareUrl = `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`;
   const lines = isEnglish
     ? [
         `I guessed ${state.result.creatorName}’s answers!`,
-        'Which ones matched? Check the answers and try the same 10 questions.',
+        numberedCopy('Which ones matched? Check the answers and try the same 10 questions.', state.result.answers.length),
         `My title: “${translateText(tier.title)}”`,
         '#Watachan',
       ]
@@ -1953,7 +2016,7 @@ function resultShareText({ includeUrl = true } = {}) {
       ];
   if (includeUrl) {
     lines.push(
-      isEnglish ? 'Try the same 10 questions here:' : '同じ10問に挑戦するURLはこちら👇',
+      numberedCopy(isEnglish ? 'Try the same 10 questions here:' : '同じ10問に挑戦するURLはこちら👇', state.result.answers.length),
       shareUrl,
     );
   }
@@ -1982,7 +2045,7 @@ function saveCreatorDraft(value) {
 function creatorDraft() {
   const draft = readStorage(CREATOR_DRAFT_KEY);
   return draft && typeof draft.creatorName === 'string'
-    && Array.isArray(draft.cards) && draft.cards.length === QUESTION_COUNT
+    && Array.isArray(draft.cards) && validQuizLength(draft.cards.length)
     && Array.isArray(draft.answers)
     ? draft
     : null;

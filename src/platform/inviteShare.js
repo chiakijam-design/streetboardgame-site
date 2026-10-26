@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import { buildChallengeInviteText } from './share.js';
 import { LOCALE_DETAILS } from '../i18n/locales.js';
+import { challengeCopy } from '../i18n/challenge-copy.js';
 
 // Machine-generated UI translations; native review has not been performed.
 export const INVITE_SHARE_LABELS = Object.freeze({
@@ -49,11 +50,14 @@ export function challengeInvitePayload({ origin, locale, room, src = '', transla
   if (!['http:', 'https:'].includes(base.protocol)) throw new TypeError('Invalid origin');
   const url = `${base.origin}${details.prefix}/challenge?room=${room.code}`;
   const creatorName = String(room.creatorName || '').slice(0, 12);
-  const text = translate(buildChallengeInviteText({ creatorName, url, isEnglish: locale === 'en' }));
+  const count = Array.isArray(room.cards) ? room.cards.length : 10;
+  const text = count > 0 && count < 10
+    ? `${creatorName} · ${challengeCopy(locale, 'swap')} (${count})\n${url}`
+    : translate(buildChallengeInviteText({ creatorName, url, isEnglish: locale === 'en' }));
   return { src, filename: 'watachan-challenge-invitation.png', title: translate('わたし理解度診断'), text, caption: text, url };
 }
 
-export async function createChallengeInviteCanvas({ payload, creatorName, locale, translate, girlImage, documentRef = document }) {
+export async function createChallengeInviteCanvas({ payload, creatorName, locale, translate, girlImage, questionCount = 10, documentRef = document }) {
   const canvas = documentRef.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
@@ -79,7 +83,7 @@ export async function createChallengeInviteCanvas({ payload, creatorName, locale
   ctx.font = '700 38px "Noto Sans JP", sans-serif';
   ctx.fillText(translate('私のこと、ちゃんと分かってるよね？'), 540, 700, 840);
   ctx.font = '700 30px "Noto Sans JP", sans-serif';
-  ctx.fillText(translate('当てるより、話すための10問。'), 540, 754, 840);
+  ctx.fillText(translate('当てるより、話すための10問。').replaceAll('10', String(questionCount)), 540, 754, 840);
   const qr = documentRef.createElement('canvas');
   await QRCode.toCanvas(qr, payload.url, { width: 360, margin: 2, errorCorrectionLevel: 'M' });
   ctx.drawImage(qr, 360, 810, 360, 360);
