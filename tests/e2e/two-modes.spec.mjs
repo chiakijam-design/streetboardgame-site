@@ -709,7 +709,7 @@ test('参加者が結果画面から役割交代し、同じ10問の出題者に
   }
 });
 
-test('出題者画面は順位を使わず、問題別の人数・割合を会話のきっかけとして最初に表示する', async ({ page, request }) => {
+test('出題者画面は共有を先頭にし、順位を使わず問題別の人数・割合を会話のきっかけとして続ける', async ({ page, request }) => {
   const challengeUrl = await createChallenge(page, '会話集計');
   const code = new URL(challengeUrl).searchParams.get('room');
   const answerSets = [
@@ -748,10 +748,13 @@ test('出題者画面は順位を使わず、問題別の人数・割合を会�
   expect(await page.evaluate(() => {
     const insightsElement = document.querySelector('[data-testid="host-conversation-insights"]');
     const shareElement = document.querySelector('[data-testid="challenge-share-screen"]');
+    const shareControls = shareElement?.querySelector('[data-result-share-controls]');
     return Boolean(
       insightsElement
       && shareElement
-      && (insightsElement.compareDocumentPosition(shareElement) & Node.DOCUMENT_POSITION_FOLLOWING)
+      && shareControls
+      && shareElement.contains(insightsElement)
+      && (shareControls.compareDocumentPosition(insightsElement) & Node.DOCUMENT_POSITION_FOLLOWING)
     );
   })).toBe(true);
   await insights.getByText('10問すべての人数・割合を見る').click();
@@ -778,11 +781,12 @@ test('途中保存から再開し、画像付き10問パックでクイズ作成
   await expect(page.getByTestId('question-library').locator('.challenge-pack-card')).toHaveCount(9);
   await expect(page.getByTestId('question-library').locator('.challenge-pack-card img')).toHaveCount(9);
   await expect(page.getByTestId('question-library').locator('.challenge-pack-count', { hasText: '主力' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: '初対面でも答えやすい10問' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '学校・放課後の10問' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '食べものの好み10問' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'わたしのトリセツ10問' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '意外な一面が分かる10問' })).toBeVisible();
+  const library = page.getByTestId('question-library');
+  await expect(library.getByRole('heading', { name: '初対面でも答えやすい10問' })).toBeVisible();
+  await expect(library.getByRole('heading', { name: '学校・放課後の10問' })).toBeVisible();
+  await expect(library.getByRole('heading', { name: '食べものの好み10問' })).toBeVisible();
+  await expect(library.getByRole('heading', { name: 'わたしのトリセツ10問' })).toBeVisible();
+  await expect(library.getByRole('heading', { name: '意外な一面が分かる10問' })).toBeVisible();
   await expect(page.getByTestId('question-library')).not.toContainText('回プレイ');
   await expect(page.getByTestId('question-library')).not.toContainText('LIVE版で作る');
   await expect(page.locator('[data-pack="unexpected-side"] .challenge-pack-actions a')).toHaveCount(1);
