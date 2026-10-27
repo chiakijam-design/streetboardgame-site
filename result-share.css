@@ -6,6 +6,7 @@
 [data-result-share-controls] .share-card-copy{display:grid;min-width:0;gap:5px;overflow-wrap:anywhere}
 [data-result-share-controls] .share-card-copy strong{font-size:17px;font-weight:900;line-height:1.25}
 [data-result-share-controls] .share-card-copy small{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+[data-native-hint-visible] [data-result-share="native"] .share-card-copy small{position:static;width:auto;height:auto;overflow:visible;clip-path:none;white-space:normal;font-size:12px;font-weight:600;line-height:1.5}
 [data-result-share-controls] .share-card-arrow{font-size:30px;font-weight:900;color:var(--share-accent)}
 [data-result-share-controls] [data-result-share="copy"]{--share-accent:#d2a400;--share-icon-bg:#fff2b3}
 [data-result-share-controls] [data-result-share="save"]{--share-accent:#ef4d86;--share-icon-bg:#ffe6ef}

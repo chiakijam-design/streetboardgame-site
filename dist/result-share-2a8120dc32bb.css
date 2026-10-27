@@ -1,0 +1,44 @@
+[data-result-share-controls]{margin-block:18px;min-width:0;text-align:start;padding:0 6px 6px 0;container-type:inline-size}
+[data-result-share-controls] .share-card{--share-accent:#4dc4dc;--share-icon-bg:#e4f9fc;position:relative;display:grid;grid-template-columns:32px minmax(0,1fr) 16px;gap:9px;align-items:center;box-sizing:border-box;width:100%;min-height:64px;margin:0;padding:10px 12px;border:2px solid #191919;border-radius:14px;background:#fff;color:#191919;box-shadow:2px 3px 0 #191919;font:inherit;text-align:start;line-height:1.35;cursor:pointer;isolation:isolate;transition:transform .14s ease,box-shadow .14s ease}
+[data-result-share-controls] .share-card::before{content:"";position:absolute;inset-block:9px;inset-inline-start:0;width:5px;border-radius:0 4px 4px 0;background:var(--share-accent)}
+[data-result-share-controls] .share-card-icon{display:grid;box-sizing:border-box;width:32px;height:32px;place-items:center;border:2px solid #191919;border-radius:9px;background:var(--share-icon-bg);color:var(--share-accent)}
+[data-result-share-controls] .share-card-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+[data-result-share-controls] .share-card-copy{display:grid;min-width:0;gap:5px;overflow-wrap:anywhere}
+[data-result-share-controls] .share-card-copy strong{font-size:17px;font-weight:900;line-height:1.25}
+[data-result-share-controls] .share-card-copy small{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+[data-native-hint-visible] [data-result-share="native"] .share-card-copy small{position:static;width:auto;height:auto;overflow:visible;clip-path:none;white-space:normal;font-size:12px;font-weight:600;line-height:1.5}
+[data-result-share-controls] .share-card-arrow{font-size:30px;font-weight:900;color:var(--share-accent)}
+[data-result-share-controls] [data-result-share="copy"]{--share-accent:#d2a400;--share-icon-bg:#fff2b3}
+[data-result-share-controls] [data-result-share="save"]{--share-accent:#ef4d86;--share-icon-bg:#ffe6ef}
+[data-result-share-controls] [data-result-share="x"]{--share-accent:#191919;--share-icon-bg:#ededed}
+[data-result-share-controls] [data-result-share="line"]{--share-accent:#06a947;--share-icon-bg:#e0f9e9}
+[data-result-share-controls] [data-result-share="whatsapp"]{--share-accent:#128c7e;--share-icon-bg:#ddf8ed}
+[data-result-share-controls] [data-result-share="instagram-link"],[data-result-share-controls] [data-result-share="instagram"]{--share-accent:#dc3f91;--share-icon-bg:#fce4f1}
+[data-result-share-controls] [data-result-share-row]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-block:12px}
+[data-result-share-controls] [data-result-share-row] .share-card{grid-template-columns:24px minmax(0,1fr);gap:7px;min-height:64px;padding:9px 8px}
+[data-result-share-controls] [data-result-share-row] .share-card-icon{width:24px;height:28px;border-radius:7px}
+[data-result-share-controls] [data-result-share-row] .share-card-icon svg{width:19px;height:19px}
+[data-result-share-controls] [data-result-share-row] .share-card-copy strong{font-size:15px}
+[data-result-share-controls] [data-result-share-row] .share-card-copy small{font-size:11px}
+[data-result-share-controls] [data-result-share-social]{direction:ltr;padding-top:12px;border-top:1px solid #c6b4bd}
+[data-result-share-controls] [data-result-share-social] .share-card{min-height:52px}
+[data-result-share-controls] [data-result-share-social] .share-card-copy strong{font-size:14px;white-space:nowrap;overflow-wrap:normal}
+[data-result-share-controls] [data-result-share="instagram"]{min-height:52px}
+[dir="rtl"] [data-result-share-controls] .share-card{direction:rtl;text-align:right}
+[dir="rtl"] [data-result-share-controls] .share-card-arrow{transform:scaleX(-1)}
+[data-result-share-controls] p{font-size:14px;line-height:1.7;overflow-wrap:anywhere;margin-block:14px}
+[data-result-share-controls] input{box-sizing:border-box;width:100%;min-width:0;margin-block:8px;padding:11px;border:2px solid #191919;border-radius:11px;background:#fff;font:inherit;font-size:14px}
+[data-result-share-controls] details{margin-top:16px;border-top:2px dashed #c6b4bd;padding-top:6px}
+[data-result-share-controls] summary{cursor:pointer;min-height:48px;line-height:1.5;display:list-item;padding-block:12px;font-weight:800;overflow-wrap:anywhere}
+[data-result-share-controls] .share-card:active{transform:translate(3px,3px);box-shadow:2px 2px 0 #191919}
+[data-result-share-controls] .share-card:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:3px 3px 0 #191919}
+[data-result-share-controls] .share-card:focus-visible,[data-result-share-controls] summary:focus-visible,[data-result-share-controls] input:focus-visible{outline:3px solid #191919;outline-offset:5px}
+.challenge-board-settings{margin-top:14px;padding:0 12px 12px;border:2px solid #191919;border-radius:12px;background:#fff;text-align:start}
+.challenge-board-settings>summary{min-height:44px;padding-block:10px;font-weight:800;cursor:pointer}
+.challenge-board-settings>summary:focus-visible{outline:3px solid #191919;outline-offset:4px}
+.challenge-board-settings .challenge-result-board-only{margin-top:6px;min-height:44px;font-size:15px;box-shadow:2px 3px 0 #191919}
+@media(max-width:560px){[data-result-share-controls] [data-result-share-row] .share-card{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;gap:4px;min-height:76px;padding:8px}[data-result-share-controls] [data-result-share-row] .share-card-icon{width:24px;height:24px}[data-result-share-controls] [data-result-share-social] .share-card{min-height:64px;padding-block:6px}}
+@media(prefers-reduced-motion:reduce){[data-result-share-controls] .share-card{transition:none}}
+
+@container(max-width:260px){[data-result-share-social] .share-card .share-card-copy strong{font-size:13px;white-space:nowrap;overflow-wrap:normal;word-break:normal}}
+@media(max-width:360px){[data-result-share-social] .share-card .share-card-copy strong{font-size:13px;white-space:nowrap;overflow-wrap:normal;word-break:normal}}

@@ -490,7 +490,8 @@ function manageView() {
       ${!room.participantCount ? `<p data-testid="first-friend-prompt">${escapeHtml(challengeCopy(currentLocale, 'first'))}</p>` : ''}
       ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml,
         ready: invitationImage.key === invitationKey() && Boolean(invitationImage.src),
-        nativeLabel: INVITE_SHARE_LABELS[currentLocale][0], saveLabel: INVITE_SHARE_LABELS[currentLocale][1], saveAction: 'save-invitation-image' })}
+        nativeLabel: INVITE_SHARE_LABELS[currentLocale][0], nativeHint: INVITE_SHARE_LABELS[currentLocale][2], showNativeHint: true,
+        saveLabel: INVITE_SHARE_LABELS[currentLocale][1], saveAction: 'save-invitation-image' })}
       ${invitationImage.key === invitationKey() && invitationImage.error ? `<p role="status">${escapeHtml(translateText('画像を保存できませんでした。もう一度お試しください。'))}</p>` : ''}
       <div class="challenge-share-actions" aria-label="完成した理解度診断を共有・保存">
         <a class="challenge-share-action board" href="/challenge/ranking?room=${room.code}" aria-label="理解度ボードを見る">

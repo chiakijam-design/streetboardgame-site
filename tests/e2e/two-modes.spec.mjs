@@ -44,7 +44,7 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await expect(page.getByRole('heading', { name: '友達に送る' })).toBeVisible();
   await expect(page.getByTestId('challenge-share-screen')).toContainText('理解度診断ができました');
   const controls = page.getByTestId('challenge-share-screen').locator('[data-result-share-controls]');
-  await expect(controls.getByRole('button', { name: '診断を共有', exact: true })).toBeVisible();
+  await expect(controls.getByRole('button', { name: '友達にクイズを出す', exact: true })).toBeVisible();
   await expect(controls.getByRole('button', { name: 'リンクをコピー', exact: true })).toBeVisible();
   await expect(controls.getByRole('button', { name: '招待画像を保存', exact: true })).toBeEnabled();
   for (const name of ['X', 'LINE', 'WhatsApp']) await expect(controls.getByRole('button', { name, exact: true })).toBeVisible();

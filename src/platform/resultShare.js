@@ -50,7 +50,7 @@ const SHARE_ICONS = {
   whatsapp: '<path d="M27 15a12 12 0 0 1-18 10l-6 2 2-6A12 12 0 1 1 27 15Z"/><path d="m10 9 3 4-2 2c2 3 3 4 6 5l2-3 4 2c0 5-4 5-8 3-5-2-9-8-5-13Z"/>',
   instagram: '<rect x="4" y="4" width="24" height="24" rx="7"/><circle cx="16" cy="16" r="6"/><circle cx="23" cy="9" r="1"/>',
 };
-export function resultShareMarkup({ translate, escape, locale = 'ja', ready = true, saveAction = 'save-result-image', nativeLabel = '結果を共有', saveLabel = '結果画像を保存' }) {
+export function resultShareMarkup({ translate, escape, locale = 'ja', ready = true, saveAction = 'save-result-image', nativeLabel = '結果を共有', nativeHint = '参加URLを友達へ送る', showNativeHint = false, saveLabel = '結果画像を保存' }) {
   const t = (text) => escape(translate(text));
   const copy = shareCardCopy(locale);
   const card = (action, label, hint, icon, attributes = '', arrow = false, accessibleLabel = label) => `<button type="button" class="share-card" data-result-share="${action}" aria-label="${t(accessibleLabel)}" aria-describedby="result-share-${action}-hint" ${attributes}>
@@ -58,8 +58,8 @@ export function resultShareMarkup({ translate, escape, locale = 'ja', ready = tr
     <span class="share-card-copy"><strong>${t(label)}</strong><small id="result-share-${action}-hint">${t(hint)}</small></span>
     ${arrow ? '<span class="share-card-arrow" aria-hidden="true">›</span>' : ''}
   </button>`;
-  return `<div data-result-share-controls data-result-share-locale="${escape(locale)}">
-    ${card('native', nativeLabel, '参加URLを友達へ送る', 'native', '', true)}
+  return `<div data-result-share-controls data-result-share-locale="${escape(locale)}"${showNativeHint ? ' data-native-hint-visible' : ''}>
+    ${card('native', nativeLabel, nativeHint, 'native', '', true)}
     <div class="challenge-result-share-buttons" data-result-share-row>
       ${card('copy', 'リンクをコピー', '参加URLをクリップボードへ', 'copy')}
       ${card('save', saveLabel, copy.saveHint, 'save', `data-action="${saveAction}" ${ready ? '' : 'disabled'}`)}

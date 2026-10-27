@@ -1,4 +1,5 @@
 import { expect, test } from './test.mjs';
+import { INVITE_SHARE_LABELS } from '../../src/platform/inviteShare.js';
 
 const code = 'QADEMO88';
 test('390px by 667px creator controls fit before and after the first answer', async ({ page, request }, testInfo) => {
@@ -56,6 +57,15 @@ for (const scene of ['host', 'result']) for (const [locale, width] of [['ja', 39
     await page.setViewportSize({ width, height: 667 });
     const { url, rankingCalls } = await fixture(page, scene, locale, width === 390 ? 1 : 10);
     const controls = page.locator('[data-result-share-controls]');
+    if(scene === 'host') {
+      const labels=INVITE_SHARE_LABELS[locale];
+      await expect(controls.locator('[data-result-share=native]')).toHaveAccessibleName(labels[0]);
+      await expect(controls.locator('#result-share-native-hint')).toHaveText(labels[2]);
+      await expect(controls.locator('#result-share-native-hint')).toBeVisible();
+      expect(await controls.locator('#result-share-native-hint').evaluate(el=>getComputedStyle(el).clipPath)).toBe('none');
+    } else {
+      await expect(controls).not.toHaveAttribute('data-native-hint-visible', '');
+    }
     await expect(page.locator('[data-action=copy-url]')).toHaveCount(0);
     const actions = ['native', 'copy', 'save', 'x', 'line', 'whatsapp', 'instagram-link', 'instagram'];
     for (const action of actions) {
