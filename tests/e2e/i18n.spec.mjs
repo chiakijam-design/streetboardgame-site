@@ -45,7 +45,7 @@ test('英語の主要ページは現在の共通テンプレートと英語catal
 test('英語トップから通常版の英語標準お題へ進める', async ({ page }) => {
   await page.goto('/en/');
   await page.getByRole('textbox').first().fill('Mia');
-  await page.getByRole('button', { name: /Start creating 10 questions/ }).click();
+  await page.getByRole('button', { name: /Start creating a quiz/ }).click();
   await expect(page).toHaveURL(/\/en\/challenge$/);
   await expect(page.getByRole('button', { name: /^Choose / }).first()).toBeVisible();
 });
@@ -179,7 +179,8 @@ test('英語の作成完了画面も共有と保存の導線を英語で表示�
   const shareScreen = page.getByTestId('challenge-share-screen');
   await expect(shareScreen.getByRole('heading', { name: 'Your quiz is ready' })).toBeVisible();
   const controls = shareScreen.locator('[data-result-share-controls]');
-  await expect(controls.getByRole('button', { name: 'Share quiz', exact: true })).toBeVisible();
+  await expect(controls.getByRole('button', { name: 'Challenge your friends', exact: true })).toBeVisible();
+  await expect(controls.getByText('Let your friends answer the questions you created', { exact: true })).toBeVisible();
   await expect(controls.getByRole('button', { name: 'Save invitation image', exact: true })).toBeEnabled();
   for (const name of ['Copy link', 'X', 'LINE', 'WhatsApp']) await expect(controls.getByRole('button', { name, exact: true })).toBeVisible();
   await expect(controls.locator('[data-result-share-row]')).toHaveCount(2);
