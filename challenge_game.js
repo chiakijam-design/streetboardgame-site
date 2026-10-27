@@ -488,7 +488,6 @@ function manageView() {
       </div>
       <p class="challenge-share-lead">${escapeHtml(shareLead)}</p>
       ${!room.participantCount ? `<p data-testid="first-friend-prompt">${escapeHtml(challengeCopy(currentLocale, 'first'))}</p>` : ''}
-      <button class="challenge-primary" data-action="copy-url" data-copy-value="${escapeHtml(challengeUrl(room.code))}">${escapeHtml(translateText('共有用URLをコピー'))}</button>
       ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml,
         ready: invitationImage.key === invitationKey() && Boolean(invitationImage.src),
         nativeLabel: INVITE_SHARE_LABELS[currentLocale][0], saveLabel: INVITE_SHARE_LABELS[currentLocale][1], saveAction: 'save-invitation-image' })}
@@ -776,7 +775,9 @@ function resultView() {
           aria-labelledby="challenge-result-share-title">
           <span class="challenge-section-label">SHARE YOUR RESULT</span>
           <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
-          <p>理解度ボードだけに載せるか、結果の送り方・保存方法を選べます。</p>
+          ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) && !state.boardPreferenceBusy })}
+          <details class="challenge-board-settings" data-board-settings ${state.boardSettingsOpen || state.boardOptIn || state.boardPreferenceBusy || state.result.participant?.rankingParticipating || state.boardActionMessage ? 'open' : ''}>
+          <summary>理解度ボードに載せる</summary>
           <button type="button" class="challenge-result-board-only" data-action="publish-board-only"
             ${state.boardPreferenceBusy || state.result.participant?.rankingParticipating ? 'disabled' : ''}>
             <span aria-hidden="true">📒</span>
@@ -798,7 +799,7 @@ function resultView() {
           ${state.boardActionMessage
             ? `<p class="challenge-result-board-message" role="status">${escapeHtml(state.boardActionMessage)}</p>`
             : ''}
-          ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) && !state.boardPreferenceBusy })}
+          </details>
         </section>
       </div>
       <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>
@@ -1104,6 +1105,9 @@ function bindEvents() {
   document.querySelector('[data-action="join"]')?.addEventListener('click', joinRoom);
   document.querySelector('[data-action="toggle-ranking"]')?.addEventListener('change', (event) => {
     chooseBoardPreference(event.currentTarget.checked);
+  });
+  document.querySelector('[data-board-settings]')?.addEventListener('toggle', (event) => {
+    if (event.currentTarget.isConnected) state.boardSettingsOpen = event.currentTarget.open;
   });
   document.querySelector('[data-action="publish-board-only"]')?.addEventListener('click', publishBoardOnly);
   document.querySelector('[data-action="retry-challenge"]')?.addEventListener('click', retryChallenge);
@@ -1508,9 +1512,11 @@ function chooseBoardPreference(enabled) {
   saveBoardOptIn(state.roomCode, enabled);
   setState({
     boardOptIn: enabled,
+    boardSettingsOpen: true,
     boardActionMessage: '',
     error: '',
   });
+  document.querySelector('[data-action="toggle-ranking"]')?.focus?.({ preventScroll: true });
 }
 
 async function updateBoardPreference(enabled) {
@@ -1605,6 +1611,7 @@ async function retryChallenge() {
       resultImageBusy: false,
       resultImageError: '',
       boardOptIn: false,
+      boardSettingsOpen: false,
       boardPreferenceBusy: false,
       mode: 'participant-answer',
       error: '',

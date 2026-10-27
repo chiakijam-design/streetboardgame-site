@@ -137,8 +137,8 @@ export function TopPage() {
             gap: 10,
             marginTop: 8,
           }}>
-            <button type="submit" aria-label="10問を作り始める" style={primaryButton()}>
-              10問を作り始める
+            <button type="submit" aria-label="クイズを作り始める" style={primaryButton()}>
+              クイズを作り始める
               <span aria-hidden="true">▶</span>
             </button>
             <p style={{
@@ -158,7 +158,7 @@ export function TopPage() {
       <nav aria-label="ゲームシリーズの紹介ページ" style={{ padding: '4px 24px 0', position: 'relative', zIndex: 1 }}>
         <h2 style={{ margin: '0 0 10px', color: theme.white, fontSize: 14 }}>まずはどんなゲームか知りたい</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 10 }}>
-          <ModeLink href="/challenge-guide" icon="📣" title="みんなに挑戦してもらう" note="10問・最大50人" />
+          <ModeLink href="/challenge-guide" icon="📣" title="みんなに挑戦してもらう" note="1〜10問・最大50人" />
         </div>
       </nav>
       <p style={{ margin: '16px 24px 0', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -173,7 +173,7 @@ export function TopPage() {
 
 function Rules() {
   const steps = [
-    'あなたが、出題する10問を選ぶ・作る',
+    '出題する問題を選ぶ・作る（1〜10問）',
     '自分の正解を選ぶ',
     'URL・QRコードで友達に問題を送信',
     '何問正解かでみんなの理解度を診断',

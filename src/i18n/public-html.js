@@ -2,6 +2,7 @@ import { createCatalogTranslator, requireCompleteCatalog } from './catalog-core.
 import { LOCALE_DETAILS, TARGET_LOCALES, localeCanonicalPath, localeFromPath, switchLocalePath, stripLocalePrefix } from './locales.js';
 import { LOCALE_SHELL_ASSET } from '../generated/locale-assets.js';
 import { rootPublicResource, rootPublicSourceSet } from './resource-paths.js';
+import { translateHomeEntryCopy } from './home-entry-copy.js';
 
 const origin = 'https://www.streetboardgame.com';
 const entityValues = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0', ndash: '–', mdash: '—' };
@@ -37,7 +38,11 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   const locale = data.catalog.locale;
   requireCompleteCatalog(data.entries, data.catalog, localeFromPath(requestUrl.pathname));
   const translator = createCatalogTranslator(data.entries, data.catalog.messages, { aliases: data.aliases });
-  const copy = (value) => escape(translator.translate(decode(value)));
+  const isHome = stripLocalePrefix(requestUrl.pathname) === '/';
+  const copy = (value) => {
+    const decoded = decode(value);
+    return escape((isHome ? translateHomeEntryCopy(decoded, locale) : undefined) ?? translator.translate(decoded));
+  };
   let output = html.replace(/(<script\b[\s\S]*?<\/script\s*>|<style\b[\s\S]*?<\/style\s*>|<!--[\s\S]*?-->)|(<[^>]+>)|([^<]+)/gi, (whole, protectedBlock, tag, text) => {
     if (protectedBlock) return protectedBlock;
     if (text) return copy(text);

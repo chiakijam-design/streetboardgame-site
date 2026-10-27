@@ -64,18 +64,18 @@ export function resultShareMarkup({ translate, escape, locale = 'ja', ready = tr
       ${card('copy', 'リンクをコピー', '参加URLをクリップボードへ', 'copy')}
       ${card('save', saveLabel, copy.saveHint, 'save', `data-action="${saveAction}" ${ready ? '' : 'disabled'}`)}
     </div>
-    <input type="text" readonly dir="ltr" aria-label="${t('参加URL')}" data-result-share-url>
-    <p>${t('共有先によって画像やリンクが届かない場合は、リンクをコピーするか画像を保存してください。')}</p>
     <div class="challenge-result-share-buttons" data-result-share-row data-result-share-social>
       ${card('x', 'X', '参加URLつきで投稿', 'x', 'data-action="share-result-x"')}
       ${card('line', 'LINE', '参加URLを友達へ送る', 'line', 'data-action="share-result-line"')}
       ${card('whatsapp', 'WhatsApp', '参加URLを友達へ送る', 'whatsapp')}
       ${card('instagram-link', 'Instagram', 'リンクをコピーして投稿', 'instagram', '', false, `Instagram: ${translate('リンクをコピー')}`)}
     </div>
-    <p>${t('WhatsAppでは本文とリンクを共有します。画像は別途添付してください。')}</p>
-    <details><summary>${t(copy.imageSummary)}</summary>
+    ${card('instagram', 'ストーリー用：文章コピー＋画像保存', copy.saveHint, 'instagram', `data-action="share-result-instagram" ${ready ? '' : 'disabled'}`, true)}
+    <details data-result-share-fallback><summary>${t('参加URL')} · ${t(copy.imageSummary)}</summary>
+      <input type="text" readonly dir="ltr" aria-label="${t('参加URL')}" data-result-share-url>
+      <p>${t('共有先によって画像やリンクが届かない場合は、リンクをコピーするか画像を保存してください。')}</p>
+      <p>${t('WhatsAppでは本文とリンクを共有します。画像は別途添付してください。')}</p>
       <p>${t('Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。')}</p>
-      ${card('instagram', 'ストーリー用：文章コピー＋画像保存', copy.saveHint, 'instagram', `data-action="share-result-instagram" ${ready ? '' : 'disabled'}`, true)}
     </details>
     <p role="status" aria-live="polite" data-result-share-status></p>
   </div>`;
@@ -104,6 +104,9 @@ export function bindResultShare(root, { getPayload, translate, beforeAction = ()
     buttons.forEach((item) => { item.disabled = true; });
     const status = controls.querySelector('[data-result-share-status]');
     const say = (message) => { if (busy === actionToken && controls.isConnected) status.textContent = translate(message); };
+    const showFallback = () => {
+      if (busy === actionToken && controls.isConnected) controls.querySelector('[data-result-share-fallback]').open = true;
+    };
     const record = (outcome) => { if (busy === actionToken && controls.isConnected) track(action, outcome); };
     const release = () => {
       if (busy !== actionToken) return;
@@ -118,14 +121,19 @@ export function bindResultShare(root, { getPayload, translate, beforeAction = ()
       if (action === 'native') {
         const outcome = await shareResult(payload);
         record(outcome);
-        if (outcome === 'unavailable') say('共有先によって画像やリンクが届かない場合は、リンクをコピーするか画像を保存してください。');
+        if (outcome === 'unavailable') {
+          showFallback();
+          say('共有先によって画像やリンクが届かない場合は、リンクをコピーするか画像を保存してください。');
+        }
       } else if (action === 'instagram-link') {
         const copied = await copyText(payload.url);
+        if (!copied) showFallback();
         record(copied ? 'copied' : 'failed');
         say(copied ? shareCardCopy(controls.dataset.resultShareLocale).instagramInstruction
           : 'コピーできませんでした。参加URLを長押ししてコピーしてください。');
       } else if (action === 'copy') {
         const copied = await copyText(payload.url);
+        if (!copied) showFallback();
         record(copied ? 'copied' : 'failed');
         say(copied ? 'コピーしました' : 'コピーできませんでした。参加URLを長押ししてコピーしてください。');
       } else if (action === 'save' || action === 'instagram') {
@@ -133,7 +141,7 @@ export function bindResultShare(root, { getPayload, translate, beforeAction = ()
           const copied = await copyText(payload.caption);
           record(copied ? 'copied' : 'failed');
           if (busy !== actionToken || !controls.isConnected) return;
-          if (!copied) { say('コピーできませんでした。参加URLを長押ししてコピーしてください。'); return; }
+          if (!copied) { showFallback(); say('コピーできませんでした。参加URLを長押ししてコピーしてください。'); return; }
         }
         const outcome = await saveImageBlob(dataUrlToBlob(payload.src), payload.filename, payload.title);
         record(outcome === 'downloaded' ? 'download-requested' : 'handed-off-save');
@@ -146,6 +154,7 @@ export function bindResultShare(root, { getPayload, translate, beforeAction = ()
       }
     } catch (error) {
       record(error?.name === 'AbortError' ? 'cancelled' : 'failed');
+      if (error?.name !== 'AbortError') showFallback();
       if (error?.name !== 'AbortError') say(action === 'save' || action === 'instagram'
         ? '画像を保存できませんでした。もう一度お試しください。'
         : '共有先によって画像やリンクが届かない場合は、リンクをコピーするか画像を保存してください。');

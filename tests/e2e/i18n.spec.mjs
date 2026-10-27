@@ -129,6 +129,7 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   })).toBeVisible();
   const resultShare = page.getByTestId('challenge-result-share');
   await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();
+  await resultShare.locator('[data-board-settings] > summary').click();
   const boardCheckbox = resultShare.getByRole('checkbox', { name: /Add to Understanding Board/ });
   await expect(boardCheckbox).not.toBeChecked();
   await expect(boardCheckbox).toBeEnabled();

@@ -41,7 +41,8 @@ for(const scene of ['host','result'])for(const locale of ['ja','en','ar'])for(co
   expect(await page.evaluate(()=>window.__COPY_CALLS__)).toBe(1);expect(await page.evaluate(()=>window.__OPEN_CALLS__)).toBe(0);
   await expect(controls.locator('[data-result-share-status]')).toHaveText(shareCardCopy(locale).instagramInstruction);
   expect(publicUrl).not.toMatch(/manage|PRIVATE_|synthetic-|#/);
-  await expect(controls.locator('summary')).toHaveText(shareCardCopy(locale).imageSummary);
+  await expect(controls.locator('summary')).toContainText(shareCardCopy(locale).imageSummary);
+  await expect(controls.locator('[data-result-share=instagram]')).toBeVisible();
   await controls.locator('summary').click();await expect(controls.locator('[data-result-share=instagram]')).toBeVisible();
   const geometry=await controls.locator('button').evaluateAll(buttons=>buttons.filter(b=>b.getClientRects().length).map(b=>{const r=b.getBoundingClientRect();return {width:r.width,height:r.height,left:r.left,right:r.right,client:b.clientWidth,scroll:b.scrollWidth,described:!!document.getElementById(b.getAttribute('aria-describedby')),icons:[...b.querySelectorAll('svg')].every(i=>i.closest('[aria-hidden="true"]'))};}));
   for(const g of geometry){expect(g.height).toBeGreaterThanOrEqual(44);expect(g.width).toBeGreaterThanOrEqual(44);expect(g.left).toBeGreaterThanOrEqual(0);expect(g.right).toBeLessThanOrEqual(width);expect(g.scroll).toBeLessThanOrEqual(g.client+1);expect(g.described).toBe(true);expect(g.icons).toBe(true);}

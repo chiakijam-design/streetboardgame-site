@@ -48,8 +48,8 @@ async function createChallenge(page, creatorName = 'ちあき') {
   await expect(controls.getByRole('button', { name: 'リンクをコピー', exact: true })).toBeVisible();
   await expect(controls.getByRole('button', { name: '招待画像を保存', exact: true })).toBeEnabled();
   for (const name of ['X', 'LINE', 'WhatsApp']) await expect(controls.getByRole('button', { name, exact: true })).toBeVisible();
-  await expect(controls.locator('summary')).toHaveText('Instagram · 画像とストーリー');
-  await expect(controls.locator('[data-result-share="instagram"]')).toBeHidden();
+  await expect(controls.locator('summary')).toHaveText('参加URL · Instagram · 画像とストーリー');
+  await expect(controls.locator('[data-result-share="instagram"]')).toBeVisible();
   await expect(page.getByRole('link', { name: '理解度ボードを見る' })).toBeVisible();
   await expect(page.getByRole('button', { name: '最近作った診断へ保存' })).toBeVisible();
   const inviteInput = controls.locator('[data-result-share-url]');
@@ -126,7 +126,7 @@ test('作成完了後は共通共有パネルの8操作と2つの管理導線を
 
 test('トップは通常版への作成導線だけを公開する', async ({ page }) => {
  await page.goto('/');
- await expect(page.getByRole('button', { name: '10問を作り始める', exact: true })).toBeVisible();
+ await expect(page.getByRole('button', { name: 'クイズを作り始める', exact: true })).toBeVisible();
  await expect(page.locator('a[href*="live-challenge"], [data-home-mode="live"]')).toHaveCount(0);
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 });
@@ -134,7 +134,7 @@ test('トップは通常版への作成導線だけを公開する', async ({ pa
 test('トップで名前を入力すると通常版の10問作成画面へ直接進む', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('あなたの名前（12文字まで）').fill('トップ通常');
-  await page.getByRole('button', { name: '10問を作り始める', exact: true }).click();
+  await page.getByRole('button', { name: 'クイズを作り始める', exact: true }).click();
   await expect(page).toHaveURL('/challenge');
   await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
   const beforeSkip = await page.locator('.challenge-builder-card h2').textContent();
@@ -506,6 +506,8 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     const resultShare = participant.getByTestId('challenge-result-share');
     await expect(resultShare).toHaveCSS('background-color', 'rgb(255, 227, 111)');
     await expect(resultShare.getByRole('heading', { name: 'この結果、友達に伝えよう' })).toBeVisible();
+    await expect(resultShare.locator('[data-board-settings]')).not.toHaveAttribute('open', '');
+    await resultShare.locator('[data-board-settings] > summary').click();
     const boardCheckbox = resultShare.getByRole('checkbox', { name: /理解度ボードに載せる/ });
     await expect(boardCheckbox).not.toBeChecked();
     await expect(boardCheckbox).toBeEnabled();
@@ -557,11 +559,11 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       expect(await participant.evaluate(() => window.__openedResultShareUrl)).toMatch(/^https:\/\/x\.com\/intent\/post\?text=/);
       expect(decodeURIComponent(await participant.evaluate(() => window.__openedResultShareUrl))).toContain('/challenge?room=');
       await boardCheckbox.check();
-      await resultShare.locator('summary').click();
+      await resultShare.locator('[data-result-share-fallback] > summary').click();
       await resultShare.locator('[data-result-share="instagram"]').click();
       await expect(resultShare.locator('.challenge-result-board-message')).toContainText('設定を更新しました');
       const downloadPromise = participant.waitForEvent('download');
-      await resultShare.locator('summary').click();
+      await resultShare.locator('[data-result-share-fallback] > summary').click();
       await resultShare.locator('[data-result-share="instagram"]').click();
       await downloadPromise;
       expect(await participant.evaluate(() => window.__copiedResultText)).toContain('称号は「');
@@ -633,6 +635,7 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
       await participant.locator('[data-action="answer"]').nth(1).click();
     }
     await expect(participant.getByRole('heading', { name: '0/10問 正解' })).toHaveCount(1);
+    await participant.locator('[data-board-settings] > summary').click();
     const firstAttemptBoardCheckbox = participant.getByTestId('challenge-result-share')
       .getByRole('checkbox', { name: /理解度ボードに載せる/ });
     await expect(firstAttemptBoardCheckbox).not.toBeChecked();
@@ -643,6 +646,7 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
       await participant.locator('[data-action="answer"]').first().click();
     }
     await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toHaveCount(1);
+    await participant.locator('[data-board-settings] > summary').click();
     const secondAttemptBoardCheckbox = participant.getByTestId('challenge-result-share')
       .getByRole('checkbox', { name: /理解度ボードに載せる/ });
     await expect(secondAttemptBoardCheckbox).not.toBeChecked();
@@ -1051,7 +1055,7 @@ test('廃止した公開URLと遠隔APIは404になり、旧screen指定も開�
   }
   expect((await request.get('/api/remote/rooms/123456')).status()).toBe(404);
   await page.goto('/?screen=friendIntro');
-  await expect(page.getByRole('button', { name: '10問を作り始める', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'クイズを作り始める', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'LIVE版で作る', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
   await expect(page.getByText('友達の友情判定ゲーム', { exact: true })).toHaveCount(0);
