@@ -99,3 +99,26 @@ for(const locale of ['', '/en'])test(`${locale||'ja'}: weekly themes use availab
   await page.locator('[data-action="start-create"]').click();
   await expect(page.locator('.challenge-q-number')).toHaveText('Q1/10');
 });
+
+test('participant double click answers only one question, even with a fast local API', async ({page,request}) => {
+  const cards=Array.from({length:3},(_,i)=>({id:`DBL${i}`,category:'Local test',title:`Question ${i+1}`,choices:['One','Two','Three','Four','Five']}));
+  const response=await request.post('/api/challenge/rooms',{data:{creatorName:'Local double',cards,answers:[0,0,0]}});
+  expect(response.status()).toBe(201);
+  const {code}=await response.json();
+  let answerRequests=0;
+  page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/answer'))answerRequests+=1;});
+  await page.goto(`/challenge?room=${code}&analytics=exclude`);
+  await page.locator('#participant-name').fill('Local guest');
+  await page.locator('[data-action="join"]').click();
+  await expect(page.locator('.challenge-q-number')).toHaveText('Q1/3');
+  await page.locator('[data-action="answer"]').first().dblclick({ delay: 150 });
+  await expect(page.locator('.challenge-q-number')).toHaveText('Q2/3');
+  expect(answerRequests).toBe(1);
+  await page.reload();
+  await expect(page.locator('.challenge-q-number')).toHaveText('Q2/3');
+  await page.locator('[data-action="answer"]').first().click();
+  await expect(page.locator('.challenge-q-number')).toHaveText('Q3/3');
+  await page.locator('[data-action="answer"]').first().click();
+  await expect(page.getByRole('heading',{name:'3/3問 正解',exact:true})).toBeVisible();
+  expect(answerRequests).toBe(3);
+});

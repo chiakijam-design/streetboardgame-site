@@ -1081,7 +1081,12 @@ function bindEvents() {
   document.querySelector('[data-action="delete-draft"]')?.addEventListener('click', deleteCreatorDraft);
   document.querySelector('[data-action="previous-question"]')?.addEventListener('click', previousQuestion);
   document.querySelectorAll('[data-action="answer"]').forEach((button) => {
-    button.addEventListener('click', () => answerQuestion(Number(button.dataset.choice)));
+    const questionIndex = state.questionIndex;
+    button.addEventListener('click', (event) => {
+      // A fast response may render the next question before the second click lands.
+      if (event.detail > 1 || state.questionIndex !== questionIndex) return;
+      answerQuestion(Number(button.dataset.choice));
+    });
   });
   document.querySelectorAll('[data-action="copy-url"], [data-action="copy-ranking"]').forEach((button) => {
     button.addEventListener('click', () => copyValue(button));
