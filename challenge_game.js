@@ -1,5 +1,6 @@
 import { validQuizLength, answeredQuestionCount, completedCreatorQuiz } from './src/challenge/length.js';
 import { challengeCopy } from './src/i18n/challenge-copy.js';
+import { challengeCompletionCopy } from './src/i18n/challenge-completion-copy.js';
 import { weeklyQuestionPacks } from './src/challenge/packs.js';
 import { publicQuestionExamples } from './src/challenge/examples.js';
 import { resultShareMarkup, bindResultShare } from './src/platform/resultShare.js';
@@ -228,16 +229,18 @@ function trackCurrentCreatorQuestionShown() {
 
 function finishEarlyControls() {
   const count = answeredQuestionCount(state.cards, state.answers);
-  return `<button class="challenge-secondary" data-action="finish-early" ${!count || state.loading ? 'disabled' : ''}>${escapeHtml(challengeCopy(currentLocale, 'finish'))} (${count}/${state.cards.length})</button>`;
+  const copy = challengeCompletionCopy(currentLocale, count, state.cards.length);
+  return `<button class="challenge-secondary" data-action="finish-early" aria-describedby="challenge-finish-help" ${!count || state.loading ? 'disabled' : ''}>${escapeHtml(copy.label)}</button>
+    <p class="challenge-note" id="challenge-finish-help" data-testid="challenge-finish-help">${escapeHtml(copy.help)}</p>`;
 }
 
 function finishConfirmationView() {
   const count = answeredQuestionCount(state.cards, state.answers);
-  return shell('QUIZ MAKER', challengeCopy(currentLocale, 'confirm'), '',
+  const copy = challengeCompletionCopy(currentLocale, count, state.cards.length);
+  return shell('QUIZ MAKER', copy.label, '',
     `<section class="challenge-panel" data-testid="finish-quiz-confirmation">
-      <p>${escapeHtml(challengeCopy(currentLocale, 'confirm'))}</p>
-      <h2>${count}/${state.cards.length}</h2>
-      <button class="challenge-primary" data-action="confirm-finish" ${!count || state.loading ? 'disabled' : ''}>${escapeHtml(challengeCopy(currentLocale, 'create'))} (${count})</button>
+      <p>${escapeHtml(copy.help)}</p>
+      <button class="challenge-primary" data-action="confirm-finish" ${!count || state.loading ? 'disabled' : ''}>${escapeHtml(copy.label)}</button>
       <button class="challenge-secondary" data-action="cancel-finish">${escapeHtml(translateText('キャンセル'))}</button>
     </section>`);
 }
@@ -290,9 +293,11 @@ function creatorEditView() {
       <div class="challenge-builder-actions">
         <button class="challenge-secondary" data-action="skip-question">この問題をスキップ</button>
         <button class="challenge-secondary" data-action="edit-question">✎ 問題・選択肢を編集する</button>
-        <button class="challenge-secondary" data-action="custom-question">＋ 自分で問題を作る</button>
       </div>
       ${finishEarlyControls()}
+      <div class="challenge-builder-actions">
+        <button class="challenge-secondary" data-action="custom-question">＋ 自分で問題を作る</button>
+      </div>
       ${questionReportControls(card)}
       <label class="challenge-consent">
         <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
@@ -413,7 +418,7 @@ function createStartView() {
       <input id="creator-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ちあき" value="${escapeHtml(state.creatorName)}">
       <button class="challenge-primary" data-action="start-create">${escapeHtml(translateText('クイズを作る'))} <span>▶</span></button>
-      <p class="challenge-note">共通のお題ライブラリから出題します。回答途中はこの端末へ自動保存されます。</p><p>${escapeHtml(challengeCopy(currentLocale, 'finish'))} (1–10)</p>
+      <p class="challenge-note">共通のお題ライブラリから出題します。回答途中はこの端末へ自動保存されます。</p><p>${escapeHtml(challengeCompletionCopy(currentLocale, 0).help)}</p>
     </section>`,
   );
 }

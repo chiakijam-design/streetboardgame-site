@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { handleChallengeApi } from '../../src/challenge/api.js';
 import { answeredQuestionCount, completedCreatorQuiz, validQuizLength } from '../../src/challenge/length.js';
 import { challengeCopy } from '../../src/i18n/challenge-copy.js';
+import { challengeCompletionCopy } from '../../src/i18n/challenge-completion-copy.js';
 
 // Execute the real client flow functions against the real API and a fresh KV.
 // DOM layout / browser rendering remain separate E2E checks; no bundler or network here.
@@ -22,7 +23,7 @@ function harness() {
   const values=new Map(),kv={async get(key,options={}){const v=values.get(key);return v?options.type==='json'?JSON.parse(v):v:null;},async put(key,v){values.set(key,String(v));}};
   const saved=new Map();let requests=0;
   const context={QUESTION_COUNT:10,CREATOR_DRAFT_KEY:'draft',state:{mode:'creator-edit',cards:structuredClone(cards),answers:[],questionIndex:0,creatorName:'Local creator',finishCount:0,loading:false,questionSubmissionConsent:false},
-    allCards:structuredClone(cards),currentLocale:'ja',languagePrefix:'',validQuizLength,answeredQuestionCount,completedCreatorQuiz,challengeCopy,
+    allCards:structuredClone(cards),currentLocale:'ja',languagePrefix:'',validQuizLength,answeredQuestionCount,completedCreatorQuiz,challengeCopy,challengeCompletionCopy,
     structuredClone,Date,Number,Array,JSON,Map,Set,console,
     escapeHtml:x=>String(x).replaceAll('<','&lt;'),translateText:x=>x,shell:(...args)=>args,
     captureCreatorConsent(){},trackGamePlay(){},trackDailyResultAction(){},
@@ -41,7 +42,9 @@ for(const count of [1,2,3,9,10]) test(`real creator flow publishes ${count} answ
   if(count<10){
     assert.equal(c.state.mode,'creator-edit');assert.equal(h.requests(),0);
     c.state.finishCount=count;
-    assert.match(c.finishConfirmationView()[3],new RegExp(`${count}/10`));
+    assert.equal(c.finishConfirmationView()[1],`この${count}問でクイズを作成`);
+    assert.match(c.finishConfirmationView()[3],new RegExp(`この${count}問でクイズを作成`));
+    assert.doesNotMatch(c.finishConfirmationView()[3],new RegExp(`${count}/10`));
     // Two simultaneous publish actions must create exactly one room.
     await Promise.all([c.createChallengeRoom(c.state.answers.slice(0,count)),c.createChallengeRoom(c.state.answers.slice(0,count))]);
   }

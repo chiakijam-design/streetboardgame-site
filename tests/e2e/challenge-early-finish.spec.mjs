@@ -1,5 +1,6 @@
 import { test, expect } from './test.mjs';
 import { challengeCopy } from '../../src/i18n/challenge-copy.js';
+import { challengeCompletionCopy } from '../../src/i18n/challenge-completion-copy.js';
 
 for (const [locale, count] of [['',1],['',2],['',3],['',9],['',10],['/en',2],['/ar',2]]) {
   test(`${locale || 'ja'}: ${count} answers, saved draft, confirmation, sharing and role swap`, async ({page, context},testInfo) => {
@@ -35,8 +36,10 @@ for (const [locale, count] of [['',1],['',2],['',3],['',9],['',10],['/en',2],['/
       await page.reload();
       await page.locator('[data-action="resume-create"]').click();
       await page.locator('[data-action="finish-early"]').click();
-      await expect(page.getByTestId('finish-quiz-confirmation')).toContainText(`${count}/10`);
-      await expect(page.getByTestId('finish-quiz-confirmation').getByText(challengeCopy(locale.slice(1) || 'ja', 'confirm'), { exact: true })).toBeVisible();
+      const completion = challengeCompletionCopy(locale.slice(1) || 'ja', count);
+      await expect(page.locator('[data-action="confirm-finish"]')).toHaveText(completion.label);
+      await expect(page.getByTestId('finish-quiz-confirmation')).toContainText(completion.help);
+      await expect(page.getByTestId('finish-quiz-confirmation')).not.toContainText(`${count}/10`);
       await page.locator('[data-action="cancel-finish"]').click();
       await expect(page.locator('.challenge-q-number')).toHaveText(`Q${count+1}/10`);
       await page.locator('[data-action="finish-early"]').click();
