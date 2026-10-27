@@ -137,8 +137,8 @@ export function TopPage() {
             gap: 10,
             marginTop: 8,
           }}>
-            <button type="submit" aria-label="クイズを作り始める" style={primaryButton()}>
-              クイズを作り始める
+            <button type="submit" aria-label="わたし理解度診断を作る" style={primaryButton()}>
+              わたし理解度診断を作る
               <span aria-hidden="true">▶</span>
             </button>
             <p style={{

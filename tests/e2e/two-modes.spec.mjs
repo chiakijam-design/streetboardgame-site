@@ -126,15 +126,28 @@ test('作成完了後は共通共有パネルの8操作と2つの管理導線を
 
 test('トップは通常版への作成導線だけを公開する', async ({ page }) => {
  await page.goto('/');
- await expect(page.getByRole('button', { name: 'クイズを作り始める', exact: true })).toBeVisible();
+ await expect(page.getByRole('button', { name: 'わたし理解度診断を作る', exact: true })).toBeVisible();
  await expect(page.locator('a[href*="live-challenge"], [data-home-mode="live"]')).toHaveCount(0);
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+ for (const width of [1280, 390, 320]) {
+   await page.setViewportSize({ width, height: 667 });
+   const start=page.getByRole('button',{name:'わたし理解度診断を作る',exact:true});
+   const layout=await start.evaluate(button=>{
+     const box=button.getBoundingClientRect(),input=document.getElementById('top-creator-name').getBoundingClientRect();
+     const range=document.createRange();range.selectNodeContents(button);
+     const content=range.getBoundingClientRect();
+     return {height:box.height,inside:content.left>=box.left&&content.right<=box.right&&content.top>=box.top&&content.bottom<=box.bottom,inputAbove:input.bottom<=box.top,noOverflow:document.documentElement.scrollWidth<=innerWidth+1};
+   });
+   expect(layout.height).toBeGreaterThanOrEqual(44);
+   expect(layout).toMatchObject({inside:true,inputAbove:true,noOverflow:true});
+   await page.getByTestId('top-common-rules').screenshot({path:`build/lcp/home-start-${test.info().project.name}-${width}.png`});
+ }
 });
 
 test('トップで名前を入力すると通常版の10問作成画面へ直接進む', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('あなたの名前（12文字まで）').fill('トップ通常');
-  await page.getByRole('button', { name: 'クイズを作り始める', exact: true }).click();
+  await page.getByRole('button', { name: 'わたし理解度診断を作る', exact: true }).click();
   await expect(page).toHaveURL('/challenge');
   await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
   const beforeSkip = await page.locator('.challenge-builder-card h2').textContent();
@@ -1055,7 +1068,7 @@ test('廃止した公開URLと遠隔APIは404になり、旧screen指定も開�
   }
   expect((await request.get('/api/remote/rooms/123456')).status()).toBe(404);
   await page.goto('/?screen=friendIntro');
-  await expect(page.getByRole('button', { name: 'クイズを作り始める', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'わたし理解度診断を作る', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'LIVE版で作る', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '彼氏の愛情を判定する' })).toHaveCount(0);
   await expect(page.getByText('友達の友情判定ゲーム', { exact: true })).toHaveCount(0);

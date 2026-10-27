@@ -33,7 +33,7 @@ test('トップはReactと外部フォントを取得せず、静的HTMLを表�
   const requested = [];
   page.on('request', (request) => requested.push(request.url()));
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'クイズを作り始める', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'わたし理解度診断を作る', exact: true })).toBeVisible();
   await expect(page.locator('[data-testid="top-question-card"]')).toHaveCount(3);
   await expect(page.locator('main')).toHaveCount(1);
   expect(requested.filter((url) => /react(?:-dom)?\.production|prototype_app-|prototype_character-/.test(url))).toEqual([]);

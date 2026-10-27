@@ -1,7 +1,7 @@
 // Fixed public home-page copy only; never names, answers or quiz titles.
 // Translations have not had native-language review.
 const rows = {
-  ja: ['出題する問題を選ぶ・作る（1〜10問）', 'クイズを作り始める', '1〜10問・最大50人'],
+  ja: ['出題する問題を選ぶ・作る（1〜10問）', 'わたし理解度診断を作る', '1〜10問・最大50人'],
   en: ['Choose or write questions (1–10)', 'Start creating a quiz', '1–10 questions · up to 50 people'],
   es: ['Elige o escribe preguntas (1–10)', 'Empieza a crear un cuestionario', '1–10 preguntas · hasta 50 personas'],
   fr: ['Choisissez ou créez des questions (1–10)', 'Créer un quiz', '1–10 questions · jusqu’à 50 personnes'],
