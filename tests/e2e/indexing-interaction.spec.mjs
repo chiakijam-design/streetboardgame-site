@@ -32,7 +32,7 @@ test('カード内タップと5色ボタンで通常版を完走し、二重送�
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill('テスト出題者');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   for (let index = 0; index < 10; index += 1) {
     await expect(page.locator('.challenge-q-number')).toHaveText(`Q${index + 1}/10`);
     const card = page.getByTestId('challenge-builder-paper-card');
@@ -40,7 +40,7 @@ test('カード内タップと5色ボタンで通常版を完走し、二重送�
     if (index === 0) await page.screenshot({ path: `build/interaction-qa/${testInfo.project.name}-card.png`, fullPage: true });
     await card.locator('.notebook-card-choice-button').nth(index % 5).tap();
   }
-  await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '友達に送る' })).toBeVisible();
   const shareControls = page.locator('[data-result-share-controls]');
   const url = await shareControls.locator('[data-result-share-url]').inputValue();
   const invitation = new URL(url);
@@ -88,7 +88,8 @@ test('カード内タップと5色ボタンで通常版を完走し、二重送�
   const room = new URL(url).searchParams.get('room');
   const board = await (await request.get(`/api/challenge/rooms/${room}/ranking`)).json();
   expect(board.participants).toHaveLength(0);
-  await expect(player.getByRole('button', { name: '同じ10問で、今度は私が出題する' })).toBeVisible();
+  await expect(player.getByTestId('challenge-role-swap')).toContainText('同じ10問で、今度は私が出題する');
+  await expect(player.getByRole('button', { name: '私のことも当ててみて' })).toBeVisible();
   expect(errors).toEqual([]);
   await playerContext.close();
 });

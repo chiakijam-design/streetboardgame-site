@@ -123,8 +123,9 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByTestId('challenge-result-image')).toHaveAttribute('alt', /You in 100% Focus/);
   const roleSwap = page.getByTestId('challenge-role-swap');
   await expect(roleSwap).toContainText('RECOMMENDED');
+  await expect(roleSwap).toContainText('Use the same 10 questions — now I’ll be the creator');
   await expect(roleSwap.getByRole('button', {
-    name: 'Use the same 10 questions — now I’ll be the creator',
+    name: 'Guess my answers too',
   })).toBeVisible();
   const resultShare = page.getByTestId('challenge-result-share');
   await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();

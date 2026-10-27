@@ -37,11 +37,11 @@ async function buildChallengeQuestions(page, startIndex = 0) {
 async function createChallenge(page, creatorName = 'ちあき') {
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill(creatorName);
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
   await expect(page.getByLabel('このクイズを友達や他の人も使えるようにする')).toBeChecked();
   await buildChallengeQuestions(page);
-  await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '友達に送る' })).toBeVisible();
   await expect(page.getByTestId('challenge-share-screen')).toContainText('理解度診断ができました');
   const controls = page.getByTestId('challenge-share-screen').locator('[data-result-share-controls]');
   await expect(controls.getByRole('button', { name: '診断を共有', exact: true })).toBeVisible();
@@ -169,7 +169,7 @@ test('通常版とLIVE版は表示・スキップを問題選出統計へ記録�
 
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill('統計確認');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   await expect.poll(() => events.filter((event) => event.mode === 'challenge'
     && event.event === 'shown').length).toBe(1);
   const challengeQuestionId = events.find((event) => event.mode === 'challenge'
@@ -191,7 +191,7 @@ test('同じ端末では過去に見た問題より初めて見る問題を優�
   });
   await page.reload();
   await page.getByLabel('出題者の名前（12文字まで）').fill('初見優先確認');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   await expect(page.getByTestId('challenge-builder-paper-card')).toContainText(unseenQuestion.title);
   await expect.poll(() => page.evaluate(({ key, id }) => {
     const history = JSON.parse(localStorage.getItem(key) || '{}');
@@ -273,7 +273,7 @@ test('共通お題を挑戦クイズと人気ライブラリで使える', async
   await page.goto(`/challenge?question=${encodeURIComponent(commonCard.id)}`);
   await expect(page.getByText(commonCard.title, { exact: true })).toBeVisible();
   await page.getByLabel('出題者の名前（12文字まで）').fill('共通お題テスト');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   const builderCard = page.locator('.challenge-builder-card');
   await expect(builderCard.getByRole('heading', { level: 2 })).toHaveText(commonCard.title);
   await expect(builderCard).toContainText(commonCard.firstChoice);
@@ -293,7 +293,7 @@ test('自作お題は初期同意で、チェック状態を自分で変更し�
   });
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill('自作テスト');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   await page.getByRole('button', { name: /自分で問題を作る/ }).click();
   await page.locator('[data-question="0"]').fill('休み時間に一番したいことは？');
   for (let index = 0; index < 5; index += 1) {
@@ -352,7 +352,7 @@ test('承認済み自作お題を理由付きで通報すると、即時非公�
 
   await page.goto(`/challenge?question=${questionId}`);
   await page.getByLabel('出題者の名前（12文字まで）').fill('通報確認');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   await expect(page.locator('.challenge-builder-card h2')).toHaveText('通報テストのお題');
   await page.locator('[data-report-reason]').selectOption('discrimination');
   page.on('dialog', (dialog) => dialog.accept());
@@ -376,7 +376,7 @@ test('公開候補チェックを外した自作お題は運営へ送信しな�
   });
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill('非公開テスト');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   await page.getByRole('button', { name: /自分で問題を作る/ }).click();
   await page.locator('[data-question="0"]').fill('自分たちだけで使いたい問題は？');
   for (let index = 0; index < 5; index += 1) {
@@ -385,7 +385,7 @@ test('公開候補チェックを外した自作お題は運営へ送信しな�
   await page.getByLabel('このクイズを友達や他の人も使えるようにする').uncheck();
   await page.getByRole('button', { name: /この内容で問題に戻る/ }).click();
   await buildChallengeQuestions(page);
-  await expect(page.getByRole('heading', { name: '主催者用回答管理' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '友達に送る' })).toBeVisible();
   expect(submissionRequests).toBe(0);
   await expect(page.getByTestId('question-submission-status')).toHaveCount(0);
 });
@@ -679,7 +679,8 @@ test('参加者が結果画面から役割交代し、同じ10問の出題者に
     await expect(participant.getByTestId('challenge-role-swap')).toContainText('次は、あなたが出題者');
     await expect(participant.getByTestId('challenge-role-swap')).toContainText('おすすめ');
     await expect(participant.getByTestId('challenge-role-swap')).toContainText('元の出題者の正解は引き継がれません');
-    const roleSwap = participant.getByRole('button', { name: '同じ10問で、今度は私が出題する' });
+    await expect(participant.getByTestId('challenge-role-swap')).toContainText('同じ10問で、今度は私が出題する');
+    const roleSwap = participant.getByRole('button', { name: '私のことも当ててみて' });
     const retry = participant.getByRole('button', { name: 'もう一度、答えを予想する' });
     const newQuestions = participant.getByRole('link', { name: '新しいお題で作る' });
     expect(await participant.evaluate(() => {
@@ -765,7 +766,7 @@ test('出題者画面は順位を使わず、問題別の人数・割合を会�
 test('途中保存から再開し、画像付き10問パックでクイズ作成へ戻れる', async ({ page }) => {
   await page.goto('/challenge');
   await page.getByLabel('出題者の名前（12文字まで）').fill('途中保存');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   await page.locator('[data-action="builder-answer"]').first().click();
   await page.reload();
   await expect(page.getByTestId('creator-resume')).toContainText('Q2/10から再開');
@@ -788,7 +789,7 @@ test('途中保存から再開し、画像付き10問パックでクイズ作成
   await page.locator('[data-pack="unexpected-side"]').getByRole('link', { name: 'この10問で作る' }).click();
   await expect(page.getByTestId('selected-question-pack')).toContainText('意外な一面が分かる10問');
   await page.getByLabel('出題者の名前（12文字まで）').fill('パックテスト');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   await expect(page.locator('.challenge-q-number')).toHaveText('Q1/10');
   await expect(page.locator('.challenge-builder-card')).toContainText('「第一印象」と本当の自分の違いに近いのは');
 
@@ -862,7 +863,7 @@ test('採用済みのお題だけを実データのある最近人気として�
   await trends.locator('[data-trend-group="weekly"] [data-question-id="Q045"] a').click();
   await expect(page).toHaveURL('/challenge?question=Q045');
   await page.getByLabel('出題者の名前（12文字まで）').fill('最近人気');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   await expect(page.locator('.challenge-builder-card')).toContainText('暇つぶしで開くのは');
 
   if (testInfo.project.name === 'mobile-chrome') {
@@ -940,7 +941,7 @@ test('PC・スマホとも横スクロールせず10問モードを操作でき�
   }));
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.innerWidth);
   await page.getByLabel('出題者の名前（12文字まで）').fill('レイアウト確認');
-  await page.getByRole('button', { name: /10問に答えてクイズを作る/ }).click();
+  await page.getByRole('button', { name: /クイズを作る/ }).click();
   await expect(page.getByTestId('challenge-question-editor')).toBeVisible();
   const builderCard = page.getByTestId('challenge-builder-paper-card');
   const builderPad = page.getByTestId('challenge-builder-answer-pad');
