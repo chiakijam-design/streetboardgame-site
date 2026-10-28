@@ -1,6 +1,7 @@
 import { validQuizLength, answeredQuestionCount, completedCreatorQuiz } from './src/challenge/length.js';
 import { challengeCopy } from './src/i18n/challenge-copy.js';
 import { challengeCompletionCopy } from './src/i18n/challenge-completion-copy.js';
+import { challengeStartCopy } from './src/i18n/challenge-start-copy.js';
 import { weeklyQuestionPacks } from './src/challenge/packs.js';
 import { publicQuestionExamples } from './src/challenge/examples.js';
 import { resultShareMarkup, bindResultShare } from './src/platform/resultShare.js';
@@ -379,10 +380,11 @@ function createStartView() {
   const preferredPack = questionPackBySlug(preferredPackSlug, isEnglish);
   const preferredPackQuestions = questionPackCards(allCards, preferredPackSlug, isEnglish, QUESTION_COUNT);
   const historyItems = manageHistory();
+  const startCopy = challengeStartCopy(currentLocale, translateText);
   return shell(
     'わたし理解度診断｜通常版',
     '私のこと、ちゃんと分かってるよね？',
-    '当てるより、話すための10問。先に自分が回答し、できたURLを送ると最大50人が挑戦できます。',
+    startCopy.intro,
     `<nav class="challenge-feature-nav" aria-label="挑戦モードのメニュー">
       <a href="/challenge/library">お題ライブラリ</a>
       ${historyItems[0] ? `<a href="${manageUrl(historyItems[0].code, historyItems[0].token)}">主催者用回答管理</a>` : ''}
@@ -399,7 +401,7 @@ function createStartView() {
     <section class="challenge-panel">
       <h2>あなたのクイズを作る</h2>
       <ol class="challenge-steps">
-        <li><b>あなた</b>が10問に回答</li>
+        <li>${escapeHtml(startCopy.step)}</li>
         <li>専用URL・QRコードを共有</li>
         <li>答え合わせを確認。希望者だけ理解度ボードへ掲載</li>
       </ol>
