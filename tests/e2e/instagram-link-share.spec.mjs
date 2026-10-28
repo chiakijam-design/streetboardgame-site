@@ -36,6 +36,11 @@ for(const scene of ['host','result'])for(const locale of ['ja','en','ar'])for(co
   expect(await social.locator('button').evaluateAll(buttons=>buttons.map(b=>b.dataset.resultShare))).toEqual(['x','line','whatsapp','instagram-link']);
   const positions=await social.locator('button').evaluateAll(buttons=>buttons.map(b=>b.getBoundingClientRect().toJSON()));
   expect(positions[3].x).toBeGreaterThan(positions[2].x);expect(positions[3].y).toBeGreaterThan(positions[1].y);
+  const instruction=instagram.locator('.share-card-copy small');
+  await expect(instruction).toHaveCSS('clip-path','none');
+  await expect(instruction).toHaveCSS('position','static');
+  const instructionBox=await instruction.boundingBox();
+  expect(instructionBox.width).toBeGreaterThan(20);expect(instructionBox.height).toBeGreaterThanOrEqual(12);
   await instagram.focus();await expect(instagram).toBeFocused();await expect(instagram).toHaveCSS('outline-style','solid');await instagram.press('Enter');
   expect(await page.evaluate(()=>window.__COPIED__)).toBe(publicUrl);
   expect(await page.evaluate(()=>window.__COPY_CALLS__)).toBe(1);expect(await page.evaluate(()=>window.__OPEN_CALLS__)).toBe(0);
