@@ -7,8 +7,8 @@ test('Aboutは旧来の立体カードデザインで現在の2モードと方�
   await expect(page.getByRole('heading', { name: 'About' })).toBeVisible();
   await expect(page.getByText('当てるより、話すための10問。')).toBeVisible();
   await expect(page.getByTestId('about-brand-promise')).toContainText('何度でも挑戦できる');
-  await expect(page.getByText('結果公開は自分で選べる', { exact: true })).toBeVisible();
-  await expect(page.getByText('点数による順位づけもしません。')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '理解度ボード', exact: true })).toBeVisible();
+  await expect(page.getByText(/表示名と点数が理解度ボードに自動で載ります/)).toBeVisible();
   await expect(page.getByRole('link', { name: /通常版.*みんなに挑戦してもらう/ })).toHaveAttribute('href', '/challenge');
   await expect(page.getByRole('link', { name: /カードで遊べる製品版/ })).toHaveAttribute('href', '/product');
   await expect(page.getByTestId('about-page')).toHaveCSS('max-width', '600px');

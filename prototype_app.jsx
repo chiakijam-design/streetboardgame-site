@@ -1,6 +1,7 @@
 import { BOARD_GAME_PRODUCT } from './src/product/config.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
 import { startCreatorGame } from './src/home/start.js';
+import { BOARD_COPY } from './src/i18n/challenge-board-copy.js';
 
 const { useEffect, useState } = React;
 
@@ -277,7 +278,7 @@ export function ChallengeGuide() {
     },
     {
       question: '点数は必ず公開されますか？',
-      answer: '公開されません。理解度ボードへ載せるかは回答した本人が選べます。載せる前に、同じ10問へもう一度挑戦することもできます。',
+      answer: BOARD_COPY.ja.notice,
     },
   ];
 
@@ -491,8 +492,7 @@ export function ChallengeGuide() {
             相手を理解できるまで、<br />何度でも挑戦できる
           </h2>
           <p style={paragraph()}>
-            理解度ボードへの掲載は任意です。掲載前に同じ10問へ再挑戦でき、
-            掲載した結果も点数順ではなく回答完了順で表示します。
+            {BOARD_COPY.ja.rule}
           </p>
         </section>
 
@@ -641,12 +641,12 @@ export function AboutPage() {
               <AboutValue
                 icon="↻"
                 title="もう一度、答えを予想できる"
-                text="点数が気になっても、結果を載せる前に同じ10問へ再挑戦できます。"
+                text={BOARD_COPY.ja.rule}
               />
               <AboutValue
                 icon="○"
-                title="結果公開は自分で選べる"
-                text="理解度ボードへの掲載は任意。掲載した結果は回答完了順で表示し、点数による順位づけもしません。"
+                title="理解度ボード"
+                text={BOARD_COPY.ja.notice}
               />
               <AboutValue
                 icon="✎"

@@ -129,12 +129,8 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   })).toBeVisible();
   const resultShare = page.getByTestId('challenge-result-share');
   await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();
-  await resultShare.locator('[data-board-settings] > summary').click();
-  const boardCheckbox = resultShare.getByRole('checkbox', { name: /Add to Understanding Board/ });
-  await expect(boardCheckbox).not.toBeChecked();
-  await expect(boardCheckbox).toBeEnabled();
-  await expect(resultShare.getByText('You can still save, share, and retry without adding your result.')).toBeVisible();
-  await expect(resultShare.getByRole('button', { name: 'Add only to Understanding Board' })).toBeEnabled();
+  await expect(page.getByTestId('understanding-board')).toBeVisible();
+  await expect(resultShare.getByRole('checkbox')).toHaveCount(0);
   await expect(resultShare.getByRole('button', { name: 'Share result', exact: true })).toBeEnabled();
   await expect(resultShare.getByRole('button', { name: 'Copy link', exact: true })).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'Save result image', exact: true })).toBeEnabled();
@@ -156,10 +152,9 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
       && (retry.compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING));
   })).toBe(true);
   await expect(page.getByRole('button', { name: 'Copy text only' })).toHaveCount(0);
-  await resultShare.getByRole('button', { name: 'Add only to Understanding Board' }).click();
   await page.getByRole('link', { name: 'View the Understanding Board' }).click();
-  await expect(page.getByTestId('understanding-board')).toContainText('Answer reviewed');
-  await expect(page.getByTestId('understanding-board')).toContainText('10/10 matched');
+  await expect(page.getByTestId('understanding-board')).toContainText('Higher scores come first');
+  await expect(page.getByTestId('understanding-board')).toContainText('10/10');
   await expect(page.getByTestId('understanding-board')).not.toContainText('#1');
 });
 

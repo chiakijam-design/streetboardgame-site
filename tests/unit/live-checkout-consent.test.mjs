@@ -21,9 +21,9 @@ test('利用規約は現在の対象年齢・理解度ボード・投稿審査�
   for (const requiredText of [
     '18歳未満の利用者',
     '10歳から12歳までの利用者',
-    '理解度ボード掲載は任意',
-    '10問の回答完了順で表示',
-    '再挑戦すると現在の回答と結果は上書き',
+    '表示名と点数が理解度ボードに自動で載ります',
+    '最高点を更新します',
+    '以前の非掲載結果は公開しません',
     '答え合わせレポートは、10問の一致・不一致と回答内容に基づき',
     '配信者が各問の回答を締め切ったあとに配信者の答えを公開',
     '掲載候補として送信しない問題',
@@ -130,7 +130,7 @@ test('コンテンツ・肖像権ガイドラインは現行2モード・投稿�
 
 test('未成年者利用規定は通常版の同意・公開範囲と過去の購入条件を分離する', async () => {
   const current = (await readFileAsync(new URL('../../minor-policy.html', import.meta.url), 'utf8')).split('<details class="legal-card"')[0];
-  for (const text of ['18歳未満', '10〜12歳', '理解度ボード掲載は任意', 'コメントなし', '掲載候補への送信に同意した問題文と選択肢']) assert.equal(current.includes(text), true, text);
+  for (const text of ['18歳未満', '10〜12歳', '表示名と点数が理解度ボードに自動で載ります', '以前の非掲載結果は公開しません', '掲載候補への送信に同意した問題文と選択肢']) assert.equal(current.includes(text), true, text);
   assert.doesNotMatch(current, /有料販売を行う場合は|選択したコメントまたは|お金がかかる機能/);
   const document = await readFileAsync(new URL('../../legal-history/minor-policy.html', import.meta.url), 'utf8');
   for (const requiredText of [

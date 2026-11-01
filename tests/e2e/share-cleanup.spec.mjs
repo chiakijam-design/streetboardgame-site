@@ -91,8 +91,8 @@ for (const scene of ['host', 'result']) for (const [locale, width] of [['ja', 39
     await expect(controls.locator('[data-result-share-url]')).toHaveValue(url);
     await page.keyboard.press('Enter'); await expect(controls.locator('[data-result-share-url]')).toBeHidden();
     if (scene === 'result') {
-      await expect(page.locator('[data-board-settings]')).not.toHaveAttribute('open', '');
-      expect(await page.locator('[data-action=toggle-ranking]').isChecked()).toBe(false);
+      await expect(page.getByTestId('understanding-board')).toBeVisible();
+      await expect(page.locator('[data-action=toggle-ranking]')).toHaveCount(0);
     }
     expect(rankingCalls).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -145,17 +145,8 @@ for (const scene of ['host', 'result']) test(`${scene}: unsupported, failed, can
   }
   expect(rankingCalls).toEqual([]);
   if (scene === 'result') {
-    await page.locator('[data-board-settings] > summary').click();
-    await page.locator('[data-action=toggle-ranking]').check();
-    await expect(page.locator('[data-action=toggle-ranking]')).toBeFocused();
+    await expect(page.locator('[data-action=toggle-ranking]')).toHaveCount(0);
+    await controls.locator('[data-result-share=copy]').click();
     expect(rankingCalls).toEqual([]);
-    await controls.locator('[data-result-share=copy]').click();
-    await expect(page.locator('.challenge-result-board-message')).toContainText('設定を更新しました');
-    expect(rankingCalls).toEqual(['POST']);
-    await page.locator('[data-action=toggle-ranking]').uncheck();
-    await expect(page.locator('[data-action=toggle-ranking]')).toBeFocused();
-    await controls.locator('[data-result-share=copy]').click();
-    await expect(page.locator('.challenge-result-board-message')).toContainText('設定を更新しました');
-    expect(rankingCalls).toEqual(['POST', 'DELETE']);
   }
 });

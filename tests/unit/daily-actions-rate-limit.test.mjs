@@ -8,7 +8,7 @@ import { sendChallengeDailyAction } from '../../src/analytics/client-daily-actio
 
 function database() {
   const db = new DatabaseSync(':memory:');
-  for (const name of ['0003_live_games', '0010_challenge_rooms', '0011_challenge_ranking_library', '0018_challenge_board_comments', '0025_live_chat', '0027_play_daily_counts', '0028_play_daily_actions']) {
+  for (const name of ['0003_live_games', '0010_challenge_rooms', '0011_challenge_ranking_library', '0018_challenge_board_comments','0029_challenge_auto_board', '0025_live_chat', '0027_play_daily_counts', '0028_play_daily_actions']) {
     db.exec(readFileSync(new URL(`../../migrations/${name}.sql`, import.meta.url), 'utf8'));
   }
   return db;

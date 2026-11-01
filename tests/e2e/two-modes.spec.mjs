@@ -227,7 +227,7 @@ test('トップ下部から挑戦モードの説明を読み、10問クイズ作
   await expect(page.getByText('PLAY SCENE', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'こんな人におすすめ' })).toBeVisible();
   await expect(page.getByTestId('challenge-guide-promise')).toContainText('何度でも挑戦できる');
-  await expect(page.getByText('点数順ではなく回答完了順で表示します。')).toBeVisible();
+  await expect(page.getByText('同じ端末から再挑戦すると最高点を更新します。点数順で、同点は最初に載った順です。')).toBeVisible();
   await expect(page.getByRole('link', { name: '10問の理解度診断を作る' })).toHaveAttribute('href', '/challenge');
   await expect(page.getByTestId('challenge-guide-page')).toHaveCSS('max-width', '600px');
   await expect(page.getByRole('link', { name: '彼氏の愛情判定を見る' })).toHaveCount(0);
@@ -474,7 +474,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(participant.getByText('相手を理解できるまで、何度でも挑戦できる')).toBeVisible();
     await expect(participant.getByRole('heading', { name: 'ちあきさんからの挑戦' })).toBeVisible();
     await participant.getByLabel('表示名（12文字まで）').fill('ゆう');
-    await expect(participant.getByText(/回答後に、理解度ボードへ載せるかを結果画面で選べます/)).toBeVisible();
+    await expect(participant.getByText(/表示名と点数が理解度ボードに自動で載ります/)).toBeVisible();
     await participant.getByRole('button', { name: /10問の答え当てに挑戦する/ }).click();
     await participant.locator('[data-action="answer"]').first().click();
     await expect(participant.locator('.challenge-q-number')).toHaveText('Q2/10');
@@ -521,14 +521,8 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     const resultShare = participant.getByTestId('challenge-result-share');
     await expect(resultShare).toHaveCSS('background-color', 'rgb(255, 227, 111)');
     await expect(resultShare.getByRole('heading', { name: 'この結果、友達に伝えよう' })).toBeVisible();
-    await expect(resultShare.locator('[data-board-settings]')).not.toHaveAttribute('open', '');
-    await resultShare.locator('[data-board-settings] > summary').click();
-    const boardCheckbox = resultShare.getByRole('checkbox', { name: /理解度ボードに載せる/ });
-    await expect(boardCheckbox).not.toBeChecked();
-    await expect(boardCheckbox).toBeEnabled();
-    await expect(resultShare.getByText('載せなくても、結果の保存・共有・再挑戦はできます')).toBeVisible();
-    const boardOnlyButton = resultShare.getByRole('button', { name: '理解度ボードだけに載せる' });
-    await expect(boardOnlyButton).toBeEnabled();
+    await expect(participant.getByTestId('understanding-board')).toBeVisible();
+    await expect(resultShare.getByRole('checkbox')).toHaveCount(0);
     await expect(resultShare.getByRole('button', { name: '結果を共有', exact: true })).toBeEnabled();
     await expect(resultShare.getByRole('button', { name: 'リンクをコピー', exact: true })).toBeVisible();
     await expect(resultShare.getByRole('button', { name: '結果画像を保存', exact: true })).toBeEnabled();
@@ -564,19 +558,10 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
         value: { writeText: async (text) => { window.__copiedResultText = text; } },
       });
     });
-    await boardOnlyButton.click();
-    await expect(resultShare.getByRole('button', { name: '理解度ボードに掲載済み' })).toBeDisabled();
     if (testInfo.project.name === 'desktop-chrome') {
-      await boardCheckbox.uncheck();
-      await resultShare.getByRole('button', { name: 'X', exact: true }).click();
-      await expect(resultShare.locator('.challenge-result-board-message')).toContainText('設定を更新しました');
       await resultShare.getByRole('button', { name: 'X', exact: true }).click();
       expect(await participant.evaluate(() => window.__openedResultShareUrl)).toMatch(/^https:\/\/x\.com\/intent\/post\?text=/);
       expect(decodeURIComponent(await participant.evaluate(() => window.__openedResultShareUrl))).toContain('/challenge?room=');
-      await boardCheckbox.check();
-      await resultShare.locator('[data-result-share-fallback] > summary').click();
-      await resultShare.locator('[data-result-share="instagram"]').click();
-      await expect(resultShare.locator('.challenge-result-board-message')).toContainText('設定を更新しました');
       const downloadPromise = participant.waitForEvent('download');
       await resultShare.locator('[data-result-share-fallback] > summary').click();
       await resultShare.locator('[data-result-share="instagram"]').click();
@@ -621,12 +606,11 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(participant.getByRole('link', { name: '新しいお題で作る' })).toHaveAttribute('href', '/challenge');
     await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
     await expect(participant.getByTestId('understanding-board')).toContainText('ゆう');
-    await expect(participant.getByTestId('understanding-board')).toContainText('答え合わせ済み');
-    await expect(participant.getByTestId('understanding-board')).toContainText('9/10問一致');
+    await expect(participant.getByTestId('understanding-board')).toContainText('最高点を更新します');
+    await expect(participant.getByTestId('understanding-board')).toContainText('9/10');
     await expect(participant.getByTestId('understanding-board').locator('.challenge-board-comment')).toHaveCount(0);
     await expect(participant.getByTestId('understanding-board')).not.toContainText('1位');
-    await expect(participant.getByText('掲載された回答は、10問を回答し終えた順に表示します。')).toBeVisible();
-    await expect(participant.getByText(/順位や点数順の並び替えはありません/)).toBeVisible();
+    await expect(participant.getByText(/同点は最初に載った順です/)).toBeVisible();
   } finally {
     await participantContext.close();
   }
@@ -637,7 +621,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
   await expect(page.getByTestId('host-answer-management')).toContainText('9/10問');
 });
 
-test('低い点数を載せず同じ10問を予想し直し、高い点数だけ理解度ボードへ載せられる', async ({ browser, page }) => {
+test('低得点も自動掲載し、再挑戦の最高点で同じ行を更新する', async ({ browser, page }) => {
   const challengeUrl = await createChallenge(page);
   const participantContext = await browser.newContext();
   const participant = await participantContext.newPage();
@@ -650,29 +634,22 @@ test('低い点数を載せず同じ10問を予想し直し、高い点数だけ
       await participant.locator('[data-action="answer"]').nth(1).click();
     }
     await expect(participant.getByRole('heading', { name: '0/10問 正解' })).toHaveCount(1);
-    await participant.locator('[data-board-settings] > summary').click();
-    const firstAttemptBoardCheckbox = participant.getByTestId('challenge-result-share')
-      .getByRole('checkbox', { name: /理解度ボードに載せる/ });
-    await expect(firstAttemptBoardCheckbox).not.toBeChecked();
-    await expect(firstAttemptBoardCheckbox).toBeEnabled();
+    await expect(participant.getByTestId('understanding-board').locator('li')).toHaveCount(1);
+    await expect(participant.getByTestId('understanding-board')).toContainText('0/10');
     await participant.getByRole('button', { name: 'もう一度、答えを予想する' }).click();
     await expect(participant.locator('.challenge-q-number')).toHaveText('Q1/10');
     for (let index = 0; index < 10; index += 1) {
       await participant.locator('[data-action="answer"]').first().click();
     }
     await expect(participant.getByRole('heading', { name: '10/10問 正解' })).toHaveCount(1);
-    await participant.locator('[data-board-settings] > summary').click();
-    const secondAttemptBoardCheckbox = participant.getByTestId('challenge-result-share')
-      .getByRole('checkbox', { name: /理解度ボードに載せる/ });
-    await expect(secondAttemptBoardCheckbox).not.toBeChecked();
-    await expect(secondAttemptBoardCheckbox).toBeEnabled();
-    await participant.getByRole('button', { name: '理解度ボードだけに載せる' }).click();
+    await expect(participant.getByTestId('understanding-board').locator('li')).toHaveCount(1);
+    await expect(participant.getByTestId('understanding-board')).toContainText('10/10');
     await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
     await expect(participant.getByTestId('understanding-board')).toContainText('再挑戦');
-    await expect(participant.getByTestId('understanding-board')).toContainText('答え合わせ済み');
-    await expect(participant.getByTestId('understanding-board')).toContainText('10/10問一致');
+    await expect(participant.getByTestId('understanding-board')).toContainText('最高点を更新します');
+    await expect(participant.getByTestId('understanding-board')).toContainText('10/10');
     await expect(participant.getByTestId('understanding-board')).not.toContainText('1位');
-    await expect(participant.getByText(/順位や点数順の並び替えはありません/)).toBeVisible();
+    await expect(participant.getByText(/同点は最初に載った順です/)).toBeVisible();
   } finally {
     await participantContext.close();
   }

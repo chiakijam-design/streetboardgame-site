@@ -1,4 +1,5 @@
 import { localeFromPath, LOCALE_DETAILS, switchLocalePath } from './locales.js';
+import { translateBoardPolicyCopy } from './challenge-board-copy.js';
 import { createCatalogTranslator, requireCompleteCatalog } from './catalog-core.js';
 import { translateLegacyEnglish } from './legacy-copy.js';
 import { rootPublicResource, rootPublicSourceSet } from './resource-paths.js';
@@ -35,6 +36,8 @@ export function localizedConfirm(message) { return window.confirm(translateText(
 export function translateText(value) {
   const raw = String(value ?? '');
   if (!isEnglish) return raw;
+  const boardPolicy = translateBoardPolicyCopy(raw, currentLocale);
+  if (boardPolicy !== undefined) return boardPolicy;
   if (!translator) return translateLegacyEnglish(raw);
   if (translator.isProtected(raw)) return raw;
   if (currentLocale === 'en') {

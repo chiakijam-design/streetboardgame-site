@@ -26,7 +26,7 @@ test('旧404 URLは404のまま、公開サイトマップから参照しない'
   }
 });
 
-test('カード内タップと5色ボタンで通常版を完走し、二重送信と掲載初期OFFを保つ', async ({ page, browser, request }, testInfo) => {
+test('カード内タップと5色ボタンで通常版を完走し、二重送信を防ぎ理解度ボードへ自動掲載する', async ({ page, browser, request }, testInfo) => {
   await request.post('/__test/reset');
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -84,10 +84,10 @@ test('カード内タップと5色ボタンで通常版を完走し、二重送�
   await expect(player.getByRole('heading', { name: '10/10問 正解' })).toBeVisible();
   await player.screenshot({ path: `build/interaction-qa/${testInfo.project.name}-result.png`, fullPage: true });
   await expect(player.locator('.challenge-result')).toHaveCount(10);
-  await expect(player.locator('[data-action="publish-board-only"]')).toBeEnabled();
+  await expect(player.getByTestId('understanding-board')).toBeVisible();
   const room = new URL(url).searchParams.get('room');
   const board = await (await request.get(`/api/challenge/rooms/${room}/ranking`)).json();
-  expect(board.participants).toHaveLength(0);
+  expect(board.participants).toHaveLength(1);
   await expect(player.getByTestId('challenge-role-swap')).toContainText('同じ10問で、今度は私が出題する');
   await expect(player.getByRole('button', { name: '私のことも当ててみて' })).toBeVisible();
   expect(errors).toEqual([]);

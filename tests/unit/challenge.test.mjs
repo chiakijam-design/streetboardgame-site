@@ -67,7 +67,7 @@ function d1Adapter(sqlite) {
 
 for (const count of [1, 2, 9, 10]) test(`D1: ${count} questions preserve completion, privacy and retry`, async () => {
   const sqlite = new DatabaseSync(':memory:');
-  for (const migration of ['0010_challenge_rooms.sql','0011_challenge_ranking_library.sql','0018_challenge_board_comments.sql']) {
+  for (const migration of ['0010_challenge_rooms.sql','0011_challenge_ranking_library.sql','0018_challenge_board_comments.sql','0029_challenge_auto_board.sql']) {
     sqlite.exec(readFileSync(new URL('../../migrations/' + migration, import.meta.url), 'utf8'));
   }
   try {
@@ -233,6 +233,7 @@ test('通常版で採用済みのお題を使うと元のお題IDで今週の作
   sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0018_challenge_board_comments.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0029_challenge_auto_board.sql', import.meta.url), 'utf8'));
   const env = { REMOTE_DB: d1Adapter(sqlite) };
   const sourceCards = cards.map((card, index) => ({
     ...card,
@@ -342,6 +343,7 @@ test('選択した1問だけを順番に確定し、正解を漏らさず正誤�
   sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0018_challenge_board_comments.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0029_challenge_auto_board.sql', import.meta.url), 'utf8'));
   const environments = [
     { CHALLENGE_KV: new MemoryKV() },
     { REMOTE_DB: d1Adapter(sqlite) },
@@ -447,6 +449,7 @@ test('結果確認後だけ点数を登録でき、同じ参加枠で再挑戦�
   sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0018_challenge_board_comments.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0029_challenge_auto_board.sql', import.meta.url), 'utf8'));
   const environments = [
     { CHALLENGE_KV: new MemoryKV() },
     { REMOTE_DB: d1Adapter(sqlite) },
@@ -537,7 +540,7 @@ test('結果確認後だけ点数を登録でき、同じ参加枠で再挑戦�
   sqlite.close();
 });
 
-test('理解度ボードは点数ではなく10問の回答完了順で並び、順位を返さない', async (t) => {
+test('理解度ボードは点数順で並び、公開データに個別回答を含めない', async (t) => {
   let currentTime = 1_750_000_000_000;
   t.mock.method(Date, 'now', () => {
     currentTime += 1;
@@ -548,6 +551,7 @@ test('理解度ボードは点数ではなく10問の回答完了順で並び、
   sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0018_challenge_board_comments.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0029_challenge_auto_board.sql', import.meta.url), 'utf8'));
   const environments = [
     { CHALLENGE_KV: new MemoryKV() },
     { REMOTE_DB: d1Adapter(sqlite) },
@@ -592,8 +596,8 @@ test('理解度ボードは点数ではなく10問の回答完了順で並び、
 
     const board = await (await api(env, `/api/challenge/rooms/${created.code}/ranking`)).json();
     assert.deepEqual(board.participants, [
-      { name: '先に回答・0問一致', score: 0 },
       { name: '後に回答・10問一致', score: 10 },
+      { name: '先に回答・0問一致', score: 0 },
     ]);
     assert.equal(board.participants.every((participant) => !Object.hasOwn(participant, 'rank')), true);
   }
@@ -606,6 +610,7 @@ test('挑戦モードのD1移行は理解度ボード掲載同意と人気お題
   sqlite.exec(readFileSync(new URL('../../migrations/0010_challenge_rooms.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0011_challenge_ranking_library.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0018_challenge_board_comments.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0029_challenge_auto_board.sql', import.meta.url), 'utf8'));
   const participantColumns = sqlite.prepare('PRAGMA table_info(challenge_participants)').all()
     .map((column) => column.name);
   assert.equal(participantColumns.includes('ranking_consent_at'), true);

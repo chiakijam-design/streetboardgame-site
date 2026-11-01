@@ -1,4 +1,5 @@
 import { validQuizLength, answeredQuestionCount, completedCreatorQuiz } from './src/challenge/length.js';
+import { boardCopy } from './src/i18n/challenge-board-copy.js';
 import { challengeCopy } from './src/i18n/challenge-copy.js';
 import { challengeCompletionCopy } from './src/i18n/challenge-completion-copy.js';
 import { challengeStartCopy } from './src/i18n/challenge-start-copy.js';
@@ -40,11 +41,11 @@ import { sendChallengeDailyAction } from './src/analytics/client-daily-actions.j
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
 const QUESTION_COUNT = 10;
+const AUTOMATIC_BOARD_POLICY = 'auto-best-v1';
 const CHALLENGE_SHARE_VERSION = 'challenge-20260726-1';
 const CREATOR_DRAFT_KEY = 'watachan-challenge-creator-draft:v1';
 const MANAGE_HISTORY_KEY = 'watachan-challenge-manage-history:v1';
 const MANAGE_STATE_KEY = 'wataChallengeManage';
-const BOARD_OPT_IN_KEY_PREFIX = 'watachan-challenge-board-opt-in:';
 const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
 const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
 const quizFeedbackSoundPlayer = createQuizFeedbackSoundPlayer();
@@ -91,9 +92,6 @@ let state = {
   resultImageUrl: '',
   resultImageBusy: false,
   resultImageError: '',
-  boardOptIn: readBoardOptIn(roomCode),
-  boardPreferenceBusy: false,
-  boardActionMessage: '',
   error: '',
   loading: false,
   answerPending: false,
@@ -406,7 +404,7 @@ function createStartView() {
       <ol class="challenge-steps">
         <li>${escapeHtml(startCopy.step)}</li>
         <li>専用URL・QRコードを共有</li>
-        <li>答え合わせを確認。希望者だけ理解度ボードへ掲載</li>
+        <li>${escapeHtml(boardCopy(currentLocale, 'notice'))}</li>
       </ol>
       ${preferredCard ? `<div class="challenge-selected-question">
         <b>選んだお題を必ず入れます</b>
@@ -517,6 +515,7 @@ function manageView() {
         <p class="challenge-recent-save-message" data-testid="recent-challenge-save-message"
           role="status" aria-live="polite"></p>
       </div>
+      ${understandingBoard(state.ranking, room.cards.length)}
       ${hasCompletedResponses ? conversationInsights : ''}
       <div class="challenge-manage-divider"><span>回答管理</span></div>
       <div class="challenge-count" data-testid="participant-count">
@@ -544,7 +543,7 @@ function hostConversationInsightsView(participants, cards) {
     ? {
       label: 'CONVERSATION STARTERS',
       title: 'Conversation starters from the answer review',
-      lead: 'No rankings. Use the answer patterns to start the next conversation.',
+      lead: 'Use the answer patterns to start the next conversation.',
       count: `${insights.completedCount} completed responses`,
       waiting: numberedCopy('Highlights appear after at least two people finish all 10 questions.', cards.length),
       all: numberedCopy('View counts and percentages for all 10 questions', cards.length),
@@ -713,9 +712,10 @@ function joinView() {
       <label class="challenge-label" for="participant-name">表示名（12文字まで）</label>
       <input id="participant-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ゆう（本名は避けてください）" value="${escapeHtml(state.participantName)}">
+      <p class="challenge-note" data-testid="automatic-board-notice">${escapeHtml(boardCopy(currentLocale, 'notice'))}</p>
       <button class="challenge-primary" data-action="join">${escapeHtml(numberedCopy('10問の答え当てに挑戦する', room.cards.length))} <span>▶</span></button>
       <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a>
-      <p class="challenge-note">${escapeHtml(numberedCopy('回答後に、理解度ボードへ載せるかを結果画面で選べます。同じ10問へもう一度挑戦することもできます。', room.cards.length))}</p>
+      <p class="challenge-note">${escapeHtml(boardCopy(currentLocale, 'rule'))}</p>
       <p class="challenge-note">回答内容は答え合わせと主催者の回答確認に使用されます。本名・学校名など個人が特定できる名前は入力しないでください。回答途中はこの端末へ自動保存されます。</p>
     </section>`,
   );
@@ -747,6 +747,7 @@ function resultView() {
       <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
     </section>
     ${state.error ? `<p class="challenge-error" role="alert">${escapeHtml(errorMessage(state.error))}</p>` : ''}
+    ${understandingBoard(state.ranking, result.answers.length)}
     <section class="challenge-panel">
       <span class="challenge-section-label">ANSWER CHECK</span>
       <h2>どこが当たった？</h2>
@@ -781,35 +782,12 @@ function resultView() {
           aria-labelledby="challenge-result-share-title">
           <span class="challenge-section-label">SHARE YOUR RESULT</span>
           <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
-          ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) && !state.boardPreferenceBusy })}
-          <details class="challenge-board-settings" data-board-settings ${state.boardSettingsOpen || state.boardOptIn || state.boardPreferenceBusy || state.result.participant?.rankingParticipating || state.boardActionMessage ? 'open' : ''}>
-          <summary>理解度ボードに載せる</summary>
-          <button type="button" class="challenge-result-board-only" data-action="publish-board-only"
-            ${state.boardPreferenceBusy || state.result.participant?.rankingParticipating ? 'disabled' : ''}>
-            <span aria-hidden="true">📒</span>
-            ${state.boardPreferenceBusy
-              ? '理解度ボードを更新中…'
-              : state.result.participant?.rankingParticipating
-                ? '理解度ボードに掲載済み'
-                : '理解度ボードだけに載せる'}
-          </button>
-          <div class="challenge-result-share-divider"><span>共有・保存する場合</span></div>
-          <label class="challenge-result-board-toggle">
-            <input type="checkbox" data-action="toggle-ranking"
-              ${state.boardOptIn ? 'checked' : ''} ${state.boardPreferenceBusy ? 'disabled' : ''}>
-            <span>
-              <strong>理解度ボードに載せる</strong>
-              <small>載せなくても、結果の保存・共有・再挑戦はできます</small>
-            </span>
-          </label>
-          ${state.boardActionMessage
-            ? `<p class="challenge-result-board-message" role="status">${escapeHtml(state.boardActionMessage)}</p>`
-            : ''}
-          </details>
+          ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) })}
+
         </section>
       </div>
       <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>
-      <p class="challenge-result-retry-note">もう一度予想すると今回の回答は上書きされます。掲載済みの場合は、現在の理解度ボードからいったん外れます。</p>
+      <p class="challenge-result-retry-note">${escapeHtml(result.participant?.rankingParticipating ? boardCopy(currentLocale, 'rule') : boardCopy(currentLocale, 'legacy'))}</p>
       <a class="challenge-secondary" href="/challenge">新しいお題で作る</a>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
       <a class="challenge-secondary" href="/">トップへ戻る</a>
@@ -884,32 +862,32 @@ function startResultFeedbackSequence() {
   cards.forEach((card) => resultFeedbackObserver.observe(card));
 }
 
+function understandingBoard(participants, count) {
+  const completed = state.mode === 'result' ? state.result?.completedParticipants : state.room?.completedParticipants;
+  return `<section class="challenge-panel" data-testid="understanding-board" aria-labelledby="understanding-board-title">
+    <h2 id="understanding-board-title">理解度ボード</h2>
+    <p class="challenge-note">${escapeHtml(boardCopy(currentLocale, 'rule'))}</p>
+    ${participants.length ? `<ol class="challenge-ranking-list">${participants.map(p => `<li><b>${escapeHtml(p.name)}</b><strong>${p.score}/${count}</strong></li>`).join('')}</ol>` : !completed ? `<p class="challenge-empty" data-testid="board-first-friend-prompt">${escapeHtml(challengeCopy(currentLocale, 'first'))}</p>` : '<p class="challenge-empty">理解度ボードに載せた回答者はまだいません。</p>'}
+    <button class="challenge-secondary" data-action="refresh-board">理解度ボードを更新</button>
+  </section>`;
+}
+
+async function refreshBoard() {
+  const response = await fetch(`/api/challenge/rooms/${state.roomCode}/ranking`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'room-not-found');
+  setState({ ranking: data.participants || [] });
+}
+
 function rankingView() {
   if (!state.room) return errorView();
-  const room = state.room;
-  return shell(
-    'UNDERSTANDING BOARD',
-    '理解度ボード',
-    numberedCopy('載せるかは自分で選べます。掲載された回答は、10問を回答し終えた順に表示します。', room.questionCount || QUESTION_COUNT),
-    `<section class="challenge-panel" data-testid="understanding-board">
-      <div class="challenge-count"><b>${room.completedParticipants}</b>人が回答済み ／ 上限${room.maxParticipants}人</div>
-      ${!room.completedParticipants ? `<p data-testid="board-first-friend-prompt">${escapeHtml(challengeCopy(currentLocale, 'first'))}</p>` : ''}
-      ${state.ranking.length ? `<ul class="challenge-ranking-list">
-        ${state.ranking.map((participant) => `
-          <li>
-            <span class="challenge-board-status">答え合わせ済み</span>
-            <b>${escapeHtml(participant.name)}</b>
-            <strong>${participant.score}/${room.questionCount || QUESTION_COUNT}問一致</strong>
-          </li>
-        `).join('')}
-      </ul>` : '<p class="challenge-empty">理解度ボードに載せた回答者はまだいません。</p>'}
-      <button class="challenge-primary" data-action="refresh-ranking">理解度ボードを更新</button>
-      <a class="challenge-secondary" href="/challenge?room=${room.code}">このクイズに挑戦する</a>
-      <button class="challenge-secondary" data-action="copy-url" data-copy-value="${escapeHtml(challengeUrl(room.code))}">挑戦用URLをコピー</button>
+  return shell('UNDERSTANDING BOARD', '理解度ボード', '',
+    `${understandingBoard(state.ranking, state.room.questionCount || QUESTION_COUNT)}
+    <section class="challenge-panel">
+      <a class="challenge-secondary" href="/challenge?room=${state.room.code}">このクイズに挑戦する</a>
+      <button class="challenge-secondary" data-action="copy-url" data-copy-value="${escapeHtml(challengeUrl(state.room.code))}">挑戦用URLをコピー</button>
       <a class="challenge-secondary" href="/challenge">自分も作る</a>
-      <p class="challenge-note">回答順で表示します。順位や点数順の並び替えはありません。掲載は任意で、表示名と一致した問題数だけを公開します。問題ごとの回答は主催者だけが確認できます。</p>
-    </section>`,
-  );
+    </section>`);
 }
 
 function weeklyPacksView() {
@@ -1107,28 +1085,15 @@ function bindEvents() {
   document.querySelector('[data-action="refresh-manage"]')?.addEventListener('click', loadManageRoom);
   document.querySelector('[data-action="retry-question-submit"]')?.addEventListener('click', submitCreatorQuestionCandidates);
   document.querySelector('[data-action="report-question"]')?.addEventListener('click', (event) => reportQuestion(event.currentTarget));
-  document.querySelector('[data-action="refresh-ranking"]')?.addEventListener('click', loadRanking);
   document.querySelector('[data-action="join"]')?.addEventListener('click', joinRoom);
-  document.querySelector('[data-action="toggle-ranking"]')?.addEventListener('change', (event) => {
-    chooseBoardPreference(event.currentTarget.checked);
+  document.querySelector('[data-action="refresh-board"]')?.addEventListener('click', () => {
+    refreshBoard().catch(error => setState({ error: error.message }));
   });
-  document.querySelector('[data-board-settings]')?.addEventListener('toggle', (event) => {
-    if (event.currentTarget.isConnected) state.boardSettingsOpen = event.currentTarget.open;
-  });
-  document.querySelector('[data-action="publish-board-only"]')?.addEventListener('click', publishBoardOnly);
   document.querySelector('[data-action="retry-challenge"]')?.addEventListener('click', retryChallenge);
   document.querySelector('[data-action="swap-roles"]')?.addEventListener('click', startRoleSwap);
   bindResultShare(app, {
     translate: translateText,
-    beforeAction: () => {
-      if (state.mode === 'manage') return Boolean(state.room);
-      if (!state.result || state.boardPreferenceBusy) return false;
-      if (state.boardOptIn === (state.result.participant?.rankingParticipating === true)) return true;
-      updateBoardPreference(state.boardOptIn).then((updated) => {
-        if (updated && state.mode === 'result') setState({ boardActionMessage: translateText('設定を更新しました。もう一度ボタンを押してください。') });
-      });
-      return false;
-    },
+    beforeAction: () => state.mode === 'manage' ? Boolean(state.room) : Boolean(state.result),
     getPayload: () => state.mode === 'manage' && state.room
       ? challengeInvitePayload({ origin: location.origin, locale: currentLocale, room: state.room,
         src: invitationImage.key === invitationKey() ? invitationImage.src : '', translate: translateText })
@@ -1382,6 +1347,7 @@ async function createChallengeRoom(answers) {
       cards,
       manageToken: data.manageToken,
       participants: [],
+      ranking: [],
       mode: 'manage',
       finishCount: 0,
       answers,
@@ -1470,6 +1436,7 @@ async function prepareInvitationImage() {
 }
 
 async function joinRoom() {
+  if (state.loading) return;
   quizFeedbackSoundPlayer.prime();
   const name = document.getElementById('participant-name')?.value.trim().slice(0, 12) || '';
   if (!name) return setState({ error: 'name-required' });
@@ -1480,7 +1447,7 @@ async function joinRoom() {
     const response = await fetch(`/api/challenge/rooms/${state.roomCode}/join`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, boardPolicy: AUTOMATIC_BOARD_POLICY }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'join-failed');
@@ -1514,97 +1481,20 @@ async function joinRoom() {
   }
 }
 
-function chooseBoardPreference(enabled) {
-  saveBoardOptIn(state.roomCode, enabled);
-  setState({
-    boardOptIn: enabled,
-    boardSettingsOpen: true,
-    boardActionMessage: '',
-    error: '',
-  });
-  document.querySelector('[data-action="toggle-ranking"]')?.focus?.({ preventScroll: true });
-}
-
-async function updateBoardPreference(enabled) {
-  if (!state.result || !state.participantToken) return false;
-  const currentPreference = state.result.participant?.rankingParticipating === true;
-  saveBoardOptIn(state.roomCode, enabled);
-  if (currentPreference === enabled) {
-    setState({
-      boardOptIn: enabled,
-      boardPreferenceBusy: false,
-      error: '',
-    });
-    return true;
-  }
-  setState({
-    boardOptIn: enabled,
-    boardPreferenceBusy: true,
-    boardActionMessage: '',
-    error: '',
-  });
-  try {
-    const response = await fetch(`/api/challenge/rooms/${state.roomCode}/ranking`, {
-      method: enabled ? 'POST' : 'DELETE',
-      headers: {
-        'content-type': 'application/json',
-        'x-challenge-participant-token': state.participantToken,
-      },
-      body: JSON.stringify({}),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || (enabled
-        ? 'ranking-registration-failed'
-        : 'ranking-unregistration-failed'));
-    }
-    saveBoardOptIn(state.roomCode, enabled);
-    setState({
-      result: { ...state.result, participant: data.participant },
-      boardOptIn: enabled,
-      boardPreferenceBusy: false,
-    });
-    return true;
-  } catch (error) {
-    const actualPreference = state.result.participant?.rankingParticipating === true;
-    saveBoardOptIn(state.roomCode, actualPreference);
-    setState({
-      boardOptIn: actualPreference,
-      boardPreferenceBusy: false,
-      mode: 'result',
-      error: error.message,
-    });
-    return false;
-  }
-}
-
-async function publishBoardOnly() {
-  if (!state.result || state.boardPreferenceBusy) return;
-  const updated = await updateBoardPreference(true);
-  if (!updated) return;
-  setState({
-    boardOptIn: true,
-    boardActionMessage: isEnglish
-      ? 'Added to the Understanding Board.'
-      : '理解度ボードに載せました。',
-  });
-}
-
 async function retryChallenge() {
   if (!state.result || !state.participantToken) return;
-  if (state.result.participant?.rankingParticipating
-    && !localizedConfirm('もう一度予想すると、現在の理解度ボード掲載はいったん取り消されます。続けますか？')) return;
+  if (state.loading) return;
   setState({ loading: true, error: '' });
   try {
     const response = await fetch(`/api/challenge/rooms/${state.roomCode}/retry`, {
       method: 'POST',
-      headers: { 'x-challenge-participant-token': state.participantToken },
+      headers: { 'content-type': 'application/json', 'x-challenge-participant-token': state.participantToken },
+      body: JSON.stringify({ boardPolicy: AUTOMATIC_BOARD_POLICY }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'retry-failed');
     dailyResultAttempt += 1;
     removeStorage(participantDraftKey(state.roomCode));
-    resetBoardOptIn(state.roomCode);
     const next = {
       loading: false,
       answerPending: false,
@@ -1616,9 +1506,6 @@ async function retryChallenge() {
       resultImageUrl: '',
       resultImageBusy: false,
       resultImageError: '',
-      boardOptIn: false,
-      boardSettingsOpen: false,
-      boardPreferenceBusy: false,
       mode: 'participant-answer',
       error: '',
     };
@@ -1686,7 +1573,8 @@ async function loadRoom() {
       headers: { 'x-challenge-participant-token': state.participantToken },
     });
     if (resultResponse.ok) {
-      setState({ result: await resultResponse.json(), mode: 'result' });
+      const result = await resultResponse.json();
+      setState({ result, ranking: result.board || [], mode: 'result' });
       return;
     }
     const resumeResponse = await fetch(`/api/challenge/rooms/${roomCode}/join`, {
@@ -1699,6 +1587,10 @@ async function loadRoom() {
     });
     if (!resumeResponse.ok) return;
     const resumeData = await resumeResponse.json();
+    if (!resumeData.participant.boardAutomatic) {
+      setState({ participantName: resumeData.participant.name, mode: 'join' });
+      return;
+    }
     const draft = participantDraft(roomCode);
     const answerCount = Math.min(
       Math.max(Number(resumeData.participant.answerCount) || 0, 0),
@@ -1733,6 +1625,7 @@ async function loadManageRoom() {
       room: data.room,
       cards: data.room.cards,
       participants: data.participants || [],
+      ranking: data.board || [],
       mode: 'manage',
     });
   } catch (error) {
@@ -1777,7 +1670,6 @@ async function loadResult(token = state.participantToken) {
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'result-failed');
-  const boardOptIn = readBoardOptIn(state.roomCode);
   trackAnalyticsEvent('game_result', {
     game_type: 'challenge',
     play_mode: 'async',
@@ -1789,12 +1681,10 @@ async function loadResult(token = state.participantToken) {
     loading: false,
     answerPending: false,
     result: data,
+    ranking: data.board || [],
     resultImageUrl: '',
     resultImageBusy: false,
     resultImageError: '',
-    boardOptIn,
-    boardPreferenceBusy: false,
-    boardActionMessage: '',
     mode: 'result',
   });
 }
@@ -2034,7 +1924,6 @@ function resultShareText({ includeUrl = true } = {}) {
         `${state.result.creatorName}の「わたし理解度診断」で答えを予想してみた📒`,
         'どこが当たった？答え合わせしてみて👇',
         `称号は「${tier.title}」`,
-        '結果公開は任意・もう一度予想もOK',
         '#わたちゃん',
       ];
   if (includeUrl) {
@@ -2167,33 +2056,6 @@ function writeStorage(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
     // 保存容量不足でもゲーム進行は継続する。
-  }
-}
-
-function readBoardOptIn(code) {
-  if (!code) return false;
-  try {
-    return localStorage.getItem(`${BOARD_OPT_IN_KEY_PREFIX}${code}`) === '1';
-  } catch (error) {
-    return false;
-  }
-}
-
-function saveBoardOptIn(code, enabled) {
-  if (!code) return;
-  try {
-    localStorage.setItem(`${BOARD_OPT_IN_KEY_PREFIX}${code}`, enabled ? '1' : '0');
-  } catch (error) {
-    // 保存できない場合も現在の画面では選択状態を維持する。
-  }
-}
-
-function resetBoardOptIn(code) {
-  if (!code) return;
-  try {
-    localStorage.removeItem(`${BOARD_OPT_IN_KEY_PREFIX}${code}`);
-  } catch (error) {
-    // 次の結果画面ではメモリ上の既定値を使用する。
   }
 }
 

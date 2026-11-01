@@ -11,7 +11,7 @@ import { runPrivacyCleanup } from '../../src/privacy/cleanup.js';
 const migration = readFileSync(new URL('../../migrations/0027_play_daily_counts.sql', import.meta.url), 'utf8');
 function database() {
   const db = new DatabaseSync(':memory:');
-  for (const name of ['0003_live_games', '0010_challenge_rooms', '0011_challenge_ranking_library', '0018_challenge_board_comments']) {
+  for (const name of ['0003_live_games', '0010_challenge_rooms', '0011_challenge_ranking_library', '0018_challenge_board_comments','0029_challenge_auto_board']) {
     db.exec(readFileSync(new URL(`../../migrations/${name}.sql`, import.meta.url), 'utf8'));
   }
   db.exec(migration);

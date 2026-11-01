@@ -11,6 +11,7 @@ export const CHALLENGE_QUESTION_COUNT = 10;
 const ROOM_TTL_MS = CHALLENGE_ROOM_TTL_DAYS * 24 * 60 * 60 * 1000;
 const ROOM_CODE_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const TOKEN_PATTERN = /^[a-f0-9]{48}$/i;
+export const AUTOMATIC_BOARD_POLICY = 'auto-best-v1';
 
 export async function handleChallengeApi(request, env, path) {
   if (request.method === 'OPTIONS') return jsonResponse({});
@@ -147,6 +148,7 @@ async function getManageRoom(request, env, code) {
   return jsonResponse({
     room: publicRoom(code, record, counts.total, counts.completed),
     participants,
+    board: await rankedParticipants(env, code, record),
   });
 }
 
@@ -176,11 +178,27 @@ async function getQuestionLibrary(env) {
 async function joinRoom(request, env, code) {
   const room = await readRoom(env, code);
   if (!room) return jsonResponse({ error: 'room-not-found' }, 404);
+  const body = await readJson(request);
 
   const existingToken = headerToken(request, 'x-challenge-participant-token');
   if (existingToken) {
-    const participant = await readParticipant(env, code, existingToken, room);
+    let participant = await readParticipant(env, code, existingToken, room);
     if (participant) {
+      // Only an explicit start/resume after the notice can enroll an old draft.
+      // Reads and already completed private attempts never change visibility.
+      if (!participant.boardAuto && participant.completedAt == null
+        && body.boardPolicy === AUTOMATIC_BOARD_POLICY) {
+        if (await ensureD1(env)) {
+          await env.REMOTE_DB.prepare(`UPDATE challenge_participants SET board_auto = 1
+            WHERE room_code = ? AND participant_id = ? AND completed_at IS NULL`)
+            .bind(code, participant.id).run();
+          participant = await readParticipant(env, code, existingToken, room);
+        } else {
+          participant.boardAuto = true;
+          room.participants = room.participants.map((p) => p.id === participant.id ? participant : p);
+          await putKvRoom(env, code, room);
+        }
+      }
       return jsonResponse({
         participantToken: existingToken,
         participant: publicParticipant(participant),
@@ -188,7 +206,6 @@ async function joinRoom(request, env, code) {
     }
   }
 
-  const body = await readJson(request);
   const name = sanitizeName(body.name, '');
   if (!name) return jsonResponse({ error: 'name-required' }, 400);
   const participantToken = createToken();
@@ -201,6 +218,10 @@ async function joinRoom(request, env, code) {
     createdAt: Date.now(),
     completedAt: null,
     rankingConsentAt: null,
+    boardAuto: body.boardPolicy === AUTOMATIC_BOARD_POLICY,
+    boardBestScore: null,
+    boardFirstAt: null,
+    boardBestAt: null,
     boardComment: null,
   };
   const inserted = await insertParticipant(env, code, participant, room);
@@ -242,6 +263,7 @@ async function unregisterRankingScore(request, env, code) {
     return jsonResponse({ error: 'answers-not-submitted' }, 409);
   }
 
+  if (participant.boardAuto) return jsonResponse({ error: 'board-automatic' }, 409);
   const saved = participant.rankingConsentAt == null
     || await removeRankingRegistration(env, code, token, room);
   if (!saved) return jsonResponse({ error: 'ranking-unregistration-failed' }, 409);
@@ -261,7 +283,9 @@ async function retryChallenge(request, env, code) {
     return jsonResponse({ error: 'answers-not-submitted' }, 409);
   }
 
-  const saved = await resetParticipantAttempt(env, code, token, room);
+  const body = await readJson(request);
+  const enableAuto = body.boardPolicy === AUTOMATIC_BOARD_POLICY;
+  const saved = await resetParticipantAttempt(env, code, token, room, enableAuto);
   if (!saved) return jsonResponse({ error: 'retry-failed' }, 409);
   return jsonResponse({
     participant: publicParticipant({
@@ -269,7 +293,7 @@ async function retryChallenge(request, env, code) {
       answers: null,
       score: null,
       completedAt: null,
-      rankingConsentAt: null,
+      ...retryBoardFields(participant, enableAuto),
     }),
   });
 }
@@ -332,7 +356,7 @@ async function submitAnswer(request, env, code) {
     return jsonResponse({ error: 'answer-already-submitted' }, 409);
   }
 
-  const updatedParticipant = { ...participant, answers, score, completedAt };
+  const updatedParticipant = { ...participant, answers, score, completedAt, ...completedBoardFields(participant, score, completedAt) };
   if (completedAt != null) {
     await recordQuestionPlays(env, room.cards, completedAt).catch(() => {});
   }
@@ -433,6 +457,7 @@ async function getResult(request, env, code) {
     creatorName: room.creatorName,
     participant: publicParticipant(participant),
     score: participant.score,
+    board: await rankedParticipants(env, code, room),
     completedParticipants: counts.completed,
     maxParticipants: CHALLENGE_MAX_PARTICIPANTS,
     answers: room.cards.map((card, index) => ({
@@ -501,6 +526,8 @@ function publicParticipant(participant) {
     answerCount: Array.isArray(participant.answers) ? participant.answers.length : 0,
     score: submitted && Number.isInteger(participant.score) ? participant.score : null,
     rankingParticipating: participant.rankingConsentAt != null,
+    boardAutomatic: Boolean(participant.boardAuto),
+    boardBestScore: participant.rankingConsentAt != null ? (participant.boardBestScore ?? participant.score) : null,
   };
 }
 
@@ -560,8 +587,8 @@ async function insertParticipant(env, code, participant, room) {
   if (await ensureD1(env)) {
     const result = await env.REMOTE_DB.prepare(`
       INSERT INTO challenge_participants
-        (room_code, participant_id, participant_token_hash, name, created_at, ranking_consent_at)
-      SELECT ?, ?, ?, ?, ?, ?
+        (room_code, participant_id, participant_token_hash, name, created_at, ranking_consent_at, board_auto)
+      SELECT ?, ?, ?, ?, ?, ?, ?
       WHERE (
         SELECT COUNT(*) FROM challenge_participants WHERE room_code = ?
       ) < ?
@@ -572,6 +599,7 @@ async function insertParticipant(env, code, participant, room) {
       participant.name,
       participant.createdAt,
       participant.rankingConsentAt,
+      participant.boardAuto ? 1 : 0,
       code,
       CHALLENGE_MAX_PARTICIPANTS,
     ).run();
@@ -590,7 +618,7 @@ async function readParticipant(env, code, token, room) {
   if (!TOKEN_PATTERN.test(token)) return null;
   if (await ensureD1(env)) {
     const row = await env.REMOTE_DB.prepare(`
-      SELECT participant_id, name, answers_json, score, created_at, completed_at, ranking_consent_at
+      SELECT participant_id, name, answers_json, score, created_at, completed_at, ranking_consent_at, board_auto, board_best_score, board_first_at, board_best_at
       FROM challenge_participants
       WHERE room_code = ? AND participant_token_hash = ?
     `).bind(code, await hashToken(token)).first();
@@ -603,25 +631,59 @@ async function readParticipant(env, code, token, room) {
       createdAt: Number(row.created_at),
       completedAt: row.completed_at == null ? null : Number(row.completed_at),
       rankingConsentAt: row.ranking_consent_at == null ? null : Number(row.ranking_consent_at),
+      boardAuto: Boolean(row.board_auto),
+      boardBestScore: row.board_best_score == null ? null : Number(row.board_best_score),
+      boardFirstAt: row.board_first_at == null ? null : Number(row.board_first_at),
+      boardBestAt: row.board_best_at == null ? null : Number(row.board_best_at),
     };
   }
   return (room.participants || []).find((participant) => participant.token === token) || null;
 }
 
+
+function completedBoardFields(participant, score, completedAt) {
+  if (!participant.boardAuto || completedAt == null) return {};
+  const improved = participant.boardBestScore == null || score > participant.boardBestScore;
+  return { rankingConsentAt: participant.rankingConsentAt ?? completedAt,
+    boardBestScore: Math.max(participant.boardBestScore ?? 0, score),
+    boardFirstAt: participant.boardFirstAt ?? completedAt,
+    boardBestAt: improved ? completedAt : participant.boardBestAt };
+}
+function retryBoardFields(participant, enableAuto) {
+  const boardAuto = Boolean(participant.boardAuto || enableAuto);
+  if (!boardAuto) return { boardAuto: false, rankingConsentAt: null };
+  // Snapshot only a result which was already public; never publish legacy private scores.
+  const fields = participant.rankingConsentAt != null
+    ? { boardBestScore: Math.max(participant.boardBestScore ?? 0, participant.score ?? 0),
+      boardFirstAt: participant.boardFirstAt ?? participant.rankingConsentAt,
+      boardBestAt: participant.boardBestAt ?? participant.completedAt }
+    : {};
+  return { boardAuto, rankingConsentAt: participant.rankingConsentAt, ...fields };
+}
+function completionBoardUpdate(score, at) {
+  if (at == null) return { sql: '', bindings: [] };
+  return { sql: `, board_best_score = CASE WHEN board_auto = 1 THEN MAX(COALESCE(board_best_score, 0), ?) ELSE board_best_score END,
+    board_best_at = CASE WHEN board_auto = 1 AND (board_best_score IS NULL OR ? > board_best_score) THEN ? ELSE board_best_at END,
+    board_first_at = CASE WHEN board_auto = 1 THEN COALESCE(board_first_at, ?) ELSE board_first_at END,
+    ranking_consent_at = CASE WHEN board_auto = 1 THEN COALESCE(ranking_consent_at, ?) ELSE ranking_consent_at END`,
+    bindings: [score, score, at, at, at] };
+}
+
 async function saveParticipantAnswers(env, code, token, participant, answers, score, completedAt, room) {
+  const board = completionBoardUpdate(score, completedAt);
   if (await ensureD1(env)) {
     const result = await env.REMOTE_DB.prepare(`
       UPDATE challenge_participants
-      SET answers_json = ?, score = ?, completed_at = ?
+      SET answers_json = ?, score = ?, completed_at = ? ${board.sql}
       WHERE room_code = ? AND participant_token_hash = ?
         AND completed_at IS NULL AND answers_json IS NULL
-    `).bind(JSON.stringify(answers), score, completedAt, code, await hashToken(token)).run();
+    `).bind(JSON.stringify(answers), score, completedAt, ...board.bindings, code, await hashToken(token)).run();
     // D1 meta.changes includes anonymous counter trigger writes. The unique
     // room/token predicate still limits the source operation to one row.
     return Number(result?.meta?.changes || 0) > 0;
   }
   const next = { ...room, participants: (room.participants || []).map((item) => (
-    item.token === token ? { ...item, answers, score, completedAt } : item
+    item.token === token ? { ...item, answers, score, completedAt, ...completedBoardFields(item, score, completedAt) } : item
   )) };
   await putKvRoom(env, code, next);
   return true;
@@ -637,17 +699,19 @@ async function saveParticipantProgress(
   completedAt,
   room,
 ) {
+  const board = completionBoardUpdate(score, completedAt);
   if (await ensureD1(env)) {
     const previousJson = previousAnswers.length > 0 ? JSON.stringify(previousAnswers) : null;
     const result = await env.REMOTE_DB.prepare(`
       UPDATE challenge_participants
-      SET answers_json = ?, score = ?, completed_at = ?
+      SET answers_json = ?, score = ?, completed_at = ? ${board.sql}
       WHERE room_code = ? AND participant_token_hash = ? AND completed_at IS NULL
         AND ((answers_json IS NULL AND ? IS NULL) OR answers_json = ?)
     `).bind(
       JSON.stringify(answers),
       score,
       completedAt,
+      ...board.bindings,
       code,
       await hashToken(token),
       previousJson,
@@ -667,7 +731,7 @@ async function saveParticipantProgress(
     return false;
   }
   const nextParticipants = participants.slice();
-  nextParticipants[index] = { ...current, answers, score, completedAt };
+  nextParticipants[index] = { ...current, answers, score, completedAt, ...completedBoardFields(current, score, completedAt) };
   await putKvRoom(env, code, { ...room, participants: nextParticipants });
   return true;
 }
@@ -722,14 +786,18 @@ async function removeRankingRegistration(env, code, token, room) {
   return true;
 }
 
-async function resetParticipantAttempt(env, code, token, room) {
+async function resetParticipantAttempt(env, code, token, room, enableAuto = false) {
   if (await ensureD1(env)) {
     const result = await env.REMOTE_DB.prepare(`
       UPDATE challenge_participants
       SET answers_json = NULL, score = NULL, completed_at = NULL,
-        ranking_consent_at = NULL, board_comment = NULL
+        board_auto = CASE WHEN board_auto = 1 OR ? = 1 THEN 1 ELSE 0 END,
+        board_best_score = CASE WHEN (board_auto = 1 OR ? = 1) AND ranking_consent_at IS NOT NULL THEN MAX(COALESCE(board_best_score, 0), COALESCE(score, 0)) ELSE board_best_score END,
+        board_first_at = CASE WHEN (board_auto = 1 OR ? = 1) AND ranking_consent_at IS NOT NULL THEN COALESCE(board_first_at, ranking_consent_at) ELSE board_first_at END,
+        board_best_at = CASE WHEN (board_auto = 1 OR ? = 1) AND ranking_consent_at IS NOT NULL THEN COALESCE(board_best_at, completed_at) ELSE board_best_at END,
+        ranking_consent_at = CASE WHEN board_auto = 1 OR ? = 1 THEN ranking_consent_at ELSE NULL END, board_comment = NULL
       WHERE room_code = ? AND participant_token_hash = ? AND completed_at IS NOT NULL
-    `).bind(code, await hashToken(token)).run();
+    `).bind(...Array(5).fill(enableAuto ? 1 : 0), code, await hashToken(token)).run();
     // D1 meta.changes includes anonymous counter trigger writes. The unique
     // room/token predicate still limits the source operation to one row.
     return Number(result?.meta?.changes || 0) > 0;
@@ -744,7 +812,7 @@ async function resetParticipantAttempt(env, code, token, room) {
     answers: null,
     score: null,
     completedAt: null,
-    rankingConsentAt: null,
+    ...retryBoardFields(participants[index], enableAuto),
     boardComment: null,
   };
   await putKvRoom(env, code, { ...room, participants: nextParticipants });
@@ -755,7 +823,7 @@ async function participantCounts(env, code, room) {
   if (await ensureD1(env)) {
     const row = await env.REMOTE_DB.prepare(`
       SELECT COUNT(*) AS total,
-        SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completed
+        SUM(CASE WHEN completed_at IS NOT NULL OR board_best_score IS NOT NULL THEN 1 ELSE 0 END) AS completed
       FROM challenge_participants WHERE room_code = ?
     `).bind(code).first();
     return { total: Number(row?.total || 0), completed: Number(row?.completed || 0) };
@@ -763,17 +831,17 @@ async function participantCounts(env, code, room) {
   const participants = room.participants || [];
   return {
     total: participants.length,
-    completed: participants.filter((participant) => participant.completedAt != null).length,
+      completed: participants.filter((participant) => participant.completedAt != null || participant.boardBestScore != null).length,
   };
 }
 
 async function rankedParticipants(env, code, room) {
   if (await ensureD1(env)) {
     const result = await env.REMOTE_DB.prepare(`
-      SELECT name, score
+      SELECT name, COALESCE(board_best_score, score) AS score
       FROM challenge_participants
-      WHERE room_code = ? AND completed_at IS NOT NULL AND ranking_consent_at IS NOT NULL
-      ORDER BY completed_at ASC, created_at ASC
+      WHERE room_code = ? AND ranking_consent_at IS NOT NULL AND COALESCE(board_best_score, score) IS NOT NULL
+      ORDER BY COALESCE(board_best_score, score) DESC, COALESCE(board_first_at, ranking_consent_at) ASC, participant_id ASC
       LIMIT ?
     `).bind(code, CHALLENGE_MAX_PARTICIPANTS).all();
     return (result?.results || []).map((row) => ({
@@ -782,12 +850,13 @@ async function rankedParticipants(env, code, room) {
     }));
   }
   return (room.participants || [])
-    .filter((participant) => participant.completedAt != null && participant.rankingConsentAt != null)
-    .sort((left, right) => Number(left.completedAt) - Number(right.completedAt)
-      || Number(left.createdAt) - Number(right.createdAt))
+    .filter((participant) => participant.rankingConsentAt != null && Number.isInteger(participant.boardBestScore ?? participant.score))
+    .sort((left, right) => Number(right.boardBestScore ?? right.score) - Number(left.boardBestScore ?? left.score)
+      || Number(left.boardFirstAt ?? left.rankingConsentAt) - Number(right.boardFirstAt ?? right.rankingConsentAt)
+      || String(left.id).localeCompare(String(right.id)))
     .map((participant) => ({
       name: participant.name,
-      score: Number(participant.score),
+      score: Number(participant.boardBestScore ?? participant.score),
     }));
 }
 
@@ -795,7 +864,7 @@ async function managedParticipants(env, code, room) {
   let participants;
   if (await ensureD1(env)) {
     const result = await env.REMOTE_DB.prepare(`
-      SELECT participant_id, name, answers_json, score, created_at, completed_at, ranking_consent_at
+      SELECT participant_id, name, answers_json, score, created_at, completed_at, ranking_consent_at, board_auto, board_best_score, board_first_at, board_best_at
       FROM challenge_participants
       WHERE room_code = ?
       ORDER BY completed_at IS NULL, score DESC, completed_at ASC, created_at ASC
@@ -809,6 +878,10 @@ async function managedParticipants(env, code, room) {
       createdAt: Number(row.created_at),
       completedAt: row.completed_at == null ? null : Number(row.completed_at),
       rankingConsentAt: row.ranking_consent_at == null ? null : Number(row.ranking_consent_at),
+      boardAuto: Boolean(row.board_auto),
+      boardBestScore: row.board_best_score == null ? null : Number(row.board_best_score),
+      boardFirstAt: row.board_first_at == null ? null : Number(row.board_first_at),
+      boardBestAt: row.board_best_at == null ? null : Number(row.board_best_at),
     }));
   } else {
     participants = (room.participants || [])
