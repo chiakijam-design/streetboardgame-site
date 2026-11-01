@@ -47,7 +47,7 @@ async function fixture(page, scene, locale = 'ja', count = 2) {
     await route.fulfill({ json: body });
   });
   const prefix = locale === 'ja' ? '' : '/' + locale;
-  await page.goto(`${prefix}/challenge${scene === 'host' ? '/manage' : ''}?room=${code}${scene === 'host' ? '#manage=synthetic-management' : ''}`);
+  await page.goto(`${prefix}/challenge${scene === 'host' ? '/manage' : ''}?room=${code}${scene === 'host' ? '#manage='+'abcdef'.repeat(8) : ''}`);
   await expect(page.locator('[data-result-share=save]')).toBeEnabled();
   return { url: new URL(page.url()).origin + `${prefix}/challenge?room=${code}`, rankingCalls };
 }

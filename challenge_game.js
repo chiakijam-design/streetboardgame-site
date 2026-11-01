@@ -43,6 +43,7 @@ const QUESTION_COUNT = 10;
 const CHALLENGE_SHARE_VERSION = 'challenge-20260726-1';
 const CREATOR_DRAFT_KEY = 'watachan-challenge-creator-draft:v1';
 const MANAGE_HISTORY_KEY = 'watachan-challenge-manage-history:v1';
+const MANAGE_STATE_KEY = 'wataChallengeManage';
 const BOARD_OPT_IN_KEY_PREFIX = 'watachan-challenge-board-opt-in:';
 const RESULT_GIRL_IMAGE_SRC = '/assets/character/girl-default.webp';
 const RESULT_QR_IMAGE_SRC = '/assets/qr-site.png?v=20260710-qr-1';
@@ -59,12 +60,14 @@ const preferredCardId = currentUrl.searchParams.get('question')?.trim() || '';
 const preferredPackSlug = currentUrl.searchParams.get('pack')?.trim() || '';
 const quickStart = readCreatorQuickStart('challenge');
 const hashManageToken = new URLSearchParams(location.hash.slice(1)).get('manage') || '';
+const entryManageState = history.state?.[MANAGE_STATE_KEY];
+const historyManageToken = entryManageState?.code === roomCode && /^[a-f0-9]{48}$/i.test(entryManageState.token || '') ? entryManageState.token : '';
 const savedManageToken = roomCode ? manageHistory().find((item) => item.code === roomCode)?.token || '' : '';
-const initialManageToken = hashManageToken || savedManageToken;
+const initialManageToken = hashManageToken || historyManageToken || savedManageToken;
 document.documentElement.dataset.challengePage = pagePath.split('/').pop() || 'challenge';
 
-if (pagePath === '/challenge' && roomCode && hashManageToken) {
-  history.replaceState(null, '', `${languagePrefix}/challenge/manage?room=${roomCode}#manage=${hashManageToken}`);
+if (roomCode && initialManageToken && ['/challenge', '/challenge/manage'].includes(pagePath)) {
+  replaceManageUrl(roomCode, initialManageToken);
 }
 
 let state = {
@@ -387,7 +390,7 @@ function createStartView() {
     startCopy.intro,
     `<nav class="challenge-feature-nav" aria-label="挑戦モードのメニュー">
       <a href="/challenge/library">お題ライブラリ</a>
-      ${historyItems[0] ? `<a href="${manageUrl(historyItems[0].code, historyItems[0].token)}">主催者用回答管理</a>` : ''}
+      ${historyItems[0] ? `<a href="${manageUrl(historyItems[0].code)}">主催者用回答管理</a>` : ''}
     </nav>
     ${draft ? `<section class="challenge-panel challenge-resume" data-testid="creator-resume">
       <span class="challenge-section-label">途中保存あり</span>
@@ -1371,7 +1374,7 @@ async function createChallengeRoom(answers) {
     if (!response.ok) throw new Error(data.error || 'create-failed');
     saveManageRoom(data.code, data.manageToken, data.room.creatorName);
     removeStorage(CREATOR_DRAFT_KEY);
-    history.replaceState(null, '', `${languagePrefix}/challenge/manage?room=${data.code}#manage=${data.manageToken}`);
+    replaceManageUrl(data.code, data.manageToken);
     setState({
       loading: false,
       roomCode: data.code,
@@ -2198,8 +2201,15 @@ function challengeUrl(code) {
   return `${location.origin}${languagePrefix}/challenge?room=${code}&share=${CHALLENGE_SHARE_VERSION}`;
 }
 
-function manageUrl(code, token) {
-  return `${languagePrefix}/challenge/manage?room=${code}#manage=${token}`;
+function manageUrl(code) {
+  return `${languagePrefix}/challenge/manage?room=${code}`;
+}
+
+function replaceManageUrl(code, token) {
+  if (typeof window.__WATACHAN_REPLACE_MANAGE_URL__ === 'function'
+    && window.__WATACHAN_REPLACE_MANAGE_URL__(code, token, manageUrl(code))) return;
+  const nextState = { ...(history.state || {}), [MANAGE_STATE_KEY]: { code, token } };
+  history.replaceState(nextState, '', manageUrl(code));
 }
 
 function errorMessage(code) {

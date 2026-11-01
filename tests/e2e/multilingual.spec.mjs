@@ -51,13 +51,20 @@ test.describe('completed multilingual release', () => {
         expect(html).toContain(`lang="${locale}"`);
         expect(html).toContain('rel="canonical" href="https://www.streetboardgame.com' + prefix + path + '"');
       }
-      await page.goto(prefix + '/challenge?room=TEST_COMPAT#manage=TEST_CAPABILITY');
+      const managed = await request.post('/api/challenge/rooms', { data: { creatorName: 'Synthetic locale', cards: oldJapaneseCards.slice(0,1), answers: [0] } });
+      expect(managed.status()).toBe(201);
+      const capability = await managed.json();
+      await page.goto(prefix + '/challenge?room=' + capability.code + '#manage=' + capability.manageToken);
+      await expect(page.getByTestId('challenge-share-screen')).toBeVisible();
       const target = locale === 'ja' ? 'ar' : 'ja';
-      await expect(page).toHaveURL(/#manage=TEST_CAPABILITY$/);
+      expect(new URL(page.url()).hash).toBe('');
+      expect(await page.content()).not.toContain(capability.manageToken);
       const beforeSwitch = new URL(page.url());
       const expectedPath = switchLocalePath(beforeSwitch.pathname + beforeSwitch.search + beforeSwitch.hash, target);
       await page.locator('[data-locale-switcher]').selectOption(target);
       await expect(page).toHaveURL(beforeSwitch.origin + expectedPath);
+      await expect(page.getByTestId('challenge-share-screen')).toBeVisible();
+      expect(await page.content()).not.toContain(capability.manageToken);
     });
     test(`${locale}: old Japanese invitation, private copy, ten answers and result PNG`, async ({ page, request, isMobile }) => {
       // Mobile save hands the PNG to an OS sheet rather than a download. Keep

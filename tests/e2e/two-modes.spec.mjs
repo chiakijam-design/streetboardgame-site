@@ -425,7 +425,9 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
   expect(invitationCaption).toContain('ちあき');
   expect(invitationCaption.split('\n').at(-1)).toBe(challengeUrl);
   expect(invitationCaption).not.toContain('/manage');
-  expect(invitationCaption).not.toContain(new URL(page.url()).hash);
+  const isolatedManageKey = await page.evaluate(() => history.state.wataChallengeManage.token);
+  expect(invitationCaption).not.toContain(isolatedManageKey);
+  expect(new URL(page.url()).hash).toBe('');
 
   const participantContext = await browser.newContext();
   const participant = await participantContext.newPage();

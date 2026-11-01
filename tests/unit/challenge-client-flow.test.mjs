@@ -17,19 +17,19 @@ function clientFunction(name) {
   return next<0?tail:tail.slice(0,next+1);
 }
 const code=['answerQuestion','createChallengeRoom','startRoleSwap','toCreatorDraftCard',
-  'finishConfirmationView','creatorDraft','resumeCreate','rankingView','numberedCopy'].map(clientFunction).join('\n');
+  'finishConfirmationView','creatorDraft','resumeCreate','rankingView','numberedCopy','manageUrl','replaceManageUrl'].map(clientFunction).join('\n');
 const cards=Array.from({length:10},(_,i)=>({id:`T${i}`,sourceId:`T${i}`,title:`Topic ${i}`,choices:['A','B','C','D','E']}));
 function harness() {
   const values=new Map(),kv={async get(key,options={}){const v=values.get(key);return v?options.type==='json'?JSON.parse(v):v:null;},async put(key,v){values.set(key,String(v));}};
   const saved=new Map();let requests=0;
-  const context={QUESTION_COUNT:10,CREATOR_DRAFT_KEY:'draft',state:{mode:'creator-edit',cards:structuredClone(cards),answers:[],questionIndex:0,creatorName:'Local creator',finishCount:0,loading:false,questionSubmissionConsent:false},
+  const context={QUESTION_COUNT:10,CREATOR_DRAFT_KEY:'draft',MANAGE_STATE_KEY:'wataChallengeManage',state:{mode:'creator-edit',cards:structuredClone(cards),answers:[],questionIndex:0,creatorName:'Local creator',finishCount:0,loading:false,questionSubmissionConsent:false},
     allCards:structuredClone(cards),currentLocale:'ja',languagePrefix:'',validQuizLength,answeredQuestionCount,completedCreatorQuiz,challengeCopy,challengeCompletionCopy,
-    structuredClone,Date,Number,Array,JSON,Map,Set,console,
+    structuredClone,Date,Number,Array,JSON,Map,Set,console,window:{},
     escapeHtml:x=>String(x).replaceAll('<','&lt;'),translateText:x=>x,shell:(...args)=>args,
     captureCreatorConsent(){},trackGamePlay(){},trackDailyResultAction(){},
     changedQuestionCandidates:()=>[],saveManageRoom(){},removeStorage:key=>saved.delete(key),
     readStorage:key=>saved.get(key),saveCreatorDraft:v=>saved.set('draft',structuredClone(v)),
-    history:{replaceState(){}},setState:patch=>Object.assign(context.state,patch),
+    history:{state:null,url:'',replaceState(next,_,url){this.state=next;this.url=url;}},setState:patch=>Object.assign(context.state,patch),
     challengeUrl:code=>`https://local.test/challenge?room=${code}`,
     async fetch(path,options){requests++;return handleChallengeApi(new Request('https://local.test'+path,options),{CHALLENGE_KV:kv},path);},
   };
@@ -49,6 +49,8 @@ for(const count of [1,2,3,9,10]) test(`real creator flow publishes ${count} answ
     await Promise.all([c.createChallengeRoom(c.state.answers.slice(0,count)),c.createChallengeRoom(c.state.answers.slice(0,count))]);
   }
   assert.equal(h.requests(),1);assert.equal(c.state.mode,'manage');
+  assert.ok(!c.history.url.includes(c.state.manageToken));
+  assert.equal(c.history.state.wataChallengeManage.token,c.state.manageToken);
   assert.equal(c.state.room.cards.length,count);assert.equal(c.state.cards.length,count);
   assert.equal(c.state.room.answerKey,undefined);assert.equal(c.state.finishCount,0);
 });

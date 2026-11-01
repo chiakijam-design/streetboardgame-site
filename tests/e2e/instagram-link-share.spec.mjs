@@ -24,7 +24,7 @@ async function fixture(page,scene,locale){
  const prefix=locale==='ja'?'':'/'+locale;
  const entry=scene==='live'?'/live-challenge':scene==='host'?'/challenge/manage':'/challenge';
  const code=scene==='live'?'123456':'QADEMO88';
- await page.goto(`${prefix}${entry}?room=${code}${scene==='host'?'#manage=synthetic-management':''}`);
+ await page.goto(`${prefix}${entry}?room=${code}${scene==='host'?'#manage='+'abcdef'.repeat(8):''}`);
  await expect(page.locator('[data-result-share=save]')).toBeEnabled({timeout:30000});
  return new URL(page.url()).origin+`${prefix}${scene==='live'?'/live-challenge':'/challenge'}?room=${code}`;
 }

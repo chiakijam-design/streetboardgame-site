@@ -264,7 +264,20 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   });
   expect(saveBodies[0].choices[0]).toBe('中庭');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
-  expect(await page.locator('#allQuestions .table-wrap').evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  // Saving rebuilds this table. Re-resolve the current node on each poll:
+  // an element detached between selector resolution and evaluation has width 0.
+  const tableWrap = page.locator('#allQuestions .table-wrap');
+  await expect.poll(() => tableWrap.evaluate((element) => (
+    element.isConnected && element.clientWidth > 0 && element.scrollWidth > element.clientWidth
+  ))).toBe(true);
+  // Keep a functional check as well as the overflow measurement.
+  const horizontalScroll = await tableWrap.evaluate((element) => {
+    element.scrollLeft = 24;
+    const moved = element.scrollLeft;
+    element.scrollLeft = 0;
+    return moved;
+  });
+  expect(horizontalScroll).toBeGreaterThan(0);
 
   const pending = page.locator(`[data-submission="${pendingId}"]`);
   page.once('dialog', (dialog) => dialog.accept());

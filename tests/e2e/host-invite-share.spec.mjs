@@ -3,7 +3,7 @@ import { TARGET_LOCALES, LOCALE_DETAILS } from '../../src/i18n/locales.js';
 import { INVITE_SHARE_LABELS } from '../../src/platform/inviteShare.js';
 
 const code = 'QADEMO88';
-const manageToken = 'synthetic-management-fixture';
+const manageToken = 'abcdef'.repeat(8); // Valid API-format synthetic capability only.
 const cards = Array.from({ length: 10 }, (_, i) => ({ id: `fixture-${i}`, title: `Fixture ${i}`, category: 'Fixture', choices: ['One', 'Two', 'Three', 'Four', 'Five'] }));
 async function hostFixture(page) {
   await page.addInitScript(() => {
