@@ -1,0 +1,2 @@
+import {defineConfig,devices} from '@playwright/test';
+export default defineConfig({testDir:'./tests/e2e',testMatch:'board-design.spec.mjs',timeout:45000,expect:{timeout:8000},workers:1,retries:0,reporter:'line',use:{baseURL:'http://127.0.0.1:4189',trace:'retain-on-failure',screenshot:'only-on-failure'},projects:[{name:'chrome',use:{...devices['Desktop Chrome'],channel:'chrome'}}],webServer:{command:'node tools/test-server.mjs',env:{TEST_PORT:'4189'},url:'http://127.0.0.1:4189/health',reuseExistingServer:false,timeout:30000},outputDir:'test-results-board-design'});

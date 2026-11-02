@@ -864,11 +864,13 @@ function startResultFeedbackSequence() {
 
 function understandingBoard(participants, count) {
   const completed = state.mode === 'result' ? state.result?.completedParticipants : state.room?.completedParticipants;
-  return `<section class="challenge-panel" data-testid="understanding-board" aria-labelledby="understanding-board-title">
-    <h2 id="understanding-board-title">理解度ボード</h2>
-    <p class="challenge-note">${escapeHtml(boardCopy(currentLocale, 'rule'))}</p>
-    ${participants.length ? `<ol class="challenge-ranking-list">${participants.map(p => `<li><b>${escapeHtml(p.name)}</b><strong>${p.score}/${count}</strong></li>`).join('')}</ol>` : !completed ? `<p class="challenge-empty" data-testid="board-first-friend-prompt">${escapeHtml(challengeCopy(currentLocale, 'first'))}</p>` : '<p class="challenge-empty">理解度ボードに載せた回答者はまだいません。</p>'}
-    <button class="challenge-secondary" data-action="refresh-board">理解度ボードを更新</button>
+  return `<section class="challenge-panel challenge-understanding-board" data-testid="understanding-board" aria-labelledby="understanding-board-title">
+    <div class="challenge-board-header">
+      <div class="challenge-board-heading"><span class="challenge-board-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 17v-4m7 4V7m7 10v-7M4 21h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span><h2 id="understanding-board-title">理解度ボード</h2></div>
+      <button class="challenge-secondary challenge-board-refresh" data-action="refresh-board" aria-label="理解度ボードを更新" title="理解度ボードを更新"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.8-1L20 9M4 15l2.1 3A7 7 0 0 0 17.9 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="challenge-board-control-label">理解度ボードを更新</span></button>
+    </div>
+    <p class="challenge-note challenge-board-note">${escapeHtml(boardCopy(currentLocale, 'rule'))}</p>
+    ${participants.length ? `<ol class="challenge-ranking-list" role="list">${participants.map((p, index) => `<li><span class="challenge-board-rank" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span><b>${escapeHtml(p.name)}</b><strong class="challenge-board-score"><span>${p.score}</span><span class="challenge-board-denominator">/${count}</span></strong></li>`).join('')}</ol>` : !completed ? `<p class="challenge-empty" data-testid="board-first-friend-prompt">${escapeHtml(challengeCopy(currentLocale, 'first'))}</p>` : '<p class="challenge-empty">理解度ボードに載せた回答者はまだいません。</p>'}
   </section>`;
 }
 
