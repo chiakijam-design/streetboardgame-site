@@ -106,6 +106,8 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   }
   await expect(page.getByRole('heading', { name: '10/10 correct' })).toHaveCount(1);
   await expect(page.locator('.challenge-hero')).toHaveCount(0);
+  await expect(page.getByTestId('challenge-result-details')).not.toHaveAttribute('open', '');
+  await page.getByTestId('challenge-result-details').locator('summary').click();
   await expect(page.getByRole('heading', { name: 'Which answers matched?' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Answer Review Report' })).toBeVisible();
   await expect(page.getByTestId('challenge-ai-review').locator(':scope > div > p')).toHaveCount(4);
@@ -122,10 +124,10 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByTestId('challenge-result-image')).toBeVisible();
   await expect(page.getByTestId('challenge-result-image')).toHaveAttribute('alt', /You in 100% Focus/);
   const roleSwap = page.getByTestId('challenge-role-swap');
-  await expect(roleSwap).toContainText('RECOMMENDED');
+  await expect(roleSwap).toContainText('My turn to create a quiz');
   await expect(roleSwap).toContainText('Use the same 10 questions — now I’ll be the creator');
   await expect(roleSwap.getByRole('button', {
-    name: 'Guess my answers too',
+    name: 'Use the same questions',
   })).toBeVisible();
   const resultShare = page.getByTestId('challenge-result-share');
   await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();
@@ -137,19 +139,16 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(resultShare.getByRole('button', { name: 'LINE', exact: true })).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'X', exact: true })).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'WhatsApp', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Create with new questions' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Use new questions' })).toBeVisible();
   expect(await page.evaluate(() => {
-    const review = document.querySelector('[data-testid="challenge-ai-review"]');
     const swap = document.querySelector('[data-action="swap-roles"]');
+    const fresh = document.querySelector('[data-testid="challenge-role-swap"] a');
+    const board = document.querySelector('[data-testid="understanding-board"]');
+    const details = document.querySelector('[data-testid="challenge-result-details"]');
     const share = document.querySelector('[data-testid="challenge-result-share"]');
     const retry = document.querySelector('[data-action="retry-challenge"]');
-    const create = Array.from(document.querySelectorAll('a'))
-      .find((link) => link.textContent.trim() === 'Create with new questions');
-    return Boolean(review && swap && share && retry && create
-      && (review.compareDocumentPosition(swap) & Node.DOCUMENT_POSITION_FOLLOWING)
-      && (swap.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING)
-      && (share.compareDocumentPosition(retry) & Node.DOCUMENT_POSITION_FOLLOWING)
-      && (retry.compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING));
+    const order = [swap, fresh, board, details, share, retry];
+    return order.every(Boolean) && order.slice(1).every((element, i) => Boolean(order[i].compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
   })).toBe(true);
   await expect(page.getByRole('button', { name: 'Copy text only' })).toHaveCount(0);
   await page.getByRole('link', { name: 'View the Understanding Board' }).click();

@@ -497,6 +497,8 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(participant.getByRole('heading', { name: '9/10問 正解' })).toHaveCount(1);
     await expect(participant.locator('.challenge-hero')).toHaveCount(0);
     await expect(participant.locator('.challenge-result')).toHaveCount(10);
+    await expect(participant.getByTestId('challenge-result-details')).not.toHaveAttribute('open', '');
+    await participant.getByTestId('challenge-result-details').locator('summary').click();
     await expect(participant.getByRole('heading', { name: 'どこが当たった？' })).toBeVisible();
     await expect(participant.getByRole('heading', { name: '点数入り結果カード' })).toHaveCount(0);
     await expect(participant.getByRole('heading', { name: 'シェアするカードを選ぶ' })).toHaveCount(0);
@@ -603,7 +605,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       return Boolean(answers && review
         && (answers.compareDocumentPosition(review) & Node.DOCUMENT_POSITION_FOLLOWING));
     })).toBe(true);
-    await expect(participant.getByRole('link', { name: '新しいお題で作る' })).toHaveAttribute('href', '/challenge');
+    await expect(participant.getByRole('link', { name: '新しい問題で作る' })).toHaveAttribute('href', '/challenge');
     await participant.getByRole('link', { name: '理解度ボードを見る' }).click();
     await expect(participant.getByTestId('understanding-board')).toContainText('ゆう');
     await expect(participant.getByTestId('understanding-board')).toContainText('最高点を更新します');
@@ -672,25 +674,22 @@ test('参加者が結果画面から役割交代し、同じ10問の出題者に
     for (let index = 0; index < 10; index += 1) {
       await participant.locator('[data-action="answer"]').first().click();
     }
-    await expect(participant.getByTestId('challenge-role-swap')).toContainText('次は、あなたが出題者');
-    await expect(participant.getByTestId('challenge-role-swap')).toContainText('おすすめ');
+    await expect(participant.getByTestId('challenge-role-swap')).toContainText('次は私が出題する');
+    await expect(participant.getByTestId('challenge-role-swap').getByRole('link')).toHaveText('新しい問題で作る');
     await expect(participant.getByTestId('challenge-role-swap')).toContainText('元の出題者の正解は引き継がれません');
     await expect(participant.getByTestId('challenge-role-swap')).toContainText('同じ10問で、今度は私が出題する');
-    const roleSwap = participant.getByRole('button', { name: '私のことも当ててみて' });
+    const roleSwap = participant.getByRole('button', { name: '同じ問題で作る' });
     const retry = participant.getByRole('button', { name: 'もう一度、答えを予想する' });
-    const newQuestions = participant.getByRole('link', { name: '新しいお題で作る' });
+    const newQuestions = participant.getByRole('link', { name: '新しい問題で作る' });
     expect(await participant.evaluate(() => {
-      const review = document.querySelector('[data-testid="challenge-ai-review"]');
       const swap = document.querySelector('[data-action="swap-roles"]');
+      const fresh = document.querySelector('[data-testid="challenge-role-swap"] a');
+      const board = document.querySelector('[data-testid="understanding-board"]');
+      const details = document.querySelector('[data-testid="challenge-result-details"]');
       const share = document.querySelector('[data-testid="challenge-result-share"]');
-      const retryButton = document.querySelector('[data-action="retry-challenge"]');
-      const newQuestionLink = Array.from(document.querySelectorAll('a'))
-        .find((link) => link.textContent.trim() === '新しいお題で作る');
-      return Boolean(review && swap && share && retryButton && newQuestionLink
-        && (review.compareDocumentPosition(swap) & Node.DOCUMENT_POSITION_FOLLOWING)
-        && (swap.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING)
-        && (share.compareDocumentPosition(retryButton) & Node.DOCUMENT_POSITION_FOLLOWING)
-        && (retryButton.compareDocumentPosition(newQuestionLink) & Node.DOCUMENT_POSITION_FOLLOWING));
+      const retry = document.querySelector('[data-action="retry-challenge"]');
+      const order = [swap, fresh, board, details, share, retry];
+      return order.every(Boolean) && order.slice(1).every((element, i) => Boolean(order[i].compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
     })).toBe(true);
     await expect(roleSwap).toHaveCSS('background-color', 'rgb(25, 25, 25)');
     await expect(retry).toHaveCSS('background-color', 'rgb(255, 255, 255)');

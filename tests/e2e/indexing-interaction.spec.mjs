@@ -89,7 +89,7 @@ test('カード内タップと5色ボタンで通常版を完走し、二重送�
   const board = await (await request.get(`/api/challenge/rooms/${room}/ranking`)).json();
   expect(board.participants).toHaveLength(1);
   await expect(player.getByTestId('challenge-role-swap')).toContainText('同じ10問で、今度は私が出題する');
-  await expect(player.getByRole('button', { name: '私のことも当ててみて' })).toBeVisible();
+  await expect(player.getByRole('button', { name: '同じ問題で作る' })).toBeVisible();
   expect(errors).toEqual([]);
   await playerContext.close();
 });

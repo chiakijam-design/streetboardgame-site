@@ -1,6 +1,7 @@
 import { validQuizLength, answeredQuestionCount, completedCreatorQuiz } from './src/challenge/length.js';
 import { boardCopy } from './src/i18n/challenge-board-copy.js';
 import { challengeCopy } from './src/i18n/challenge-copy.js';
+import { challengeResultCopy } from './src/i18n/challenge-result-copy.js';
 import { challengeCompletionCopy } from './src/i18n/challenge-completion-copy.js';
 import { challengeStartCopy } from './src/i18n/challenge-start-copy.js';
 import { weeklyQuestionPacks } from './src/challenge/packs.js';
@@ -747,7 +748,18 @@ function resultView() {
       <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
     </section>
     ${state.error ? `<p class="challenge-error" role="alert">${escapeHtml(errorMessage(state.error))}</p>` : ''}
+    <section class="challenge-role-swap" data-testid="challenge-role-swap" aria-labelledby="challenge-next-title">
+      <h2 id="challenge-next-title">${escapeHtml(challengeResultCopy(currentLocale, 'heading'))}</h2>
+      <div class="challenge-result-next-actions">
+        <button class="challenge-primary" data-action="swap-roles">${escapeHtml(challengeResultCopy(currentLocale, 'same'))}</button>
+        <a class="challenge-secondary" href="${languagePrefix}/challenge">${escapeHtml(challengeResultCopy(currentLocale, 'fresh'))}</a>
+      </div>
+      <p>${escapeHtml(numberedCopy('同じ10問で、今度は私が出題する', result.answers.length))}</p>
+      <p>問題と選択肢だけ引き継ぎます。元の出題者の正解は引き継がれません。</p>
+    </section>
     ${understandingBoard(state.ranking, result.answers.length)}
+    <details class="challenge-result-details" data-testid="challenge-result-details"${state.resultDetailsOpen ? ' open' : ''}>
+      <summary><span class="challenge-result-details-show">${escapeHtml(challengeResultCopy(currentLocale, 'details'))}</span><span class="challenge-result-details-hide">${escapeHtml(challengeResultCopy(currentLocale, 'close'))}</span></summary>
     <section class="challenge-panel">
       <span class="challenge-section-label">ANSWER CHECK</span>
       <h2>どこが当たった？</h2>
@@ -770,13 +782,9 @@ function resultView() {
         </div>
         <small>回答内容をもとに用意された文章から総評を作成しています。</small>
       </section>
-      <section class="challenge-role-swap" data-testid="challenge-role-swap">
-        <span class="challenge-section-label">おすすめ</span>
-        <h2>次は、あなたが出題者</h2>
-        <button class="challenge-primary" data-action="swap-roles">${escapeHtml(challengeCopy(currentLocale, 'swap'))}</button>
-        <p>${escapeHtml(numberedCopy('同じ10問で、今度は私が出題する', result.answers.length))}</p>
-        <p>問題と選択肢だけ引き継ぎます。元の出題者の正解は引き継がれません。</p>
-      </section>
+    </section>
+    </details>
+    <section class="challenge-panel">
       <div class="challenge-result-share-wrap">
         <section class="challenge-result-share" data-testid="challenge-result-share"
           aria-labelledby="challenge-result-share-title">
@@ -788,7 +796,6 @@ function resultView() {
       </div>
       <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>
       <p class="challenge-result-retry-note">${escapeHtml(result.participant?.rankingParticipating ? boardCopy(currentLocale, 'rule') : boardCopy(currentLocale, 'legacy'))}</p>
-      <a class="challenge-secondary" href="/challenge">新しいお題で作る</a>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
       <a class="challenge-secondary" href="/">トップへ戻る</a>
     </section>
@@ -1022,6 +1029,8 @@ function errorView() {
 }
 
 function bindEvents() {
+  const resultDetails = app.querySelector('[data-testid="challenge-result-details"]');
+  resultDetails?.addEventListener('toggle', () => { state.resultDetailsOpen = resultDetails.open; });
   document.querySelector('[data-action="start-create"]')?.addEventListener('click', startCreate);
   document.querySelector('[data-action="back-create"]')?.addEventListener('click', () => setState({
     mode: 'create',
@@ -1683,6 +1692,7 @@ async function loadResult(token = state.participantToken) {
     loading: false,
     answerPending: false,
     result: data,
+    resultDetailsOpen: false,
     ranking: data.board || [],
     resultImageUrl: '',
     resultImageBusy: false,

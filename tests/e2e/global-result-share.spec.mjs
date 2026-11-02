@@ -61,7 +61,7 @@ test('OS share cancellation, rapid clicks, errors and returning preserve fallbac
   await expect(controls.locator('[data-result-share-url]')).toHaveValue(new URL(page.url()).origin + `/challenge?room=${code}`);
   await page.evaluate(() => { window.__SHARE_MODE__ = 'pending'; });
   await native.click();
-  await page.getByRole('link', { name: '新しいお題で作る', exact: true }).click();
+  await page.getByRole('link', { name: '新しい問題で作る', exact: true }).click();
   await expect(page.locator('[data-result-share-controls]')).toHaveCount(0);
   await page.goBack();
   await expect(page.locator('[data-result-share="native"]')).toBeEnabled();
