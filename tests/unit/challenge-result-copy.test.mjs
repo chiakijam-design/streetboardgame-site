@@ -15,5 +15,5 @@ test('result actions and both disclosure states have fixed copy for every public
 test('Japanese requested labels and unsupported locale fallback remain explicit',()=>{
  assert.equal(challengeResultCopy('ja','heading'),'次は私が出題する');
  assert.equal(challengeResultCopy('ja','same'),'同じ問題で作る');assert.equal(challengeResultCopy('ja','fresh'),'新しい問題で作る');
- assert.equal(challengeResultCopy('ja','details'),'詳しく見る');assert.equal(challengeResultCopy('unknown','details'),'View details');
+ assert.equal(challengeResultCopy('ja','details'),'1問ごとの正解・不正解を見る');assert.equal(challengeResultCopy('ja','close'),'1問ごとの結果を閉じる');assert.equal(challengeResultCopy('unknown','details'),'See which answers were right or wrong');
 });
