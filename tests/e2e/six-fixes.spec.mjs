@@ -64,6 +64,13 @@ test('completed normal play delivers image, report and role-swap actions without
     await page.locator('[data-action="answer"]').first().click();
   }
   await expect.poll(() => actions.map(a=>a.metric)).toContain('result_image_ready');
+  const details = page.getByTestId('challenge-result-details');
+  await expect(details).not.toHaveAttribute('open', '');
+  await expect(page.getByTestId('challenge-ai-review')).not.toBeVisible();
+  expect(actions.map(action => action.metric)).not.toContain('answer_report_viewed');
+  await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+  await expect(page.getByTestId('challenge-ai-review')).toBeVisible();
   await page.getByTestId('challenge-ai-review').scrollIntoViewIfNeeded();
   await expect.poll(() => actions.map(a=>a.metric)).toContain('answer_report_viewed');
   await page.locator('[data-action="save-result-image"]').click();
