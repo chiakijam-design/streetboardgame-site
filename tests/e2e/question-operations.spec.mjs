@@ -146,7 +146,7 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
       }),
     });
   });
-  await page.route('**/api/questions/admin/overview', async (route) => {
+  await page.route('**/api/questions/admin/overview*', async (route) => {
     expect(route.request().headers()['x-live-admin-session']).toBeUndefined();
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(overview) });
   });
@@ -186,6 +186,9 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   await page.reload();
   await expect(page.locator('#dashboard')).toBeVisible();
   await expect(page.locator('#authPanel')).toBeHidden();
+  // Pagination limits mounted rows; search the complete catalog for these
+  // synthetic fixtures before asserting their ordering and moderation flows.
+  await page.locator('#questionSearch').fill('CUS');
   await expect(page.locator('#pendingSubmissions')).toContainText('放課後にみんなでしたいことは？');
   await expect(page.locator('#pendingSubmissions')).toContainText('重点審査：いじめ・容姿攻撃');
   await expect(page.getByText('問題数ではなく「どの問題が出ても答え合わせで会話になる」を品質基準に、通常版・LIVE版で共通のお題を管理します。')).toBeVisible();

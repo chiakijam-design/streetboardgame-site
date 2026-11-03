@@ -48,6 +48,82 @@ export function findSimilarQuestions(items, threshold = 0.58) {
   return matches;
 }
 
+// The operations screen must stay interactive while comparing a large review
+// queue. Cache the exact same normalized features, and yield between chunks.
+export async function findSimilarQuestionsCooperative(items, threshold = 0.58, {
+  signal,
+  compareIds = null,
+  onProgress = () => {},
+  yieldControl = yieldComparisonTask,
+} = {}) {
+  const complete = (items || []).filter(isCompleteQuestion);
+  const questions = compareIds ? complete.filter((item) => compareIds.has(String(item.id))) : complete;
+  const approved = complete.filter(isApprovedQuestion);
+  const features = new Map(complete.map((item) => [item, similarityFeatures(item)]));
+  const matches = new Map(questions.map((item) => [String(item.id), []]));
+  const total = questions.length * approved.length;
+  let completed = 0;
+  let chunkStart = Date.now();
+  const checkAbort = () => { if (signal?.aborted) throw new DOMException('Comparison cancelled', 'AbortError'); };
+  checkAbort();
+  onProgress({ completed, total });
+  await yieldControl();
+  for (const question of questions) {
+    for (const candidate of approved) {
+      checkAbort();
+      if (String(question.id) !== String(candidate.id)) {
+        const score = preparedSimilarity(features.get(question), features.get(candidate));
+        if (score >= threshold) matches.get(String(question.id)).push(compactMatch(candidate, score));
+      }
+      completed += 1;
+      if (completed % 512 === 0 || (completed % 32 === 0 && Date.now() - chunkStart >= 8)) {
+        onProgress({ completed, total });
+        await yieldControl();
+        checkAbort();
+        chunkStart = Date.now();
+      }
+    }
+  }
+  for (const candidates of matches.values()) {
+    candidates.sort((left, right) => right.score - left.score || JAPANESE_COLLATOR.compare(left.title, right.title));
+  }
+  checkAbort();
+  onProgress({ completed, total });
+  return matches;
+}
+
+function yieldComparisonTask() {
+  // A background tab can heavily throttle timers. Prefer the browser's
+  // cooperative scheduler when provided; older engines retain the timer path.
+  return typeof globalThis.scheduler?.yield === 'function'
+    ? globalThis.scheduler.yield()
+    : new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function similarityFeatures(item) {
+  const feature = (text) => ({ text, bigrams: bigramCounts(text) });
+  const choices = normalizedChoices(item?.choices);
+  return { title: feature(normalizeText(item?.title)), choices: choices.map(feature), choicesKey: choices.join('|') };
+}
+
+function preparedDice(left, right) {
+  if (left.text === right.text) return 1;
+  if (left.text.length < 2 || right.text.length < 2) return 0;
+  let overlap = 0;
+  for (const [bigram, count] of left.bigrams) overlap += Math.min(count, right.bigrams.get(bigram) || 0);
+  return (2 * overlap) / ((left.text.length - 1) + (right.text.length - 1));
+}
+
+function preparedSimilarity(left, right) {
+  if (!left.title.text || !right.title.text) return 0;
+  const titleScore = left.title.text === right.title.text ? 1
+    : containsMeaningfulText(left.title.text, right.title.text) ? 0.9 : preparedDice(left.title, right.title);
+  const choiceScore = left.choices.length !== 5 || right.choices.length !== 5 ? 0
+    : left.choices.reduce((sum, choice) => sum + Math.max(...right.choices.map((candidate) => preparedDice(choice, candidate))), 0) / 5;
+  if (left.choicesKey === right.choicesKey && titleScore >= 0.35) return Math.max(0.82, titleScore);
+  return roundScore(titleScore * 0.72 + choiceScore * 0.28);
+}
+
 export function questionSimilarity(left, right) {
   const leftTitle = normalizeText(left?.title);
   const rightTitle = normalizeText(right?.title);

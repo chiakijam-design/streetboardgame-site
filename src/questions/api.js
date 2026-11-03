@@ -1,4 +1,5 @@
 import { requireLiveAdminSession } from '../live/admin-auth.js';
+import { submissionPageOptions } from './operations-pagination.js';
 import { recordLiveOpsEvent } from '../live/ops.js';
 import { scanQuestionSafety } from './safety.js';
 import { getQuestionTrendMetrics } from './trends.js';
@@ -59,7 +60,7 @@ export async function handleQuestionApi(request, env, path) {
     }
 
     if (path === '/api/questions/admin/overview' && request.method === 'GET') {
-      return json(await adminOverview(env));
+      return json(await adminOverview(env, submissionPageOptions(new URL(request.url))));
     }
 
     const reviewRoute = path.match(/^\/api\/questions\/admin\/submissions\/([a-f0-9-]{36})\/review$/i);
@@ -274,8 +275,8 @@ async function signSelectionPayload(payload, env) {
   return encodeBase64Url(new Uint8Array(signature));
 }
 
-async function adminOverview(env) {
-  const [catalogResult, submissionResult, selectionStatsResult] = await Promise.all([
+async function adminOverview(env, submissionPage = null) {
+  const [catalogResult, submissionResult, selectionStatsResult, pendingCountResult] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT q.question_id, q.source_kind, q.source_ref, q.title, q.category, q.choices_json, q.status,
         q.use_challenge, q.use_live, q.created_at, q.updated_at,
@@ -286,7 +287,15 @@ async function adminOverview(env) {
       ORDER BY q.updated_at DESC
       LIMIT 1000
     `).all(),
-    env.REMOTE_DB.prepare(`
+    submissionPage ? env.REMOTE_DB.prepare(`
+      SELECT s.submission_id, s.source_mode, s.source_question_id, s.title, s.choices_json, s.status,
+        s.submitted_at, s.reviewed_at, s.review_note, s.catalog_id, f.flags_json
+      FROM question_submissions s
+      LEFT JOIN question_submission_flags f ON f.submission_id = s.submission_id
+      WHERE s.status = 'pending'
+      ORDER BY s.submitted_at DESC, s.submission_id DESC
+      LIMIT ? OFFSET ?
+    `).bind(submissionPage.limit, submissionPage.offset).all() : env.REMOTE_DB.prepare(`
       SELECT s.submission_id, s.source_mode, s.source_question_id, s.title, s.choices_json, s.status,
         s.submitted_at, s.reviewed_at, s.review_note, s.catalog_id, f.flags_json
       FROM question_submissions s
@@ -299,12 +308,14 @@ async function adminOverview(env) {
       FROM question_selection_stats
       WHERE shown_count > 0 OR skip_count > 0
     `).all(),
+    submissionPage ? env.REMOTE_DB.prepare("SELECT COUNT(*) AS total FROM question_submissions WHERE status = 'pending'").first() : null,
   ]);
   return {
     catalog: (catalogResult?.results || []).map(mapCatalogRow),
     submissions: (submissionResult?.results || []).map(mapSubmissionRow),
     selectionStats: (selectionStatsResult?.results || []).map(mapSelectionStatsRow),
     reports: await listQuestionReports(env),
+    ...(submissionPage ? { submissionPagination: { ...submissionPage, total: Number(pendingCountResult?.total || 0) } } : {}),
   };
 }
 

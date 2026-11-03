@@ -1,10 +1,11 @@
 import { safetyFlagLabels } from './src/questions/safety.js';
 import { assessQuestionQuality } from './src/questions/quality.js';
 import {
-  findSimilarQuestions,
+  findSimilarQuestionsCooperative,
   questionSkipRate,
   sortQuestionsForOperations,
 } from './src/questions/similarity.js';
+import { OPERATIONS_PAGE_SIZE, pageWindow } from './src/questions/operations-pagination.js';
 import { downloadQuestionBackup } from './src/questions/export.js';
 import {
   clearAdminSessionToken,
@@ -27,41 +28,136 @@ const dirtyQuestionIds = new Set();
 let overview = { catalog: [], submissions: [], selectionStats: [] };
 let allQuestions = [];
 let similarityMatches = new Map();
+const catalogRowCache = new Map();
+const pendingRowCache = new Map();
+let catalogPage = 0;
+let pendingOffset = 0;
+let pendingTotal = 0;
+let loading = false;
+let loadController;
 
 sessionStorage.removeItem('live:admin-token');
 tokenInput.value = '';
 document.getElementById('loadQuestions').addEventListener('click', loadOverview);
 document.getElementById('forgetSession').addEventListener('click', forgetAdminSession);
 forgetTrustedDeviceButton.addEventListener('click', forgetAdminSession);
-document.getElementById('questionSearch').addEventListener('input', renderAllQuestions);
-document.getElementById('questionFilter').addEventListener('change', renderAllQuestions);
+document.getElementById('questionSearch').addEventListener('input', () => { catalogPage = 0; renderAllQuestions(); });
+document.getElementById('questionFilter').addEventListener('change', () => { catalogPage = 0; renderAllQuestions(); });
+document.getElementById('questionPrevious').addEventListener('click', () => { catalogPage -= 1; renderAllQuestions(); });
+document.getElementById('questionNext').addEventListener('click', () => { catalogPage += 1; renderAllQuestions(); });
+document.getElementById('pendingPrevious').addEventListener('click', () => loadPendingPage(Math.max(0, pendingOffset - OPERATIONS_PAGE_SIZE)));
+document.getElementById('pendingNext').addEventListener('click', () => loadPendingPage(pendingOffset + OPERATIONS_PAGE_SIZE));
 document.getElementById('saveAllQuestions').addEventListener('click', saveAllQuestions);
 document.getElementById('exportQuestionsCsv').addEventListener('click', exportQuestionsCsv);
 void restoreAdminSessionToken().then((restored) => { if (restored) void loadOverview(); });
 
 async function loadOverview() {
+  if (loading) return;
+  const controller = new AbortController();
+  loadController = controller;
+  setLoading(true);
+  showStatus('問題を読み込んでいます…');
   try {
     if (tokenInput.value.trim() || otpInput.value.trim()) await createAdminSession();
     else if (!getAdminSessionToken() && !await restoreAdminSessionToken()) throw apiError('admin-session-required', 401);
-    overview = await adminApi('/api/questions/admin/overview');
+    const nextOverview = await adminApi(`/api/questions/admin/overview?submissionOffset=${pendingOffset}`);
+    if (controller.signal.aborted) return;
+    overview = nextOverview;
+    pendingTotal = Number(overview.submissionPagination?.total ?? (overview.submissions || []).filter((item) => item.status === 'pending').length);
     allQuestions = sortQuestionsForOperations(mergeQuestionSelectionStats(
       mergeQuestionOverview(staticQuestions, overview.catalog),
       overview.selectionStats,
     ));
-    similarityMatches = findSimilarQuestions([
+    similarityMatches = await findSimilarQuestionsCooperative([
       ...allQuestions,
       ...(overview.submissions || []).filter((item) => item.status === 'pending'),
-    ]);
-    dirtyQuestionIds.clear();
+    ], 0.58, { signal: controller.signal, onProgress: showComparisonProgress });
+    discardCleanCachedRows(catalogRowCache);
+    discardCleanCachedRows(pendingRowCache);
     dashboard.hidden = false;
     setAuthenticatedUi(true);
     renderPending();
     renderAllQuestions();
+    showStatus('読み込みました。問題は50問ずつ表示します。ページを移動しても未保存の編集は保持されます。');
   } catch (error) {
+    if (error.name === 'AbortError' || controller.signal.aborted) return;
     if (error.status === 401) clearAdminSessionToken();
     dashboard.hidden = true;
     setAuthenticatedUi(false);
     showStatus(humanError(error), true);
+  } finally {
+    if (loadController === controller) { setLoading(false); loadController = null; }
+  }
+}
+
+async function loadPendingPage(offset) {
+  if (loading) return;
+  const controller = new AbortController();
+  loadController = controller;
+  setLoading(true);
+  showStatus('審査待ちの次のページを読み込んでいます…');
+  try {
+    const next = await adminApi(`/api/questions/admin/overview?submissionOffset=${offset}`);
+    if (controller.signal.aborted) return;
+    const submissions = next.submissions || [];
+    const matches = await findSimilarQuestionsCooperative([...allQuestions, ...submissions.filter((item) => item.status === 'pending')], 0.58, {
+      signal: controller.signal, onProgress: showComparisonProgress,
+      compareIds: new Set(submissions.map((item) => String(item.id))),
+    });
+    overview.submissions = submissions;
+    pendingOffset = Number(next.submissionPagination?.offset ?? offset);
+    pendingTotal = Number(next.submissionPagination?.total ?? submissions.length);
+    for (const [id, candidates] of matches) similarityMatches.set(id, candidates);
+    renderPending();
+    showStatus('審査待ちのページを表示しました。未保存の編集はこの画面を閉じるまで保持されます。');
+  } catch (error) {
+    if (error.name !== 'AbortError' && !controller.signal.aborted) showStatus(humanError(error), true);
+  } finally {
+    if (loadController === controller) { setLoading(false); loadController = null; }
+  }
+}
+
+function showComparisonProgress({ completed, total }) {
+  showStatus(`類似候補を確認しています… ${total ? Math.floor(completed / total * 100) : 100}%`);
+}
+
+function setLoading(value) {
+  loading = value;
+  document.getElementById('loadQuestions').disabled = value;
+  document.getElementById('questionSearch').disabled = value;
+  document.getElementById('questionFilter').disabled = value;
+  dashboard.setAttribute('aria-busy', String(value));
+  updatePageControls();
+}
+
+function discardCleanCachedRows(cache) {
+  for (const [id, rows] of cache) {
+    if (!rows.some((row) => row.classList.contains('dirty') || row.querySelector('.dirty'))) cache.delete(id);
+  }
+}
+
+function updatePageControls() {
+  document.getElementById('pendingPrevious').disabled = loading || pendingOffset === 0;
+  document.getElementById('pendingNext').disabled = loading || pendingOffset + OPERATIONS_PAGE_SIZE >= pendingTotal;
+  document.getElementById('pendingPageStatus').textContent = pendingTotal
+    ? `${pendingOffset + 1}〜${Math.min(pendingOffset + OPERATIONS_PAGE_SIZE, pendingTotal)}問／審査待ち全${pendingTotal}問`
+    : '審査待ち0問';
+  const total = Number(document.getElementById('questionPageStatus').dataset.total || 0);
+  document.getElementById('questionPrevious').disabled = loading || catalogPage === 0;
+  document.getElementById('questionNext').disabled = loading || (catalogPage + 1) * OPERATIONS_PAGE_SIZE >= total;
+}
+
+function appendCachedRows(target, items, cache, rowHtml, bind) {
+  const body = target.querySelector('tbody');
+  for (const item of items) {
+    const id = String(item.id);
+    if (!cache.has(id)) {
+      const table = document.createElement('table');
+      table.innerHTML = `<tbody>${rowHtml(item)}</tbody>`;
+      bind(table.tBodies[0]);
+      cache.set(id, Array.from(table.tBodies[0].children));
+    }
+    body.append(...cache.get(id));
   }
 }
 
@@ -90,11 +186,17 @@ function setAuthenticatedUi(authenticated) {
 }
 
 async function forgetAdminSession() {
+  loadController?.abort();
   await revokeAdminSession();
   tokenInput.value = '';
   otpInput.value = '';
   dashboard.hidden = true;
   setAuthenticatedUi(false);
+  allQuestions = [];
+  overview = { catalog: [], submissions: [], selectionStats: [] };
+  catalogRowCache.clear(); pendingRowCache.clear(); dirtyQuestionIds.clear();
+  document.getElementById('allQuestions').replaceChildren();
+  document.getElementById('pendingSubmissions').replaceChildren();
   showStatus('この端末に保存した管理認証を解除しました。');
 }
 
@@ -111,10 +213,16 @@ function renderPending() {
           <th class="similar-col">類似候補</th>
           <th class="action-col">審査</th>
         </tr></thead>
-        <tbody>${pending.map(pendingRow).join('')}</tbody>
+        <tbody></tbody>
       </table>
     </div>
   ` : '<div class="empty">審査待ちのお題はありません。</div>';
+  if (pending.length) appendCachedRows(target, pending.slice(0, OPERATIONS_PAGE_SIZE), pendingRowCache, pendingRow, bindPendingRows);
+  updatePageControls();
+}
+
+function bindPendingRows(target) {
+  target.querySelectorAll('[data-submission] input,[data-submission] textarea').forEach((control) => control.addEventListener('input', () => control.closest('[data-submission]').classList.add('dirty')));
   target.querySelectorAll('[data-approve]').forEach((button) => button.addEventListener('click', () => review(button.dataset.approve, 'approved')));
   target.querySelectorAll('[data-reject]').forEach((button) => button.addEventListener('click', () => review(button.dataset.reject, 'rejected')));
   bindComparisonButtons(target);
@@ -134,7 +242,7 @@ function pendingRow(item) {
           ${(item.safetyFlags || []).length ? `<span class="pill critical">重点審査：${html(safetyFlagLabels(item.safetyFlags).join('・'))}</span>` : ''}
           <br>送信：${formatDate(item.submittedAt)}
         </div>
-        <input data-field="reviewNote" maxlength="300" placeholder="審査メモ（非公開）">
+        <input data-field="reviewNote" maxlength="300" placeholder="審査メモ（非公開）" value="${attr(item.reviewNote || '')}">
       </td>
       ${choiceCells(item)}
       <td class="quality-col" data-quality-cell>${qualityCell(item, matches)}</td>
@@ -172,7 +280,12 @@ function renderAllQuestions() {
   const qualityReviewCount = allQuestions.filter((item) => assessQuestionQuality(item, {
     similarMatches: similarityMatches.get(String(item.id)) || [],
   }).status !== 'ready').length;
-  document.getElementById('questionCount').textContent = `${filtered.length}問を表示（採用${approvedCount}問／保留${heldCount}問／無効化${disabledCount}問／隔離${quarantinedCount}問／全${allQuestions.length}問）`;
+  const window = pageWindow(filtered, catalogPage);
+  catalogPage = window.page;
+  document.getElementById('questionCount').textContent = `${window.items.length}問を表示（対象${filtered.length}問／採用${approvedCount}問／保留${heldCount}問／無効化${disabledCount}問／隔離${quarantinedCount}問／全${allQuestions.length}問）`;
+  const pageStatus = document.getElementById('questionPageStatus');
+  pageStatus.dataset.total = String(filtered.length);
+  pageStatus.textContent = filtered.length ? `${window.start + 1}〜${window.start + window.items.length}問／対象${filtered.length}問` : '該当0問';
   document.getElementById('similaritySummary').textContent = `類似候補：${similarCount}問`;
   document.getElementById('qualitySummary').textContent = `品質要確認：${qualityReviewCount}問`;
   const target = document.getElementById('allQuestions');
@@ -190,10 +303,16 @@ function renderAllQuestions() {
           <th class="similar-col">類似候補</th>
           <th class="action-col">保存</th>
         </tr></thead>
-        <tbody>${filtered.map(questionRow).join('')}</tbody>
+        <tbody></tbody>
       </table>
     </div>
   ` : '<div class="empty">条件に一致するお題はありません。</div>';
+  if (window.items.length) appendCachedRows(target, window.items, catalogRowCache, questionRow, bindCatalogRows);
+  updateBulkButton();
+  updatePageControls();
+}
+
+function bindCatalogRows(target) {
   target.querySelectorAll('[data-save]').forEach((button) => button.addEventListener('click', () => saveQuestion(button.dataset.save)));
   target.querySelectorAll('input,textarea').forEach((control) => control.addEventListener('input', () => {
     const row = control.closest('[data-catalog]');
@@ -347,10 +466,7 @@ function comparisonRow(id, item, matches, columnCount) {
   return `
     <tr class="compare-row" data-comparison="${attr(id)}" hidden>
       <td colspan="${Number(columnCount) || 1}">
-        <div class="comparison-grid">
-          ${comparisonCard('この問題', item, id)}
-          ${matches.map((match, index) => comparisonCard(`類似候補${index + 1}（${Math.round(match.score * 100)}%）`, match, id)).join('')}
-        </div>
+        <div class="comparison-grid"></div>
       </td>
     </tr>
   `;
@@ -405,8 +521,18 @@ function readOnlyComparisonCard(label, item) {
 
 function bindComparisonButtons(container) {
   container.querySelectorAll('[data-compare]').forEach((button) => button.addEventListener('click', () => {
-    const comparison = container.querySelector(`[data-comparison="${CSS.escape(button.dataset.compare)}"]`);
+    const comparison = button.closest('tbody')?.querySelector(`[data-comparison="${CSS.escape(button.dataset.compare)}"]`);
     if (!comparison) return;
+    if (!comparison.dataset.rendered) {
+      const id = String(button.dataset.compare);
+      const item = allQuestions.find((question) => String(question.id) === id)
+        || (overview.submissions || []).find((question) => String(question.id) === id);
+      if (!item) return;
+      comparison.querySelector('.comparison-grid').innerHTML = comparisonCard('この問題', item, id)
+        + topMatches(id).map((match, index) => comparisonCard(`類似候補${index + 1}（${Math.round(match.score * 100)}%）`, match, id)).join('');
+      comparison.dataset.rendered = 'true';
+      bindComparisonEditors(comparison);
+    }
     comparison.hidden = !comparison.hidden;
     button.textContent = comparison.hidden ? '並べて比較' : '比較を閉じる';
   }));
@@ -450,6 +576,8 @@ async function review(id, decision) {
     }
     body.decision = decision;
     await adminApi(`/api/questions/admin/submissions/${id}/review`, { method: 'POST', body: JSON.stringify(body) });
+    pendingRowCache.delete(String(id));
+    pendingOffset = 0;
     await loadOverview();
   } catch (error) {
     alert(humanError(error));
@@ -457,7 +585,7 @@ async function review(id, decision) {
 }
 
 async function saveQuestion(id, { reload = true } = {}) {
-  const row = document.querySelector(`[data-catalog="${CSS.escape(id)}"]`);
+  const row = document.querySelector(`[data-catalog="${CSS.escape(id)}"]`) || catalogRowCache.get(String(id))?.[0];
   const current = allQuestions.find((item) => String(item.id) === String(id));
   if (!row || !current) return;
   const body = {
@@ -468,6 +596,7 @@ async function saveQuestion(id, { reload = true } = {}) {
   };
   await adminApi(`/api/questions/admin/catalog/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
   dirtyQuestionIds.delete(String(id));
+  catalogRowCache.delete(String(id));
   if (reload) {
     showStatus(`「${body.title}」を${statusLabel(body.status)}として保存しました。`);
     await loadOverview();
@@ -493,6 +622,7 @@ async function saveComparisonQuestion(card) {
       method: 'PUT',
       body: JSON.stringify(body),
     });
+    card.classList.remove('dirty');
     showStatus(`比較欄の「${body.title}」を${statusLabel(body.status)}として保存しました。`);
     await loadOverview();
   } catch (error) {
