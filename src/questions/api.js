@@ -3,6 +3,7 @@ import { submissionPageOptions } from './operations-pagination.js';
 import { recordLiveOpsEvent } from '../live/ops.js';
 import { scanQuestionSafety } from './safety.js';
 import { getQuestionTrendMetrics } from './trends.js';
+import { consumeCostBudget, costBudgetResponse } from '../cost/guard.js';
 
 const DAILY_QUESTION_LIMIT = 20;
 const MAX_BATCH_SIZE = 10;
@@ -62,7 +63,10 @@ export async function handleQuestionApi(request, env, path) {
     if (path === '/api/questions/admin/overview' && request.method === 'GET') {
       const url = new URL(request.url);
       const page = submissionPageOptions(url);
-      return json(await adminOverview(env, page, Boolean(page && url.searchParams.get('view') === 'pending')));
+      const pendingOnly = Boolean(page && url.searchParams.get('view') === 'pending');
+      const budget = await consumeCostBudget(env, pendingOnly ? 'overview-pending' : 'overview-full');
+      if (!budget.allowed) return costBudgetResponse(budget);
+      return json(await adminOverview(env, page, pendingOnly));
     }
 
     const reviewRoute = path.match(/^\/api\/questions\/admin\/submissions\/([a-f0-9-]{36})\/review$/i);

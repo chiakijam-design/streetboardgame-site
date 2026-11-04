@@ -5,6 +5,28 @@ import { readFile } from 'node:fs/promises';
 import { handleQuestionApi } from '../../src/questions/api.js';
 import { createLiveAdminSession, generateLiveAdminTotp } from '../../src/live/admin-auth.js';
 
+test('enforced cost budget authenticates first, classifies full reads safely, and leaves decisions/public catalog usable',async()=>{
+  const x=await setup();try{
+    x.db.exec(await readFile(new URL('../../migrations/0030_wata_cost_budgets.sql',import.meta.url),'utf8'));
+    x.env.WATA_COST_GUARD_MODE='enforce';
+    const path='/api/questions/admin/overview';
+    assert.equal((await handleQuestionApi(new Request('https://example.com'+path),x.env,path)).status,401);
+    assert.equal(x.db.prepare('SELECT count(*) AS n FROM wata_cost_budgets').get().n,0);
+    assert.equal((await x.get('?view=pending')).status,200);
+    assert.equal(x.db.prepare('SELECT scope FROM wata_cost_budgets').get().scope,'overview-full');
+    assert.equal((await x.get('?submissionOffset=0&view=pending')).status,200);
+    x.db.exec('UPDATE wata_cost_budgets SET interval_count=999,day_count=999999,month_count=999999');
+    x.calls.length=0;
+    const denied=await x.get('?submissionOffset=0');assert.equal(denied.status,429);
+    assert.equal(x.calls.some(sql=>/FROM question_catalog|FROM question_submissions|FROM question_selection_stats/.test(sql)),false);
+    const id='00000000-0000-4000-8000-000000000120',review=`/api/questions/admin/submissions/${id}/review`;
+    const response=await handleQuestionApi(new Request('https://example.com'+review,{method:'POST',headers:{...x.headers,origin:'https://example.com'},body:JSON.stringify({decision:'rejected'})}),x.env,review);
+    assert.equal(response.status,200);
+    assert.equal(x.db.prepare('SELECT status FROM question_submissions WHERE submission_id=?').get(id).status,'rejected');
+    assert.equal((await handleQuestionApi(new Request('https://example.com/api/questions/catalog'),x.env,'/api/questions/catalog')).status,200);
+  }finally{x.db.close();}
+});
+
 function d1(db, calls) { return { prepare(sql) { const s=db.prepare(sql);let values=[];return {bind(...v){values=v;return this;},async all(){calls.push(sql);return{results:s.all(...values)};},async first(){calls.push(sql);return s.get(...values)||null;},async run(){calls.push(sql);return{success:true,meta:{changes:s.run(...values).changes}};}};},async batch(s){return Promise.all(s.map(x=>x.run()));} }; }
 async function setup(){const db=new DatabaseSync(':memory:'),calls=[];db.exec(await readFile(new URL('../../migrations/0012_question_catalog_moderation.sql',import.meta.url),'utf8'));db.exec(await readFile(new URL('../../migrations/0013_question_safety_reports.sql',import.meta.url),'utf8'));const env={REMOTE_DB:d1(db,calls),LIVE_ADMIN_TOKEN:'isolated-budget-token-not-real-32-characters',LIVE_ADMIN_TOTP_SECRET:'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',LIVE_ADMIN_SESSION_SECRET:'isolated-budget-session-not-real-32-characters'};await handleQuestionApi(new Request('https://example.com/api/questions/catalog'),env,'/api/questions/catalog');const insert=db.prepare('INSERT INTO question_submissions VALUES(?,?,?,?,?,?,?,?,?,?,?)');for(let i=1;i<=120;i++)insert.run(`00000000-0000-4000-8000-${String(i).padStart(12,'0')}`,'challenge',`synthetic${i}`,`一緒に選ぶ架空のお題${i}は？`,'["朝","昼","夕方","夜","いつでも"]','pending',i,null,'未審査',null,'synthetic-hash');const session=await createLiveAdminSession(new Request('https://example.com/api/live/admin/session',{method:'POST',headers:{'x-live-admin-token':env.LIVE_ADMIN_TOKEN,'x-live-admin-otp':await generateLiveAdminTotp(env.LIVE_ADMIN_TOTP_SECRET)}}),env);const headers={cookie:session.cookie.split(';')[0],'x-admin-csrf':session.csrfToken,'content-type':'application/json'};return{db,env,calls,headers,get:q=>handleQuestionApi(new Request('https://example.com/api/questions/admin/overview'+q,{headers}),env,'/api/questions/admin/overview')};}
 test('審査待ちのみのページ取得は全カタログ・全統計・通報一覧を走査しない。認証と正確な残数は維持',async()=>{const x=await setup();try{x.calls.length=0;const r=await x.get('?submissionOffset=50&view=pending'),p=await r.json();assert.equal(r.status,200);assert.equal(p.pendingOnly,true);assert.equal(p.submissions.length,50);assert.equal(p.submissionPagination.total,120);assert.deepEqual(p.catalog,[]);assert.deepEqual(p.selectionStats,[]);assert.deepEqual(p.reports,[]);assert.equal(x.calls.some(sql=>/FROM question_catalog|FROM question_selection_stats|FROM question_reports/.test(sql)),false);assert.equal(x.calls.filter(sql=>/SELECT COUNT\(\*\) AS total/.test(sql)).length,1);const denied=await handleQuestionApi(new Request('https://example.com/api/questions/admin/overview?submissionOffset=0&view=pending'),x.env,'/api/questions/admin/overview');assert.equal(denied.status,401);}finally{x.db.close();}});

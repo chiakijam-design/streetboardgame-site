@@ -18,6 +18,9 @@
   },
   // 負荷試験後に1,000→5,000→10,000と段階的に設定する。未設定時は50人。
   "vars": {
+    "WATA_COST_GUARD_MODE": "enforce",
+    "WATA_COST_STOP_OVERVIEW": "false",
+    "WATA_COST_STOP_SOCIAL": "false",
     "LIVE_OPERATIONAL_VIEWER_LIMIT": "1000",
     "SOCIAL_PUBLISHING_ENABLED": "true",
     "SOCIAL_X_BUDGET_MICRO_USD": "9500000",

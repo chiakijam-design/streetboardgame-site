@@ -38,6 +38,9 @@ function fixture(engine){
   return {db,env:{REMOTE_DB:{prepare(sql){const stmt=db.prepare(sql);return {bind(...args){return {async run(){return {meta:{changes:Number(stmt.run(...args).changes)}};},async first(){return stmt.get(...args)||null;},async all(){return {results:stmt.all(...args)};}};}};} }},close(){db.close();}};
 }
 async function setup(engine,count){const f=fixture(engine);const api=async(path,body,token,method)=>{const options={method:method||(body===undefined?'GET':'POST'),headers:{'content-type':'application/json',...(token?{'x-challenge-participant-token':token}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})};const r=await handleChallengeApi(new Request('https://example.com'+path,options),f.env,path);return {status:r.status,body:await r.json()};};
+  // Cost guard deliberately has no migration here: stopped/unavailable
+  // operational budgets must not interrupt creation, play, results or retry.
+  Object.assign(f.env,{WATA_COST_GUARD_MODE:'enforce',WATA_COST_STOP_OVERVIEW:'true',WATA_COST_STOP_SOCIAL:'true'});
   const cards=Array.from({length:count},(_,i)=>({id:'AUTO'+i,title:'Synthetic '+i,choices:['A','B','C','D','E']}));
   const created=await api('/api/challenge/rooms',{creatorName:'Synthetic host',cards,answers:Array(count).fill(0)});assert.equal(created.status,201);
   return {...f,api,path:'/api/challenge/rooms/'+created.body.code,room:created.body};}

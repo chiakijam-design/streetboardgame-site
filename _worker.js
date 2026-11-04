@@ -4,6 +4,7 @@ import { handleChallengeApi } from './src/challenge/api.js';
 import { handleQuestionApi } from './src/questions/api.js';
 import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 import { runSocialPublishing } from './src/social/publisher.js';
+import { runBudgetedSocialPublishing } from './src/cost/guard.js';
 import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
 import { questionPacks } from './src/challenge/packs.js';
 import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
@@ -67,7 +68,7 @@ export default {
     const scheduledAt = Number(controller?.scheduledTime) || Date.now();
     context.waitUntil(Promise.all([
       runPrivacyCleanup(env, scheduledAt),
-      runSocialPublishing(env, scheduledAt),
+      runBudgetedSocialPublishing(env, Date.now(), runSocialPublishing),
     ]));
   },
 };

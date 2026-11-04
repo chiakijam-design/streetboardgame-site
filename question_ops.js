@@ -27,6 +27,7 @@ const authStatus = document.getElementById('authStatus');
 const staticQuestions = buildStaticQuestions();
 const dirtyQuestionIds = new Set();
 let overview = { catalog: [], submissions: [], selectionStats: [] };
+let hasLoadedOverview = false;
 let allQuestions = [];
 let similarityMatches = new Map();
 const catalogRowCache = new Map();
@@ -68,6 +69,7 @@ async function loadOverview({ snapshot = null } = {}) {
     if (!snapshot) needsFullOverviewRefresh = false;
     if (controller.signal.aborted) return;
     overview = nextOverview;
+    hasLoadedOverview = true;
     pendingTotal = Number(overview.submissionPagination?.total ?? (overview.submissions || []).filter((item) => item.status === 'pending').length);
     allQuestions = sortQuestionsForOperations(mergeQuestionSelectionStats(
       mergeQuestionOverview(staticQuestions, overview.catalog),
@@ -87,8 +89,10 @@ async function loadOverview({ snapshot = null } = {}) {
   } catch (error) {
     if (error.name === 'AbortError' || controller.signal.aborted) return;
     if (error.status === 401) clearAdminSessionToken();
-    dashboard.hidden = true;
-    setAuthenticatedUi(false);
+    // Read budgets must not discard loaded decisions or unsaved edits.
+    const keepLoaded = hasLoadedOverview && error.status !== 401 && error.status !== 403;
+    dashboard.hidden = !keepLoaded;
+    setAuthenticatedUi(keepLoaded);
     showStatus(humanError(error), true);
   } finally {
     if (loadController === controller) { setLoading(false); loadController = null; }
@@ -210,6 +214,7 @@ async function forgetAdminSession() {
   setAuthenticatedUi(false);
   allQuestions = [];
   overview = { catalog: [], submissions: [], selectionStats: [] };
+  hasLoadedOverview = false;
   catalogRowCache.clear(); pendingRowCache.clear(); dirtyQuestionIds.clear();
   document.getElementById('allQuestions').replaceChildren();
   document.getElementById('pendingSubmissions').replaceChildren();
@@ -858,6 +863,9 @@ function showStatus(message, isError = false) {
 
 function humanError(error) {
   const messages = {
+    'cost-guard-limit': '一覧の取得上限に達しました。時間をおいて再取得してください。表示中の問題と未保存の編集は保持されています。',
+    'cost-guard-paused': '一覧の再取得を一時停止しています。表示中の編集と採用・却下の保存は続けられます。',
+    'cost-guard-unavailable': '一覧の取得上限を確認できないため、再取得を一時停止しました。時間をおいてお試しください。',
     'admin-forbidden': '管理トークンが違います。',
     'admin-otp-invalid': '6桁の認証コードが違うか、有効時間を過ぎています。',
     'admin-session-required': '管理者認証を行ってください。',
