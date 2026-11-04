@@ -6,6 +6,7 @@ import {
   sortQuestionsForOperations,
 } from './src/questions/similarity.js';
 import { OPERATIONS_PAGE_SIZE, pageWindow } from './src/questions/operations-pagination.js';
+import { withSavedCatalog, withReviewedSubmission } from './src/questions/operations-state.js';
 import { downloadQuestionBackup } from './src/questions/export.js';
 import {
   clearAdminSessionToken,
@@ -35,6 +36,8 @@ let pendingOffset = 0;
 let pendingTotal = 0;
 let loading = false;
 let loadController;
+const busyButtons = new Map();
+let needsFullOverviewRefresh = false;
 
 sessionStorage.removeItem('live:admin-token');
 tokenInput.value = '';
@@ -47,12 +50,12 @@ document.getElementById('questionSort').addEventListener('change', () => { catal
 document.getElementById('questionPrevious').addEventListener('click', () => { catalogPage -= 1; renderAllQuestions(); });
 document.getElementById('questionNext').addEventListener('click', () => { catalogPage += 1; renderAllQuestions(); });
 document.getElementById('pendingPrevious').addEventListener('click', () => loadPendingPage(Math.max(0, pendingOffset - OPERATIONS_PAGE_SIZE)));
-document.getElementById('pendingNext').addEventListener('click', () => loadPendingPage(pendingOffset + OPERATIONS_PAGE_SIZE));
+document.getElementById('pendingNext').addEventListener('click', () => loadPendingPage(pendingOffset + (overview.submissions || []).length));
 document.getElementById('saveAllQuestions').addEventListener('click', saveAllQuestions);
 document.getElementById('exportQuestionsCsv').addEventListener('click', exportQuestionsCsv);
 void restoreAdminSessionToken().then((restored) => { if (restored) void loadOverview(); });
 
-async function loadOverview() {
+async function loadOverview({ snapshot = null } = {}) {
   if (loading) return;
   const controller = new AbortController();
   loadController = controller;
@@ -61,7 +64,8 @@ async function loadOverview() {
   try {
     if (tokenInput.value.trim() || otpInput.value.trim()) await createAdminSession();
     else if (!getAdminSessionToken() && !await restoreAdminSessionToken()) throw apiError('admin-session-required', 401);
-    const nextOverview = await adminApi(`/api/questions/admin/overview?submissionOffset=${pendingOffset}`);
+    const nextOverview = snapshot || await adminApi(`/api/questions/admin/overview?submissionOffset=${pendingOffset}`);
+    if (!snapshot) needsFullOverviewRefresh = false;
     if (controller.signal.aborted) return;
     overview = nextOverview;
     pendingTotal = Number(overview.submissionPagination?.total ?? (overview.submissions || []).filter((item) => item.status === 'pending').length);
@@ -98,7 +102,7 @@ async function loadPendingPage(offset) {
   setLoading(true);
   showStatus('審査待ちの次のページを読み込んでいます…');
   try {
-    const next = await adminApi(`/api/questions/admin/overview?submissionOffset=${offset}`);
+    const next = await adminApi(`/api/questions/admin/overview?submissionOffset=${offset}&view=pending`);
     if (controller.signal.aborted) return;
     const submissions = next.submissions || [];
     const matches = await findSimilarQuestionsCooperative([...allQuestions, ...submissions.filter((item) => item.status === 'pending')], 0.58, {
@@ -123,6 +127,15 @@ function showComparisonProgress({ completed, total }) {
 }
 
 function setLoading(value) {
+  if (value) {
+    for (const button of dashboard.querySelectorAll('button')) {
+      if (!busyButtons.has(button)) busyButtons.set(button, button.disabled);
+      button.disabled = true;
+    }
+  } else {
+    for (const [button, disabled] of busyButtons) button.disabled = disabled;
+    busyButtons.clear();
+  }
   loading = value;
   document.getElementById('loadQuestions').disabled = value;
   document.getElementById('questionSearch').disabled = value;
@@ -140,9 +153,10 @@ function discardCleanCachedRows(cache) {
 
 function updatePageControls() {
   document.getElementById('pendingPrevious').disabled = loading || pendingOffset === 0;
-  document.getElementById('pendingNext').disabled = loading || pendingOffset + OPERATIONS_PAGE_SIZE >= pendingTotal;
+  const visiblePending = (overview.submissions || []).filter(item => item.status === 'pending').length;
+  document.getElementById('pendingNext').disabled = loading || pendingOffset + visiblePending >= pendingTotal;
   document.getElementById('pendingPageStatus').textContent = pendingTotal
-    ? `${pendingOffset + 1}〜${Math.min(pendingOffset + OPERATIONS_PAGE_SIZE, pendingTotal)}問／審査待ち全${pendingTotal}問`
+    ? `${pendingOffset + 1}〜${Math.min(pendingOffset + visiblePending, pendingTotal)}問／審査待ち全${pendingTotal}問`
     : '審査待ち0問';
   const total = Number(document.getElementById('questionPageStatus').dataset.total || 0);
   document.getElementById('questionPrevious').disabled = loading || catalogPage === 0;
@@ -561,6 +575,7 @@ function topMatches(id) {
 }
 
 async function review(id, decision) {
+  if (loading) return;
   const row = document.querySelector(`[data-submission="${CSS.escape(id)}"]`);
   if (!row) return;
   if (decision === 'rejected' && !confirm('この掲載候補を却下しますか？')) return;
@@ -578,16 +593,26 @@ async function review(id, decision) {
       if (!confirm(message)) return;
     }
     body.decision = decision;
-    await adminApi(`/api/questions/admin/submissions/${id}/review`, { method: 'POST', body: JSON.stringify(body) });
+    setLoading(true);
+    const result = await adminApi(`/api/questions/admin/submissions/${id}/review`, { method: 'POST', body: JSON.stringify(body) });
+    if (!getAdminSessionToken()) return;
+    const snapshot = withReviewedSubmission(overview, result, pendingTotal, pendingOffset);
     pendingRowCache.delete(String(id));
-    pendingOffset = 0;
-    await loadOverview();
+    if (!snapshot) pendingOffset = 0; // Older server response: safely resync, never resend the review.
+    setLoading(false);
+    await loadOverview({ snapshot });
+    if (snapshot && !overview.submissions.length && pendingTotal > 0) {
+      await loadPendingPage(Math.max(0, Math.min(pendingOffset, pendingTotal - OPERATIONS_PAGE_SIZE)));
+    }
   } catch (error) {
     alert(humanError(error));
+  } finally {
+    setLoading(false);
   }
 }
 
 async function saveQuestion(id, { reload = true } = {}) {
+  if (loading) return;
   const row = document.querySelector(`[data-catalog="${CSS.escape(id)}"]`) || catalogRowCache.get(String(id))?.[0];
   const current = allQuestions.find((item) => String(item.id) === String(id));
   if (!row || !current) return;
@@ -597,16 +622,25 @@ async function saveQuestion(id, { reload = true } = {}) {
     sourceRef: current.sourceRef || current.id,
     status: normalizeCatalogStatus(row.querySelector('[data-status]:checked')?.value || current.status),
   };
-  await adminApi(`/api/questions/admin/catalog/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
+  setLoading(true);
+  let result;
+  try {
+    result = await adminApi(`/api/questions/admin/catalog/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) });
+  } finally { setLoading(false); }
+  if (!getAdminSessionToken()) return;
+  const snapshot = withSavedCatalog(overview, result.question);
+  if (snapshot) overview = snapshot;
+  else needsFullOverviewRefresh = true;
   dirtyQuestionIds.delete(String(id));
   catalogRowCache.delete(String(id));
   if (reload) {
     showStatus(`「${body.title}」を${statusLabel(body.status)}として保存しました。`);
-    await loadOverview();
+    await loadOverview({ snapshot: needsFullOverviewRefresh ? null : overview });
   }
 }
 
 async function saveComparisonQuestion(card) {
+  if (loading) return;
   if (!card) return;
   const id = String(card.dataset.compareCatalog || '');
   const current = allQuestions.find((item) => String(item.id) === id);
@@ -621,21 +655,29 @@ async function saveComparisonQuestion(card) {
   button.disabled = true;
   button.textContent = '保存中';
   try {
-    await adminApi(`/api/questions/admin/catalog/${encodeURIComponent(id)}`, {
+    setLoading(true);
+    const result = await adminApi(`/api/questions/admin/catalog/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(body),
     });
+    if (!getAdminSessionToken()) return;
+    const snapshot = withSavedCatalog(overview, result.question);
+    if (snapshot) overview = snapshot;
     card.classList.remove('dirty');
     showStatus(`比較欄の「${body.title}」を${statusLabel(body.status)}として保存しました。`);
-    await loadOverview();
+    setLoading(false);
+    await loadOverview({ snapshot: snapshot && !needsFullOverviewRefresh ? overview : null });
   } catch (error) {
     button.disabled = false;
     button.textContent = 'この問題を保存';
     showStatus(humanError(error), true);
+  } finally {
+    setLoading(false);
   }
 }
 
 async function saveAllQuestions() {
+  if (loading) return;
   const ids = [...dirtyQuestionIds];
   if (!ids.length) return;
   const button = document.getElementById('saveAllQuestions');
@@ -647,7 +689,7 @@ async function saveAllQuestions() {
       button.textContent = `保存中 ${index + 1}/${ids.length}`;
     }
     showStatus(`${ids.length}問の変更を保存しました。`);
-    await loadOverview();
+    await loadOverview({ snapshot: needsFullOverviewRefresh ? null : overview });
   } catch (error) {
     showStatus(humanError(error), true);
     updateBulkButton();

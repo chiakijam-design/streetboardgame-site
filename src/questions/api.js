@@ -60,7 +60,9 @@ export async function handleQuestionApi(request, env, path) {
     }
 
     if (path === '/api/questions/admin/overview' && request.method === 'GET') {
-      return json(await adminOverview(env, submissionPageOptions(new URL(request.url))));
+      const url = new URL(request.url);
+      const page = submissionPageOptions(url);
+      return json(await adminOverview(env, page, Boolean(page && url.searchParams.get('view') === 'pending')));
     }
 
     const reviewRoute = path.match(/^\/api\/questions\/admin\/submissions\/([a-f0-9-]{36})\/review$/i);
@@ -275,9 +277,9 @@ async function signSelectionPayload(payload, env) {
   return encodeBase64Url(new Uint8Array(signature));
 }
 
-async function adminOverview(env, submissionPage = null) {
+async function adminOverview(env, submissionPage = null, pendingOnly = false) {
   const [catalogResult, submissionResult, selectionStatsResult, pendingCountResult] = await Promise.all([
-    env.REMOTE_DB.prepare(`
+    pendingOnly ? null : env.REMOTE_DB.prepare(`
       SELECT q.question_id, q.source_kind, q.source_ref, q.title, q.category, q.choices_json, q.status,
         q.use_challenge, q.use_live, q.created_at, q.updated_at,
         q.quarantined_at, q.quarantine_reason, q.previous_status,
@@ -303,7 +305,7 @@ async function adminOverview(env, submissionPage = null) {
       ORDER BY CASE s.status WHEN 'pending' THEN 0 ELSE 1 END, s.submitted_at DESC
       LIMIT 500
     `).all(),
-    env.REMOTE_DB.prepare(`
+    pendingOnly ? null : env.REMOTE_DB.prepare(`
       SELECT question_id, mode, shown_count, skip_count
       FROM question_selection_stats
       WHERE shown_count > 0 OR skip_count > 0
@@ -314,7 +316,8 @@ async function adminOverview(env, submissionPage = null) {
     catalog: (catalogResult?.results || []).map(mapCatalogRow),
     submissions: (submissionResult?.results || []).map(mapSubmissionRow),
     selectionStats: (selectionStatsResult?.results || []).map(mapSelectionStatsRow),
-    reports: await listQuestionReports(env),
+    reports: pendingOnly ? [] : await listQuestionReports(env),
+    ...(pendingOnly ? { pendingOnly: true } : {}),
     ...(submissionPage ? { submissionPagination: { ...submissionPage, total: Number(pendingCountResult?.total || 0) } } : {}),
   };
 }
@@ -490,7 +493,8 @@ async function reviewSubmission(request, env, submissionId) {
     SET status = ?, reviewed_at = ?, review_note = ?, catalog_id = ?
     WHERE submission_id = ?
   `).bind(decision, now, reviewNote, catalogId, submissionId).run();
-  return json({ submissionId, status: decision, catalogId });
+  return json({ submissionId, status: decision, catalogId,
+    question: catalogId ? await catalogQuestionForOperations(env, catalogId) : null });
 }
 
 async function saveCatalogQuestion(request, env, questionId) {
@@ -535,12 +539,19 @@ async function saveCatalogQuestion(request, env, questionId) {
     now,
     now,
   ).run();
+  return json({ question: await catalogQuestionForOperations(env, questionId) });
+}
+
+async function catalogQuestionForOperations(env, questionId) {
   const row = await env.REMOTE_DB.prepare(`
-    SELECT question_id, source_kind, source_ref, title, category, choices_json, status,
-      use_challenge, use_live, created_at, updated_at
-    FROM question_catalog WHERE question_id = ?
+    SELECT q.question_id, q.source_kind, q.source_ref, q.title, q.category, q.choices_json, q.status,
+      q.use_challenge, q.use_live, q.created_at, q.updated_at,
+      q.quarantined_at, q.quarantine_reason, q.previous_status,
+      (SELECT COUNT(*) FROM question_reports r WHERE r.question_id = q.question_id) AS report_count,
+      (SELECT MAX(reported_at) FROM question_reports r WHERE r.question_id = q.question_id) AS last_reported_at
+    FROM question_catalog q WHERE q.question_id = ?
   `).bind(questionId).first();
-  return json({ question: mapCatalogRow(row) });
+  return row ? mapCatalogRow(row) : null;
 }
 
 async function consumeDailyLimit(env, ipHash, increment) {
