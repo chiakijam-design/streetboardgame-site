@@ -189,6 +189,8 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   // Pagination limits mounted rows; search the complete catalog for these
   // synthetic fixtures before asserting their ordering and moderation flows.
   await page.locator('#questionSearch').fill('CUS');
+  await expect(page.locator('#questionFilter')).toHaveValue('approved');
+  await page.locator('#questionFilter').selectOption('all');
   await expect(page.locator('#pendingSubmissions')).toContainText('放課後にみんなでしたいことは？');
   await expect(page.locator('#pendingSubmissions')).toContainText('重点審査：いじめ・容姿攻撃');
   await expect(page.getByText('問題数ではなく「どの問題が出ても答え合わせで会話になる」を品質基準に、通常版・LIVE版で共通のお題を管理します。')).toBeVisible();
@@ -224,7 +226,7 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   const activeRowsInDisplayOrder = await page.locator('#allQuestions [data-catalog^="CUSCOMPAREACTIVE"]').evaluateAll(
     (rows) => rows.map((row) => row.dataset.catalog),
   );
-  expect(activeRowsInDisplayOrder).toEqual(['CUSCOMPAREACTIVE2', 'CUSCOMPAREACTIVE1']);
+  expect(activeRowsInDisplayOrder).toEqual(['CUSCOMPAREACTIVE1', 'CUSCOMPAREACTIVE2']);
   await expect(page.locator('#similaritySummary')).not.toHaveText('類似候補：0問');
   const activeCompareRow = page.locator('[data-catalog="CUSCOMPAREACTIVE1"]');
   const heldCompareRow = page.locator('[data-catalog="CUSCOMPAREHELD"]');

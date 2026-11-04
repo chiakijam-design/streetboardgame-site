@@ -4,7 +4,7 @@ const JAPANESE_COLLATOR = new Intl.Collator('ja', {
   ignorePunctuation: true,
 });
 
-export function sortQuestionsForOperations(items) {
+export function sortQuestionsForOperations(items, { skipOrder = 'asc' } = {}) {
   return [...(items || [])].sort((left, right) => {
     const statusOrder = statusRank(left?.status) - statusRank(right?.status);
     if (statusOrder) return statusOrder;
@@ -13,7 +13,7 @@ export function sortQuestionsForOperations(items) {
     if (leftSkipRate == null && rightSkipRate != null) return 1;
     if (leftSkipRate != null && rightSkipRate == null) return -1;
     if (leftSkipRate != null && rightSkipRate != null && leftSkipRate !== rightSkipRate) {
-      return leftSkipRate - rightSkipRate;
+      return skipOrder === 'desc' ? rightSkipRate - leftSkipRate : leftSkipRate - rightSkipRate;
     }
     const titleOrder = JAPANESE_COLLATOR.compare(String(left?.title || ''), String(right?.title || ''));
     if (titleOrder) return titleOrder;

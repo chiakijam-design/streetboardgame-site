@@ -43,6 +43,7 @@ document.getElementById('forgetSession').addEventListener('click', forgetAdminSe
 forgetTrustedDeviceButton.addEventListener('click', forgetAdminSession);
 document.getElementById('questionSearch').addEventListener('input', () => { catalogPage = 0; renderAllQuestions(); });
 document.getElementById('questionFilter').addEventListener('change', () => { catalogPage = 0; renderAllQuestions(); });
+document.getElementById('questionSort').addEventListener('change', () => { catalogPage = 0; renderAllQuestions(); });
 document.getElementById('questionPrevious').addEventListener('click', () => { catalogPage -= 1; renderAllQuestions(); });
 document.getElementById('questionNext').addEventListener('click', () => { catalogPage += 1; renderAllQuestions(); });
 document.getElementById('pendingPrevious').addEventListener('click', () => loadPendingPage(Math.max(0, pendingOffset - OPERATIONS_PAGE_SIZE)));
@@ -126,6 +127,7 @@ function setLoading(value) {
   document.getElementById('loadQuestions').disabled = value;
   document.getElementById('questionSearch').disabled = value;
   document.getElementById('questionFilter').disabled = value;
+  document.getElementById('questionSort').disabled = value;
   dashboard.setAttribute('aria-busy', String(value));
   updatePageControls();
 }
@@ -261,7 +263,8 @@ function pendingRow(item) {
 function renderAllQuestions() {
   const query = normalizeSearch(document.getElementById('questionSearch').value);
   const filter = document.getElementById('questionFilter').value;
-  const filtered = allQuestions.filter((item) => {
+  const skipOrder = document.getElementById('questionSort').value === 'asc' ? 'asc' : 'desc';
+  const filtered = sortQuestionsForOperations(allQuestions.filter((item) => {
     const searchable = normalizeSearch(`${item.id} ${item.title} ${(item.choices || []).join(' ')}`);
     const textMatches = !query || searchable.includes(query);
     const matches = similarityMatches.get(String(item.id)) || [];
@@ -271,7 +274,7 @@ function renderAllQuestions() {
       || filter === 'quality' && assessQuestionQuality(item, { similarMatches: matches }).status !== 'ready'
       || filter === 'custom' && item.sourceKind === 'custom' && item.status === 'approved';
     return textMatches && filterMatches;
-  });
+  }), { skipOrder });
   const approvedCount = allQuestions.filter((item) => item.status === 'approved').length;
   const heldCount = allQuestions.filter((item) => item.status === 'held').length;
   const disabledCount = allQuestions.filter((item) => item.status === 'disabled').length;
@@ -298,7 +301,7 @@ function renderAllQuestions() {
           <th class="status-col">無効化</th>
           <th class="question-col">問題文</th>
           ${choiceHeaders()}
-          <th class="skip-col">スキップ率<br>（低い順）</th>
+          <th class="skip-col">スキップ率<br>（${skipOrder === 'desc' ? '高い順' : '低い順'}）</th>
           <th class="quality-col">会話品質</th>
           <th class="similar-col">類似候補</th>
           <th class="action-col">保存</th>
@@ -570,7 +573,7 @@ async function review(id, decision) {
       const assessment = assessQuestionQuality(body, { similarMatches: topMatches(id) });
       const issueNames = assessment.issues.map((issue) => issue.label).join('、');
       const message = assessment.status === 'ready'
-        ? '品質基準を満たしています。通常版・LIVE版の共通お題として採用しますか？'
+        ? '品質基準を満たしています。通常版の出題候補として公開・採用しますか？'
         : `自動審査は「${assessment.statusLabel}（${assessment.score}点）」です。\n${issueNames}\n編集内容を確認したうえで採用しますか？`;
       if (!confirm(message)) return;
     }
