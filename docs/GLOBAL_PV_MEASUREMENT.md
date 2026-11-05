@@ -58,6 +58,11 @@ Keep the real response CSP in the intercepted vendor test: a fixture without CSP
 cannot prove that a permitted page view will reach the collector. No test events
 are sent to the live collector.
 
+Public HTML is transformed with a per-response nonce. Strip template validators
+and ignore conditional template headers on these routes, so an edge304 cannot
+combine an old cached body with a new nonce/CSP. Static JS/CSS validation and
+private/API responses retain their existing behavior.
+
 Report Cloudflare aggregate PV/geography separately from GA4 PV and game KPIs,
 with calendar dates, timezone, acquisition time and bot/consent exclusions. Never
 add the two sources, substitute infrastructure requests for views or people, or

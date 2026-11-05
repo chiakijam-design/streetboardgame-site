@@ -62,6 +62,14 @@ const LEGAL_PAGE_FILES = Object.freeze({
 
 export default {
   async fetch(request, env) {
+    // These HTML documents are rewritten with a fresh nonce and choice UI.
+    // A template's validator cannot validate the rewritten representation.
+    if (/^(?:GET|HEAD)$/.test(request.method) && pvPublicPath(new URL(request.url).pathname, PUBLIC_LOCALES)) {
+      const headers = new Headers(request.headers);
+      headers.delete('if-none-match');
+      headers.delete('if-modified-since');
+      request = new Request(request, { headers });
+    }
     return withSecurityHeaders(await handleRequest(request, env), request, env);
   },
   async scheduled(controller, env, context) {
@@ -537,6 +545,10 @@ async function withSecurityHeaders(response, request, env) {
   // public documents may connect; private/admin/API responses keep their CSP.
   const pvCollector = isHtml && response.ok && !env?.__STATIC_HTML_BUILD && pvPublicPath(requestPath, PUBLIC_LOCALES)
     ? ' https://cloudflareinsights.com/cdn-cgi/rum' : '';
+  if (pvCollector) {
+    headers.delete('etag');
+    headers.delete('last-modified');
+  }
   const sensitivePath = /^\/(?:[a-zA-Z-]+\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|question-ops|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
     "default-src 'none'",
