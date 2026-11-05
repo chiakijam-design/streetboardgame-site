@@ -4,7 +4,8 @@ test('current legal pages explain the free quiz and keep historical purchase con
   for (const path of ['/legal', '/terms', '/privacy', '/minor-policy', '/content-guidelines']) {
     await page.goto(path + '?analytics=exclude');
     const history = page.getByTestId('historical-provisions');
-    await expect(history).not.toHaveAttribute('open', '');
+    if (path === '/legal') await expect(history).toHaveCount(0);
+    else { await expect(history).toHaveCount(1); await expect(history).not.toHaveAttribute('open', ''); }
     const visible = await page.locator('main').innerText();
     expect(visible).not.toMatch(/LIVE版の有料サービスの内容をご案内|お金がかかる機能|出題者または配信者|有料販売を行う場合は|選択したコメントまたは|Googleセキュリティ設定|上記目的/);
     if (path === '/terms' || path === '/content-guidelines') {
