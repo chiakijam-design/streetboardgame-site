@@ -11,6 +11,7 @@ import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
 import { PUBLIC_LOCALE_PAGES } from './src/generated/public-locale-pages.js';
+import { pvRegionMode } from './src/analytics/pv-regions.js';
 import { injectPVChoice, pvPublicPath } from './src/analytics/pv-policy.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
@@ -62,6 +63,7 @@ const LEGAL_PAGE_FILES = Object.freeze({
 
 export default {
   async fetch(request, env) {
+    const pvMode = pvRegionMode(request.cf); // Capture trusted metadata before Request cloning.
     // These HTML documents are rewritten with a fresh nonce and choice UI.
     // A template's validator cannot validate the rewritten representation.
     if (/^(?:GET|HEAD)$/.test(request.method) && pvPublicPath(new URL(request.url).pathname, PUBLIC_LOCALES)) {
@@ -70,7 +72,7 @@ export default {
       headers.delete('if-modified-since');
       request = new Request(request, { headers });
     }
-    return withSecurityHeaders(await handleRequest(request, env), request, env);
+    return withSecurityHeaders(await handleRequest(request, env), request, env, pvMode);
   },
   async scheduled(controller, env, context) {
     const scheduledAt = Number(controller?.scheduledTime) || Date.now();
@@ -534,7 +536,7 @@ async function handleRequest(request, env) {
     return response;
 }
 
-async function withSecurityHeaders(response, request, env) {
+async function withSecurityHeaders(response, request, env, pvMode = 'consent') {
   if (response.status === 101 || response.webSocket) return response;
   const headers = new Headers(response.headers);
   const isHtml = /text\/html/i.test(headers.get('content-type') || '');
@@ -579,6 +581,13 @@ async function withSecurityHeaders(response, request, env) {
     headers.set('cross-origin-opener-policy', 'same-origin');
     headers.set('cross-origin-resource-policy', 'same-origin');
   }
+  if (isHtml && response.ok && !env?.__STATIC_HTML_BUILD && pvPublicPath(requestPath, PUBLIC_LOCALES)) {
+    // Apply to GET and HEAD; never share country-specific rewritten HTML.
+    // Underlying static assets retain their independent cache policy.
+    headers.set('cache-control', 'private, no-store');
+    headers.set('cdn-cache-control', 'no-store');
+    headers.set('cloudflare-cdn-cache-control', 'no-store');
+  }
   let body = response.body;
   if (isHtml && response.body) {
     body = await response.text();
@@ -597,7 +606,9 @@ async function withSecurityHeaders(response, request, env) {
     }
     // Only fixed, public paths get the optional measurement UI. Keep generated
     // locale HTML unchanged: insert at the existing response/nonce pass.
-    if (response.ok && !env?.__STATIC_HTML_BUILD) body = injectPVChoice(body, new URL(request.url), locale, PUBLIC_LOCALES);
+    if (response.ok && !env?.__STATIC_HTML_BUILD) {
+      body = injectPVChoice(body, new URL(request.url), locale, PUBLIC_LOCALES, pvMode);
+    }
     body = body.replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
     headers.delete('content-length');
     headers.delete('content-encoding');

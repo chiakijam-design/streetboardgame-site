@@ -29,7 +29,10 @@ for(const route of ['/zh-Hans/refund-policy','/ko/legal','/zh-Hant/terms','/bn/r
     const html=await response.text();
     assert.match(html,/data-watachan-locale-catalog/);
     assert.doesNotMatch(html,/window\.__WATACHAN_I18N__=/);
-    assert.match(response.headers.get('cache-control'),/must-revalidate/);
+    // Country-specific rewritten HTML must not be reused for another visitor.
+    assert.equal(response.headers.get('cache-control'),'private, no-store');
+    assert.equal(response.headers.get('cdn-cache-control'),'no-store');
+    assert.equal(response.headers.get('cloudflare-cdn-cache-control'),'no-store');
     const csp=response.headers.get('content-security-policy');
     assert.match(csp,/'nonce-/);
     const head=await worker.fetch(new Request('https://www.streetboardgame.com'+route,{method:'HEAD'}),env);
