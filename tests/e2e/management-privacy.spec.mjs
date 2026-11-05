@@ -119,7 +119,7 @@ for (const count of [1, 10]) test(`new ${count}-question creation contains no ke
   await guest.close();
 });
 
-test('built preview: stub GA/GTM/Clarity see clean URL/DOM/event data; same-origin state remains readable', async ({ page, baseURL }) => {
+test('internal enabled-tag fixture: stub GA/GTM/Clarity see clean URL/DOM/event data; same-origin state remains readable', async ({ page, baseURL }) => {
   // The production hostname is simulated entirely by route.fulfill. The browser
   // proxy and context blocker prohibit fallback to any real service.
   const fixture = await createRoom(page.request, 1);
@@ -158,7 +158,12 @@ test('built preview: stub GA/GTM/Clarity see clean URL/DOM/event data; same-orig
     const response = await page.request.fetch(new URL(url.pathname + url.search, baseURL).href, {
       method: request.method(), headers: allowed, data: request.postDataBuffer() || undefined, maxRedirects: 0,
     });
-    await route.fulfill({ response });
+    // Exercise the preserved secret guard independently of the current policy,
+    // which disables both Google paths. Never enable tags on the live site.
+    if (request.isNavigationRequest()) {
+      const body = (await response.text()).replace('__WATACHAN_GOOGLE_ANALYTICS_POLICY__="off"', '__WATACHAN_GOOGLE_ANALYTICS_POLICY__="notice"');
+      await route.fulfill({ response, body });
+    } else await route.fulfill({ response });
   });
   await page.goto(`https://www.streetboardgame.com/challenge?room=${fixture.code}#manage=${fixture.manageToken}`);
   await expect(page.getByTestId('challenge-share-screen')).toBeVisible();
@@ -169,10 +174,7 @@ test('built preview: stub GA/GTM/Clarity see clean URL/DOM/event data; same-orig
   expect(legacy.every(x => !x.urlDOMOrEventHasKey)).toBe(true);
 
   await page.goto('https://www.streetboardgame.com/challenge');
-  const pvChoice = page.locator('#wata-pv-choice');
-  await expect(pvChoice).toBeVisible();
-  await pvChoice.getByRole('button', { name: '許可しない', exact: true }).click();
-  await expect(pvChoice).not.toBeVisible();
+  await expect(page.locator('#wata-pv-choice')).toHaveCount(0);
   expect(cloudflareRequests).toEqual([]);
   await expect(page.locator('script[data-wata-cf-pv]')).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.__TAG_OBSERVATIONS__.some(x => x.kind === 'clarity'))).toBe(true);

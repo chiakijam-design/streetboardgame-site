@@ -16,6 +16,7 @@ function runAnalytics({ hostname, search = '', storedValue = null, readyState = 
   const locationUrl = new URL(`https://${urlHostname}/${search ? `?${search}` : ''}`);
 
   const windowObject = {
+    __WATACHAN_GOOGLE_ANALYTICS_POLICY__: 'notice', // Explicit internal fixture, not the production policy.
     __WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__: localeReviewPending,
     navigator: { webdriver },
     requestAnimationFrame,

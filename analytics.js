@@ -151,7 +151,7 @@
   var isProductionHost = productionHosts.indexOf(hostname) !== -1;
   var isAutomatedBrowser = windowObject.navigator && windowObject.navigator.webdriver === true;
   var localeReviewPending = windowObject.__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__ === true;
-  var analyticsEnabled = isProductionHost && !isExcluded && !isAutomatedBrowser && !localeReviewPending && urlPrivacyReady;
+  var analyticsEnabled = isProductionHost && !isExcluded && !isAutomatedBrowser && !localeReviewPending && urlPrivacyReady && windowObject.__WATACHAN_GOOGLE_ANALYTICS_POLICY__ === 'notice' && windowObject.navigator.globalPrivacyControl !== true && windowObject.navigator.doNotTrack !== '1';
 
   windowObject.__WATACHAN_ANALYTICS_DISABLED__ = !analyticsEnabled;
   windowObject.__WATACHAN_GTM_CONTAINER_ID__ = containerId;
@@ -243,34 +243,5 @@
       currentUrl.pathname + currentUrl.search + currentUrl.hash
     );
 
-    windowObject.addEventListener('DOMContentLoaded', function showAnalyticsPreferenceNotice() {
-      var notice = documentObject.createElement('div');
-      notice.setAttribute('role', 'status');
-      notice.setAttribute('aria-live', 'polite');
-      notice.textContent = preference === 'exclude'
-        ? 'このブラウザをアクセス解析の対象外に設定しました。'
-        : 'このブラウザのアクセス解析除外を解除しました。';
-      notice.style.cssText = [
-        'position:fixed',
-        'z-index:2147483647',
-        'left:50%',
-        'bottom:max(20px,env(safe-area-inset-bottom))',
-        'transform:translateX(-50%)',
-        'width:min(calc(100% - 32px),560px)',
-        'box-sizing:border-box',
-        'padding:14px 18px',
-        'border:2px solid #1a1a1a',
-        'border-radius:14px',
-        'background:#fff7c7',
-        'color:#1a1a1a',
-        'font:700 14px/1.5 "Noto Sans JP",sans-serif',
-        'text-align:center',
-        'box-shadow:4px 4px 0 #1a1a1a'
-      ].join(';');
-      documentObject.body.appendChild(notice);
-      windowObject.setTimeout(function removeAnalyticsPreferenceNotice() {
-        notice.remove();
-      }, 12000);
-    }, { once: true });
   }
 })(window, document);

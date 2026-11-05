@@ -1,46 +1,43 @@
-# Regional Cloudflare PV policy — 2026-11-05
+# Passive measurement policy — 2026-11-05
 
-Base release: ed819da9a1502b30a4f1415a0e677fbd02a3b420. This release enables notice/opt-out only for connections whose trusted Cloudflare request.cf.country is JP, from 2026-11-06T15:00:00Z (2026-11-07 00:00 JST). Before that date JP is pending-notice and still needs the existing explicit permission. AU, NZ, GB, EEA/EU, CH and every other or unknown country remain consent-gated.
+This supersedes the consent-dialog design in release 368b156. The operator requested no measurement prompts, banners, advance-notice bars or measurement controls on use screens, in all 34 languages. Ordinary provider, purpose, processing/reuse and stop information stays inside the privacy page. No substitute widget is introduced.
 
-## Basis and limits
+## Collection scope and data-series break
 
-This is a narrow configuration decision about ordinary public-document page/performance statistics. It is not a declaration that all analytics in Japan or any other country is consent-exempt. PPC FAQ Q8-3 distinguishes transfers expected to become personal data at the recipient from personal-related-information transfers generally. The documented RUM service does not store a persistent visitor identifier or fingerprint, receives the network IP but discards it at the nearest centre, and describes no cross-property user tracking. The public paths contain no free-form user paths; raw capability-bearing locations/referrers are excluded. Notice-mode collection additionally excludes detailed third-party and non-public same-site referrer paths. No question, answer, display name, account ID or management secret is intentionally sent.
+Cloudflare public-document statistics may start only for trusted `request.cf.country === 'JP'`, from 2026-11-06T15:00:00Z (November 7, 00:00 JST). The previously announced date is not moved forward. Before that date, every country is disabled. Other and unknown countries stay disabled even when an old Allow record exists. Neither a URL parameter, UI language nor a client country header can grant permission. Country is IP geography, not nationality, residence or a complete determination of applicable law.
 
-The purpose, recipient Cloudflare, Inc., page/referring URLs without query or fragment, temporary page ID, view time, browser/device/performance/memory data, overseas processing and stop method are disclosed in the34 UI languages. The operator uses this for aggregate audience/performance improvements. Cloudflare can use Network Data for its own service operation/improvement/security and can share non-identifying aggregates with third parties. Its anonymized BEACON publication demonstrates that use is not limited to this site. Do not describe Cloudflare as using all such data solely on our behalf. No claim is made that Wata is actually selected in BEACON.
+No consent-free configuration has been cleared for Google Analytics/GTM or Microsoft Clarity. Both Google loading paths and GTM's downstream Clarity tag are therefore disabled on all newly served pages, including Japanese and English pages. Existing URL-secret removal and private navigation helpers remain active. This stops new GA4 page views and game events; do not interpret that collection gap as a traffic or gameplay collapse. Already-open old documents can continue their old behavior until reloaded. External tag-manager settings are not changed. A former isolated Google-SDK initial-PV failure belongs to the superseded consent-based candidate; it is not claimed as resolved by this disabled policy.
 
-The applicable personal account and existing Wata manual Web Analytics installation were read in the official dashboard. Public self-serve terms and DPA were read; no new terms were accepted. Processor-purpose restrictions apply within their defined scope, not automatically to every kind of aggregate Network Data. AU/NZ cross-border and provider own-purpose requirements are not treated as resolved by generic GDPR marketing or the generic DPA; these countries remain opt-in. Country-of-IP is not nationality/residence or a conclusive determination of applicable law. Unknown/invalid country metadata never enables automatic collection.
+Existing CF refusals, the all-analytics exclusion, `analytics=exclude`, `cf_pv=off`, GPC, DNT, automation, storage failure, unsafe referrers and private/unlisted routes remain excluded. Expired (180-day), invalid or malformed positive records stay disabled without requesting renewal. No automatic collection writes a positive consent. The existing privacy-page analytics-stop link saves the refusal and reloads. Cross-tab storage changes stop started documents. Previously sent aggregates cannot be recalled. Storage deletion, different browsers and devices do not preserve a preference reliably.
 
-## Existing promises and advance notice
+## Narrow basis and limits
 
-The current privacy policy promises a dated advance announcement of important changes. The34-language announcement is rendered publicly before the effective date; the JP banner does not silently activate measurement during that period. Public privacy pages also show the date and scope. The server clock chooses pending-notice versus notice, never a URL parameter, a client country header or a UI language. Already-open pending pages do not acquire automatic collection merely when the time passes; a fresh document uses the new server decision.
+The earlier JP review applies only to minimized public-document Cloudflare RUM statistics. It does not exempt Google/Microsoft, cookies, replay, advertising or all analytics in Japan. AU/NZ provider-purpose and cross-border conditions remain unresolved and are not inferred from generic GDPR claims. There is no country expansion in this repair.
 
-Existing refusals persist until changed. Existing all-analytics opt-outs, GPC, DNT, analytics=exclude, automation, unavailable storage, unsafe URLs/referrers and private/API/unlisted paths remain excluded. An explicit Allow still lasts180days. Once expired it requires a real renewed permission even in JP; expired or malformed records are never silently converted into automatic permission. Automatic collection does not create a saved positive consent. The notice explains stopping, overseas processing and non-identifying third-party reuse; no CF choice enables Google/Microsoft/replay/ads.
+Cloudflare receives transport IP, which its documentation says is discarded at the nearest centre, and minimized public URL/referrer, temporary page ID and device/performance information. Query, fragment, user-input and secret-bearing URLs/referrers are excluded. Detailed third-party and non-public same-site referrers suppress collection. No question, answer, display name, account identifier or management secret is intentionally sent. The current inspected vendor is not a permanent guarantee about future third-party code.
 
-Preferences use only the existing choice/time fields. Automatic mode requires a working preference store, including a constant immediately removed availability probe, not a visitorID. Stopping persists and reloads, and propagates to other tabs. If a stop cannot be saved, a CF-only cf_pv=off navigation suppresses collection in that document; no Google/Microsoft preference is changed. Already-sent aggregates cannot be recalled. Storage loss can prevent persistent preferences; do not promise cross-device persistence.
+Cloudflare's self-serve Network Data terms permit service operation/improvement/security use, and its privacy notice permits non-identifying aggregate sharing. Processor-purpose restrictions apply within their defined scope. Do not state that every kind of data is used solely for this site or that overseas processing never occurs. Ordinary privacy disclosures retain these limits and the existing effective date; the earlier public advance announcement is not claimed never to have existed.
 
-## Cache, load, verification and rollback
+## Deployment, verification and rollback
 
-Final eligible public GET/HEADHTML is private,no-store with CDN-specific no-store headers so a country-specific representation cannot leak through a shared cache. The underlying prepared HTML assets and JS/CSS retain their independent cache behaviour. Fresh nonce/body pairing and conditional-request protection are preserved. No new D1 work, authentication, paid product or infrastructure contract is introduced. More eligible traffic can mean more beacon traffic, and a full HTML response is not free of transfer cost; no hard account fee cap or zero-overhead guarantee is made.
+Runtime injection contains only passive configuration/scripts and privacy-page text. Both changed JS URLs are versioned to avoid stale cached collectors. Public HTML remains private/no-store with fresh CSP nonce and country representation; private/API/unlisted routes never gain CF collection. No new D1 work, authentication, paid product, Google settings save or infrastructure contract is introduced.
 
-Test before deployment: JP before/exactly at/after the start; AU/NZ and unknown/unreviewed countries; forged country headers/query; shared template across countries;34 translations;180day expiry and malformed records; persistent refusal and privacy signals; storage read/write failure and failed stop; cross-tab withdrawal and travel; cached real vendor under actual CSP with all network intercepted; no synthetic input/secret/query/fragment markers or per-answer/history double counts; keyboard, RTL and320/390/PC layouts. Current vendor tests are not a permanent sandbox guarantee for future third-party JS. Never send synthetic test events to production.
+Verify all 34 languages/public routes, JP before/exactly at the date, other/unknown/forged-country cases, prior refusals, old/expired Allow, GPC/DNT, unavailable storage, private data, cross-tab stop, one cached real-vendor PV and no history/answer duplication, and PC/390/320/RTL absence of measurement UI. All synthetic HTTP/WebSocket traffic must be intercepted; never send test events to live analytics. Standard build filename-only drift from the isolated dependency layout is excluded from publication.
 
-The standard build can change esbuild hashed filenames under an isolated dependency layout even when both game/QR bundles are byte-identical. Such unrelated generated files are preserved separately and excluded. Static locale generation intentionally omits this runtime-only injection. Do not mix those unrelated paths into this release.
+Daily diagnosis must record the precise publication SHA/time, GA4/Clarity gap, CF country/date scope and organic receipt latency separately. No reconstruction of unmeasured history, 100% coverage claim, CF-to-GA addition or unique-person inference is permitted. No new resident watcher is required.
 
-Rollback: restore the base code through a regular non-force update, keep Cloudflare manual installation to honour existing refusals, retain preference data, and accept a CF measurement gap. No DB restoration, token rotation or unconditional automatic edge injection is needed. Record the policy effective time and distinguish implementation, activation, synthetic scenarios and real received aggregates. Do not add CF to GA4 or reconstruct missing history.
+Rollback via a regular non-force code update. Prefer disabling collection while retaining the no-prompt UI if emergency rollback is needed; restoring 368b156 also restores the unwanted prompts and unsafe unreviewed Google behavior and requires an explicit decision. No DB restore or preference deletion is needed.
 
-## Primary sources
+## Primary references used in the existing review
 
-- https://www.ppc.go.jp/all_faq_index/faq1-q8-3/
-- https://laws.e-gov.go.jp/law/359AC0000000086
 - https://developers.cloudflare.com/web-analytics/about/
 - https://developers.cloudflare.com/speed/observatory/rum-beacon/
-- https://developers.cloudflare.com/workers/runtime-apis/request/
-- https://www.cloudflare.com/terms/ (Network Data section2.5.5)
-- https://www.cloudflare.com/privacypolicy/ (aggregation section4)
-- https://www.cloudflare.com/cloudflare-customer-dpa/ (processor scope and3.1)
-- https://blog.cloudflare.com/how-fast-is-the-web/
-- https://www.oaic.gov.au/privacy/australian-privacy-principles/australian-privacy-principles-guidelines/chapter-3-app-3-collection-of-solicited-personal-information
-- https://www.oaic.gov.au/privacy/australian-privacy-principles/australian-privacy-principles-guidelines/chapter-8-app-8-cross-border-disclosure-of-personal-information
-- https://www.privacy.org.nz/privacy-principles/12/
+- https://www.cloudflare.com/terms/ (Network Data §2.5.5)
+- https://www.cloudflare.com/privacypolicy/ (aggregate use §4)
+- https://www.cloudflare.com/cloudflare-customer-dpa/
+- https://www.ppc.go.jp/all_faq_index/faq1-q8-3/
+- https://laws.e-gov.go.jp/law/359AC0000000086
+- https://developers.google.com/tag-platform/security/guides/consent
+- https://learn.microsoft.com/en-us/clarity/setup-and-installation/consent-mode
 
-Not all underlying provider practices can be independently audited. The Japanese configuration decision relies on these specific documented properties, the actual manual installation, minimized inspected payload and disclosed reuse, not an absolute legal-compliance warranty. The original e-Gov page had no readable text in this tool; parent legal research supplied the notification/publication route and no statutory quote is reproduced here.
+No absolute legal-compliance warranty follows from these references. Conditions not established in this review result in collection being disabled.

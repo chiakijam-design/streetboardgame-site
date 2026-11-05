@@ -13,6 +13,7 @@ function boot({ url = `https://www.streetboardgame.com/challenge?room=${room}#ma
   const sends = [];
   const storage = new Map();
   const window = {
+    __WATACHAN_GOOGLE_ANALYTICS_POLICY__: 'notice', // Explicit internal fixture, not the production policy.
     location: current, navigator: { webdriver: false },
     localStorage: {
       getItem(k) { if (storageDenied) throw Error('denied'); return storage.get(k) ?? null; },

@@ -17,15 +17,7 @@ test('only the reviewed edge country use notice; unknown and protected regions r
  for(const country of ['AU','NZ','GB','FR','DE','NO','IS','LI','CH','US','CA','CN','XX','T1','','jp',' AU ',null,undefined,42])assert.equal(pvRegionMode({country}),'consent');
  assert.equal(pvRegionMode(null),'consent');assert.equal(pvRegionMode(undefined),'consent');
 });
-test('notice and stop translations are complete for34 languages; inherited consent copy stays unchanged',()=>{
- assert.deepEqual(Object.keys(PV_NOTICE_COPY).sort(),[...PUBLIC_LOCALES].sort());assert.deepEqual(Object.keys(PV_STOP_COPY).sort(),[...PUBLIC_LOCALES].sort());
- for(const locale of PUBLIC_LOCALES){const row=PV_NOTICE_COPY[locale];assert.equal(row.length,3,locale);row.forEach(x=>assert.ok(typeof x==='string'&&x.trim().length>5,locale));assert.match(row[0],/Cloudflare/);assert.match(row[1],/Cloudflare/);assert.match(PV_NOTICE_DETAILS[locale],/Cloudflare, Inc\./);assert.match(PV_NOTICE_DETAILS[locale],/IP/);assert.ok(PV_STOP_COPY[locale].length>2,locale);
- const url=new URL(origin+(locale==='ja'?'':'/'+locale)+'/privacy?country=JP&name=FAKE_NAME#FAKE_KEY');
- const notice=data(injectPVChoice(template,url,locale,PUBLIC_LOCALES,'notice')),consent=data(injectPVChoice(template,url,locale,PUBLIC_LOCALES));
- assert.equal(notice.mode,'notice');assert.equal(notice.notice,row[0]);assert.equal(notice.copy[1],row[1]+' '+PV_NOTICE_DETAILS[locale]+' '+PV_NOTICE_REUSE[locale]);assert.equal(notice.copy[3],PV_STOP_COPY[locale]);assert.equal(notice.copy[7],row[2]+' '+PV_RENEWAL_COPY[locale]);assert.equal(notice.copy[9],PV_COPY[locale][9]);
- assert.deepEqual(consent.copy,PV_COPY[locale]);assert.equal(consent.mode,'consent');assert.equal(consent.notice,null);assert.doesNotMatch(JSON.stringify(notice),/FAKE_NAME|FAKE_KEY|country=JP/);
- }
-});
+test('all34 privacy disclosures remain complete while passive config has no consent/notice UI',()=>{assert.deepEqual(Object.keys(PV_NOTICE_COPY).sort(),[...PUBLIC_LOCALES].sort());for(const locale of PUBLIC_LOCALES){const row=PV_NOTICE_COPY[locale];assert.equal(row.length,3);assert.match(PV_NOTICE_DETAILS[locale],/Cloudflare, Inc\./);assert.match(PV_NOTICE_DETAILS[locale],/IP/);const url=new URL(origin+(locale==='ja'?'':'/'+locale)+'/privacy?name=FAKE_NAME#FAKE_KEY');for(const mode of ['notice','consent','pending-notice']){const html=injectPVChoice(template,url,locale,PUBLIC_LOCALES,mode),config=data(html);assert.equal(config.mode,mode);assert.equal(config.policy,'passive');assert.ok(!Object.hasOwn(config,'copy'));assert.doesNotMatch(html,/FAKE_NAME|FAKE_KEY|data-wata-pv-notice|data-wata-pv-settings|<button|<dialog/);assert.match(html,/2026-11-07 00:00 JST/);assert.match(html,/Cloudflare/);}}});
 test('invalid injected mode falls back to consent',()=>assert.equal(data(injectPVChoice(template,new URL(origin), 'ja',PUBLIC_LOCALES,'all-countries')).mode,'consent'));
 test('Worker captures trusted country before cloning and does not trust headers/query or UI language',async()=>{
  const env={ASSETS:{async fetch(){return new Response(template,{headers:{'content-type':'text/html','etag':'"same-template"'}});}}};
@@ -43,12 +35,12 @@ test('HEAD is also non-cacheable; static assets retain their old cache policy',a
  const env={ASSETS:{async fetch(req){return new Response(req.method==='HEAD'?null:template,{headers:{'content-type':'text/html'}});}}};const r=await worker.fetch(new Request(origin+'/',{method:'HEAD'}),env);assert.equal(r.headers.get('cache-control'),'private, no-store');
  const staticEnv={ASSETS:{async fetch(){return new Response('void 0',{headers:{'content-type':'application/javascript'}});}}};const asset=await worker.fetch(new Request(origin+'/global-pv.js'),staticEnv);assert.doesNotMatch(asset.headers.get('cache-control')||'',/private/);
 });
-test('candidate never enables legacy Google/Microsoft collection or modifies their runtime',()=>{
+test('passive collector cannot enable the separately gated Google/Microsoft runtime',()=>{
  const bytes=readFileSync('analytics.js');
  const gitBlob=createHash('sha1').update(Buffer.concat([Buffer.from('blob '+bytes.length+'\0'),bytes])).digest('hex');
- assert.equal(gitBlob,'84a75b1b717636e956f5f809313463b3338eb7ec');
+ assert.equal(gitBlob,'4f406b53232805ab341330fca6567f8464ec8fd7');
  const script=readFileSync('global-pv.js','utf8');assert.doesNotMatch(script,/__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__\s*=|googletagmanager\.com|clarity\.ms/);
  assert.match(script,/choice:'deny'/);assert.doesNotMatch(script,/choice:'allow'/);assert.match(script,/cf_pv/);
 });
 
-test('effective date announces in advance and never auto-enables an unreviewed country',()=>{const at=Date.parse(PV_NOTICE_START_UTC);assert.equal(pvRegionMode({country:'JP'},at-1),'pending-notice');assert.equal(pvRegionMode({country:'JP'},at),'notice');assert.equal(pvRegionMode({country:'JP'},NaN),'consent');for(const country of ['AU','NZ','GB','FR',undefined])for(const now of [at-1,at,at+1])assert.equal(pvRegionMode({country},now),'consent');for(const l of PUBLIC_LOCALES){assert.match(PV_RENEWAL_COPY[l],/180/);assert.ok(PV_NOTICE_REUSE[l].length>10);assert.match(PV_CHANGE_COPY[l],/\{date\}/);const pending=data(injectPVChoice(template,new URL(origin+'/privacy'),l,PUBLIC_LOCALES,'pending-notice'));assert.equal(pending.mode,'pending-notice');assert.match(pending.changeNotice,/2026-11-07 00:00 JST/);assert.match(pending.renewalNotice,/180/);}});
+test('effective date remains unchanged with no earlier automatic collection',()=>{const at=Date.parse(PV_NOTICE_START_UTC);assert.equal(pvRegionMode({country:'JP'},at-1),'pending-notice');assert.equal(pvRegionMode({country:'JP'},at),'notice');assert.equal(pvRegionMode({country:'JP'},NaN),'consent');for(const country of ['AU','NZ','GB','FR',undefined])for(const now of [at-1,at,at+1])assert.equal(pvRegionMode({country},now),'consent');for(const l of PUBLIC_LOCALES){const html=injectPVChoice(template,new URL(origin+'/privacy'),l,PUBLIC_LOCALES,'pending-notice'),pending=data(html);assert.equal(pending.mode,'pending-notice');assert.equal(pending.policy,'passive');assert.match(html,/2026-11-07 00:00 JST/);assert.doesNotMatch(html,/data-wata-pv-notice|changeNotice|renewalNotice/);}});
