@@ -11,6 +11,7 @@ import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
 import { PUBLIC_LOCALE_PAGES } from './src/generated/public-locale-pages.js';
+import { injectPVChoice } from './src/analytics/pv-policy.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
@@ -578,6 +579,9 @@ async function withSecurityHeaders(response, request, env) {
         catch { return new Response('Translation unavailable', { status: 503, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } }); }
       }
     }
+    // Only fixed, public paths get the optional measurement UI. Keep generated
+    // locale HTML unchanged: insert at the existing response/nonce pass.
+    if (response.ok && !env?.__STATIC_HTML_BUILD) body = injectPVChoice(body, new URL(request.url), locale, PUBLIC_LOCALES);
     body = body.replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
     headers.delete('content-length');
     headers.delete('content-encoding');

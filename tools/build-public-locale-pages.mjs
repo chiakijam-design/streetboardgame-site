@@ -11,7 +11,7 @@ const root = new URL('../', import.meta.url);
 const pages = ['/', '/challenge', '/challenge/manage', '/challenge/ranking', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/creator-terms', '/content-guidelines', '/minor-policy'];
 const manifest = {};
 const activeCatalogAssets = new Set();
-const env = { ASSETS: { async fetch(request) {
+const env = { __STATIC_HTML_BUILD: true, ASSETS: { async fetch(request) {
   const pathname = new URL(request.url).pathname;
   // Recompile from the current templates, never from a previous build.
   if (pathname.startsWith('/locale-pages/')) return new Response('Not Found', { status: 404 });
