@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {pvRegionMode, PV_NOTICE_COUNTRIES, PV_NOTICE_START_UTC} from '../../src/analytics/pv-regions.js';
 import {PV_NOTICE_COPY,PV_STOP_COPY,PV_NOTICE_DETAILS,PV_NOTICE_REUSE,PV_RENEWAL_COPY,PV_CHANGE_COPY} from '../../src/analytics/pv-notice-copy.js';
 import {injectPVChoice} from '../../src/analytics/pv-policy.js';
@@ -43,7 +44,9 @@ test('HEAD is also non-cacheable; static assets retain their old cache policy',a
  const staticEnv={ASSETS:{async fetch(){return new Response('void 0',{headers:{'content-type':'application/javascript'}});}}};const asset=await worker.fetch(new Request(origin+'/global-pv.js'),staticEnv);assert.doesNotMatch(asset.headers.get('cache-control')||'',/private/);
 });
 test('candidate never enables legacy Google/Microsoft collection or modifies their runtime',()=>{
- const before=readFileSync('../pv-release-candidate-20261105/analytics.js');assert.deepEqual(readFileSync('analytics.js'),before);
+ const bytes=readFileSync('analytics.js');
+ const gitBlob=createHash('sha1').update(Buffer.concat([Buffer.from('blob '+bytes.length+'\0'),bytes])).digest('hex');
+ assert.equal(gitBlob,'84a75b1b717636e956f5f809313463b3338eb7ec');
  const script=readFileSync('global-pv.js','utf8');assert.doesNotMatch(script,/__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__\s*=|googletagmanager\.com|clarity\.ms/);
  assert.match(script,/choice:'deny'/);assert.doesNotMatch(script,/choice:'allow'/);assert.match(script,/cf_pv/);
 });
