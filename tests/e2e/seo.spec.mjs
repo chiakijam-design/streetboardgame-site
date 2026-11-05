@@ -1,11 +1,19 @@
 import { expect, test } from './test.mjs';
+import { PUBLIC_LOCALES } from '../../src/generated/public-locales.js';
 const ORIGIN = 'https://www.streetboardgame.com';
 test('current public metadata, sitemap, privacy and retirement are consistent', async ({ request }, testInfo) => {
  test.skip(testInfo.project.name !== 'desktop-chrome', 'One HTTP inventory.');
  const sitemap = await (await request.get('/sitemap.xml')).text();
  expect(sitemap).not.toMatch(/live-challenge|creator-terms|\?room=|\/manage<|\/ranking</);
  const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
- expect(urls).toHaveLength(442);
+ expect(urls).toHaveLength(408);
+ expect(sitemap).not.toMatch(/\/pricing(?:[<\/?#]|$)/);
+ for (const locale of PUBLIC_LOCALES) {
+  const prefix = locale === 'ja' ? '' : '/' + locale;
+  const gone = await request.get(prefix + '/pricing');
+  expect(gone.status(), prefix + '/pricing').toBe(410);
+  expect(gone.headers()['x-robots-tag']).toContain('noindex');
+ }
  expect(new Set(urls).size).toBe(urls.length);
  for (const url of urls) {
   const path = new URL(url).pathname;
