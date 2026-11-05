@@ -7,6 +7,7 @@ import { answeredQuestionCount, completedCreatorQuiz, validQuizLength } from '..
 import { challengeCopy } from '../../src/i18n/challenge-copy.js';
 import { challengeCompletionCopy } from '../../src/i18n/challenge-completion-copy.js';
 import { boardCopy } from '../../src/i18n/challenge-board-copy.js';
+import { submissionEligibleCards, publicQuizCards } from '../../src/questions/personal-library.js';
 
 // Execute the real client flow functions against the real API and a fresh KV.
 // DOM layout / browser rendering remain separate E2E checks; no bundler or network here.
@@ -25,7 +26,7 @@ function harness() {
   const saved=new Map();let requests=0;
   const context={QUESTION_COUNT:10,CREATOR_DRAFT_KEY:'draft',MANAGE_STATE_KEY:'wataChallengeManage',state:{mode:'creator-edit',cards:structuredClone(cards),answers:[],questionIndex:0,creatorName:'Local creator',finishCount:0,loading:false,questionSubmissionConsent:false},
     allCards:structuredClone(cards),currentLocale:'ja',languagePrefix:'',validQuizLength,answeredQuestionCount,completedCreatorQuiz,challengeCopy,challengeCompletionCopy,boardCopy,
-    structuredClone,Date,Number,Array,JSON,Map,Set,console,window:{},
+    structuredClone,Date,Number,Array,JSON,Map,Set,console,window:{},submissionEligibleCards,publicQuizCards,
     escapeHtml:x=>String(x).replaceAll('<','&lt;'),translateText:x=>x,shell:(...args)=>args,
     captureCreatorConsent(){},trackGamePlay(){},trackDailyResultAction(){},
     changedQuestionCandidates:()=>[],saveManageRoom(){},removeStorage:key=>saved.delete(key),
@@ -43,8 +44,8 @@ for(const count of [1,2,3,9,10]) test(`real creator flow publishes ${count} answ
   if(count<10){
     assert.equal(c.state.mode,'creator-edit');assert.equal(h.requests(),0);
     c.state.finishCount=count;
-    assert.equal(c.finishConfirmationView()[1],`この${count}問でクイズを作成`);
-    assert.match(c.finishConfirmationView()[3],new RegExp(`この${count}問でクイズを作成`));
+    assert.equal(c.finishConfirmationView()[1],`この${count}問でクイズを完成`);
+    assert.match(c.finishConfirmationView()[3],new RegExp(`この${count}問でクイズを完成`));
     assert.doesNotMatch(c.finishConfirmationView()[3],new RegExp(`${count}/10`));
     // Two simultaneous publish actions must create exactly one room.
     await Promise.all([c.createChallengeRoom(c.state.answers.slice(0,count)),c.createChallengeRoom(c.state.answers.slice(0,count))]);

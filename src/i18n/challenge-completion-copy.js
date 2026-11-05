@@ -1,5 +1,5 @@
 // Fixed UI copy only; native-language review remains unverified.
-const rows = `ja|クイズを作成|この{count}問でクイズを作成|この{count}問でクイズを作成|1問から作れます。最大{max}問まで追加できます。
+const rows = `ja|クイズを完成|この{count}問でクイズを完成|この{count}問でクイズを完成|1問から作れます。最大{max}問まで追加できます。
 en|Create a quiz|Create a quiz with {count} question|Create a quiz with {count} questions|You can start with 1 question and add up to {max} questions.
 es|Crear un cuestionario|Crear un cuestionario con {count} pregunta|Crear un cuestionario con {count} preguntas|Puedes crearlo con 1 pregunta y añadir hasta {max} preguntas.
 fr|Créer un quiz|Créer un quiz avec {count} question|Créer un quiz avec {count} questions|Vous pouvez créer un quiz dès 1 question et en ajouter jusqu’à {max}.

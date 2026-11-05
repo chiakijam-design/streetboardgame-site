@@ -11,7 +11,7 @@ test('390px by 667px creator controls fit before and after the first answer', as
   await page.locator('[data-action=start-create]').click();
   for (const count of [0, 1]) {
     if (count) await page.locator('[data-action=builder-answer]').first().click();
-    await expect(page.locator('[data-action=finish-early]')).toHaveText(count ? 'この1問でクイズを作成' : 'クイズを作成');
+    await expect(page.locator('[data-action=finish-early]')).toHaveText(count ? 'この1問でクイズを完成' : 'クイズを完成');
     const geometry = await page.locator('[data-action=skip-question], [data-action=edit-question], [data-action=finish-early], [data-action=custom-question]').evaluateAll(buttons => buttons.map(button => {
       const r = button.getBoundingClientRect(); return { action: button.dataset.action, top: r.top, bottom: r.bottom, height: r.height };
     }));

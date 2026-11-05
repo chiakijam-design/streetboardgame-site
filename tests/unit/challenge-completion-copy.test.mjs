@@ -15,11 +15,11 @@ test('completion copy covers every locale and supported length without unfinishe
 });
 
 test('approved Japanese copy states that the selected count is a complete quiz', () => {
-  assert.equal(challengeCompletionCopy('ja', 1).label, 'この1問でクイズを作成');
-  assert.equal(challengeCompletionCopy('ja', 2).label, 'この2問でクイズを作成');
-  assert.equal(challengeCompletionCopy('ja', 9).label, 'この9問でクイズを作成');
+  assert.equal(challengeCompletionCopy('ja', 1).label, 'この1問でクイズを完成');
+  assert.equal(challengeCompletionCopy('ja', 2).label, 'この2問でクイズを完成');
+  assert.equal(challengeCompletionCopy('ja', 9).label, 'この9問でクイズを完成');
   assert.equal(challengeCompletionCopy('ja', 1).help, '1問から作れます。最大10問まで追加できます。');
-  assert.equal(challengeCompletionCopy('ja', 0).label, 'クイズを作成');
+  assert.equal(challengeCompletionCopy('ja', 0).label, 'クイズを完成');
   assert.equal(challengeCompletionCopy('ja', 0, 2).help, '1問から作れます。最大2問まで追加できます。');
 });
 

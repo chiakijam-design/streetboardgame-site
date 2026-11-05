@@ -1,3 +1,7 @@
+import { loadPersonalQuestions, changePersonalQuestions, personalQuestionCard, personalQuestionBatch, restorePersonalQuestion, submissionEligibleCards, publicQuizCards, questionTemplate } from './src/questions/personal-library.js';
+import { personalQuestionCopy } from './src/i18n/personal-question-copy.js';
+import { personalHistoryCopy, personalCompactCopy } from './src/i18n/personal-question-history-copy.js';
+import { personalBatchCopy } from './src/i18n/personal-question-batch-copy.js';
 import { validQuizLength, answeredQuestionCount, completedCreatorQuiz } from './src/challenge/length.js';
 import { boardCopy } from './src/i18n/challenge-board-copy.js';
 import { challengeCopy } from './src/i18n/challenge-copy.js';
@@ -103,6 +107,10 @@ let state = {
   editingQuestion: false,
   editingOriginalCard: null,
 };
+state.personalView = '';
+state.personalEditId = '';
+state.personalMessage = '';
+state.personalError = '';
 let lastQuestionViewportKey = '';
 let questionCatalogReady = false;
 let invitationImage = { key: '', src: '', busy: false, error: false };
@@ -162,7 +170,7 @@ function escapeHtml(value) {
 
 function render() {
   if (!app) return;
-  protectUserCopy(collectProtectedUserCopy(state, allCards));
+  protectUserCopy([...collectProtectedUserCopy(state, allCards), ...state.cards.filter(card => card.personalQuestion).flatMap(card => [card.title, ...card.choices])]);
   document.documentElement.dataset.challengeMode = state.mode;
   const questionViewportKey = !state.editingQuestion
     && ['creator-edit', 'creator-answer', 'participant-answer'].includes(state.mode)
@@ -181,6 +189,9 @@ function render() {
                   : state.mode === 'library' ? libraryView()
                     : errorView();
   app.innerHTML = body;
+  if (state.mode === 'creator-edit' && (state.personalView || state.editingQuestion || state.cards[state.questionIndex]?.personalQuestion)) {
+    app.setAttribute('data-clarity-mask', 'true');
+  } else app.removeAttribute('data-clarity-mask');
   app.classList.remove('is-booting');
   app.removeAttribute('aria-busy');
   localizeDom(app);
@@ -253,6 +264,7 @@ function numberedCopy(source, count) {
 }
 
 function creatorEditView() {
+  if (state.personalView) return personalLibraryView();
   if (state.finishCount) return finishConfirmationView();
   const card = state.cards[state.questionIndex];
   if (!card) return errorView();
@@ -300,9 +312,11 @@ function creatorEditView() {
       ${finishEarlyControls()}
       <div class="challenge-builder-actions">
         <button class="challenge-secondary" data-action="custom-question">＋ 自分で問題を作る</button>
+        <button class="challenge-secondary" data-action="personal-library">${escapeHtml(personalQuestionCopy(currentLocale, 'pick'))}</button>
       </div>
       ${questionReportControls(card)}
-      <label class="challenge-consent">
+      ${personalConsentView(card)}
+      <label class="challenge-consent" ${card.personalQuestion ? 'hidden' : ''}>
         <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
           aria-label="このクイズを友達や他の人も使えるようにする">
         <span><b>このクイズを友達や他の人も使えるようにする</b><br>
@@ -331,16 +345,183 @@ function creatorQuestionEditView(card) {
         <input data-option="${index}:${choiceIndex}" maxlength="60" value="${escapeHtml(translateText(choice))}"
           aria-label="Q${index + 1} 選択肢${choiceIndex + 1}">
       </label>`).join('')}
-      <label class="challenge-consent">
+      <label class="challenge-consent" ${card.personalQuestion ? 'hidden' : ''}>
         <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
           aria-label="このクイズを友達や他の人も使えるようにする">
         <span><b>このクイズを友達や他の人も使えるようにする</b><br>
         <small>ONのままなら、この自作・編集した問題を掲載候補として運営へ送ります。<br>${QUESTION_PUBLICATION_NOTICE}<br>${QUESTION_REVIEW_CRITERIA}</small></span>
       </label>
+      ${personalConsentView(card)}
       <button class="challenge-primary" data-action="save-question-edit">この内容で問題に戻る <span>▶</span></button>
+      <button class="challenge-secondary" data-action="personal-save-current">${escapeHtml(personalQuestionCopy(currentLocale, 'save'))}</button>
+      <button class="challenge-secondary" data-action="personal-library">${escapeHtml(personalQuestionCopy(currentLocale, 'pick'))}</button>
+      ${personalStatusView()}
+      <p class="challenge-note">${escapeHtml(personalQuestionCopy(currentLocale, 'privacy'))}</p>
+      <p class="challenge-note">${escapeHtml(personalQuestionCopy(currentLocale, 'server'))}</p>
       <button class="challenge-secondary" data-action="cancel-question-edit">キャンセル</button>
     </section>`,
   );
+}
+
+const personalStorage = {
+  getItem: key => window.localStorage.getItem(key),
+  setItem: (key, value) => window.localStorage.setItem(key, value),
+};
+
+function personalStatusView() {
+  const key = state.personalError || state.personalMessage;
+  return key ? `<p class="challenge-note" role="${state.personalError ? 'alert' : 'status'}">${escapeHtml(personalQuestionCopy(currentLocale, key))}</p>` : '';
+}
+
+function personalConsentView(card) {
+  if (!card.personalQuestion) return '';
+  return `<div class="challenge-personal-consent">
+    <label class="challenge-consent"><input id="personal-submit-consent" type="checkbox" ${card.personalSubmissionConsent === true ? 'checked' : ''}><span>${escapeHtml(personalQuestionCopy(currentLocale, 'submit'))}</span></label>
+    <p class="challenge-note">${escapeHtml(personalQuestionCopy(currentLocale, 'server'))}</p>
+  </div>`;
+}
+
+function personalLibraryView() {
+  const copy = key => escapeHtml(personalQuestionCopy(currentLocale, key));
+  const loaded = loadPersonalQuestions(personalStorage);
+  const item = state.personalEditor;
+  const editor = state.personalView === 'edit' && item;
+  const historyItem = loaded.items.find(question => question.id === state.personalHistoryId);
+  const history = state.personalView === 'history';
+  return shell('MY QUESTIONS', personalQuestionCopy(currentLocale, 'title'), '',
+    `<section class="challenge-panel challenge-personal-library" data-testid="personal-library" data-clarity-mask="true" tabindex="-1" aria-label="${copy('title')}">
+      <h2>${copy('title')}</h2>
+      <p class="challenge-note">${copy('privacy')}</p><p class="challenge-note">${copy('server')}</p>
+      ${!loaded.ok ? `<p role="alert">${copy('failure')}</p>` : ''}
+      ${loaded.ok ? personalStatusView() : ''}
+      ${history ? `<h2>${escapeHtml(personalHistoryCopy(currentLocale, 'title'))}</h2>
+        <ul class="challenge-personal-list" data-testid="personal-history">${(historyItem?.history || []).map((version,index) => `<li><h3 data-user-copy>${escapeHtml(version.title)}</h3><ol data-user-copy>${version.choices.map(choice => `<li>${escapeHtml(choice)}</li>`).join('')}</ol><div class="challenge-personal-actions">
+          <button class="challenge-secondary" data-personal-restore-all="${index}">${escapeHtml(personalHistoryCopy(currentLocale,'all'))}</button>
+          <button class="challenge-secondary" data-personal-restore-choices="${index}">${escapeHtml(personalHistoryCopy(currentLocale,'choices'))}</button></div></li>`).join('')}</ul>
+        ${!historyItem?.history.length ? `<p>${escapeHtml(personalHistoryCopy(currentLocale,'empty'))}</p>` : ''}
+        <button class="challenge-secondary" data-action="personal-list">${copy('back')}</button>` : editor ? `<div class="challenge-single-editor" data-testid="personal-template-editor">
+        <label class="challenge-label" for="personal-question">${escapeHtml(translateText('問題文'))}</label>
+        <textarea id="personal-question" maxlength="80" data-user-copy>${escapeHtml(item.title)}</textarea>
+        ${item.choices.map((choice, index) => `<label class="challenge-option-edit"><b>${index + 1}</b><input data-personal-option="${index}" maxlength="40" value="${escapeHtml(choice)}" aria-label="${index + 1}" data-user-copy></label>`).join('')}
+        <p class="challenge-note">${copy('invalid')}</p>
+        <button class="challenge-primary" data-action="personal-update">${copy('save')}</button>
+        <button class="challenge-secondary" data-action="personal-list">${copy('back')}</button>
+      </div>` : `<p class="challenge-note">${loaded.items.length}/30</p>
+        <ul class="challenge-personal-list">${loaded.items.map((question, index) => `<li>
+          <h2 data-user-copy><label class="challenge-personal-select"><input type="checkbox" data-personal-select="${index}" ${(state.personalSelection || []).includes(question.id) ? 'checked' : ''}><span>${escapeHtml(question.title)}</span></label></h2>
+          <details data-personal-options><summary>${escapeHtml(personalCompactCopy(currentLocale,'choices'))}</summary><ol data-user-copy>${question.choices.map(choice => `<li>${escapeHtml(choice)}</li>`).join('')}</ol></details>
+          <div class="challenge-personal-actions">
+            <button class="challenge-primary" data-personal-use="${index}">${copy('use')}</button>
+            <button class="challenge-secondary" data-personal-edit="${index}">${copy('edit')}</button>
+            <button class="challenge-secondary" data-personal-history="${index}">${escapeHtml(personalCompactCopy(currentLocale,'history'))}</button>
+            <button class="challenge-secondary" data-personal-delete="${index}">${copy('remove')}</button>
+          </div>
+        </li>`).join('')}</ul>${loaded.ok && !loaded.items.length ? `<p>${copy('empty')}</p>` : ''}
+        <div class="challenge-personal-batch"><p class="challenge-note">${escapeHtml(personalBatchCopy(currentLocale,'help',{max:state.cards.length-state.questionIndex}))}</p>
+        <button class="challenge-primary" data-action="personal-use-batch" ${(state.personalSelection || []).length ? '' : 'disabled'}>${escapeHtml(personalBatchCopy(currentLocale,'apply',{count:(state.personalSelection || []).length}))}</button></div>
+        <button class="challenge-secondary" data-action="personal-close">${copy('back')}</button>`}
+    </section>`);
+}
+
+function personalPatch(patch, focus = '[data-testid="personal-library"]') {
+  setState(patch);
+  requestAnimationFrame(() => {
+    const target = app.querySelector(focus);
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: focus === '[data-testid="personal-library"]' ? 'start' : 'nearest' });
+  });
+}
+
+function personalWrite(operation) {
+  const result = changePersonalQuestions(personalStorage, operation);
+  state.personalError = result.ok ? '' : ['invalid','limit'].includes(result.error) ? result.error : 'failure';
+  state.personalMessage = result.ok ? 'saved' : '';
+  return result;
+}
+
+function bindPersonalLibrary() {
+  app.querySelector('[data-action="personal-library"]')?.addEventListener('click', () => {
+    if (state.editingQuestion) captureCreatorEdit();
+    captureCreatorConsent();
+    personalPatch({ personalView: 'list', personalSelection: [], personalError: '', personalMessage: '' });
+  });
+  app.querySelector('[data-action="personal-close"]')?.addEventListener('click', () => personalPatch({ personalView: '', personalError: '', personalMessage: '' }, '[data-action="personal-library"]'));
+  app.querySelector('[data-action="personal-list"]')?.addEventListener('click', () => personalPatch({ personalView: 'list', personalError: '', personalMessage: '' }));
+  const loaded = state.personalView ? loadPersonalQuestions(personalStorage) : { items: [] };
+  const remaining = state.cards.length - state.questionIndex;
+  function updatePersonalSelection() {
+    const selected = new Set(state.personalSelection || []);
+    app.querySelectorAll('[data-personal-select]').forEach(input => { input.disabled = !input.checked && selected.size >= remaining; });
+    const button = app.querySelector('[data-action="personal-use-batch"]');
+    if (button) { button.disabled = selected.size === 0; button.textContent = personalBatchCopy(currentLocale,'apply',{count:selected.size}); }
+  }
+  app.querySelectorAll('[data-personal-select]').forEach(input => input.addEventListener('change', () => {
+    const item = loaded.items[Number(input.dataset.personalSelect)]; if (!item) return;
+    const selected = new Set(state.personalSelection || []);
+    if (input.checked && selected.size < remaining) selected.add(item.id); else selected.delete(item.id);
+    input.checked = selected.has(item.id); state.personalSelection = [...selected]; updatePersonalSelection();
+  }));
+  updatePersonalSelection();
+  app.querySelector('[data-action="personal-use-batch"]')?.addEventListener('click', () => {
+    if (state.personalView !== 'list') return;
+    const selection = loaded.items.filter(item => (state.personalSelection || []).includes(item.id));
+    if (!selection.length || selection.length > remaining) return;
+    const batch = personalQuestionBatch(state.cards,state.answers,state.questionIndex,selection,`USR${Date.now()}`);
+    const next = { ...batch, personalView:'', personalSelection:[], editingQuestion:false, editingOriginalCard:null, personalMessage:'', personalError:'', error:'' };
+    saveCreatorDraft({...state,...next}); personalPatch(next,'[data-action="builder-answer"]');
+  });
+  for (const [attribute, action] of [['use', 'use'], ['edit','edit'], ['delete','delete'], ['history','history']]) {
+    app.querySelectorAll(`[data-personal-${attribute}]`).forEach(button => button.addEventListener('click', () => {
+      const item = loaded.items[Number(button.getAttribute(`data-personal-${attribute}`))];
+      if (!item) return;
+      if (action === 'edit') return personalPatch({ personalView: 'edit', personalEditId: item.id, personalEditor: structuredClone(item), personalMessage: '', personalError: '' }, '#personal-question');
+      if (action === 'history') return personalPatch({ personalView: 'history', personalHistoryId: item.id, personalMessage: '', personalError: '' });
+      if (action === 'delete') {
+        if (!window.confirm(personalQuestionCopy(currentLocale, 'confirm'))) return;
+        const result = personalWrite({ type: 'delete', id: item.id });
+        // Do not describe a deletion as a save.
+        personalPatch({ personalMessage: '', personalError: result.ok ? '' : 'failure', personalSelection:(state.personalSelection || []).filter(id => id !== item.id) });
+        return;
+      }
+      const cards = state.cards.slice(), answers = state.answers.slice();
+      cards[state.questionIndex] = personalQuestionCard(item, `USR${Date.now()}${state.questionIndex}`);
+      delete answers[state.questionIndex];
+      const next = { cards, answers, personalView: '', personalMessage: '', personalError: '', editingQuestion: false, error: '' };
+      saveCreatorDraft({ ...state, ...next });
+      personalPatch(next, '[data-action="builder-answer"]');
+    }));
+  }
+  for (const scope of ['all','choices']) app.querySelectorAll(`[data-personal-restore-${scope}]`).forEach(button => button.addEventListener('click', () => {
+    const item = loaded.items.find(item => item.id === state.personalHistoryId);
+    const version = item?.history[Number(button.getAttribute(`data-personal-restore-${scope}`))];
+    if (!version) return;
+    const cards = state.cards.slice(), answers = state.answers.slice();
+    try {
+      cards[state.questionIndex] = restorePersonalQuestion({ ...cards[state.questionIndex], title: translateText(cards[state.questionIndex].title) }, { ...version, id:item.id }, scope, `USR${Date.now()}${state.questionIndex}`);
+    } catch { return personalPatch({personalError:'invalid'}); }
+    delete answers[state.questionIndex];
+    const next = { cards, answers, personalView:'', editingQuestion:false, editingOriginalCard:null, personalMessage:'', personalError:'', error:'' };
+    saveCreatorDraft({...state,...next}); personalPatch(next,'[data-action="builder-answer"]');
+  }));
+  app.querySelector('[data-action="personal-update"]')?.addEventListener('click', () => {
+    state.personalEditor = { title: app.querySelector('#personal-question').value, choices: Array.from(app.querySelectorAll('[data-personal-option]'), input => input.value) };
+    const result = personalWrite({ type: 'save', id: state.personalEditId, question: state.personalEditor });
+    personalPatch({ personalView: result.ok ? 'list' : 'edit' }, result.ok ? '[data-testid="personal-library"]' : '#personal-question');
+  });
+  app.querySelector('[data-action="personal-save-current"]')?.addEventListener('click', () => {
+    const question = { title: app.querySelector('[data-question]').value, choices: Array.from(app.querySelectorAll('[data-option]'), input => input.value) };
+    captureCreatorEdit();
+    const card = state.cards[state.questionIndex];
+    const result = personalWrite({ type: 'save', id: card.personalTemplateId, question });
+    if (result.ok) {
+      state.cards[state.questionIndex] = { ...card, ...questionTemplate(question), personalTemplateId:result.id, personalQuestion: true, personalSubmissionConsent: false };
+      saveCreatorDraft(state);
+    }
+    personalPatch({}, '[data-action="personal-save-current"]');
+  });
+  app.querySelector('#personal-submit-consent')?.addEventListener('change', () => {
+    captureCreatorConsent(); saveCreatorDraft(state);
+  });
 }
 
 function questionReportControls(card) {
@@ -1029,6 +1210,7 @@ function errorView() {
 }
 
 function bindEvents() {
+  bindPersonalLibrary();
   const resultDetails = app.querySelector('[data-testid="challenge-result-details"]');
   resultDetails?.addEventListener('toggle', () => { state.resultDetailsOpen = resultDetails.open; });
   document.querySelector('[data-action="start-create"]')?.addEventListener('click', startCreate);
@@ -1158,7 +1340,12 @@ function startCreate() {
 }
 
 function captureCreatorConsent() {
-  state.questionSubmissionConsent = document.getElementById('question-submit-consent')?.checked === true;
+  const general = document.getElementById('question-submit-consent');
+  if (general) state.questionSubmissionConsent = general.checked === true;
+  const personal = document.getElementById('personal-submit-consent');
+  if (personal && state.cards[state.questionIndex]?.personalQuestion) {
+    state.cards[state.questionIndex].personalSubmissionConsent = personal.checked === true;
+  }
 }
 
 function captureCreatorEdit() {
@@ -1227,6 +1414,7 @@ function toCreatorDraftCard(card) {
   return {
     ...card,
     sourceId: card.id,
+    ...(/^USR/.test(card.id || '') ? { personalQuestion: true, personalSubmissionConsent: false } : {}),
     choices: card.choices.slice(0, 5),
   };
 }
@@ -1337,14 +1525,14 @@ async function createChallengeRoom(answers) {
       || card.choices.some((choice, choiceIndex) => choice !== source.choices[choiceIndex]);
     return { ...card, id: changed ? `USR${Date.now()}${index}` : source.id };
   });
-  const candidates = changedQuestionCandidates(cards, allCards);
-  const submissionConsent = state.questionSubmissionConsent;
+  const candidates = changedQuestionCandidates(submissionEligibleCards(cards, state.questionSubmissionConsent), allCards);
+  const submissionConsent = candidates.length > 0;
   setState({ loading: true, error: '' });
   try {
     const response = await fetch('/api/challenge/rooms', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ creatorName: state.creatorName, cards, answers }),
+      body: JSON.stringify({ creatorName: state.creatorName, cards: publicQuizCards(cards), answers }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'create-failed');
