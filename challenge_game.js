@@ -381,6 +381,7 @@ function personalConsentView(card) {
   if (!card.personalQuestion) return '';
   return `<div class="challenge-personal-consent">
     <label class="challenge-consent"><input id="personal-submit-consent" type="checkbox" ${card.personalSubmissionConsent === true ? 'checked' : ''}><span>${escapeHtml(personalQuestionCopy(currentLocale, 'submit'))}</span></label>
+    <p class="challenge-note" data-personal-publication-notice>${QUESTION_PUBLICATION_NOTICE}<br>${QUESTION_REVIEW_CRITERIA}</p>
     <p class="challenge-note">${escapeHtml(personalQuestionCopy(currentLocale, 'server'))}</p>
   </div>`;
 }

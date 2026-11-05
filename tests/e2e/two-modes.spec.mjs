@@ -294,7 +294,7 @@ test('共通お題を挑戦クイズと人気ライブラリで使える', async
   await expect(builderCard.locator('.notebook-question-card-picture')).toHaveCount(0);
 });
 
-test('自作お題は初期同意で、チェック状態を自分で変更して運営へ送信できる', async ({ page }) => {
+test('自作お題は初期非掲載で、明示同意した問題だけ運営へ送信できる', async ({ page }) => {
   const submissions = [];
   await page.route('**/api/questions/submissions', async (route) => {
     submissions.push(route.request().postDataJSON());
@@ -312,10 +312,14 @@ test('自作お題は初期同意で、チェック状態を自分で変更し�
   for (let index = 0; index < 5; index += 1) {
     await page.locator(`[data-option="0:${index}"]`).fill(`自作選択肢${index + 1}`);
   }
-  const consent = page.getByLabel('このクイズを友達や他の人も使えるようにする');
-  await expect(consent).toBeChecked();
-  await expect(page.getByText('送信した内容は運営が編集し、他の利用者へ公開する可能性があります。')).toBeVisible();
-  await expect(page.getByText('性的内容、いじめ、容姿攻撃、差別表現は審査対象です。')).toBeVisible();
+  const consent = page.locator('#personal-submit-consent');
+  await expect(consent).toBeVisible();
+  await expect(consent).not.toBeChecked();
+  const notice = page.locator('[data-personal-publication-notice]');
+  await expect(notice).toContainText('送信した内容は運営が編集し、他の利用者へ公開する可能性があります。');
+  await expect(notice).toContainText('性的内容、いじめ、容姿攻撃、差別表現は審査対象です。');
+  await expect(notice).toBeVisible();
+  await consent.check();
   await consent.uncheck();
   await expect(consent).not.toBeChecked();
   await consent.check();
@@ -395,7 +399,10 @@ test('公開候補チェックを外した自作お題は運営へ送信しな�
   for (let index = 0; index < 5; index += 1) {
     await page.locator(`[data-option="0:${index}"]`).fill(`非公開選択肢${index + 1}`);
   }
-  await page.getByLabel('このクイズを友達や他の人も使えるようにする').uncheck();
+  const consent = page.locator('#personal-submit-consent');
+  await expect(consent).not.toBeChecked();
+  await consent.check();
+  await consent.uncheck();
   await page.getByRole('button', { name: /この内容で問題に戻る/ }).click();
   await buildChallengeQuestions(page);
   await expect(page.getByRole('heading', { name: '友達に送る' })).toBeVisible();
