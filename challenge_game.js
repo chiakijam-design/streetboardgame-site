@@ -1,7 +1,8 @@
-import { loadPersonalQuestions, changePersonalQuestions, personalQuestionCard, personalQuestionBatch, restorePersonalQuestion, submissionEligibleCards, publicQuizCards, questionTemplate } from './src/questions/personal-library.js';
+import { loadPersonalQuestions, changePersonalQuestions, autoSavePersonalQuestion, personalQuestionCard, personalQuestionBatch, restorePersonalQuestion, submissionEligibleCards, publicQuizCards } from './src/questions/personal-library.js';
 import { personalQuestionCopy } from './src/i18n/personal-question-copy.js';
 import { personalHistoryCopy, personalCompactCopy } from './src/i18n/personal-question-history-copy.js';
 import { personalBatchCopy } from './src/i18n/personal-question-batch-copy.js';
+import { personalAutosaveCopy } from './src/i18n/personal-question-autosave-copy.js';
 import { validQuizLength, answeredQuestionCount, completedCreatorQuiz } from './src/challenge/length.js';
 import { boardCopy } from './src/i18n/challenge-board-copy.js';
 import { challengeCopy } from './src/i18n/challenge-copy.js';
@@ -112,6 +113,7 @@ state.personalEditId = '';
 state.personalMessage = '';
 state.personalError = '';
 let lastQuestionViewportKey = '';
+let personalLibrarySnapshot = { items: [] };
 let questionCatalogReady = false;
 let invitationImage = { key: '', src: '', busy: false, error: false };
 function invitationKey() { return state.room ? JSON.stringify([currentLocale, state.room.code, state.room.creatorName]) : ''; }
@@ -315,6 +317,7 @@ function creatorEditView() {
         <button class="challenge-secondary" data-action="personal-library">${escapeHtml(personalQuestionCopy(currentLocale, 'pick'))}</button>
       </div>
       ${questionReportControls(card)}
+      ${card.personalSaveError ? personalStatusView() : ''}
       ${personalConsentView(card)}
       <label class="challenge-consent" ${card.personalQuestion ? 'hidden' : ''}>
         <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
@@ -338,11 +341,11 @@ function creatorQuestionEditView(card) {
     '問題文と5つの選択肢を編集してから、答えを選んでください。',
     `<section class="challenge-panel challenge-single-editor" data-testid="challenge-question-edit-form">
       <label class="challenge-label" for="builder-question">問題文</label>
-      <textarea id="builder-question" data-question="${index}" maxlength="180"
+      <textarea id="builder-question" data-question="${index}" maxlength="80"
         aria-label="Q${index + 1}の問題文">${escapeHtml(translateText(card.title))}</textarea>
       ${card.choices.map((choice, choiceIndex) => `<label class="challenge-option-edit">
         <b>${choiceIndex + 1}</b>
-        <input data-option="${index}:${choiceIndex}" maxlength="60" value="${escapeHtml(translateText(choice))}"
+        <input data-option="${index}:${choiceIndex}" maxlength="40" value="${escapeHtml(translateText(choice))}"
           aria-label="Q${index + 1} 選択肢${choiceIndex + 1}">
       </label>`).join('')}
       <label class="challenge-consent" ${card.personalQuestion ? 'hidden' : ''}>
@@ -353,9 +356,9 @@ function creatorQuestionEditView(card) {
       </label>
       ${personalConsentView(card)}
       <button class="challenge-primary" data-action="save-question-edit">この内容で問題に戻る <span>▶</span></button>
-      <button class="challenge-secondary" data-action="personal-save-current">${escapeHtml(personalQuestionCopy(currentLocale, 'save'))}</button>
       <button class="challenge-secondary" data-action="personal-library">${escapeHtml(personalQuestionCopy(currentLocale, 'pick'))}</button>
       ${personalStatusView()}
+      <p class="challenge-note" data-testid="personal-autosave-notice">${escapeHtml(personalAutosaveCopy(currentLocale, 'notice'))}</p>
       <p class="challenge-note">${escapeHtml(personalQuestionCopy(currentLocale, 'privacy'))}</p>
       <p class="challenge-note">${escapeHtml(personalQuestionCopy(currentLocale, 'server'))}</p>
       <button class="challenge-secondary" data-action="cancel-question-edit">キャンセル</button>
@@ -369,8 +372,9 @@ const personalStorage = {
 };
 
 function personalStatusView() {
-  const key = state.personalError || state.personalMessage;
-  return key ? `<p class="challenge-note" role="${state.personalError ? 'alert' : 'status'}">${escapeHtml(personalQuestionCopy(currentLocale, key))}</p>` : '';
+  const failure = state.personalError || (!state.personalView && state.cards[state.questionIndex]?.personalSaveError);
+  const key = failure || state.personalMessage;
+  return key ? `<p class="challenge-note" role="${failure ? 'alert' : 'status'}">${escapeHtml(personalQuestionCopy(currentLocale, key))}</p>` : '';
 }
 
 function personalConsentView(card) {
@@ -384,6 +388,8 @@ function personalConsentView(card) {
 function personalLibraryView() {
   const copy = key => escapeHtml(personalQuestionCopy(currentLocale, key));
   const loaded = loadPersonalQuestions(personalStorage);
+  loaded.items.reverse();
+  personalLibrarySnapshot = loaded;
   const item = state.personalEditor;
   const editor = state.personalView === 'edit' && item;
   const historyItem = loaded.items.find(question => question.id === state.personalHistoryId);
@@ -404,7 +410,7 @@ function personalLibraryView() {
         <textarea id="personal-question" maxlength="80" data-user-copy>${escapeHtml(item.title)}</textarea>
         ${item.choices.map((choice, index) => `<label class="challenge-option-edit"><b>${index + 1}</b><input data-personal-option="${index}" maxlength="40" value="${escapeHtml(choice)}" aria-label="${index + 1}" data-user-copy></label>`).join('')}
         <p class="challenge-note">${copy('invalid')}</p>
-        <button class="challenge-primary" data-action="personal-update">${copy('save')}</button>
+        <button class="challenge-primary" data-action="personal-update">${escapeHtml(personalAutosaveCopy(currentLocale, 'done'))}</button>
         <button class="challenge-secondary" data-action="personal-list">${copy('back')}</button>
       </div>` : `<p class="challenge-note">${loaded.items.length}/30</p>
         <ul class="challenge-personal-list">${loaded.items.map((question, index) => `<li>
@@ -433,7 +439,7 @@ function personalPatch(patch, focus = '[data-testid="personal-library"]') {
 }
 
 function personalWrite(operation) {
-  const result = changePersonalQuestions(personalStorage, operation);
+  const result = changePersonalQuestions(personalStorage, { ...operation, allowEviction: operation.type !== 'delete' });
   state.personalError = result.ok ? '' : ['invalid','limit'].includes(result.error) ? result.error : 'failure';
   state.personalMessage = result.ok ? 'saved' : '';
   return result;
@@ -441,13 +447,15 @@ function personalWrite(operation) {
 
 function bindPersonalLibrary() {
   app.querySelector('[data-action="personal-library"]')?.addEventListener('click', () => {
-    if (state.editingQuestion) captureCreatorEdit();
+    if (state.personalView) return;
+    let failure = '';
+    if (state.editingQuestion && autoSaveCreatorEdit()) failure = state.cards[state.questionIndex]?.personalSaveError || '';
     captureCreatorConsent();
-    personalPatch({ personalView: 'list', personalSelection: [], personalError: '', personalMessage: '' });
+    personalPatch({ personalView: 'list', personalSelection: [], personalError: failure, personalMessage: '' });
   });
   app.querySelector('[data-action="personal-close"]')?.addEventListener('click', () => personalPatch({ personalView: '', personalError: '', personalMessage: '' }, '[data-action="personal-library"]'));
   app.querySelector('[data-action="personal-list"]')?.addEventListener('click', () => personalPatch({ personalView: 'list', personalError: '', personalMessage: '' }));
-  const loaded = state.personalView ? loadPersonalQuestions(personalStorage) : { items: [] };
+  const loaded = state.personalView ? personalLibrarySnapshot : { items: [] };
   const remaining = state.cards.length - state.questionIndex;
   function updatePersonalSelection() {
     const selected = new Set(state.personalSelection || []);
@@ -504,20 +512,10 @@ function bindPersonalLibrary() {
     saveCreatorDraft({...state,...next}); personalPatch(next,'[data-action="builder-answer"]');
   }));
   app.querySelector('[data-action="personal-update"]')?.addEventListener('click', () => {
+    if (state.personalView !== 'edit') return;
     state.personalEditor = { title: app.querySelector('#personal-question').value, choices: Array.from(app.querySelectorAll('[data-personal-option]'), input => input.value) };
     const result = personalWrite({ type: 'save', id: state.personalEditId, question: state.personalEditor });
     personalPatch({ personalView: result.ok ? 'list' : 'edit' }, result.ok ? '[data-testid="personal-library"]' : '#personal-question');
-  });
-  app.querySelector('[data-action="personal-save-current"]')?.addEventListener('click', () => {
-    const question = { title: app.querySelector('[data-question]').value, choices: Array.from(app.querySelectorAll('[data-option]'), input => input.value) };
-    captureCreatorEdit();
-    const card = state.cards[state.questionIndex];
-    const result = personalWrite({ type: 'save', id: card.personalTemplateId, question });
-    if (result.ok) {
-      state.cards[state.questionIndex] = { ...card, ...questionTemplate(question), personalTemplateId:result.id, personalQuestion: true, personalSubmissionConsent: false };
-      saveCreatorDraft(state);
-    }
-    personalPatch({}, '[data-action="personal-save-current"]');
   });
   app.querySelector('#personal-submit-consent')?.addEventListener('change', () => {
     captureCreatorConsent(); saveCreatorDraft(state);
@@ -668,6 +666,7 @@ function manageView() {
     challengeCopy(currentLocale, 'send'),
     shareLead,
     `<section class="challenge-panel challenge-share-screen" data-testid="challenge-share-screen">
+      ${state.cards.some(card => card.personalSaveError) ? `<p class="challenge-note" role="alert">${escapeHtml(personalQuestionCopy(currentLocale, 'failure'))}</p>` : ''}
       <div class="challenge-created-heading">
         <h2>理解度診断ができました</h2>
       </div>
@@ -1222,9 +1221,13 @@ function bindEvents() {
   document.querySelector('[data-action="skip-question"]')?.addEventListener('click', skipCreatorQuestion);
   document.querySelector('[data-action="edit-question"]')?.addEventListener('click', () => {
     captureCreatorConsent();
+    const original = structuredClone(state.cards[state.questionIndex]);
+    const cards = state.cards.slice();
+    cards[state.questionIndex] = { ...original, personalQuestion:true, personalSubmissionConsent:original.personalQuestion === true && original.personalSubmissionConsent === true };
     setState({
+      cards,
       editingQuestion: true,
-      editingOriginalCard: structuredClone(state.cards[state.questionIndex]),
+      editingOriginalCard: original,
       error: '',
     });
   });
@@ -1236,6 +1239,8 @@ function bindEvents() {
       id: `USR${Date.now()}${state.questionIndex}`,
       sourceId: '',
       category: '自作のお題',
+      personalQuestion: true,
+      personalSubmissionConsent: false,
       title: '',
       choices: ['', '', '', '', ''],
     };
@@ -1360,13 +1365,29 @@ function captureCreatorEdit() {
   }));
 }
 
-function saveCreatorQuestionEdit() {
+function autoSaveCreatorEdit() {
+  const raw = { title: app.querySelector('[data-question]')?.value, choices: Array.from(app.querySelectorAll('[data-option]'), input => input.value) };
   captureCreatorEdit();
   const card = state.cards[state.questionIndex];
   if (!card?.title || card.choices.length !== 5 || card.choices.some((choice) => !choice)) {
-    return setState({ error: 'questions-incomplete' });
+    return false;
   }
-  const next = { editingQuestion: false, editingOriginalCard: null, error: '' };
+  const original = state.editingOriginalCard;
+  const changed = !original || card.id !== original.id || card.title !== original.title || card.choices.some((choice,index) => choice !== original.choices[index]);
+  if (!changed && !original?.personalQuestion) state.cards[state.questionIndex] = original;
+  else {
+    const result = autoSavePersonalQuestion(personalStorage, { ...card, title:raw.title, choices:raw.choices });
+    state.cards[state.questionIndex] = result.card;
+  }
+  if (changed) { const answers = state.answers.slice(); delete answers[state.questionIndex]; state.answers = answers; }
+  saveCreatorDraft(state);
+  return true;
+}
+
+function saveCreatorQuestionEdit() {
+  if (state.mode !== 'creator-edit' || !state.editingQuestion || state.personalView || state.loading) return;
+  if (!autoSaveCreatorEdit()) return setState({error:'questions-incomplete'});
+  const next = { editingQuestion: false, editingOriginalCard: null, personalError:'', personalMessage:'', error: '' };
   saveCreatorDraft({ ...state, ...next });
   setState(next);
 }

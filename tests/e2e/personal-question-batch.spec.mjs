@@ -17,15 +17,17 @@ for(const locale of ['', '/en','/ar'])test(`${locale||'ja'} choose three from th
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.locator('[data-action="personal-use-batch"]').click();await expect(page.locator('.challenge-q-number')).toHaveText('Q1/3');await expect(page.locator('#personal-submit-consent')).not.toBeChecked();
   for(let i=0;i<3;i++){await expect(page.locator('.challenge-q-number')).toHaveText(`Q${i+1}/3`);await page.locator('[data-action="builder-answer"]').nth(i).click();}
-  await expect(page.getByTestId('challenge-share-screen')).toBeVisible();expect(creation.cards.map(c=>c.title)).toEqual(items.slice(0,3).map(i=>i.title));expect(creation.answers).toEqual([0,1,2]);expect(sent).toHaveLength(0);expect(JSON.stringify(creation)).not.toContain('personalTemplateId');
+  await expect(page.getByTestId('challenge-share-screen')).toBeVisible();expect(creation.cards.map(c=>c.title)).toEqual(items.slice(-3).reverse().map(i=>i.title));expect(creation.answers).toEqual([0,1,2]);expect(sent).toHaveLength(0);expect(JSON.stringify(creation)).not.toContain('personalTemplateId');
 });
-test('answered prefix survives a batch, remaining limit is enforced, and thirty-one cannot save',async({page})=>{
+test('answered prefix survives a batch, remaining limit is enforced, and thirty-first replaces oldest',async({page})=>{
   await page.setViewportSize({width:320,height:667});await page.goto('/challenge?analytics=exclude');await page.locator('#creator-name').fill('Local limit');await page.locator('[data-action="start-create"]').click();
   for(let i=0;i<8;i++)await page.locator('[data-action="builder-answer"]').first().click();
   await page.locator('[data-action="personal-library"]').click();await page.locator('[data-personal-select]').nth(0).check();await page.locator('[data-personal-select]').nth(1).check();await expect(page.locator('[data-personal-select]').nth(2)).toBeDisabled();
   await page.locator('[data-action="personal-use-batch"]').click();await expect(page.locator('.challenge-q-number')).toHaveText('Q9/10');
-  await page.locator('[data-action="custom-question"]').click();await page.locator('[data-question]').fill('The thirty-first question?');for(let i=0;i<5;i++)await page.locator('[data-option]').nth(i).fill(`Option ${i+1}`);await page.locator('[data-action="personal-save-current"]').click();await expect(page.locator('#challenge-app [role="alert"]')).toContainText('30');
+  await page.locator('[data-action="custom-question"]').click();await page.locator('[data-question]').fill('The thirty-first question?');for(let i=0;i<5;i++)await page.locator('[data-option]').nth(i).fill(`Option ${i+1}`);await page.locator('[data-action="save-question-edit"]').click();await expect(page.locator('#challenge-app [role="alert"]')).toHaveCount(0);
   expect(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).items.length,key)).toBe(30);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).items.some(item=>item.id==='saved0'),key)).toBe(false);
+  expect(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).items.at(-1).title,key)).toBe('The thirty-first question?');
 });
 
 for(const locale of ['', '/en','/ar'])test(`${locale||'ja'} compact library focuses the first saved question and keeps keyboard controls usable at 320px`,async({page},testInfo)=>{

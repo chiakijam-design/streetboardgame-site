@@ -41,21 +41,27 @@ export function changePersonalQuestions(storage, operation) {
       items.splice(index, 1);
     } else {
       const template = questionTemplate(operation.question);
-      const index = operation.id ? items.findIndex(item => item.id === operation.id) : -1;
+      let index = operation.id ? items.findIndex(item => item.id === operation.id) : -1;
       if (operation.id && index < 0) throw new Error('missing');
       // An unchanged save reuses its template rather than making duplicate rows.
       const duplicate = items.find(item => item.id !== operation.id && fingerprint(item) === fingerprint(template));
       if (duplicate) {
         if (operation.id) throw new Error('invalid');
-        return { ok: true, items, id: duplicate.id };
+        if (!operation.allowEviction) return { ok: true, items, id: duplicate.id };
+        index = items.findIndex(item => item.id === duplicate.id);
       }
-      if (index < 0 && items.length >= PERSONAL_QUESTIONS_LIMIT) throw new Error('limit');
-      const id = operation.id || globalThis.crypto.randomUUID();
+      if (index < 0 && items.length >= PERSONAL_QUESTIONS_LIMIT) {
+        if (!operation.allowEviction) throw new Error('limit');
+        items.shift();
+      }
+      const id = operation.id || duplicate?.id || globalThis.crypto.randomUUID();
       const previous = items[index];
       const history = previous ? JSON.stringify(questionTemplate(previous)) === JSON.stringify(template) ? previous.history
         : [questionTemplate(previous), ...previous.history].slice(0, PERSONAL_HISTORY_LIMIT) : [];
       const item = { id, ...template, history };
-      if (index < 0) items.push(item); else items[index] = item;
+      if (index < 0) items.push(item);
+      else if (operation.allowEviction) { items.splice(index,1); items.push(item); }
+      else items[index] = item;
       operation = { ...operation, id };
     }
     const serialized = JSON.stringify({ version: 1, items });
@@ -97,4 +103,22 @@ export function submissionEligibleCards(cards, generalConsent) {
 
 export function publicQuizCards(cards) {
   return cards.map(({ id, sourceId, category, title, choices }) => ({ id, sourceId, category, title, choices: [...choices] }));
+}
+
+// Automatic save is local only. A persistence failure never opts a question into
+// publication review, and callers can keep using the in-memory quiz copy.
+export function autoSavePersonalQuestion(storage, card) {
+  const privacy = { personalQuestion: true, personalSubmissionConsent: card.personalQuestion === true && card.personalSubmissionConsent === true };
+  const loaded = loadPersonalQuestions(storage);
+  let result;
+  if (!loaded.ok) result = { ok:false, error:'storage' };
+  else {
+    const existing = loaded.items.find(item => item.id === card.personalTemplateId);
+    try {
+      const question = questionTemplate(card);
+      result = changePersonalQuestions(storage,{type:'save',id:existing?.id,question,allowEviction:true});
+    } catch { result = { ok:false, error:'invalid' }; }
+  }
+  return { ...result, card:{...card,...privacy,
+    ...(result.ok ? {personalTemplateId:result.id,personalSaveError:''} : {personalSaveError:result.error === 'invalid' ? 'invalid' : 'failure'})} };
 }

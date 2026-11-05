@@ -7,7 +7,7 @@ test.beforeEach(async({context})=>{
 });
 async function start(page,locale='') {await page.goto(`${locale}/challenge?analytics=exclude`);await page.locator('#creator-name').fill('Local author');await page.locator('[data-action="start-create"]').click();}
 async function custom(page) {await page.locator('[data-action="custom-question"]').click();await page.locator('[data-question]').fill(title);for(let i=0;i<5;i++)await page.locator('[data-option]').nth(i).fill(choices[i]);}
-async function save(page) {await page.locator('[data-action="personal-save-current"]').click();await expect(page.locator('#challenge-app [role="status"]')).toBeVisible();}
+async function save(page) {await expect(page.locator('[data-action="personal-save-current"]')).toHaveCount(0);await page.locator('[data-action="save-question-edit"]').click();await expect.poll(()=>page.evaluate(k=>JSON.parse(localStorage.getItem(k))?.items.length,key)).toBeGreaterThan(0);}
 async function finishOne(page) {await page.locator('[data-action="builder-answer"]').first().click();await page.locator('[data-action="finish-early"]').click();await page.locator('[data-action="confirm-finish"]').click();await expect(page.getByTestId('challenge-share-screen')).toBeVisible();return new URL(page.url()).searchParams.get('room');}
 
 for(const locale of ['', '/en','/ar']) test(`${locale||'ja'} personal save, resume, fresh answer, issued copy, edit and delete`,async({page,context,request},testInfo)=>{
@@ -18,7 +18,6 @@ for(const locale of ['', '/en','/ar']) test(`${locale||'ja'} personal save, resu
   await expect(page.locator('#question-submit-consent')).not.toBeVisible();
   expect(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).items[0],key)).toEqual(expect.objectContaining({title,choices}));
   expect(await page.evaluate(k=>Object.keys(JSON.parse(localStorage.getItem(k)).items[0]).sort(),key)).toEqual(['choices','history','id','title']);
-  await page.locator('[data-action="save-question-edit"]').click();
   await page.locator('[data-action="builder-answer"]').first().click();
   await page.locator('[data-action="previous-builder-question"]').click();
   await page.locator('[data-action="personal-library"]').click();
@@ -47,7 +46,7 @@ for(const locale of ['', '/en','/ar']) test(`${locale||'ja'} personal save, resu
 
 test('explicit personal candidate opt-in survives draft while local library never stores it',async({page})=>{
   const submissions=[];page.on('request',r=>{if(r.method()==='POST'&&new URL(r.url()).pathname==='/api/questions/submissions')submissions.push(r.postDataJSON());});
-  await start(page);await custom(page);await save(page);await page.locator('[data-action="save-question-edit"]').click();
+  await start(page);await custom(page);await save(page);
   await page.locator('#personal-submit-consent').check();await page.reload();await page.locator('[data-action="resume-create"]').click();
   await expect(page.locator('#personal-submit-consent')).toBeChecked();
   await finishOne(page);await expect.poll(()=>submissions.length).toBe(1);
@@ -59,16 +58,16 @@ test('explicit personal candidate opt-in survives draft while local library neve
 test('storage denied and invalid templates show failure without server fallback or loss of input',async({page,context})=>{
   await context.addInitScript(k=>{const original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key===k)throw new DOMException('denied','QuotaExceededError');return original.call(this,key,value);};},key);
   const requests=[];page.on('request',r=>{if(r.method()==='POST')requests.push(new URL(r.url()).pathname);});
-  await start(page);await custom(page);await page.locator('[data-action="personal-save-current"]').click();
-  await expect(page.locator('[role="alert"]')).toBeVisible();await expect(page.locator('[data-question]')).toHaveValue(title);
+  await start(page);await custom(page);await page.locator('[data-action="save-question-edit"]').click();
+  await expect(page.locator('#challenge-app [role="alert"]')).toBeVisible();await page.locator('[data-action="edit-question"]').click();await expect(page.locator('[data-question]')).toHaveValue(title);
   expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBeNull();
   expect(requests.filter(p=>p==='/api/questions/submissions'||p==='/api/challenge/rooms')).toHaveLength(0);
-  await page.locator('[data-option]').nth(1).fill(choices[0]);await page.locator('[data-action="personal-save-current"]').click();
-  await expect(page.locator('[role="alert"]')).toContainText('80');
+  await page.locator('[data-option]').nth(1).fill(choices[0]);await page.locator('[data-action="save-question-edit"]').click();
+  await expect(page.locator('#challenge-app [role="alert"]')).toContainText('80');
 });
 
 test('same-browser shared visibility and a different browser context has no templates; 320px remains usable',async({page,context,browser},testInfo)=>{
-  await page.setViewportSize({width:320,height:667});await start(page);await custom(page);await save(page);await page.locator('[data-action="save-question-edit"]').click();
+  await page.setViewportSize({width:320,height:667});await start(page);await custom(page);await save(page);
   await page.locator('[data-action="personal-library"]').click();await page.screenshot({path:testInfo.outputPath('library-320.png'),fullPage:true});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await expect(page.locator('[data-personal-use]')).toBeVisible();
