@@ -6,13 +6,15 @@ test('current public metadata, sitemap, privacy and retirement are consistent', 
  const sitemap = await (await request.get('/sitemap.xml')).text();
  expect(sitemap).not.toMatch(/live-challenge|creator-terms|\?room=|\/manage<|\/ranking</);
  const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
- expect(urls).toHaveLength(408);
+ expect(urls).toHaveLength(374);
  expect(sitemap).not.toMatch(/\/pricing(?:[<\/?#]|$)/);
  for (const locale of PUBLIC_LOCALES) {
   const prefix = locale === 'ja' ? '' : '/' + locale;
-  const gone = await request.get(prefix + '/pricing');
-  expect(gone.status(), prefix + '/pricing').toBe(410);
-  expect(gone.headers()['x-robots-tag']).toContain('noindex');
+  for (const path of ['/pricing', '/refund-policy']) {
+   const gone = await request.get(prefix + path);
+   expect(gone.status(), prefix + path).toBe(410);
+   expect(gone.headers()['x-robots-tag']).toContain('noindex');
+  }
  }
  expect(new Set(urls).size).toBe(urls.length);
  for (const url of urls) {

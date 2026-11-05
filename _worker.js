@@ -1,4 +1,4 @@
-import { isRetiredLivePage, isLiveHistoryRequest, liveRetiredResponse, isRemovedPricingPage, removedPricingResponse } from './src/live/retirement.js';
+import { isRetiredLivePage, isLiveHistoryRequest, liveRetiredResponse, isRemovedPricingPage, isRemovedRefundPage, removedPricingResponse } from './src/live/retirement.js';
 import { handleLiveApi } from './src/live/api.js';
 import { handleChallengeApi } from './src/challenge/api.js';
 import { handleQuestionApi } from './src/questions/api.js';
@@ -100,7 +100,7 @@ async function handleRequest(request, env) {
       });
     }
     const path = rawPath.replace(/\/+$/, '');
-    if (isRemovedPricingPage(path)) return removedPricingResponse(request);
+    if (isRemovedPricingPage(path) || isRemovedRefundPage(path)) return removedPricingResponse(request);
     if (isRetiredLivePage(path, url.searchParams)) return liveRetiredResponse(request);
     if (path.startsWith('/api/live') && !isLiveHistoryRequest(path, request.method)) return liveRetiredResponse(request, true);
     // These build artifacts are fetched internally; stable locale URLs are

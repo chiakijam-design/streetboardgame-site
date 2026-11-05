@@ -79,10 +79,7 @@ const HTML_STYLE_MAP = {
   'privacy.html': [
     'legal',
   ],
-  'refund-policy.html': [
-    'legal',
-  ],
-  'terms.html': [
+ 'terms.html': [
     'legal',
   ],
 };

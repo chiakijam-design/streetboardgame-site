@@ -49,22 +49,22 @@ function normalizeVersionedLegalDocument(document) {
     .replace(/\/dist\/legal-[a-f0-9]{12}\.css/g, '/dist/legal-9975948de7b8.css');
 }
 
-test('特商法表記は個人の住所・電話番号を公開せず、請求時の開示方法を案内する', async () => {
+test('製品版の特商法情報は正式販売元へ案内し、Web側へ住所・電話番号を複製しない', async () => {
   const document = await readFileAsync(new URL('../../legal.html', import.meta.url), 'utf8');
   const incidentDocument = await readFileAsync(new URL('../../docs/PRIVACY_INCIDENT_RESPONSE.md', import.meta.url), 'utf8');
   assert.equal(/〒\d{3}-\d{4}/.test(document), false);
   assert.equal(document.includes('販売・役務提供事業者'), true);
-  assert.equal(document.includes('特定商取引法第11条ただし書に基づき'), true);
-  assert.equal(document.includes('所在地の開示'), true);
+  assert.equal(document.includes('https://www.amazon.co.jp/sp?seller=A3QW758BCMIP1P'), true);
+  assert.equal(document.includes('Chiaki Hirakawa'), true);
   assert.equal(/0\d{1,4}-\d{1,4}-\d{3,4}/.test(document), false);
   assert.equal(document.includes('href="tel:'), false);
   assert.equal(/0\d{1,4}-\d{1,4}-\d{3,4}/.test(incidentDocument), false);
-  assert.equal(document.includes('申込みの意思決定に先立って十分な時間的余裕を確保できるよう、遅滞なく電子メール等で提供します'), true);
-  assert.equal(document.includes('topic=commerce-disclosure'), true);
+  assert.equal(document.includes('physical-product-commerce-information'), true);
+  assert.equal(document.includes('nodeId=GKM69DUUYKQWKWX7'), true);
 });
 
 test('特商法表記は過去の取引の料金・提供・キャンセル条件を保持する', async () => {
-  const document = await readFileAsync(new URL('../../legal.html', import.meta.url), 'utf8');
+  const document = await readFileAsync(new URL('../../legal-history/2026-10-23-legal.html', import.meta.url), 'utf8');
   for (const requiredText of [
     '2026-10-23',
     '480円、980円、2,980円',
@@ -85,7 +85,7 @@ test('特商法表記は過去の取引の料金・提供・キャンセル条�
 });
 
 test('返金ポリシーは過去の取引の提供完了・代替提供・返金申請条件を保持する', async () => {
-  const document = await readFileAsync(new URL('../../refund-policy.html', import.meta.url), 'utf8');
+  const document = await readFileAsync(new URL('../../legal-history/2026-10-23-refund-policy.html', import.meta.url), 'utf8');
   for (const requiredText of [
     '2026-10-23',
     '過去の取引と既存データ',

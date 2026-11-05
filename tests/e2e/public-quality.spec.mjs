@@ -47,7 +47,7 @@ test('library shows real questions and choices before game creation and hides em
 });
 
 test('public pages retain useful content, working links and no LIVE entry', async ({ page, request }, testInfo) => {
-  for (const path of ['/', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/refund-policy', '/content-guidelines', '/minor-policy']) {
+  for (const path of ['/', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy']) {
     const response = await page.goto(path + '?analytics=exclude');
     expect(response.status(), path).toBe(200);
     await expect(page.locator('h1')).toHaveCount(1);
@@ -63,4 +63,24 @@ test('public pages retain useful content, working links and no LIVE entry', asyn
   await expect(page.locator('a[href="https://myadcenter.google.com/personalizationoff"]')).toBeVisible();
   await expect(page.locator('a[href="https://www.aboutads.info/choices/"]')).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('privacy.png'), fullPage: true });
+});
+
+test('free quiz and Amazon product information stay separate, readable and keyboard accessible', async ({page}, info) => {
+  for (const locale of ['ja','en','ar']) for (const width of [1280,390,320]) {
+    await page.setViewportSize({width,height:800});
+    await page.goto((locale==='ja'?'':'/'+locale)+'/legal?analytics=exclude');
+    await expect(page.getByTestId('free-quiz-information')).toBeVisible();
+    const product=page.getByTestId('physical-product-commerce-information');
+    await expect(product).toBeVisible();
+    await expect(product).toContainText('Chiaki Hirakawa');
+    const seller=product.locator('a[href="https://www.amazon.co.jp/sp?seller=A3QW758BCMIP1P"]');
+    const returns=product.locator('a[href*="GKM69DUUYKQWKWX7"]');
+    await expect(seller).toBeVisible();await expect(returns).toBeVisible();
+    expect(await seller.evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(43);
+    expect(await returns.evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(43);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+    await expect(page.locator('a[href$="/refund-policy"]')).toHaveCount(0);
+    await seller.focus();await page.keyboard.press('Tab');await expect(returns).toBeFocused();
+    if(locale==='ja'&&width===390)await page.screenshot({path:info.outputPath('commerce-ja-390.png'),fullPage:true});
+  }
 });

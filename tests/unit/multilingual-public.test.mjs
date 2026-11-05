@@ -6,7 +6,7 @@ import { PUBLIC_LOCALES } from '../../src/generated/public-locales.js';
 import { readdir } from 'node:fs/promises';
 import { switchLocalePath, LOCALE_DETAILS } from '../../src/i18n/locales.js';
 
-const publicPages = ['/', '/challenge', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/refund-policy', '/content-guidelines', '/minor-policy'];
+const publicPages = ['/', '/challenge', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy'];
 test('new fixed public copy does not silently fall back to Japanese on English pages', async () => {
   for (const name of (await readdir('locale-pages')).filter(name => name.startsWith('en-') && name.endsWith('.html'))) {
     const html = await readFile('locale-pages/' + name, 'utf8');
@@ -26,7 +26,7 @@ const env = { ASSETS: { async fetch(request) {
   return new Response(cache.get(path), { headers: { 'content-type': path.endsWith('.json') ? 'application/json' : 'text/html' } });
 } } };
 
-test('all 408 stable locale pages render SEO HTML without room or capability URLs', async () => {
+test('all 374 stable locale pages render SEO HTML without room or capability URLs', async () => {
   assert.equal(PUBLIC_LOCALES.length, 34);
   const sitemap = await readFile(new URL('../../sitemap.xml', import.meta.url), 'utf8');
   const titles = new Set();
@@ -51,7 +51,7 @@ test('all 408 stable locale pages render SEO HTML without room or capability URL
     assert.equal((html.match(/name="google-adsense-account"/g) || []).length, 1, route);
     assert.ok(sitemap.includes(`<loc>https://www.streetboardgame.com${route}</loc>`), route);
   }
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 408);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 374);
   for (const [, location] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
     assert.doesNotMatch(location, /[?#]|\/manage|\/ranking|\/remote/);
   }

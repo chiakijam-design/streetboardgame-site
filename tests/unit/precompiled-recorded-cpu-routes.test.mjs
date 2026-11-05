@@ -32,6 +32,12 @@ for(const route of [
   "/th/minor-policy"
 ]){
   test(route+': packaged static HTML, GET/HEAD and CSP',async()=>{
+    if(route.endsWith('/refund-policy')){
+      assert.equal(PUBLIC_LOCALE_PAGES[route],undefined,'Removed route must not retain a public asset');
+      let reads=0;const noAssets={ASSETS:{async fetch(){reads++;throw Error('No asset work for removed policy');}}};
+      for(const method of ['GET','HEAD']){const gone=await worker.fetch(new Request('https://www.streetboardgame.com'+route,{method}),noAssets);assert.equal(gone.status,410);assert.match(gone.headers.get('x-robots-tag'),/noindex/);if(method==='HEAD')assert.equal(await gone.text(),'');}
+      assert.equal(reads,0);return;
+    }
     const asset=PUBLIC_LOCALE_PAGES[route];
     assert.ok(asset,'Recorded public route must have a prepared page');
     const bytes=await readFile(new URL('../..'+asset,import.meta.url));

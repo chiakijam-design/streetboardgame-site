@@ -33,7 +33,7 @@ test('removed pricing has no source HTML, sitemap entry or compiled locale route
  await assert.rejects(access('pricing.html'),{code:'ENOENT'});
  assert.doesNotMatch(await readFile('sitemap.xml','utf8'),/\/pricing/);
  assert.ok(!Object.keys(PUBLIC_LOCALE_PAGES).some(p=>p.endsWith('/pricing')));
- assert.equal(Object.keys(PUBLIC_LOCALE_PAGES).length,495);
+ assert.equal(Object.keys(PUBLIC_LOCALE_PAGES).length,462);
  const source=await readFile('prototype_app.jsx','utf8');
  assert.doesNotMatch(source,/href="\/pricing"|'\/pricing'/);
  assert.match(source,/top-free-notice/);
@@ -50,7 +50,9 @@ test('historical contracts remain byte-identical and reachable without current s
 };
  for(const [page,expected] of Object.entries(hashes)){
   assert.equal(createHash('sha256').update(await readFile('legal-history/'+page+'.html')).digest('hex'),expected,page);
+  if(page==='refund-policy'){await assert.rejects(readFile(page+'.html'),{code:'ENOENT'});continue;}
   const current=await readFile(page+'.html','utf8');
+  if(page==='legal'){assert.match(current,/data-testid="physical-product-commerce-information"/);assert.doesNotMatch(current,/LIVEチャット/);continue;}
   assert.match(current,/data-testid="historical-provisions"/);
   assert.match(current,new RegExp('href="/legal-history/'+page+'\\.html"'));
   assert.doesNotMatch(current,/data-testid="live-retirement-notice"|LIVE版は終了しました|href="\/pricing"/);

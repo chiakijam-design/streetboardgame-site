@@ -9,6 +9,12 @@ import {PUBLIC_LOCALE_PAGES} from '../../src/generated/public-locale-pages.js';
 // rather than parsing and translating the complete catalog on every request.
 for(const route of ['/zh-Hans/refund-policy','/ko/legal','/zh-Hant/terms','/bn/refund-policy','/fr/refund-policy','/el/refund-policy','/vi/refund-policy']){
   test(`${route}: deployed HTML serves directly, preserves CSP and supports HEAD`,async()=>{
+    if(route.endsWith('/refund-policy')){
+      assert.equal(PUBLIC_LOCALE_PAGES[route],undefined,'Removed route must not retain a public asset');
+      let reads=0;const noAssets={ASSETS:{async fetch(){reads++;throw Error('No asset work for removed policy');}}};
+      for(const method of ['GET','HEAD']){const gone=await worker.fetch(new Request('https://www.streetboardgame.com'+route,{method}),noAssets);assert.equal(gone.status,410);assert.match(gone.headers.get('x-robots-tag'),/noindex/);if(method==='HEAD')assert.equal(await gone.text(),'');}
+      assert.equal(reads,0);return;
+    }
     const asset=PUBLIC_LOCALE_PAGES[route];
     const bytes=await readFile(new URL('../..'+asset,import.meta.url));
     assert.ok(asset.endsWith('-'+createHash('sha256').update(bytes).digest('hex').slice(0,12)+'.html'));

@@ -1,0 +1,20 @@
+// Fixed informational copy only. Never interpolate user text or identifiers.
+export const FREE_QUIZ_COPY = Object.freeze({
+ ja:'クイズの作成と回答は無料です。',en:'Creating and answering quizzes is free.',
+ es:'Crear cuestionarios y responderlos es gratis.',fr:'Créer un quiz et y répondre est gratuit.',
+ de:'Das Erstellen und Beantworten von Quizzen ist kostenlos.',it:'Creare quiz e rispondere è gratuito.',
+ pt:'Criar e responder a quizzes é gratuito.',ru:'Создавать викторины и отвечать на них можно бесплатно.',
+ uk:'Створення вікторин і відповіді на них безкоштовні.',pl:'Tworzenie quizów i odpowiadanie na nie jest bezpłatne.',
+ nl:'Quizzen maken en beantwoorden is gratis.',sv:'Det är gratis att skapa och besvara quiz.',
+ da:'Det er gratis at oprette og besvare quizzer.',no:'Det er gratis å lage og svare på quizer.',
+ fi:'Visojen luominen ja niihin vastaaminen on ilmaista.',cs:'Vytváření kvízů a odpovídání na ně je zdarma.',
+ el:'Η δημιουργία και η απάντηση σε κουίζ είναι δωρεάν.',ro:'Crearea și rezolvarea chestionarelor sunt gratuite.',
+ hu:'A kvízek készítése és kitöltése ingyenes.',bg:'Създаването и попълването на тестове е безплатно.',
+ hr:'Izrada kvizova i odgovaranje na njih su besplatni.',sk:'Vytváranie kvízov a odpovedanie na ne je zadarmo.',
+ tr:'Test oluşturmak ve soruları yanıtlamak ücretsizdir.',ar:'إنشاء الاختبارات والإجابة عنها مجاني.',
+ he:'יצירת חידונים ומענה עליהם הם בחינם.',hi:'क्विज़ बनाना और उनके जवाब देना मुफ़्त है।',
+ bn:'কুইজ তৈরি করা ও উত্তর দেওয়া বিনামূল্যে।',id:'Membuat dan menjawab kuis gratis.',
+ ms:'Membina dan menjawab kuiz adalah percuma.',th:'สร้างและตอบแบบทดสอบได้ฟรี',
+ vi:'Tạo và trả lời câu đố đều miễn phí.',ko:'퀴즈 만들기와 답변은 무료입니다.',
+ 'zh-Hans':'创建和回答测验均免费。','zh-Hant':'建立及回答測驗均免費。',
+});

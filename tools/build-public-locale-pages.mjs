@@ -8,7 +8,7 @@ import { requireCompleteCatalog } from '../src/i18n/catalog-core.js';
 import { safeScriptJson } from '../src/i18n/public-html.js';
 
 const root = new URL('../', import.meta.url);
-const pages = ['/', '/challenge', '/challenge/manage', '/challenge/ranking', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/creator-terms', '/refund-policy', '/content-guidelines', '/minor-policy'];
+const pages = ['/', '/challenge', '/challenge/manage', '/challenge/ranking', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/creator-terms', '/content-guidelines', '/minor-policy'];
 const manifest = {};
 const activeCatalogAssets = new Set();
 const env = { ASSETS: { async fetch(request) {
