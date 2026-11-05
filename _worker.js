@@ -11,7 +11,7 @@ import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
 import { PUBLIC_LOCALE_PAGES } from './src/generated/public-locale-pages.js';
-import { injectPVChoice } from './src/analytics/pv-policy.js';
+import { injectPVChoice, pvPublicPath } from './src/analytics/pv-policy.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
@@ -533,6 +533,10 @@ async function withSecurityHeaders(response, request, env) {
   if (isHtml) headers.set('content-type', 'text/html; charset=UTF-8');
   const nonce = isHtml ? createCspNonce() : '';
   const requestPath = request ? new URL(request.url).pathname : '';
+  // Manual Web Analytics sends to this exact collector path. Only eligible
+  // public documents may connect; private/admin/API responses keep their CSP.
+  const pvCollector = isHtml && response.ok && !env?.__STATIC_HTML_BUILD && pvPublicPath(requestPath, PUBLIC_LOCALES)
+    ? ' https://cloudflareinsights.com/cdn-cgi/rum' : '';
   const sensitivePath = /^\/(?:[a-zA-Z-]+\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|question-ops|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
     "default-src 'none'",
@@ -544,7 +548,7 @@ async function withSecurityHeaders(response, request, env) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://c.clarity.ms https://c.bing.com/c.gif",
-    `connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com ${CLARITY_COLLECT_SOURCES} https://formspree.io`,
+    `connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com ${CLARITY_COLLECT_SOURCES} https://formspree.io${pvCollector}`,
     "form-action 'self' https://formspree.io",
     "frame-src 'none'",
     "media-src 'none'",

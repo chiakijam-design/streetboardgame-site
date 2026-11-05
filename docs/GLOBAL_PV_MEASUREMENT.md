@@ -51,6 +51,13 @@ The product's privacy statement and this implementation do not guarantee that a
 third-party script can never change. Recheck the public vendor hash/payload after
 updates. No cross-site identifier, fingerprint, new login or ad consent is added.
 
+The manual vendor script posts to `https://cloudflareinsights.com/cdn-cgi/rum`.
+Eligible public HTML therefore permits that exact HTTPS path in `connect-src`;
+private/admin/API responses and all other CSP directives remain unchanged.
+Keep the real response CSP in the intercepted vendor test: a fixture without CSP
+cannot prove that a permitted page view will reach the collector. No test events
+are sent to the live collector.
+
 Report Cloudflare aggregate PV/geography separately from GA4 PV and game KPIs,
 with calendar dates, timezone, acquisition time and bot/consent exclusions. Never
 add the two sources, substitute infrastructure requests for views or people, or
