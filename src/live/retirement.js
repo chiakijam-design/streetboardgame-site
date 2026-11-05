@@ -1,6 +1,7 @@
 import { RETIREMENT_COPY } from './retirement-copy.js';
 import { purchaseRecoveryScript } from './purchase-recovery-ui.js';
 import { stripLocalePrefix, localeFromPath } from '../i18n/locales.js';
+import { removedPageHeading } from '../i18n/removed-page-copy.js';
 
 export function isRetiredLivePage(path, searchParams = new URLSearchParams()) {
   const base = stripLocalePrefix(path).replace(/\/+$/, '') || '/';
@@ -30,9 +31,22 @@ export function liveRetiredResponse(request, api = false) {
   const prefix = locale === 'ja' ? '' : '/' + locale;
   const ja = locale === 'ja';
   const copy = RETIREMENT_COPY[locale] || RETIREMENT_COPY.en;
-  const title = ja ? 'LIVE版は終了しました' : 'LIVE';
-  const body = ja ? 'LIVE版は終了しました。新規の有料販売・配信者登録は受け付けていません。過去の購入・返金の権利と既存データの保存条件は変わりません。' : copy.body;
+  const title = removedPageHeading(locale);
   const formCopy = ja ? { email: 'メールアドレス', submit: '送信', save: '画像を保存', contact: 'お問い合わせフォーム' } : copy;
   const recovery = '<details style="margin-top:2rem"><summary>' + (ja ? '過去の購入・受取' : copy.history) + '</summary><form id="purchase-recovery" style="display:grid;gap:1rem;margin:1rem 0"><label>Order ID <input name="orderId" required pattern="ord_[a-fA-F0-9]{32}" placeholder="ord_…" autocomplete="off" style="box-sizing:border-box;width:100%;min-height:44px;font:inherit"></label><label>' + formCopy.email + '<input name="email" type="email" required maxlength="320" autocomplete="off" style="box-sizing:border-box;width:100%;min-height:44px;font:inherit"></label><button type="submit" style="min-height:44px;font:inherit">' + formCopy.submit + '</button></form><p id="purchase-recovery-status" role="status"></p><a id="purchase-recovery-download" hidden download>' + formCopy.save + '</a></details><script>' + purchaseRecoveryScript(formCopy) + '</script>';
-  return new Response(request.method === 'HEAD' ? null : '<!doctype html><html lang="' + locale + '" dir="' + (['ar', 'he'].includes(locale) ? 'rtl' : 'ltr') + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>' + title + '</title></head><body><main style="max-width:42rem;margin:3rem auto;padding:1.5rem;font-family:sans-serif;line-height:1.8"><h1>' + title + '</h1><p>' + body + '</p><p><a href="' + prefix + '/challenge">' + (ja ? '無料クイズ' : copy.quiz) + '</a> · <a href="' + prefix + '/about?to=contact">' + (ja ? 'お問い合わせ' : copy.contact) + '</a> · <a href="' + prefix + '/refund-policy">' + (ja ? '過去の購入・返金' : copy.history) + '</a></p>' + recovery + '</main></body></html>', { status: 410, headers });
+  return new Response(request.method === 'HEAD' ? null : '<!doctype html><html lang="' + locale + '" dir="' + (['ar', 'he'].includes(locale) ? 'rtl' : 'ltr') + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>' + title + '</title></head><body><main style="max-width:42rem;margin:3rem auto;padding:1.5rem;font-family:sans-serif;line-height:1.8;overflow-wrap:anywhere"><h1>' + title + '</h1><p><a href="' + prefix + '/challenge">' + (ja ? '無料クイズ' : copy.quiz) + '</a> · <a href="' + prefix + '/about?to=contact">' + (ja ? 'お問い合わせ' : copy.contact) + '</a> · <a href="' + prefix + '/refund-policy">' + (ja ? '過去の購入・返金' : copy.history) + '</a></p>' + recovery + '</main></body></html>', { status: 410, headers });
+}
+
+// Removed marketing URLs stop before any storage or asset fetch, including old HTML aliases.
+export function isRemovedPricingPage(path) {
+  return /^\/pricing(?:\.html)?$/i.test(stripLocalePrefix(path).replace(/\/+$/, ''));
+}
+export function removedPricingResponse(request) {
+  const locale=localeFromPath(new URL(request.url).pathname);
+  const prefix=locale==='ja'?'':'/'+locale;
+  const copy=RETIREMENT_COPY[locale]||RETIREMENT_COPY.en;
+  const quiz=locale==='ja'?'無料クイズ':copy.quiz;
+  const title=removedPageHeading(locale);
+  const html='<!doctype html><html lang="'+locale+'" dir="'+(['ar','he'].includes(locale)?'rtl':'ltr')+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>'+title+'</title></head><body><main style="max-width:42rem;margin:3rem auto;padding:1.5rem;font-family:sans-serif;line-height:1.8"><h1>'+title+'</h1><p><a style="display:inline-block;padding:1rem" href="'+prefix+'/challenge">'+quiz+'</a></p></main></body></html>';
+  return new Response(request.method==='HEAD'?null:html,{status:410,headers:{'content-type':'text/html; charset=UTF-8','cache-control':'no-store','x-robots-tag':'noindex, nofollow, noarchive'}});
 }

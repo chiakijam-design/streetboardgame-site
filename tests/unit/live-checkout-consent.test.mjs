@@ -24,7 +24,7 @@ test('利用規約は現在の対象年齢・理解度ボード・投稿審査�
     '表示名と点数が理解度ボードに自動で載ります',
     '最高点を更新します',
     '以前の非掲載結果は公開しません',
-    '答え合わせレポートは、10問の一致・不一致と回答内容に基づき',
+    '答え合わせレポートは、1〜10問の一致・不一致と回答内容に基づき',
     '配信者が各問の回答を締め切ったあとに配信者の答えを公開',
     '掲載候補として送信しない問題',
     '本サービスの提供と無関係な生成AIの学習へ無期限に利用',
@@ -63,7 +63,7 @@ test('特商法表記は個人の住所・電話番号を公開せず、請求�
   assert.equal(document.includes('topic=commerce-disclosure'), true);
 });
 
-test('特商法表記は現行LIVE版の料金・提供・キャンセル条件を表示する', async () => {
+test('特商法表記は過去の取引の料金・提供・キャンセル条件を保持する', async () => {
   const document = await readFileAsync(new URL('../../legal.html', import.meta.url), 'utf8');
   for (const requiredText of [
     '2026-10-23',
@@ -84,11 +84,11 @@ test('特商法表記は現行LIVE版の料金・提供・キャンセル条件�
   ]) assert.equal(document.includes(requiredText), true, requiredText);
 });
 
-test('返金ポリシーは現行LIVE版の提供完了・代替提供・返金申請条件を表示する', async () => {
+test('返金ポリシーは過去の取引の提供完了・代替提供・返金申請条件を保持する', async () => {
   const document = await readFileAsync(new URL('../../refund-policy.html', import.meta.url), 'utf8');
   for (const requiredText of [
     '2026-10-23',
-    '過去のLIVE取引と既存データ',
+    '過去の取引と既存データ',
     '通信販売にクーリング・オフ制度は適用されず',
     '決済完了時に応援受付が完了',
     '有料応援メッセージの不具合',
@@ -106,11 +106,11 @@ test('返金ポリシーは現行LIVE版の提供完了・代替提供・返金�
   assert.equal(document.includes('関連するYouTuberへの分配'), false);
 });
 
-test('コンテンツ・肖像権ガイドラインは現行2モード・投稿審査・画像利用条件を表示する', async () => {
+test('コンテンツ・肖像権ガイドラインは通常版・投稿審査と過去の画像利用条件を分離する', async () => {
   const document = await readFileAsync(new URL('../../content-guidelines.html', import.meta.url), 'utf8');
   for (const requiredText of [
     '2026-10-23',
-    '過去のLIVE取引と既存データ',
+    '過去の取引と既存データ',
     '「みんなに挑戦してもらう」通常版',
     '「ライブ配信でみんなに挑戦してもらう」LIVE版',
     '問題文、5個の選択肢',

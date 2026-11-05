@@ -58,7 +58,9 @@ test('historical legal documents are marked as past terms while the signed sourc
   const response = await worker.fetch(new Request('https://www.streetboardgame.com/legal-history/terms.html'), env);
   assert.equal(response.status, 200);
   assert.match(response.headers.get('x-robots-tag'), /noindex/);
-  assert.match(await response.text(), /LIVE版は終了しました/);
+  const html=await response.text();
+  assert.match(html, /過去の取引と既存データ/);
+  assert.doesNotMatch(html, /href="\/pricing"/);
   assert.equal(await readFile('legal-history/terms.html', 'utf8'), original);
 });
 

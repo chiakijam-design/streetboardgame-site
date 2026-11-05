@@ -49,7 +49,8 @@ test('JavaScriptなしでもトップの主要内容とリンクは重複せず�
     await expect(page.locator('main')).toHaveCount(1);
     await expect(page.locator('#site-title')).toHaveCount(1);
     await expect(page.locator('[data-testid="top-character-visual"] img')).toBeVisible();
-    await expect(page.locator('a[href="/pricing"]').first()).toBeVisible();
+    await expect(page.getByTestId('top-free-notice')).toBeVisible();
+    await expect(page.locator('a[href="/pricing"]')).toHaveCount(0);
   } finally {
     await context.close();
   }

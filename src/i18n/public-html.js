@@ -4,6 +4,7 @@ import { LOCALE_SHELL_ASSET } from '../generated/locale-assets.js';
 import { rootPublicResource, rootPublicSourceSet } from './resource-paths.js';
 import { translateHomeEntryCopy } from './home-entry-copy.js';
 import { translateBoardPolicyCopy } from './challenge-board-copy.js';
+import { translateCurrentSiteCopy } from './current-site-copy.js';
 
 const origin = 'https://www.streetboardgame.com';
 const entityValues = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0', ndash: '–', mdash: '—' };
@@ -42,7 +43,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   const isHome = stripLocalePrefix(requestUrl.pathname) === '/';
   const copy = (value) => {
     const decoded = decode(value);
-    return escape(translateBoardPolicyCopy(decoded, locale) ?? (isHome ? translateHomeEntryCopy(decoded, locale) : undefined) ?? translator.translate(decoded));
+    return escape(translateBoardPolicyCopy(decoded, locale) ?? (isHome ? translateHomeEntryCopy(decoded, locale) : undefined) ?? translateCurrentSiteCopy(decoded, locale, translator.translate) ?? translator.translate(decoded));
   };
   let output = html.replace(/(<script\b[\s\S]*?<\/script\s*>|<style\b[\s\S]*?<\/style\s*>|<!--[\s\S]*?-->)|(<[^>]+>)|([^<]+)/gi, (whole, protectedBlock, tag, text) => {
     if (protectedBlock) return protectedBlock;
@@ -80,7 +81,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
             return origin + localeCanonicalPath(url.pathname, locale) + url.hash;
           } catch { return value; }
         }
-        return translateBoardPolicyCopy(value, locale) ?? translator.translate(value);
+        return translateCurrentSiteCopy(value, locale, translator.translate) ?? translateBoardPolicyCopy(value, locale) ?? translator.translate(value);
       }
       return open + safeScriptJson(localizeValue(JSON.parse(json))) + close;
     } catch { return whole; }

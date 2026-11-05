@@ -1,15 +1,15 @@
 import { expect, test } from './test.mjs';
 
-test('Aboutは旧来の立体カードデザインで現在の2モードと方針を案内する', async ({ page }) => {
+test('Aboutは旧来の立体カードデザインで現在のクイズと方針を案内する', async ({ page }) => {
   await page.goto('/about');
 
   await expect(page.getByTestId('about-hero')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'About' })).toBeVisible();
-  await expect(page.getByText('当てるより、話すための10問。')).toBeVisible();
+  await expect(page.getByText('当てるより、話すための1〜10問。')).toBeVisible();
   await expect(page.getByTestId('about-brand-promise')).toContainText('何度でも挑戦できる');
   await expect(page.getByRole('heading', { name: '理解度ボード', exact: true })).toBeVisible();
   await expect(page.getByText(/表示名と点数が理解度ボードに自動で載ります/)).toBeVisible();
-  await expect(page.getByRole('link', { name: /通常版.*みんなに挑戦してもらう/ })).toHaveAttribute('href', '/challenge');
+  await expect(page.getByRole('link', { name: /クイズ.*みんなに挑戦してもらう/ })).toHaveAttribute('href', '/challenge');
   await expect(page.getByRole('link', { name: /カードで遊べる製品版/ })).toHaveAttribute('href', '/product');
   await expect(page.getByTestId('about-page')).toHaveCSS('max-width', '600px');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);

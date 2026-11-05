@@ -47,10 +47,12 @@ test('library shows real questions and choices before game creation and hides em
 });
 
 test('public pages retain useful content, working links and no LIVE entry', async ({ page, request }, testInfo) => {
-  for (const path of ['/', '/challenge-guide', '/about', '/product', '/pricing', '/terms', '/privacy', '/legal', '/refund-policy', '/content-guidelines', '/minor-policy']) {
+  for (const path of ['/', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/refund-policy', '/content-guidelines', '/minor-policy']) {
     const response = await page.goto(path + '?analytics=exclude');
     expect(response.status(), path).toBe(200);
     await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.getByTestId('live-retirement-notice')).toHaveCount(0);
+    await expect(page.locator('a[href$="/pricing"]')).toHaveCount(0);
     await expect(page.locator('a[href*="live-challenge"], [data-home-mode="live"]')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), path).toBe(true);
     const links = await page.locator('main a[href^="/"]').evaluateAll(elements => [...new Set(elements.map(e => e.getAttribute('href')))]);

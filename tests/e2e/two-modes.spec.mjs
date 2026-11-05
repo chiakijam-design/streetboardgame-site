@@ -256,7 +256,7 @@ test('PCのトップページは横へ広がらず中央600px以内に収まる'
   expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
 });
 
-test('製品版はパッケージ風デザインで現在の通常版・LIVE版とつながる', async ({ page }) => {
+test('製品版はパッケージ風デザインで現在のクイズとつながる', async ({ page }) => {
   await page.goto('/product');
   await expect(page.getByRole('heading', { name: '製品版もあります' })).toBeVisible();
   await expect(page.getByTestId('product-showcase')).toBeVisible();
@@ -270,7 +270,7 @@ test('製品版はパッケージ風デザインで現在の通常版・LIVE版�
   await expect(page.getByText('54問入り', { exact: true })).toBeVisible();
   await expect(page.getByText('休み時間・放課後に', { exact: true })).toBeVisible();
   await expect(page.getByText('どの遊び方でも、合言葉は「当てるより、話すため」。')).toBeVisible();
-  await expect(page.getByRole('link', { name: /通常版.*好きな時間に回答/ })).toHaveAttribute('href', '/challenge');
+  await expect(page.getByRole('link', { name: /クイズ.*好きな時間に回答/ })).toHaveAttribute('href', '/challenge');
   await expect(page.getByRole('link', { name: /Amazonで製品版を見る/ })).toHaveAttribute('href', /amazon\.co\.jp/);
   await expect(page.getByTestId('product-page')).toHaveCSS('max-width', '600px');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);

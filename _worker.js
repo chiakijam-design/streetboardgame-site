@@ -1,4 +1,4 @@
-import { isRetiredLivePage, isLiveHistoryRequest, liveRetiredResponse } from './src/live/retirement.js';
+import { isRetiredLivePage, isLiveHistoryRequest, liveRetiredResponse, isRemovedPricingPage, removedPricingResponse } from './src/live/retirement.js';
 import { handleLiveApi } from './src/live/api.js';
 import { handleChallengeApi } from './src/challenge/api.js';
 import { handleQuestionApi } from './src/questions/api.js';
@@ -50,7 +50,6 @@ const ENGLISH_CHALLENGE_PAGE_PATHS = new Set([
   '/en/challenge/library',
 ]);
 const LEGAL_PAGE_FILES = Object.freeze({
-  '/pricing': '/pricing.html',
   '/terms': '/terms.html',
   '/privacy': '/privacy.html',
   '/legal': '/legal.html',
@@ -101,6 +100,7 @@ async function handleRequest(request, env) {
       });
     }
     const path = rawPath.replace(/\/+$/, '');
+    if (isRemovedPricingPage(path)) return removedPricingResponse(request);
     if (isRetiredLivePage(path, url.searchParams)) return liveRetiredResponse(request);
     if (path.startsWith('/api/live') && !isLiveHistoryRequest(path, request.method)) return liveRetiredResponse(request, true);
     // These build artifacts are fetched internally; stable locale URLs are
@@ -114,7 +114,7 @@ async function handleRequest(request, env) {
       headers.set('cache-control', 'no-store');
       let body = response.body;
       if (response.ok && /text\/html/i.test(headers.get('content-type') || '')) {
-        const notice = '<aside style="max-width:68rem;margin:1rem auto;padding:1rem;background:#fff5d0;border:2px solid #333;line-height:1.8;font-family:sans-serif"><strong>過去のLIVE取引と既存データ</strong><p>LIVE版は終了しました。新規の有料販売・配信者登録は受け付けていません。過去の購入・返金の権利と既存データの保存条件は変わりません。</p><a href="/pricing">現在の商品・料金</a> / <a href="/contact">お問い合わせフォーム</a></aside>';
+        const notice = '<aside style="max-width:68rem;margin:1rem auto;padding:1rem;background:#fff5d0;border:2px solid #333;line-height:1.8;font-family:sans-serif"><strong>過去の取引と既存データ</strong><p>過去の購入・返金の権利と既存データの保存条件は変わりません。</p><a href="/challenge">無料クイズ</a> / <a href="/contact">お問い合わせフォーム</a></aside>';
         body = (await response.text()).replace(/<body\b[^>]*>/i, '$&' + notice);
       }
       return new Response(request.method === 'HEAD' ? null : body, { status: response.status, headers });
@@ -406,21 +406,21 @@ async function handleRequest(request, env) {
 
     const pageMap = {
       '/challenge-guide': {
-        title: 'みんなに挑戦してもらう｜10問クイズの遊び方・作り方',
-        description: '自分が先に答えた10問をみんなに予想してもらう無料クイズ。専用URLを送るだけで最大50人が挑戦でき、答え合わせと任意の理解度ボードを楽しめます。',
+        title: 'みんなに挑戦してもらう｜1〜10問クイズの遊び方・作り方',
+        description: 'みんなに挑戦してもらう｜1〜10問クイズの遊び方・作り方。回答を完了すると、表示名と点数が理解度ボードに自動で載ります。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
         ogTitle: 'みんなに挑戦してもらう｜わたし理解度診断',
         ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge-v3.png?v=20260726-ogp-2',
         imageWidth: 1200,
         imageHeight: 630,
-        imageAlt: 'わたし理解度診断｜私のこと、ちゃんと分かってるよね？｜当てるより、話すための10問。',
+        imageAlt: 'わたし理解度診断｜私のこと、ちゃんと分かってるよね？｜当てるより、話すための1〜10問。',
         pageId: CANONICAL_ORIGIN + '/challenge-guide#webpage',
-        noscriptTitle: 'みんなに挑戦してもらう｜10問クイズの遊び方',
-        noscriptBody: '自分が先に10問へ回答し、発行された専用URLを参加者へ送ると、最大50人があなたの答えを予想できます。',
+        noscriptTitle: 'みんなに挑戦してもらう｜1〜10問クイズの遊び方',
+        noscriptBody: '自分が先に1〜10問へ回答し、発行された専用URLを参加者へ送ると、最大50人があなたの答えを予想できます。',
         faq: [
           {
             question: 'どうやってクイズを作りますか？',
-            answer: '出題者名を入力して10問へ回答すると、挑戦者へ送る専用URLが発行されます。',
+            answer: '出題者名を入力して1〜10問へ回答すると、挑戦者へ送る専用URLが発行されます。',
           },
           {
             question: '何人まで挑戦できますか？',
@@ -428,19 +428,19 @@ async function handleRequest(request, env) {
           },
           {
             question: '無料で遊べますか？',
-            answer: '無料で遊べます。クイズ作成、専用URLの共有、答え合わせ、答え合わせレポート、任意の理解度ボードまで利用できます。',
+            answer: 'クイズ作成、参加URL・QRコードの共有、1〜10問の答え合わせ、答え合わせレポートを無料で利用できます。',
           },
         ],
       },
       '/about': {
         title: 'About｜わたし理解度診断・私のこと、ちゃんと分かってるよね？',
-        description: '点数が気になっても、結果を載せる前に同じ10問へ再挑戦できます。',
+        description: '同じ端末から再挑戦すると最高点を更新します。点数順で、同点は最初に載った順です。',
         url: CANONICAL_ORIGIN + '/about',
         ogTitle: 'About｜わたし理解度診断',
         imageAlt: 'わたし理解度診断「私のこと、ちゃんと分かってるよね？」',
         pageId: CANONICAL_ORIGIN + '/about#webpage',
         noscriptTitle: 'About｜わたし理解度診断',
-        noscriptBody: '点数が気になっても、結果を載せる前に同じ10問へ再挑戦できます。',
+        noscriptBody: '同じ端末から再挑戦すると最高点を更新します。点数順で、同点は最初に載った順です。',
       },
       '/product': {
         title: '製品版｜私のこと、ちゃんと分かってるよね？',
@@ -704,7 +704,7 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
     : 'Challenge Your Friends | How well do they know you?';
   const description = isLive
     ? 'Answer the same 10 questions with your livestream viewers. Earn one point for every match and give each viewer a personal result card.'
-    : 'Create a free 10-question quiz, share one link, and see how well up to 50 friends know your answers.';
+    : 'Create a free quiz with 1–10 questions, share one link, and see how well up to 50 friends know your answers.';
   const ogTitle = isLive ? 'Challenge your livestream viewers | Understanding Quiz' : 'How well do you know me? | Understanding Quiz';
   const shareUrl = new URL(canonicalPath, CANONICAL_ORIGIN);
   const room = String(requestUrl.searchParams.get('room') || '').trim();
@@ -892,7 +892,7 @@ function buildStructuredData(page) {
       name: 'わたし理解度診断',
       alternateName: '私のこと、ちゃんと分かってるよね？',
       inLanguage: 'ja',
-      description: '当てるより、話すための10問。先に自分が回答し、できたURLを送ると最大50人が挑戦できます。',
+      description: '当てるより、話すための1〜10問。先に自分が回答し、できたURLを送ると最大50人が挑戦できます。',
       publisher: {
         '@id': organizationId,
       },

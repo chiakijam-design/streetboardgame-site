@@ -6,7 +6,7 @@ test('retired LIVE pages and aliases return 410 without creating games', async (
     expect(response.headers()['x-robots-tag']).toContain('noindex');
   }
   await page.goto('/live-challenge?analytics=exclude');
-  await expect(page.getByRole('heading')).toHaveText('LIVE版は終了しました');
+  await expect(page.getByRole('heading')).toHaveText('このページはありません');
   await expect(page.getByRole('link', { name: '無料クイズ', exact: true })).toBeVisible();
 });
 test('new LIVE and payment operations are closed before bindings or Stripe calls', async ({ request }) => {

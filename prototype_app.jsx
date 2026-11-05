@@ -149,7 +149,7 @@ export function TopPage() {
               fontWeight: 800,
               lineHeight: 1.5,
             }}>
-              通常版｜URLを送って、好きな時間に回答
+              URLを送って、好きな時間に回答
             </p>
 
           </div>
@@ -163,9 +163,9 @@ export function TopPage() {
         </div>
       </nav>
       <p style={{ margin: '16px 24px 0', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        <a data-testid="top-pricing-link" href="/pricing" style={{ color: theme.white, fontSize: 13, fontWeight: 800, lineHeight: 1.8 }}>
+        <span data-testid="top-free-notice" style={{ color: theme.white, fontSize: 13, fontWeight: 800, lineHeight: 1.8 }}>
           通常版のクイズ作成・回答は無料です。
-        </a>
+        </span>
       </p>
       <SiteFooter />
     </main>
@@ -252,7 +252,7 @@ function CommonCardStack() {
 
 export function ChallengeGuide() {
   const steps = [
-    '名前を入力して、出題する10問を選ぶ・作る',
+    '名前を入力して、出題する1〜10問を選ぶ・作る',
     '自分の正解を選ぶ',
     '参加URL・QRコードを友達へ送る',
     '何問正解かを確認し、答え合わせを楽しむ',
@@ -266,15 +266,15 @@ export function ChallengeGuide() {
   const faqs = [
     {
       question: 'どうやって理解度診断を作りますか？',
-      answer: '共通のお題から1問ずつ選び、自分の正解を登録して10問を完成させます。問題文と5つの選択肢は編集でき、自分で問題を作ることもできます。',
+      answer: '共通のお題から1問ずつ選び、自分の正解を登録して1〜10問を完成させます。問題文と5つの選択肢は編集でき、自分で問題を作ることもできます。',
     },
     {
       question: '何人まで挑戦できますか？',
-      answer: '1つの理解度診断へ最大50人まで参加できます。回答する人は、届いた参加URLから自分のスマホで10問へ回答します。',
+      answer: '1つの理解度診断へ最大50人まで参加できます。回答する人は、届いた参加URLから自分のスマホで1〜10問へ回答します。',
     },
     {
       question: '無料で遊べますか？',
-      answer: 'クイズ作成、参加URL・QRコードの共有、10問の答え合わせ、答え合わせレポートを無料で利用できます。',
+      answer: 'クイズ作成、参加URL・QRコードの共有、1〜10問の答え合わせ、答え合わせレポートを無料で利用できます。',
     },
     {
       question: '点数は必ず公開されますか？',
@@ -352,17 +352,17 @@ export function ChallengeGuide() {
 
       <div style={contentWrap()}>
         <section data-testid="challenge-guide-intro" style={guideCardStyle()}>
-          <span style={aboutLabelStyle(theme.cyan)}>通常版</span>
+          <span style={aboutLabelStyle(theme.cyan)}>クイズ</span>
           <h2 style={{ margin: '12px 0 0', color: theme.pinkDeep, fontSize: 22, lineHeight: 1.5 }}>
             あなたの答えを、<br />最大50人が予想します
           </h2>
           <p style={paragraph()}>
-            出題者が10問を選び、自分の正解を先に登録して、発行された参加URLをみんなへ送る「わたし理解度診断」です。
+            出題者が1〜10問を選び、自分の正解を先に登録して、発行された参加URLをみんなへ送る「わたし理解度診断」です。
             回答する人は、届いたURLからあなたの答えを予想します。
           </p>
           <p style={paragraph()}>
             問題は共通のお題ライブラリから1問ずつ選び、スキップ・編集・自作もできます。
-            10問後は正解とすれ違いを振り返る答え合わせレポートを確認できます。
+            1〜10問後は正解とすれ違いを振り返る答え合わせレポートを確認できます。
           </p>
         </section>
 
@@ -497,7 +497,7 @@ export function ChallengeGuide() {
         </section>
 
         <a href="/challenge" style={{ ...primaryButton(), minHeight: 68, textDecoration: 'none', display: 'flex' }}>
-          10問の理解度診断を作る <span style={{ color: theme.yellow }}>▶</span>
+          1〜10問の理解度診断を作る <span style={{ color: theme.yellow }}>▶</span>
         </a>
 
         <section aria-labelledby="guide-faq-title" style={{ ...guideCardStyle(), background: theme.cream }}>
@@ -611,11 +611,11 @@ export function AboutPage() {
               私のこと、ちゃんと<br />分かってるよね？
             </h2>
             <p style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.65, fontWeight: 900 }}>
-              当てるより、話すための10問。
+              当てるより、話すための1〜10問。
             </p>
             <p style={paragraph()}>
               自分の答えをみんなに予想してもらい、答え合わせから次の会話を生むゲームです。
-              出題者が10問を作り、回答する人へ参加URLを送って遊びます。
+              出題者が1〜10問を作り、回答する人へ参加URLを送って遊びます。
             </p>
           </AboutCard>
         </section>
@@ -663,7 +663,7 @@ export function AboutPage() {
             <AboutMode
               href="/challenge"
               icon="📣"
-              label="通常版"
+              label="クイズ"
               title="みんなに挑戦してもらう"
               text="URLを送って、好きな時間に回答"
               color={theme.cyan}
@@ -1160,7 +1160,7 @@ export function ProductPage() {
             遊び方
           </h2>
           <div style={{ display: 'grid', gap: 9, marginTop: 14 }}>
-            <ProductWay label="通常版" title="URLを送って、好きな時間に回答" href="/challenge" />
+            <ProductWay label="クイズ" title="URLを送って、好きな時間に回答" href="/challenge" />
             <ProductWay label="製品版" title="スマホを置いて、その場でカードを囲む" />
           </div>
           <p style={{ ...paragraph(), marginBottom: 0, textAlign: 'center' }}>
@@ -1274,12 +1274,11 @@ function HomeLink() {
 
 function SiteFooter() {
   const links = [
-    ['通常版', '/challenge'],
+    ['クイズ', '/challenge'],
     ['遊び方', '/challenge-guide'],
     ['About', '/about'],
     ['お題ライブラリ', '/challenge/library'],
     ['製品版', '/product'],
-    ['商品・料金', '/pricing'],
     ['利用規約', '/terms'],
     ['プライバシー', '/privacy'],
     ['特商法表記', '/legal'],

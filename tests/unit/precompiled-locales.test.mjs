@@ -5,7 +5,7 @@ import worker from '../../_worker.js';
 import { PUBLIC_LOCALE_PAGES } from '../../src/generated/public-locale-pages.js';
 
 test('localized requests serve bounded precompiled HTML without parsing catalogs and receive fresh CSP nonces', async () => {
-  assert.equal(Object.keys(PUBLIC_LOCALE_PAGES).length, 528);
+  assert.equal(Object.keys(PUBLIC_LOCALE_PAGES).length, 495);
   const requests = [];
   const env = { ASSETS: { async fetch(request) {
     const path = new URL(request.url).pathname;

@@ -40,6 +40,13 @@ export function translateText(value) {
   if (boardPolicy !== undefined) return boardPolicy;
   if (!translator) return translateLegacyEnglish(raw);
   if (translator.isProtected(raw)) return raw;
+  // The public guide is rendered again by React. Resolve its revised fixed
+  // question-count copy through the existing catalog, after private-copy protection.
+  if(raw.includes('1〜10問')){
+    const previous=raw.replaceAll('1〜10問','10問');
+    const translated=translateText(previous);
+    if(translated!==previous)return translated.replace(/10/g,'1–10');
+  }
   if (currentLocale === 'en') {
     const legacy = translateLegacyEnglish(raw);
     if (legacy !== raw) return translator.translate(legacy);
