@@ -34,7 +34,7 @@ test('ordinary question publication remains opt-in and no current board comment 
   }
   const legal = await current('legal.html');
   assert.doesNotMatch(legal, /LIVE版の有料サービスの内容をご案内/);
-  assert.match(legal, /通常版のクイズ作成・回答は無料です/);
+  assert.match(legal, /クイズの作成と回答は無料です。/);
   const privacy = await current('privacy.html');
   assert.match(privacy, /本ポリシーは、Streetboardgameの無料の通常版クイズ/);
   assert.match(privacy, /Googleの広告Cookie/);
