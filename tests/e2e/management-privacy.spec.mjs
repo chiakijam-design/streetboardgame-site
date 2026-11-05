@@ -144,6 +144,11 @@ test('built preview: stub GA/GTM/Clarity see clean URL/DOM/event data; same-orig
       const script = document.createElement('script'); script.src = 'https://www.clarity.ms/tag/y40ha6gkld'; document.head.appendChild(script);
     }
   })();`;
+  const cloudflareRequests = [];
+  await page.route('https://static.cloudflareinsights.com/**', route => {
+    cloudflareRequests.push(route.request().url());
+    return route.fulfill({ contentType: 'text/javascript', body: '' });
+  });
   await page.route('https://www.googletagmanager.com/**', route => route.fulfill({ contentType: 'text/javascript', body: stub(route.request().url().includes('/gtm.js') ? 'gtm' : 'ga') }));
   await page.route('https://www.clarity.ms/**', route => route.fulfill({ contentType: 'text/javascript', body: stub('clarity') }));
   await page.route('https://www.streetboardgame.com/**', async route => {
@@ -164,6 +169,12 @@ test('built preview: stub GA/GTM/Clarity see clean URL/DOM/event data; same-orig
   expect(legacy.every(x => !x.urlDOMOrEventHasKey)).toBe(true);
 
   await page.goto('https://www.streetboardgame.com/challenge');
+  const pvChoice = page.locator('#wata-pv-choice');
+  await expect(pvChoice).toBeVisible();
+  await pvChoice.getByRole('button', { name: '許可しない', exact: true }).click();
+  await expect(pvChoice).not.toBeVisible();
+  expect(cloudflareRequests).toEqual([]);
+  await expect(page.locator('script[data-wata-cf-pv]')).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.__TAG_OBSERVATIONS__.some(x => x.kind === 'clarity'))).toBe(true);
   await page.locator('#creator-name').fill('Synthetic tags');
   await page.locator('[data-action=start-create]').click();
@@ -184,6 +195,7 @@ test('built preview: stub GA/GTM/Clarity see clean URL/DOM/event data; same-orig
   expect(result.queueHasKey).toBe(false);
   expect(result.urlOrDOMHasKey).toBe(false);
   expect(result.observations.every(x => !x.urlDOMOrEventHasKey)).toBe(true);
+  expect(cloudflareRequests).toEqual([]);
 });
 
 
