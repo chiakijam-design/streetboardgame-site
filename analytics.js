@@ -151,14 +151,112 @@
   var isProductionHost = productionHosts.indexOf(hostname) !== -1;
   var isAutomatedBrowser = windowObject.navigator && windowObject.navigator.webdriver === true;
   var localeReviewPending = windowObject.__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__ === true;
-  var analyticsEnabled = isProductionHost && !isExcluded && !isAutomatedBrowser && !localeReviewPending && urlPrivacyReady && windowObject.__WATACHAN_GOOGLE_ANALYTICS_POLICY__ === 'notice' && windowObject.navigator.globalPrivacyControl !== true && windowObject.navigator.doNotTrack !== '1';
+  var japanBasic = windowObject.__WATACHAN_GOOGLE_ANALYTICS_POLICY__ === 'jp-basic';
+  var analyticsEnabled = isProductionHost && !isExcluded && !isAutomatedBrowser && !localeReviewPending && urlPrivacyReady && (windowObject.__WATACHAN_GOOGLE_ANALYTICS_POLICY__ === 'notice' || japanBasic) && windowObject.navigator.globalPrivacyControl !== true && windowObject.navigator.doNotTrack !== '1';
 
   windowObject.__WATACHAN_ANALYTICS_DISABLED__ = !analyticsEnabled;
   windowObject.__WATACHAN_GTM_CONTAINER_ID__ = containerId;
   windowObject.__WATACHAN_GA4_MEASUREMENT_ID__ = measurementId;
   windowObject.analyticsEnabled = analyticsEnabled;
 
-  if (analyticsEnabled) {
+  function jpBasicPreferenceReady() {
+    try {
+      var raw = windowObject.localStorage.getItem('watachan:cf-pv-consent:v1');
+      if (raw !== null) {
+        var record = JSON.parse(raw);
+        if (!record || record.v !== 1 || record.choice !== 'allow' || !Number.isFinite(record.at)
+          || record.at > Date.now() + 300000 || Date.now() - record.at >= 180 * 86400000) return false;
+      }
+      if (windowObject.localStorage.getItem(exclusionKey) === '1') return false;
+      var probe = 'watachan:analytics-preference-available';
+      windowObject.localStorage.setItem(probe, '1');
+      var usable = windowObject.localStorage.getItem(probe) === '1';
+      windowObject.localStorage.removeItem(probe);
+      return usable;
+    } catch (_) { return false; }
+  }
+
+  function startJapanBasic() {
+    // Conditional candidate only: the server policy stays off until the actual
+    // account, stream and disclosure conditions have been reviewed as satisfied.
+    var u = new URL(windowObject.location.href), publicRoutes = ['/', '/challenge', '/challenge/library', '/challenge/ranking', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy', '/creator-terms'];
+    var route = u.pathname === '/en' ? '/' : u.pathname.replace(/^\/(?:en)\//, '/').replace(/\/$/, '') || '/';
+    var safeQuery = true;
+    u.searchParams.forEach(function (value, key) {
+      if (key === 'room') { if (!/^[A-Z2-9]{8}$/.test(value)) safeQuery = false; }
+      else if (key === 'analytics') { if (!/^(?:include|exclude)$/.test(value)) safeQuery = false; }
+      else if (key === 'utm_source') { if (!/^(?:instagram|line|x|twitter|facebook|copy|direct)$/.test(value)) safeQuery = false; }
+      else if (key === 'utm_medium') { if (!/^(?:social|referral|organic|email|qr)$/.test(value)) safeQuery = false; }
+      else safeQuery = false;
+    });
+    if (publicRoutes.indexOf(route) === -1 || !safeQuery || u.hash || !jpBasicPreferenceReady()
+      || windowObject['ga-disable-' + measurementId] === true) {
+      windowObject.analyticsEnabled = false; windowObject.__WATACHAN_ANALYTICS_DISABLED__ = true;
+      windowObject.gtag = windowObject.ga4Event = windowObject.trackEvent = function () {};
+      return;
+    }
+    var stopped = false, loaded = false;
+    windowObject[eventLayerName] = windowObject[eventLayerName] || [];
+    function queue() { if (!stopped) windowObject[eventLayerName].push(arguments); }
+    windowObject.ga4Event = windowObject.gtag = queue;
+    // Deny advertising uses; no positive user-consent state is manufactured.
+    queue('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+    queue('js', new Date());
+    var referrer = '';
+    try { if (documentObject.referrer) { var ref = new URL(documentObject.referrer); referrer = ref.origin + '/'; } } catch (_) {}
+    var pageContext = { page_location: u.origin + u.pathname, page_referrer: referrer, page_title: 'Streetboardgame' };
+    var privacy = { allow_google_signals: false, allow_ad_personalization_signals: false, ads_data_redaction: true, url_passthrough: false };
+    queue('set', Object.assign({}, privacy, pageContext));
+    var config = Object.assign({ send_page_view: false }, privacy, pageContext);
+    if (u.searchParams.has('utm_source')) config.campaign_source = u.searchParams.get('utm_source');
+    if (u.searchParams.has('utm_medium')) config.campaign_medium = u.searchParams.get('utm_medium');
+    queue('config', measurementId, config);
+    queue('event', 'page_view', Object.assign({ send_to: measurementId }, pageContext));
+    var values = {
+      game_type: ['challenge'], play_mode: ['async'], player_role: ['creator', 'participant'], play_criteria: ['accepted_answer'],
+      method: ['copy', 'native', 'line', 'x', 'twitter', 'facebook', 'instagram', 'image', 'download'],
+      content_type: ['challenge_invite', 'challenge_result'], item_id: ['challenge_invite', 'challenge_result']
+    };
+    function stop() {
+      stopped = true; windowObject['ga-disable-' + measurementId] = true;
+      windowObject.analyticsEnabled = false; windowObject.__WATACHAN_ANALYTICS_DISABLED__ = true;
+      windowObject.gtag = windowObject.ga4Event = windowObject.trackEvent = function () {};
+    }
+    function load() {
+      if (loaded || stopped) return;
+      if (!jpBasicPreferenceReady() || windowObject.navigator.globalPrivacyControl === true || windowObject.navigator.doNotTrack === '1') { stop(); return; }
+      loaded = true;
+      var script = documentObject.createElement('script'); script.async = true;
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(measurementId) + '&l=' + encodeURIComponent(eventLayerName);
+      script.referrerPolicy = 'no-referrer'; documentObject.head.appendChild(script);
+    }
+    windowObject.trackEvent = function (name, params) {
+      if (stopped || ['game_start', 'game_play', 'game_result', 'share'].indexOf(name) === -1) return;
+      if (!jpBasicPreferenceReady()) { stop(); return; }
+      var clean = {};
+      Object.keys(values).forEach(function (key) { if (values[key].indexOf(params && params[key]) !== -1) clean[key] = params[key]; });
+      queue('event', name, Object.assign({ send_to: measurementId }, pageContext, clean)); load();
+    };
+    windowObject.addEventListener('storage', function () {
+      if (!jpBasicPreferenceReady()) { stop(); if (typeof windowObject.location.reload === 'function') windowObject.location.reload(); }
+    });
+    documentObject.addEventListener('click', function (event) {
+      var link = event.target && typeof event.target.closest === 'function' ? event.target.closest('a[href]') : null;
+      if (!link) return;
+      try { if (new URL(link.href, u.origin).searchParams.get('analytics') === 'exclude') stop(); } catch (_) {}
+    }, true);
+    function afterPaint() {
+      if (typeof windowObject.requestAnimationFrame !== 'function') return load();
+      windowObject.requestAnimationFrame(function () { windowObject.requestAnimationFrame(load); });
+    }
+    if (documentObject.readyState === 'complete') afterPaint(); else windowObject.addEventListener('load', afterPaint, { once: true });
+    windowObject.addEventListener('pointerdown', load, { once: true, passive: true });
+    windowObject.addEventListener('keydown', load, { once: true });
+  }
+
+  if (analyticsEnabled && japanBasic) {
+    startJapanBasic();
+  } else if (analyticsEnabled) {
     windowObject.dataLayer = windowObject.dataLayer || [];
     windowObject.gtag = windowObject.gtag || function gtag() {
       windowObject.dataLayer.push(arguments);

@@ -1,10 +1,12 @@
-// No consent-free Google/Microsoft configuration has been cleared in this review.
+import {japanGA4Mode} from './jp-ga4-policy.js';
+// Only the purpose-limited Japan direct-GA4 configuration has been cleared.
 // Do not infer it from Cloudflare's country decision or from an old Allow record.
-export const GOOGLE_NO_CONSENT_COUNTRIES = Object.freeze([]);
-export function injectGooglePolicy(html) {
+export const GOOGLE_NO_CONSENT_COUNTRIES = Object.freeze(['JP']);
+export function injectGooglePolicy(html, cf) {
   if (!/src=["']\/analytics\.js(?:[?"'])/.test(html) || html.includes('__WATACHAN_GOOGLE_ANALYTICS_POLICY__')) return html;
-  return html.replace(/<head\b[^>]*>/i, '$&<script>window.__WATACHAN_GOOGLE_ANALYTICS_POLICY__="off";</script>')
-    .replace(/src=(["'])\/analytics\.js\1/g, 'src=$1/analytics.js?v=20261106-passive-1$1');
+  const mode = japanGA4Mode(cf);
+  return html.replace(/<head\b[^>]*>/i, '$&<script>window.__WATACHAN_GOOGLE_ANALYTICS_POLICY__='+JSON.stringify(mode)+';</script>')
+    .replace(/src=(["'])\/analytics\.js\1/g, 'src=$1/analytics.js?v=20261106-jp-basic-1$1');
 }
 // Plain privacy-page text only. No banner, dialog, notice bar or play-page UI.
 export const PASSIVE_SCOPE = {
