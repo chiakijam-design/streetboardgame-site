@@ -7,7 +7,7 @@ export function pvPublicPath(path,locales){const parts=path.split('/').filter(Bo
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const json=value=>JSON.stringify(value).replace(/[<>&\u2028\u2029]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'));
 export const CF_PV_TOKEN='d0480a717f184d468c77bfe7126340d0'; // public installation ID
-export function injectPVChoice(html,url,locale,locales,mode='consent'){
+export function injectPVChoice(html,url,locale,locales,mode='consent',googlePolicy='off'){
  const route=pvPublicPath(url.pathname,locales);if(!route||html.includes('id="wata-pv-config"'))return html;
  mode=mode==='notice'||mode==='pending-notice'?mode:'consent';
  const privacy=(locale==='ja'?'':'/'+locale)+'/privacy';
@@ -17,10 +17,10 @@ export function injectPVChoice(html,url,locale,locales,mode='consent'){
  const parts=url.pathname.split('/').filter(Boolean);if(locales.includes(parts[0]))parts.shift();
  if(parts.join('/')==='privacy'){
   const notice=PV_NOTICE_COPY[locale]||PV_NOTICE_COPY.ja,copy=pvCopy(locale);
-  const googleDetails=html.includes('__WATACHAN_GOOGLE_ANALYTICS_POLICY__="jp-basic"')&&JP_BASIC_DESCRIPTION[locale]?'<p><a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">'+(locale==='ja'?'Googleによるデータの利用':'How Google uses data')+'</a></p>':'';
+  const googleDetails=googlePolicy==='jp-basic'&&JP_BASIC_DESCRIPTION[locale]?'<p><a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">'+(locale==='ja'?'Googleによるデータの利用':'How Google uses data')+'</a></p>':'';
   const scope=(PASSIVE_SCOPE[locale]||PASSIVE_SCOPE.en).replace('{date}','2026-11-07 00:00 JST / 2026-11-06 15:00 UTC');
   const description=notice[1]+' '+(PV_NOTICE_DETAILS[locale]||PV_NOTICE_DETAILS.ja)+' '+(PV_NOTICE_REUSE[locale]||PV_NOTICE_REUSE.ja);
-  const policy='<section id="cloudflare-pv-policy" data-testid="cloudflare-pv-policy"><h2>'+escape(copy[0])+'</h2><p>'+escape(scope)+'</p><p>'+escape(description)+'</p><p>'+escape(notice[2])+'</p><p>'+escape(html.includes('__WATACHAN_GOOGLE_ANALYTICS_POLICY__="jp-basic"')&&JP_BASIC_DESCRIPTION[locale]?JP_BASIC_DESCRIPTION[locale]:GOOGLE_OFF[locale]||GOOGLE_OFF.en)+'</p>'+googleDetails+'<p><a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">Cloudflare — '+escape(copy[5])+'</a></p><p><a href="?analytics=exclude">'+escape(locale==='ja'?'すべてのアクセス解析を停止':locale==='en'?'Stop all access analytics':PV_STOP_COPY[locale]||PV_STOP_COPY.en)+'</a></p></section>';
+  const policy='<section id="cloudflare-pv-policy" data-testid="cloudflare-pv-policy"><h2>'+escape(copy[0])+'</h2><p>'+escape(scope)+'</p><p>'+escape(description)+'</p><p>'+escape(notice[2])+'</p><p>'+escape(googlePolicy==='jp-basic'&&JP_BASIC_DESCRIPTION[locale]?JP_BASIC_DESCRIPTION[locale]:GOOGLE_OFF[locale]||GOOGLE_OFF.en)+'</p>'+googleDetails+'<p><a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">Cloudflare — '+escape(copy[5])+'</a></p><p><a href="?analytics=exclude">'+escape(locale==='ja'?'すべてのアクセス解析を停止':locale==='en'?'Stop all access analytics':PV_STOP_COPY[locale]||PV_STOP_COPY.en)+'</a></p></section>';
   out=out.replace(/<article\b[^>]*class="legal-card"[^>]*>/i,'$&'+policy);
  }
  return out;

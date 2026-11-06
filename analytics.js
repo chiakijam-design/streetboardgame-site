@@ -184,6 +184,7 @@
     var safeQuery = true;
     u.searchParams.forEach(function (value, key) {
       if (key === 'room') { if (!/^[A-Z2-9]{8}$/.test(value)) safeQuery = false; }
+      else if (key === 'share') { if (value !== 'challenge-20260726-1') safeQuery = false; }
       else if (key === 'analytics') { if (!/^(?:include|exclude)$/.test(value)) safeQuery = false; }
       else if (key === 'utm_source') { if (!/^(?:instagram|line|x|twitter|facebook|copy|direct)$/.test(value)) safeQuery = false; }
       else if (key === 'utm_medium') { if (!/^(?:social|referral|organic|email|qr)$/.test(value)) safeQuery = false; }

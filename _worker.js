@@ -13,6 +13,7 @@ import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
 import { PUBLIC_LOCALE_PAGES } from './src/generated/public-locale-pages.js';
 import { pvRegionMode } from './src/analytics/pv-regions.js';
 import { injectGooglePolicy } from './src/analytics/passive-policy.js';
+import { japanGA4Mode } from './src/analytics/jp-ga4-policy.js';
 import { injectPVChoice, pvPublicPath } from './src/analytics/pv-policy.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
@@ -610,7 +611,7 @@ async function withSecurityHeaders(response, request, env, pvMode = 'consent', g
     // locale HTML unchanged: insert at the existing response/nonce pass.
     if (response.ok && !env?.__STATIC_HTML_BUILD) {
       body = injectGooglePolicy(body, pvPublicPath(new URL(request.url).pathname, PUBLIC_LOCALES) ? googleRegion : null);
-      body = injectPVChoice(body, new URL(request.url), locale, PUBLIC_LOCALES, pvMode);
+      body = injectPVChoice(body, new URL(request.url), locale, PUBLIC_LOCALES, pvMode, japanGA4Mode(googleRegion));
     }
     body = body.replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
     headers.delete('content-length');

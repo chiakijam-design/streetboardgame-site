@@ -38,7 +38,7 @@ test('HEAD is also non-cacheable; static assets retain their old cache policy',a
 test('passive collector cannot enable the separately gated Google/Microsoft runtime',()=>{
  const bytes=readFileSync('analytics.js');
  const gitBlob=createHash('sha1').update(Buffer.concat([Buffer.from('blob '+bytes.length+'\0'),bytes])).digest('hex');
- assert.equal(gitBlob,'a259960a71580adbc2036b44c4d0d6e2add1ba91');
+ assert.equal(gitBlob,'65c21f2353fceffd3c384153841241645880d2b2');
  const script=readFileSync('global-pv.js','utf8');assert.doesNotMatch(script,/__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__\s*=|googletagmanager\.com|clarity\.ms/);
  assert.match(script,/choice:'deny'/);assert.doesNotMatch(script,/choice:'allow'/);assert.match(script,/cf_pv/);
 });
