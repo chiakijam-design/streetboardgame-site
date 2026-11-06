@@ -1,3 +1,4 @@
+import { injectQuestionFontWarmup } from './src/challenge/font-warmup.js';
 import { isRetiredLivePage, isLiveHistoryRequest, liveRetiredResponse, isRemovedPricingPage, isRemovedRefundPage, removedPricingResponse } from './src/live/retirement.js';
 import { handleLiveApi } from './src/live/api.js';
 import { handleChallengeApi } from './src/challenge/api.js';
@@ -610,6 +611,7 @@ async function withSecurityHeaders(response, request, env, pvMode = 'consent', g
     // Only fixed, public paths get the optional measurement UI. Keep generated
     // locale HTML unchanged: insert at the existing response/nonce pass.
     if (response.ok && !env?.__STATIC_HTML_BUILD) {
+      body = injectQuestionFontWarmup(body, new URL(request.url));
       body = injectGooglePolicy(body, pvPublicPath(new URL(request.url).pathname, PUBLIC_LOCALES) ? googleRegion : null);
       body = injectPVChoice(body, new URL(request.url), locale, PUBLIC_LOCALES, pvMode, japanGA4Mode(googleRegion));
     }
