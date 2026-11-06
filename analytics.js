@@ -159,6 +159,7 @@
   windowObject.__WATACHAN_GA4_MEASUREMENT_ID__ = measurementId;
   windowObject.analyticsEnabled = analyticsEnabled;
 
+  var jpStorageWritable = null;
   function jpBasicPreferenceReady() {
     try {
       var raw = windowObject.localStorage.getItem('watachan:cf-pv-consent:v1');
@@ -168,11 +169,13 @@
           || record.at > Date.now() + 300000 || Date.now() - record.at >= 180 * 86400000) return false;
       }
       if (windowObject.localStorage.getItem(exclusionKey) === '1') return false;
-      var probe = 'watachan:analytics-preference-available';
-      windowObject.localStorage.setItem(probe, '1');
-      var usable = windowObject.localStorage.getItem(probe) === '1';
-      windowObject.localStorage.removeItem(probe);
-      return usable;
+      if (jpStorageWritable === null) {
+        var probe = 'watachan:analytics-preference-available';
+        windowObject.localStorage.setItem(probe, '1');
+        jpStorageWritable = windowObject.localStorage.getItem(probe) === '1';
+        windowObject.localStorage.removeItem(probe);
+      }
+      return jpStorageWritable;
     } catch (_) { return false; }
   }
 
@@ -238,7 +241,9 @@
       Object.keys(values).forEach(function (key) { if (values[key].indexOf(params && params[key]) !== -1) clean[key] = params[key]; });
       queue('event', name, Object.assign({ send_to: measurementId }, pageContext, clean)); load();
     };
-    windowObject.addEventListener('storage', function () {
+    windowObject.addEventListener('storage', function (event) {
+      if (stopped) return;
+      if (event && event.key !== null && event.key !== exclusionKey && event.key !== 'watachan:cf-pv-consent:v1') return;
       if (!jpBasicPreferenceReady()) { stop(); if (typeof windowObject.location.reload === 'function') windowObject.location.reload(); }
     });
     documentObject.addEventListener('click', function (event) {

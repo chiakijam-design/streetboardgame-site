@@ -6,7 +6,7 @@ export function injectGooglePolicy(html, cf) {
   if (!/src=["']\/analytics\.js(?:[?"'])/.test(html) || html.includes('__WATACHAN_GOOGLE_ANALYTICS_POLICY__')) return html;
   const mode = japanGA4Mode(cf);
   return html.replace(/<head\b[^>]*>/i, '$&<script>window.__WATACHAN_GOOGLE_ANALYTICS_POLICY__='+JSON.stringify(mode)+';</script>')
-    .replace(/src=(["'])\/analytics\.js\1/g, 'src=$1/analytics.js?v=20261106-jp-basic-2$1');
+    .replace(/src=(["'])\/analytics\.js\1/g, 'src=$1/analytics.js?v=20261106-jp-basic-3$1');
 }
 // Plain privacy-page text only. No banner, dialog, notice bar or play-page UI.
 export const PASSIVE_SCOPE = {
