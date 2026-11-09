@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
+import { test, expect } from './test.mjs';
 
 test.use({ locale: 'ja-JP' });
 
@@ -42,7 +43,7 @@ test('トップはReactと外部フォントを取得せず、静的HTMLを表�
 });
 
 test('JavaScriptなしでもトップの主要内容とリンクは重複せず表示される', async ({ browser, baseURL }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
+  const context = await createIsolatedContext(browser, { javaScriptEnabled: false });
   try {
     const page = await context.newPage();
     await page.goto(baseURL);

@@ -1,3 +1,4 @@
+import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
 import { expect, test } from './test.mjs';
 
 async function preparePage(page) {
@@ -436,7 +437,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
   expect(invitationCaption).not.toContain(isolatedManageKey);
   expect(new URL(page.url()).hash).toBe('');
 
-  const participantContext = await browser.newContext();
+  const participantContext = await createIsolatedContext(browser);
   const participant = await participantContext.newPage();
   try {
     await participant.addInitScript(() => {
@@ -632,7 +633,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
 
 test('低得点も自動掲載し、再挑戦の最高点で同じ行を更新する', async ({ browser, page }) => {
   const challengeUrl = await createChallenge(page);
-  const participantContext = await browser.newContext();
+  const participantContext = await createIsolatedContext(browser);
   const participant = await participantContext.newPage();
   try {
     await participant.goto(challengeUrl);
@@ -671,7 +672,7 @@ test('低得点も自動掲載し、再挑戦の最高点で同じ行を更新�
 
 test('参加者が結果画面から役割交代し、同じ10問の出題者になれる', async ({ browser, page }) => {
   const challengeUrl = await createChallenge(page, '最初の出題者');
-  const participantContext = await browser.newContext();
+  const participantContext = await createIsolatedContext(browser);
   const participant = await participantContext.newPage();
   try {
     await participant.goto(challengeUrl);

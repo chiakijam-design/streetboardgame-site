@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test.mjs';
 
 test('初期HTMLはH1と領域を確保し、カタログ取得で開始画面を動かさない', async ({ page }) => {
   // Isolate catalog-driven layout from independently timed remote font swaps.

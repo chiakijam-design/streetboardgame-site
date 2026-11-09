@@ -12,7 +12,7 @@ export function injectPVChoice(html,url,locale,locales,mode='consent',googlePoli
  mode=mode==='notice'||mode==='pending-notice'?mode:'consent';
  const privacy=(locale==='ja'?'':'/'+locale)+'/privacy';
  const config={v:1,policy:'passive',mode,locale,privacy,token:CF_PV_TOKEN,publicPaths:[...PUBLIC_PATHS],locales};
- const script='<script type="application/json" id="wata-pv-config">'+json(config)+'</script><script defer src="/global-pv.js?v=20261106-passive-1"></script>';
+ const script='<script type="application/json" id="wata-pv-config">'+json(config)+'</script><script defer src="/global-pv.js?v=20261106-passive-2"></script>';
  let out=html.replace(/<\/body>/i,script+'</body>');
  const parts=url.pathname.split('/').filter(Boolean);if(locales.includes(parts[0]))parts.shift();
  if(parts.join('/')==='privacy'){

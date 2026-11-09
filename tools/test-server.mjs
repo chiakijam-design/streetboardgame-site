@@ -1,8 +1,11 @@
+import { guardTestRedirect, guardTestFetch } from './test-redirect-guard.mjs';
 import http from 'node:http';
 import path from 'node:path';
 import { readFile, unlink, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
+
+globalThis.fetch = guardTestFetch(globalThis.fetch.bind(globalThis));
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const host = '127.0.0.1';
@@ -163,7 +166,7 @@ const server = http.createServer(async (req, res) => {
       LIVE_CREATOR_INVITE_BYPASS_TOKEN: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
       ASSETS: { fetch: fetchStaticAsset },
     });
-    await sendWebResponse(res, response);
+    await sendWebResponse(res, guardTestRedirect(response, parsed.href));
   } catch (error) {
     const status = error && error.code === 'ENOENT' ? 404 : 500;
     if (status === 404) {

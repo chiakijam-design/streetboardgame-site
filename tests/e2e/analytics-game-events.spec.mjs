@@ -1,3 +1,4 @@
+import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
 import { expect, test } from './test.mjs';
 
 async function captureAnalyticsEvents(page) {
@@ -76,7 +77,7 @@ test('通常版の実プレイ操作で game_start、game_result、share が発�
   await expect(shareControls.locator('[data-result-share-status]')).toContainText('コピーできませんでした');
   expect(await capturedEvents(page)).toHaveLength(eventCount);
 
-  const participantContext = await browser.newContext({ viewport: page.viewportSize() });
+  const participantContext = await createIsolatedContext(browser, { viewport: page.viewportSize() });
   const participant = await participantContext.newPage();
   try {
     await participant.goto(challengeUrl + '&analytics=exclude');

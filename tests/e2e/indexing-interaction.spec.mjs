@@ -1,3 +1,4 @@
+import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
 import { test, expect } from './test.mjs';
 test.use({ hasTouch: true });
 
@@ -52,7 +53,7 @@ test('カード内タップと5色ボタンで通常版を完走し、二重送�
   }));
   await shareControls.getByRole('button', { name: 'リンクをコピー', exact: true }).click();
   expect(await page.evaluate(() => window.__HOST_INVITATION_COPIED__)).toBe(url);
-  const playerContext = await browser.newContext({
+  const playerContext = await createIsolatedContext(browser, {
     viewport: page.viewportSize(), hasTouch: true,
     isMobile: testInfo.project.name.startsWith('mobile-'),
     userAgent: await page.evaluate(() => navigator.userAgent),

@@ -1,3 +1,4 @@
+import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
 import { test, expect } from './test.mjs';
 
 test.beforeEach(async ({ context }) => {
@@ -60,7 +61,7 @@ test('old localized query link, history menu, and isolated participant answers r
   expect(await management.getAttribute('href')).not.toContain('manage=');
   await management.click();
   await expect(page.getByTestId('challenge-share-screen')).toBeVisible();
-  const guest = await browser.newContext();
+  const guest = await createIsolatedContext(browser);
   await guest.route('**/*', r => new URL(r.request().url()).hostname === '127.0.0.1' ? r.continue() : r.abort());
   const other = await guest.newPage();
   await other.goto(new URL(`/challenge?room=${data.code}&analytics=exclude`, page.url()).href);
@@ -104,7 +105,7 @@ for (const count of [1, 10]) test(`new ${count}-question creation contains no ke
   await page.reload();
   await expect(page.getByTestId('challenge-share-screen')).toBeVisible();
   await assertNoSecret(page, data.manageToken);
-  const guest = await browser.newContext();
+  const guest = await createIsolatedContext(browser);
   await guest.route('**/*', r => new URL(r.request().url()).hostname === '127.0.0.1' ? r.continue() : r.abort());
   const other = await guest.newPage();
   await other.goto(new URL(`/challenge?room=${data.code}&analytics=exclude`, page.url()).href);

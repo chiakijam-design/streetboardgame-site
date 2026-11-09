@@ -131,7 +131,9 @@
 
   try {
     currentUrl = new URL(windowObject.location.href);
-    preference = currentUrl.searchParams.get(preferenceParameter) || '';
+    // An explicit exclusion wins even when a URL repeats the preference.
+    preference = currentUrl.searchParams.getAll(preferenceParameter).indexOf('exclude') !== -1
+      ? 'exclude' : currentUrl.searchParams.get(preferenceParameter) || '';
   } catch (error) {
     currentUrl = null;
   }

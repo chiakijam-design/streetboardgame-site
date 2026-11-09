@@ -1,3 +1,4 @@
+import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
 import {test,expect} from './test.mjs';
 import {boardCopy} from '../../src/i18n/challenge-board-copy.js';
 const choices=['A','B','C','D','E'];
@@ -24,7 +25,7 @@ for(const [locale,count] of [['ja',1],['ja',2],['ja',3],['ja',9],['ja',10],['en'
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
  await page.screenshot({path:info.outputPath('automatic-best-score.png'),fullPage:true});
  // A separate guest context with the same name must remain a separate person.
- const guest=await context.browser().newContext();await isolate(guest);const second=await guest.newPage();
+ const guest=await createIsolatedContext(context.browser());await isolate(guest);const second=await guest.newPage();
  await second.goto(`${info.project.use.baseURL||'http://127.0.0.1:4187'}${prefix}/challenge?room=${data.code}&analytics=exclude`);
  await second.locator('#participant-name').fill('LocalA');await second.locator('[data-action="join"]').click();await answer(second,count,1);
  await expect(second.getByTestId('understanding-board').locator('li')).toHaveCount(2);await guest.close();

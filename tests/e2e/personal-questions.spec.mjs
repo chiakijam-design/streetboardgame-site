@@ -1,3 +1,4 @@
+import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
 import {test,expect} from './test.mjs';
 const key='watachan:my-questions:v1';
 const title='Local-only sample question?';
@@ -72,6 +73,6 @@ test('same-browser shared visibility and a different browser context has no temp
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await expect(page.locator('[data-personal-use]')).toBeVisible();
   const other=await context.newPage();await start(other);await other.locator('[data-action="personal-library"]').click();await expect(other.locator('[data-personal-use]')).toHaveCount(1);await other.close();
-  const separate=await browser.newContext();await separate.route('**/*',route=>['127.0.0.1','localhost'].includes(new URL(route.request().url()).hostname)?route.continue():route.abort());
+  const separate=await createIsolatedContext(browser);await separate.route('**/*',route=>['127.0.0.1','localhost'].includes(new URL(route.request().url()).hostname)?route.continue():route.abort());
   const clean=await separate.newPage();await clean.goto(page.url());expect(await clean.evaluate(k=>localStorage.getItem(k),key)).toBeNull();await separate.close();
 });
