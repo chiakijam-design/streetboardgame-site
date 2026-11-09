@@ -56,8 +56,8 @@ test('legacy secret parameters are removed before a public document collector is
   assert.doesNotMatch(r.w.location.href,/secret|FAKE_SECRET/);assert.doesNotMatch(JSON.stringify(r.w.ga4EventLayer),/FAKE_SECRET/);assert.equal(r.scripts.length,2);
 });
 test('candidate standalone scripts have new cache keys and the reviewed runtime pin matches its contents',()=>{
-  assert.match(fs.readFileSync(path.join(root,'src/analytics/passive-policy.js'),'utf8'),/20261106-jp-basic-4/);
-  assert.match(fs.readFileSync(path.join(root,'src/analytics/pv-policy.js'),'utf8'),/20261106-passive-2/);
+  assert.match(fs.readFileSync(path.join(root,'src/analytics/passive-policy.js'),'utf8'),/20261109-jp-operator-observation-1/);
+  assert.match(fs.readFileSync(path.join(root,'src/analytics/pv-policy.js'),'utf8'),/20261109-operator-observation-1/);
   const bytes=fs.readFileSync(path.join(root,'analytics.js')),hash=crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob '+bytes.length+'\0'),bytes])).digest('hex');
   assert.match(fs.readFileSync(path.join(root,'tests/unit/global-pv.test.mjs'),'utf8'),new RegExp("assert.equal\\(sha,'"+hash+"'\\)"));
 });

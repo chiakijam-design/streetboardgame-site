@@ -138,6 +138,7 @@
     currentUrl = null;
   }
 
+  var operatorStorageObserved = false;
   try {
     if (preference === 'exclude') {
       windowObject.localStorage.setItem(exclusionKey, '1');
@@ -145,8 +146,17 @@
       windowObject.localStorage.removeItem(exclusionKey);
     }
     isExcluded = windowObject.localStorage.getItem(exclusionKey) === '1';
+    operatorStorageObserved = true;
   } catch (error) {
     isExcluded = preference === 'exclude';
+  }
+
+  if (isExcluded) {
+    try {
+      documentObject.documentElement.setAttribute('data-wata-ga-exclusion-initialized', '1');
+      documentObject.documentElement.setAttribute('data-wata-ga-exclusion-storage', operatorStorageObserved ? 'stored' : 'unavailable');
+      documentObject.documentElement.setAttribute('data-wata-ga-exclusion-reason', 'operator');
+    } catch (_) {}
   }
 
   var hostname = String(windowObject.location.hostname || '').toLowerCase();

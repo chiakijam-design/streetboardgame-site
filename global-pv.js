@@ -7,8 +7,12 @@
  try{var query=new URL(w.location.href).searchParams;if(query.getAll('analytics').indexOf('exclude')!==-1)w.localStorage.setItem(exclude,'1');if(query.get('cf_pv')==='off')w.localStorage.setItem(key,JSON.stringify({v:1,choice:'deny',at:Date.now()}));}catch(_){}
  function choice(){try{var raw=w.localStorage.getItem(key);if(raw===null)return 'unknown';var x=JSON.parse(raw);if(!x||x.v!==1)return 'invalid';if(x.choice==='deny')return 'deny';if(x.choice==='allow'&&Number.isFinite(x.at)&&x.at<=Date.now()+300000)return Date.now()-x.at<ttl?'allow':'expired';return 'invalid';}catch(_){return 'invalid';}}
  function permitted(){var c=choice();return config.mode==='notice'&&(c==='unknown'||c==='allow');}
+ function observeOperator(stored){
+  var state='unavailable';try{state=stored===true||w.localStorage.getItem(exclude)==='1'?'stored':'absent';}catch(_){}
+  try{d.documentElement.setAttribute('data-wata-cf-exclusion-initialized','1');d.documentElement.setAttribute('data-wata-cf-exclusion-storage',state);d.documentElement.setAttribute('data-wata-cf-exclusion-reason','operator');}catch(_){}
+ }
  function excluded(){
-  try{var u=new URL(w.location.href);if(u.searchParams.getAll('analytics').indexOf('exclude')!==-1||u.searchParams.get('cf_pv')==='off'||w.localStorage.getItem(exclude)==='1')return true;}catch(_){return true;}
+  try{var u=new URL(w.location.href);if(u.searchParams.getAll('analytics').indexOf('exclude')!==-1){observeOperator();return true;}if(u.searchParams.get('cf_pv')==='off')return true;if(w.localStorage.getItem(exclude)==='1'){observeOperator(true);return true;}}catch(_){return true;}
   if(w.navigator.webdriver||w.navigator.globalPrivacyControl===true||w.navigator.doNotTrack==='1')return true;
   if(storeReady===null){try{var probe=key+':availability';w.localStorage.setItem(probe,'1');if(w.localStorage.getItem(probe)!=='1')throw Error();w.localStorage.removeItem(probe);storeReady=true;}catch(_){storeReady=false;}}
   return !storeReady;
