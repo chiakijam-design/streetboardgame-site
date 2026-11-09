@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';import crypto from 'node:crypto';
-const root=process.env.WATA_EXCLUSION_BASELINE==='1'
-  ? path.resolve('jp-ga4-candidate-20261106') : path.resolve('measurement-exclusion-candidate-20261106');
+const root=fileURLToPath(new URL('../../',import.meta.url));
 const source={ga:fs.readFileSync(path.join(root,'analytics.js'),'utf8'),cf:fs.readFileSync(path.join(root,'global-pv.js'),'utf8')};
 const exclusion='watachan:analytics-excluded:v1',consent='watachan:cf-pv-consent:v1';
 
@@ -56,7 +56,6 @@ test('legacy secret parameters are removed before a public document collector is
   assert.doesNotMatch(r.w.location.href,/secret|FAKE_SECRET/);assert.doesNotMatch(JSON.stringify(r.w.ga4EventLayer),/FAKE_SECRET/);assert.equal(r.scripts.length,2);
 });
 test('candidate standalone scripts have new cache keys and the reviewed runtime pin matches its contents',()=>{
-  if(process.env.WATA_EXCLUSION_BASELINE==='1')return;
   assert.match(fs.readFileSync(path.join(root,'src/analytics/passive-policy.js'),'utf8'),/20261106-jp-basic-4/);
   assert.match(fs.readFileSync(path.join(root,'src/analytics/pv-policy.js'),'utf8'),/20261106-passive-2/);
   const bytes=fs.readFileSync(path.join(root,'analytics.js')),hash=crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob '+bytes.length+'\0'),bytes])).digest('hex');
