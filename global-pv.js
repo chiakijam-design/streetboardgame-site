@@ -20,9 +20,12 @@
  function route(){try{var parts=new URL(w.location.href).pathname.split('/').filter(Boolean);if(config.locales.indexOf(parts[0])!==-1)parts.shift();return config.publicPaths.indexOf(parts.length?'/'+parts.join('/'):'/')!==-1;}catch(_){return false;}}
  function safe(){
   if(w.location.protocol!=='https:'||['www.streetboardgame.com','streetboardgame.com'].indexOf(w.location.hostname)===-1||excluded()||!route())return false;
+  // Match the documented public-document policy before loading the vendor.
+  // Keep operator preference processing above this guard intact.
+  if(/[?#]/.test(String(w.location.href)))return false;
   var secret=/(?:[?&#]|%3[fF]|%26)(?:manage|manage_token|token|secret|password)(?:=|%3[dD])|(?:^|[^a-f0-9])[a-f0-9]{48}(?:$|[^a-f0-9])/i;
   if(secret.test(String(w.location.href))||secret.test(String(d.referrer||'')))return false;
-  if(d.referrer){try{var ref=new URL(d.referrer);if(ref.username||ref.password)return false;if(ref.origin!==w.location.origin){if(ref.pathname!=='/'||ref.search||ref.hash)return false;}else{var parts=ref.pathname.split('/').filter(Boolean);if(config.locales.indexOf(parts[0])!==-1)parts.shift();if(config.publicPaths.indexOf(parts.length?'/'+parts.join('/'):'/')===-1)return false;}}catch(_){return false;}}
+  if(d.referrer){try{var ref=new URL(d.referrer);if(ref.username||ref.password||/[?#]/.test(ref.href))return false;if(ref.origin!==w.location.origin){if(ref.pathname!=='/'||ref.search||ref.hash)return false;}else{var parts=ref.pathname.split('/').filter(Boolean);if(config.locales.indexOf(parts[0])!==-1)parts.shift();if(config.publicPaths.indexOf(parts.length?'/'+parts.join('/'):'/')===-1)return false;}}catch(_){return false;}}
   return true;
  }
  function existing(){return !!d.querySelector('script[src*="static.cloudflareinsights.com/beacon.min.js"]');}
