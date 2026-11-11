@@ -52,7 +52,6 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
   for (const updatedUrl of [
     'https://www.streetboardgame.com/',
     'https://www.streetboardgame.com/challenge',
-    'https://www.streetboardgame.com/challenge/library',
     'https://www.streetboardgame.com/terms',
     'https://www.streetboardgame.com/privacy',
     'https://www.streetboardgame.com/en/challenge',
@@ -62,6 +61,8 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
     const expectedDate = '2026-10-23';
     assert.equal(lastModifiedByUrl.get(updatedUrl), expectedDate, updatedUrl);
   }
+  assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/challenge/library'), '2026-11-12');
+  assert.equal(locations.some((location) => /^https:\/\/www\.streetboardgame\.com\/(?!en\/)[a-z]{2}(?:-[A-Za-z]+)?\//.test(location)), false);
 });
 
 test('公開説明は現行の二本立てと答え合わせ中心の方針に統一する', async () => {

@@ -44,7 +44,7 @@ test('library shows real questions and choices before game creation and hides em
     await expect.poll(() => image.evaluate(node => node.complete && node.naturalWidth > 0)).toBe(true);
   }
   await examples.screenshot({ path: testInfo.outputPath('question-examples.png') });
-  await page.screenshot({ path: testInfo.outputPath('question-library.png'), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath('question-library.png') });
 });
 
 test('public pages retain useful content, working links and no LIVE entry', async ({ page, request }, testInfo) => {

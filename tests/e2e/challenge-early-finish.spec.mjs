@@ -96,7 +96,7 @@ for(const locale of ['', '/en'])test(`${locale||'ja'}: weekly themes use availab
   await expect(weekly.locator('article')).toHaveCount(3);
   await expect(weekly.locator('time')).toHaveAttribute('datetime',/^\d{4}-\d{2}-\d{2}$/);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
-  await page.screenshot({path:testInfo.outputPath('weekly-themes.png'),fullPage:true});
+  await page.screenshot({path:testInfo.outputPath('weekly-themes.png')});
   await weekly.locator('a').first().click();
   await page.locator('#creator-name').fill('Local weekly');
   await page.locator('[data-action="start-create"]').click();
