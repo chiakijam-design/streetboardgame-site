@@ -8,6 +8,7 @@ import { runSocialPublishing } from './src/social/publisher.js';
 import { runBudgetedSocialPublishing } from './src/cost/guard.js';
 import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
 import { questionPacks } from './src/challenge/packs.js';
+import { injectLibraryCatalog, removeLibraryCatalog } from './src/challenge/library-catalog.js';
 import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
@@ -25,6 +26,9 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 // 廃止したゲームURLとAPIは互換転送せず404を返す。
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
+// Only Japanese and English pages are offered for search indexing; the other
+// machine-translated locales stay available to visitors but are noindex.
+const SEARCH_INDEXED_LOCALES = new Set(['ja', 'en']);
 // Clarity load-balances collection across a-z. Allow only HTTPS collection
 // paths, rather than every subdomain or every path on those hosts.
 const CLARITY_COLLECT_SOURCES = Array.from('abcdefghijklmnopqrstuvwxyz',
@@ -214,6 +218,8 @@ async function handleRequest(request, env) {
         if (url.searchParams.has('room') || /\/(?:manage|ranking)$/.test(path)) {
           headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
           if (locale !== 'en') headers.set('cache-control', 'no-store');
+        } else if (!SEARCH_INDEXED_LOCALES.has(locale)) {
+          headers.set('x-robots-tag', 'noindex, follow');
         }
         return new Response(request.method === 'HEAD' ? null : prepared.body, { status: 200, headers });
       }
@@ -246,11 +252,13 @@ async function handleRequest(request, env) {
       if (url.searchParams.has('room') || /\/(?:manage|ranking)$/.test(path)) {
         headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
         headers.set('cache-control', 'no-store');
+      } else if (!SEARCH_INDEXED_LOCALES.has(locale)) {
+        headers.set('x-robots-tag', 'noindex, follow');
       }
       let rendered;
       try {
         let baseHtml = await response.text();
-        if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge/library') baseHtml = applyChallengeLibraryMeta(baseHtml);
+        if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge/library') baseHtml = removeLibraryCatalog(applyChallengeLibraryMeta(baseHtml));
         rendered = localizePublicHtml(baseHtml, data, url, PUBLIC_LOCALES);
       }
       catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
@@ -337,7 +345,7 @@ async function handleRequest(request, env) {
       }
       const html = request.method === 'HEAD' ? null : await response.text();
       const localizedBody = html && path === '/challenge/library'
-        ? applyChallengeLibraryMeta(html)
+        ? injectLibraryCatalog(applyChallengeLibraryMeta(html))
         : html && path === '/challenge'
           ? applyChallengeShareMeta(html, url)
           : html;
