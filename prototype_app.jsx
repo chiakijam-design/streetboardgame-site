@@ -316,7 +316,7 @@ export function ChallengeGuide() {
         </a>
         <div aria-hidden="true" style={{
           position: 'absolute',
-          right: -22,
+          right: 0,
           bottom: -22,
           width: 176,
           opacity: .84,
