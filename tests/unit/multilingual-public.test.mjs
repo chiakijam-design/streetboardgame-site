@@ -26,7 +26,7 @@ const env = { ASSETS: { async fetch(request) {
   return new Response(cache.get(path), { headers: { 'content-type': path.endsWith('.json') ? 'application/json' : 'text/html' } });
 } } };
 
-test('all 374 stable locale pages render SEO HTML without room or capability URLs', async () => {
+test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and listed in the sitemap', async () => {
   assert.equal(PUBLIC_LOCALES.length, 34);
   const sitemap = await readFile(new URL('../../sitemap.xml', import.meta.url), 'utf8');
   const titles = new Set();
@@ -49,9 +49,12 @@ test('all 374 stable locale pages render SEO HTML without room or capability URL
     titles.add(`${locale}:${title}`);
     descriptions.add(`${locale}:${description}`);
     assert.equal((html.match(/name="google-adsense-account"/g) || []).length, 1, route);
-    assert.ok(sitemap.includes(`<loc>https://www.streetboardgame.com${route}</loc>`), route);
+    const indexed = locale === 'ja' || locale === 'en';
+    assert.equal(sitemap.includes(`<loc>https://www.streetboardgame.com${route}</loc>`), indexed, route);
+    if (indexed) assert.doesNotMatch(response.headers.get('x-robots-tag') || '', /noindex/, route);
+    else assert.equal(response.headers.get('x-robots-tag'), 'noindex, follow', route);
   }
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 374);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 22);
   for (const [, location] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
     assert.doesNotMatch(location, /[?#]|\/manage|\/ranking|\/remote/);
   }
