@@ -9,6 +9,7 @@ import { runBudgetedSocialPublishing } from './src/cost/guard.js';
 import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
 import { questionPacks } from './src/challenge/packs.js';
 import { injectLibraryCatalog, removeLibraryCatalog } from './src/challenge/library-catalog.js';
+import { injectGuideDetails, removeGuideDetails } from './src/challenge/guide-details.js';
 import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
@@ -259,6 +260,7 @@ async function handleRequest(request, env) {
       try {
         let baseHtml = await response.text();
         if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge/library') baseHtml = removeLibraryCatalog(applyChallengeLibraryMeta(baseHtml));
+        if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge-guide') baseHtml = removeGuideDetails(baseHtml);
         rendered = localizePublicHtml(baseHtml, data, url, PUBLIC_LOCALES);
       }
       catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
@@ -496,6 +498,7 @@ async function handleRequest(request, env) {
         /<div id="root"[^>]*>[\s\S]*?<\/div><!-- \/home-prerender -->/,
         () => `<div id="root" aria-live="polite">${infoPageMarkup[path]}</div><!-- /home-prerender -->`,
       );
+      if (path === '/challenge-guide') rendered = injectGuideDetails(rendered);
       if (infoPageFontStyles[path]) {
         rendered = rendered
           .replace(/<link id="brand-font-styles" href="[^"]+"/, `<link id="brand-font-styles" data-page-subset="true" href="${infoPageFontStyles[path]}"`)
