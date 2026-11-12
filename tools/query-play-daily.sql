@@ -8,3 +8,5 @@ SELECT COUNT(*) AS retry_cursor_count, MIN(day) AS first_cursor_day, MAX(day) AS
 FROM play_daily_live_streams;
 SELECT key, value FROM play_daily_actions_meta ORDER BY key;
 SELECT day, mode, metric, count FROM play_daily_actions ORDER BY day, mode, metric;
+SELECT date(day, '-6 days', 'weekday 1') AS week_start_jst, surface, action, SUM(count) AS count
+FROM play_daily_share_actions GROUP BY week_start_jst, surface, action ORDER BY week_start_jst, surface, action;

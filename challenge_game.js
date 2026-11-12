@@ -44,6 +44,7 @@ import { stripLocalePrefix } from './src/i18n/locales.js';
 import { localizedCanvasContext, collectProtectedUserCopy } from './src/i18n/canvas-copy.js';
 import { trackAnalyticsEvent, trackGamePlay } from './src/analytics/events.js';
 import { sendChallengeDailyAction } from './src/analytics/client-daily-actions.js';
+import { sendChallengeShareAction } from './src/analytics/client-share-actions.js';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -221,6 +222,15 @@ function render() {
 
 function trackDailyResultAction(metric) {
   sendChallengeDailyAction(state.result?.code, state.participantToken, dailyResultAttempt, metric);
+}
+
+function trackShareButtonPress(action) {
+  if (state.mode === 'manage') {
+    sendChallengeShareAction({ code: state.room?.code, surface: 'invite', action, manageToken: state.manageToken });
+  } else if (state.mode === 'result') {
+    sendChallengeShareAction({ code: state.result?.code, surface: 'result', action,
+      participantToken: state.participantToken, attempt: dailyResultAttempt });
+  }
 }
 
 function scheduleDailyReportView() {
@@ -1308,6 +1318,7 @@ function bindEvents() {
       url: `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`,
     } : null,
     track: (action, outcome) => {
+      if (outcome === 'pressed') trackShareButtonPress(action);
       if (state.mode === 'manage') {
         if (['handed-off-image', 'handed-off-link', 'copied', 'open-requested'].includes(outcome)) trackChallengeShare(action, 'challenge_invite');
         return;
