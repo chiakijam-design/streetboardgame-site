@@ -9,6 +9,7 @@ import { challengeCopy } from './src/i18n/challenge-copy.js';
 import { challengeResultCopy } from './src/i18n/challenge-result-copy.js';
 import { challengeCompletionCopy } from './src/i18n/challenge-completion-copy.js';
 import { challengeStartCopy } from './src/i18n/challenge-start-copy.js';
+import { participantAnswerOwnerText } from './src/i18n/challenge-participant-copy.js';
 import { weeklyQuestionPacks } from './src/challenge/packs.js';
 import { publicQuestionExamples } from './src/challenge/examples.js';
 import { resultShareMarkup, bindResultShare } from './src/platform/resultShare.js';
@@ -191,6 +192,8 @@ function render() {
                   : state.mode === 'library' ? libraryView()
                     : errorView();
   app.innerHTML = body;
+  const answerOwner = state.mode === 'participant-answer' ? app.querySelector('[data-testid="participant-answer-owner"]') : null;
+  if (answerOwner) answerOwner.textContent = participantAnswerOwnerText(currentLocale, state.room?.creatorName);
   if (state.mode === 'creator-edit' && (state.personalView || state.editingQuestion || state.cards[state.questionIndex]?.personalQuestion)) {
     app.setAttribute('data-clarity-mask', 'true');
   } else app.removeAttribute('data-clarity-mask');
@@ -621,6 +624,7 @@ function questionView(isCreator) {
       <div class="challenge-progress" aria-label="${state.questionIndex + 1}問目、全${state.cards.length}問">
         ${Array.from({ length: state.cards.length }, (_, index) => `<span class="${index <= state.questionIndex ? 'is-active' : ''}"></span>`).join('')}
       </div>
+      ${isCreator ? '' : '<p class="challenge-answer-owner" data-testid="participant-answer-owner" data-user-copy></p>'}
       <article class="challenge-card notebook-question-card" data-testid="challenge-paper-card">
         <div class="challenge-q-number notebook-card-counter">Q${state.questionIndex + 1}/${state.cards.length}</div>
         <h2 class="notebook-card-accessible-title">${escapeHtml(translateText(card.title))}</h2>
