@@ -2,6 +2,7 @@ import { recordQuestionSelections } from '../questions/trends.js';
 import { recordLiveOpsEvent } from '../live/ops.js';
 import { enforceChallengeRateLimit } from './rate-limit.js';
 import { CHALLENGE_DAILY_ACTIONS, recordDailyAction } from '../analytics/daily-actions.js';
+import { validShareAction, recordShareAction } from '../analytics/share-actions.js';
 import { validQuizLength } from './length.js';
 
 export const CHALLENGE_MAX_PARTICIPANTS = 50;
@@ -72,6 +73,9 @@ export async function handleChallengeApi(request, env, path) {
 
     const actionMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/actions$/);
     if (actionMatch && request.method === 'POST') return await recordParticipantAction(request, env, actionMatch[1]);
+
+    const shareActionMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/share-actions$/);
+    if (shareActionMatch && request.method === 'POST') return await recordShareButtonAction(request, env, shareActionMatch[1]);
 
     const resultMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/result$/);
     if (resultMatch && request.method === 'GET') {
@@ -435,6 +439,51 @@ async function recordParticipantAction(request, env, code) {
   if (!CHALLENGE_DAILY_ACTIONS.includes(metric)) throw apiError('invalid-action', 400);
   await enforceChallengeRateLimit(env, token, 'actions', 12);
   return jsonResponse({ stored: await recordDailyAction(env, 'challenge', metric) });
+}
+
+// Share-button press counts. Result presses use the participant token, invite
+// presses use the existing manage token. Only (day, surface, action, count) is stored.
+async function recordShareButtonAction(request, env, code) {
+  const origin = request.headers.get('origin');
+  if (origin && origin !== new URL(request.url).origin) throw apiError('origin-forbidden', 403);
+  const text = await readSmallBody(request, 128);
+  let surface;
+  let action;
+  try { ({ surface, action } = JSON.parse(text)); } catch { throw apiError('invalid-action', 400); }
+  if (!validShareAction(surface, action)) throw apiError('invalid-action', 400);
+  const room = await readRoom(env, code);
+  if (!room) throw apiError('room-not-found', 404);
+  let token;
+  if (surface === 'result') {
+    token = headerToken(request, 'x-challenge-participant-token');
+    const participant = token ? await readParticipant(env, code, token, room) : null;
+    if (!participant) throw apiError('participant-forbidden', 403);
+    if (participant.completedAt == null) throw apiError('answers-not-submitted', 409);
+  } else {
+    token = headerToken(request, 'x-challenge-manage-token');
+    if (!token || !(await tokenMatches(token, room.manageTokenHash || room.manageToken))) throw apiError('manage-forbidden', 403);
+  }
+  await enforceChallengeRateLimit(env, token, 'share-actions', 12);
+  return jsonResponse({ stored: await recordShareAction(env, surface, action) });
+}
+
+async function readSmallBody(request, limit) {
+  if (Number(request.headers.get('content-length')) > limit) throw apiError('invalid-action', 400);
+  const reader = request.body?.getReader();
+  let bytes = new Uint8Array();
+  if (reader) {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (bytes.length + value.length > limit) {
+        await reader.cancel();
+        throw apiError('invalid-action', 400);
+      }
+      const next = new Uint8Array(bytes.length + value.length);
+      next.set(bytes); next.set(value, bytes.length); bytes = next;
+    }
+  }
+  return new TextDecoder().decode(bytes);
 }
 
 async function getResult(request, env, code) {
