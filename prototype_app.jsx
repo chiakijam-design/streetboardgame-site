@@ -281,6 +281,81 @@ export function ChallengeGuide() {
       answer: BOARD_COPY.ja.notice,
     },
   ];
+  // Detailed how-to sections. Each string is one text node so the catalog
+  // translates whole sentences; links are kept as separate lines.
+  const details = [
+    {
+      id: 'guide-creator-title',
+      title: '出題する人：クイズの作り方',
+      before: ['トップページの「わたし理解度診断を作る」か、クイズ作成画面の「クイズを作る」から始めます。表示する名前（12文字まで）を入れると、共通のお題が1問ずつ表示されます。自分の答えに合う色のボタンを押すと、その1問が完成します。'],
+      items: [
+        '合わないお題は「この問題をスキップ」で次のお題へ進めます。',
+        '「問題・選択肢を編集する」で、問題文や5つの選択肢を自分たち向けに書き換えられます。',
+        '「自分で問題を作る」でオリジナルのお題を、「過去に作った問題を使う」で以前に作ったお題を入れられます。',
+        '1問から作れて、最大10問まで追加できます。途中までの内容はこの端末に自動保存されます。',
+      ],
+    },
+    {
+      id: 'guide-packs-title',
+      title: 'お題をまとめて選ぶなら',
+      before: ['お題ライブラリでは、「初対面でも答えやすい10問」「食べものの好み10問」「わたしのトリセツ10問」など、テーマごとの10問パックを選べます。週ごとに入れ替わる「今週のお題」もあります。パックを選ぶと、そのテーマの問題でそのままクイズを作れます。'],
+      link: { href: '/challenge/library', label: 'お題ライブラリを見る' },
+    },
+    {
+      id: 'guide-share-title',
+      title: '参加URLの送り方',
+      background: '#FFE4EE',
+      before: ['クイズが完成すると、参加用のURLが発行されます。送り方は次の中から選べます。'],
+      items: [
+        'リンクをコピーして、LINEやメッセージに貼る',
+        'X・LINE・WhatsAppのボタンから、参加URLつきで送る',
+        'Instagram用にリンクをコピーする、ストーリー用の文章と画像を保存する',
+        '招待画像を保存して、グループに送る',
+      ],
+      after: ['1つのクイズには最大50人まで参加できます。回答する人はアプリのインストールや会員登録をしなくても、届いたURLを開くだけで遊べます。'],
+    },
+    {
+      id: 'guide-player-title',
+      title: '回答する人：答えの予想と結果',
+      items: [
+        'URLを開いたら、表示名（12文字まで）を入れて挑戦を始めます。本名や学校名など、個人が分かる名前は避けてください。',
+        '1問ずつ、出題者が選んだと思う答えを色のボタンで予想します。',
+        '最後まで答えると「何問中何問正解」かが表示され、1問ごとの正解・不正解も見られます。',
+        '回答を完了すると、表示名と点数がそのクイズの理解度ボードに自動で載ります。同じ端末から再挑戦すると最高点に更新されます。',
+        '「次は私が出題する」から、同じ問題か新しい問題で、今度は自分がクイズを作れます。',
+      ],
+    },
+    {
+      id: 'guide-organizer-title',
+      title: '答え合わせのあと：主催者用の画面',
+      items: [
+        '出題者の端末には、回答状況・理解度ボード・参加者の回答をまとめて見られる主催者用の画面が表示されます。',
+        '2人以上が全問を答え終えると、「会話のきっかけ」になる問題が表示されます。順位を競うためではなく、答え合わせのあとに話すネタを見つけるための機能です。',
+        '「最近作った診断へ保存」を押すと、この端末からあとで開き直せます。',
+        '主催者用URLは回答内容を見られる秘密のURLです。この端末に保存され、30日後に無効になります。参加者や第三者には送らないでください。',
+      ],
+    },
+    {
+      id: 'guide-tips-title',
+      title: '盛り上がる遊び方のコツ',
+      background: theme.cream,
+      items: [
+        'はじめての相手には3〜5問くらいの短いクイズがおすすめです。答えるのに時間がかからず、気軽に挑戦してもらえます。',
+        'みんなの予想が分かれそうなお題を1〜2問まぜると、答え合わせが盛り上がります。',
+        '結果画像をグループに送って、「なんでそれを選んだの？」と理由を聞いてみてください。点数より、その会話がこのゲームのいちばんの楽しみです。',
+      ],
+    },
+    {
+      id: 'guide-safety-title',
+      title: '安心して遊ぶために',
+      items: [
+        '名前や自作の問題には、本名・学校名・住所など個人が分かる内容を入れないでください。',
+        '自作・編集した問題は、作成時の設定がオンのままなら掲載候補として運営へ送られ、運営が編集して他の利用者へ公開することがあります。送りたくない場合は作成時にオフにしてください。',
+        '性的な内容、いじめ、容姿への攻撃、差別的な表現は審査の対象です。',
+      ],
+      link: { href: '/content-guidelines', label: 'コンテンツ・肖像権ガイドラインを見る' },
+    },
+  ];
 
   return (
     <main data-testid="challenge-guide-page" style={pageStyle()}>
@@ -499,6 +574,24 @@ export function ChallengeGuide() {
         <a href="/challenge" style={{ ...primaryButton(), minHeight: 68, textDecoration: 'none', display: 'flex' }}>
           1〜10問の理解度診断を作る <span style={{ color: theme.yellow }}>▶</span>
         </a>
+
+        {details.map((section) => (
+          <section key={section.id} aria-labelledby={section.id} data-testid="challenge-guide-detail" style={{ ...guideCardStyle(), background: section.background || theme.white }}>
+            <h2 id={section.id} style={{ margin: '0 0 4px', fontSize: 18, lineHeight: 1.5 }}>{section.title}</h2>
+            {(section.before || []).map((text) => <p key={text} style={paragraph()}>{text}</p>)}
+            {section.items && (
+              <ul style={{ margin: '10px 0 0', paddingInlineStart: '1.3em', display: 'grid', gap: 6, fontSize: 14, lineHeight: 1.75, fontWeight: 700 }}>
+                {section.items.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            )}
+            {(section.after || []).map((text) => <p key={text} style={paragraph()}>{text}</p>)}
+            {section.link && (
+              <p style={paragraph()}>
+                <a href={section.link.href} style={{ color: theme.black, fontWeight: 900, textDecorationColor: theme.pinkDeep, textDecorationThickness: 2, textUnderlineOffset: 3 }}>{section.link.label} →</a>
+              </p>
+            )}
+          </section>
+        ))}
 
         <section aria-labelledby="guide-faq-title" style={{ ...guideCardStyle(), background: theme.cream }}>
           <h2 id="guide-faq-title" style={{ margin: '0 0 12px', fontSize: 18 }}>よくある質問</h2>
