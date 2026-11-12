@@ -1074,6 +1074,27 @@
       ]
     },
     {
+      "id": "m0e06ebe63b0834",
+      "source": "「最近作った診断へ保存」を押すと、この端末からあとで開き直せます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m8dc16b3f811dcd",
+      "source": "「次は私が出題する」から、同じ問題か新しい問題で、今度は自分がクイズを作れます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m15296cc9059f95",
+      "source": "「自分で問題を作る」でオリジナルのお題を、「過去に作った問題を使う」で以前に作ったお題を入れられます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
       "id": "ma373f76fce68e5",
       "source": "「他の人も使えるようにする」がONの問題は、運営が確認・編集してお題ライブラリへ掲載することがあります。",
       "contexts": [
@@ -1085,6 +1106,13 @@
       "source": "「第一印象」と本当の自分の違いに近いのは",
       "contexts": [
         "question:japanese:Q307:title"
+      ]
+    },
+    {
+      "id": "mda56d3e55c5527",
+      "source": "「問題・選択肢を編集する」で、問題文や5つの選択肢を自分たち向けに書き換えられます。",
+      "contexts": [
+        "prototype_app.jsx"
       ]
     },
     {
@@ -2006,6 +2034,13 @@
       ]
     },
     {
+      "id": "mcf27b9bacbaf50",
+      "source": "1つのクイズには最大50人まで参加できます。回答する人はアプリのインストールや会員登録をしなくても、届いたURLを開くだけで遊べます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
       "id": "meeedcc4dc3f6fa",
       "source": "1つの理解度診断へ最大50人まで参加できます。回答する人は、届いた参加URLから自分のスマホで10問へ回答します。",
       "contexts": [
@@ -2074,6 +2109,20 @@
       "contexts": [
         "question:japanese:Q169:title",
         "question:japanese:Q533:title"
+      ]
+    },
+    {
+      "id": "m2bc3ca2af46bd6",
+      "source": "1問から作れて、最大10問まで追加できます。途中までの内容はこの端末に自動保存されます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m86e5b2da8fa4d0",
+      "source": "1問ずつ、出題者が選んだと思う答えを色のボタンで予想します。",
+      "contexts": [
+        "prototype_app.jsx"
       ]
     },
     {
@@ -2250,6 +2299,13 @@
       "source": "2人以上が10問を答え終えると、会話のきっかけになる問題を表示します。",
       "contexts": [
         "challenge_game.js"
+      ]
+    },
+    {
+      "id": "m5b3093c7ed83da",
+      "source": "2人以上が全問を答え終えると、「会話のきっかけ」になる問題が表示されます。順位を競うためではなく、答え合わせのあとに話すネタを見つけるための機能です。",
+      "contexts": [
+        "prototype_app.jsx"
       ]
     },
     {
@@ -6273,6 +6329,13 @@
       "source": "Instagram、YouTubeその他の配信サービスを利用する場合は、各サービスの年齢、保護者同意、公開範囲および安全に関する規約にも従ってください。YouTubeでライブ配信を開始できるのは原則16歳以上です。16歳未満の利用者がYouTubeライブへ出演する場合は、成人が画面に映り、同程度以上に配信へ関与することなど、YouTubeが定める条件を満たす必要があります。",
       "contexts": [
         "minor-policy.html:body"
+      ]
+    },
+    {
+      "id": "mf2d631fe160d25",
+      "source": "Instagram用にリンクをコピーする、ストーリー用の文章と画像を保存する",
+      "contexts": [
+        "prototype_app.jsx"
       ]
     },
     {
@@ -10820,6 +10883,13 @@
       ]
     },
     {
+      "id": "ma7465a20af4bfb",
+      "source": "URLを開いたら、表示名（12文字まで）を入れて挑戦を始めます。本名や学校名など、個人が分かる名前は避けてください。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
       "id": "mb7f3ebc4636dc0",
       "source": "URLを送って、好きな時間に回答",
       "contexts": [
@@ -11662,6 +11732,13 @@
       ]
     },
     {
+      "id": "m07b803ecd1ccd4",
+      "source": "X・LINE・WhatsAppのボタンから、参加URLつきで送る",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
       "id": "m19dd83f117525b",
       "source": "Yellow",
       "contexts": [
@@ -12488,6 +12565,27 @@
       ]
     },
     {
+      "id": "m1e2f1f1de90233",
+      "source": "お題ライブラリでは、「初対面でも答えやすい10問」「食べものの好み10問」「わたしのトリセツ10問」など、テーマごとの10問パックを選べます。週ごとに入れ替わる「今週のお題」もあります。パックを選ぶと、そのテーマの問題でそのままクイズを作れます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "mecec4980aa12f1",
+      "source": "お題ライブラリを見る",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m04458389e1cb72",
+      "source": "お題をまとめて選ぶなら",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
       "id": "m0f7ec6590a510c",
       "source": "お問い合わせフォーム",
       "contexts": [
@@ -12875,6 +12973,13 @@
       "contexts": [
         "question:japanese:Q267:choice:0",
         "question:japanese:Q057:choice:2"
+      ]
+    },
+    {
+      "id": "m2e3109f607975b",
+      "source": "クイズが完成すると、参加用のURLが発行されます。送り方は次の中から選べます。",
+      "contexts": [
+        "prototype_app.jsx"
       ]
     },
     {
@@ -13283,6 +13388,13 @@
       "contexts": [
         "content-guidelines.html:title",
         "content-guidelines.html:body"
+      ]
+    },
+    {
+      "id": "ma8254987331d96",
+      "source": "コンテンツ・肖像権ガイドラインを見る",
+      "contexts": [
+        "prototype_app.jsx"
       ]
     },
     {
@@ -13857,6 +13969,13 @@
       ]
     },
     {
+      "id": "m8ba0013a0dbb11",
+      "source": "トップページの「わたし理解度診断を作る」か、クイズ作成画面の「クイズを作る」から始めます。表示する名前（12文字まで）を入れると、共通のお題が1問ずつ表示されます。自分の答えに合う色のボタンを押すと、その1問が完成します。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
       "id": "me08b16727d7b54",
       "source": "トップページへ戻る",
       "contexts": [
@@ -14067,6 +14186,13 @@
       "contexts": [
         "question:japanese:Q017:choice:1",
         "question:japanese:Q506:choice:1"
+      ]
+    },
+    {
+      "id": "m3166c87b33ce85",
+      "source": "はじめての相手には3〜5問くらいの短いクイズがおすすめです。答えるのに時間がかからず、気軽に挑戦してもらえます。",
+      "contexts": [
+        "prototype_app.jsx"
       ]
     },
     {
@@ -14485,6 +14611,13 @@
       ]
     },
     {
+      "id": "m712fb6bd9d2086",
+      "source": "みんなの予想が分かれそうなお題を1〜2問まぜると、答え合わせが盛り上がります。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
       "id": "mf160fd947d419b",
       "source": "メイク",
       "contexts": [
@@ -14695,6 +14828,13 @@
       ]
     },
     {
+      "id": "me94bdd648735ea",
+      "source": "リンクをコピーして、LINEやメッセージに貼る",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
       "id": "m79e4b656346f38",
       "source": "りんご飴",
       "contexts": [
@@ -14843,6 +14983,13 @@
       ]
     },
     {
+      "id": "m9bb794699faf9c",
+      "source": "安心して遊ぶために",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
       "id": "me307d740d7c8b2",
       "source": "一人暮らしで欲しいのは",
       "contexts": [
@@ -14914,10 +15061,108 @@
       ]
     },
     {
+      "id": "m0a987d2efac720",
+      "source": "回答する人：答えの予想と結果",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m6d971a7305e2f9",
+      "source": "回答を完了すると、表示名と点数がそのクイズの理解度ボードに自動で載ります。同じ端末から再挑戦すると最高点に更新されます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "mf5d4d16f5c301f",
+      "source": "結果画像をグループに送って、「なんでそれを選んだの？」と理由を聞いてみてください。点数より、その会話がこのゲームのいちばんの楽しみです。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "ma9c42c23d1429a",
+      "source": "合わないお題は「この問題をスキップ」で次のお題へ進めます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "ma544c665d5c4f1",
+      "source": "最後まで答えると「何問中何問正解」かが表示され、1問ごとの正解・不正解も見られます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m360eb433b2fc9e",
+      "source": "参加URLの送り方",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "mc408eb444c9d0f",
+      "source": "自作・編集した問題は、作成時の設定がオンのままなら掲載候補として運営へ送られ、運営が編集して他の利用者へ公開することがあります。送りたくない場合は作成時にオフにしてください。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "md67998c5ab654d",
+      "source": "主催者用URLは回答内容を見られる秘密のURLです。この端末に保存され、30日後に無効になります。参加者や第三者には送らないでください。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m34a48527a2f34a",
+      "source": "出題する人：クイズの作り方",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m9cd3b17bfae2d6",
+      "source": "出題者の端末には、回答状況・理解度ボード・参加者の回答をまとめて見られる主催者用の画面が表示されます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m65958fae309212",
+      "source": "招待画像を保存して、グループに送る",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
       "id": "m806f214cf1368a",
       "source": "上記に必要な範囲でのトリミング、縮小・拡大、文字・装飾との合成、形式変換",
       "contexts": [
         "creator-terms.html:body"
+      ]
+    },
+    {
+      "id": "m9307c31a88343f",
+      "source": "性的な内容、いじめ、容姿への攻撃、差別的な表現は審査の対象です。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "mb1e8b833e4ab38",
+      "source": "盛り上がる遊び方のコツ",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m54a2dd7d411a32",
+      "source": "答え合わせのあと：主催者用の画面",
+      "contexts": [
+        "prototype_app.jsx"
       ]
     },
     {
@@ -14996,6 +15241,13 @@
       "source": "主催者用回答管理｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？",
       "contexts": [
         "challenge_game.js"
+      ]
+    },
+    {
+      "id": "m872624d9181e97",
+      "source": "名前や自作の問題には、本名・学校名・住所など個人が分かる内容を入れないでください。",
+      "contexts": [
+        "prototype_app.jsx"
       ]
     },
     {
