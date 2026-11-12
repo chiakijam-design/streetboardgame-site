@@ -6,6 +6,9 @@ import { validShareAction, recordShareAction } from '../analytics/share-actions.
 import { validQuizLength } from './length.js';
 
 export const CHALLENGE_MAX_PARTICIPANTS = 50;
+// Respondents see per-question choice counts only when this many people have finished,
+// so a single person's answer cannot be read from the totals.
+export const ANSWER_STATS_MINIMUM = 3;
 export const CHALLENGE_ROOM_TTL_DAYS = 30;
 export const CHALLENGE_QUESTION_COUNT = 10;
 
@@ -504,6 +507,7 @@ async function getResult(request, env, code) {
   return jsonResponse({
     code,
     creatorName: room.creatorName,
+    answerStats: await respondentAnswerStats(env, code, room, counts.completed),
     participant: publicParticipant(participant),
     score: participant.score,
     board: await rankedParticipants(env, code, room),
@@ -516,6 +520,39 @@ async function getResult(request, env, code) {
       match: participant.answers[index] === room.answerKey[index],
     })),
   });
+}
+
+// Aggregated choice counts for the result screen. Returns only totals per choice
+// (never names, tokens or who chose what), and nothing below ANSWER_STATS_MINIMUM.
+export function aggregateAnswerStats(cards, participants, minimum = ANSWER_STATS_MINIMUM) {
+  const completed = (participants || []).filter((participant) => participant
+    && participant.completedAt != null
+    && Array.isArray(participant.answers)
+    && participant.answers.length === cards.length);
+  if (completed.length < minimum) return { minimum, completed: completed.length, questions: null };
+  return {
+    minimum,
+    completed: completed.length,
+    questions: cards.map((card, index) => {
+      const choiceCount = Array.isArray(card?.choices) ? card.choices.length : 0;
+      const counts = Array(choiceCount).fill(0);
+      for (const participant of completed) {
+        const raw = participant.answers[index];
+        const selected = Number(raw && typeof raw === 'object' ? raw.selected : raw);
+        if (Number.isInteger(selected) && selected >= 0 && selected < choiceCount) counts[selected] += 1;
+      }
+      return { counts, total: counts.reduce((sum, count) => sum + count, 0) };
+    }),
+  };
+}
+
+async function respondentAnswerStats(env, code, room, completedCount) {
+  if (completedCount < ANSWER_STATS_MINIMUM) return { minimum: ANSWER_STATS_MINIMUM, completed: completedCount, questions: null };
+  try {
+    return aggregateAnswerStats(room.cards, await managedParticipants(env, code, room));
+  } catch {
+    return { minimum: ANSWER_STATS_MINIMUM, completed: completedCount, questions: null };
+  }
 }
 
 function sanitizeCards(value) {

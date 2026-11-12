@@ -473,7 +473,9 @@
     "案内文をコピーできませんでした。文章を選択してコピーしてください。": "The opening message could not be copied. Select the text and copy it manually.",
     "操作が集中しています。少し待ってから試してください。": "The service is busy. Wait a moment and try again.",
     "通信に失敗しました。接続を確認してください。": "The request failed. Check your connection.",
-    "通信に失敗しました。少し待ってから試してください。": "The request failed. Wait a moment and try again."
+    "通信に失敗しました。少し待ってから試してください。": "The request failed. Wait a moment and try again.",
+    "みんなの答え": "Everyone's answers",
+    "3人以上が答えると、問題ごとのみんなの答えが見られます。": "Once 3 or more people have answered, you can see everyone's answers for each question."
   },
   "questions": {
     "japanese": [
