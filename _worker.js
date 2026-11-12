@@ -9,6 +9,7 @@ import { runBudgetedSocialPublishing } from './src/cost/guard.js';
 import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
 import { questionPacks } from './src/challenge/packs.js';
 import { injectLibraryCatalog, removeLibraryCatalog } from './src/challenge/library-catalog.js';
+import { personalizeRoomPage } from './src/challenge/share-meta.js';
 import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
@@ -221,6 +222,11 @@ async function handleRequest(request, env) {
         } else if (!SEARCH_INDEXED_LOCALES.has(locale)) {
           headers.set('x-robots-tag', 'noindex, follow');
         }
+        if (request.method !== 'HEAD' && url.searchParams.has('room') && stripLocalePrefix(path) === '/challenge') {
+          const shared = await personalizeRoomPage(await prepared.text(), env, url, locale);
+          if (shared.personalized) headers.set('cache-control', 'no-store');
+          return new Response(shared.html, { status: 200, headers });
+        }
         return new Response(request.method === 'HEAD' ? null : prepared.body, { status: 200, headers });
       }
     }
@@ -260,6 +266,9 @@ async function handleRequest(request, env) {
         let baseHtml = await response.text();
         if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge/library') baseHtml = removeLibraryCatalog(applyChallengeLibraryMeta(baseHtml));
         rendered = localizePublicHtml(baseHtml, data, url, PUBLIC_LOCALES);
+        if (url.searchParams.has('room') && stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge') {
+          rendered = (await personalizeRoomPage(rendered, env, url, locale)).html;
+        }
       }
       catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
       return new Response(request.method === 'HEAD' ? null : rendered, { status: response.status, headers });
@@ -349,7 +358,12 @@ async function handleRequest(request, env) {
         : html && path === '/challenge'
           ? applyChallengeShareMeta(html, url)
           : html;
-      const body = localizedBody ? selectQuestionDataScript(localizedBody, 'ja') : localizedBody;
+      let body = localizedBody ? selectQuestionDataScript(localizedBody, 'ja') : localizedBody;
+      if (body && path === '/challenge' && url.searchParams.has('room')) {
+        const shared = await personalizeRoomPage(body, env, url, 'ja');
+        body = shared.html;
+        if (shared.personalized) headers.set('cache-control', 'no-store');
+      }
       return new Response(body, {
         status: response.status,
         headers,
