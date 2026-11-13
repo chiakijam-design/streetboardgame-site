@@ -505,8 +505,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(participant.getByRole('heading', { name: '9/10問 正解' })).toHaveCount(1);
     await expect(participant.locator('.challenge-hero')).toHaveCount(0);
     await expect(participant.locator('.challenge-result')).toHaveCount(10);
-    await expect(participant.getByTestId('challenge-result-details')).not.toHaveAttribute('open', '');
-    await participant.getByTestId('challenge-result-details').locator('summary').click();
+    await expect(participant.getByTestId('challenge-result-details')).toHaveAttribute('open', '');
     await expect(participant.getByRole('heading', { name: 'どこが当たった？' })).toBeVisible();
     await expect(participant.getByRole('heading', { name: '点数入り結果カード' })).toHaveCount(0);
     await expect(participant.getByRole('heading', { name: 'シェアするカードを選ぶ' })).toHaveCount(0);

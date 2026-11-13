@@ -27,9 +27,10 @@ for(const [width,locale,count] of cases)test(`${before?'before':'after'} ${local
   expect(await page.locator('[data-action="swap-roles"]').count()).toBe(1);
   expect(await page.locator('.challenge-result-image-section').evaluate(e=>e.nextElementSibling?.matches('[data-testid="challenge-role-swap"]'))).toBe(true);
   expect(await next.evaluate(e=>!!(e.compareDocumentPosition(document.querySelector('[data-testid="understanding-board"]'))&Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
-  await expect(details).not.toHaveAttribute('open','');await expect(page.locator('.challenge-results')).not.toBeVisible();await expect(summary).toHaveAccessibleName(copy(locale,'details'));
-  for(let i=0;i<2;i++){await summary.press('Enter');await expect(details).toHaveAttribute('open','');await expect(page.locator('.challenge-results')).toBeVisible();await expect(page.locator('.challenge-result[data-result-answer]')).toHaveCount(count);await expect(summary).toHaveAccessibleName(copy(locale,'close'));await summary.press('Space');await expect(details).not.toHaveAttribute('open','');}
-  await summary.click();await page.locator('[data-action="refresh-board"]').click();await expect(details).toHaveAttribute('open','');
+  // Question-by-question results start open (11/13 request) and can still be closed.
+  await expect(details).toHaveAttribute('open','');await expect(page.locator('.challenge-results')).toBeVisible();await expect(page.locator('.challenge-result[data-result-answer]')).toHaveCount(count);await expect(summary).toHaveAccessibleName(copy(locale,'close'));
+  for(let i=0;i<2;i++){await summary.press('Enter');await expect(details).not.toHaveAttribute('open','');await expect(page.locator('.challenge-results')).not.toBeVisible();await expect(summary).toHaveAccessibleName(copy(locale,'details'));await summary.press('Space');await expect(details).toHaveAttribute('open','');await expect(page.locator('.challenge-result[data-result-answer]')).toHaveCount(count);}
+  await summary.click();await page.locator('[data-action="refresh-board"]').click();await expect(details).not.toHaveAttribute('open','');
   await expect(page.getByTestId('challenge-result-share')).toBeVisible();expect(await page.getByTestId('challenge-result-share').evaluate(e=>!!e.closest('details'))).toBe(false);
   await summary.click();
   if(['ar','he'].includes(locale))await expect(page.locator('html')).toHaveAttribute('dir','rtl');

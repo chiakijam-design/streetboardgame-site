@@ -1,5 +1,7 @@
 import { createReviewContext, createReviewTemplateTools } from '../core/review.js';
 
+// messageLong: 4-line comment for the ja/en result card. Other locales keep
+// using the translated two-line message (translations are keyed by message).
 export const CHALLENGE_RESULT_TIERS = Object.freeze([
   {
     score: 0,
@@ -8,6 +10,7 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#191919',
     tagColor: '#ffffff',
     message: 'まだ知らない話が10個見つかった。\n答え合わせから、会話を始めよう。',
+    messageLong: 'まだ知らない話が10個見つかった。\n外れた答えは、ぜんぶ新しい発見。\n「なんでそれ？」と聞いてみよう。\n答え合わせから、会話を始めよう。',
   },
   {
     score: 1,
@@ -16,6 +19,7 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#f4a261',
     tagColor: '#ffffff',
     message: 'はじめの1問がぴったり一致。\nここから話すほど、もっと分かっていく。',
+    messageLong: 'はじめの1問がぴったり一致。\n残る9問は、これから知れる話。\n気になった答えから聞いてみよう。\n話すほど、もっと分かっていく。',
   },
   {
     score: 2,
@@ -24,6 +28,7 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#ef8730',
     tagColor: '#ffffff',
     message: '2問の一致と、8問の新しい発見。\nここから話すほど、もっと分かっていく。',
+    messageLong: '2問の一致と、8問の新しい発見。\n意外な答えほど、話のネタになる。\n外れた理由を、本人に聞いてみよう。\n話すほど、もっと分かっていく。',
   },
   {
     score: 3,
@@ -32,6 +37,7 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#55c9dd',
     tagColor: '#191919',
     message: '相手らしさが3問ぴったり一致。\nここから話すほど、もっと分かっていく。',
+    messageLong: '相手らしさが3問ぴったり一致。\n少しずつ、好みが見えてきた。\n外れた7問は、次の話題の宝庫。\n話すほど、もっと分かっていく。',
   },
   {
     score: 4,
@@ -40,6 +46,7 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#55c9dd',
     tagColor: '#191919',
     message: '分かるところと意外なところが半分ずつ。\nズレた答えも、次の会話のきっかけ。',
+    messageLong: '4問が一致。理解度は更新中。\n分かるところも、意外なところも。\nズレた答えも、次の会話のきっかけ。\n気になる1問から話してみよう。',
   },
   {
     score: 5,
@@ -48,6 +55,7 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#ffe36f',
     tagColor: '#191919',
     message: '分かるところと意外なところが半分ずつ。\n5個の発見から、話がもっと広がりそう。',
+    messageLong: '分かるところと意外なところが半分ずつ。\n5問ぴったり、5問は新しい発見。\n5個の発見から、話がもっと広がりそう。\n次は半分以上の一致を目指そう。',
   },
   {
     score: 6,
@@ -56,6 +64,7 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#f06e9f',
     tagColor: '#ffffff',
     message: '分かるところが、意外なところより一歩リード。\n残る4問にも、会話の種が見つかった。',
+    messageLong: 'ぴったりが、意外より一歩リード。\n相手の好みをしっかりつかんでいる。\n残る4問にも、会話の種が見つかった。\n理由を聞けば、次はもっと当たる。',
   },
   {
     score: 7,
@@ -64,6 +73,7 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#ec4683',
     tagColor: '#ffffff',
     message: 'かなり分かっている。でもまだ発見あり。\n残る3問は、次に話したい話題。',
+    messageLong: 'かなり分かっている。でも発見あり。\n7問の一致は、よく見ている証拠。\n残る3問は、次に話したい話題。\n答え合わせで、もっと近づける。',
   },
   {
     score: 8,
@@ -72,6 +82,7 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#ec4683',
     tagColor: '#ffffff',
     message: 'かなり分かっている。でもまだ発見あり。\n2つの意外な答えまで、楽しめる結果。',
+    messageLong: 'かなり分かっている。でも発見あり。\n8問一致は、もう上級者レベル。\n2つの意外な答えまで、楽しめる結果。\nあと少しで、満点に手が届く。',
   },
   {
     score: 9,
@@ -80,6 +91,7 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#ec4683',
     tagColor: '#ffffff',
     message: 'かなり分かっている。でもまだ発見あり。\n最後の1問が、新しい会話のきっかけ。',
+    messageLong: 'かなり分かっている。あと1問だけ。\n9問一致は、かなりの理解度。\n最後の1問が、新しい会話のきっかけ。\n次はきっと、満点が狙える。',
   },
   {
     score: 10,
@@ -88,21 +100,22 @@ export const CHALLENGE_RESULT_TIERS = Object.freeze([
     tagBg: '#ffe36f',
     tagColor: '#191919',
     message: '10問すべて同じ答え。理解度ぴったり。\n理由まで聞けば、会話はもっと深くなる。',
+    messageLong: '10問すべて同じ答え。理解度ぴったり。\n好みも考え方も、しっかり読めている。\nふたりの息は、ぴったり合っている。\n理由まで聞けば、会話はもっと深くなる。',
   },
 ]);
 
 export const CHALLENGE_RESULT_TIERS_EN = Object.freeze([
-  { score: 0, title: '10 New Sides Discovered', tag: 'START', tagBg: '#191919', tagColor: '#ffffff', message: 'You found ten new things to talk about.\nLet the answer review start the conversation.' },
-  { score: 1, title: 'One Match, First Step', tag: '1 HIT', tagBg: '#f4a261', tagColor: '#ffffff', message: 'Your first answer matched perfectly.\nThe more you talk, the more you will understand.' },
-  { score: 2, title: 'Two “Oh, Really?” Moments', tag: '2 HITS', tagBg: '#ef8730', tagColor: '#ffffff', message: 'Two matches and eight new discoveries.\nThe more you talk, the more you will understand.' },
-  { score: 3, title: 'Starting to Get the Picture', tag: '3 HITS', tagBg: '#55c9dd', tagColor: '#191919', message: 'Three answers matched their point of view.\nThe more you talk, the more you will understand.' },
-  { score: 4, title: 'You-Knowledge Updating', tag: 'UPDATE', tagBg: '#55c9dd', tagColor: '#191919', message: 'Some answers matched and some surprised you.\nEvery difference is a new conversation starter.' },
-  { score: 5, title: 'Half Matches, Half Discoveries', tag: 'HALF', tagBg: '#ffe36f', tagColor: '#191919', message: 'Half familiar and half surprising.\nFive discoveries can lead to five new stories.' },
-  { score: 6, title: 'More in Sync Than Surprised', tag: 'GOOD', tagBg: '#f06e9f', tagColor: '#ffffff', message: 'What you know now leads what surprised you.\nThe other four answers give you more to discuss.' },
-  { score: 7, title: 'Pretty Fluent in You', tag: 'GREAT', tagBg: '#ec4683', tagColor: '#ffffff', message: 'You understand them well, with discoveries left.\nThe last three answers are your next topics.' },
-  { score: 8, title: 'Your World in HD', tag: 'EXPERT', tagBg: '#ec4683', tagColor: '#ffffff', message: 'You understand them well, with discoveries left.\nEnjoy the two answers that still surprised you.' },
-  { score: 9, title: 'One More Conversation Starter', tag: '1 DISCOVERY', tagBg: '#ec4683', tagColor: '#ffffff', message: 'You understand them well, with one discovery left.\nThat last answer can start a new conversation.' },
-  { score: 10, title: 'You in 100% Focus', tag: 'PERFECT', tagBg: '#ffe36f', tagColor: '#191919', message: 'All ten answers matched. Perfect understanding.\nAsk why, and the conversation can go even deeper.' },
+  { score: 0, title: '10 New Sides Discovered', tag: 'START', tagBg: '#191919', tagColor: '#ffffff', message: 'You found ten new things to talk about.\nLet the answer review start the conversation.', messageLong: 'You found ten new things to learn.\nEvery miss is a fresh discovery.\nAsk them, “Why that answer?”\nLet the review start the talk.' },
+  { score: 1, title: 'One Match, First Step', tag: '1 HIT', tagBg: '#f4a261', tagColor: '#ffffff', message: 'Your first answer matched perfectly.\nThe more you talk, the more you will understand.', messageLong: 'Your first match: a perfect start.\nNine answers are left to discover.\nAsk about the one that surprised you.\nThe more you talk, the more you know.' },
+  { score: 2, title: 'Two “Oh, Really?” Moments', tag: '2 HITS', tagBg: '#ef8730', tagColor: '#ffffff', message: 'Two matches and eight new discoveries.\nThe more you talk, the more you will understand.', messageLong: 'Two matches and eight discoveries.\nSurprising answers make great topics.\nAsk why they chose differently.\nThe more you talk, the more you know.' },
+  { score: 3, title: 'Starting to Get the Picture', tag: '3 HITS', tagBg: '#55c9dd', tagColor: '#191919', message: 'Three answers matched their point of view.\nThe more you talk, the more you will understand.', messageLong: 'Three answers matched their style.\nTheir tastes are coming into view.\nSeven misses mean seven new topics.\nThe more you talk, the more you know.' },
+  { score: 4, title: 'You-Knowledge Updating', tag: 'UPDATE', tagBg: '#55c9dd', tagColor: '#191919', message: 'Some answers matched and some surprised you.\nEvery difference is a new conversation starter.', messageLong: 'Four matches: your view is updating.\nSome answers fit, some surprised you.\nEach difference starts a new chat.\nPick one answer and ask about it.' },
+  { score: 5, title: 'Half Matches, Half Discoveries', tag: 'HALF', tagBg: '#ffe36f', tagColor: '#191919', message: 'Half familiar and half surprising.\nFive discoveries can lead to five new stories.', messageLong: 'Half familiar, half surprising.\nFive matches and five discoveries.\nFive discoveries, five new stories.\nAim for more than half next time.' },
+  { score: 6, title: 'More in Sync Than Surprised', tag: 'GOOD', tagBg: '#f06e9f', tagColor: '#ffffff', message: 'What you know now leads what surprised you.\nThe other four answers give you more to discuss.', messageLong: 'More in sync than surprised.\nYou know their tastes quite well.\nFour answers left to talk about.\nAsk why, and you will match more.' },
+  { score: 7, title: 'Pretty Fluent in You', tag: 'GREAT', tagBg: '#ec4683', tagColor: '#ffffff', message: 'You understand them well, with discoveries left.\nThe last three answers are your next topics.', messageLong: 'You know them well, with more to learn.\nSeven matches: you pay attention.\nThe last three are your next topics.\nThe review brings you even closer.' },
+  { score: 8, title: 'Your World in HD', tag: 'EXPERT', tagBg: '#ec4683', tagColor: '#ffffff', message: 'You understand them well, with discoveries left.\nEnjoy the two answers that still surprised you.', messageLong: 'Eight matches: expert level.\nYou really know how they think.\nTwo surprises left to enjoy.\nA perfect score is within reach.' },
+  { score: 9, title: 'One More Conversation Starter', tag: '1 DISCOVERY', tagBg: '#ec4683', tagColor: '#ffffff', message: 'You understand them well, with one discovery left.\nThat last answer can start a new conversation.', messageLong: 'So close: just one answer away.\nNine matches show real insight.\nThe last one sparks a new chat.\nNext time, go for a perfect score.' },
+  { score: 10, title: 'You in 100% Focus', tag: 'PERFECT', tagBg: '#ffe36f', tagColor: '#191919', message: 'All ten answers matched. Perfect understanding.\nAsk why, and the conversation can go even deeper.', messageLong: 'All ten answers matched.\nYou read their tastes and thinking.\nYou two are perfectly in sync.\nAsk why, and the talk goes deeper.' },
 ]);
 
 const REVIEW_VARIANTS = Object.freeze({
