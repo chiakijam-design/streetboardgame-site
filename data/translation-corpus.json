@@ -435,7 +435,9 @@
     "元気が出ることや助けてほしいときを予想して、自分との付き合い方を伝えられます。": "A personal guide to my energy, habits, support needs, and communication style.",
     "よく開くアプリや推しの楽しみ方を予想して、普段は話さない好みを知れます。": "Everyday phone, social, video, and fandom choices that are easy to share.",
     "いつもと違う選択や意外な好みを予想して、第一印象との違いを話せます。": "Reveal personality, quirks, and choices that may not match a first impression.",
-    "♡ 遊び方": "遊び方"
+    "♡ 遊び方": "遊び方",
+    "みんなの答え": "Everyone's answers",
+    "3人以上が答えると、問題ごとのみんなの答えが見られます。": "Once 3 or more people have answered, you can see everyone's answers for each question."
   },
   "instructions": "Translate every source. Preserve {N} placeholders, numbers, URLs, product names and identifiers. Do not edit policy meaning. Machine-generated; no native review claim.",
   "entries": [
@@ -23734,6 +23736,22 @@
       "contexts": [
         "question:japanese:Q418:choice:2",
         "question:japanese:Q438:choice:3"
+      ]
+    },
+    {
+      "id": "m7397084328ac84",
+      "source": "Everyone's answers",
+      "contexts": [
+        "legacy-ui-ja",
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "m85f91988fbcc84",
+      "source": "Once 3 or more people have answered, you can see everyone's answers for each question.",
+      "contexts": [
+        "legacy-ui-ja",
+        "challenge_game.js"
       ]
     }
   ]

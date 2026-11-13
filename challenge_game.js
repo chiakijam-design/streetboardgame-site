@@ -965,9 +965,11 @@ function resultView() {
             <header><b>Q${index + 1} ${escapeHtml(translateText(answer.card.title))}</b><span>${answer.match ? '当たり' : 'ハズレ'}</span></header>
             <p>あなた：<i style="background:${COLORS[answer.selected]}"></i>${escapeHtml(answer.card.choices[answer.selected])}</p>
             <p>正解：<i style="background:${COLORS[answer.correct]}"></i>${escapeHtml(answer.card.choices[answer.correct])}</p>
+            ${answerCrowdView(result, index)}
           </article>
         `).join('')}
       </div>
+      ${answerCrowdWaitView(result)}
       <section class="challenge-ai-review" data-testid="challenge-ai-review" aria-labelledby="challenge-ai-review-title">
         <span class="challenge-section-label">REVIEW</span>
         <h2 id="challenge-ai-review-title">答え合わせレポート</h2>
@@ -995,6 +997,26 @@ function resultView() {
       <a class="challenge-secondary" href="/">トップへ戻る</a>
     </section>
   `;
+}
+
+// Respondents see aggregated choice shares only when the server returns them
+// (3 or more completed answers); individual answers are never sent.
+function answerCrowdView(result, index) {
+  const question = result.answerStats?.questions?.[index];
+  const answer = result.answers[index];
+  if (!question || !question.total || !answer) return '';
+  return `<div class="challenge-result-crowd" data-testid="challenge-result-crowd">
+    <span class="challenge-result-crowd-label">みんなの答え</span>
+    <ul>${question.counts.map((count, choice) => `<li class="${choice === answer.correct ? 'is-answer' : ''}">
+      <i style="background:${COLORS[choice]}"></i><span>${escapeHtml(answer.card.choices[choice])}</span><b>${Math.round((count / question.total) * 100)}%</b>
+    </li>`).join('')}</ul>
+  </div>`;
+}
+
+function answerCrowdWaitView(result) {
+  const stats = result.answerStats;
+  if (!stats || stats.questions) return '';
+  return `<p class="challenge-note" data-testid="challenge-result-crowd-wait">3人以上が答えると、問題ごとのみんなの答えが見られます。</p>`;
 }
 
 function resultFeedbackSequenceKey() {

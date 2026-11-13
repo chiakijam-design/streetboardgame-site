@@ -17,10 +17,10 @@ test('context firewall installs before use, aborts request before continuation a
   assert.equal(sockets[0].match(new URL('wss://www.streetboardgame.com/api/FAKE')),true);assert.equal(sockets[0].match(new URL('ws://127.0.0.1:4173/')),false);let closed=false;sockets[0].fn({close(){closed=true;}});assert.equal(closed,true);assert.equal(guard.state.blockedWebSockets,1);
   await guard.dispose();assert.deepEqual(calls,['registered','removed']);
 });
-test('all39 standard E2E entrypoints use the shared fixture; service workers blocked',()=>{
+test('all40 standard E2E entrypoints use the shared fixture; service workers blocked',()=>{
   const base=fileURLToPath(new URL('../e2e/',import.meta.url)),candidate=base;let n=0;
   for(const name of fs.readdirSync(base).filter(x=>x.endsWith('.spec.mjs'))){const p=fs.existsSync(path.join(candidate,name))?path.join(candidate,name):path.join(base,name),s=fs.readFileSync(p,'utf8');assert.match(s,/\bfrom\s*['"]\.\/test\.mjs['"]/,name);assert.doesNotMatch(s,/\bfrom\s*['"]@playwright\/test['"]/,name);n++;}
-  assert.equal(n,39);const fixture=fs.readFileSync(path.join(candidate,'test.mjs'),'utf8');assert.match(fixture,/serviceWorkers: 'block'/);assert.match(fixture,/auto: true/);
+  assert.equal(n,40);const fixture=fs.readFileSync(path.join(candidate,'test.mjs'),'utf8');assert.match(fixture,/serviceWorkers: 'block'/);assert.match(fixture,/auto: true/);
 });
 test('extra participant context is blocked before returned to a test and closes if guard setup fails',async()=>{
   const calls=[],context={async route(){calls.push('http-guard');},async routeWebSocket(){calls.push('socket-guard');},async close(){calls.push('close');}};

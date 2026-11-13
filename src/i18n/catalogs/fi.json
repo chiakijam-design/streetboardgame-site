@@ -3252,6 +3252,8 @@
     "m872624d9181e97": "Älä kirjoita nimiin tai omiin kysymyksiin mitään, mistä joku voidaan tunnistaa, kuten oikeaa nimeä, koulua tai osoitetta.",
     "mc408eb444c9d0f": "Jos asetus on päällä visaa luodessa, omat tai muokatut kysymykset lähetetään ylläpidolle kirjaston ehdokkaiksi, ja ylläpito voi muokata ja julkaista niitä muille käyttäjille. Jos et halua lähettää niitä, kytke asetus pois päältä luodessasi visaa.",
     "m9307c31a88343f": "Seksuaalinen sisältö, kiusaaminen, ulkonäön arvostelu ja syrjivät ilmaukset tarkastetaan.",
-    "ma8254987331d96": "Lue sisältö- ja kuvaoikeusohjeet"
+    "ma8254987331d96": "Lue sisältö- ja kuvaoikeusohjeet",
+    "m7397084328ac84": "Kaikkien vastaukset",
+    "m85f91988fbcc84": "Kun vähintään 3 ihmistä on vastannut, näet kaikkien vastaukset jokaiseen kysymykseen."
   }
 }

@@ -3252,6 +3252,8 @@
     "m872624d9181e97": "Don’t include anything that identifies someone — such as a real name, school or address — in names or custom questions.",
     "mc408eb444c9d0f": "If the setting is left on when you create a quiz, custom or edited questions are sent to the operator as library candidates, and the operator may edit and publish them for other users. If you don’t want to send them, turn the setting off when creating the quiz.",
     "m9307c31a88343f": "Sexual content, bullying, attacks on appearance and discriminatory expressions are subject to review.",
-    "ma8254987331d96": "Read the Content and Likeness Guidelines"
+    "ma8254987331d96": "Read the Content and Likeness Guidelines",
+    "m7397084328ac84": "Everyone's answers",
+    "m85f91988fbcc84": "Once 3 or more people have answered, you can see everyone's answers for each question."
   }
 }
