@@ -143,7 +143,10 @@ export function bindResultShare(root, { getPayload, translate, beforeAction = ()
           if (busy !== actionToken || !controls.isConnected) return;
           if (!copied) { showFallback(); say('コピーできませんでした。参加URLを長押ししてコピーしてください。'); return; }
         }
-        const outcome = await saveImageBlob(dataUrlToBlob(payload.src), payload.filename, payload.title);
+        // Story button: the 1080x1920 story image when available (request 5).
+        const story = action === 'instagram' && payload.storySrc;
+        const outcome = await saveImageBlob(dataUrlToBlob(story ? payload.storySrc : payload.src),
+          story ? payload.storyFilename || payload.filename : payload.filename, payload.title);
         record(outcome === 'downloaded' ? 'download-requested' : 'handed-off-save');
         if (action === 'instagram') say('Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。');
       } else {
