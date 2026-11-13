@@ -18,7 +18,7 @@ const nativeNames = [
   'Tiếng Việt', '한국어', '简体中文', '繁體中文',
 ];
 // Open Graph uses language_TERRITORY; hreflang retains the requested locales.
-const openGraphLocales = ['ja_JP', 'en_US', 'es_ES', 'fr_FR', 'de_DE', 'it_IT', 'pt_PT', 'ru_RU', 'uk_UA', 'pl_PL', 'nl_NL', 'sv_SE', 'da_DK', 'no_NO', 'fi_FI', 'cs_CZ', 'el_GR', 'ro_RO', 'hu_HU', 'bg_BG', 'hr_HR', 'sk_SK', 'tr_TR', 'ar_SA', 'he_IL', 'hi_IN', 'bn_BD', 'id_ID', 'ms_MY', 'th_TH', 'vi_VN', 'ko_KR', 'zh_CN', 'zh_TW'];
+const openGraphLocales = ['ja_JP', 'en_US', 'es_ES', 'fr_FR', 'de_DE', 'it_IT', 'pt_BR', 'ru_RU', 'uk_UA', 'pl_PL', 'nl_NL', 'sv_SE', 'da_DK', 'no_NO', 'fi_FI', 'cs_CZ', 'el_GR', 'ro_RO', 'hu_HU', 'bg_BG', 'hr_HR', 'sk_SK', 'tr_TR', 'ar_SA', 'he_IL', 'hi_IN', 'bn_BD', 'id_ID', 'ms_MY', 'th_TH', 'vi_VN', 'ko_KR', 'zh_CN', 'zh_TW'];
 
 export const LOCALE_DETAILS = Object.freeze(Object.fromEntries(TARGET_LOCALES.map((locale, index) => [
   locale,
