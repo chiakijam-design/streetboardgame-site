@@ -15,6 +15,7 @@ import { publicQuestionExamples } from './src/challenge/examples.js';
 import { resultShareMarkup, bindResultShare, shareResult } from './src/platform/resultShare.js';
 import { isPerfectResult, perfectTitle, launchConfetti, playFanfare, showPerfectSharePopup } from './src/challenge/perfect.js';
 import { INVITE_SHARE_LABELS, challengeInvitePayload, createChallengeInviteCanvas } from './src/platform/inviteShare.js';
+import { createStoryCanvas } from './src/platform/storyImage.js';
 import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
 import { questionPackBySlug, questionPackCards, questionPacks } from './src/challenge/packs.js';
 import {
@@ -99,6 +100,7 @@ let state = {
   questionTrendsLoaded: false,
   result: null,
   resultImageUrl: '',
+  resultStoryUrl: '',
   resultImageBusy: false,
   resultImageError: '',
   error: '',
@@ -1345,8 +1347,10 @@ function bindEvents() {
     translate: translateText,
     beforeAction: () => state.mode === 'manage' ? Boolean(state.room) : Boolean(state.result),
     getPayload: () => state.mode === 'manage' && state.room
-      ? challengeInvitePayload({ origin: location.origin, locale: currentLocale, room: state.room,
-        src: invitationImage.key === invitationKey() ? invitationImage.src : '', translate: translateText })
+      ? { ...challengeInvitePayload({ origin: location.origin, locale: currentLocale, room: state.room,
+        src: invitationImage.key === invitationKey() ? invitationImage.src : '', translate: translateText }),
+        storySrc: invitationImage.key === invitationKey() ? invitationImage.storySrc || '' : '',
+        storyFilename: 'watachan-challenge-invitation-story.png' }
       : state.result ? resultSharePayload() : null,
     track: (action, outcome) => {
       if (outcome === 'pressed') trackShareButtonPress(action);
@@ -1697,6 +1701,8 @@ async function prepareInvitationImage() {
     const canvas = await createChallengeInviteCanvas({ payload, creatorName: room.creatorName,
       locale: currentLocale, translate: translateText, girlImage, questionCount: room.cards.length });
     image.src = canvas.toDataURL('image/png');
+    // The story image is optional: without it the story button saves the regular image.
+    try { image.storySrc = createStoryCanvas(canvas, { locale: currentLocale, direction: document.documentElement.dir || 'ltr', crop: { x: 64, y: 48, width: 952, height: 1254 } }).toDataURL('image/png'); } catch { image.storySrc = ''; }
   } catch { image.error = true; }
   image.busy = false;
   if (state.mode === 'manage' && invitationImage === image && invitationKey() === key) render();
@@ -1771,6 +1777,7 @@ async function retryChallenge() {
       questionIndex: 0,
       result: null,
       resultImageUrl: '',
+      resultStoryUrl: '',
       resultImageBusy: false,
       resultImageError: '',
       mode: 'participant-answer',
@@ -1816,6 +1823,7 @@ function startRoleSwap() {
     questionIndex: 0,
     result: null,
     resultImageUrl: '',
+    resultStoryUrl: '',
     resultImageBusy: false,
     resultImageError: '',
     questionSubmissionConsent: true,
@@ -1951,6 +1959,7 @@ async function loadResult(token = state.participantToken) {
     resultDetailsOpen: true,
     ranking: data.board || [],
     resultImageUrl: '',
+    resultStoryUrl: '',
     resultImageBusy: false,
     resultImageError: '',
     mode: 'result',
@@ -2193,9 +2202,12 @@ async function prepareResultImage() {
   try {
     const canvas = await createChallengeResultCanvas(state.result);
     const imageUrl = canvas.toDataURL('image/png');
+    let storyUrl = '';
+    try { storyUrl = createStoryCanvas(canvas, { locale: currentLocale, direction: document.documentElement.dir || 'ltr', background: isPerfectResult(state.result) ? 'gold' : '#ec4683', crop: { x: 68, y: 50, width: 944, height: 1250, radius: 42 } }).toDataURL('image/png'); } catch { /* optional */ }
     trackDailyResultAction('result_image_ready');
     setState({
       resultImageUrl: imageUrl,
+      resultStoryUrl: storyUrl,
       resultImageBusy: false,
       resultImageError: '',
     });
@@ -2211,6 +2223,8 @@ function resultSharePayload() {
   return {
     src: state.resultImageUrl,
     filename: 'watachan-challenge-score.png',
+    storySrc: state.resultStoryUrl,
+    storyFilename: 'watachan-challenge-score-story.png',
     title: translateText(isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード'),
     text: resultShareText(), caption: resultShareText({ includeUrl: false }),
     url: `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`,

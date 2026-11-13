@@ -1,5 +1,12 @@
 import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
 import { expect, test } from './test.mjs';
+import fs from 'node:fs/promises';
+
+// Width/height from a downloaded PNG's IHDR header.
+async function pngSize(download) {
+  const bytes = await fs.readFile(await download.path());
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+}
 
 async function preparePage(page) {
   await page.addInitScript(() => {
@@ -427,7 +434,10 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
   await hostShare.locator('summary').click();
   const invitationDownload = page.waitForEvent('download');
   await hostShare.locator('[data-result-share="instagram"]').click();
-  expect((await invitationDownload).suggestedFilename()).toBe('watachan-challenge-invitation.png');
+  const invitationFile = await invitationDownload;
+  // Story button saves the vertical 1080x1920 invitation (request 5).
+  expect(invitationFile.suggestedFilename()).toBe('watachan-challenge-invitation-story.png');
+  expect(await pngSize(invitationFile)).toEqual({ width: 1080, height: 1920 });
   await expect(hostShare.locator('[data-result-share-status]')).toHaveText('Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。');
   const invitationCaption = await page.evaluate(() => window.__instagramCopiedUrl);
   expect(invitationCaption).toContain('ちあき');
@@ -574,12 +584,16 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       const downloadPromise = participant.waitForEvent('download');
       await resultShare.locator('[data-result-share-fallback] > summary').click();
       await resultShare.locator('[data-result-share="instagram"]').click();
-      await downloadPromise;
+      const storyFile = await downloadPromise;
+      expect(storyFile.suggestedFilename()).toBe('watachan-challenge-score-story.png');
+      expect(await pngSize(storyFile)).toEqual({ width: 1080, height: 1920 });
       expect(await participant.evaluate(() => window.__copiedResultText)).toContain('称号は「');
       expect(await participant.evaluate(() => window.__copiedResultText.includes(location.origin))).toBe(false);
       const imageDownloadPromise = participant.waitForEvent('download');
       await resultShare.getByRole('button', { name: '結果画像を保存', exact: true }).click();
-      await imageDownloadPromise;
+      const imageFile = await imageDownloadPromise;
+      expect(imageFile.suggestedFilename()).toBe('watachan-challenge-score.png');
+      expect(await pngSize(imageFile)).toEqual({ width: 1080, height: 1350 });
     }
     const feedbackToneCount = await participant.evaluate(
       () => window.__quizFeedbackFrequencies.length,
