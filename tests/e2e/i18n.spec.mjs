@@ -106,8 +106,7 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   }
   await expect(page.getByRole('heading', { name: '10/10 correct' })).toHaveCount(1);
   await expect(page.locator('.challenge-hero')).toHaveCount(0);
-  await expect(page.getByTestId('challenge-result-details')).not.toHaveAttribute('open', '');
-  await page.getByTestId('challenge-result-details').locator('summary').click();
+  await expect(page.getByTestId('challenge-result-details')).toHaveAttribute('open', '');
   await expect(page.getByRole('heading', { name: 'Which answers matched?' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Answer Review Report' })).toBeVisible();
   await expect(page.getByTestId('challenge-ai-review').locator(':scope > div > p')).toHaveCount(4);
@@ -122,7 +121,7 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   await expect(page.getByTestId('challenge-ai-review')).toContainText('Overall understanding');
   await expect(page.getByTestId('challenge-ai-review')).toContainText('A fun topic for next time');
   await expect(page.getByTestId('challenge-result-image')).toBeVisible();
-  await expect(page.getByTestId('challenge-result-image')).toHaveAttribute('alt', /You in 100% Focus/);
+  await expect(page.getByTestId('challenge-result-image')).toHaveAttribute('alt', /King of Mia/); // perfect score: gold "<creator>王" title (11/13)
   const roleSwap = page.getByTestId('challenge-role-swap');
   await expect(roleSwap).toContainText('My turn to create a quiz');
   await expect(roleSwap).toContainText('Use the same 10 questions — now I’ll be the creator');

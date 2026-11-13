@@ -15,12 +15,12 @@ test('respondents see everyone\'s answers only after three people finish, as sha
  const made=await request.post('/api/challenge/rooms',{data:{creatorName:'Synthetic host',cards:[0,1].map(i=>({id:'crowd'+i,title:'Synthetic crowd '+i,choices})),answers:[0,0]}});
  expect(made.status()).toBe(201);const {code}=await made.json();
  const first=await play(browser,code,'CrowdOne',1);
- await first.page.getByTestId('challenge-result-details').locator('summary').click();
+ await expect(first.page.getByTestId('challenge-result-details')).toHaveAttribute('open','');
  await expect(first.page.getByTestId('challenge-result-crowd-wait')).toBeVisible();
  await expect(first.page.getByTestId('challenge-result-crowd')).toHaveCount(0);
  const second=await play(browser,code,'CrowdTwo',1);
  const third=await play(browser,code,'CrowdThree',0);
- await third.page.getByTestId('challenge-result-details').locator('summary').click();
+ await expect(third.page.getByTestId('challenge-result-details')).toHaveAttribute('open','');
  const crowd=third.page.getByTestId('challenge-result-crowd');
  await expect(crowd).toHaveCount(2);
  await expect(crowd.first()).toContainText('67%');

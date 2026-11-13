@@ -12,7 +12,8 @@ import { challengeStartCopy } from './src/i18n/challenge-start-copy.js';
 import { participantAnswerOwnerText } from './src/i18n/challenge-participant-copy.js';
 import { weeklyQuestionPacks } from './src/challenge/packs.js';
 import { publicQuestionExamples } from './src/challenge/examples.js';
-import { resultShareMarkup, bindResultShare } from './src/platform/resultShare.js';
+import { resultShareMarkup, bindResultShare, shareResult } from './src/platform/resultShare.js';
+import { isPerfectResult, perfectTitle, launchConfetti, playFanfare, showPerfectSharePopup } from './src/challenge/perfect.js';
 import { INVITE_SHARE_LABELS, challengeInvitePayload, createChallengeInviteCanvas } from './src/platform/inviteShare.js';
 import { mergeChallengeCards, pickChallengeCards } from './src/challenge/data.js';
 import { questionPackBySlug, questionPackCards, questionPacks } from './src/challenge/packs.js';
@@ -209,9 +210,14 @@ function render() {
     && !state.resultImageBusy && !state.resultImageError) {
     prepareResultImage();
   }
+  if (state.mode === 'result' && state.result && celebratedResult !== state.result && isPerfectResult(state.result)) {
+    celebratedResult = state.result;
+    celebratePerfectResult();
+  }
   if (state.mode === 'result' && state.result && (state.resultImageUrl || state.resultImageError)) {
     requestAnimationFrame(startResultFeedbackSequence);
   } else if (state.mode !== 'result') {
+    stopPerfectCelebration();
     stopResultFeedbackSequence();
   }
   if (questionViewportKey && questionViewportKey !== lastQuestionViewportKey) {
@@ -920,7 +926,12 @@ function joinView() {
 function localizedResultTier(result) {
   const total = result.answers.length;
   const tier = isEnglish ? getChallengeResultTierEnglish(result.score, total) : getChallengeResultTier(result.score, total);
-  return total < QUESTION_COUNT ? { ...tier, message: challengeCopy(currentLocale, 'talk') } : tier;
+  // ja/en show the 4-line comment; other locales keep the translated 2-line message.
+  const message = ['ja', 'en'].includes(currentLocale) && tier.messageLong ? tier.messageLong : tier.message;
+  const base = total < QUESTION_COUNT ? { ...tier, message: challengeCopy(currentLocale, 'talk') } : { ...tier, message };
+  return isPerfectResult(result)
+    ? { ...base, title: perfectTitle(result.creatorName, currentLocale), baseTitle: tier.title, perfect: true }
+    : base;
 }
 
 function resultView() {
@@ -930,6 +941,10 @@ function resultView() {
   const displayResult = isEnglish ? { ...result, answers: result.answers.map((answer) => ({ ...answer, card: localizedQuestionCard(answer.card, translateText) })) } : result;
   const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(displayResult).map((line, index) => index === 0 ? line.replace(`“${tier.title}”`, `“${translateText(tier.title)}”`) : line) : getChallengeReviewLines(result);
   if (result.answers.length < QUESTION_COUNT) reviewLines[3] = `${reviewLines[3]} — ${challengeCopy(currentLocale, 'talk')}`;
+  if (tier.perfect) {
+    reviewLines[0] = reviewLines[0].replace(`「${tier.baseTitle}」`, `「${tier.title}」`)
+      .replace(`“${tier.baseTitle}”`, `“${tier.title}”`).replace(`“${translateText(tier.baseTitle)}”`, `“${tier.title}”`);
+  }
   return `
     <section class="challenge-result-image-section" aria-labelledby="challenge-result-score-title">
       <h1 id="challenge-result-score-title" class="challenge-result-visually-hidden">${result.score}/${result.answers.length}問 正解</h1>
@@ -1332,13 +1347,7 @@ function bindEvents() {
     getPayload: () => state.mode === 'manage' && state.room
       ? challengeInvitePayload({ origin: location.origin, locale: currentLocale, room: state.room,
         src: invitationImage.key === invitationKey() ? invitationImage.src : '', translate: translateText })
-      : state.result ? {
-      src: state.resultImageUrl,
-      filename: 'watachan-challenge-score.png',
-      title: translateText(isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード'),
-      text: resultShareText(), caption: resultShareText({ includeUrl: false }),
-      url: `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`,
-    } : null,
+      : state.result ? resultSharePayload() : null,
     track: (action, outcome) => {
       if (outcome === 'pressed') trackShareButtonPress(action);
       if (state.mode === 'manage') {
@@ -1939,7 +1948,7 @@ async function loadResult(token = state.participantToken) {
     loading: false,
     answerPending: false,
     result: data,
-    resultDetailsOpen: false,
+    resultDetailsOpen: true,
     ranking: data.board || [],
     resultImageUrl: '',
     resultImageBusy: false,
@@ -1985,6 +1994,22 @@ function splitResultText(text, maxLength = 18, maxLines = 3) {
   return lines.slice(0, maxLines);
 }
 
+function wrapEnglishLines(context, text, maxWidth, maxLines) {
+  const lines = [];
+  String(text || '').split('\n').forEach((paragraph) => {
+    let line = '';
+    paragraph.split(/\s+/).filter(Boolean).forEach((word) => {
+      const next = line ? `${line} ${word}` : word;
+      if (line && context.measureText(next).width > maxWidth) {
+        lines.push(line);
+        line = word;
+      } else line = next;
+    });
+    if (line) lines.push(line);
+  });
+  return lines.slice(0, maxLines);
+}
+
 function drawResultLines(context, lines, x, y, lineHeight, maxWidth) {
   lines.forEach((line, index) => maxWidth === undefined
     ? context.fillText(line, x, y + index * lineHeight)
@@ -2008,6 +2033,13 @@ async function createChallengeResultCanvas(result) {
     : localizedCanvasContext(canvas.getContext('2d'), translateText, document.documentElement.dir);
 
   context.fillStyle = '#ec4683';
+  if (tier.perfect) {
+    const gold = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gold.addColorStop(0, '#fff3a8');
+    gold.addColorStop(0.45, '#f7b500');
+    gold.addColorStop(1, '#b8860b');
+    context.fillStyle = gold;
+  }
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   context.fillStyle = '#191919';
@@ -2046,14 +2078,14 @@ async function createChallengeResultCanvas(result) {
   context.fillStyle = '#fff8f1';
   resultRoundRect(context, 140, 248, 800, 344, 30);
   context.fill();
-  context.strokeStyle = '#ec4683';
+  context.strokeStyle = tier.perfect ? '#d4a017' : '#ec4683';
   context.setLineDash([18, 16]);
   context.lineWidth = 6;
   resultRoundRect(context, 140, 248, 800, 344, 30);
   context.stroke();
   context.setLineDash([]);
 
-  context.fillStyle = '#ec4683';
+  context.fillStyle = tier.perfect ? '#a87400' : '#ec4683';
   context.font = '700 31px "Noto Sans JP", sans-serif';
   context.textAlign = 'left';
   const scoreLabelLines = splitResultText(
@@ -2106,8 +2138,14 @@ async function createChallengeResultCanvas(result) {
   context.textAlign = 'center';
   context.fillText(isEnglish ? 'YOUR TITLE' : '今日の称号', 540, 660);
 
-  context.fillStyle = '#ec4683';
-  const titleLines = splitResultText(tier.title, 11, 2);
+  context.fillStyle = tier.perfect ? '#a87400' : '#ec4683';
+  // English titles wrap between words (e.g. "King of <long name>"), not mid-word.
+  context.font = '900 54px "Noto Sans JP", sans-serif';
+  let titleLines = currentLocale === 'en' ? wrapEnglishLines(context, tier.title, 760, 2) : splitResultText(tier.title, 11, 2);
+  if (currentLocale === 'en' && titleLines.length > 1) {
+    context.font = '900 46px "Noto Sans JP", sans-serif';
+    titleLines = wrapEnglishLines(context, tier.title, 760, 2);
+  }
   context.font = `900 ${titleLines.length > 1 ? 46 : 54}px "Noto Sans JP", sans-serif`;
   drawResultLines(context, titleLines, 540, 740, 58, !['ja', 'en'].includes(currentLocale) ? 760 : undefined);
 
@@ -2120,7 +2158,7 @@ async function createChallengeResultCanvas(result) {
   context.stroke();
   context.fillStyle = '#191919';
   context.font = '900 31px "Noto Sans JP", sans-serif';
-  const messageLines = splitResultText(tier.message, 20, 4);
+  const messageLines = currentLocale === 'en' ? wrapEnglishLines(context, tier.message, 720, 4) : splitResultText(tier.message, 20, 4);
   drawResultLines(context, messageLines, 540, 878, 47, !['ja', 'en'].includes(currentLocale) ? 730 : undefined);
 
   context.fillStyle = '#ffe36f';
@@ -2167,6 +2205,51 @@ async function prepareResultImage() {
       resultImageError: '結果画像を作成できませんでした。ページを再読み込みしてください。',
     });
   }
+}
+
+function resultSharePayload() {
+  return {
+    src: state.resultImageUrl,
+    filename: 'watachan-challenge-score.png',
+    title: translateText(isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード'),
+    text: resultShareText(), caption: resultShareText({ includeUrl: false }),
+    url: `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`,
+  };
+}
+
+// Perfect score: gold card + confetti + fanfare, then a share popup a few seconds later.
+const PERFECT_POPUP_DELAY_MS = 3500;
+let celebratedResult = null;
+let perfectPopupTimer = 0;
+let closePerfectPopup = () => {};
+
+function celebratePerfectResult() {
+  const shown = state.result;
+  launchConfetti(document);
+  playFanfare(window);
+  clearTimeout(perfectPopupTimer);
+  perfectPopupTimer = setTimeout(() => {
+    if (state.mode !== 'result' || state.result !== shown) return;
+    trackAnalyticsEvent('result_share_action', { game_type: 'challenge', action: 'perfect-popup', outcome: 'shown' });
+    closePerfectPopup = showPerfectSharePopup(document, {
+      locale: currentLocale,
+      dir: document.documentElement.dir || 'ltr',
+      onShare: async () => {
+        trackShareButtonPress('native');
+        const outcome = await shareResult(resultSharePayload());
+        trackAnalyticsEvent('result_share_action', { game_type: 'challenge', action: 'perfect-popup', outcome });
+        if (outcome === 'unavailable') {
+          document.querySelector('[data-testid="challenge-result-share"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      },
+    });
+  }, PERFECT_POPUP_DELAY_MS);
+}
+
+function stopPerfectCelebration() {
+  clearTimeout(perfectPopupTimer);
+  closePerfectPopup();
+  closePerfectPopup = () => {};
 }
 
 function resultShareText({ includeUrl = true } = {}) {
