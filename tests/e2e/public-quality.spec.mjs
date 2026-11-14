@@ -1,6 +1,6 @@
 import { expect, test } from './test.mjs';
 
-test('current legal pages explain the free quiz and keep historical purchase conditions separate', async ({ page }, testInfo) => {
+test('current legal pages explain the free quiz and link only to previous versions (LIVE removed 2026-11-15)', async ({ page }, testInfo) => {
   for (const path of ['/legal', '/terms', '/privacy', '/minor-policy', '/content-guidelines']) {
     await page.goto(path + '?analytics=exclude');
     const history = page.getByTestId('historical-provisions');

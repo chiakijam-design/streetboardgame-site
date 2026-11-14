@@ -65,7 +65,6 @@ const LEGAL_PAGE_FILES = Object.freeze({
   '/terms': '/terms.html',
   '/privacy': '/privacy.html',
   '/legal': '/legal.html',
-  '/creator-terms': '/creator-terms.html',
   '/refund-policy': '/refund-policy.html',
   '/content-guidelines': '/content-guidelines.html',
   '/minor-policy': '/minor-policy.html',
@@ -134,7 +133,7 @@ async function handleRequest(request, env) {
       headers.set('cache-control', 'no-store');
       let body = response.body;
       if (response.ok && /text\/html/i.test(headers.get('content-type') || '')) {
-        const notice = '<aside style="max-width:68rem;margin:1rem auto;padding:1rem;background:#fff5d0;border:2px solid #333;line-height:1.8;font-family:sans-serif"><strong>過去の取引と既存データ</strong><p>過去の購入・返金の権利と既存データの保存条件は変わりません。</p><a href="/challenge">無料クイズ</a> / <a href="/contact">お問い合わせフォーム</a></aside>';
+        const notice = '<aside style="max-width:68rem;margin:1rem auto;padding:1rem;background:#fff5d0;border:2px solid #333;line-height:1.8;font-family:sans-serif"><strong>改定前の版</strong><p>これは改定前の版です。現在の内容は各ページをご覧ください。</p><a href="/challenge">無料クイズ</a> / <a href="/contact">お問い合わせフォーム</a></aside>';
         body = (await response.text()).replace(/<body\b[^>]*>/i, '$&' + notice);
       }
       return new Response(request.method === 'HEAD' ? null : body, { status: response.status, headers });

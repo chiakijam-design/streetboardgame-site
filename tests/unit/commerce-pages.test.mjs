@@ -21,11 +21,11 @@ test('commerce information distinguishes free quiz from verified physical produc
  }}finally{globalThis.fetch=before;}
 });
 
-test('current policies use a live archival destination for preserved historical refund references',async()=>{
+test('current policies no longer reference the LIVE refund policy, which stays archived (2026-11-15)',async()=>{
  const savedFetch=globalThis.fetch;globalThis.fetch=()=>{throw Error('External network forbidden');};
  try{for(const locale of PUBLIC_LOCALES){const prefix=locale==='ja'?'':'/'+locale;for(const page of ['terms','minor-policy']){
   const r=await worker.fetch(new Request('https://www.streetboardgame.com'+prefix+'/'+page+'?analytics=exclude'),assets());assert.equal(r.status,200);const html=await r.text();
-  assert.doesNotMatch(html,/href="(?:\/[a-zA-Z-]+)?\/refund-policy"/);assert.match(html,/href="\/legal-history\/2026-10-23-refund-policy.html"/);
+  assert.doesNotMatch(html,/href="(?:\/[a-zA-Z-]+)?\/refund-policy"/);assert.doesNotMatch(html,/refund-policy/);
  }}const r=await worker.fetch(new Request('https://www.streetboardgame.com/legal-history/2026-10-23-refund-policy.html?analytics=exclude'),assets());assert.equal(r.status,200);assert.match(r.headers.get('x-robots-tag'),/noindex/);assert.match(await r.text(),/返金/);
  }finally{globalThis.fetch=savedFetch;}
 });

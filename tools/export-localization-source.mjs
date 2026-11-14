@@ -20,7 +20,7 @@ const english = await questionLibrary('prototype_english_common_data.js', 'ENGLI
 const htmlFiles = [
   'index.html', 'en/index.html', 'challenge.html',
   'terms.html', 'en/terms.html', 'privacy.html', 'en/privacy.html', 'legal.html',
-  'creator-terms.html', 'refund-policy.html', 'minor-policy.html',
+  'minor-policy.html',
   'content-guidelines.html', 'pricing.html', '404.html',
 ];
 const pages = {};

@@ -62,9 +62,6 @@ const HTML_STYLE_MAP = {
   'content-guidelines.html': [
     'legal',
   ],
-  'creator-terms.html': [
-    'legal',
-  ],
   'legal.html': [
     'legal',
   ],

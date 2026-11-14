@@ -9,7 +9,7 @@ import { safeScriptJson } from '../src/i18n/public-html.js';
 import { runtimeCatalogEntries, unescapeScriptText } from '../src/i18n/runtime-catalog.js';
 
 const root = new URL('../', import.meta.url);
-const pages = ['/', '/challenge', '/challenge/manage', '/challenge/ranking', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/creator-terms', '/content-guidelines', '/minor-policy'];
+const pages = ['/', '/challenge', '/challenge/manage', '/challenge/ranking', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy'];
 const manifest = {};
 const activeCatalogAssets = new Set();
 const env = { __STATIC_HTML_BUILD: true, ASSETS: { async fetch(request) {

@@ -205,7 +205,6 @@ test('主要HTMLはGTMローダーを読み込み、運用・法務画面は読�
     'terms.html',
     'privacy.html',
     'legal.html',
-    'creator-terms.html',
     'legal-history/refund-policy.html',
     'content-guidelines.html',
     'minor-policy.html',
