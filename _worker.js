@@ -17,6 +17,7 @@ import { pvRegionMode } from './src/analytics/pv-regions.js';
 import { injectGooglePolicy } from './src/analytics/passive-policy.js';
 import { japanGA4Mode } from './src/analytics/jp-ga4-policy.js';
 import { injectPVChoice, pvPublicPath } from './src/analytics/pv-policy.js';
+import { adsenseConfigFor, injectAdsenseConfig, ADSENSE_CSP } from './src/ads/adsense-config.js';
 export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
@@ -570,20 +571,23 @@ async function withSecurityHeaders(response, request, env, pvMode = 'consent', g
     headers.delete('etag');
     headers.delete('last-modified');
   }
+  // AdSense (off until ADSENSE_ENABLED=true): only Japanese connections on
+  // the public game pages that can show one of the four approved scenes.
+  const adsense = isHtml && response.ok && !env?.__STATIC_HTML_BUILD ? adsenseConfigFor(env, requestPath, googleRegion) : null;
   const sensitivePath = /^\/(?:[a-zA-Z-]+\/(?:challenge|live-challenge)(?:\/|$)|challenge(?:\/|$)|live(?:-ops)?|question-ops|api(?:\/|$))/.test(requestPath);
   headers.set('content-security-policy', [
     "default-src 'none'",
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",
-    `script-src 'self'${nonce ? ` 'nonce-${nonce}' 'strict-dynamic'` : ''} https://www.googletagmanager.com https://www.clarity.ms https://scripts.clarity.ms`,
+    `script-src 'self'${nonce ? ` 'nonce-${nonce}' 'strict-dynamic'` : ''} https://www.googletagmanager.com https://www.clarity.ms https://scripts.clarity.ms${adsense ? ' ' + ADSENSE_CSP.script : ''}`,
     "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://c.clarity.ms https://c.bing.com/c.gif",
-    `connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com ${CLARITY_COLLECT_SOURCES}${pvCollector}`,
+    `img-src 'self' data: blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://c.clarity.ms https://c.bing.com/c.gif${adsense ? ' ' + ADSENSE_CSP.img : ''}`,
+    `connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com ${CLARITY_COLLECT_SOURCES}${pvCollector}${adsense ? ' ' + ADSENSE_CSP.connect : ''}`,
     "form-action 'self'",
-    "frame-src 'none'",
+    adsense ? `frame-src ${ADSENSE_CSP.frame}` : "frame-src 'none'",
     "media-src 'none'",
     "manifest-src 'self'",
     "worker-src 'self'",
@@ -603,6 +607,12 @@ async function withSecurityHeaders(response, request, env, pvMode = 'consent', g
   if (isHtml && response.ok && !env?.__STATIC_HTML_BUILD && pvPublicPath(requestPath, PUBLIC_LOCALES)) {
     // Apply to GET and HEAD; never share country-specific rewritten HTML.
     // Underlying static assets retain their independent cache policy.
+    headers.set('cache-control', 'private, no-store');
+    headers.set('cdn-cache-control', 'no-store');
+    headers.set('cloudflare-cdn-cache-control', 'no-store');
+  }
+  if (adsense) {
+    // Country-specific HTML must never be shared through a cache.
     headers.set('cache-control', 'private, no-store');
     headers.set('cdn-cache-control', 'no-store');
     headers.set('cloudflare-cdn-cache-control', 'no-store');
@@ -629,6 +639,7 @@ async function withSecurityHeaders(response, request, env, pvMode = 'consent', g
       body = injectQuestionFontWarmup(body, new URL(request.url));
       body = injectGooglePolicy(body, pvPublicPath(new URL(request.url).pathname, PUBLIC_LOCALES) ? googleRegion : null);
       body = injectPVChoice(body, new URL(request.url), locale, PUBLIC_LOCALES, pvMode, japanGA4Mode(googleRegion));
+      body = injectAdsenseConfig(body, adsense);
     }
     body = body.replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`);
     headers.delete('content-length');

@@ -1028,6 +1028,13 @@
       "contexts": [
         "2026-11-15:challenge-guide-more"
       ]
+    },
+    {
+      "id": "m28bbec41ce925b",
+      "source": "広告",
+      "contexts": [
+        "2026-11-15:adsense-label"
+      ]
     }
   ]
 }

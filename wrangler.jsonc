@@ -20,7 +20,15 @@
   "vars": {
     "WATA_COST_GUARD_MODE": "enforce",
     "WATA_COST_STOP_OVERVIEW": "false",
-    "LIVE_OPERATIONAL_VIEWER_LIMIT": "1000"
+    "LIVE_OPERATIONAL_VIEWER_LIMIT": "1000",
+    // Google AdSense: keep "false" until the review passes. Then set "true" and
+    // the display ad unit IDs (digits) from the AdSense dashboard. See
+    // docs/ADVERTISING_PLACEMENT_POLICY.md. Auto ads must stay OFF for this site.
+    "ADSENSE_ENABLED": "false",
+    "ADSENSE_SLOT_RESULT": "",
+    "ADSENSE_SLOT_LIBRARY": "",
+    "ADSENSE_SLOT_BEFORE_CREATE": "",
+    "ADSENSE_SLOT_BOARD": ""
   },
   "assets": {
     "directory": "./",
