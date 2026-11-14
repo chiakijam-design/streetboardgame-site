@@ -46,7 +46,7 @@ LIVE運営コンソール、障害告知、Stripe Checkout・Webhook・返金・
 - Apply `migrations/0017_consolidate_legacy_question_ids.sql` to `REMOTE_DB` if old `FQ`/`FAM`/`LOVE` catalog IDs remain. It keeps the newest status/edit for duplicate IDs and converts them to the common `Q` ID namespace.
 - `/question-ops` reuses the existing LIVE operations token and TOTP authentication.
 - Do not expose `LIVE_ADMIN_TOKEN` or the TOTP secret in static assets or browser code.
-- Public submissions are stored only when the creator explicitly checks the review-consent checkbox.
+- The "このクイズを友達や他の人も使えるようにする" checkbox is ON by default (owner decision, confirmed 2026-11-15). While it stays ON, custom or edited questions are sent to `/question-ops` as library candidates; creators can turn it off and still create the quiz. The screen states that it starts ON.
 - Configure all three Worker secrets before using the moderation page: `LIVE_ADMIN_TOKEN`,
   `LIVE_ADMIN_TOTP_SECRET`, and `LIVE_ADMIN_SESSION_SECRET`. Each secret must meet the
   validation in `src/live/admin-auth.js`; production fails closed with HTTP 503 when they are absent.

@@ -373,7 +373,7 @@ function creatorQuestionEditView(card) {
         <input id="question-submit-consent" type="checkbox" ${state.questionSubmissionConsent ? 'checked' : ''}
           aria-label="このクイズを友達や他の人も使えるようにする">
         <span><b>このクイズを友達や他の人も使えるようにする</b><br>
-        <small>ONのままなら、この自作・編集した問題を掲載候補として運営へ送ります。<br>${QUESTION_PUBLICATION_NOTICE}<br>${QUESTION_REVIEW_CRITERIA}</small></span>
+        <small>初期状態はONです。ONのままなら、自作・編集した問題を掲載候補として運営へ送ります。外してもクイズは作れます。<br>${QUESTION_PUBLICATION_NOTICE}<br>${QUESTION_REVIEW_CRITERIA}</small></span>
       </label>
       ${personalConsentView(card)}
       <button class="challenge-primary" data-action="save-question-edit">この内容で問題に戻る <span>▶</span></button>

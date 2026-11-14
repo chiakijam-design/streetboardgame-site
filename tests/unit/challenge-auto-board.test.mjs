@@ -22,12 +22,17 @@ test('public policy pages preserve the new notice and legacy privacy in every lo
    if(page==='privacy') assert.ok(html.includes(BOARD_COPY[locale].data),locale+' data inventory');
  }
 });
-test('localized challenge structured descriptions match the automatic-publication notice',()=>{
+// 2026-11-15 (owner decision): the /challenge description describes the page itself.
+// The automatic-publication notice stays visible on the page and in the policies above.
+const CHALLENGE_DESCRIPTION_ID='mc3a427298a734f';
+test('localized challenge structured descriptions use the translated page description',()=>{
  for(const locale of TARGET_LOCALES.filter(l=>l!=='ja')){
+   const expected=JSON.parse(readFileSync(new URL('../../src/i18n/catalogs/'+locale+'.json',import.meta.url),'utf8')).messages[CHALLENGE_DESCRIPTION_ID];
    const html=readFileSync(new URL('../../'+PUBLIC_LOCALE_PAGES['/'+locale+'/challenge'].slice(1),import.meta.url),'utf8');
    const blocks=[...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].map(m=>JSON.parse(m[1]));
    const page=blocks.flatMap(b=>b['@graph']||[b]).find(b=>b['@type']==='WebPage');
-   assert.equal(page.description,BOARD_COPY[locale].notice,locale);
+   assert.ok(expected,locale+' catalog');
+   assert.equal(page.description,expected,locale);
  }
 });
 

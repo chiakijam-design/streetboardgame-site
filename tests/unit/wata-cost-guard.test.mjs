@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
-import { COST_POLICIES, consumeCostBudget, costBudgetResponse, runBudgetedSocialPublishing } from '../../src/cost/guard.js';
+import { COST_POLICIES, consumeCostBudget, costBudgetResponse } from '../../src/cost/guard.js';
 import worker from '../../_worker.js';
 const start = Date.UTC(2026, 10, 4, 12);
 function setup() {
@@ -37,18 +37,11 @@ test('separate full/pending scopes and emergency pause do not consume counters',
   assert.equal((await consumeCostBudget(x.env,'invalid',start)).status,503);
   }finally{x.db.close();}
 });
-test('social duplicate delivery, external failures and stop remain bounded; disabled social needs no DB',async()=>{
-  const x=setup();let attempts=0;const publish=async()=>{attempts++;throw Error('synthetic external failure');};try{x.env.SOCIAL_PUBLISHING_ENABLED='true';await assert.rejects(runBudgetedSocialPublishing(x.env,start,publish));
-  assert.equal((await runBudgetedSocialPublishing(x.env,start,publish)).skipped,true);assert.equal(attempts,1);
-  x.env.WATA_COST_STOP_SOCIAL='true';assert.equal((await runBudgetedSocialPublishing(x.env,start+3600000,publish)).reason,'cost-guard-paused');assert.equal(attempts,1);
-  assert.equal((await runBudgetedSocialPublishing({},start,publish)).enabled,false);
-  }finally{x.db.close();}
-});
 
-test('actual scheduled entry keeps privacy cleanup active when social is paused',async()=>{
+test('scheduled entry runs privacy cleanup only (X automated posting ended 2026-11-15)',async()=>{
   const calls=[];const db={prepare(sql){calls.push(sql);const stmt={bind(){return stmt;},async all(){return{results:[]};},async first(){return null;},async run(){return{meta:{changes:0}};}};return stmt;}};
   const jobs=[];
-  await worker.scheduled({scheduledTime:start},{REMOTE_DB:db,WATA_COST_GUARD_MODE:'enforce',WATA_COST_STOP_SOCIAL:'true',SOCIAL_PUBLISHING_ENABLED:'true'},{waitUntil(job){jobs.push(job);}});
+  await worker.scheduled({scheduledTime:start},{REMOTE_DB:db,WATA_COST_GUARD_MODE:'enforce',SOCIAL_PUBLISHING_ENABLED:'true'},{waitUntil(job){jobs.push(job);}});
   await Promise.all(jobs);
   assert.ok(calls.some(sql=>/DELETE FROM live_rate_limits/.test(sql)));
   assert.ok(calls.some(sql=>/SELECT code FROM challenge_rooms/.test(sql)));

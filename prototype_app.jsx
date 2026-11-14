@@ -64,6 +64,56 @@ export function TopPage() {
         </p>
       </section>
 
+      <form onSubmit={(event) => { event.preventDefault(); start('challenge'); }} data-testid="top-start-form" style={{
+        display: 'grid',
+        gap: 10,
+        margin: '0 24px 18px',
+        padding: '14px 16px 12px',
+        position: 'relative',
+        zIndex: 1,
+        background: '#FFEAF1',
+        color: theme.black,
+        border: `3px solid ${theme.black}`,
+        borderRadius: 18,
+        boxShadow: `5px 5px 0 ${theme.pinkDeep}`,
+      }}>
+        <label htmlFor="top-creator-name" style={{ fontSize: 12, fontWeight: 900 }}>
+          あなたの名前（12文字まで）
+        </label>
+        <input
+          id="top-creator-name"
+          value={creatorName}
+          maxLength={12}
+          autoComplete="nickname"
+          placeholder="例：ちあき"
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={error ? 'top-name-error' : undefined}
+          onChange={(event) => { setCreatorName(event.target.value.slice(0, 12)); setError(''); }}
+          style={inputStyle()}
+        />
+        {error && <p id="top-name-error" role="alert" style={{ margin: 0, color: '#B81745', fontSize: 12, fontWeight: 900 }}>{error}</p>}
+        <div data-testid="top-mode-pillars" style={{
+          display: 'grid',
+          gap: 10,
+          marginTop: 8,
+        }}>
+          <button type="submit" aria-label="わたし理解度診断を作る" style={primaryButton()}>
+            わたし理解度診断を作る
+            <span aria-hidden="true">▶</span>
+          </button>
+          <p style={{
+            margin: '-2px 0 2px',
+            textAlign: 'center',
+            fontSize: 12,
+            fontWeight: 800,
+            lineHeight: 1.5,
+          }}>
+            URLを送って、好きな時間に回答
+          </p>
+
+        </div>
+      </form>
+
       <div data-testid="top-character-visual" style={{
         minHeight: 315,
         padding: '4px 14px 20px',
@@ -111,49 +161,6 @@ export function TopPage() {
           </span>
         </h2>
         <Rules />
-        <form onSubmit={(event) => { event.preventDefault(); start('challenge'); }} style={{
-          display: 'grid',
-          gap: 10,
-          marginTop: 16,
-          paddingTop: 14,
-          borderTop: `2px dashed ${theme.black}`,
-        }}>
-          <label htmlFor="top-creator-name" style={{ fontSize: 12, fontWeight: 900 }}>
-            あなたの名前（12文字まで）
-          </label>
-          <input
-            id="top-creator-name"
-            value={creatorName}
-            maxLength={12}
-            autoComplete="nickname"
-            placeholder="例：ちあき"
-            aria-invalid={error ? 'true' : 'false'}
-            aria-describedby={error ? 'top-name-error' : undefined}
-            onChange={(event) => { setCreatorName(event.target.value.slice(0, 12)); setError(''); }}
-            style={inputStyle()}
-          />
-          {error && <p id="top-name-error" role="alert" style={{ margin: 0, color: '#B81745', fontSize: 12, fontWeight: 900 }}>{error}</p>}
-          <div data-testid="top-mode-pillars" style={{
-            display: 'grid',
-            gap: 10,
-            marginTop: 8,
-          }}>
-            <button type="submit" aria-label="わたし理解度診断を作る" style={primaryButton()}>
-              わたし理解度診断を作る
-              <span aria-hidden="true">▶</span>
-            </button>
-            <p style={{
-              margin: '-2px 0 2px',
-              textAlign: 'center',
-              fontSize: 12,
-              fontWeight: 800,
-              lineHeight: 1.5,
-            }}>
-              URLを送って、好きな時間に回答
-            </p>
-
-          </div>
-        </form>
       </section>
 
       <nav aria-label="ゲームシリーズの紹介ページ" style={{ padding: '4px 24px 0', position: 'relative', zIndex: 1 }}>
@@ -280,6 +287,14 @@ export function ChallengeGuide() {
       question: '点数は必ず公開されますか？',
       answer: BOARD_COPY.ja.notice,
     },
+    {
+      question: 'スマホ以外でも遊べますか？',
+      answer: 'パソコンやタブレットのブラウザーでも遊べます。アプリのインストールや会員登録は必要ありません。',
+    },
+    {
+      question: 'クイズはいつまで遊べますか？',
+      answer: '作成から30日たつと、クイズと参加情報は自動で削除されます。',
+    },
   ];
   // Detailed how-to sections. Each string is one text node so the catalog
   // translates whole sentences; links are kept as separate lines.
@@ -333,6 +348,25 @@ export function ChallengeGuide() {
         '2人以上が全問を答え終えると、「会話のきっかけ」になる問題が表示されます。順位を競うためではなく、答え合わせのあとに話すネタを見つけるための機能です。',
         '「最近作った診断へ保存」を押すと、この端末からあとで開き直せます。',
         '主催者用URLは回答内容を見られる秘密のURLです。この端末に保存され、30日後に無効になります。参加者や第三者には送らないでください。',
+      ],
+    },
+    {
+      id: 'guide-result-title',
+      title: '結果の見方',
+      items: [
+        '点数は「出題者が選んだ答えと同じものを何問選べたか」です。点数が低くても、相手をよく知らないという意味ではありません。',
+        '答え合わせレポートでは、1問ごとに出題者の答えと自分の予想を並べて見られます。外れた問題ほど、理由を聞くと会話が広がります。',
+        'みんなの答えは、3人以上が答え終えると表示されます。誰がどれを選んだかは表示されず、選んだ人数だけが分かります。',
+      ],
+    },
+    {
+      id: 'guide-audience-title',
+      title: '相手別・おすすめの出し方',
+      items: [
+        'クラスや部活の友達には：学校生活や放課後のお題を中心に、5問くらいで気軽に送るのがおすすめです。',
+        '仲のいい親友には：好きな食べものや休日の過ごし方など、知っているつもりで意外と外れやすいお題に挑戦してみましょう。',
+        '家族には：子どものころの思い出や、家での過ごし方のお題を入れると、ふだん話さない話題が出てきます。',
+        'はじめて会った人や新しいグループには：「初対面でも答えやすい10問」パックから始めると安心です。',
       ],
     },
     {
