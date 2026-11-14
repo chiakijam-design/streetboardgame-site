@@ -164,6 +164,11 @@ async function handleRequest(request, env) {
       '/live_ops.html': '/live-ops',
       '/question_ops.html': '/question-ops',
     };
+    // /en (no slash) used to render the full runtime catalog inline (~640KB).
+    // The English top page lives at /en/ like every other locale (2026-11-15).
+    if (rawPath === '/en') {
+      return Response.redirect(url.origin + '/en/' + url.search, 301);
+    }
     if (cleanHtmlPaths[rawPath]) {
       return Response.redirect(url.origin + cleanHtmlPaths[rawPath] + url.search, 301);
     }

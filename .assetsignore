@@ -59,3 +59,6 @@ live_challenge.html
 en/index.html
 en/terms.html
 en/privacy.html
+
+# The original handwritten font file is not redistributed (2026-11-15).
+assets/fonts/*.ttf
