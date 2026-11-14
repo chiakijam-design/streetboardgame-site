@@ -29,12 +29,12 @@ test('current public metadata, sitemap, privacy and retirement are consistent', 
  }
 });
 test('private and historical URLs remain noindex; retired games return permanent errors', async ({ request }) => {
- for (const path of ['/challenge?room=ABCDEFGH', '/challenge/manage?room=ABCDEFGH', '/challenge/ranking?room=ABCDEFGH', '/en/challenge?room=ABCDEFGH', '/live-ops', '/question-ops', '/legal-history/terms.html']) {
+ for (const path of ['/challenge?room=ABCDEFGH', '/challenge/manage?room=ABCDEFGH', '/challenge/ranking?room=ABCDEFGH', '/en/challenge?room=ABCDEFGH', '/question-ops', '/legal-history/terms.html']) {
   const response = await request.get(path);
   expect(response.status(), path).toBe(200);
   expect(response.headers()['x-robots-tag'], path).toContain('noindex');
  }
- for (const path of ['/live', '/live-guide', '/live-challenge', '/en/live-challenge', '/ar/live-challenge?room=123456']) expect((await request.get(path)).status(), path).toBe(410);
+ for (const path of ['/live', '/live-guide', '/live-challenge', '/live-ops', '/en/live-challenge', '/ar/live-challenge?room=123456']) expect((await request.get(path)).status(), path).toBe(410);
  for (const path of ['/es/', '/ar/challenge-guide', '/zh-Hans/about', '/fr/challenge/library']) {
   const response = await request.get(path);
   expect(response.status(), path).toBe(200);

@@ -211,14 +211,24 @@ homeHtml = homeHtml.replace(/(<link id="brand-font-styles" href=")[^"]+/, `$1/${
 homeHtml = homeHtml.replace(/(<noscript id="brand-font-fallback"><link href=")[^"]+/, `$1/${homeFontCssPath}`);
 await writeFile('index.html', homeHtml);
 let englishHtml = await readFile('en/index.html', 'utf8');
-const englishFont = await buildPageFont(englishHtml.replace(/<head>[\s\S]*?<\/head>/, '').replace(/<script[\s\S]*?<\/script>/g, ''), 'english');
+const englishFont = await buildPageFont(removeRepeatedly(removeRepeatedly(englishHtml, /<head>[\s\S]*?<\/head>/i), /<script\b[\s\S]*?<\/script\s*>/gi), 'english');
 englishHtml = englishHtml.replace(/<link[^>]*(?:data-build-font="english"|href="https:\/\/fonts.googleapis.com\/css2[^\"]+")[^>]*>/, `<link data-build-font="english" href="${englishFont}" rel="stylesheet">`);
 await writeFile('en/index.html', englishHtml);
 // Compile fixed translated HTML outside Workers' per-request CPU budget.
 execFileSync(process.execPath, ['tools/build-public-locale-pages.mjs'], { stdio: 'inherit' });
 
+// Repeat a removal until the text stops changing (no nested leftovers).
+function removeRepeatedly(text, pattern) {
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(pattern, '');
+  } while (text !== previous);
+  return text;
+}
+
 async function buildPageFont(markup, name) {
-  const homeText = markup.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, '');
+  const homeText = removeRepeatedly(removeRepeatedly(markup, /<[^>]*>/g), /&[^;]+;/g);
   const fontText = [...new Set([...homeText, ...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'])].sort().join('');
   const homeFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..900&display=swap&text=' + encodeURIComponent(fontText);
   const fontKey = createHash('sha256').update(homeFontUrl).digest('hex').slice(0, 12);

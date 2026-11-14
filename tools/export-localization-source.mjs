@@ -31,9 +31,7 @@ for (const file of htmlFiles) {
     description: html.match(/<meta[^>]*name="description"[^>]*content="([^"]*)"/i)?.[1] || '',
     // Preserve exact copy. Translation needs a parser/explicit template integration,
     // not blind replacement of arbitrary user-authored DOM nodes.
-    bodyText: [...new Set(html
-      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
-      .replace(/<!--[\s\S]*?-->/g, '').split(/<[^>]+>/g)
+    bodyText: [...new Set(removeRepeatedly(removeRepeatedly(html, /<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi), /<!--[\s\S]*?-->/g).split(/<[^>]+>/g)
       .map((text) => text.trim()).filter(Boolean))],
   };
 }
@@ -77,3 +75,13 @@ console.log(JSON.stringify({
   pages: htmlFiles.length,
   status: output.status,
 }));
+
+// Repeat a removal until the text stops changing (no nested leftovers).
+function removeRepeatedly(text, pattern) {
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(pattern, '');
+  } while (text !== previous);
+  return text;
+}
