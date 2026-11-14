@@ -179,7 +179,8 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end(String(error && error.stack || error));
+    console.error(error);
+    res.end('Internal Server Error');
   }
 });
 
