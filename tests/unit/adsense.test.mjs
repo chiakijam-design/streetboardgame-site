@@ -53,11 +53,12 @@ test('Worker opens the CSP for AdSense only when ads are served', async () => {
 
   const on = await fetchChallenge(ON, JP);
   const csp = directives(on);
-  assert.ok(csp.get('frame-src').includes('https://*.googlesyndication.com'));
-  assert.ok(csp.get('frame-src').includes('https://*.doubleclick.net'));
-  assert.ok(csp.get('script-src').includes('https://pagead2.googlesyndication.com'));
-  assert.ok(csp.get('script-src').includes("'strict-dynamic'"));
-  assert.ok(csp.get('connect-src').includes('https://*.googlesyndication.com'));
+  const has = (name, source) => new Set(csp.get(name)).has(source);
+  assert.ok(has('frame-src', 'https://*.googlesyndication.com'));
+  assert.ok(has('frame-src', 'https://*.doubleclick.net'));
+  assert.ok(has('script-src', 'https://pagead2.googlesyndication.com'));
+  assert.ok(has('script-src', "'strict-dynamic'"));
+  assert.ok(has('connect-src', 'https://*.googlesyndication.com'));
   assert.equal(on.headers.get('cache-control'), 'private, no-store');
   const body = await on.text();
   const nonce = csp.get('script-src').find((source) => source.startsWith("'nonce-")).slice(7, -1);
