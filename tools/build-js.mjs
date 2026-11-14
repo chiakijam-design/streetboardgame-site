@@ -13,8 +13,6 @@ const DIST_ENTRIES = {
   prototype_common_data: 'prototype_common_data.js',
   prototype_english_common_data: 'prototype_english_common_data.js',
   challenge_game: 'challenge_game.js',
-  'qr-code': 'src/live/qr-code.js',
-  live_ops: 'live_ops.js',
   question_ops: 'question_ops.js',
   prototype_character: 'prototype_character.jsx',
   prototype_app: 'prototype_app.jsx',
@@ -41,9 +39,6 @@ const HTML_ENTRY_MAP = {
     'prototype_common_data',
     'prototype_english_common_data',
     'challenge_game',
-  ],
-  'live_ops.html': [
-    'live_ops',
   ],
   'question_ops.html': [
     'prototype_common_data',
@@ -169,7 +164,7 @@ for (const [htmlPath, entryNames] of Object.entries(HTML_STYLE_MAP)) {
   for (const entryName of entryNames) {
     const stylePath = stylePaths[entryName];
     if (!stylePath) throw new Error(`Missing generated stylesheet for ${entryName}`);
-    if (['index.html', 'challenge.html', 'live_challenge.html'].includes(htmlPath)) {
+    if (['index.html', 'challenge.html'].includes(htmlPath)) {
       const { code } = await transform(await readFile(STYLE_ENTRIES[entryName], 'utf8'), { loader: 'css', minify: true });
       const styleMarker = new RegExp(`<link[^>]*data-build-style="${entryName}"[^>]*>|<style data-build-style="${entryName}">[\\s\\S]*?<\\/style>`);
       if (!styleMarker.test(html)) throw new Error(`Missing inline style marker for ${entryName}`);

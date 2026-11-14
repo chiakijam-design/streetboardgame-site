@@ -18,7 +18,7 @@ async function questionLibrary(file, globalName) {
 const japanese = await questionLibrary('prototype_common_data.js', 'COMMON_QUESTION_CARDS');
 const english = await questionLibrary('prototype_english_common_data.js', 'ENGLISH_COMMON_QUESTION_CARDS');
 const htmlFiles = [
-  'index.html', 'en/index.html', 'challenge.html', 'live_challenge.html',
+  'index.html', 'en/index.html', 'challenge.html',
   'terms.html', 'en/terms.html', 'privacy.html', 'en/privacy.html', 'legal.html',
   'creator-terms.html', 'refund-policy.html', 'minor-policy.html',
   'content-guidelines.html', 'pricing.html', '404.html',
@@ -39,10 +39,10 @@ for (const file of htmlFiles) {
 }
 
 const filesToAudit = [
-  'challenge_game.js', 'live_challenge.js', 'prototype_app.jsx',
+  'challenge_game.js', 'prototype_app.jsx',
   'src/challenge/result.js', 'src/challenge/packs.js',
-  'src/challenge/insights.js', 'src/live/age-notice.js',
-  'src/live/checkout-terms-config.js', 'src/questions/safety.js',
+  'src/challenge/insights.js',
+  'src/questions/safety.js',
 ];
 const remainingSource = {};
 for (const file of filesToAudit) {

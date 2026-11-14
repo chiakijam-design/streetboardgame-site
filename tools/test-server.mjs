@@ -94,7 +94,6 @@ const mime = {
 function staticPath(urlPath) {
   if (['/', '/about', '/product'].includes(urlPath)) return 'index.html';
   if (urlPath === '/challenge') return 'challenge.html';
-  if (urlPath === '/live-ops') return 'live_ops.html';
   if (urlPath === '/question-ops') return 'question_ops.html';
   return urlPath.replace(/^\/+/, '');
 }

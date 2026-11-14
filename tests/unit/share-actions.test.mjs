@@ -108,7 +108,7 @@ test('no personal value is stored: only day, surface, action and count', async (
     assert.equal(dump.includes(secret), false, secret);
   }
   // The rate limiter keeps only hashed keys, never the raw tokens.
-  const limiterKeys = JSON.stringify(db.prepare('SELECT rate_key FROM live_rate_limits').all());
+  const limiterKeys = JSON.stringify(db.prepare('SELECT rate_key FROM rate_limits').all());
   assert.equal(limiterKeys.includes(joined.participantToken) || limiterKeys.includes(created.manageToken), false);
   db.close();
 });

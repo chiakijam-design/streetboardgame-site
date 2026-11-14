@@ -1,6 +1,5 @@
 const schemaReadyByDatabase = new WeakMap();
 const QUESTION_ID_PATTERN = /^[A-Za-z0-9_-]{2,80}$/;
-const FOUR_WEEKS_MS = 28 * 24 * 60 * 60 * 1000;
 
 export function startOfJstWeek(now = Date.now()) {
   const jstOffsetMs = 9 * 60 * 60 * 1000;
@@ -30,36 +29,13 @@ export async function recordQuestionSelections(env, cards, mode, now = Date.now(
   return true;
 }
 
-export async function recordLiveAnswerDistribution(env, question, result, now = Date.now()) {
-  if (!await ensureQuestionTrendSchema(env)) return false;
-  const questionId = String(question?.sourceId || '');
-  if (!QUESTION_ID_PATTERN.test(questionId)) return false;
-  const counts = Array.isArray(result?.options)
-    ? result.options.slice(0, 5).map((option) => Math.max(0, Number(option?.count) || 0))
-    : [];
-  if (!counts.some((count) => count > 0)) return false;
-  const weekStart = startOfJstWeek(now);
-  const statements = counts.flatMap((count, optionIndex) => count > 0 ? [env.REMOTE_DB.prepare(`
-    INSERT INTO question_live_option_weekly
-      (question_id, week_start, option_index, answer_count, updated_at)
-    VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT(question_id, week_start, option_index) DO UPDATE SET
-      answer_count = question_live_option_weekly.answer_count + excluded.answer_count,
-      updated_at = excluded.updated_at
-  `).bind(questionId, weekStart, optionIndex, count, Number(now))] : []);
-  if (!statements.length) return false;
-  await env.REMOTE_DB.batch(statements);
-  return true;
-}
-
 export async function getQuestionTrendMetrics(env, language = 'ja', now = Date.now()) {
   if (!await ensureQuestionTrendSchema(env)) {
     return { weeklySelections: [], recentApprovals: [], liveResponses: [] };
   }
   const weekStart = startOfJstWeek(now);
-  const liveWindowStart = weekStart - FOUR_WEEKS_MS;
   const english = language === 'en';
-  const [weeklyResult, recentResult, liveResult] = await Promise.all([
+  const [weeklyResult, recentResult] = await Promise.all([
     env.REMOTE_DB.prepare(`
       SELECT question_id, SUM(selected_count) AS selected_count
       FROM question_weekly_activity
@@ -79,13 +55,6 @@ export async function getQuestionTrendMetrics(env, language = 'ja', now = Date.n
       ORDER BY updated_at DESC, question_id ASC
       LIMIT 30
     `).bind(english ? 1 : 0, english ? 1 : 0).all(),
-    env.REMOTE_DB.prepare(`
-      SELECT question_id, option_index, SUM(answer_count) AS answer_count
-      FROM question_live_option_weekly
-      WHERE week_start >= ?
-      GROUP BY question_id, option_index
-      ORDER BY question_id ASC, option_index ASC
-    `).bind(liveWindowStart).all(),
   ]);
   return {
     weeklySelections: (weeklyResult?.results || []).map((row) => ({
@@ -96,7 +65,8 @@ export async function getQuestionTrendMetrics(env, language = 'ja', now = Date.n
       questionId: String(row.question_id),
       addedAt: Math.max(0, Number(row.added_at) || 0),
     })),
-    liveResponses: groupLiveResponseRows(liveResult?.results || []),
+    // LIVE was removed on 2026-11-15; there are no live answer distributions.
+    liveResponses: [],
   };
 }
 
@@ -167,20 +137,6 @@ export async function ensureQuestionTrendSchema(env) {
         CREATE INDEX IF NOT EXISTS idx_question_weekly_activity_recent
         ON question_weekly_activity (week_start, selected_count DESC)
       `).run();
-      await database.prepare(`
-        CREATE TABLE IF NOT EXISTS question_live_option_weekly (
-          question_id TEXT NOT NULL,
-          week_start INTEGER NOT NULL,
-          option_index INTEGER NOT NULL,
-          answer_count INTEGER NOT NULL DEFAULT 0,
-          updated_at INTEGER NOT NULL,
-          PRIMARY KEY (question_id, week_start, option_index)
-        )
-      `).run();
-      await database.prepare(`
-        CREATE INDEX IF NOT EXISTS idx_question_live_option_recent
-        ON question_live_option_weekly (week_start, question_id)
-      `).run();
     })();
     schemaReadyByDatabase.set(database, ready);
   }
@@ -188,16 +144,3 @@ export async function ensureQuestionTrendSchema(env) {
   return true;
 }
 
-function groupLiveResponseRows(rows) {
-  const grouped = new Map();
-  for (const row of rows || []) {
-    const questionId = String(row.question_id || '');
-    const optionIndex = Number(row.option_index);
-    if (!QUESTION_ID_PATTERN.test(questionId)
-      || !Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= 5) continue;
-    const current = grouped.get(questionId) || Array(5).fill(0);
-    current[optionIndex] += Math.max(0, Number(row.answer_count) || 0);
-    grouped.set(questionId, current);
-  }
-  return [...grouped.entries()].map(([questionId, optionCounts]) => ({ questionId, optionCounts }));
-}

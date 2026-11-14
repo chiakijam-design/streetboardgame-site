@@ -216,7 +216,7 @@ function windowStart(now) {
 
 async function ensureContactTables(db) {
   if (readyDatabases.has(db)) return;
-  await db.prepare(`CREATE TABLE IF NOT EXISTS live_rate_limits (
+  await db.prepare(`CREATE TABLE IF NOT EXISTS rate_limits (
     rate_key TEXT PRIMARY KEY, window_start INTEGER NOT NULL,
     request_count INTEGER NOT NULL, expires_at INTEGER NOT NULL
   )`).run();
@@ -227,7 +227,7 @@ async function allowSender(db, siteKey, identity, now) {
   const start = windowStart(now);
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`contact:${start}:${identity}`));
   const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
-  const row = await db.prepare(`INSERT INTO live_rate_limits (rate_key, window_start, request_count, expires_at)
+  const row = await db.prepare(`INSERT INTO rate_limits (rate_key, window_start, request_count, expires_at)
     VALUES (?, ?, 1, ?) ON CONFLICT(rate_key) DO UPDATE SET request_count = request_count + 1
     RETURNING request_count`)
     .bind(`contact:${siteKey}:${hash}`, start, start + CONTACT_LIMITS.rateWindowMs * 2)

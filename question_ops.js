@@ -15,7 +15,7 @@ import {
   restoreAdminSessionToken,
   revokeAdminSession,
   saveAdminSessionToken,
-} from './src/live/admin-session-client.js';
+} from './src/admin/session-client.js';
 
 const tokenInput = document.getElementById('adminToken');
 const otpInput = document.getElementById('adminOtp');
@@ -182,7 +182,7 @@ function appendCachedRows(target, items, cache, rowHtml, bind) {
 }
 
 async function createAdminSession() {
-  const response = await fetch('/api/live/admin/session', {
+  const response = await fetch('/api/admin/session', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',

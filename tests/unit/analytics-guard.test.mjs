@@ -193,7 +193,6 @@ test('主要HTMLはGTMローダーを読み込み、運用・法務画面は読�
   const publicPages = [
     'index.html',
     'challenge.html',
-    'live_challenge.html',
     'en/index.html',
   ];
   for (const page of publicPages) {
@@ -202,7 +201,6 @@ test('主要HTMLはGTMローダーを読み込み、運用・法務画面は読�
   }
 
   const excludedPages = [
-    'live_ops.html',
     'question_ops.html',
     'terms.html',
     'privacy.html',

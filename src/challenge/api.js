@@ -1,5 +1,5 @@
 import { recordQuestionSelections } from '../questions/trends.js';
-import { recordLiveOpsEvent } from '../live/ops.js';
+import { recordOpsEvent } from '../ops/events.js';
 import { enforceChallengeRateLimit } from './rate-limit.js';
 import { CHALLENGE_DAILY_ACTIONS, recordDailyAction } from '../analytics/daily-actions.js';
 import { validShareAction, recordShareAction } from '../analytics/share-actions.js';
@@ -90,7 +90,7 @@ export async function handleChallengeApi(request, env, path) {
     const status = Number(error && error.status) || 500;
     if (status >= 500) {
       const traceId = crypto.randomUUID();
-      await recordLiveOpsEvent(env, {
+      await recordOpsEvent(env, {
         category: 'application', severity: 'critical', eventType: 'challenge-api-error',
         message: error?.message || 'challenge-api-error',
         metadata: { path, method: request.method, status, traceId },

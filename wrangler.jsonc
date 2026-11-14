@@ -16,11 +16,9 @@
       "enabled": false
     }
   },
-  // 負荷試験後に1,000→5,000→10,000と段階的に設定する。未設定時は50人。
   "vars": {
     "WATA_COST_GUARD_MODE": "enforce",
     "WATA_COST_STOP_OVERVIEW": "false",
-    "LIVE_OPERATIONAL_VIEWER_LIMIT": "1000",
     // Google AdSense: keep "false" until the review passes. Then set "true" and
     // the display ad unit IDs (digits) from the AdSense dashboard. See
     // docs/ADVERTISING_PLACEMENT_POLICY.md. Auto ads must stay OFF for this site.
@@ -64,15 +62,12 @@
     ]
   },
   "triggers": {
-    // 期限切れD1データとR2画像を毎時削除・匿名化する。
+    // 期限切れのD1データ（部屋・回数制限・管理ログイン・お問い合わせ）を毎時削除する。
     "crons": ["17 * * * *"]
   },
-  // 有料画像を有効化する前に非公開R2バケットを作成し、以下を有効化する。
-  // 未作成のバケットを先に記載すると本番デプロイが失敗するため、現時点ではコメントのままにする。
-  "r2_buckets": [
-    { "binding": "LIVE_MEDIA", "bucket_name": "streetboardgame-live-private" }
-  ],
-  "images": { "binding": "IMAGES" },
+  // LIVE was removed on 2026-11-15. The two Durable Object classes remain as
+  // empty stubs (src/retired/durable-objects.js) so no delete-class migration
+  // is needed; they answer 410 and are never called by the site.
   "durable_objects": {
     "bindings": [
       {
@@ -100,11 +95,6 @@
       "binding": "REMOTE_DB",
       "database_name": "streetboardgame-remote",
       "database_id": "3feb5dad-3465-4d1f-a12b-8859a28308f4"
-    },
-    {
-      "binding": "LIVE_PURCHASE_DB",
-      "database_name": "streetboardgame-live-purchases",
-      "database_id": "67345cc4-e122-4f0d-b799-1a9def0ec8d7"
     }
   ]
 }

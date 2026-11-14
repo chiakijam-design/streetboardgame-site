@@ -41,9 +41,9 @@ for (const [file, page] of Object.entries(inventory.pages)) {
   page.bodyText.forEach((text) => add(text, `${file}:body`, true));
 }
 const files = [
-  'challenge_game.js', 'live_challenge.js', 'prototype_app.jsx',
+  'challenge_game.js', 'prototype_app.jsx',
   'src/challenge/result.js', 'src/challenge/packs.js', 'src/challenge/insights.js',
-  'src/live/age-notice.js', 'src/live/checkout-terms-config.js',
+
   'src/questions/safety.js', 'src/platform/share.js', 'src/home/start.js',
 ];
 function visit(node, context) {

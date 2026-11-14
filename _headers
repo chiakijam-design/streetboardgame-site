@@ -12,10 +12,6 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: accelerometer=(), autoplay=(), browsing-topics=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), serial=(), usb=(), xr-spatial-tracking=()
 
-/live-ops
-  Referrer-Policy: no-referrer
-  X-Robots-Tag: noindex, nofollow, noarchive
-  Cache-Control: no-store
 /question-ops
   Referrer-Policy: no-referrer
   X-Robots-Tag: noindex, nofollow, noarchive
@@ -23,8 +19,6 @@
 /challenge*
   Referrer-Policy: no-referrer
 /en/challenge*
-  Referrer-Policy: no-referrer
-/en/live-challenge*
   Referrer-Policy: no-referrer
 /api/*
   Referrer-Policy: no-referrer

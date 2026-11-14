@@ -1,6 +1,6 @@
-import { requireLiveAdminSession } from '../live/admin-auth.js';
+import { requireAdminSession } from '../admin/auth.js';
 import { submissionPageOptions } from './operations-pagination.js';
-import { recordLiveOpsEvent } from '../live/ops.js';
+import { recordOpsEvent } from '../ops/events.js';
 import { scanQuestionSafety } from './safety.js';
 import { getQuestionTrendMetrics } from './trends.js';
 import { consumeCostBudget, costBudgetResponse } from '../cost/guard.js';
@@ -57,7 +57,7 @@ export async function handleQuestionApi(request, env, path) {
     }
 
     if (path.startsWith('/api/questions/admin/')) {
-      await requireLiveAdminSession(request, env, Date.now(), { mutation: request.method !== 'GET' });
+      await requireAdminSession(request, env, Date.now(), { mutation: request.method !== 'GET' });
     }
 
     if (path === '/api/questions/admin/overview' && request.method === 'GET') {
@@ -89,7 +89,7 @@ export async function handleQuestionApi(request, env, path) {
     const status = Number(error?.status) || 500;
     const traceId = crypto.randomUUID();
     if (status >= 500) {
-      await recordLiveOpsEvent(env, {
+      await recordOpsEvent(env, {
         category: 'application', severity: 'critical', eventType: 'question-api-error',
         message: error?.message || 'question-api-error',
         metadata: { path, method: request.method, status, traceId },
@@ -189,7 +189,7 @@ async function recordSelectionEvent(request, env) {
     WHERE device_hash = ? AND created_at > ?
   `).bind(selectionSession.deviceHash, now - REPORT_WINDOW_MS).first();
   if (Number(recentIpCount?.count || 0) >= 1200 || Number(recentDeviceCount?.count || 0) >= 600) {
-    await recordLiveOpsEvent(env, {
+    await recordOpsEvent(env, {
       category: 'security', severity: 'warning', eventType: 'question-selection-rate-limited',
       message: '大量の問題選択イベントを制限しました。',
       metadata: { ipHash, deviceHash: selectionSession.deviceHash },
@@ -371,7 +371,7 @@ async function reportCatalogQuestion(request, env, questionId) {
         quarantined_at = ?, quarantine_reason = ?, updated_at = ?
       WHERE question_id = ? AND source_kind = 'custom'
     `).bind(now, reason, now, questionId).run();
-    await recordLiveOpsEvent(env, {
+    await recordOpsEvent(env, {
       category: 'moderation', severity: seriousCount ? 'critical' : 'warning',
       eventType: 'question-auto-quarantined', code: questionId,
       message: '通報しきい値に達した問題を一時隔離しました。',
@@ -439,7 +439,7 @@ async function consumeReportRateLimit(env, reporterHash, now) {
     SELECT report_count FROM question_report_rate_limits WHERE rate_key = ?
   `).bind(rateKey).first();
   if (Number(row?.report_count || 0) >= REPORT_RATE_LIMIT) {
-    await recordLiveOpsEvent(env, {
+    await recordOpsEvent(env, {
       category: 'security', severity: 'warning', eventType: 'question-report-rate-limited',
       message: '同一送信元からの大量通報を制限しました。', metadata: { reporterHash },
     }).catch(() => {});

@@ -109,7 +109,6 @@ test('英語ルート・hreflang・専用OGP・初回言語案内を静的構成
   }
   for (const page of [
     'challenge.html',
-    'live_challenge.html',
     'terms.html',
     'privacy.html',
     'en/terms.html',

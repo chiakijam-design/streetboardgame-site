@@ -31,8 +31,8 @@ test('normal creation limit is atomic, scope-separated, expires, and stores no r
   await enforceChallengeRateLimit(env, '192.0.2.2', 'create', 60, now);
   await enforceChallengeRateLimit(env, '192.0.2.1', 'actions', 12, now);
   await enforceChallengeRateLimit(env, '192.0.2.1', 'create', 60, now + 60_000);
-  assert.equal(db.prepare('SELECT COUNT(*) n FROM live_rate_limits').get().n, 4);
-  assert.ok(db.prepare('SELECT rate_key FROM live_rate_limits').all().every(row => !row.rate_key.includes('192.0.2.')));
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM rate_limits').get().n, 4);
+  assert.ok(db.prepare('SELECT rate_key FROM rate_limits').all().every(row => !row.rate_key.includes('192.0.2.')));
   db.close();
 });
 test('only normal POST creation is limited, returns Retry-After, never blocks GET or other IP', async () => {

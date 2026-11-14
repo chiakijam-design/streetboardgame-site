@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleLiveApi } from '../../src/live/api.js';
+import { handleAdminApi } from '../../src/admin/api.js';
 import {
-  createLiveAdminSession, generateLiveAdminTotp, getLiveAdminSession,
-  requireLiveAdminSession, revokeLiveAdminSession,
-} from '../../src/live/admin-auth.js';
+  createAdminSession, generateAdminTotp, getAdminSession,
+  requireAdminSession, revokeAdminSession,
+} from '../../src/admin/auth.js';
 
 function authEnv() {
   const values = new Map();
@@ -23,13 +23,13 @@ function authEnv() {
   };
 }
 
-function request(cookie, path = '/api/live/admin/session') {
+function request(cookie, path = '/api/admin/session') {
   return new Request(`https://example.com${path}`, { headers: { cookie } });
 }
 
 for (const malformed of ['%', '%C0', '%E3%81', '%GG']) {
   test(`malformed admin cookie ${malformed} returns controlled 401, not 500`, async () => {
-    const response = await handleLiveApi(request(`sbg_admin_session=${malformed}`), authEnv(), '/api/live/admin/session');
+    const response = await handleAdminApi(request(`sbg_admin_session=${malformed}`), authEnv(), '/api/admin/session');
     assert.equal(response.status, 401);
     assert.equal((await response.json()).error, 'admin-session-invalid');
   });
@@ -37,7 +37,7 @@ for (const malformed of ['%', '%C0', '%E3%81', '%GG']) {
 
 test('all shared admin cookie readers reject malformed encoding without exposing the value', async () => {
   const env = authEnv();
-  for (const read of [getLiveAdminSession, requireLiveAdminSession, revokeLiveAdminSession]) {
+  for (const read of [getAdminSession, requireAdminSession, revokeAdminSession]) {
     await assert.rejects(read(request('sbg_admin_session=%E3%81'), env),
       (error) => error.status === 401 && error.message === 'admin-session-invalid');
   }
@@ -46,20 +46,20 @@ test('all shared admin cookie readers reject malformed encoding without exposing
 test('malformed unrelated cookies do not prevent a valid encoded admin session', async () => {
   const env = authEnv();
   const now = Date.now();
-  const otp = await generateLiveAdminTotp(env.LIVE_ADMIN_TOTP_SECRET, now);
-  const session = await createLiveAdminSession(new Request('https://example.com/api/live/admin/session', {
+  const otp = await generateAdminTotp(env.LIVE_ADMIN_TOTP_SECRET, now);
+  const session = await createAdminSession(new Request('https://example.com/api/admin/session', {
     method: 'POST', headers: { 'x-live-admin-token': env.LIVE_ADMIN_TOKEN, 'x-live-admin-otp': otp },
   }), env, now);
   const encoded = [...session.sessionToken].map((character) => `%${character.charCodeAt(0).toString(16)}`).join('');
-  const restored = await getLiveAdminSession(request(`unrelated=%; sbg_admin_session=${encoded}`), env, now + 1000);
+  const restored = await getAdminSession(request(`unrelated=%; sbg_admin_session=${encoded}`), env, now + 1000);
   assert.equal(restored.csrfToken, session.csrfToken);
   assert.equal(restored.expiresAt, session.expiresAt);
-  await assert.rejects(getLiveAdminSession(request(`sbg_admin_session=%; sbg_admin_session=${encoded}`), env, now + 1000),
+  await assert.rejects(getAdminSession(request(`sbg_admin_session=%; sbg_admin_session=${encoded}`), env, now + 1000),
     (error) => error.status === 401 && error.message === 'admin-session-invalid');
 });
 
 test('missing admin cookie remains unauthorized and unrelated malformed values are ignored', async () => {
-  const response = await handleLiveApi(request('unrelated=%'), authEnv(), '/api/live/admin/session');
+  const response = await handleAdminApi(request('unrelated=%'), authEnv(), '/api/admin/session');
   assert.equal(response.status, 401);
   assert.equal((await response.json()).error, 'admin-session-required');
 });
