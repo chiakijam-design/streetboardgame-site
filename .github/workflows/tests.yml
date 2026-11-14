@@ -5,10 +5,48 @@ on:
     branches: [main]
   pull_request:
 
+# The browser suites used to run one after another on a single machine
+# (30-38 minutes). They now run as parallel shards (2026-11-15).
 jobs:
-  e2e:
+  checks:
+    name: Build, translations and unit tests
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - name: Committed build output matches the sources
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --short | head -50
+            echo 'Run pnpm run build and commit the generated files.'
+            exit 1
+          fi
+      - run: pnpm run check:translations
+      - run: pnpm run test:unit
+
+  e2e:
+    name: e2e (${{ matrix.suite }} ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { suite: site, shard: 1/4 }
+          - { suite: site, shard: 2/4 }
+          - { suite: site, shard: 3/4 }
+          - { suite: site, shard: 4/4 }
+          - { suite: locales, shard: 1/2 }
+          - { suite: locales, shard: 2/2 }
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -21,17 +59,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium webkit
       - run: pnpm run build
-      - run: pnpm run check:translations
-      - run: pnpm run test:unit
       - name: Existing game and site regressions
-        id: existing_regressions
-        run: pnpm exec playwright test --grep-invert 'completed multilingual release'
+        if: matrix.suite == 'site'
+        run: pnpm exec playwright test --grep-invert 'completed multilingual release' --shard=${{ matrix.shard }}
       - name: All locale desktop and mobile flows
-        if: success() || steps.existing_regressions.conclusion == 'failure'
-        run: pnpm exec playwright test tests/e2e/multilingual.spec.mjs --workers=2
+        if: matrix.suite == 'locales'
+        run: pnpm exec playwright test tests/e2e/multilingual.spec.mjs --workers=2 --shard=${{ matrix.shard }}
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.suite }}-${{ strategy.job-index }}
           path: playwright-report/
           retention-days: 7
