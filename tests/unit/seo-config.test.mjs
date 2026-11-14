@@ -40,8 +40,9 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
   const lastModifiedDates = [...sitemap.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map((match) => match[1]);
   assert.equal(new Set(locations).size, locations.length);
   assert.equal(lastModifiedDates.length, locations.length);
-  assert.equal(locations.includes('https://www.streetboardgame.com/challenge'), true);
-  assert.equal(locations.includes('https://www.streetboardgame.com/live'), false);
+  const locationSet = new Set(locations);
+  assert.equal(locationSet.has('https://www.streetboardgame.com/challenge'), true);
+  assert.equal(locationSet.has('https://www.streetboardgame.com/live'), false);
   assert.equal(locations.some((location) => location.includes('?')), false);
   assert.equal(sitemap.includes('<changefreq>'), false);
   assert.equal(sitemap.includes('<priority>'), false);
@@ -53,15 +54,16 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
     'https://www.streetboardgame.com/',
     'https://www.streetboardgame.com/challenge',
     'https://www.streetboardgame.com/terms',
-    'https://www.streetboardgame.com/privacy',
     'https://www.streetboardgame.com/en/challenge',
     'https://www.streetboardgame.com/en/terms',
-    'https://www.streetboardgame.com/en/privacy',
   ]) {
     const expectedDate = '2026-10-23';
     assert.equal(lastModifiedByUrl.get(updatedUrl), expectedDate, updatedUrl);
   }
   assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/challenge/library'), '2026-11-12');
+  // 2026-11-14: contact form moved from Formspree to our own intake and Resend.
+  assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/privacy'), '2026-11-14');
+  assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/en/privacy'), '2026-11-14');
   assert.equal(locations.some((location) => /^https:\/\/www\.streetboardgame\.com\/(?!en\/)[a-z]{2}(?:-[A-Za-z]+)?\//.test(location)), false);
 });
 

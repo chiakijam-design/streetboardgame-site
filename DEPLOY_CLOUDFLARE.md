@@ -29,6 +29,14 @@ YouTube Data API v3、チャンネル所有確認、字幕由来の内輪問題�
 
 LIVE運営コンソール、障害告知、Stripe Checkout・Webhook・返金・70%月次分配、WebSocket切断率監視、配信中チャット・有料応援メッセージ、招待・手動審査・収益分配規約同意は、[`docs/LIVE_OPERATIONS_RUNBOOK.md`](docs/LIVE_OPERATIONS_RUNBOOK.md)と[`docs/LIVE_ABUSE_PREVENTION.md`](docs/LIVE_ABUSE_PREVENTION.md)に従い、ゲーム用D1へ`0025_live_chat.sql`まで、購入用D1へ`migrations-purchases/0006_live_support_message.sql`まで適用し、`LIVE_ADMIN_TOKEN`、`LIVE_OPS_ALERT_WEBHOOK_URL`、`STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`、`LIVE_PURCHASE_ACCESS_SECRET`を設定する。本番ではE2E専用の`LIVE_CREATOR_INVITE_BYPASS_TOKEN`を設定してはならない。
 
+## Contact Form
+
+- `POST /api/contact` stores every message in `REMOTE_DB` (`contact_messages`) first, then mails the operator through Resend. Apply `migrations/0032_contact_messages.sql` before deploying.
+- It accepts this site (same origin) and `https://webpersonalitytest.com` / `https://www.webpersonalitytest.com` (CORS preflight). Other origins get 403.
+- Worker secrets: `RESEND_API_KEY` (sending access for `notify.streetboardgame.com`) and `CONTACT_NOTIFY_TO` (operator address). Never write the address in this public repository.
+- A filled hidden field or a send within 3 seconds is stored as `bot` without mail. Each sender may send 5 messages per hour (hashed keys in `live_rate_limits`; no raw IP). Mail stops at 80 per day; later messages are still stored (`skipped_limit`).
+- Cron deletes contact messages 12 months after receipt.
+
 ## Question Catalog and Moderation
 
 - Apply `migrations/0012_question_catalog_moderation.sql` to `REMOTE_DB` before deployment.

@@ -7,7 +7,7 @@
 - 対応責任者: Streetboardgame運営者 平川智章
 - 緊急連絡: 公開リポジトリには記載せず、運営者の非公開連絡先を使用する
 - 利用者窓口: `https://www.streetboardgame.com/contact`
-- 技術確認先: Cloudflare Workers / D1 / R2、Stripe、Google / YouTube、Formspree、GA4の各管理画面とサポート
+- 技術確認先: Cloudflare Workers / D1 / R2、Stripe、Google / YouTube、Resend、GA4の各管理画面とサポート
 
 発見者は、個人データが実際に流出したと断定できない段階でも、アクセス権限の誤設定、不審な管理ログ、秘密URL・APIキーの公開、第三者からの指摘を「漏えい疑い」として直ちに対応責任者へ連絡する。
 
@@ -21,7 +21,7 @@
    - API・Webhook: 該当secretを交換し、不要なトークンを失効
    - 公開R2・D1設定: 公開アクセスを停止し、最小権限へ戻す
 4. 影響が継続する場合はLIVEを`maintenance`へ切り替え、新規作成・参加を停止する。
-5. Cloudflare、Stripe、Google、Formspree等の委託先が関係する場合は、各社のインシデント窓口へ連絡する。
+5. Cloudflare、Stripe、Google、Resend等の委託先が関係する場合は、各社のインシデント窓口へ連絡する。
 
 ## 3. 24時間以内の影響評価
 
@@ -49,7 +49,7 @@
 ## 5. 復旧条件
 
 1. 漏えい経路が閉じ、交換前のsecret・URL・セッションが使えない。
-2. D1・R2・Stripe・Cloudflare・Google・Formspree・GA4のアクセス権限を再点検した。
+2. D1・R2・Stripe・Cloudflare・Google・Resend・GA4のアクセス権限を再点検した。
 3. 不正アクセスとデータ改ざんの範囲を確認した。
 4. 必要な報告・本人通知を開始した。
 5. 再発防止策をテストし、対応責任者がサービス再開を承認した。

@@ -26,7 +26,7 @@ test('プライバシーポリシーは現在の公開範囲・子ども・第�
     assert.equal(document.includes(retiredText), false, retiredText);
   }
   const englishDocument = await readFile(new URL('../../en/privacy.html', import.meta.url), 'utf8');
-  assert.equal(englishDocument.includes('Version 1.9'), true);
+  assert.equal(englishDocument.includes('Version 1.10'), true);
   assert.equal(englishDocument.includes('optional selected or self-written comment'), false);
   assert.equal(englishDocument.includes('Answer content is not currently sent to an external AI service'), true);
   assert.equal(englishDocument.includes('Cloudflare Images'), true);

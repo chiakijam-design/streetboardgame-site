@@ -915,6 +915,7 @@ function aboutLabelStyle(background) {
 function ContactForm() {
   const [status, setStatus] = useState('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [openedAt] = useState(() => Date.now());
   const sending = status === 'sending';
   const sent = status === 'sent';
   const contactTopic = new URLSearchParams(location.search).get('topic') || '';
@@ -941,20 +942,32 @@ function ContactForm() {
     event.preventDefault();
     if (sending) return;
     const form = event.currentTarget;
+    const fields = new FormData(form);
+    const field = (name) => String(fields.get(name) || '');
+    const payload = {
+      name: field('name'),
+      email: field('email'),
+      message: field('message'),
+      hp: field('_gotcha'),
+      elapsedMs: Date.now() - openedAt,
+      extra: {
+        subject: field('_subject'),
+        topic: field('topic'),
+        feedback_type: field('feedback_type'),
+        usage_scene: field('usage_scene'),
+      },
+    };
     setStatus('sending');
     setErrorMessage('');
     try {
-      const response = await fetch('https://formspree.io/f/xrevejjr', {
+      const response = await fetch('/api/contact', {
         method: 'POST',
-        headers: { Accept: 'application/json' },
-        body: new FormData(form),
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message = Array.isArray(data?.errors) && data.errors[0]?.message
-          ? data.errors[0].message
-          : '送信に失敗しました。時間をおいてもう一度お試しください。';
-        throw new Error(message);
+      if (!response.ok || data?.ok !== true) {
+        throw new Error('送信に失敗しました。時間をおいてもう一度お試しください。');
       }
       form.reset();
       setStatus('sent');

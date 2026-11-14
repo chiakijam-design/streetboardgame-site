@@ -881,6 +881,41 @@
       "contexts": [
         "2026-10-23:normal-report-heading"
       ]
+    },
+    {
+      "id": "mf243c9f63db2cf",
+      "source": "Cloudflare D1（お問い合わせ受付）",
+      "contexts": [
+        "2026-11-14:contact-form-self-hosted"
+      ]
+    },
+    {
+      "id": "m276c499c23a08e",
+      "source": "お問い合わせフォームから送信された氏名、メールアドレス、問い合わせ内容の受付・保管",
+      "contexts": [
+        "2026-11-14:contact-form-self-hosted"
+      ]
+    },
+    {
+      "id": "m1f94843777aed8",
+      "source": "Resend",
+      "contexts": [
+        "2026-11-14:contact-form-self-hosted"
+      ]
+    },
+    {
+      "id": "ma3bef034b1534c",
+      "source": "受け付けた問い合わせ内容を運営者へ届けるメール送信",
+      "contexts": [
+        "2026-11-14:contact-form-self-hosted"
+      ]
+    },
+    {
+      "id": "m0cafd8e99ff0b6",
+      "source": "Resend契約上の期間",
+      "contexts": [
+        "2026-11-14:contact-form-self-hosted"
+      ]
     }
   ]
 }
