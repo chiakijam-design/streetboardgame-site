@@ -916,6 +916,118 @@
       "contexts": [
         "2026-11-14:contact-form-self-hosted"
       ]
+    },
+    {
+      "id": "mc3a427298a734f",
+      "source": "友達はあなたのことをどれだけ分かってる？1〜10問を選んで先に自分が答え、できたURLを送ると最大50人が挑戦できます。登録不要・無料。",
+      "contexts": [
+        "2026-11-15:page-descriptions"
+      ]
+    },
+    {
+      "id": "mff8f12793031d7",
+      "source": "「わたし理解度診断」の作り方と遊び方。問題の選び方、URL・QRコードの送り方、答え合わせレポートの見方を紹介します。",
+      "contexts": [
+        "2026-11-15:page-descriptions"
+      ]
+    },
+    {
+      "id": "m5e4c7648f491da",
+      "source": "「わたし理解度診断」のコンセプトと大切にしていること、理解度ボードのしくみ、感想・お問い合わせの送り方を紹介します。",
+      "contexts": [
+        "2026-11-15:page-descriptions"
+      ]
+    },
+    {
+      "id": "m2bd36c5070cdb1",
+      "source": "スマホ以外でも遊べますか？",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "ma5f10f762f2e25",
+      "source": "パソコンやタブレットのブラウザーでも遊べます。アプリのインストールや会員登録は必要ありません。",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "m44b09f269fe8eb",
+      "source": "クイズはいつまで遊べますか？",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "m259594e5442a4d",
+      "source": "作成から30日たつと、クイズと参加情報は自動で削除されます。",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "m00dd7d6ffe914c",
+      "source": "結果の見方",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "me482cfc75bbf1c",
+      "source": "点数は「出題者が選んだ答えと同じものを何問選べたか」です。点数が低くても、相手をよく知らないという意味ではありません。",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "m1806e541f627d5",
+      "source": "答え合わせレポートでは、1問ごとに出題者の答えと自分の予想を並べて見られます。外れた問題ほど、理由を聞くと会話が広がります。",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "mf677710c755ab1",
+      "source": "みんなの答えは、3人以上が答え終えると表示されます。誰がどれを選んだかは表示されず、選んだ人数だけが分かります。",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "mf83c7cb275eef5",
+      "source": "相手別・おすすめの出し方",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "m6bf2a5fcdb395a",
+      "source": "クラスや部活の友達には：学校生活や放課後のお題を中心に、5問くらいで気軽に送るのがおすすめです。",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "m5645228c8720bb",
+      "source": "仲のいい親友には：好きな食べものや休日の過ごし方など、知っているつもりで意外と外れやすいお題に挑戦してみましょう。",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "m16e41443a0287e",
+      "source": "家族には：子どものころの思い出や、家での過ごし方のお題を入れると、ふだん話さない話題が出てきます。",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
+    },
+    {
+      "id": "md787568c4dc4d4",
+      "source": "はじめて会った人や新しいグループには：「初対面でも答えやすい10問」パックから始めると安心です。",
+      "contexts": [
+        "2026-11-15:challenge-guide-more"
+      ]
     }
   ]
 }

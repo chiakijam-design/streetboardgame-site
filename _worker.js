@@ -5,8 +5,6 @@ import { handleChallengeApi } from './src/challenge/api.js';
 import { handleQuestionApi } from './src/questions/api.js';
 import { handleContactApi } from './src/contact/api.js';
 import { runPrivacyCleanup } from './src/privacy/cleanup.js';
-import { runSocialPublishing } from './src/social/publisher.js';
-import { runBudgetedSocialPublishing } from './src/cost/guard.js';
 import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
 import { questionPacks } from './src/challenge/packs.js';
 import { injectLibraryCatalog, removeLibraryCatalog } from './src/challenge/library-catalog.js';
@@ -86,10 +84,8 @@ export default {
   },
   async scheduled(controller, env, context) {
     const scheduledAt = Number(controller?.scheduledTime) || Date.now();
-    context.waitUntil(Promise.all([
-      runPrivacyCleanup(env, scheduledAt),
-      runBudgetedSocialPublishing(env, Date.now(), runSocialPublishing),
-    ]));
+    // X automated posting ended on 2026-11-15 (owner decision); only cleanup runs.
+    context.waitUntil(runPrivacyCleanup(env, scheduledAt));
   },
 };
 
@@ -197,19 +193,6 @@ async function handleRequest(request, env) {
 
     if (path.startsWith('/api/questions')) {
       return handleQuestionApi(request, env, path);
-    }
-
-    if (path === '/api/social/x/callback') {
-      return new Response(JSON.stringify({
-        ok: true,
-        message: 'X OAuth callback is configured. Automated posting uses the approved account token.',
-      }), {
-        headers: {
-          'content-type': 'application/json; charset=UTF-8',
-          'cache-control': 'no-store',
-          'x-robots-tag': 'noindex, nofollow, noarchive',
-        },
-      });
     }
 
     const locale = localeFromPath(rawPath);
@@ -449,7 +432,7 @@ async function handleRequest(request, env) {
     const pageMap = {
       '/challenge-guide': {
         title: 'みんなに挑戦してもらう｜1〜10問クイズの遊び方・作り方',
-        description: 'みんなに挑戦してもらう｜1〜10問クイズの遊び方・作り方。回答を完了すると、表示名と点数が理解度ボードに自動で載ります。',
+        description: '「わたし理解度診断」の作り方と遊び方。問題の選び方、URL・QRコードの送り方、答え合わせレポートの見方を紹介します。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
         ogTitle: 'みんなに挑戦してもらう｜わたし理解度診断',
         ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge-v3.png?v=20260726-ogp-2',
@@ -476,13 +459,13 @@ async function handleRequest(request, env) {
       },
       '/about': {
         title: 'About｜わたし理解度診断・私のこと、ちゃんと分かってるよね？',
-        description: '同じ端末から再挑戦すると最高点を更新します。点数順で、同点は最初に載った順です。',
+        description: '「わたし理解度診断」のコンセプトと大切にしていること、理解度ボードのしくみ、感想・お問い合わせの送り方を紹介します。',
         url: CANONICAL_ORIGIN + '/about',
         ogTitle: 'About｜わたし理解度診断',
         imageAlt: 'わたし理解度診断「私のこと、ちゃんと分かってるよね？」',
         pageId: CANONICAL_ORIGIN + '/about#webpage',
         noscriptTitle: 'About｜わたし理解度診断',
-        noscriptBody: '同じ端末から再挑戦すると最高点を更新します。点数順で、同点は最初に載った順です。',
+        noscriptBody: '「わたし理解度診断」のコンセプトと大切にしていること、理解度ボードのしくみ、感想・お問い合わせの送り方を紹介します。',
       },
       '/product': {
         title: '製品版｜私のこと、ちゃんと分かってるよね？',

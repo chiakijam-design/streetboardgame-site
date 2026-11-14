@@ -3,7 +3,6 @@
 export const COST_POLICIES = Object.freeze({
   'overview-full': Object.freeze({ intervalMs: 60_000, interval: 60, day: 2000, month: 40000 }),
   'overview-pending': Object.freeze({ intervalMs: 60_000, interval: 120, day: 4000, month: 80000 }),
-  social: Object.freeze({ intervalMs: 3_600_000, interval: 1, day: 24, month: 744 }),
 });
 
 export async function consumeCostBudget(env, scope, now = Date.now()) {
@@ -11,8 +10,7 @@ export async function consumeCostBudget(env, scope, now = Date.now()) {
   if (mode === 'off') return { allowed: true, enforced: false };
   const policy = COST_POLICIES[scope];
   if (mode !== 'enforce' || !policy || !Number.isSafeInteger(now) || now < 0) return unavailable();
-  const stop = scope === 'social' ? env.WATA_COST_STOP_SOCIAL : env.WATA_COST_STOP_OVERVIEW;
-  if (stop === 'true') return { allowed: false, status: 503, error: 'cost-guard-paused', retryAfter: 300 };
+  if (env.WATA_COST_STOP_OVERVIEW === 'true') return { allowed: false, status: 503, error: 'cost-guard-paused', retryAfter: 300 };
   const interval = Math.floor(now / policy.intervalMs) * policy.intervalMs;
   const day = Math.floor(now / 86400000) * 86400000;
   const date = new Date(now);
@@ -57,13 +55,4 @@ export function costBudgetResponse(result) {
     status: result.status,
     headers: { 'content-type': 'application/json; charset=UTF-8', 'cache-control': 'no-store', 'retry-after': String(result.retryAfter) },
   });
-}
-
-export async function runBudgetedSocialPublishing(env, now, publish) {
-  if (String(env?.SOCIAL_PUBLISHING_ENABLED || '').toLowerCase() !== 'true') return { enabled: false };
-  // Use delivery time, not possibly stale scheduledTime: duplicate/backlogged
-  // deliveries must not obtain fresh budgets by replaying historical timestamps.
-  const admission = await consumeCostBudget(env, 'social', now);
-  if (!admission.allowed) return { skipped: true, reason: admission.error };
-  return publish(env, now);
 }
