@@ -6,11 +6,14 @@
 export const CONTACT_SITES = Object.freeze({
   wata: Object.freeze({
     name: 'わたし理解度診断',
+    // Sender display name. No spaces: iPhone Mail swaps space-separated names like a family/given name.
+    fromName: 'わたちゃんお問い合わせ',
     origins: Object.freeze(['https://www.streetboardgame.com']),
     sameOrigin: true,
   }),
   minna: Object.freeze({
     name: 'みんなのWeb診断',
+    fromName: 'みんなのWeb診断お問い合わせ',
     origins: Object.freeze(['https://webpersonalitytest.com', 'https://www.webpersonalitytest.com']),
     sameOrigin: false,
   }),
@@ -136,7 +139,7 @@ export async function handleContactApi(request, env, now = Date.now()) {
           'idempotency-key': `contact-${id}`,
         },
         body: JSON.stringify({
-          from: `${match.site.name} お問い合わせ <${FROM_ADDRESS}>`,
+          from: `${match.site.fromName} <${FROM_ADDRESS}>`,
           to: [String(env.CONTACT_NOTIFY_TO).trim()],
           ...(email ? { reply_to: email } : {}),
           subject: mail.subject,

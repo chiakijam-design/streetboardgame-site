@@ -63,7 +63,7 @@ test('Wataからの送信は先に保存し、Resendで文字だけの通知メ�
   assert.equal(calls[0].url, 'https://api.resend.com/emails');
   assert.equal(calls[0].init.headers.authorization, 'Bearer re_test_key');
   assert.equal(calls[0].init.headers['idempotency-key'], `contact-${row.id}`);
-  assert.equal(calls[0].body.from, 'わたし理解度診断 お問い合わせ <no-reply@notify.streetboardgame.com>');
+  assert.equal(calls[0].body.from, 'わたちゃんお問い合わせ <no-reply@notify.streetboardgame.com>');
   assert.deepEqual(calls[0].body.to, ['operator@example.test']);
   assert.equal(calls[0].body.reply_to, 'hanako@example.com');
   assert.equal(calls[0].body.subject, '【わたし理解度診断】感想：花子様');
@@ -99,7 +99,7 @@ test('みんなのWeb診断の2つのオリジンはCORSで受け付け、ほか
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('access-control-allow-origin'), origin);
   }
-  assert.equal(calls[0].body.from, 'みんなのWeb診断 お問い合わせ <no-reply@notify.streetboardgame.com>');
+  assert.equal(calls[0].body.from, 'みんなのWeb診断お問い合わせ <no-reply@notify.streetboardgame.com>');
   assert.equal(calls[0].body.subject, '【みんなのWeb診断】感想：花子様');
   assert.deepEqual(db.prepare('SELECT DISTINCT site FROM contact_messages').all().map((r) => r.site), ['minna']);
   for (const origin of ['https://evil.example', 'https://webpersonalitytest.com.evil.example', '']) {
@@ -112,6 +112,8 @@ test('みんなのWeb診断の2つのオリジンはCORSで受け付け、ほか
   assert.equal((await handleContactApi(post(valid(), { type: 'text/plain' }), env(db), NOW)).status, 415);
   assert.equal((await handleContactApi(new Request(`${WATA}/api/contact`, { headers: { origin: WATA } }), env(db), NOW)).status, 405);
   assert.deepEqual(Object.keys(CONTACT_SITES), ['wata', 'minna']);
+  // iPhone Mail reorders space-separated sender names, so the display names have no spaces.
+  for (const site of Object.values(CONTACT_SITES)) assert.doesNotMatch(site.fromName, /\s/);
 });
 
 test('隠し欄入力・3秒未満の送信は機械の投稿として保存だけしてメールしない', async (t) => {
