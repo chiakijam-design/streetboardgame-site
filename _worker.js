@@ -585,7 +585,7 @@ async function withSecurityHeaders(response, request, env, pvMode = 'consent', g
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     `img-src 'self' data: blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://c.clarity.ms https://c.bing.com/c.gif${adsense ? ' ' + ADSENSE_CSP.img : ''}`,
-    `connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com ${CLARITY_COLLECT_SOURCES}${pvCollector}${adsense ? ' ' + ADSENSE_CSP.connect : ''}`,
+    `connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.google.com/g/collect ${CLARITY_COLLECT_SOURCES}${pvCollector}${adsense ? ' ' + ADSENSE_CSP.connect : ''}`,
     "form-action 'self'",
     adsense ? `frame-src ${ADSENSE_CSP.frame}` : "frame-src 'none'",
     "media-src 'none'",
