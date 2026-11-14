@@ -68,7 +68,7 @@ test('localized current terms and local-storage notices match the 1–10 questio
   assert.match(terms,locale==='ja'?/1〜10問/:/1–10/,locale);
   const privacy=await readFile(privacyPath,'utf8');
   assert.match(privacy,/data-testid="personal-question-storage-policy"/,locale);
-  const unescape=s=>s.replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"');
+  const unescape=s=>s.replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&');
   assert.ok(unescape(privacy).includes(PERSONAL_QUESTION_COPY[locale].server),locale+' server disclosure');
   assert.ok(unescape(privacy).includes(PERSONAL_AUTOSAVE_COPY[locale].notice),locale+' latest30');
  }
@@ -80,7 +80,7 @@ test('all locale guides describe flexible quiz length and automatic board instea
   const prefix=locale==='ja'?'':'/'+locale;
   const guide=await(await worker.fetch(new Request('https://www.streetboardgame.com'+prefix+'/challenge-guide'),env)).text();
   const about=await(await worker.fetch(new Request('https://www.streetboardgame.com'+prefix+'/about'),env)).text();
-  const decode=s=>s.replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"');
+  const decode=s=>s.replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&');
   assert.ok(decode(guide).includes(BOARD_COPY[locale].notice),locale+' automatic board');
   assert.ok(decode(about).includes(BOARD_COPY[locale].rule),locale+' highest score');
   assert.match(guide,locale==='ja'?/1〜10問/:/1–10/,locale+' flexible length');
