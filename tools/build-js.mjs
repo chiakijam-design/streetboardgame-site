@@ -214,7 +214,7 @@ homeHtml = homeHtml.replace(/(<link id="brand-font-styles" href=")[^"]+/, `$1/${
 homeHtml = homeHtml.replace(/(<noscript id="brand-font-fallback"><link href=")[^"]+/, `$1/${homeFontCssPath}`);
 await writeFile('index.html', homeHtml);
 let englishHtml = await readFile('en/index.html', 'utf8');
-const englishFont = await buildPageFont(removeRepeatedly(removeRepeatedly(englishHtml, /<head>[\s\S]*?<\/head>/i), /<script\b[\s\S]*?<\/script\s*>/gi), 'english');
+const englishFont = await buildPageFont(removeRepeatedly(removeRepeatedly(englishHtml, /<head>[\s\S]*?<\/head>/i), /<script\b[\s\S]*?<\/script[^>]*>/gi), 'english');
 englishHtml = englishHtml.replace(/<link[^>]*(?:data-build-font="english"|href="https:\/\/fonts.googleapis.com\/css2[^\"]+")[^>]*>/, `<link data-build-font="english" href="${englishFont}" rel="stylesheet">`);
 await writeFile('en/index.html', englishHtml);
 // Compile fixed translated HTML outside Workers' per-request CPU budget.
