@@ -68,7 +68,8 @@ secret設定後、認証アプリの現在コードで`/live-ops`へログイン
 ## 4. 外部サービス側で必要な設定
 
 - GA4: データ保持を14か月に設定する
-- Formspree: 対応完了から12か月を超えた問い合わせを月1回削除する
+- お問い合わせ（2026-11-14にFormspreeから自前の`/api/contact`へ移行）: ゲーム用D1の`contact_messages`に保存し、受付から12か月を超えた行はCronが毎時自動削除する。生のIPアドレスは保存しない
+- Resend: お問い合わせ通知メールの送信に使う（送信元`notify.streetboardgame.com`）。APIキーは送信専用権限にし、宛先は`CONTACT_NOTIFY_TO` secretだけに置く
 - Cloudflare: Logs・Analyticsの契約上の保持期間を確認し、不要なLogpush保存を行わない
 - Stripe: 権限を最小化し、本人確認・決済記録の保持と削除はStripeの契約・法令も確認する
 - Google / YouTube: 不要なOAuthクライアントとトークンを削除し、確認用stateを長期保存しない
@@ -81,4 +82,4 @@ secret設定後、認証アプリの現在コードで`/live-ops`へログイン
 3. R2で期限超過した元画像・結果画像が残っていないことを確認する。
 4. 購入履歴専用D1とゲーム用D1のbindingが別database IDであることを確認する。
 5. 管理者secretを交換し、不要アカウントを削除する。
-6. GA4、Formspree、Stripe、Google、Cloudflareの保持・権限設定を確認する。
+6. GA4、Resend、Stripe、Google、Cloudflareの保持・権限設定を確認する。

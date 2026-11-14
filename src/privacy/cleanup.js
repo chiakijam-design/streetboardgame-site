@@ -32,6 +32,7 @@ export async function runPrivacyCleanup(env, now = Date.now()) {
     deletedCaptionSources: 0,
     deletedPendingVerifications: 0,
     deletedCreatorInvites: 0,
+    deletedContactMessages: 0,
   };
   if (env?.REMOTE_DB) await cleanupGameDatabase(env, now, summary);
   if (getLivePurchaseDb(env)) await cleanupPurchaseDatabase(env, now, summary);
@@ -100,6 +101,20 @@ async function cleanupGameDatabase(env, now, summary) {
     WHERE (expires_at < ? OR revoked_at < ?)
   `, [now - PRIVACY_RETENTION.expiredCreatorInviteDays * DAY_MS, now - PRIVACY_RETENTION.expiredCreatorInviteDays * DAY_MS]);
   summary.deletedCreatorInvites = changes(deletedInvites);
+  // Contact messages: the policy promises at most 12 months after resolution; we delete
+  // 12 calendar months after receipt, which is never later than that.
+  const deletedContacts = await safeRun(
+    env.REMOTE_DB,
+    'DELETE FROM contact_messages WHERE created_at < ?',
+    [contactCutoff(now)],
+  );
+  summary.deletedContactMessages = changes(deletedContacts);
+}
+
+export function contactCutoff(now) {
+  const date = new Date(now);
+  date.setUTCMonth(date.getUTCMonth() - PRIVACY_RETENTION.contactMonths);
+  return date.getTime();
 }
 
 async function cleanupPurchaseDatabase(env, now, summary) {

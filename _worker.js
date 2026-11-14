@@ -3,6 +3,7 @@ import { isRetiredLivePage, isLiveHistoryRequest, liveRetiredResponse, isRemoved
 import { handleLiveApi } from './src/live/api.js';
 import { handleChallengeApi } from './src/challenge/api.js';
 import { handleQuestionApi } from './src/questions/api.js';
+import { handleContactApi } from './src/contact/api.js';
 import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 import { runSocialPublishing } from './src/social/publisher.js';
 import { runBudgetedSocialPublishing } from './src/cost/guard.js';
@@ -188,6 +189,10 @@ async function handleRequest(request, env) {
 
     if (path.startsWith('/api/challenge')) {
       return handleChallengeApi(request, env, path);
+    }
+
+    if (path === '/api/contact') {
+      return handleContactApi(request, env);
     }
 
     if (path.startsWith('/api/questions')) {
@@ -588,8 +593,8 @@ async function withSecurityHeaders(response, request, env, pvMode = 'consent', g
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://c.clarity.ms https://c.bing.com/c.gif",
-    `connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com ${CLARITY_COLLECT_SOURCES} https://formspree.io${pvCollector}`,
-    "form-action 'self' https://formspree.io",
+    `connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com ${CLARITY_COLLECT_SOURCES}${pvCollector}`,
+    "form-action 'self'",
     "frame-src 'none'",
     "media-src 'none'",
     "manifest-src 'self'",
