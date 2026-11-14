@@ -40,8 +40,9 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
   const lastModifiedDates = [...sitemap.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map((match) => match[1]);
   assert.equal(new Set(locations).size, locations.length);
   assert.equal(lastModifiedDates.length, locations.length);
-  assert.equal(locations.includes('https://www.streetboardgame.com/challenge'), true);
-  assert.equal(locations.includes('https://www.streetboardgame.com/live'), false);
+  const locationSet = new Set(locations);
+  assert.equal(locationSet.has('https://www.streetboardgame.com/challenge'), true);
+  assert.equal(locationSet.has('https://www.streetboardgame.com/live'), false);
   assert.equal(locations.some((location) => location.includes('?')), false);
   assert.equal(sitemap.includes('<changefreq>'), false);
   assert.equal(sitemap.includes('<priority>'), false);
