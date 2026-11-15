@@ -11,7 +11,7 @@ export async function loadManagedQuestionCards(baseCards, series, language = 'ja
     });
     if (!response.ok) return applyQuestionViewHistory(baseCards);
     const data = await response.json();
-    const cards = applyManagedQuestionCards(baseCards, data.questions, series, language);
+    const cards = applyManagedQuestionCards(baseCards, data.questions, series, language, data.hiddenIds);
     return applyQuestionViewHistory(applyQuestionSelectionStats(cards, data.selectionStats, series));
   } catch (error) {
     return applyQuestionViewHistory(baseCards);
@@ -166,14 +166,19 @@ export function applyQuestionSelectionStats(cards, selectionStats, mode) {
   });
 }
 
-export function applyManagedQuestionCards(baseCards, managedQuestions, series, language = 'ja') {
-  const rows = Array.isArray(managedQuestions) ? managedQuestions : [];
+export function applyManagedQuestionCards(baseCards, managedQuestions, series, language = 'ja', hiddenIds = []) {
+  // Public rows are approved unless they still carry an older status field.
+  const rows = (Array.isArray(managedQuestions) ? managedQuestions : []).filter((row) => (row?.status || 'approved') === 'approved');
+  const hidden = new Set([
+    ...(Array.isArray(hiddenIds) ? hiddenIds : []),
+    ...(Array.isArray(managedQuestions) ? managedQuestions : []).filter((row) => row?.status && row.status !== 'approved').map((row) => row.id),
+  ].map(String));
   const byId = new Map(rows.map((row) => [String(row.id), row]));
   const cards = [];
 
   for (const base of baseCards || []) {
+    if (hidden.has(String(base.id))) continue;
     const row = byId.get(String(base.id));
-    if (row && row.status !== 'approved') continue;
     cards.push(row ? {
       ...base,
       title: row.title,
@@ -186,7 +191,7 @@ export function applyManagedQuestionCards(baseCards, managedQuestions, series, l
 
   const baseIds = new Set((baseCards || []).map((card) => String(card.id)));
   for (const row of rows) {
-    if (!['custom', 'candidate'].includes(row.sourceKind) || row.status !== 'approved'
+    if (!['custom', 'candidate'].includes(row.sourceKind)
       || (row.language || 'ja') !== language
       || baseIds.has(String(row.id))) continue;
     if (!row.title || !Array.isArray(row.choices) || row.choices.length !== 5) continue;

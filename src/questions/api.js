@@ -27,11 +27,11 @@ export async function handleQuestionApi(request, env, path) {
     await ensureQuestionSchema(env);
 
     if (path === '/api/questions/catalog' && request.method === 'GET') {
-      const [questions, selectionStats] = await Promise.all([
+      const [{ questions, hiddenIds }, selectionStats] = await Promise.all([
         publicCatalog(env),
         publicSelectionStats(env),
       ]);
-      return json({ questions, selectionStats });
+      return json({ questions, hiddenIds, selectionStats });
     }
 
     if (path === '/api/questions/trends' && request.method === 'GET') {
@@ -154,7 +154,19 @@ async function publicCatalog(env) {
     WHERE status = 'approved' OR source_kind = 'static'
     ORDER BY updated_at DESC
   `).all();
-  return (result?.results || []).map(mapCatalogRow);
+  const rows = (result?.results || []).map(mapCatalogRow);
+  // Public data carries only what the game needs: ID, title, choices, category,
+  // plus the kind (built-in / user-made / candidate) and language used to pick
+  // cards. Report counts, quarantine notes and history stay admin-only
+  // (2026-11-15). Built-in questions taken out of use are listed by ID only.
+  return {
+    questions: rows.filter((row) => row.status === 'approved').map(publicQuestion),
+    hiddenIds: rows.filter((row) => row.status !== 'approved').map((row) => row.id),
+  };
+}
+
+function publicQuestion(row) {
+  return { id: row.id, title: row.title, category: row.category, choices: row.choices, sourceKind: row.sourceKind, language: row.language };
 }
 
 async function publicSelectionStats(env) {

@@ -90,24 +90,3 @@ test('送信先がエラーを返した場合は再送できる案内を表示�
   await expect(page.getByRole('alert')).toContainText('送信に失敗しました。時間をおいてもう一度お試しください。');
   await expect(page.getByRole('button', { name: '送信する' })).toBeEnabled();
 });
-
-test('特商法表示事項の開示請求は専用案内と入力ひな形を表示する', async ({ page }) => {
-  await page.goto('/?screen=about&to=contact&topic=commerce-disclosure');
-
-  await expect(page.getByTestId('commerce-disclosure-contact-notice')).toContainText('所在地・電話番号の開示');
-  await expect(page.getByLabel('お問い合わせ内容')).toHaveValue(/特定商取引法第11条に基づく表示事項/);
-  await expect(page.locator('input[name="_subject"]')).toHaveValue('streetboardgame.com 特定商取引法第11条表示事項の開示請求');
-  await expect(page.locator('input[name="topic"]')).toHaveValue('commerce-disclosure');
-  await expect(page.getByLabel('お名前')).toHaveAttribute('required', '');
-  await expect(page.getByLabel('メールアドレス')).toHaveAttribute('required', '');
-  await expect(page.getByLabel('送りたい内容')).toHaveCount(0);
-});
-
-test('返金申請は専用案内と注文情報の入力ひな形を表示する', async ({ page }) => {
-  await page.goto('/?screen=about&to=contact&topic=refund-request');
-
-  await expect(page.getByTestId('refund-request-contact-notice')).toContainText('カード番号全桁やセキュリティコードは入力しない');
-  await expect(page.getByLabel('お問い合わせ内容')).toHaveValue(/注文番号（ord_から始まる番号）/);
-  await expect(page.locator('input[name="_subject"]')).toHaveValue('streetboardgame.com 返金・キャンセル申請');
-  await expect(page.locator('input[name="topic"]')).toHaveValue('refund-request');
-});

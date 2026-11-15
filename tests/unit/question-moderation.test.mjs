@@ -308,8 +308,8 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   const publicData = await publicResponse.json();
   assert.equal(publicData.questions.length, 1);
   assert.deepEqual(publicData.questions[0].choices, question.choices);
-  assert.equal(publicData.questions[0].useChallenge, true);
-  assert.equal(publicData.questions[0].useLive, true);
+  // Public rows carry only the fields the game needs (2026-11-15).
+  assert.deepEqual(Object.keys(publicData.questions[0]).sort(), ['category', 'choices', 'id', 'language', 'sourceKind', 'title']);
   assert.equal('targetFriend' in publicData.questions[0], false);
   assert.equal('targetFamily' in publicData.questions[0], false);
 
@@ -375,14 +375,15 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
     '/api/questions/catalog',
   );
   const catalogWithDisabled = await catalogWithDisabledResponse.json();
-  const disabledStatic = catalogWithDisabled.questions.find((item) => item.id === 'Q001');
-  assert.equal(disabledStatic.status, 'disabled');
+  // A built-in question taken out of use is listed by ID only.
+  assert.equal(catalogWithDisabled.questions.some((item) => item.id === 'Q001'), false);
+  assert.deepEqual(catalogWithDisabled.hiddenIds, ['Q001']);
   const cardsAfterDisable = applyManagedQuestionCards([{
     id: 'Q001',
     title: question.title,
     category: 'みんなのお題',
     choices: question.choices,
-  }], catalogWithDisabled.questions, 'challenge');
+  }], catalogWithDisabled.questions, 'challenge', 'ja', catalogWithDisabled.hiddenIds);
   assert.equal(cardsAfterDisable.some((item) => item.id === 'Q001'), false);
   assert.equal(cardsAfterDisable.some((item) => item.id === approved.catalogId), true);
   assert.equal(cardsAfterDisable.find((item) => item.id === approved.catalogId).reportable, true);
@@ -392,7 +393,7 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
     title: question.title,
     category: 'みんなのお題',
     choices: question.choices,
-  }], catalogWithDisabled.questions, 'live');
+  }], catalogWithDisabled.questions, 'live', 'ja', catalogWithDisabled.hiddenIds);
   assert.deepEqual(
     liveCardsAfterDisable.map((item) => item.id),
     cardsAfterDisable.map((item) => item.id),

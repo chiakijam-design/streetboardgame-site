@@ -37,9 +37,9 @@
 <meta property="og:title" content="わたし理解度診断｜私のこと、ちゃんと分かってるよね？" />
 <meta property="og:description" content="当てるより、話すための1〜10問。先に自分が回答し、できたURLを送ると最大50人が挑戦できます。" />
 <meta property="og:url" content="https://www.streetboardgame.com/" />
-<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=20260726-ogp-2" />
-<meta property="og:image:secure_url" content="https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=20260726-ogp-2" />
-<meta property="og:image:type" content="image/png" />
+<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp-challenge-v4.jpg?v=20261115-jpg" />
+<meta property="og:image:secure_url" content="https://www.streetboardgame.com/assets/ogp-challenge-v4.jpg?v=20261115-jpg" />
+<meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:alt" content="わたし理解度診断｜私のこと、ちゃんと分かってるよね？｜当てるより、話すための1〜10問。" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -49,7 +49,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="わたし理解度診断｜私のこと、ちゃんと分かってるよね？" />
 <meta name="twitter:description" content="当てるより、話すための1〜10問。先に自分が回答し、できたURLを送ると最大50人が挑戦できます。" />
-<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=20260726-ogp-2" />
+<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp-challenge-v4.jpg?v=20261115-jpg" />
 <meta name="twitter:image:alt" content="わたし理解度診断｜私のこと、ちゃんと分かってるよね？｜当てるより、話すための1〜10問。" />
 
 <script type="application/ld+json">
@@ -92,7 +92,7 @@
       },
       "primaryImageOfPage": {
         "@type": "ImageObject",
-        "url": "https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=20260726-ogp-2",
+        "url": "https://www.streetboardgame.com/assets/ogp-challenge-v4.jpg?v=20261115-jpg",
         "width": 1200,
         "height": 630
       },
@@ -193,15 +193,19 @@
 ========================= -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link id="brand-font-styles" href="/dist/home-font-fe266daa0cd1.css" rel="stylesheet" media="print">
+<link id="brand-font-styles" data-href="/dist/home-font-fe266daa0cd1.css" rel="stylesheet" media="print">
 <script>
   (function() {
     var brandFontStyles = document.getElementById('brand-font-styles');
     if (!brandFontStyles) return;
+    // Load exactly one Japanese font stylesheet (2026-11-15): the subset made
+    // for the top page, or the full Google Fonts sheet for other screens.
+    var fontHref = brandFontStyles.dataset.href;
     if (window.__INITIAL_SCREEN && window.__INITIAL_SCREEN !== 'top') {
       document.documentElement.dataset.initialScreen = window.__INITIAL_SCREEN;
-      if (!brandFontStyles.dataset.pageSubset) brandFontStyles.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..900&display=swap';
+      if (!brandFontStyles.dataset.pageSubset) fontHref = 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..900&display=swap';
     }
+    brandFontStyles.href = fontHref;
     var activateBrandFonts = function() { brandFontStyles.media = 'all'; };
     var scheduleBrandFonts = function() {
       if (window.__INITIAL_SCREEN && window.__INITIAL_SCREEN !== 'top') return activateBrandFonts();
@@ -266,10 +270,9 @@
     viewBox="0 0 756 1122"
     width="756"
     height="1122"
-    role="img"
-    aria-label="休日にしたいこと"
+    aria-hidden="true"
+    focusable="false"
   >
-    <title>休日にしたいこと</title>
     <defs>
       <filter id="notebook-card-1-dot-shadow" x="-35%" y="-35%" width="170%" height="170%">
         <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity=".24"/>
@@ -308,15 +311,14 @@
     </g>
     <path d="M690 920 C726 932 750 1005 738 1122 L650 1122 C667 1055 677 982 690 920 Z" fill="url(#notebook-card-1-curl)" opacity=".94"/>
     <path d="M681 932 C716 953 731 1015 725 1122" stroke="rgba(0,0,0,.12)" stroke-width="4" fill="none"/>
-  </svg><ol class="notebook-card-accessible-choices"><li>動画を見る</li><li>買い物</li><li>ゲーム</li><li>外へ行く</li><li>のんびり</li></ol></div><div class="top-question-card" data-testid="top-question-card" style="position:absolute;top:0;left:28%;width:118px;aspect-ratio:756 / 1122;overflow:hidden;transform:rotate(4deg);z-index:3;border:3px solid #fff;border-radius:10px;background:#fff;box-shadow:0 12px 24px rgba(0,0,0,.25);color:#1A1A1A"><svg
+  </svg><p class="notebook-card-accessible-choices">休日にしたいこと</p><ol class="notebook-card-accessible-choices"><li>動画を見る</li><li>買い物</li><li>ゲーム</li><li>外へ行く</li><li>のんびり</li></ol></div><div class="top-question-card" data-testid="top-question-card" style="position:absolute;top:0;left:28%;width:118px;aspect-ratio:756 / 1122;overflow:hidden;transform:rotate(4deg);z-index:3;border:3px solid #fff;border-radius:10px;background:#fff;box-shadow:0 12px 24px rgba(0,0,0,.25);color:#1A1A1A"><svg
     class="notebook-question-card-visual"
     viewBox="0 0 756 1122"
     width="756"
     height="1122"
-    role="img"
-    aria-label="今ほしいもの"
+    aria-hidden="true"
+    focusable="false"
   >
-    <title>今ほしいもの</title>
     <defs>
       <filter id="notebook-card-2-dot-shadow" x="-35%" y="-35%" width="170%" height="170%">
         <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity=".24"/>
@@ -355,15 +357,14 @@
     </g>
     <path d="M690 920 C726 932 750 1005 738 1122 L650 1122 C667 1055 677 982 690 920 Z" fill="url(#notebook-card-2-curl)" opacity=".94"/>
     <path d="M681 932 C716 953 731 1015 725 1122" stroke="rgba(0,0,0,.12)" stroke-width="4" fill="none"/>
-  </svg><ol class="notebook-card-accessible-choices"><li>時間</li><li>旅行</li><li>服</li><li>ごほうび</li><li>睡眠</li></ol></div><div class="top-question-card" data-testid="top-question-card" style="position:absolute;top:30px;left:52%;width:118px;aspect-ratio:756 / 1122;overflow:hidden;transform:rotate(-3deg);z-index:2;border:3px solid #fff;border-radius:10px;background:#fff;box-shadow:0 12px 24px rgba(0,0,0,.25);color:#1A1A1A"><svg
+  </svg><p class="notebook-card-accessible-choices">今ほしいもの</p><ol class="notebook-card-accessible-choices"><li>時間</li><li>旅行</li><li>服</li><li>ごほうび</li><li>睡眠</li></ol></div><div class="top-question-card" data-testid="top-question-card" style="position:absolute;top:30px;left:52%;width:118px;aspect-ratio:756 / 1122;overflow:hidden;transform:rotate(-3deg);z-index:2;border:3px solid #fff;border-radius:10px;background:#fff;box-shadow:0 12px 24px rgba(0,0,0,.25);color:#1A1A1A"><svg
     class="notebook-question-card-visual"
     viewBox="0 0 756 1122"
     width="756"
     height="1122"
-    role="img"
-    aria-label="好きな食べもの"
+    aria-hidden="true"
+    focusable="false"
   >
-    <title>好きな食べもの</title>
     <defs>
       <filter id="notebook-card-3-dot-shadow" x="-35%" y="-35%" width="170%" height="170%">
         <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity=".24"/>
@@ -402,12 +403,11 @@
     </g>
     <path d="M690 920 C726 932 750 1005 738 1122 L650 1122 C667 1055 677 982 690 920 Z" fill="url(#notebook-card-3-curl)" opacity=".94"/>
     <path d="M681 932 C716 953 731 1015 725 1122" stroke="rgba(0,0,0,.12)" stroke-width="4" fill="none"/>
-  </svg><ol class="notebook-card-accessible-choices"><li>お寿司</li><li>焼き肉</li><li>とんかつ</li><li>ラーメン</li><li>パンケーキ</li></ol></div></div></div><section data-testid="top-common-rules" aria-labelledby="rules-title" style="margin:0 24px 22px;padding:18px 16px 16px;position:relative;z-index:1;background:linear-gradient(160deg, #FFD6E5 0%, #FFEAF1 100%);color:#1A1A1A;border:3px solid #1A1A1A;border-radius:18px;box-shadow:5px 5px 0 #D63A75"><h2 id="rules-title" style="margin:0;text-align:center;font-size:clamp(14px, 4.2vw, 18px);line-height:1.5"><span data-testid="top-rules-title-line" style="display:block;white-space:nowrap">あなたの「わたし理解度診断」を</span><span data-testid="top-rules-title-line" style="display:block;white-space:nowrap">作って、みんなに挑戦してもらおう</span></h2><ol style="display:grid;gap:8px;margin:14px 0 0;padding:0;list-style:none"><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#5BD4E8;color:#1A1A1A">1</b><span>出題する問題を選ぶ・作る（1〜10問）</span></li><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#EC4F88;color:#FFFFFF">2</b><span>自分の正解を選ぶ</span></li><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#FFE26B;color:#1A1A1A">3</b><span>URL・QRコードで友達に問題を送信</span></li><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#FFFFFF;color:#1A1A1A">4</b><span>何問正解かでみんなの理解度を診断</span></li></ol></section><nav aria-label="ゲームシリーズの紹介ページ" style="padding:4px 24px 0;position:relative;z-index:1"><h2 style="margin:0 0 10px;color:#FFFFFF;font-size:14px">まずはどんなゲームか知りたい</h2><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><a href="/challenge-guide" style="min-height:112px;padding:12px;border-radius:14px;border:2px solid #FFE26B;box-shadow:3px 3px 0 #000;background:rgba(255,255,255,.2);color:#FFFFFF;text-align:center;text-decoration:none"><div style="font-size:28px">📣</div><div style="margin-top:4px;font-size:12px;font-weight:900;line-height:1.5">みんなに挑戦してもらう</div><span style="display:inline-block;margin-top:7px;padding:3px 8px;border-radius:999px;background:#FFE26B;color:#1A1A1A;font-size:10px;font-weight:900">1〜10問・最大50人</span></a></div></nav><p style="margin:16px 24px 0;text-align:center;position:relative;z-index:1"><span data-testid="top-free-notice" style="color:#FFFFFF;font-size:13px;font-weight:800;line-height:1.8">通常版のクイズ作成・回答は無料です。</span></p><footer style="padding:24px 20px 32px;display:flex;justify-content:center;flex-wrap:wrap;gap:10px 18px;position:relative;z-index:1"><a href="/challenge" style="color:#FFFFFF;font-size:12px;font-weight:800">クイズ</a><a href="/challenge-guide" style="color:#FFFFFF;font-size:12px;font-weight:800">遊び方</a><a href="/about" style="color:#FFFFFF;font-size:12px;font-weight:800">About</a><a href="/challenge/library" style="color:#FFFFFF;font-size:12px;font-weight:800">お題ライブラリ</a><a href="/product" style="color:#FFFFFF;font-size:12px;font-weight:800">製品版</a><a href="/terms" style="color:#FFFFFF;font-size:12px;font-weight:800">利用規約</a><a href="/privacy" style="color:#FFFFFF;font-size:12px;font-weight:800">プライバシー</a><a href="/legal" style="color:#FFFFFF;font-size:12px;font-weight:800">特商法表記</a></footer></main></div><!-- /home-prerender -->
+  </svg><p class="notebook-card-accessible-choices">好きな食べもの</p><ol class="notebook-card-accessible-choices"><li>お寿司</li><li>焼き肉</li><li>とんかつ</li><li>ラーメン</li><li>パンケーキ</li></ol></div></div></div><section data-testid="top-common-rules" aria-labelledby="rules-title" style="margin:0 24px 22px;padding:18px 16px 16px;position:relative;z-index:1;background:linear-gradient(160deg, #FFD6E5 0%, #FFEAF1 100%);color:#1A1A1A;border:3px solid #1A1A1A;border-radius:18px;box-shadow:5px 5px 0 #D63A75"><h2 id="rules-title" style="margin:0;text-align:center;font-size:clamp(14px, 4.2vw, 18px);line-height:1.5"><span data-testid="top-rules-title-line" style="display:block;white-space:nowrap">あなたの「わたし理解度診断」を</span><span data-testid="top-rules-title-line" style="display:block;white-space:nowrap">作って、みんなに挑戦してもらおう</span></h2><ol style="display:grid;gap:8px;margin:14px 0 0;padding:0;list-style:none"><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#5BD4E8;color:#1A1A1A">1</b><span>出題する問題を選ぶ・作る（1〜10問）</span></li><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#EC4F88;color:#FFFFFF">2</b><span>自分の正解を選ぶ</span></li><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#FFE26B;color:#1A1A1A">3</b><span>URL・QRコードで友達に問題を送信</span></li><li data-testid="top-common-rule-step" style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;min-height:46px;padding:7px 10px 7px 8px;border:2px solid #1A1A1A;border-radius:12px;background:#FFFFFF;box-shadow:2px 2px 0 #000;font-size:12px;line-height:1.55;font-weight:900"><b style="display:grid;place-items:center;width:32px;height:32px;border:2px solid #1A1A1A;border-radius:50%;background:#FFFFFF;color:#1A1A1A">4</b><span>何問正解かでみんなの理解度を診断</span></li></ol></section><nav aria-label="ゲームシリーズの紹介ページ" style="padding:4px 24px 0;position:relative;z-index:1"><h2 style="margin:0 0 10px;color:#FFFFFF;font-size:14px">まずはどんなゲームか知りたい</h2><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><a href="/challenge-guide" style="min-height:112px;padding:12px;border-radius:14px;border:2px solid #FFE26B;box-shadow:3px 3px 0 #000;background:rgba(255,255,255,.2);color:#FFFFFF;text-align:center;text-decoration:none"><div style="font-size:28px">📣</div><div style="margin-top:4px;font-size:12px;font-weight:900;line-height:1.5">みんなに挑戦してもらう</div><span style="display:inline-block;margin-top:7px;padding:3px 8px;border-radius:999px;background:#FFE26B;color:#1A1A1A;font-size:10px;font-weight:900">1〜10問・最大50人</span></a></div></nav><p style="margin:16px 24px 0;text-align:center;position:relative;z-index:1"><span data-testid="top-free-notice" style="color:#FFFFFF;font-size:13px;font-weight:800;line-height:1.8">通常版のクイズ作成・回答は無料です。</span></p><footer style="padding:24px 20px 32px;display:flex;justify-content:center;flex-wrap:wrap;gap:10px 18px;position:relative;z-index:1"><a href="/challenge" style="color:#FFFFFF;font-size:12px;font-weight:800">クイズ</a><a href="/challenge-guide" style="color:#FFFFFF;font-size:12px;font-weight:800">遊び方</a><a href="/about" style="color:#FFFFFF;font-size:12px;font-weight:800">About</a><a href="/challenge/library" style="color:#FFFFFF;font-size:12px;font-weight:800">お題ライブラリ</a><a href="/product" style="color:#FFFFFF;font-size:12px;font-weight:800">製品版</a><a href="/terms" style="color:#FFFFFF;font-size:12px;font-weight:800">利用規約</a><a href="/privacy" style="color:#FFFFFF;font-size:12px;font-weight:800">プライバシー</a><a href="/legal" style="color:#FFFFFF;font-size:12px;font-weight:800">特商法表記</a></footer></main></div><!-- /home-prerender -->
 
 <script data-build-entry="viewport_recovery" defer src="/dist/viewport_recovery-HHI3ISN7.js"></script>
 <script data-build-entry="prototype_character" type="application/x-page-script" src="/dist/prototype_character-5ECBWOAI.js"></script>
-<script data-build-entry="prototype_app" type="application/x-page-script" src="/dist/prototype_app-54NOTE5Q.js"></script>
+<script data-build-entry="prototype_app" type="application/x-page-script" src="/dist/prototype_app-GXY2HFHX.js"></script>
 <script data-build-entry="home_entry" defer src="/dist/home_entry-RXO65SB5.js"></script>
-<script defer src="/language_switch.js?v=20260727-tap-1"></script>
 </body>
 </html>

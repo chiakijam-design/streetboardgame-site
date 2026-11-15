@@ -421,7 +421,7 @@ async function handleRequest(request, env) {
         description: '「わたし理解度診断」の作り方と遊び方。問題の選び方、URL・QRコードの送り方、答え合わせレポートの見方を紹介します。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
         ogTitle: 'みんなに挑戦してもらう｜わたし理解度診断',
-        ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge-v3.png?v=20260726-ogp-2',
+        ogImage: CANONICAL_ORIGIN + '/assets/ogp-challenge-v4.jpg?v=20261115-jpg',
         imageWidth: 1200,
         imageHeight: 630,
         imageAlt: 'わたし理解度診断｜私のこと、ちゃんと分かってるよね？｜当てるより、話すための1〜10問。',
@@ -486,7 +486,7 @@ async function handleRequest(request, env) {
       );
       if (infoPageFontStyles[path]) {
         rendered = rendered
-          .replace(/<link id="brand-font-styles" href="[^"]+"/, `<link id="brand-font-styles" data-page-subset="true" href="${infoPageFontStyles[path]}"`)
+          .replace(/<link id="brand-font-styles" data-href="[^"]+"/, `<link id="brand-font-styles" data-page-subset="true" data-href="${infoPageFontStyles[path]}"`)
           .replace(/(<noscript id="brand-font-fallback"><link href=")[^"]+/, `$1${infoPageFontStyles[path]}`);
       }
       return new Response(applySeoMeta(rendered, pageMap[path]), {
@@ -503,9 +503,6 @@ async function handleRequest(request, env) {
 
     if (redirectMap[path]) {
       const target = new URL(redirectMap[path], url.origin);
-      if (path === '/contact' && ['live-creator-registration', 'commerce-disclosure', 'refund-request'].includes(url.searchParams.get('topic'))) {
-        target.searchParams.set('topic', url.searchParams.get('topic'));
-      }
       return Response.redirect(target.toString(), 301);
     }
 
@@ -637,7 +634,7 @@ function createCspNonce() {
 }
 
 function applySeoMeta(html, page) {
-  const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=20260726';
+  const ogImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge-v4.jpg?v=20261115-jpg';
   const imageWidth = Number(page.imageWidth || 1200);
   const imageHeight = Number(page.imageHeight || 630);
   const ogUrl = page.ogUrl || page.url;
@@ -703,7 +700,7 @@ function applyChallengeLibraryMeta(html) {
             isPartOf: { '@type': 'WebSite', url: CANONICAL_ORIGIN + '/' },
             primaryImageOfPage: {
               '@type': 'ImageObject',
-              url: CANONICAL_ORIGIN + '/assets/ogp-challenge-v3.png?v=20260726-ogp-2',
+              url: CANONICAL_ORIGIN + '/assets/ogp-challenge-v4.jpg?v=20261115-jpg',
               width: 1200,
               height: 630,
             },
@@ -768,7 +765,7 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
         breadcrumb: { '@id': breadcrumbId },
         primaryImageOfPage: {
           '@type': 'ImageObject',
-          url: CANONICAL_ORIGIN + '/assets/ogp-challenge-en.png?v=20260725-en-1',
+          url: CANONICAL_ORIGIN + '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg',
           width: 1729,
           height: 910,
         },
@@ -798,7 +795,7 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
         name: ogTitle,
         url: canonicalUrl,
         description,
-        image: CANONICAL_ORIGIN + '/assets/ogp-challenge-en.png?v=20260725-en-1',
+        image: CANONICAL_ORIGIN + '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg',
         applicationCategory: 'GameApplication',
         operatingSystem: 'Any',
         isAccessibleForFree: true,
@@ -820,14 +817,14 @@ function applyEnglishGameMeta(html, kind, requestUrl) {
     .replace(/<meta property="og:site_name" content="[^"]*"\s*\/?>/i, '<meta property="og:site_name" content="Understanding Quiz">')
     .replace(/<meta property="og:description" content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${description}">`)
     .replace(/<meta property="og:url" content="[^"]*"\s*\/?>/i, `<meta property="og:url" content="${shareUrl.toString()}">`)
-    .replace(/<meta property="og:image" content="[^"]*"\s*\/?>/i, '<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en.png?v=20260725-en-1">')
-    .replace(/<meta property="og:image:secure_url" content="[^"]*"\s*\/?>/i, '<meta property="og:image:secure_url" content="https://www.streetboardgame.com/assets/ogp-challenge-en.png?v=20260725-en-1">')
+    .replace(/<meta property="og:image" content="[^"]*"\s*\/?>/i, '<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg">')
+    .replace(/<meta property="og:image:secure_url" content="[^"]*"\s*\/?>/i, '<meta property="og:image:secure_url" content="https://www.streetboardgame.com/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg">')
     .replace(/<meta property="og:image:width" content="[^"]*"\s*\/?>/i, '<meta property="og:image:width" content="1729">')
     .replace(/<meta property="og:image:height" content="[^"]*"\s*\/?>/i, '<meta property="og:image:height" content="910">')
     .replace(/<meta property="og:image:alt" content="[^"]*"\s*\/?>/i, `<meta property="og:image:alt" content="${ogTitle}">`)
     .replace(/<meta name="twitter:title" content="[^"]*"\s*\/?>/i, `<meta name="twitter:title" content="${ogTitle}">`)
     .replace(/<meta name="twitter:description" content="[^"]*"\s*\/?>/i, `<meta name="twitter:description" content="${description}">`)
-    .replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/i, '<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en.png?v=20260725-en-1">')
+    .replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/i, '<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg">')
     .replace(/<meta name="twitter:image:alt" content="[^"]*"\s*\/?>/i, `<meta name="twitter:image:alt" content="${ogTitle}">`)
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/i, `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>`);
   if (/<meta property="og:locale" content="[^"]*"\s*\/?>/i.test(localized)) {
@@ -897,7 +894,7 @@ function buildNoscript(page) {
 function buildStructuredData(page) {
   const organizationId = 'https://www.streetboardgame.com/#organization';
   const websiteId = 'https://www.streetboardgame.com/#website';
-  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge-v3.png?v=20260726-ogp-2';
+  const pageImage = page.ogImage || 'https://www.streetboardgame.com/assets/ogp-challenge-v4.jpg?v=20261115-jpg';
 
   const webPage = {
     '@type': 'WebPage',

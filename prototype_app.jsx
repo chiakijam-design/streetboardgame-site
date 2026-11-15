@@ -41,7 +41,10 @@ export function TopPage() {
   const [error, setError] = useState('');
 
   const start = (mode) => {
-    setError(startCreatorGame(mode, creatorName));
+    const message = startCreatorGame(mode, creatorName);
+    setError(message);
+    // Move to the name field so the message is not missed on phones.
+    if (message) document.getElementById('top-creator-name')?.focus();
   };
 
   return (
@@ -952,25 +955,7 @@ function ContactForm() {
   const [openedAt] = useState(() => Date.now());
   const sending = status === 'sending';
   const sent = status === 'sent';
-  const contactTopic = new URLSearchParams(location.search).get('topic') || '';
-  const isCreatorRegistration = false;
-  const isCommerceDisclosure = contactTopic === 'commerce-disclosure';
-  const isRefundRequest = contactTopic === 'refund-request';
-  const isSpecialRequest = isCreatorRegistration || isCommerceDisclosure || isRefundRequest;
-  const contactSubject = isCreatorRegistration
-    ? 'streetboardgame.com LIVE配信者登録申込み'
-    : isCommerceDisclosure
-      ? 'streetboardgame.com 特定商取引法第11条表示事項の開示請求'
-      : isRefundRequest
-        ? 'streetboardgame.com 返金・キャンセル申請'
-        : 'streetboardgame.com 感想・改善要望・お問い合わせ';
-  const defaultMessage = isCreatorRegistration
-    ? 'LIVE配信者登録を希望します。\n\n配信サービス：\n配信アカウント／チャンネルURL：\n利用予定：'
-    : isCommerceDisclosure
-      ? '特定商取引法第11条に基づく表示事項（事業者の所在地・電話番号）の開示を請求します。\n\n確認したい有料サービス：\n購入予定時期：'
-      : isRefundRequest
-        ? '返金・キャンセルの確認を希望します。\n\n申込み時のメールアドレス：\n注文番号（ord_から始まる番号）：\n決済日時：\n金額：\n対象サービス（結果画像／応援機能）：\nLIVE名または参加コード：\n申請理由：'
-        : '';
+  const contactSubject = 'streetboardgame.com 感想・改善要望・お問い合わせ';
 
   const submit = async (event) => {
     event.preventDefault();
@@ -1017,50 +1002,7 @@ function ContactForm() {
   return (
     <form onSubmit={submit} style={{ display: 'grid', gap: 12, marginTop: 16 }}>
       <input type="hidden" name="_subject" value={contactSubject} />
-      <input type="hidden" name="topic" value={contactTopic} />
-      {isCreatorRegistration && (
-        <p data-testid="creator-registration-contact-notice" style={{
-          margin: 0,
-          padding: 10,
-          border: `2px solid ${theme.black}`,
-          borderRadius: 10,
-          background: '#FFF9D7',
-          fontSize: 13,
-          lineHeight: 1.65,
-          fontWeight: 900,
-        }}>
-          LIVE配信者登録のお申し込みです。配信アカウントのURLと利用予定を追記して送信してください。
-        </p>
-      )}
-      {isCommerceDisclosure && (
-        <p data-testid="commerce-disclosure-contact-notice" style={{
-          margin: 0,
-          padding: 10,
-          border: `2px solid ${theme.black}`,
-          borderRadius: 10,
-          background: '#FFF9D7',
-          fontSize: 13,
-          lineHeight: 1.65,
-          fontWeight: 900,
-        }}>
-          購入を決める前に、事業者の所在地・電話番号の開示を請求するためのフォームです。確認したい有料サービスと購入予定時期を追記して送信してください。
-        </p>
-      )}
-      {isRefundRequest && (
-        <p data-testid="refund-request-contact-notice" style={{
-          margin: 0,
-          padding: 10,
-          border: `2px solid ${theme.black}`,
-          borderRadius: 10,
-          background: '#FFF9D7',
-          fontSize: 13,
-          lineHeight: 1.65,
-          fontWeight: 900,
-        }}>
-          返金・キャンセルの確認用フォームです。注文番号など、分かる範囲の購入情報を追記してください。カード番号全桁やセキュリティコードは入力しないでください。
-        </p>
-      )}
-      {!isSpecialRequest && (
+      {(
         <>
           <div data-testid="feedback-prompt" style={{
             display: 'grid',
@@ -1105,23 +1047,22 @@ function ContactForm() {
         <input id="contact-company" name="_gotcha" tabIndex="-1" autoComplete="off" />
       </div>
       <label htmlFor="contact-name" style={contactLabelStyle()}>
-        お名前 {!isSpecialRequest && <span style={{ fontSize: 12, color: '#6D5861' }}>（任意）</span>}
-        <input id="contact-name" name="name" required={isSpecialRequest} maxLength={50} autoComplete="name" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending} />
+        お名前 {<span style={{ fontSize: 12, color: '#6D5861' }}>（任意）</span>}
+        <input id="contact-name" name="name" maxLength={50} autoComplete="name" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending} />
       </label>
       <label htmlFor="contact-email" style={contactLabelStyle()}>
-        メールアドレス {!isSpecialRequest && <span style={{ fontSize: 12, color: '#6D5861' }}>（返信が必要な場合のみ）</span>}
-        <input id="contact-email" name="email" type="email" required={isSpecialRequest} maxLength={160} autoComplete="email" inputMode="email" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending} />
+        メールアドレス {<span style={{ fontSize: 12, color: '#6D5861' }}>（返信が必要な場合のみ）</span>}
+        <input id="contact-email" name="email" type="email" maxLength={160} autoComplete="email" inputMode="email" style={{ ...inputStyle(), marginTop: 5 }} disabled={sending} />
       </label>
       <label htmlFor="contact-message" style={contactLabelStyle()}>
-        {isSpecialRequest ? 'お問い合わせ内容' : '感想・改善してほしいこと'}
+        感想・改善してほしいこと
         <textarea
           id="contact-message"
           name="message"
           required
           maxLength={2000}
           rows={7}
-          defaultValue={defaultMessage}
-          placeholder={isSpecialRequest ? '' : '例：楽しかったところ、困ったところ、こうなったらもっと使いたい、など。短い一言だけでも大歓迎です。'}
+          placeholder={'例：楽しかったところ、困ったところ、こうなったらもっと使いたい、など。短い一言だけでも大歓迎です。'}
           style={{ ...inputStyle(), minHeight: 150, marginTop: 5, resize: 'vertical', lineHeight: 1.6 }}
           disabled={sending}
         />
@@ -1136,7 +1077,7 @@ function ContactForm() {
       )}
       {sent && (
         <p role="status" style={{ margin: 0, padding: 10, border: '2px solid #16805D', borderRadius: 10, background: '#DFF8EF', color: '#075940', fontSize: 13, lineHeight: 1.6, fontWeight: 900 }}>
-          {isSpecialRequest ? '送信しました。お問い合わせありがとうございます。' : '送信しました。声を届けていただきありがとうございます。'}
+          送信しました。声を届けていただきありがとうございます。
         </p>
       )}
       <button type="submit" disabled={sending || sent} style={{ ...primaryButton(), opacity: sending ? .72 : 1 }}>

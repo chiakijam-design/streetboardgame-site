@@ -623,6 +623,27 @@ function loadingView() {
   return '<section class="challenge-panel challenge-centered" aria-live="polite"><div class="challenge-loader"></div><p>読み込み中です…</p></section>';
 }
 
+// A missing name is also shown right under the name field, which receives
+// focus, so the message is not missed on small screens (2026-11-15).
+function nameErrorAttributes(id) {
+  return state.error === 'name-required' ? ` aria-invalid="true" aria-describedby="${id}-error"` : '';
+}
+
+function nameFieldError(id) {
+  return state.error === 'name-required'
+    ? `<p class="challenge-field-error" id="${id}-error">${escapeHtml(errorMessage(state.error))}</p>`
+    : '';
+}
+
+function showNameRequired(id, patch = {}) {
+  setState({ ...patch, error: 'name-required' });
+  const field = document.getElementById(id);
+  if (field) {
+    field.focus({ preventScroll: true });
+    field.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+}
+
 function shell(label, title, description, content) {
   return `
     <section class="challenge-hero">
@@ -679,7 +700,8 @@ function createStartView() {
       </div>` : ''}
       <label class="challenge-label" for="creator-name">出題者の名前（12文字まで）</label>
       <input id="creator-name" class="challenge-input" maxlength="12" autocomplete="nickname"
-        placeholder="例：ちあき" value="${escapeHtml(state.creatorName)}">
+        placeholder="例：ちあき" value="${escapeHtml(state.creatorName)}"${nameErrorAttributes('creator-name')}>
+      ${nameFieldError('creator-name')}
       <button class="challenge-primary" data-action="start-create">${escapeHtml(translateText('クイズを作る'))} <span>▶</span></button>
       <p class="challenge-note">共通のお題ライブラリから出題します。回答途中はこの端末へ自動保存されます。</p><p>${escapeHtml(challengeCompletionCopy(currentLocale, 0).help)}</p>
     </section>`,
@@ -973,7 +995,8 @@ function joinView() {
       <div class="challenge-count"><b>${room.completedParticipants}</b>人が回答済み ／ 上限${room.maxParticipants}人</div>
       <label class="challenge-label" for="participant-name">表示名（12文字まで）</label>
       <input id="participant-name" class="challenge-input" maxlength="12" autocomplete="nickname"
-        placeholder="例：ゆう（本名は避けてください）" value="${escapeHtml(state.participantName)}">
+        placeholder="例：ゆう（本名は避けてください）" value="${escapeHtml(state.participantName)}"${nameErrorAttributes('participant-name')}>
+      ${nameFieldError('participant-name')}
       <p class="challenge-note" data-testid="automatic-board-notice">${escapeHtml(boardCopy(currentLocale, 'notice'))}</p>
       <button class="challenge-primary" data-action="join">${escapeHtml(numberedCopy('10問の答え当てに挑戦する', room.cards.length))} <span>▶</span></button>
       <a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a>
@@ -1424,7 +1447,7 @@ function bindEvents() {
 
 function startCreate() {
   const name = document.getElementById('creator-name')?.value.trim().slice(0, 12) || '';
-  if (!name) return setState({ error: 'name-required', creatorName: '' });
+  if (!name) return showNameRequired('creator-name', { creatorName: '' });
   if (allCards.length < QUESTION_COUNT) return setState({ error: 'questions-unavailable' });
   const preferredPack = questionPackBySlug(preferredPackSlug, isEnglish);
   const packedCards = questionPackCards(allCards, preferredPackSlug, isEnglish, QUESTION_COUNT);
@@ -1770,7 +1793,7 @@ async function joinRoom() {
   if (state.loading) return;
   quizFeedbackSoundPlayer.prime();
   const name = document.getElementById('participant-name')?.value.trim().slice(0, 12) || '';
-  if (!name) return setState({ error: 'name-required' });
+  if (!name) return showNameRequired('participant-name');
   setState({ loading: true, participantName: name, error: '' });
   try {
     const headers = { 'content-type': 'application/json' };
