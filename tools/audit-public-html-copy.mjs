@@ -13,7 +13,7 @@ const missing = new Map();
 // output. Translated derivatives must not replace the original public source.
 const priorSupplement = JSON.parse(await readFile(new URL('data/translation-supplement-public-html.json', root), 'utf8'));
 for (const entry of priorSupplement.entries) missing.set(entry.source, new Set(entry.contexts));
-const paths = ['/', '/challenge', '/challenge/library', '/live-challenge', '/challenge-guide', '/about', '/product', '/pricing', '/terms', '/privacy', '/legal', '/creator-terms', '/refund-policy', '/content-guidelines', '/minor-policy', '/en/', '/en/challenge', '/en/live-challenge', '/en/terms', '/en/privacy'];
+const paths = ['/', '/challenge', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy', '/en/', '/en/challenge', '/en/terms', '/en/privacy'];
 const env = { ASSETS: { async fetch(request) {
   const pathname = new URL(request.url).pathname;
   const file = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
@@ -22,11 +22,36 @@ const env = { ASSETS: { async fetch(request) {
   catch { return new Response('Not Found', { status: 404 }); }
 } } };
 function add(raw, context) {
-  let source = raw.trim().replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, '\u00a0');
+  let source = raw.trim().replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, '\u00a0').replace(/&amp;/g, '&');
   source = corpus.aliases[source] || source;
   if (!source || known.has(source) || /^https?:\/\//.test(source) || !/\p{L}/u.test(source)) return;
   if (!missing.has(source)) missing.set(source, new Set());
   missing.get(source).add(context);
+}
+// Split the site's own HTML into text runs and tags, skipping comments,
+// scripts and styles (a small scanner, not a sanitizer).
+function scanHtml(html) {
+  const lower = html.toLowerCase();
+  const texts = [];
+  let markup = '';
+  let index = 0;
+  while (index < html.length) {
+    const open = html.indexOf('<', index);
+    if (open < 0) { texts.push(html.slice(index)); break; }
+    texts.push(html.slice(index, open));
+    let close;
+    if (html.startsWith('<!--', open)) close = html.indexOf('-->', open + 4) + 3;
+    else if (lower.startsWith('<script', open) || lower.startsWith('<style', open)) {
+      const name = lower.startsWith('<script', open) ? 'script' : 'style';
+      const end = lower.indexOf('</' + name, open);
+      close = end < 0 ? html.length : html.indexOf('>', end) + 1;
+    } else {
+      close = html.indexOf('>', open) + 1;
+      if (close > open) markup += html.slice(open, close);
+    }
+    index = close > open ? close : html.length;
+  }
+  return { texts, markup };
 }
 function strings(value, context) {
   if (typeof value === 'string') add(value, context);
@@ -50,8 +75,8 @@ for (const path of paths) {
     }
     visit(data);
   }
-  const visible = html.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '');
-  visible.split(/<[^>]+>/g).forEach((value) => add(value, path + ':body'));
+  const { texts, markup: visible } = scanHtml(html);
+  texts.forEach((value) => add(value, path + ':body'));
   for (const [, value] of visible.matchAll(/(?:aria-label|placeholder|alt|title)="([^"]*)"/gi)) add(value, path + ':attribute');
   for (const [tag] of visible.matchAll(/<meta\b[^>]*>/gi)) {
     const field = tag.match(/(?:name|property)="([^"]*)"/i)?.[1];

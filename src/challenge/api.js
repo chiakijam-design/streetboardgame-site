@@ -1,6 +1,6 @@
 import { recordQuestionSelections } from '../questions/trends.js';
 import { recordOpsEvent } from '../ops/events.js';
-import { enforceChallengeRateLimit } from './rate-limit.js';
+import { enforceChallengeRateLimit, CHALLENGE_PLAY_LIMITS } from './rate-limit.js';
 import { CHALLENGE_DAILY_ACTIONS, recordDailyAction } from '../analytics/daily-actions.js';
 import { validShareAction, recordShareAction } from '../analytics/share-actions.js';
 import { validQuizLength } from './length.js';
@@ -48,6 +48,7 @@ export async function handleChallengeApi(request, env, path) {
       return await getRanking(env, rankingMatch[1]);
     }
     if (rankingMatch && request.method === 'POST') {
+      await enforceChallengeRateLimit(env, request.headers.get('CF-Connecting-IP'), 'ranking', CHALLENGE_PLAY_LIMITS.ranking);
       return await registerRankingScore(request, env, rankingMatch[1]);
     }
     if (rankingMatch && request.method === 'DELETE') {
@@ -56,21 +57,25 @@ export async function handleChallengeApi(request, env, path) {
 
     const retryMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/retry$/);
     if (retryMatch && request.method === 'POST') {
+      await enforceChallengeRateLimit(env, request.headers.get('CF-Connecting-IP'), 'retry', CHALLENGE_PLAY_LIMITS.retry);
       return await retryChallenge(request, env, retryMatch[1]);
     }
 
     const joinMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/join$/);
     if (joinMatch && request.method === 'POST') {
+      await enforceChallengeRateLimit(env, request.headers.get('CF-Connecting-IP'), 'join', CHALLENGE_PLAY_LIMITS.join);
       return await joinRoom(request, env, joinMatch[1]);
     }
 
     const answerMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/answer$/);
     if (answerMatch && request.method === 'POST') {
+      await enforceChallengeRateLimit(env, request.headers.get('CF-Connecting-IP'), 'answer', CHALLENGE_PLAY_LIMITS.answer);
       return await submitAnswer(request, env, answerMatch[1]);
     }
 
     const submitMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/submit$/);
     if (submitMatch && request.method === 'POST') {
+      await enforceChallengeRateLimit(env, request.headers.get('CF-Connecting-IP'), 'submit', CHALLENGE_PLAY_LIMITS.submit);
       return await submitAnswers(request, env, submitMatch[1]);
     }
 

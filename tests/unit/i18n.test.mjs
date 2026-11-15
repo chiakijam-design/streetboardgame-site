@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import {
@@ -86,28 +86,21 @@ test('英語結果は0点から10点まで11称号と英語総評を返す', () 
 
 test('英語ルート・hreflang・専用OGP・初回言語案内を静的構成にもつ', () => {
   const worker = text('_worker.js');
-  const switchSource = text('language_switch.js');
   const sitemap = text('sitemap.xml');
   for (const route of ['/en/', '/en/challenge', '/en/terms', '/en/privacy']) {
     assert.ok(worker.includes(route.replace(/\/$/, '') || '/en'), route);
     assert.ok(sitemap.includes(`<loc>https://www.streetboardgame.com${route}</loc>`), route);
   }
-  assert.match(switchSource, /navigator\.languages/);
-  assert.match(switchSource, /watachan:language:v1/);
-  assert.match(switchSource, /English version available/);
-  assert.match(switchSource, /if \(!topPage\) return/);
-  assert.match(switchSource, /\.site-language-switch\{position:absolute/);
-  assert.doesNotMatch(switchSource, /\.site-language-switch\{position:fixed/);
   for (const page of ['en/index.html', 'en/terms.html', 'en/privacy.html']) {
     const html = text(page);
     assert.match(html, /<html lang="en">/);
     assert.match(html, /hreflang="ja"/);
     assert.match(html, /hreflang="en"/);
   }
-  for (const page of ['index.html', 'en/index.html']) {
-    assert.match(text(page), /<script[^>]*\bsrc="\/language_switch\.js/);
-  }
+  assert.ok(!existsSync(new URL('language_switch.js', rootUrl)), 'the old language switch is gone (2026-11-15)');
   for (const page of [
+    'index.html',
+    'en/index.html',
     'challenge.html',
     'terms.html',
     'privacy.html',
@@ -116,5 +109,5 @@ test('英語ルート・hreflang・専用OGP・初回言語案内を静的構成
   ]) {
     assert.doesNotMatch(text(page), /language_switch\.js/, page);
   }
-  assert.ok(statSync(new URL('assets/ogp-challenge-en.png', rootUrl)).size > 100_000);
+  assert.ok(statSync(new URL('assets/ogp-challenge-en-v2.jpg', rootUrl)).size < 300_000);
 });

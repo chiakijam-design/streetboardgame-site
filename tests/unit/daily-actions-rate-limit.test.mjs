@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { handleChallengeApi } from '../../src/challenge/api.js';
-import { enforceChallengeRateLimit } from '../../src/challenge/rate-limit.js';
+import { enforceChallengeRateLimit, CHALLENGE_CREATE_LIMIT } from '../../src/challenge/rate-limit.js';
 import { sendChallengeDailyAction } from '../../src/analytics/client-daily-actions.js';
 
 function database() {
@@ -39,7 +39,7 @@ test('only normal POST creation is limited, returns Retry-After, never blocks GE
   const db = database(); const env = { REMOTE_DB: adapter(db) };
   const call = (method, path = '/api/challenge/rooms', ip = '192.0.2.4') => handleChallengeApi(new Request(`https://example.com${path}`, { method,
     headers: { 'CF-Connecting-IP': ip }, ...(method === 'POST' ? { body: '{}' } : {}), }), env, path);
-  for (let n = 0; n < 60; n++) assert.equal((await call('POST')).status, 400);
+  for (let n = 0; n < CHALLENGE_CREATE_LIMIT; n++) assert.equal((await call('POST')).status, 400);
   const limited = await call('POST'); assert.equal(limited.status, 429); assert.ok(Number(limited.headers.get('retry-after')) > 0);
   assert.equal((await call('GET')).status, 404);
   assert.equal((await call('POST', undefined, '192.0.2.5')).status, 400);

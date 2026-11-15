@@ -41,33 +41,6 @@ export function trackAnalyticsEvent(name, params = {}, { onceKey = '', persistSe
   }
 }
 
-export function trackPurchaseFromCheckout(checkout) {
-  const orderId = String(checkout?.orderId || '').trim();
-  const productType = String(checkout?.productType || '').trim();
-  const currency = String(checkout?.currency || '').trim().toUpperCase();
-  const amount = Number(checkout?.amount);
-  if (checkout?.status !== 'paid' || !orderId || !['result_image', 'support'].includes(productType)
-    || !/^[A-Z]{3}$/.test(currency) || !Number.isFinite(amount) || amount <= 0) return false;
-
-  return trackAnalyticsEvent('purchase', {
-    transaction_id: orderId,
-    value: amount,
-    currency,
-    affiliation: 'Stripe',
-    product_type: productType,
-    items: [{
-      item_id: productType,
-      item_name: productType === 'result_image' ? 'LIVE result image' : 'LIVE support',
-      item_category: 'live_challenge',
-      price: amount,
-      quantity: 1,
-    }],
-  }, {
-    onceKey: `purchase:${orderId}`,
-    persistSession: true,
-  });
-}
-
 // Count players, not visits: call only after an answer has been accepted.
 // GA4 Total users for game_play is the player metric; event count is not.
 export function trackGamePlay(gameType, playerRole) {

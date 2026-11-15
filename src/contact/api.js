@@ -3,6 +3,8 @@
 // The operator address lives only in the CONTACT_NOTIFY_TO secret; this repository is public.
 // Raw IP addresses are never stored: repeated sends are counted with hashed, hourly keys.
 
+import { senderDigest } from '../security/sender-key.js';
+
 export const CONTACT_SITES = Object.freeze({
   wata: Object.freeze({
     name: 'わたし理解度診断',
@@ -104,7 +106,7 @@ export async function handleContactApi(request, env, now = Date.now()) {
   const db = env.REMOTE_DB;
   await ensureContactTables(db);
   const identity = request.headers.get('CF-Connecting-IP') || 'unknown';
-  if (!await allowSender(db, match.key, identity, now)) {
+  if (!await allowSender(env, db, match.key, identity, now)) {
     const retryAfter = Math.max(1, Math.ceil((windowStart(now) + CONTACT_LIMITS.rateWindowMs - now) / 1000));
     return reply({ error: 'rate-limited' }, 429, { 'retry-after': String(retryAfter) });
   }
@@ -223,10 +225,9 @@ async function ensureContactTables(db) {
   readyDatabases.add(db);
 }
 
-async function allowSender(db, siteKey, identity, now) {
+async function allowSender(env, db, siteKey, identity, now) {
   const start = windowStart(now);
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`contact:${start}:${identity}`));
-  const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  const hash = await senderDigest(env, `contact:${start}:${identity}`);
   const row = await db.prepare(`INSERT INTO rate_limits (rate_key, window_start, request_count, expires_at)
     VALUES (?, ?, 1, ?) ON CONFLICT(rate_key) DO UPDATE SET request_count = request_count + 1
     RETURNING request_count`)

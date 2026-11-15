@@ -10,7 +10,7 @@ test('security.txtはRFC 9116の必須項目と公開連絡先を持つ', async 
 
   assert.match(securityTxt, /^Contact: https:\/\/www\.streetboardgame\.com\/contact$/m);
   assert.match(securityTxt, /^Preferred-Languages: ja, en$/m);
-  assert.match(securityTxt, new RegExp(`^Canonical: ${SECURITY_TXT_URL.replaceAll('.', '\\.')}$`, 'm'));
+  assert.ok(securityTxt.split(/\r?\n/).includes(`Canonical: ${SECURITY_TXT_URL}`));
 
   const expiresValue = securityTxt.match(/^Expires: (.+)$/m)?.[1];
   assert.ok(expiresValue, 'Expiresが必要です');

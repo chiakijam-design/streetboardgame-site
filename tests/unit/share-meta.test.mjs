@@ -67,3 +67,15 @@ test('control characters are stripped and names capped at 12 characters', async 
   assert.equal(info.name, 'abcdefghijkl');
   assert.equal(info.count, 2);
 });
+
+test('abusive names, contact details and links never reach link previews', async () => {
+  const { isUnsafeShareName, roomShareCopy } = await import('../../src/challenge/share-meta.js');
+  for (const name of ['死ね', 'ブス', '@abc_def', '090-1234-5678', 'Fuck you', 'a.com']) {
+    assert.equal(isUnsafeShareName(name), true, name);
+    const copy = roomShareCopy('ja', { name, count: 10 });
+    assert.ok(!copy.title.includes(name) && !copy.description.includes(name), name);
+    assert.match(copy.title, /^友だちからの挑戦/);
+  }
+  for (const name of ['たろう', 'Ken', 'Diego', 'さくら']) assert.equal(isUnsafeShareName(name), false, name);
+  assert.match(roomShareCopy('en', { name: 'ブス', count: 1 }).description, /1 question\./);
+});

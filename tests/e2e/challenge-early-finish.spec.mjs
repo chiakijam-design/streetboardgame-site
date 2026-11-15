@@ -76,7 +76,7 @@ for (const [locale, count] of [['',1],['',2],['',3],['',9],['',10],['/en',2],['/
     await page.locator('[data-action="resume-create"]').click();
     await expect(page.locator('.challenge-q-number')).toHaveText(`Q1/${count}`);
     // No native share / clipboard / SNS destination is invoked by this test.
-    expect(outbound.every(host=>!host.includes('streetboardgame.com'))).toBe(true);
+    expect(outbound.every(host=>host!=='streetboardgame.com'&&!host.endsWith('.streetboardgame.com'))).toBe(true);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
   });
 }

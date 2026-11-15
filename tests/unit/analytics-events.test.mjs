@@ -5,7 +5,6 @@ import {
   resetAnalyticsEventTrackingForTests,
   trackAnalyticsEvent,
   trackGamePlay,
-  trackPurchaseFromCheckout,
 } from '../../src/analytics/events.js';
 
 function installWindow() {
@@ -80,53 +79,4 @@ test('excluded play does not consume the player marker', () => {
   window.analyticsEnabled = true;
   assert.equal(trackGamePlay('challenge', 'participant'), true);
   assert.equal(events.length, 1);
-});
-
-test('paid Stripe status produces one GA4 purchase with matching value and transaction', () => {
-  const { events } = installWindow();
-  const checkout = {
-    status: 'paid',
-    orderId: 'order_123',
-    productType: 'support',
-    amount: 480,
-    currency: 'jpy',
-  };
-  assert.equal(trackPurchaseFromCheckout(checkout), true);
-  assert.equal(trackPurchaseFromCheckout(checkout), false);
-  resetAnalyticsEventTrackingForTests();
-  assert.equal(trackPurchaseFromCheckout(checkout), false);
-  assert.deepEqual(events, [{
-    name: 'purchase',
-    params: {
-      transaction_id: 'order_123',
-      value: 480,
-      currency: 'JPY',
-      affiliation: 'Stripe',
-      product_type: 'support',
-      items: [{
-        item_id: 'support',
-        item_name: 'LIVE support',
-        item_category: 'live_challenge',
-        price: 480,
-        quantity: 1,
-      }],
-    },
-  }]);
-});
-
-test('unpaid or incomplete checkout never produces purchase', () => {
-  const { events } = installWindow();
-  assert.equal(trackPurchaseFromCheckout({
-    status: 'pending', orderId: 'order_1', productType: 'support', amount: 180, currency: 'JPY',
-  }), false);
-  assert.equal(trackPurchaseFromCheckout({
-    status: 'paid', orderId: '', productType: 'support', amount: 180, currency: 'JPY',
-  }), false);
-  assert.equal(trackPurchaseFromCheckout({
-    status: 'paid', orderId: 'order_2', productType: 'unknown', amount: 180, currency: 'JPY',
-  }), false);
-  assert.equal(trackPurchaseFromCheckout({
-    status: 'paid', orderId: 'order_3', productType: 'support', amount: 0, currency: 'JPY',
-  }), false);
-  assert.equal(events.length, 0);
 });

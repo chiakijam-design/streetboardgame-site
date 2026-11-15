@@ -1,6 +1,12 @@
+import { senderDigest } from '../security/sender-key.js';
+
 const ready = new WeakSet();
-export const CHALLENGE_CREATE_LIMIT = 60;
+export const CHALLENGE_CREATE_LIMIT = 30;
 export const CHALLENGE_RATE_WINDOW_MS = 60_000;
+// Per sender address and minute. Loose on purpose: a class of up to 50 players
+// on one school network must be able to join a room, answer 10 questions and
+// retry within a minute; only scripted bulk traffic reaches these numbers.
+export const CHALLENGE_PLAY_LIMITS = Object.freeze({ join: 120, answer: 1200, submit: 120, retry: 120, ranking: 120 });
 
 // Production uses a single atomic D1 increment. Never persist raw IPs/tokens.
 // Expired window buckets are removed by the existing Cron.
@@ -16,8 +22,7 @@ export async function enforceChallengeRateLimit(env, identity, scope = 'create',
     ready.add(db);
   }
   const start = Math.floor(now / CHALLENGE_RATE_WINDOW_MS) * CHALLENGE_RATE_WINDOW_MS;
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${start}:${identity}`));
-  const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  const hash = await senderDigest(env, `${start}:${identity}`);
   const row = await db.prepare(`INSERT INTO rate_limits (rate_key, window_start, request_count, expires_at)
     VALUES (?, ?, 1, ?) ON CONFLICT(rate_key) DO UPDATE SET request_count = request_count + 1
     RETURNING request_count`).bind(`challenge:${scope}:${hash}`, start, start + CHALLENGE_RATE_WINDOW_MS * 2).first();

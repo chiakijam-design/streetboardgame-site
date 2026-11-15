@@ -207,7 +207,7 @@ homeHtml = homeHtml.replace(
   `<div id="root" aria-live="polite" data-prerendered="top">${homeMarkup}</div><!-- /home-prerender -->\n\n`,
 );
 const homeFontCssPath = (await buildPageFont(homeMarkup, 'home')).slice(1);
-homeHtml = homeHtml.replace(/(<link id="brand-font-styles" href=")[^"]+/, `$1/${homeFontCssPath}`);
+homeHtml = homeHtml.replace(/(<link id="brand-font-styles" data-href=")[^"]+/, `$1/${homeFontCssPath}`);
 homeHtml = homeHtml.replace(/(<noscript id="brand-font-fallback"><link href=")[^"]+/, `$1/${homeFontCssPath}`);
 await writeFile('index.html', homeHtml);
 let englishHtml = await readFile('en/index.html', 'utf8');

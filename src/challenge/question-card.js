@@ -66,10 +66,9 @@ function dynamicQuestionCardSvg(card, locale = 'ja') {
     viewBox="0 0 ${CARD_WIDTH} ${CARD_HEIGHT}"
     width="${CARD_WIDTH}"
     height="${CARD_HEIGHT}"
-    role="img"
-    aria-label="${escapeMarkup(title)}"
+    aria-hidden="true"
+    focusable="false"
   >
-    <title>${escapeMarkup(title)}</title>
     <defs>
       <filter id="${dotShadowId}" x="-35%" y="-35%" width="170%" height="170%">
         <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity=".24"/>
@@ -107,6 +106,10 @@ function dynamicQuestionCardSvg(card, locale = 'ja') {
   </svg>`;
 }
 
+// Screen readers get each choice once (2026-11-15): the drawn card is hidden
+// from them. On answer screens the labelled choice buttons carry the choices
+// (the page heading carries the title); sample cards without buttons carry a
+// visually hidden title and choice list instead.
 export function renderNotebookQuestionCard(card, { answerAction = '', disabled = false, locale = 'ja' } = {}) {
   const accessibleChoices = normalizedChoices(card)
     .map((choice) => `<li>${escapeMarkup(choice)}</li>`)
@@ -116,5 +119,7 @@ export function renderNotebookQuestionCard(card, { answerAction = '', disabled =
       style="top:calc(${CHOICE_YS[index] - 74} / ${CARD_HEIGHT} * 100%);height:calc(148 / ${CARD_HEIGHT} * 100%)"
       aria-label="${escapeMarkup(choice)}${answerAction === 'builder-answer' ? 'を正解に選ぶ' : 'を選ぶ'}"
       ${disabled ? 'disabled aria-busy="true"' : ''}></button>`).join('') : '';
-  return `${dynamicQuestionCardSvg(card, locale)}<ol class="notebook-card-accessible-choices">${accessibleChoices}</ol>${choiceButtons}`;
+  const accessibleText = answerAction ? ''
+    : `<p class="notebook-card-accessible-choices">${escapeMarkup(cardTitle(card))}</p><ol class="notebook-card-accessible-choices">${accessibleChoices}</ol>`;
+  return `${dynamicQuestionCardSvg(card, locale)}${accessibleText}${choiceButtons}`;
 }

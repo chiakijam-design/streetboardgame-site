@@ -2,22 +2,43 @@
 // display name into og:title / og:description / twitter:* / <title>.
 // The page stays noindex and is served no-store when personalized.
 
+import { scanQuestionSafety } from '../questions/safety.js';
+
 const ROOM_CODE = /^[A-Z2-9]{8}$/;
+
+// Names that would spread abuse, contact details or links through link
+// previews are replaced with a generic heading (the name still shows inside
+// the game, where the creator chose it).
+const UNSAFE_LATIN_NAME = /fuck|shit|bitch|sex|porn|nude|nazi|nigg|kill|\bdie\b|https?:|www\.|\.(?:com|net|jp)\b/i;
+export function isUnsafeShareName(name) {
+  const text = String(name || '').normalize('NFKC');
+  if (UNSAFE_LATIN_NAME.test(text)) return true;
+  const { moderationFlags, personalInfoFlags } = scanQuestionSafety({ title: text });
+  return moderationFlags.length > 0 || personalInfoFlags.some((flag) => flag === 'sns-id' || flag === 'phone-number');
+}
 
 const COPY = {
   ja: {
+    genericTitle: '友だちからの挑戦｜私のこと、ちゃんと分かってるよね？',
+    genericDescription: (count) => `友だちのこと、どれだけ分かってる？${count}問の答えを当てよう。登録不要。`,
     title: (name) => `${name}さんからの挑戦｜私のこと、ちゃんと分かってるよね？`,
     description: (name, count) => `${name}さんのこと、どれだけ分かってる？${count}問の答えを当てよう。登録不要。`,
   },
   en: {
+    genericTitle: "A friend's challenge | How well do you know me?",
+    genericDescription: (count) => `How well do you know your friend? Guess the answers to ${count} ${count === 1 ? 'question' : 'questions'}. No sign-up.`,
     title: (name) => `${name}'s challenge | How well do you know me?`,
     description: (name, count) => `How well do you know ${name}? Guess the answers to ${count} ${count === 1 ? 'question' : 'questions'}. No sign-up.`,
   },
   pt: {
+    genericTitle: 'Desafio de um amigo | Você me conhece mesmo?',
+    genericDescription: (count) => `Quanto você conhece seu amigo? Adivinhe as respostas de ${count} ${count === 1 ? 'pergunta' : 'perguntas'}. Sem cadastro.`,
     title: (name) => `Desafio de ${name} | Você me conhece mesmo?`,
     description: (name, count) => `Quanto você conhece ${name}? Adivinhe as respostas de ${count} ${count === 1 ? 'pergunta' : 'perguntas'}. Sem cadastro.`,
   },
   es: {
+    genericTitle: 'El reto de un amigo | ¿Cuánto me conoces?',
+    genericDescription: (count) => `¿Cuánto conoces a tu amigo? Adivina las respuestas de ${count} ${count === 1 ? 'pregunta' : 'preguntas'}. Sin registro.`,
     title: (name) => `El reto de ${name} | ¿Cuánto me conoces?`,
     description: (name, count) => `¿Cuánto conoces a ${name}? Adivina las respuestas de ${count} ${count === 1 ? 'pregunta' : 'preguntas'}. Sin registro.`,
   },
@@ -70,6 +91,7 @@ export async function readRoomShareInfo(env, code) {
 
 export function roomShareCopy(locale, info) {
   const copy = COPY[locale] || COPY.en;
+  if (isUnsafeShareName(info.name)) return { title: copy.genericTitle, description: copy.genericDescription(info.count) };
   return { title: copy.title(info.name, info.count), description: copy.description(info.name, info.count) };
 }
 

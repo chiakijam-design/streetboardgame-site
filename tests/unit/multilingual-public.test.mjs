@@ -6,11 +6,32 @@ import { PUBLIC_LOCALES } from '../../src/generated/public-locales.js';
 import { readdir } from 'node:fs/promises';
 import { switchLocalePath, LOCALE_DETAILS } from '../../src/i18n/locales.js';
 
-const publicPages = ['/', '/challenge', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy'];
+// Text outside tags, comments, scripts and styles (a small scanner, not a sanitizer).
+function visibleText(html) {
+  const lower = html.toLowerCase();
+  let text = '';
+  let index = 0;
+  while (index < html.length) {
+    const open = html.indexOf('<', index);
+    if (open < 0) { text += html.slice(index); break; }
+    text += html.slice(index, open);
+    let close;
+    if (html.startsWith('<!--', open)) close = html.indexOf('-->', open + 4) + 3;
+    else if (/^<(?:script|style)\b/.test(lower.slice(open, open + 8))) {
+      const name = lower.startsWith('<script', open) ? 'script' : 'style';
+      const end = lower.indexOf('</' + name, open);
+      close = end < 0 ? html.length : html.indexOf('>', end) + 1;
+    } else close = html.indexOf('>', open) + 1;
+    index = close > open ? close : html.length;
+  }
+  return text;
+}
+
+const publicPages = ['/','/challenge', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy'];
 test('new fixed public copy does not silently fall back to Japanese on English pages', async () => {
   for (const name of (await readdir('locale-pages')).filter(name => name.startsWith('en-') && name.endsWith('.html'))) {
     const html = await readFile('locale-pages/' + name, 'utf8');
-    const visibleCopy = html.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, '');
+    const visibleCopy = visibleText(html);
     assert.doesNotMatch(visibleCopy, /[ぁ-んァ-ヶ一-龠]/, name);
   }
 });
