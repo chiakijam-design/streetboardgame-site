@@ -30,7 +30,7 @@ test('removed pricing is not advertised and old URLs offer the current quiz',asy
 });
 test('current policies stay readable in Japanese English and RTL without retirement banners',async({page},testInfo)=>{
  await page.setViewportSize({width:390,height:667});
- for(const locale of ['', '/en','/ar'])for(const name of ['terms','privacy','creator-terms']){
+ for(const locale of ['', '/en','/ar'])for(const name of ['terms','privacy']){
   await page.goto(locale+'/'+name+'?analytics=exclude');
   await expect(page.getByTestId('live-retirement-notice')).toHaveCount(0);
   await expect(page.getByTestId('historical-provisions')).not.toHaveAttribute('open','');

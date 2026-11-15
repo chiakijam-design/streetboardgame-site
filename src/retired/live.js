@@ -22,8 +22,10 @@ export function liveRetiredResponse(request, api = false) {
   return new Response(request.method === 'HEAD' ? null : '<!doctype html><html lang="' + locale + '" dir="' + (['ar', 'he'].includes(locale) ? 'rtl' : 'ltr') + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>' + title + '</title></head><body><main style="max-width:42rem;margin:3rem auto;padding:1.5rem;font-family:sans-serif;line-height:1.8;overflow-wrap:anywhere"><h1>' + title + '</h1><p><a href="' + prefix + '/challenge">' + (ja ? '無料クイズ' : copy.quiz) + '</a> · <a href="' + prefix + '/about?to=contact">' + (ja ? 'お問い合わせ' : copy.contact) + '</a></p></main></body></html>', { status: 410, headers });
 }
 
+// The refund policy and the LIVE creator agreement (removed 2026-11-15) only
+// covered LIVE purchases; their last versions stay under /legal-history/.
 export function isRemovedRefundPage(path) {
-  return /^\/refund-policy(?:\.html)?$/i.test(stripLocalePrefix(path).replace(/\/+$/, ''));
+  return /^\/(?:refund-policy|creator-terms)(?:\.html)?$/i.test(stripLocalePrefix(path).replace(/\/+$/, ''));
 }
 
 // Removed URLs stop before any storage or asset fetch, including old HTML aliases.
