@@ -5,7 +5,7 @@ import worker from '../../_worker.js';
 import { PUBLIC_LOCALE_PAGES } from '../../src/generated/public-locale-pages.js';
 
 test('localized requests serve bounded precompiled HTML without parsing catalogs and receive fresh CSP nonces', async () => {
-  assert.equal(Object.keys(PUBLIC_LOCALE_PAGES).length, 462);
+  assert.equal(Object.keys(PUBLIC_LOCALE_PAGES).length, 429);
   const requests = [];
   const env = { ASSETS: { async fetch(request) {
     const path = new URL(request.url).pathname;
@@ -23,7 +23,7 @@ test('localized requests serve bounded precompiled HTML without parsing catalogs
     assert.match(html, /data-watachan-locale-catalog src="\/locale-assets\/[a-zA-Z-]+-[a-f0-9]{12}\.js"/);
     assert.doesNotMatch(html, /window\.__WATACHAN_I18N__=/);
     const nonce = response.headers.get('content-security-policy').match(/'nonce-([^']+)'/)[1];
-    assert.ok([...html.matchAll(/<script\b[^>]*>/g)].every(([tag]) => tag.includes(`nonce="${nonce}"`)));
+    assert.ok([...html.matchAll(/<script\b[^>]*>/gi)].every(([tag]) => tag.includes(`nonce="${nonce}"`)));
     const again = await worker.fetch(new Request('https://www.streetboardgame.com' + path), env);
     assert.notEqual(again.headers.get('content-security-policy'), response.headers.get('content-security-policy'));
   }

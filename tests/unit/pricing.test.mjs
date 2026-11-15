@@ -33,7 +33,7 @@ test('removed pricing has no source HTML, sitemap entry or compiled locale route
  await assert.rejects(access('pricing.html'),{code:'ENOENT'});
  assert.doesNotMatch(await readFile('sitemap.xml','utf8'),/\/pricing/);
  assert.ok(!Object.keys(PUBLIC_LOCALE_PAGES).some(p=>p.endsWith('/pricing')));
- assert.equal(Object.keys(PUBLIC_LOCALE_PAGES).length,462);
+ assert.equal(Object.keys(PUBLIC_LOCALE_PAGES).length,429);
  const source=await readFile('prototype_app.jsx','utf8');
  assert.doesNotMatch(source,/href="\/pricing"|'\/pricing'/);
  assert.match(source,/top-free-notice/);
@@ -50,11 +50,13 @@ test('historical contracts remain byte-identical and reachable without current s
 };
  for(const [page,expected] of Object.entries(hashes)){
   assert.equal(createHash('sha256').update(await readFile('legal-history/'+page+'.html')).digest('hex'),expected,page);
-  if(page==='refund-policy'){await assert.rejects(readFile(page+'.html'),{code:'ENOENT'});continue;}
+  if(page==='refund-policy'||page==='creator-terms'){await assert.rejects(readFile(page+'.html'),{code:'ENOENT'});continue;}
   const current=await readFile(page+'.html','utf8');
   if(page==='legal'){assert.match(current,/data-testid="physical-product-commerce-information"/);assert.doesNotMatch(current,/LIVEチャット/);continue;}
   assert.match(current,/data-testid="historical-provisions"/);
-  assert.match(current,new RegExp('href="/legal-history/'+page+'\\.html"'));
+  // 2026-11-15: the LIVE-era appendix was replaced by a link to the version it superseded.
+  assert.match(current,new RegExp('href="/legal-history/20[0-9-]+-'+page+'\\.html"'));
+  assert.doesNotMatch(current,/LIVE/);
   assert.doesNotMatch(current,/data-testid="live-retirement-notice"|LIVE版は終了しました|href="\/pricing"/);
  }
 });
@@ -66,7 +68,7 @@ test('localized current terms and local-storage notices match the 1–10 questio
   assert.match(terms,locale==='ja'?/1〜10問/:/1–10/,locale);
   const privacy=await readFile(privacyPath,'utf8');
   assert.match(privacy,/data-testid="personal-question-storage-policy"/,locale);
-  const unescape=s=>s.replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"');
+  const unescape=s=>s.replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&');
   assert.ok(unescape(privacy).includes(PERSONAL_QUESTION_COPY[locale].server),locale+' server disclosure');
   assert.ok(unescape(privacy).includes(PERSONAL_AUTOSAVE_COPY[locale].notice),locale+' latest30');
  }
@@ -78,7 +80,7 @@ test('all locale guides describe flexible quiz length and automatic board instea
   const prefix=locale==='ja'?'':'/'+locale;
   const guide=await(await worker.fetch(new Request('https://www.streetboardgame.com'+prefix+'/challenge-guide'),env)).text();
   const about=await(await worker.fetch(new Request('https://www.streetboardgame.com'+prefix+'/about'),env)).text();
-  const decode=s=>s.replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"');
+  const decode=s=>s.replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&');
   assert.ok(decode(guide).includes(BOARD_COPY[locale].notice),locale+' automatic board');
   assert.ok(decode(about).includes(BOARD_COPY[locale].rule),locale+' highest score');
   assert.match(guide,locale==='ja'?/1〜10問/:/1–10/,locale+' flexible length');

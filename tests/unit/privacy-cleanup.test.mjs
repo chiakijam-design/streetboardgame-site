@@ -7,22 +7,24 @@ import { PRIVACY_RETENTION, runPrivacyCleanup, contactCutoff } from '../../src/p
 test('プライバシーポリシーは現在の公開範囲・子ども・第三者提供・統計情報を明記する', async () => {
   const document = await readFile(new URL('../../privacy.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    '2026-10-23',
+    '2026-11-15',
     '表示名と点数が理解度ボードに自動で載ります',
     '以前の非掲載結果は公開しません',
     '掲載候補として送信しない問題は、この目的では公開しません',
-    '個人情報または統計情報を広告事業者、データ販売事業者、AI開発事業者へ販売しません',
+    '個人情報または個人を識別できないよう加工した統計情報を販売・ライセンスしません',
     '現在、答え合わせレポートの生成のために回答内容を外部のAIサービスへ送信しません',
-    'LIVE配信者登録（有料販売を利用する場合）',
-    '購入者メールHMAC',
-    'Cloudflare Images',
     'Microsoft Clarity',
     'Cookieは無効化し、すべての画面テキストを厳密にマスクします',
     'セッション再現データ30日',
     '10歳から12歳までの利用者',
-    '国外で保存または処理される場合があります',
+    'これらの事業者が国外でデータを取り扱う場合',
   ]) assert.equal(document.includes(requiredText), true, requiredText);
   assert.equal(document.includes('任意に選択または入力したコメント'), false);
+  // LIVE was removed on 2026-11-15; its provisions live only in /legal-history/.
+  for (const liveText of ['LIVE', '購入者メールHMAC', 'Cloudflare Images', 'Stripe']) {
+    assert.equal(document.includes(liveText), false, liveText);
+  }
+  assert.equal(document.includes('href="/legal-history/2026-11-14-privacy.html"'), true);
   for (const retiredText of ['YouTuber登録', 'YouTuberとの契約', 'YouTuber元画像', '遠隔ゲーム']) {
     assert.equal(document.includes(retiredText), false, retiredText);
   }

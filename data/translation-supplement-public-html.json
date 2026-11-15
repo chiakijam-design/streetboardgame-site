@@ -1035,6 +1035,13 @@
       "contexts": [
         "2026-11-15:adsense-label"
       ]
+    },
+    {
+      "id": "m7a9f346a9c8681",
+      "source": "改定前の版",
+      "contexts": [
+        "2026-11-15:legal-live-removed"
+      ]
     }
   ]
 }
