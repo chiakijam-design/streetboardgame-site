@@ -28,6 +28,31 @@ function add(raw, context) {
   if (!missing.has(source)) missing.set(source, new Set());
   missing.get(source).add(context);
 }
+// Split the site's own HTML into text runs and tags, skipping comments,
+// scripts and styles (a small scanner, not a sanitizer).
+function scanHtml(html) {
+  const lower = html.toLowerCase();
+  const texts = [];
+  let markup = '';
+  let index = 0;
+  while (index < html.length) {
+    const open = html.indexOf('<', index);
+    if (open < 0) { texts.push(html.slice(index)); break; }
+    texts.push(html.slice(index, open));
+    let close;
+    if (html.startsWith('<!--', open)) close = html.indexOf('-->', open + 4) + 3;
+    else if (lower.startsWith('<script', open) || lower.startsWith('<style', open)) {
+      const name = lower.startsWith('<script', open) ? 'script' : 'style';
+      const end = lower.indexOf('</' + name, open);
+      close = end < 0 ? html.length : html.indexOf('>', end) + 1;
+    } else {
+      close = html.indexOf('>', open) + 1;
+      if (close > open) markup += html.slice(open, close);
+    }
+    index = close > open ? close : html.length;
+  }
+  return { texts, markup };
+}
 function strings(value, context) {
   if (typeof value === 'string') add(value, context);
   else if (Array.isArray(value)) value.forEach((entry) => strings(entry, context));
@@ -50,8 +75,8 @@ for (const path of paths) {
     }
     visit(data);
   }
-  const visible = html.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '');
-  visible.split(/<[^>]+>/g).forEach((value) => add(value, path + ':body'));
+  const { texts, markup: visible } = scanHtml(html);
+  texts.forEach((value) => add(value, path + ':body'));
   for (const [, value] of visible.matchAll(/(?:aria-label|placeholder|alt|title)="([^"]*)"/gi)) add(value, path + ':attribute');
   for (const [tag] of visible.matchAll(/<meta\b[^>]*>/gi)) {
     const field = tag.match(/(?:name|property)="([^"]*)"/i)?.[1];

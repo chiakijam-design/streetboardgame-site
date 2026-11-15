@@ -29,7 +29,10 @@ async function buildChallengeQuestions(page, startIndex = 0) {
       const answerPad = page.getByTestId('challenge-builder-answer-pad');
       await expect(paperCard).toBeVisible();
       await expect(paperCard.locator('.notebook-question-card-visual')).toHaveCount(1);
-      await expect(paperCard.locator('.notebook-card-accessible-choices li')).toHaveCount(5);
+      // 2026-11-15: each choice is read once, through the labelled buttons; the drawing is hidden from screen readers.
+      await expect(paperCard.locator('.notebook-card-accessible-choices li')).toHaveCount(0);
+      await expect(paperCard.locator('svg.notebook-question-card-visual')).toHaveAttribute('aria-hidden', 'true');
+      await expect(paperCard.getByRole('button')).toHaveCount(5);
       expect(await paperCard.locator('.notebook-question-card-copy').evaluate((element) => (
         getComputedStyle(element).fontFamily
       ))).toContain('YomogiCard');
