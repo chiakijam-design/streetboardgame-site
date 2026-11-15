@@ -23,7 +23,7 @@ Do not ignore `wrangler.jsonc`; it contains the `ASSETS` binding and Worker entr
 
 「みんなに挑戦してもらう」はゲーム用D1の`REMOTE_DB`を使用する。デプロイ前に`migrations/0010_challenge_rooms.sql`、`migrations/0011_challenge_ranking_library.sql`、`migrations/0018_challenge_board_comments.sql`を番号順に適用する。挑戦者上限は画面表示だけでなくD1への条件付きINSERTでも50人に固定され、クイズと参加情報は作成から30日後にCronで削除される。0011は理解度ボード掲載同意日時と匿名のお題別プレイ回数、0018は利用者が定型候補から選んだ理解度ボードコメントを追加する。
 
-LIVE版は2026-10-23に終了し、2026-11-15にコードと本番D1の表を削除した（`migrations/0033_remove_live.sql`、購入用D1は `migrations-purchases/0007_remove_live.sql`）。旧URLは410を返す。Durable Object の2クラスは空の代役（`src/retired/durable-objects.js`）として残している。
+LIVE版は2026-10-23に終了し、2026-11-15にコードと本番D1の表を削除した（`migrations/0033_remove_live.sql`、購入用D1は `migrations-purchases/0007_remove_live.sql` と同じ内容を運営者が画面で適用済み）。旧URLは410を返す。Durable Object の2クラスは空の代役（`src/retired/durable-objects.js`）として残している。
 
 
 

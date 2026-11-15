@@ -15,7 +15,7 @@ Cron の直近実行と失敗は Cloudflare Workers の Cron Trigger、Logs、No
 
 ## 2. 終了した機能（LIVE 版・決済）
 
-LIVE 版（配信・有料応援・結果画像の販売・YouTube 連携）は 2026-10-23 に終了し、2026-11-15 にプログラムと本番 D1 の表を削除した。購入は0件。表の控えは AI-HANDOFF/records/backup/wata-live-20261115/ にある。決済（Stripe）の処理もコードから外した。購入用 D1（`streetboardgame-live-purchases`）の表の削除（`migrations-purchases/0007_remove_live.sql`）と、決済関係の Worker の秘密の値の削除は、運営者の許可を得て行う。
+LIVE 版（配信・有料応援・結果画像の販売・YouTube 連携）は 2026-10-23 に終了し、2026-11-15 にプログラムと本番 D1 の表を削除した。購入は0件。表の控えは AI-HANDOFF/records/backup/wata-live-20261115/ にある。決済（Stripe）の処理もコードから外した。2026-11-15 に運営者が Cloudflare の画面で、購入用 D1（`streetboardgame-live-purchases`）の live_* の表8本（`migrations-purchases/0007_remove_live.sql` と同じ内容）と、決済関係の Worker の秘密の値7つを削除した（読み取りで確認済み。残る秘密の値は CONTACT_NOTIFY_TO・LIVE_ADMIN_SESSION_SECRET・LIVE_ADMIN_TOKEN・LIVE_ADMIN_TOTP_SECRET・RESEND_API_KEY の5つ）。
 
 ## 3. 管理画面（お題の管理）
 
