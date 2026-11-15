@@ -15,8 +15,8 @@ async function stubCMS(page, { holdNext = false } = {}) {
   const requests = [], writes = [];
   let authenticated = true, release;
   const gate = new Promise((resolve) => { release = resolve; });
-  await page.route('**/api/admin/session', async route => route.fulfill({ status: authenticated ? 200 : 401, contentType: 'application/json', body: JSON.stringify(authenticated ? { csrfToken: 'isolated-cms-csrf', expiresAt: Date.now() + 900000, trusted: true } : { error: 'admin-session-required' }) }));
-  await page.route('**/api/admin/session/logout', async route => { authenticated = false; await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); });
+  await page.route('**/api/questions/admin/session', async route => route.fulfill({ status: authenticated ? 200 : 401, contentType: 'application/json', body: JSON.stringify(authenticated ? { csrfToken: 'isolated-cms-csrf', expiresAt: Date.now() + 900000, trusted: true } : { error: 'admin-session-required' }) }));
+  await page.route('**/api/questions/admin/session/logout', async route => { authenticated = false; await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); });
   await page.route('**/api/questions/admin/overview*', async route => {
     const offset = Number(new URL(route.request().url()).searchParams.get('submissionOffset'));
     requests.push(offset);

@@ -175,7 +175,9 @@ async function handleRequest(request, env) {
       return Response.redirect(url.origin + cleanHtmlPaths[rawPath] + url.search, 301);
     }
 
-    if (path.startsWith('/api/admin/') || path === '/api/security/csp-report') {
+    // Operator sign-in lives under /api/questions/admin/ so the Cloudflare Access
+    // policy that guards /question-ops and its APIs also guards it (2026-11-15).
+    if (path === '/api/questions/admin/session' || path.startsWith('/api/questions/admin/session/') || path === '/api/security/csp-report') {
       return handleAdminApi(request, env, path);
     }
 

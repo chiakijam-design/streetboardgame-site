@@ -121,7 +121,7 @@ test('運営だけが二要素認証後に表形式でお題を審査し、採�
   };
 
   let authenticated = false;
-  await page.route('**/api/admin/session', async (route) => {
+  await page.route('**/api/questions/admin/session', async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: authenticated ? 200 : 401,

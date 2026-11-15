@@ -251,7 +251,7 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   assert.equal(forbidden.status, 401);
 
   const otp = await generateAdminTotp(env.LIVE_ADMIN_TOTP_SECRET);
-  const session = await createAdminSession(new Request('https://example.com/api/admin/session', {
+  const session = await createAdminSession(new Request('https://example.com/api/questions/admin/session', {
     method: 'POST',
     headers: {
       'x-live-admin-token': env.LIVE_ADMIN_TOKEN,

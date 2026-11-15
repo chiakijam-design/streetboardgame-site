@@ -12,7 +12,7 @@ export function saveAdminSessionToken(csrfToken, rememberDevice) {
 }
 
 export async function restoreAdminSessionToken() {
-  const response = await fetch('/api/admin/session', {
+  const response = await fetch('/api/questions/admin/session', {
     method: 'GET',
     credentials: 'same-origin',
     headers: { accept: 'application/json' },
@@ -27,7 +27,7 @@ export async function restoreAdminSessionToken() {
 export async function revokeAdminSession({ all = false } = {}) {
   const csrfToken = getAdminSessionToken();
   if (csrfToken) {
-    await fetch(`/api/admin/session/${all ? 'logout-all' : 'logout'}`, {
+    await fetch(`/api/questions/admin/session/${all ? 'logout-all' : 'logout'}`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'content-type': 'application/json', 'x-admin-csrf': csrfToken },
