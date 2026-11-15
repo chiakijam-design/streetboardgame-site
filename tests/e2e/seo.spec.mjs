@@ -6,7 +6,8 @@ test('current public metadata, sitemap, privacy and retirement are consistent', 
  const sitemap = await (await request.get('/sitemap.xml')).text();
  expect(sitemap).not.toMatch(/live-challenge|creator-terms|\?room=|\/manage<|\/ranking</);
  const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
- expect(urls).toHaveLength(22);
+ // ja, en, es and pt are search-indexed (2026-11-15): 11 public pages each.
+ expect(urls).toHaveLength(44);
  expect(sitemap).not.toMatch(/\/pricing(?:[<\/?#]|$)/);
  for (const locale of PUBLIC_LOCALES) {
   const prefix = locale === 'ja' ? '' : '/' + locale;
@@ -35,7 +36,7 @@ test('private and historical URLs remain noindex; retired games return permanent
   expect(response.headers()['x-robots-tag'], path).toContain('noindex');
  }
  for (const path of ['/live', '/live-guide', '/live-challenge', '/live-ops', '/en/live-challenge', '/ar/live-challenge?room=123456']) expect((await request.get(path)).status(), path).toBe(410);
- for (const path of ['/es/', '/ar/challenge-guide', '/zh-Hans/about', '/fr/challenge/library']) {
+ for (const path of ['/de/', '/ar/challenge-guide', '/zh-Hans/about', '/fr/challenge/library']) {
   const response = await request.get(path);
   expect(response.status(), path).toBe(200);
   expect(response.headers()['x-robots-tag'], path).toBe('noindex, follow');
