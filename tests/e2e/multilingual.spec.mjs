@@ -22,8 +22,8 @@ test.describe('completed multilingual release', () => {
         if (locale !== 'ja') await expect(page.locator('html')).toHaveAttribute('dir', LOCALE_DETAILS[locale].direction);
         await expect(page.locator('[data-locale-switcher]')).toBeVisible();
         await expect(page.locator('[data-locale-switcher] option')).toHaveCount(34);
-        // ja, en and x-default only: the other locales are noindex (2026-11-15).
-        await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(3);
+        // ja, en, es, pt and x-default only: the other locales are noindex (2026-11-15).
+        await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(5);
         await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.streetboardgame.com' + route);
         const geometry = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
         expect(geometry.scroll, route).toBeLessThanOrEqual(geometry.client + 1);

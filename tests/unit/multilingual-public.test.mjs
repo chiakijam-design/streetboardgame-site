@@ -60,7 +60,7 @@ test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and li
     assert.match(html, new RegExp(`lang="${locale}"`), route);
     if (locale !== 'ja') assert.ok(html.includes(`dir="${LOCALE_DETAILS[locale].direction}"`), route);
     assert.ok(html.includes(`rel="canonical" href="https://www.streetboardgame.com${route}"`), route);
-    assert.equal((html.match(/hreflang="/g) || []).length, 3, route); // ja, en and x-default only (2026-11-15)
+    assert.equal((html.match(/hreflang="/g) || []).length, 5, route); // ja, en, es, pt and x-default only (2026-11-15)
     assert.match(html, /<title>[^<]+<\/title>/, route);
     assert.match(html, /name="description" content="[^"]+"/, route);
     const title = html.match(/<title>([^<]+)<\/title>/)[1];
@@ -70,12 +70,12 @@ test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and li
     titles.add(`${locale}:${title}`);
     descriptions.add(`${locale}:${description}`);
     assert.equal((html.match(/name="google-adsense-account"/g) || []).length, 1, route);
-    const indexed = locale === 'ja' || locale === 'en';
+    const indexed = ['ja', 'en', 'es', 'pt'].includes(locale);
     assert.equal(sitemap.includes(`<loc>https://www.streetboardgame.com${route}</loc>`), indexed, route);
     if (indexed) assert.doesNotMatch(response.headers.get('x-robots-tag') || '', /noindex/, route);
     else assert.equal(response.headers.get('x-robots-tag'), 'noindex, follow', route);
   }
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 22);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 44);
   for (const [, location] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
     assert.doesNotMatch(location, /[?#]|\/manage|\/ranking|\/remote/);
   }
