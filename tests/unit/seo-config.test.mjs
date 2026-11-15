@@ -63,7 +63,10 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
   // 2026-11-14: contact form moved from Formspree to our own intake and Resend.
   assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/privacy'), '2026-11-14');
   assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/en/privacy'), '2026-11-14');
-  assert.equal(locations.some((location) => /^https:\/\/www\.streetboardgame\.com\/(?!en\/)[a-z]{2}(?:-[A-Za-z]+)?\//.test(location)), false);
+  // Search-indexed locales only: ja (no prefix), en, es and pt (2026-11-15).
+  assert.equal(locations.some((location) => /^https:\/\/www\.streetboardgame\.com\/(?!(?:en|es|pt)\/)[a-z]{2}(?:-[A-Za-z]+)?\//.test(location)), false);
+  assert.equal(locationSet.has('https://www.streetboardgame.com/es/challenge'), true);
+  assert.equal(locationSet.has('https://www.streetboardgame.com/pt/challenge'), true);
 });
 
 test('公開説明は現行の二本立てと答え合わせ中心の方針に統一する', async () => {

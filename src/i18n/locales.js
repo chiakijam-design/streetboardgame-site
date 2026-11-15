@@ -11,7 +11,9 @@ export const CURRENT_PUBLIC_LOCALES = PUBLIC_LOCALES;
 // Only Japanese and English pages are offered for search indexing; the other
 // machine-translated locales stay available to visitors but are noindex, so
 // hreflang alternates list only these (2026-11-15).
-export const SEARCH_INDEXED_LOCALES = Object.freeze(['ja', 'en']);
+// Spanish (Latin America) and Brazilian Portuguese were added on 2026-11-15
+// for friend-quiz markets (Brazil, Colombia, Argentina) after a wording review.
+export const SEARCH_INDEXED_LOCALES = Object.freeze(['ja', 'en', 'es', 'pt']);
 
 const nativeNames = [
   '日本語', 'English', 'Español', 'Français', 'Deutsch', 'Italiano',
