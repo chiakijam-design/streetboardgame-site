@@ -60,7 +60,7 @@ test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and li
     assert.match(html, new RegExp(`lang="${locale}"`), route);
     if (locale !== 'ja') assert.ok(html.includes(`dir="${LOCALE_DETAILS[locale].direction}"`), route);
     assert.ok(html.includes(`rel="canonical" href="https://www.streetboardgame.com${route}"`), route);
-    assert.equal((html.match(/hreflang="/g) || []).length, 35, route);
+    assert.equal((html.match(/hreflang="/g) || []).length, 3, route); // ja, en and x-default only (2026-11-15)
     assert.match(html, /<title>[^<]+<\/title>/, route);
     assert.match(html, /name="description" content="[^"]+"/, route);
     const title = html.match(/<title>([^<]+)<\/title>/)[1];

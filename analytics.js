@@ -194,7 +194,7 @@
   function startJapanBasic() {
     // Conditional candidate only: the server policy stays off until the actual
     // account, stream and disclosure conditions have been reviewed as satisfied.
-    var u = new URL(windowObject.location.href), publicRoutes = ['/', '/challenge', '/challenge/library', '/challenge/ranking', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy', '/creator-terms'];
+    var u = new URL(windowObject.location.href), publicRoutes = ['/', '/challenge', '/challenge/library', '/challenge/ranking', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy'];
     var route = u.pathname === '/en' ? '/' : u.pathname.replace(/^\/(?:en)\//, '/').replace(/\/$/, '') || '/';
     var safeQuery = true;
     u.searchParams.forEach(function (value, key) {
@@ -220,7 +220,10 @@
     queue('js', new Date());
     var referrer = '';
     try { if (documentObject.referrer) { var ref = new URL(documentObject.referrer); referrer = ref.origin + '/'; } } catch (_) {}
-    var pageContext = { page_location: u.origin + u.pathname, page_referrer: referrer, page_title: 'Streetboardgame' };
+    // Fixed screen names (never names or answers) so reports can tell screens
+    // apart (2026-11-15). An invite link (?room=) opens the answering screen.
+    var screenNames = { '/': 'home', '/challenge': u.searchParams.has('room') ? 'challenge_invite' : 'challenge_create', '/challenge/library': 'library', '/challenge/ranking': 'ranking', '/challenge-guide': 'guide', '/about': 'about', '/product': 'product', '/terms': 'terms', '/privacy': 'privacy', '/legal': 'operator', '/content-guidelines': 'content_guidelines', '/minor-policy': 'minor_policy' };
+    var pageContext = { page_location: u.origin + u.pathname, page_referrer: referrer, page_title: screenNames[route] || 'other' };
     var privacy = { allow_google_signals: false, allow_ad_personalization_signals: false, ads_data_redaction: true, url_passthrough: false };
     queue('set', Object.assign({}, privacy, pageContext));
     var config = Object.assign({ send_page_view: false }, privacy, pageContext);

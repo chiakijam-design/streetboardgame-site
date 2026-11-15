@@ -664,7 +664,7 @@ function createStartView() {
   const historyItems = manageHistory();
   const startCopy = challengeStartCopy(currentLocale, translateText);
   return shell(
-    'わたし理解度診断｜通常版',
+    'わたし理解度診断',
     '私のこと、ちゃんと分かってるよね？',
     startCopy.intro,
     `<nav class="challenge-feature-nav" aria-label="挑戦モードのメニュー">

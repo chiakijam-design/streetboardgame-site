@@ -52,7 +52,7 @@ test('historical contracts remain byte-identical and reachable without current s
   assert.equal(createHash('sha256').update(await readFile('legal-history/'+page+'.html')).digest('hex'),expected,page);
   if(page==='refund-policy'||page==='creator-terms'){await assert.rejects(readFile(page+'.html'),{code:'ENOENT'});continue;}
   const current=await readFile(page+'.html','utf8');
-  if(page==='legal'){assert.match(current,/data-testid="physical-product-commerce-information"/);assert.doesNotMatch(current,/LIVEチャット/);continue;}
+  if(page==='legal'){assert.match(current,/data-testid="physical-product-information"/);assert.match(current,/<h1>運営者情報<\/h1>/);assert.doesNotMatch(current,/LIVEチャット/);continue;}
   assert.match(current,/data-testid="historical-provisions"/);
   // 2026-11-15: the LIVE-era appendix was replaced by a link to the version it superseded.
   assert.match(current,new RegExp('href="/legal-history/20[0-9-]+-'+page+'\\.html"'));

@@ -38,7 +38,9 @@ test('Japanese navigation exposes completed locales without changing original co
   const html = '<html lang="ja"><head><link rel="canonical" href="https://old.example/"></head><body>元の日本語</body></html>';
   const output = injectPublicLocaleShell(html, new URL('https://www.streetboardgame.com/challenge?room=TEST#manage=TEST'), ['ja', 'en', 'ar']);
   assert.match(output, /元の日本語/);
-  assert.match(output, /hreflang="ar" href="https:\/\/www.streetboardgame.com\/ar\/challenge"/);
+  // Only search-indexed locales (ja, en) are listed as alternates (2026-11-15).
+  assert.doesNotMatch(output, /hreflang="ar"/);
+  assert.match(output, /hreflang="en" href="https:\/\/www.streetboardgame.com\/en\/challenge"/);
   assert.doesNotMatch(output, /room=TEST|manage=TEST/);
 });
 

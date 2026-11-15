@@ -9,7 +9,7 @@ import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.j
 import { questionPacks } from './src/challenge/packs.js';
 import { injectLibraryCatalog, removeLibraryCatalog } from './src/challenge/library-catalog.js';
 import { personalizeRoomPage } from './src/challenge/share-meta.js';
-import { localeFromPath, stripLocalePrefix } from './src/i18n/locales.js';
+import { localeFromPath, stripLocalePrefix, SEARCH_INDEXED_LOCALES as SEARCH_LOCALE_LIST } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
 import { PUBLIC_LOCALE_PAGES } from './src/generated/public-locale-pages.js';
@@ -29,9 +29,8 @@ export { LiveRoomCoordinator, LiveVoteShard } from './src/retired/durable-object
 // 廃止したゲームURLとAPIは互換転送せず404を返す。
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
-// Only Japanese and English pages are offered for search indexing; the other
-// machine-translated locales stay available to visitors but are noindex.
-const SEARCH_INDEXED_LOCALES = new Set(['ja', 'en']);
+// Only Japanese and English pages are offered for search indexing (see src/i18n/locales.js).
+const SEARCH_INDEXED_LOCALES = new Set(SEARCH_LOCALE_LIST);
 // Clarity load-balances collection across a-z. Allow only HTTPS collection
 // paths, rather than every subdomain or every path on those hosts.
 const CLARITY_COLLECT_SOURCES = Array.from('abcdefghijklmnopqrstuvwxyz',

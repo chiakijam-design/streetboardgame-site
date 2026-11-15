@@ -17,7 +17,7 @@ test('current legal pages explain the free quiz and link only to previous versio
     await page.screenshot({ path: testInfo.outputPath(path.slice(1) + '-current.png'), fullPage: true });
   }
   await page.goto('/en/terms?analytics=exclude');
-  await expect(page.locator('main')).toContainText("These terms apply to Streetboardgame's free standard quiz");
+  await expect(page.locator('main')).toContainText('These Terms apply to the free quiz “Know Me Quiz”');
 });
 
 test('library shows real questions and choices before game creation and hides empty metrics', async ({ page }, testInfo) => {
@@ -71,9 +71,10 @@ test('free quiz and Amazon product information stay separate, readable and keybo
     await page.setViewportSize({width,height:800});
     await page.goto((locale==='ja'?'':'/'+locale)+'/legal?analytics=exclude');
     await expect(page.getByTestId('free-quiz-information')).toBeVisible();
-    const product=page.getByTestId('physical-product-commerce-information');
+    // 2026-11-15: /legal is the operator page; the physical edition is our own product sold on Amazon.
+    await expect(page.getByTestId('operator-information')).toContainText(locale==='ja'?'平川智章':'Chiaki Hirakawa');
+    const product=page.getByTestId('physical-product-information');
     await expect(product).toBeVisible();
-    await expect(product).toContainText('Chiaki Hirakawa');
     const seller=product.locator('a[href="https://www.amazon.co.jp/sp?seller=A3QW758BCMIP1P"]');
     const returns=product.locator('a[href*="GKM69DUUYKQWKWX7"]');
     await expect(seller).toBeVisible();await expect(returns).toBeVisible();

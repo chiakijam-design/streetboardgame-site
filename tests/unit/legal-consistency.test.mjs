@@ -15,7 +15,7 @@ test('current legal documents have continuous section numbers after LIVE retirem
 test('current terms define the free service and retain the original consent-limited question license', async () => {
   const html = await current('terms.html');
   assert.match(html, /第1条（適用）/);
-  assert.match(html, /無料の通常版クイズと関連機能（以下「本サービス」）/);
+  assert.match(html, /無料のクイズ「わたし理解度診断」と関連機能（以下「本サービス」）/);
   const clause = html.match(/<h2>第6条[\s\S]*?<ol>([\s\S]*?)<\/ol>/)[1];
   const items = [...clause.matchAll(/<li>(.*?)<\/li>/g)].map(match => match[1]);
   assert.match(items[2], /掲載候補の送信に同意した利用者コンテンツ/);
@@ -36,7 +36,7 @@ test('ordinary question publication remains opt-in and no current board comment 
   assert.doesNotMatch(legal, /LIVE版の有料サービスの内容をご案内/);
   assert.match(legal, /クイズの作成と回答は無料です。/);
   const privacy = await current('privacy.html');
-  assert.match(privacy, /本ポリシーは、Streetboardgameの無料の通常版クイズ/);
+  assert.match(privacy, /本ポリシーは、無料のクイズ「わたし理解度診断」/);
   assert.match(privacy, /Googleの広告Cookie/);
   assert.match(privacy, /myadcenter\.google\.com\/personalizationoff/);
 });
