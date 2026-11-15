@@ -32,7 +32,7 @@ async function buildChallengeQuestions(page, startIndex = 0) {
       await expect(paperCard.locator('.notebook-card-accessible-choices li')).toHaveCount(5);
       expect(await paperCard.locator('.notebook-question-card-copy').evaluate((element) => (
         getComputedStyle(element).fontFamily
-      ))).toContain('HuiFontP29');
+      ))).toContain('YomogiCard');
       await expect(answerPad.locator('[data-action="builder-answer"]')).toHaveCount(5);
       await expect(page.getByRole('button', { name: /この問題をスキップ/ })).toBeVisible();
       await expect(page.getByRole('button', { name: /問題・選択肢を編集する/ })).toBeVisible();

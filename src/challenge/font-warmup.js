@@ -1,9 +1,9 @@
-export const QUESTION_CARD_FONT_URL = '/assets/fonts/HuiFontP29.woff2?v=20260727-font-1';
+export const QUESTION_CARD_FONT_URL = '/assets/fonts/Yomogi-card.woff2?v=20261115-1';
 
 // Warm the unchanged font on quiz intent after initial rendering. Do not hold
 // back text or download a full Japanese font for a passive page view.
 export function injectQuestionFontWarmup(html, url) {
-  if (url.pathname !== '/challenge' || !html.includes('HuiFontP29')
+  if (url.pathname !== '/challenge' || !html.includes('YomogiCard')
     || html.includes('data-wata-question-font-warmup')) return html;
   const script = `<script data-wata-question-font-warmup>(function(w,d){
     var painted=false,pending=false,started=false;
@@ -11,9 +11,9 @@ export function injectQuestionFontWarmup(html, url) {
     function warm(){
       if(!painted){pending=true;return;}
       if(started||w.location.pathname!=='/challenge'||!d.fonts)return;
-      var active=Array.from(d.fonts).some(function(f){return f.family.replace(/["']/g,'')==='HuiFontP29'&&f.status!=='unloaded';});
+      var active=Array.from(d.fonts).some(function(f){return f.family.replace(/["']/g,'')==='YomogiCard'&&f.status!=='unloaded';});
       if(active)return;
-      started=true;d.fonts.load('400 24px "HuiFontP29"','あ').catch(function(){});
+      started=true;d.fonts.load('400 24px "YomogiCard"','あ').catch(function(){});
     }
     function ready(){painted=true;if(pending||intent(d.activeElement))warm();}
     function afterPaint(){if(typeof w.requestAnimationFrame==='function')w.requestAnimationFrame(function(){w.requestAnimationFrame(ready);});else w.setTimeout(ready,0);}
