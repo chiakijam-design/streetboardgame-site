@@ -6,14 +6,24 @@ import { PUBLIC_LOCALES } from '../../src/generated/public-locales.js';
 import { readdir } from 'node:fs/promises';
 import { switchLocalePath, LOCALE_DETAILS } from '../../src/i18n/locales.js';
 
-// Remove markup until nothing changes (no nested leftovers).
+// Text outside tags, comments, scripts and styles (a small scanner, not a sanitizer).
 function visibleText(html) {
-  let text = html;
-  let previous;
-  do {
-    previous = text;
-    text = text.replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]*>/g, '');
-  } while (text !== previous);
+  const lower = html.toLowerCase();
+  let text = '';
+  let index = 0;
+  while (index < html.length) {
+    const open = html.indexOf('<', index);
+    if (open < 0) { text += html.slice(index); break; }
+    text += html.slice(index, open);
+    let close;
+    if (html.startsWith('<!--', open)) close = html.indexOf('-->', open + 4) + 3;
+    else if (/^<(?:script|style)\b/.test(lower.slice(open, open + 8))) {
+      const name = lower.startsWith('<script', open) ? 'script' : 'style';
+      const end = lower.indexOf('</' + name, open);
+      close = end < 0 ? html.length : html.indexOf('>', end) + 1;
+    } else close = html.indexOf('>', open) + 1;
+    index = close > open ? close : html.length;
+  }
   return text;
 }
 
