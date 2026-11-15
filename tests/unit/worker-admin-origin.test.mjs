@@ -14,9 +14,8 @@ const env = {
 test('workers.dev does not expose management pages or admin APIs', async () => {
   for (const path of [
     '/question-ops',
-    '/live-ops',
     '/api/questions/admin/overview',
-    '/api/live/admin/overview',
+    '/api/admin/session',
   ]) {
     const response = await worker.fetch(
       new Request(`https://streetboardgame.chiaki-jam.workers.dev${path}`),

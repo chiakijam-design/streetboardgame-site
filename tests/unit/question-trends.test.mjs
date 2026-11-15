@@ -6,7 +6,6 @@ import {
   buildRecentQuestionGroups,
   getQuestionTrendMetrics,
   liveSplitDetails,
-  recordLiveAnswerDistribution,
   recordQuestionSelections,
   startOfJstWeek,
 } from '../../src/questions/trends.js';
@@ -93,7 +92,7 @@ test('採用済みカードだけから4分類を作り、無効IDは結果へ�
   });
 });
 
-test('作成回数とLIVE回答分散を週単位で保存し、最近の採用だけを返す', async () => {
+test('作成回数を週単位で保存し、最近の採用だけを返す（LIVE回答分散は2026-11-15に廃止）', async () => {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(`
     CREATE TABLE question_catalog (
@@ -113,9 +112,6 @@ test('作成回数とLIVE回答分散を週単位で保存し、最近の採用�
 
   await recordQuestionSelections(env, [{ id: 'Q1' }, { id: 'Q2' }], 'challenge', now);
   await recordQuestionSelections(env, [{ id: 'Q1' }], 'live', now);
-  await recordLiveAnswerDistribution(env, { sourceId: 'Q1' }, {
-    options: [{ count: 2 }, { count: 1 }, { count: 1 }, { count: 0 }, { count: 0 }],
-  }, now);
 
   const metrics = await getQuestionTrendMetrics(env, 'ja', now);
   assert.deepEqual(metrics.weeklySelections, [
@@ -123,8 +119,5 @@ test('作成回数とLIVE回答分散を週単位で保存し、最近の採用�
     { questionId: 'Q2', selectedCount: 1 },
   ]);
   assert.deepEqual(metrics.recentApprovals, [{ questionId: 'Q1', addedAt: 300 }]);
-  assert.deepEqual(metrics.liveResponses, [{
-    questionId: 'Q1',
-    optionCounts: [2, 1, 1, 0, 0],
-  }]);
+  assert.deepEqual(metrics.liveResponses, []);
 });

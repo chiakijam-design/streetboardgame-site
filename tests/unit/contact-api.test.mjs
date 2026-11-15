@@ -71,7 +71,7 @@ test('Wataからの送信は先に保存し、Resendで文字だけの通知メ�
   assert.match(calls[0].body.text, /送りたい内容：感想/);
   assert.match(calls[0].body.text, /楽しかったです。/);
   // No raw IP is stored anywhere.
-  assert.ok(db.prepare('SELECT rate_key FROM live_rate_limits').all().every((r) => !r.rate_key.includes('192.0.2.')));
+  assert.ok(db.prepare('SELECT rate_key FROM rate_limits').all().every((r) => !r.rate_key.includes('192.0.2.')));
   assert.doesNotMatch(JSON.stringify(db.prepare('SELECT * FROM contact_messages').all()), /192\.0\.2\./);
 });
 

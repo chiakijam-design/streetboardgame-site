@@ -9,7 +9,7 @@ export async function enforceChallengeRateLimit(env, identity, scope = 'create',
   const db = env.REMOTE_DB;
   if (!ready.has(db)) {
     // Only cache completed setup, never another request's in-flight D1 IO.
-    await db.prepare(`CREATE TABLE IF NOT EXISTS live_rate_limits (
+    await db.prepare(`CREATE TABLE IF NOT EXISTS rate_limits (
       rate_key TEXT PRIMARY KEY, window_start INTEGER NOT NULL,
       request_count INTEGER NOT NULL, expires_at INTEGER NOT NULL
     )`).run();
@@ -18,7 +18,7 @@ export async function enforceChallengeRateLimit(env, identity, scope = 'create',
   const start = Math.floor(now / CHALLENGE_RATE_WINDOW_MS) * CHALLENGE_RATE_WINDOW_MS;
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${start}:${identity}`));
   const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
-  const row = await db.prepare(`INSERT INTO live_rate_limits (rate_key, window_start, request_count, expires_at)
+  const row = await db.prepare(`INSERT INTO rate_limits (rate_key, window_start, request_count, expires_at)
     VALUES (?, ?, 1, ?) ON CONFLICT(rate_key) DO UPDATE SET request_count = request_count + 1
     RETURNING request_count`).bind(`challenge:${scope}:${hash}`, start, start + CHALLENGE_RATE_WINDOW_MS * 2).first();
   if (Number(row?.request_count) > limit) {

@@ -21,8 +21,7 @@ function add(source, context, force = false) {
   sources.get(source).add(context);
 }
 function fragments(value, context) {
-  const text = value.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
-    .replace(/<!--[\s\S]*?-->/g, '');
+  const text = removeRepeatedly(removeRepeatedly(value, /<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi), /<!--[\s\S]*?-->/g);
   if (/<\/?[a-z][^>]*>/i.test(text)) {
     text.split(/<[^>]+>/g).forEach((part) => add(part, context));
     for (const match of text.matchAll(/(?:aria-label|placeholder|alt|title)="([^"]+)"/g)) add(match[1], context);
@@ -41,9 +40,9 @@ for (const [file, page] of Object.entries(inventory.pages)) {
   page.bodyText.forEach((text) => add(text, `${file}:body`, true));
 }
 const files = [
-  'challenge_game.js', 'live_challenge.js', 'prototype_app.jsx',
+  'challenge_game.js', 'prototype_app.jsx',
   'src/challenge/result.js', 'src/challenge/packs.js', 'src/challenge/insights.js',
-  'src/live/age-notice.js', 'src/live/checkout-terms-config.js',
+
   'src/questions/safety.js', 'src/platform/share.js', 'src/home/start.js',
 ];
 function visit(node, context) {
@@ -84,3 +83,13 @@ await writeFile(new URL('data/translation-corpus.json', root), JSON.stringify({
   entries,
 }, null, 2) + '\n');
 console.log(JSON.stringify({ entries: entries.length, sourceCharacters: entries.reduce((sum, entry) => sum + entry.source.length, 0) }));
+
+// Repeat a removal until the text stops changing (no nested leftovers).
+function removeRepeatedly(text, pattern) {
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(pattern, '');
+  } while (text !== previous);
+  return text;
+}

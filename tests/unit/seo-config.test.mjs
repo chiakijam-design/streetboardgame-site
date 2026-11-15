@@ -21,12 +21,11 @@ test('内容ハッシュ付き本番JavaScript・CSSだけを長期キャッシ�
   for (const [htmlPath, marker] of [
     ['index.html', 'accessibility'],
     ['challenge.html', 'question_card'],
-    ['live_challenge.html', 'question_card'],
     ['terms.html', 'legal'],
   ]) {
     const html = await readFile(htmlPath, 'utf8');
     assert.match(html, new RegExp(`data-build-style="${marker}"`), htmlPath);
-    if (htmlPath === 'challenge.html' || htmlPath === 'live_challenge.html') {
+    if (htmlPath === 'challenge.html') {
       assert.match(html, /<style data-build-style="question_card">/, htmlPath);
     } else {
       assert.match(html, new RegExp(`href="/dist/[a-z0-9-]+-[a-f0-9]{12}\\.css"`), htmlPath);
@@ -84,9 +83,9 @@ test('運営画面は検索除外・キャッシュ禁止・参照元非送信�
   const headers = await readFile('_headers', 'utf8');
   const worker = await readFile('_worker.js', 'utf8');
 
-  for (const route of ['/live-ops', '/question-ops']) {
+  for (const route of ['/question-ops']) {
     const escapedRoute = route.replace('/', '\\/');
     assert.match(headers, new RegExp(`${escapedRoute}[\\s\\S]*?Referrer-Policy: no-referrer[\\s\\S]*?X-Robots-Tag: noindex, nofollow, noarchive[\\s\\S]*?Cache-Control: no-store`));
   }
-  assert.equal((worker.match(/headers\.set\('referrer-policy', 'no-referrer'\)/g) || []).length >= 2, true);
+  assert.equal((worker.match(/headers\.set\('referrer-policy', 'no-referrer'\)/g) || []).length >= 1, true);
 });

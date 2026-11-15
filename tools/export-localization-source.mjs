@@ -18,7 +18,7 @@ async function questionLibrary(file, globalName) {
 const japanese = await questionLibrary('prototype_common_data.js', 'COMMON_QUESTION_CARDS');
 const english = await questionLibrary('prototype_english_common_data.js', 'ENGLISH_COMMON_QUESTION_CARDS');
 const htmlFiles = [
-  'index.html', 'en/index.html', 'challenge.html', 'live_challenge.html',
+  'index.html', 'en/index.html', 'challenge.html',
   'terms.html', 'en/terms.html', 'privacy.html', 'en/privacy.html', 'legal.html',
   'creator-terms.html', 'refund-policy.html', 'minor-policy.html',
   'content-guidelines.html', 'pricing.html', '404.html',
@@ -31,18 +31,16 @@ for (const file of htmlFiles) {
     description: html.match(/<meta[^>]*name="description"[^>]*content="([^"]*)"/i)?.[1] || '',
     // Preserve exact copy. Translation needs a parser/explicit template integration,
     // not blind replacement of arbitrary user-authored DOM nodes.
-    bodyText: [...new Set(html
-      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
-      .replace(/<!--[\s\S]*?-->/g, '').split(/<[^>]+>/g)
+    bodyText: [...new Set(removeRepeatedly(removeRepeatedly(html, /<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi), /<!--[\s\S]*?-->/g).split(/<[^>]+>/g)
       .map((text) => text.trim()).filter(Boolean))],
   };
 }
 
 const filesToAudit = [
-  'challenge_game.js', 'live_challenge.js', 'prototype_app.jsx',
+  'challenge_game.js', 'prototype_app.jsx',
   'src/challenge/result.js', 'src/challenge/packs.js',
-  'src/challenge/insights.js', 'src/live/age-notice.js',
-  'src/live/checkout-terms-config.js', 'src/questions/safety.js',
+  'src/challenge/insights.js',
+  'src/questions/safety.js',
 ];
 const remainingSource = {};
 for (const file of filesToAudit) {
@@ -77,3 +75,13 @@ console.log(JSON.stringify({
   pages: htmlFiles.length,
   status: output.status,
 }));
+
+// Repeat a removal until the text stops changing (no nested leftovers).
+function removeRepeatedly(text, pattern) {
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(pattern, '');
+  } while (text !== previous);
+  return text;
+}

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
-import { createLiveAdminSession, generateLiveAdminTotp } from '../../src/live/admin-auth.js';
+import { createAdminSession, generateAdminTotp } from '../../src/admin/auth.js';
 import { handleQuestionApi } from '../../src/questions/api.js';
 import { applyManagedQuestionCards } from '../../src/questions/catalog.js';
 import { scanQuestionSafety } from '../../src/questions/safety.js';
@@ -250,8 +250,8 @@ test('未チェックでは保存せず、明示同意したお題だけ審査�
   const forbidden = await handleQuestionApi(new Request('https://example.com/api/questions/admin/overview'), env, '/api/questions/admin/overview');
   assert.equal(forbidden.status, 401);
 
-  const otp = await generateLiveAdminTotp(env.LIVE_ADMIN_TOTP_SECRET);
-  const session = await createLiveAdminSession(new Request('https://example.com/api/live/admin/session', {
+  const otp = await generateAdminTotp(env.LIVE_ADMIN_TOTP_SECRET);
+  const session = await createAdminSession(new Request('https://example.com/api/admin/session', {
     method: 'POST',
     headers: {
       'x-live-admin-token': env.LIVE_ADMIN_TOKEN,

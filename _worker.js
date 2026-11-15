@@ -1,6 +1,6 @@
 import { injectQuestionFontWarmup } from './src/challenge/font-warmup.js';
-import { isRetiredLivePage, isLiveHistoryRequest, liveRetiredResponse, isRemovedPricingPage, isRemovedRefundPage, removedPricingResponse } from './src/live/retirement.js';
-import { handleLiveApi } from './src/live/api.js';
+import { isRetiredLivePage, liveRetiredResponse, isRemovedPricingPage, isRemovedRefundPage, removedPricingResponse } from './src/retired/live.js';
+import { handleAdminApi } from './src/admin/api.js';
 import { handleChallengeApi } from './src/challenge/api.js';
 import { handleQuestionApi } from './src/questions/api.js';
 import { handleContactApi } from './src/contact/api.js';
@@ -18,12 +18,14 @@ import { injectGooglePolicy } from './src/analytics/passive-policy.js';
 import { japanGA4Mode } from './src/analytics/jp-ga4-policy.js';
 import { injectPVChoice, pvPublicPath } from './src/analytics/pv-policy.js';
 import { adsenseConfigFor, injectAdsenseConfig, ADSENSE_CSP } from './src/ads/adsense-config.js';
-export { LiveRoomCoordinator, LiveVoteShard } from './src/live/realtime.js';
+// LIVE ended (2026-10-23) and its code was removed (2026-11-15). The Durable
+// Object classes stay as empty stubs so no deployment migration is needed.
+export { LiveRoomCoordinator, LiveVoteShard } from './src/retired/durable-objects.js';
 
 // Cloudflare Workers 静的サイト + ルーティング
 // https://developers.cloudflare.com/pages/functions/advanced-mode/
 //
-// 現行の通常版・LIVE版、共通ページ、法務ページと静的アセットだけを配信する。
+// 現行の通常版、共通ページ、法務ページと静的アセットだけを配信する（LIVE版は2026-11-15に削除）。
 // 廃止したゲームURLとAPIは互換転送せず404を返す。
 
 const CANONICAL_ORIGIN = 'https://www.streetboardgame.com';
@@ -120,7 +122,7 @@ async function handleRequest(request, env) {
     const path = rawPath.replace(/\/+$/, '');
     if (isRemovedPricingPage(path) || isRemovedRefundPage(path)) return removedPricingResponse(request);
     if (isRetiredLivePage(path, url.searchParams)) return liveRetiredResponse(request);
-    if (path.startsWith('/api/live') && !isLiveHistoryRequest(path, request.method)) return liveRetiredResponse(request, true);
+    if (path.startsWith('/api/live')) return liveRetiredResponse(request, true);
     // These build artifacts are fetched internally; stable locale URLs are
     // the public entry points, including historical invitation query strings.
     if (path.startsWith('/locale-pages/')) return new Response('Not Found', { status: 404 });
@@ -142,8 +144,8 @@ async function handleRequest(request, env) {
     // management surface through the Worker preview hostname, which would
     // otherwise bypass the Access policy applied to www.streetboardgame.com.
     const isWorkersDevHost = url.hostname.endsWith('.workers.dev');
-    const isAdminSurface = /^\/(?:live-ops|question-ops)(?:\/|$)/.test(path)
-      || /^\/api\/(?:live|questions)\/admin(?:\/|$)/.test(path);
+    const isAdminSurface = /^\/question-ops(?:\/|$)/.test(path)
+      || /^\/api\/(?:admin|questions\/admin)(?:\/|$)/.test(path);
     if (isWorkersDevHost && isAdminSurface) {
       return new Response(request.method === 'HEAD' ? null : 'Not Found', {
         status: 404,
@@ -162,7 +164,6 @@ async function handleRequest(request, env) {
       '/en/privacy.html': '/en/privacy',
       '/challenge.html': '/challenge',
       '/live_challenge.html': LIVE_CHALLENGE_PATH,
-      '/live_ops.html': '/live-ops',
       '/question_ops.html': '/question-ops',
     };
     // /en (no slash) used to render the full runtime catalog inline (~640KB).
@@ -174,8 +175,8 @@ async function handleRequest(request, env) {
       return Response.redirect(url.origin + cleanHtmlPaths[rawPath] + url.search, 301);
     }
 
-    if (path.startsWith('/api/live')) {
-      return handleLiveApi(request, env, path);
+    if (path.startsWith('/api/admin/') || path === '/api/security/csp-report') {
+      return handleAdminApi(request, env, path);
     }
 
     if (path.startsWith('/api/remote')) {
@@ -326,10 +327,6 @@ async function handleRequest(request, env) {
       });
     }
 
-    if (rawPath !== '/' && rawPath.endsWith('/') && path === LIVE_CHALLENGE_PATH) {
-      return Response.redirect(url.origin + path + url.search, 301);
-    }
-
 
     if (rawPath !== '/' && rawPath.endsWith('/') && CHALLENGE_PAGE_PATHS.has(path)) {
       return Response.redirect(url.origin + path + url.search, 301);
@@ -373,24 +370,6 @@ async function handleRequest(request, env) {
           'x-robots-tag': 'noindex, nofollow, noarchive',
         },
       });
-    }
-
-    if (rawPath !== '/' && rawPath.endsWith('/') && path === '/live-ops') {
-      return Response.redirect(url.origin + path, 301);
-    }
-
-    if (path === '/live-ops') {
-      const opsUrl = new URL('/live_ops.html', url.origin);
-      const response = await env.ASSETS.fetch(new Request(opsUrl.toString(), {
-        method: 'GET',
-        headers: request.headers,
-      }));
-      const headers = new Headers(response.headers);
-      headers.set('content-type', 'text/html; charset=UTF-8');
-      headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
-      headers.set('cache-control', 'no-store');
-      headers.set('referrer-policy', 'no-referrer');
-      return new Response(request.method === 'HEAD' ? null : await response.text(), { status: response.status, headers });
     }
 
     if (rawPath !== '/' && rawPath.endsWith('/') && path === '/question-ops') {
@@ -591,7 +570,7 @@ async function withSecurityHeaders(response, request, env, pvMode = 'consent', g
     "media-src 'none'",
     "manifest-src 'self'",
     "worker-src 'self'",
-    "report-uri /api/live/security/csp-report",
+    "report-uri /api/security/csp-report",
   ].join('; '));
   headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   headers.set('x-frame-options', 'DENY');

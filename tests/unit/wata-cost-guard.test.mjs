@@ -43,7 +43,7 @@ test('scheduled entry runs privacy cleanup only (X automated posting ended 2026-
   const jobs=[];
   await worker.scheduled({scheduledTime:start},{REMOTE_DB:db,WATA_COST_GUARD_MODE:'enforce',SOCIAL_PUBLISHING_ENABLED:'true'},{waitUntil(job){jobs.push(job);}});
   await Promise.all(jobs);
-  assert.ok(calls.some(sql=>/DELETE FROM live_rate_limits/.test(sql)));
+  assert.ok(calls.some(sql=>/DELETE FROM rate_limits/.test(sql)));
   assert.ok(calls.some(sql=>/SELECT code FROM challenge_rooms/.test(sql)));
   assert.equal(calls.some(sql=>/social_posts|wata_cost_budgets/.test(sql)),false);
 });

@@ -94,7 +94,6 @@ const mime = {
 function staticPath(urlPath) {
   if (['/', '/about', '/product'].includes(urlPath)) return 'index.html';
   if (urlPath === '/challenge') return 'challenge.html';
-  if (urlPath === '/live-ops') return 'live_ops.html';
   if (urlPath === '/question-ops') return 'question_ops.html';
   return urlPath.replace(/^\/+/, '');
 }
@@ -180,7 +179,8 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end(String(error && error.stack || error));
+    console.error(error);
+    res.end('Internal Server Error');
   }
 });
 
