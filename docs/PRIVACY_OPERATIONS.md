@@ -1,85 +1,41 @@
 # プライバシー運用設定
 
-最終更新: 2026-07-23
+最終更新: 2026-11-15（LIVE 版の削除・決済の終了に合わせて書き直し）
 
 ## 1. コードで実行される処理
 
-- Cron Trigger: 毎時17分に期限切れD1データとR2画像を削除・匿名化
-- 遠隔ゲーム: 最終操作から24時間で失効
-- LIVEゲーム・投票・参加者: 完了、キャンセル、強制終了後24時間で削除
-- 未完了チャンネル所有確認: 90日で削除
-- 運用・セキュリティイベント: 180日で削除
-- 有料結果画像: 30日でR2から削除。同時に参加者名、参加者ID、ゲームコード、アクセス用ハッシュ、購入メールHMACを購入権限から消去し、Checkout注文の参加者名・画像表示名も匿名化。購入メールの平文はD1へ保存しない
-- YouTube公開動画字幕: YouTuber本人のOAuth同意時に、過去1年の公開動画から再生数を主軸に公開日の新しさも加味して優先した最大8本を取得し、30日でゲーム用D1から削除する。アクセストークン・リフレッシュトークンは保存しない
-- 購入・返金・売上・分配記録: 購入履歴専用D1で7年保存後に削除
+- Cron Trigger: 毎時17分（`wrangler.jsonc` の `crons`）に `src/privacy/cleanup.js` を実行する。
+- クイズの部屋と参加者: 作成から30日の期限を過ぎた部屋と、その参加者・回答を削除する。
+- 回数制限の記録（`rate_limits`）: 期限切れの区切りを削除する。送り元は Worker の秘密の値を混ぜたハッシュ（HMAC、`src/security/sender-key.js`）で数え、生の IP アドレスは保存しない。
+- 管理画面のセッション（`admin_sessions`）: 期限切れを削除する。
+- お問い合わせ（`contact_messages`）: 受付から12か月を超えた行を削除する。
+- 運用の記録（エラー・CSP 違反の報告）は D1 に保存せず、Cloudflare Workers Logs に出す。
 
-Cronの直近実行と失敗はCloudflare WorkersのCron Trigger、Logs、Notificationsで確認する。
+Cron の直近実行と失敗は Cloudflare Workers の Cron Trigger、Logs、Notifications で確認する。
 
-## 2. 購入履歴専用D1
+## 2. 終了した機能（LIVE 版・決済）
 
-有料販売前に、ゲーム用`REMOTE_DB`とは別に作成する。
+LIVE 版（配信・有料応援・結果画像の販売・YouTube 連携）は 2026-10-23 に終了し、2026-11-15 にプログラムと本番 D1 の表を削除した。購入は0件。表の控えは AI-HANDOFF/records/backup/wata-live-20261115/ にある。決済（Stripe）の処理もコードから外した。購入用 D1（`streetboardgame-live-purchases`）の表の削除（`migrations-purchases/0007_remove_live.sql`）と、決済関係の Worker の秘密の値の削除は、運営者の許可を得て行う。
 
-```powershell
-npx wrangler d1 create streetboardgame-live-purchases
-```
+## 3. 管理画面（お題の管理）
 
-返されたdatabase IDを`wrangler.jsonc`のコメント済み`LIVE_PURCHASE_DB`へ設定し、専用マイグレーションを適用する。
-
-```powershell
-npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0001_live_purchase_records.sql
-npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0002_live_checkout_orders.sql
-npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0003_live_revenue_ledger.sql
-npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0004_live_entitlement_recovery.sql
-npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0005_live_checkout_consent.sql
-npx wrangler d1 execute streetboardgame-live-purchases --remote --file migrations-purchases/0006_live_support_message.sql
-```
-
-コードは購入・ダウンロード・返金・再発行処理で`LIVE_PURCHASE_DB`を必須とする。未設定時は有料処理を503で停止し、ゲーム用D1へフォールバックしない。
-
-旧`REMOTE_DB.live_result_entitlements`に本番購入が存在する場合は、件数とStripe PaymentIntent IDを照合して専用D1へ移行し、移行確認後に旧テーブルの個人データを削除する。購入が存在しないことを確認せずに旧テーブルを削除しない。
-
-## 2.1 非公開R2
-
-- 元画像、変換画像、購入結果画像は`streetboardgame-live-private`へ保存し、公開バケット・`r2.dev`・カスタムドメインを使わない
-- ブラウザへR2のオブジェクトキー、元画像Data URL、R2署名URLを返さない
-- 無料プレビューは参加者認証後にWorkerが生成し、`private, no-store`で返す
-- 有料画像は購入権限と10分以内のWorker署名URLを確認した場合だけ、Worker経由で`private, no-store`の添付ファイルとして返す
-- 画像差し替え・審査却下時は旧3オブジェクトを直ちに削除する。ゲーム終了後の元画像と、購入から30日後の結果画像は毎時Cronで削除する
-- 四半期点検ではPublic Development URLが`Disabled`、Custom Domainsが0件、不要なR2 APIトークンとWorkerバインディングがないことも確認する
-
-## 3. 管理画面二要素認証
-
-次の3つをCloudflare Worker secretとして設定する。
-
-```powershell
-npx wrangler secret put LIVE_ADMIN_TOKEN
-npx wrangler secret put LIVE_ADMIN_TOTP_SECRET
-npx wrangler secret put LIVE_ADMIN_SESSION_SECRET
-```
-
-- `LIVE_ADMIN_TOKEN`: 32文字以上のランダム値
-- `LIVE_ADMIN_TOTP_SECRET`: 認証アプリへ登録するBase32秘密鍵。32文字以上
-- `LIVE_ADMIN_SESSION_SECRET`: 32文字以上の別のランダム値
-- TOTPは30秒、6桁。時刻ずれは前後1区間まで許容
-- 二要素認証成功後の管理セッションは15分で失効し、ブラウザの`sessionStorage`だけに保存
-
-secret設定後、認証アプリの現在コードで`/live-ops`へログインし、誤ったコードと期限切れセッションが拒否されることを確認する。
+- `/question-ops` と、その API（`/api/questions/admin/*`、ログインの受け口 `/api/questions/admin/session` を含む）は Cloudflare Access（運営者のメールでのログイン）で守る。
+- そのうえで Worker の秘密の値3つ（名前は LIVE 版のころのまま）による合言葉と二段階認証を使う。
+  - `LIVE_ADMIN_TOKEN`: 32文字以上のランダム値
+  - `LIVE_ADMIN_TOTP_SECRET`: 認証アプリへ登録する Base32 の秘密鍵。32文字以上
+  - `LIVE_ADMIN_SESSION_SECRET`: 32文字以上の別のランダム値（回数制限の HMAC の鍵もここから別ラベルで導く。専用の `RATE_LIMIT_SECRET` を置けばそちらを使う）
+- TOTP は30秒・6桁、時刻ずれは前後1区間まで。二段階認証のあとの管理セッションは15分で失効する。
 
 ## 4. 外部サービス側で必要な設定
 
-- GA4: データ保持を14か月に設定する
-- お問い合わせ（2026-11-14にFormspreeから自前の`/api/contact`へ移行）: ゲーム用D1の`contact_messages`に保存し、受付から12か月を超えた行はCronが毎時自動削除する。生のIPアドレスは保存しない
-- Resend: お問い合わせ通知メールの送信に使う（送信元`notify.streetboardgame.com`）。APIキーは送信専用権限にし、宛先は`CONTACT_NOTIFY_TO` secretだけに置く
-- Cloudflare: Logs・Analyticsの契約上の保持期間を確認し、不要なLogpush保存を行わない
-- Stripe: 権限を最小化し、本人確認・決済記録の保持と削除はStripeの契約・法令も確認する
-- Google / YouTube: 不要なOAuthクライアントとトークンを削除し、確認用stateを長期保存しない
-- Cloudflare通知: Cron失敗、Worker 5xx、D1・R2使用量を通知対象にする
+- GA4: データ保持を14か月に設定する。送るのは固定の画面名（home・challenge_create など）と、名前や回答を含まない項目だけ。
+- お問い合わせ（2026-11-14 に Formspree から自前の `/api/contact` へ移行）: ゲーム用 D1 の `contact_messages` に保存する。
+- Resend: お問い合わせ通知メールの送信に使う（送信元 `notify.streetboardgame.com`）。API キーは送信専用の権限にし、宛先は `CONTACT_NOTIFY_TO` だけに置く。
+- Cloudflare: Logs・Analytics の契約上の保持期間を確認し、不要な Logpush 保存を行わない。Cron 失敗、Worker 5xx、D1 使用量を通知対象にする。
 
 ## 5. 四半期点検
 
-1. Cronが毎時成功していることを確認する。
-2. D1で期限超過したゲーム、ログ、未完了確認が残っていないことを確認する。
-3. R2で期限超過した元画像・結果画像が残っていないことを確認する。
-4. 購入履歴専用D1とゲーム用D1のbindingが別database IDであることを確認する。
-5. 管理者secretを交換し、不要アカウントを削除する。
-6. GA4、Resend、Stripe、Google、Cloudflareの保持・権限設定を確認する。
+1. Cron が毎時成功していることを確認する。
+2. D1 で期限を過ぎた部屋・回数制限・セッション・お問い合わせが残っていないことを確認する。
+3. 管理者の秘密の値を交換し、Cloudflare Access の許可メールに不要な人がいないことを確認する。
+4. GA4、Resend、Cloudflare の保持・権限設定を確認する。
