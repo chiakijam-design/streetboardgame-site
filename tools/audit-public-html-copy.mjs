@@ -13,7 +13,7 @@ const missing = new Map();
 // output. Translated derivatives must not replace the original public source.
 const priorSupplement = JSON.parse(await readFile(new URL('data/translation-supplement-public-html.json', root), 'utf8'));
 for (const entry of priorSupplement.entries) missing.set(entry.source, new Set(entry.contexts));
-const paths = ['/', '/challenge', '/challenge/library', '/live-challenge', '/challenge-guide', '/about', '/product', '/pricing', '/terms', '/privacy', '/legal', '/creator-terms', '/refund-policy', '/content-guidelines', '/minor-policy', '/en/', '/en/challenge', '/en/live-challenge', '/en/terms', '/en/privacy'];
+const paths = ['/', '/challenge', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy', '/en/', '/en/challenge', '/en/terms', '/en/privacy'];
 const env = { ASSETS: { async fetch(request) {
   const pathname = new URL(request.url).pathname;
   const file = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
@@ -22,7 +22,7 @@ const env = { ASSETS: { async fetch(request) {
   catch { return new Response('Not Found', { status: 404 }); }
 } } };
 function add(raw, context) {
-  let source = raw.trim().replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, '\u00a0');
+  let source = raw.trim().replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, '\u00a0').replace(/&amp;/g, '&');
   source = corpus.aliases[source] || source;
   if (!source || known.has(source) || /^https?:\/\//.test(source) || !/\p{L}/u.test(source)) return;
   if (!missing.has(source)) missing.set(source, new Set());

@@ -45,7 +45,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
     const decoded = decode(value);
     return escape(translateBoardPolicyCopy(decoded, locale) ?? (isHome ? translateHomeEntryCopy(decoded, locale) : undefined) ?? translateCurrentSiteCopy(decoded, locale, translator.translate) ?? translator.translate(decoded));
   };
-  let output = html.replace(/(<script\b[\s\S]*?<\/script\s*>|<style\b[\s\S]*?<\/style\s*>|<!--[\s\S]*?-->)|(<[^>]+>)|([^<]+)/gi, (whole, protectedBlock, tag, text) => {
+  let output = html.replace(/(<script\b[\s\S]*?<\/script\b[^>]*>|<style\b[\s\S]*?<\/style\b[^>]*>|<!--[\s\S]*?--!?>)|(<[^>]+>)|([^<]+)/gi, (whole, protectedBlock, tag, text) => {
     if (protectedBlock) return protectedBlock;
     if (text) return copy(text);
     return tag.replace(/\b(src|srcset)=(['"])([\s\S]*?)\2/gi, (attribute, name, quote, value) => {
@@ -74,12 +74,12 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
         if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, localizeValue(item, name)]));
         if (key === 'inLanguage') return locale;
         if (typeof value !== 'string') return value;
-        if (localizedShareImage && value.startsWith(origin + '/assets/ogp')) return localizedShareImage;
-        if (value.startsWith(origin)) {
-          try {
-            const url = new URL(value);
-            return origin + localeCanonicalPath(url.pathname, locale) + url.hash;
-          } catch { return value; }
+        // Compare parsed origins, not string prefixes.
+        let url = null;
+        try { url = new URL(value); } catch { url = null; }
+        if (url && url.origin === origin) {
+          if (localizedShareImage && url.pathname.startsWith('/assets/ogp')) return localizedShareImage;
+          try { return origin + localeCanonicalPath(url.pathname, locale) + url.hash; } catch { return value; }
         }
         return translateCurrentSiteCopy(value, locale, translator.translate) ?? translateBoardPolicyCopy(value, locale) ?? translator.translate(value);
       }

@@ -2,6 +2,17 @@ import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
 import { test, expect } from './test.mjs';
 test.use({ hasTouch: true });
 
+// Remove tags until nothing changes (no nested leftovers).
+function visibleText(html) {
+  let text = html;
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(/<[^>]*>/g, '');
+  } while (text !== previous);
+  return text;
+}
+
 test('Bing指摘の5ページはJS実行前からページ固有のH1を返す', async ({ page, request }) => {
   for (const [path, heading] of [
     ['/', 'わたし理解度診断'], ['/challenge', '私のこと、ちゃんと'],
@@ -12,7 +23,7 @@ test('Bing指摘の5ページはJS実行前からページ固有のH1を返す',
     const html = (await response.text()).replace(/<noscript[\s\S]*?<\/noscript>/g, '');
     const headings = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/g)];
     expect(headings, path).toHaveLength(1);
-    expect(headings[0][1].replace(/<[^>]+>/g, ''), path).toContain(heading);
+    expect(visibleText(headings[0][1]), path).toContain(heading);
     await page.goto(path);
     await expect(page.locator('h1')).toHaveCount(1);
     await expect(page.locator('h1')).toContainText(heading);

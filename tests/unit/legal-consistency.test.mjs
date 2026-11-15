@@ -38,7 +38,7 @@ test('ordinary question publication remains opt-in and no current board comment 
   const privacy = await current('privacy.html');
   assert.match(privacy, /本ポリシーは、Streetboardgameの無料の通常版クイズ/);
   assert.match(privacy, /Googleの広告Cookie/);
-  assert.match(privacy, /myadcenter.google.com\/personalizationoff/);
+  assert.match(privacy, /myadcenter\.google\.com\/personalizationoff/);
 });
 
 test('the current content license retains user ownership and excludes unrelated AI training and third-party sales', async () => {

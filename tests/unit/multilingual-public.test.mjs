@@ -6,11 +6,22 @@ import { PUBLIC_LOCALES } from '../../src/generated/public-locales.js';
 import { readdir } from 'node:fs/promises';
 import { switchLocalePath, LOCALE_DETAILS } from '../../src/i18n/locales.js';
 
-const publicPages = ['/', '/challenge', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy'];
+// Remove markup until nothing changes (no nested leftovers).
+function visibleText(html) {
+  let text = html;
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]*>/g, '');
+  } while (text !== previous);
+  return text;
+}
+
+const publicPages = ['/','/challenge', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy'];
 test('new fixed public copy does not silently fall back to Japanese on English pages', async () => {
   for (const name of (await readdir('locale-pages')).filter(name => name.startsWith('en-') && name.endsWith('.html'))) {
     const html = await readFile('locale-pages/' + name, 'utf8');
-    const visibleCopy = html.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, '');
+    const visibleCopy = visibleText(html);
     assert.doesNotMatch(visibleCopy, /[ぁ-んァ-ヶ一-龠]/, name);
   }
 });
