@@ -17,9 +17,11 @@ const BLOCKING_CONTEXT_KEYS = Object.freeze([
 ]);
 
 const placementRequirements = Object.freeze({
+  // Quizzes have 1-10 questions (2026-11-15): every question must be answered.
   [AD_PLACEMENTS.RESULT_AFTER_DISPLAY]: (context) => (
     context.resultDisplayed === true
-    && Number(context.answeredQuestionCount) >= 10
+    && Number(context.answeredQuestionCount) >= 1
+    && Number(context.answeredQuestionCount) >= Number(context.totalQuestionCount ?? context.answeredQuestionCount)
   ),
   [AD_PLACEMENTS.LIBRARY_AFTER_LONG_BROWSE]: (context) => (
     context.libraryLongBrowseCompleted === true

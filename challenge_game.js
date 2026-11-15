@@ -33,6 +33,8 @@ import {
 } from './src/platform/share.js';
 import { createQuizFeedbackSoundPlayer } from './src/platform/quizFeedbackSound.js';
 import { renderNotebookQuestionCard } from './src/challenge/question-card.js';
+import { updateAdHost } from './src/ads/adsense.js';
+import { AD_PLACEMENTS } from './src/ads/placement-policy.js';
 import { localizedQuestionCard, wrapLocalizedText, editedQuestionValue } from './src/i18n/display-copy.js';
 import { buildQuestionConversationInsights } from './src/challenge/insights.js';
 import {
@@ -226,6 +228,62 @@ function render() {
     requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
   }
   lastQuestionViewportKey = questionViewportKey;
+  updateAdHost(app, currentAdCandidate(), translateText('広告'));
+}
+
+// The four approved ad scenes (docs/ADVERTISING_PLACEMENT_POLICY.md). The ad
+// sits after the whole game root: after the result, share controls and board.
+const LIBRARY_LONG_BROWSE_MS = 30_000;
+let libraryBrowseStartedAt = 0;
+let libraryLongBrowseCompleted = false;
+let libraryBrowseTimer = 0;
+let libraryScrollListener = null;
+function trackLibraryBrowse() {
+  if (state.mode !== 'library' || state.loading) {
+    libraryBrowseStartedAt = 0;
+    clearTimeout(libraryBrowseTimer);
+    if (libraryScrollListener) window.removeEventListener('scroll', libraryScrollListener);
+    libraryScrollListener = null;
+    return;
+  }
+  if (libraryBrowseStartedAt || libraryLongBrowseCompleted) return;
+  libraryBrowseStartedAt = Date.now();
+  const check = () => {
+    const scrolled = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight * 0.6;
+    if (libraryLongBrowseCompleted || !scrolled || Date.now() - libraryBrowseStartedAt < LIBRARY_LONG_BROWSE_MS) return;
+    libraryLongBrowseCompleted = true;
+    window.removeEventListener('scroll', libraryScrollListener);
+    libraryScrollListener = null;
+    if (state.mode === 'library') updateAdHost(app, currentAdCandidate(), translateText('広告'));
+  };
+  libraryScrollListener = check;
+  window.addEventListener('scroll', libraryScrollListener, { passive: true });
+  libraryBrowseTimer = setTimeout(check, LIBRARY_LONG_BROWSE_MS);
+}
+
+function currentAdCandidate() {
+  trackLibraryBrowse();
+  if (state.loading || state.editingQuestion) return null;
+  const blocking = {
+    isCreatingQuestions: ['creator-edit', 'creator-answer'].includes(state.mode),
+    isAnsweringQuestions: state.mode === 'participant-answer',
+  };
+  if (state.mode === 'result' && state.result) {
+    const answered = state.result.answers?.length || 0;
+    return { placement: AD_PLACEMENTS.RESULT_AFTER_DISPLAY, context: { ...blocking,
+      resultDisplayed: Boolean(state.resultImageUrl || state.resultImageError),
+      answeredQuestionCount: answered, totalQuestionCount: answered } };
+  }
+  if (state.mode === 'ranking' && state.room && state.ranking) {
+    return { placement: AD_PLACEMENTS.AFTER_UNDERSTANDING_BOARD, context: { ...blocking, understandingBoardViewed: true } };
+  }
+  if (state.mode === 'library') {
+    return { placement: AD_PLACEMENTS.LIBRARY_AFTER_LONG_BROWSE, context: { ...blocking, libraryLongBrowseCompleted } };
+  }
+  if (state.mode === 'create') {
+    return { placement: AD_PLACEMENTS.BEFORE_NEW_DIAGNOSIS, context: { ...blocking, beforeDiagnosisStart: true } };
+  }
+  return null;
 }
 
 function trackDailyResultAction(metric) {
