@@ -68,7 +68,7 @@ test('認証した審査待ちだけを安定した50件ページで読み、既
     const insert = db.prepare('INSERT INTO question_submissions VALUES(?,?,?,?,?,?,?,?,?,?,?)');
     for (let i = 1; i <= 1032; i++) insert.run(`00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, 'challenge', `isolated${i}`, `隔離お題${i}は？`, '["朝","昼","夕方","夜","いつでも"]', i === 1032 ? 'rejected' : 'pending', 1000, null, '未審査', null, 'synthetic-hash');
     const before = JSON.stringify(db.prepare('SELECT * FROM question_submissions ORDER BY submission_id').all());
-    const session = await createAdminSession(new Request('https://example.com/api/admin/session', { method: 'POST', headers: { 'x-live-admin-token': env.LIVE_ADMIN_TOKEN, 'x-live-admin-otp': await generateAdminTotp(env.LIVE_ADMIN_TOTP_SECRET) } }), env);
+    const session = await createAdminSession(new Request('https://example.com/api/questions/admin/session', { method: 'POST', headers: { 'x-live-admin-token': env.LIVE_ADMIN_TOKEN, 'x-live-admin-otp': await generateAdminTotp(env.LIVE_ADMIN_TOTP_SECRET) } }), env);
     const get = (query = '', authenticated = true) => handleQuestionApi(new Request('https://example.com/api/questions/admin/overview' + query, { headers: authenticated ? { cookie: session.cookie.split(';')[0] } : {} }), env, '/api/questions/admin/overview');
     assert.equal((await get('?submissionOffset=0', false)).status, 401);
     const first = await (await get('?submissionOffset=0&submissionLimit=999999')).json();

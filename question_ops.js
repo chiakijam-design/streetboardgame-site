@@ -182,7 +182,7 @@ function appendCachedRows(target, items, cache, rowHtml, bind) {
 }
 
 async function createAdminSession() {
-  const response = await fetch('/api/admin/session', {
+  const response = await fetch('/api/questions/admin/session', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',

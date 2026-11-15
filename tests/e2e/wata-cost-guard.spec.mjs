@@ -5,7 +5,7 @@ for(const status of [429,503])test(`read ${status} preserves edits, allows one r
   await context.route('**/*',r=>['127.0.0.1','localhost'].includes(new URL(r.request().url()).hostname)?r.continue():r.abort());
   let reads=0,writes=0;
   const second={...submission,id:'22222222-2222-4222-8222-222222222222'};
-  await page.route('**/api/admin/session',r=>r.fulfill({json:{csrfToken:'synthetic-only',trusted:true,expiresAt:Date.now()+900000}}));
+  await page.route('**/api/questions/admin/session',r=>r.fulfill({json:{csrfToken:'synthetic-only',trusted:true,expiresAt:Date.now()+900000}}));
   await page.route('**/api/questions/admin/overview*',r=>{reads++;return reads===1?r.fulfill({json:{catalog:[],reports:[],selectionStats:[],submissions:[submission,second],submissionPagination:{offset:0,limit:50,total:2}}}):r.fulfill({status,headers:{'retry-after':'60'},json:{error:status===429?'cost-guard-limit':'cost-guard-unavailable',retryAfter:60}});});
   await page.route('**/api/questions/admin/submissions/*/review',r=>{writes++;return r.fulfill({json:writes===1?{submissionId:id,status:'approved',catalogId:'LEGACY-ACK'}:{submissionId:second.id,status:'rejected',catalogId:null,question:null}});});
   await page.goto('/question-ops?analytics=exclude');
@@ -29,7 +29,7 @@ for(const status of [429,503])test(`read ${status} preserves edits, allows one r
 });
 test('first read denied does not expose an empty authenticated dashboard',async({page,context})=>{
   await context.route('**/*',r=>['127.0.0.1','localhost'].includes(new URL(r.request().url()).hostname)?r.continue():r.abort());
-  await page.route('**/api/admin/session',r=>r.fulfill({json:{csrfToken:'synthetic-only',trusted:true,expiresAt:Date.now()+900000}}));
+  await page.route('**/api/questions/admin/session',r=>r.fulfill({json:{csrfToken:'synthetic-only',trusted:true,expiresAt:Date.now()+900000}}));
   await page.route('**/api/questions/admin/overview*',r=>r.fulfill({status:503,json:{error:'cost-guard-unavailable'}}));
   await page.goto('/question-ops?analytics=exclude');await expect(page.locator('#authStatus')).toContainText('確認できない');await expect(page.locator('#dashboard')).toBeHidden();
 });
