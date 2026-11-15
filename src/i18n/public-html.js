@@ -1,5 +1,5 @@
 import { createCatalogTranslator, requireCompleteCatalog } from './catalog-core.js';
-import { LOCALE_DETAILS, TARGET_LOCALES, localeCanonicalPath, localeFromPath, switchLocalePath, stripLocalePrefix } from './locales.js';
+import { LOCALE_DETAILS, SEARCH_INDEXED_LOCALES, TARGET_LOCALES, localeCanonicalPath, localeFromPath, switchLocalePath, stripLocalePrefix } from './locales.js';
 import { LOCALE_SHELL_ASSET } from '../generated/locale-assets.js';
 import { rootPublicResource, rootPublicSourceSet } from './resource-paths.js';
 import { translateHomeEntryCopy } from './home-entry-copy.js';
@@ -27,7 +27,7 @@ export function safeScriptJson(value) {
 export function injectPublicLocaleShell(html, requestUrl, publicLocales) {
   const locale = localeFromPath(requestUrl.pathname);
   const canonical = origin + localeCanonicalPath(requestUrl.pathname, locale);
-  const links = publicLocales.map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('');
+  const links = publicLocales.filter((language) => SEARCH_INDEXED_LOCALES.includes(language)).map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('');
   const data = { publicLocales, entries: [], aliases: {}, catalog: { locale, messages: {}, provenance: { method: 'original', nativeReview: false } } };
   return html.replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
     .replace(/<\/head>/i, `<link rel="canonical" href="${canonical}">${links}<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}"><script>window.__WATACHAN_I18N__=${safeScriptJson(data)};</script><script defer src="${LOCALE_SHELL_ASSET}"></script></head>`);
@@ -91,7 +91,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   const canonical = origin + localeCanonicalPath(requestUrl.pathname, locale);
   output = output.replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
     .replace(/(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${canonical}"`);
-  const alternate = publicLocales.map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('');
+  const alternate = publicLocales.filter((language) => SEARCH_INDEXED_LOCALES.includes(language)).map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('');
   const publicData = { entries: data.entries, aliases: data.aliases, catalog: data.catalog, publicLocales };
   const additions = `<link rel="canonical" href="${canonical}">${alternate}<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}">`
     + `<style>html[lang="${locale}"] body{font-family:system-ui,sans-serif}html[dir=rtl] input,html[dir=rtl] textarea{direction:rtl}html[dir=rtl] [data-user-copy]{unicode-bidi:plaintext}button,a,p,h1,h2,h3{overflow-wrap:anywhere}html[lang="${locale}"] [data-testid=top-rules-title-line]{white-space:normal!important;overflow-wrap:anywhere}.challenge-result-share-button small span,.challenge-result-share-divider span{white-space:normal}.challenge-result-share-copy{max-width:100%}</style>`

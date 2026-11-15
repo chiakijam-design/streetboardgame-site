@@ -174,7 +174,7 @@ export function TopPage() {
       </nav>
       <p style={{ margin: '16px 24px 0', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         <span data-testid="top-free-notice" style={{ color: theme.white, fontSize: 13, fontWeight: 800, lineHeight: 1.8 }}>
-          通常版のクイズ作成・回答は無料です。
+          クイズ作成・回答は無料です。
         </span>
       </p>
       <SiteFooter />
@@ -1362,7 +1362,7 @@ function SiteFooter() {
     ['製品版', '/product'],
     ['利用規約', '/terms'],
     ['プライバシー', '/privacy'],
-    ['特商法表記', '/legal'],
+    ['運営者情報', '/legal'],
   ];
   return (
     <footer style={{ padding: '24px 20px 32px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '10px 18px', position: 'relative', zIndex: 1 }}>

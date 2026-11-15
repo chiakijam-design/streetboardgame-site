@@ -12,9 +12,10 @@ test('all locales remove obsolete LIVE refunds before asset/database work, inclu
 test('commerce information distinguishes free quiz from verified physical product seller and preserves contact',async()=>{
  const before=globalThis.fetch;globalThis.fetch=()=>{throw Error('External network forbidden');};
  try{for(const locale of PUBLIC_LOCALES){const prefix=locale==='ja'?'':'/'+locale,r=await worker.fetch(new Request('https://www.streetboardgame.com'+prefix+'/legal?analytics=exclude'),assets());assert.equal(r.status,200);const html=await r.text();
-  assert.match(html,/data-testid="free-quiz-information"/);assert.match(html,/data-testid="physical-product-commerce-information"/);
+  assert.match(html,/data-testid="free-quiz-information"/);assert.match(html,/data-testid="physical-product-information"/);
   assert.ok(html.includes(FREE_QUIZ_COPY[locale]),locale+' exact fixed free-service fact');
-  assert.match(html,/Chiaki Hirakawa/);assert.match(html,/StreetBoardGame/);assert.match(html,/href="https:\/\/www\.amazon\.co\.jp\/sp\?seller=A3QW758BCMIP1P"/);
+  // 2026-11-15: no direct sales, so /legal is the operator page (individual operator).
+  assert.match(html,/data-testid="operator-information"/);assert.match(html,locale==='ja'?/平川智章/:/Chiaki Hirakawa/);assert.doesNotMatch(html,/Tomoaki/);assert.match(html,/href="https:\/\/www\.amazon\.co\.jp\/sp\?seller=A3QW758BCMIP1P"/);
   assert.match(html,/nodeId=GKM69DUUYKQWKWX7/);assert.match(html,/https:\/\/www\.amazon\.co\.jp\/dp\/B0G87M4ZYK/);
   assert.doesNotMatch(html,/LIVEチャット|2,160×2,700px|480円|href="(?:\/[a-zA-Z-]+)?\/refund-policy"/);
   assert.match(html,/to=contact/);assert.match(html,new RegExp('rel="canonical" href="https://www.streetboardgame.com'+prefix+'/legal"'));
