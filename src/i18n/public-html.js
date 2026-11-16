@@ -73,6 +73,8 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
         if (Array.isArray(value)) return value.map((item) => localizeValue(item, key));
         if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, localizeValue(item, name)]));
         if (key === 'inLanguage') return locale;
+        // schema.org の型名・ID は訳さない（2026-11-16：es/pt で Game が Juego/Jogo になっていた）。
+        if (key.startsWith('@')) return value;
         if (typeof value !== 'string') return value;
         // Compare parsed origins, not string prefixes.
         let url = null;

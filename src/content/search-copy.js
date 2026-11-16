@@ -139,9 +139,14 @@ export function injectChallengeCopy(html, locale) {
   if (!html || !SEARCH_COPY[locale] || html.includes('data-wata-guide="challenge"')) return html;
   return beforeMainEnd(html, renderChallengeCopy(locale));
 }
+// お題ライブラリの見出しは /challenge と同じ文にせず「10問パック」にする（2026-11-16）。
+export function setLibraryHeading(html, locale) {
+  if (!html || !SEARCH_COPY[locale]) return html;
+  return html.replace(/(<div class="challenge-app-placeholder__hero"><h1>)[\s\S]*?(<\/h1>)/, `$1${escapeHtml(SEARCH_COPY[locale].ui.packListTitle)}$2`);
+}
 export function injectLibraryPackLinks(html, locale) {
-  if (!html || !SEARCH_COPY[locale] || html.includes('data-wata-guide="library"')) return html;
-  return beforeMainEnd(html, renderLibraryPackLinks(locale));
+  if (!html || !SEARCH_COPY[locale] || html.includes('data-wata-guide="library"')) return setLibraryHeading(html, locale);
+  return setLibraryHeading(beforeMainEnd(html, renderLibraryPackLinks(locale)), locale);
 }
 // Localized pages (en/es/pt) after translation: page is the path without the locale.
 export function injectSearchCopy(html, locale, page) {
