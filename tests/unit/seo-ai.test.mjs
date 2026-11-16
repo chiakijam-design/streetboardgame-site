@@ -18,7 +18,30 @@ const get = async (path) => (await worker.fetch(new Request('https://www.streetb
 const graph = (html) => [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].flatMap((m) => { const j = JSON.parse(m[1]); return j['@graph'] || [j]; });
 const types = (html) => graph(html).flatMap((node) => [].concat(node['@type']));
 const KNOWN = new Set(['Organization', 'WebSite', 'WebPage', 'SiteNavigationElement', 'WebApplication', 'Game', 'BreadcrumbList', 'FAQPage', 'CollectionPage']);
-const h1 = (html) => [...html.replace(/<script[\s\S]*?<\/script>/gi, '').matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => m[1].replace(/<br\s*\/?>/g, ' ').replace(/<[^>]+>/g, '').trim());
+// The page outside its script blocks, cut with indexOf (this only reads our own
+// test output; nothing is sanitized for display).
+function withoutScripts(html) {
+  let out = '';
+  let at = 0;
+  for (;;) {
+    const open = html.indexOf('<script', at);
+    if (open < 0) return out + html.slice(at);
+    out += html.slice(at, open);
+    const close = html.indexOf('</script', open);
+    if (close < 0) return out;
+    at = html.indexOf('>', close) + 1;
+  }
+}
+// Text of an element: drop tags character by character, a line break becomes a space.
+function textOf(fragment) {
+  let out = '';
+  let inTag = false;
+  for (const ch of fragment) {
+    if (ch === '<') { inTag = true; out += ' '; } else if (ch === '>') inTag = false; else if (!inTag) out += ch;
+  }
+  return out.split(/\s+/).filter(Boolean).join(' ');
+}
+const h1 = (html) => withoutScripts(html).split('<h1').slice(1).map((part) => textOf(part.slice(part.indexOf('>') + 1, part.indexOf('</h1>'))));
 
 test('schema.org types are never translated', async () => {
   for (const path of ['/', '/challenge', '/challenge-guide', '/challenge/library', '/en/', '/en/challenge', '/es/', '/es/challenge', '/pt/', '/pt/challenge', '/es/challenge-guide', '/pt/about']) {
@@ -39,7 +62,7 @@ test('the FAQ data matches the visible FAQ on the guide', async () => {
   const html = await get('/challenge-guide');
   const faq = graph(html).find((node) => node['@type'] === 'FAQPage');
   assert.equal(faq.mainEntity.length, 6);
-  const visible = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+  const visible = withoutScripts(html);
   for (const item of faq.mainEntity) {
     assert.ok(visible.includes(item.name), item.name);
     assert.ok(visible.includes(item.acceptedAnswer.text), item.acceptedAnswer.text);
