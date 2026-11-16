@@ -16,7 +16,8 @@ const env = { ASSETS: { async fetch(request) {
 const ORIGIN = 'https://www.streetboardgame.com';
 const get = (path) => worker.fetch(new Request(ORIGIN + path), env);
 const pick = (html, re) => (html.match(re) || [])[1] || '';
-const decode = (s) => s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+// &amp; last, so "&amp;lt;" stays "&lt;" (no double unescaping).
+const decode = (s) => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 
 test('archived legal pages link to archived copies instead of removed pages', async () => {
   const files = (await readdir(new URL('legal-history/', root))).filter((f) => f.endsWith('.html'));
