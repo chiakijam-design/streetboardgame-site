@@ -143,7 +143,7 @@ export default {
     'easy-first-meeting': {
       title: '10 perguntas fáceis para novos amigos',
       summary: 'Perguntas leves que qualquer um consegue chutar, mesmo depois de uma conversa só.',
-      description: 'Pacote do Quanto você me conhece? para quem acabou de se conhecer: o que você compraria na loja de conveniência, sua matéria favorita, o elogio que mais te alegra. Todas as perguntas e dicas.',
+      description: 'Pacote do Quanto você me conhece? para quem acabou de se conhecer: loja de conveniência, matéria favorita e o elogio preferido.',
       lead: 'Perguntas sem pressão para mandar para alguém que você conheceu semana passada.',
       body: [
         'São perguntas do dia a dia: o que você compraria numa loja de conveniência, qual era sua matéria favorita na escola, que tipo de livro você leria de verdade. Ninguém precisa contar nada muito pessoal, e mesmo assim um amigo novo consegue dar um bom chute.',
@@ -156,7 +156,7 @@ export default {
     'school-after-school': {
       title: '10 perguntas sobre a escola e depois das aulas',
       summary: 'Eventos da escola, matéria favorita e o que você faz quando está atrasado.',
-      description: 'Pacote do Quanto você me conhece? sobre a vida escolar: matéria favorita, eventos da escola, o que você faz quando vai se atrasar e como toma decisões. Todas as perguntas e dicas para a turma.',
+      description: 'Pacote do Quanto você me conhece? sobre a escola: matéria favorita, eventos da escola e o que você faz quando se atrasa.',
       lead: 'Para quem dividiu sala, recreio ou treino com você.',
       body: [
         'Qual evento da escola você mais esperava, o que você faz quando percebe que vai se atrasar, qual matéria você curtia de verdade. Colegas passam horas juntos todo dia e mesmo assim erram essas perguntas, e é isso que deixa o pacote divertido.',
@@ -169,7 +169,7 @@ export default {
     'food-preferences': {
       title: '10 perguntas sobre preferências alimentares',
       summary: 'Lanche da madrugada, comida de festa e a textura que você não suporta.',
-      description: 'Pacote do Quanto você me conhece? sobre comida: lanche da madrugada, comida de aniversário, doces e a textura que você menos gosta. Todas as perguntas e dicas para puxar assunto.',
+      description: 'Pacote do Quanto você me conhece? sobre comida: lanche da madrugada, comida de aniversário e a textura que você menos gosta.',
       lead: 'Todo mundo tem opinião sobre comida, por isso é o pacote mais fácil para começar.',
       body: [
         'Seu lanche da madrugada, o doce que você escolheria, a textura que você não suporta de jeito nenhum. Quem come com você sempre tem certeza de que sabe essas respostas. Com este pacote, dá para provar.',
@@ -182,7 +182,7 @@ export default {
     'my-manual': {
       title: '10 perguntas para o meu manual pessoal',
       summary: 'Como você decide, o que valoriza num melhor amigo e a tarefa de casa que evita.',
-      description: 'Pacote do Quanto você me conhece? que funciona como um manual de instruções seu: como você decide, o que valoriza num melhor amigo, o elogio que mais te toca. Todas as perguntas e dicas.',
+      description: 'Pacote do Quanto você me conhece? como seu manual de instruções: como você decide, o que valoriza num amigo e o elogio certo.',
       lead: 'Seu manual de instruções, em formato de quiz.',
       body: [
         'Como você costuma tomar uma decisão, o que mais valoriza num melhor amigo, que elogio realmente te toca. São coisas que quase nunca dizemos em voz alta, mas que ficam fáceis de compartilhar como respostas de um quiz.',
@@ -195,7 +195,7 @@ export default {
     'unexpected-side': {
       title: '10 perguntas que revelam um lado surpreendente',
       summary: 'Seu papel num RPG, seu elemento e a vida que você testaria por uma semana.',
-      description: 'Pacote do Quanto você me conhece? com perguntas divertidas que revelam um lado surpreendente: seu papel num RPG, seu elemento, o que faria primeiro se ganhasse na loteria. Todas as perguntas e dicas.',
+      description: 'Pacote do Quanto você me conhece? com perguntas divertidas: seu papel num RPG, seu elemento e o que faria ao ganhar na loteria.',
       lead: 'Perguntas divertidas que mostram como os outros te veem e como você se vê.',
       body: [
         'Que papel você teria num RPG? Que elemento combina com você? Que vida você experimentaria por uma semana? Essas perguntas chegam na sua personalidade por um caminho que a conversa normal nunca pega.',
@@ -208,7 +208,7 @@ export default {
     'holiday-outings': {
       title: '10 perguntas sobre dias de folga e passeios',
       summary: 'Atividades novas, compras em festival e a sua função numa viagem em grupo.',
-      description: 'Pacote do Quanto você me conhece? sobre dias de folga: a atividade nova que você testaria, sua função numa viagem em grupo, como competiria com os amigos. Todas as perguntas e dicas para planejar juntos.',
+      description: 'Pacote do Quanto você me conhece? sobre dias de folga: uma atividade nova, sua função numa viagem em grupo e como compete.',
       lead: 'Um pacote que costuma terminar em "bora fazer isso de verdade".',
       body: [
         'Como você competiria com os amigos, que tarefa assumiria numa viagem, que atividade nova experimentaria. O jeito como alguém passa a folga diz muito, e quem já saiu com você pode se apoiar em lembranças de verdade.',
@@ -221,7 +221,7 @@ export default {
     'smartphone-social-fandom': {
       title: '10 perguntas sobre celulares, redes sociais e interesses',
       summary: 'O que você printa, o que você salva e sobre o que falaria sem parar.',
-      description: 'Pacote do Quanto você me conhece? sobre celular e interesses: o app que você abre no tédio, o que você printa, sobre o que falaria sem parar. Todas as perguntas e dicas para trocar indicações.',
+      description: 'Pacote do Quanto você me conhece? sobre celular e interesses: o app do tédio, o que você printa e do que falaria sem parar.',
       lead: 'Você usa o celular o dia inteiro. Seus amigos sabem como?',
       body: [
         'O app que você abre quando está entediado, o que você sempre acaba printando, o que tem mais chance de salvar. As pessoas ao seu redor te veem no celular o tempo todo, então acham que essas perguntas são fáceis. Muitas vezes não são.',
@@ -234,7 +234,7 @@ export default {
     'values-future': {
       title: '10 perguntas sobre valores e o futuro',
       summary: 'Com o que você gastaria, o que valoriza num amigo e o que faria se ganhasse na loteria.',
-      description: 'Pacote do Quanto você me conhece? sobre valores e futuro: com o que você prefere gastar, o que tornaria grátis para sempre, o que valoriza num melhor amigo. Ideal para uma segunda rodada.',
+      description: 'Pacote do Quanto você me conhece? sobre valores e futuro: com o que gastaria e o que valoriza num amigo. Para a segunda rodada.',
       lead: 'Um pacote mais profundo para a segunda vez que você joga com alguém.',
       body: [
         'Com o que você prefere gastar dinheiro, o que tornaria grátis para sempre, o que mais valoriza num amigo. Algumas levam um tempinho para responder, e é por isso que a conversa depois vale a pena.',
@@ -247,7 +247,7 @@ export default {
     'memories-past': {
       title: '10 perguntas sobre memórias e o meu eu de antes',
       summary: 'Obsessões antigas, eventos da escola e o que você sempre guarda.',
-      description: 'Pacote do Quanto você me conhece? sobre memórias: o que te deixava obcecado antes, seu evento favorito da escola, o que você sempre guarda. Todas as perguntas e dicas para contar histórias.',
+      description: 'Pacote do Quanto você me conhece? sobre memórias: antigas obsessões, seu evento favorito da escola e o que você sempre guarda.',
       lead: 'Acertando ou não, cada resposta vem com uma história.',
       body: [
         'O que te deixava obcecado antes, qual evento da escola você mais curtia, o que você tem mais chance de guardar. Por trás de cada resposta quase sempre existe uma história que vale a pena contar.',

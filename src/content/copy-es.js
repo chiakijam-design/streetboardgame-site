@@ -143,7 +143,7 @@ export default {
     'easy-first-meeting': {
       title: '10 preguntas fáciles para nuevos amigos',
       summary: 'Preguntas ligeras que cualquiera puede adivinar, aunque se conozcan de hace poco.',
-      description: 'Paquete de ¿Cuánto me conoces? para personas que se acaban de conocer: qué comprarías en la tienda, tu materia favorita, el cumplido que más te alegra. Todas las preguntas y consejos para jugar.',
+      description: 'Paquete de ¿Cuánto me conoces? para quienes se acaban de conocer: compras en la tienda, materia favorita y tu cumplido ideal.',
       lead: 'Preguntas sin presión para mandarle a alguien que conociste la semana pasada.',
       body: [
         'Son preguntas sobre la vida diaria: qué comprarías en una tienda de conveniencia, cuál era tu materia favorita, qué tipo de libro leerías de verdad. Nadie tiene que contar nada muy personal, y aun así un amigo nuevo puede hacer una buena apuesta.',
@@ -156,7 +156,7 @@ export default {
     'school-after-school': {
       title: '10 preguntas sobre la escuela y después de clase',
       summary: 'Eventos escolares, materias favoritas y qué haces cuando vas tarde.',
-      description: 'Paquete de ¿Cuánto me conoces? sobre la vida escolar: materia favorita, eventos de la escuela, qué haces cuando vas tarde y cómo tomas decisiones. Todas las preguntas y consejos para compañeros.',
+      description: 'Paquete de ¿Cuánto me conoces? sobre la escuela: materia favorita, eventos escolares y qué haces cuando vas tarde.',
       lead: 'Para quienes compartieron salón, recreo o entrenamientos contigo.',
       body: [
         'Qué evento escolar esperabas con más ganas, qué haces cuando sabes que vas a llegar tarde, qué materia te gustaba en serio. Los compañeros pasan horas juntos todos los días y aun así fallan estas preguntas, y eso es lo divertido.',
@@ -169,7 +169,7 @@ export default {
     'food-preferences': {
       title: '10 preguntas sobre gustos culinarios',
       summary: 'Antojos de noche, comida de feria y la textura que no soportas.',
-      description: 'Paquete de ¿Cuánto me conoces? sobre comida: antojos nocturnos, comida de cumpleaños, dulces favoritos y la textura que menos te gusta. Todas las preguntas y consejos para iniciar la conversación.',
+      description: 'Paquete de ¿Cuánto me conoces? sobre comida: antojos nocturnos, comida de cumpleaños y la textura que menos te gusta.',
       lead: 'Todos tenemos opiniones sobre la comida; por eso es el paquete más fácil para empezar.',
       body: [
         'Tu antojo de medianoche, el dulce que elegirías, la textura que de plano no soportas. Quienes comen contigo seguido están seguros de saber estas respuestas. Con este paquete pueden comprobarlo.',
@@ -182,7 +182,7 @@ export default {
     'my-manual': {
       title: '10 preguntas para mi manual personal',
       summary: 'Cómo decides, qué valoras en un mejor amigo y la tarea de la casa que evitas.',
-      description: 'Paquete de ¿Cuánto me conoces? que funciona como tu manual de uso: cómo tomas decisiones, qué valoras en tu mejor amigo, el cumplido que más te llega. Todas las preguntas y consejos.',
+      description: 'Paquete de ¿Cuánto me conoces? como tu manual de uso: cómo decides, qué valoras en tu mejor amigo y el cumplido que te llega.',
       lead: 'Tu manual de instrucciones, en forma de quiz.',
       body: [
         'Cómo sueles tomar una decisión, qué valoras más en tu mejor amigo, qué cumplido te llega de verdad. Son cosas que casi nunca decimos en voz alta, pero que resultan fáciles de compartir como respuestas de un quiz.',
@@ -195,7 +195,7 @@ export default {
     'unexpected-side': {
       title: '10 preguntas para descubrir una faceta sorprendente',
       summary: 'Tu papel en un juego de rol, tu elemento y la vida que probarías una semana.',
-      description: 'Paquete de ¿Cuánto me conoces? con preguntas juguetonas que muestran una faceta sorprendente: tu papel en un juego de rol, tu elemento, qué harías si ganaras la lotería. Todas las preguntas y consejos.',
+      description: 'Paquete de ¿Cuánto me conoces? con preguntas juguetonas: tu papel en un juego de rol, tu elemento y qué harías con la lotería.',
       lead: 'Preguntas juguetonas que muestran cómo te ven los demás y cómo te ves tú.',
       body: [
         '¿Qué papel tendrías en un juego de rol? ¿Qué elemento va contigo? ¿Qué vida probarías durante una semana? Estas preguntas llegan a tu personalidad por un camino que una charla normal nunca toma.',
@@ -208,7 +208,7 @@ export default {
     'holiday-outings': {
       title: '10 preguntas sobre días libres y salidas',
       summary: 'Actividades nuevas, compras en ferias y tu papel en un viaje en grupo.',
-      description: 'Paquete de ¿Cuánto me conoces? sobre días libres: la actividad nueva que probarías, tu tarea en un viaje en grupo, cómo competirías con tus amigos. Todas las preguntas y consejos para planear juntos.',
+      description: 'Paquete de ¿Cuánto me conoces? sobre días libres: una actividad nueva, tu tarea en un viaje en grupo y cómo compites.',
       lead: 'Un paquete que suele terminar en «listo, hay que hacerlo».',
       body: [
         'Cómo competirías con tus amigos, qué tarea asumirías en un viaje, qué actividad nueva probarías. La forma en que alguien pasa su día libre dice mucho, y quienes ya salieron contigo pueden apoyarse en recuerdos reales.',
@@ -221,7 +221,7 @@ export default {
     'smartphone-social-fandom': {
       title: '10 preguntas sobre celulares, redes sociales y aficiones',
       summary: 'Lo que capturas, lo que guardas y de qué podrías hablar sin parar.',
-      description: 'Paquete de ¿Cuánto me conoces? sobre el celular y tus aficiones: la app que abres cuando te aburres, de qué haces capturas, de qué podrías hablar sin parar. Todas las preguntas y consejos.',
+      description: 'Paquete de ¿Cuánto me conoces? sobre el celular y aficiones: la app que abres al aburrirte y de qué hablarías sin parar.',
       lead: 'Usas el celular todo el día. ¿Tus amigos saben cómo?',
       body: [
         'La aplicación que abres cuando te aburres, lo que siempre terminas capturando, lo que más probablemente guardas. La gente a tu alrededor te ve con el celular todo el tiempo, así que cree que estas preguntas son fáciles. Muchas veces no lo son.',
@@ -234,7 +234,7 @@ export default {
     'values-future': {
       title: '10 preguntas sobre valores y el futuro',
       summary: 'En qué gastarías, qué valoras en un amigo y qué harías si ganaras la lotería.',
-      description: 'Paquete de ¿Cuánto me conoces? sobre valores y futuro: en qué preferirías gastar, qué harías gratis toda la vida, qué valoras en tu mejor amigo. Ideal para una segunda ronda.',
+      description: 'Paquete de ¿Cuánto me conoces? sobre valores y futuro: en qué gastarías y qué valoras en un amigo. Ideal para una segunda ronda.',
       lead: 'Un paquete más profundo para la segunda vez que juegas con alguien.',
       body: [
         'En qué preferirías gastar dinero, qué harías gratis toda la vida, qué valoras más en un amigo. Algunas toman un momento para responder, y por eso la conversación que viene después vale la pena.',
@@ -247,7 +247,7 @@ export default {
     'memories-past': {
       title: '10 preguntas sobre recuerdos y mi yo de antes',
       summary: 'Viejas obsesiones, eventos escolares y lo que siempre guardas.',
-      description: 'Paquete de ¿Cuánto me conoces? sobre recuerdos: qué te obsesionaba antes, tu evento escolar favorito, lo que siempre guardas. Todas las preguntas y consejos para compartir anécdotas.',
+      description: 'Paquete de ¿Cuánto me conoces? sobre recuerdos: qué te obsesionaba antes, tu evento escolar favorito y lo que siempre guardas.',
       lead: 'Aciertes o no, cada respuesta trae una historia.',
       body: [
         'Qué te obsesionaba antes, qué evento escolar disfrutabas más, qué es lo que más probablemente guardas. Detrás de cada respuesta casi siempre hay una anécdota que vale la pena contar.',

@@ -143,7 +143,7 @@ export default {
     'easy-first-meeting': {
       title: '10 easy questions for new friends',
       summary: 'Light, low-pressure questions anyone can guess, even after one conversation.',
-      description: 'A Know Me Quiz pack for people who have only just met: convenience-store snacks, favorite school subjects, the compliment that makes your day. See every question and tips for playing.',
+      description: 'A Know Me Quiz pack for people who just met: convenience-store snacks, favorite subjects, the compliment you love most.',
       lead: 'Low-pressure questions you can send to someone you met last week.',
       body: [
         'These questions ask about everyday things: what you would grab at a convenience store, your favorite subject at school, the kind of book you would actually read. Nobody has to share anything personal, and a new friend can still make a reasonable guess.',
@@ -156,7 +156,7 @@ export default {
     'school-after-school': {
       title: '10 school and after-school questions',
       summary: 'School events, favorite subjects and what you do when you are running late.',
-      description: 'A Know Me Quiz pack about school life: favorite subjects and school events, what you do when you are late, how you make decisions. Every question plus tips for classmates.',
+      description: 'A Know Me Quiz pack about school life: favorite subjects, school events, what you do when you are late. Tips included.',
       lead: 'For people who shared classrooms, lunch tables or club practice with you.',
       body: [
         'Which school event you looked forward to, what you do when you are about to be late, which subject you actually liked. Classmates spend hours together every day and still guess these wrong, which is what makes the pack fun.',
@@ -169,7 +169,7 @@ export default {
     'food-preferences': {
       title: '10 questions about food preferences',
       summary: 'Late-night snacks, festival food and the texture you cannot stand.',
-      description: 'A Know Me Quiz pack about food: late-night snacks, birthday meals, festival treats and the texture you hate most. See every question and tips for starting conversations.',
+      description: 'A Know Me Quiz pack about food: late-night snacks, birthday meals, festival treats and the texture you hate most.',
       lead: 'Everyone has opinions about food, which makes this the easiest pack to start with.',
       body: [
         'Your go-to late-night snack, the treat that would make your day, the texture you cannot stand. People who eat with you all the time feel sure they know these answers. This pack lets them prove it.',
@@ -182,7 +182,7 @@ export default {
     'my-manual': {
       title: '10 questions for my personal manual',
       summary: 'How you decide, what you need from a best friend, the chore you avoid.',
-      description: 'A Know Me Quiz pack that works like a user manual for you: how you make decisions, what you value in a best friend, the compliment that lands. Every question plus tips for close friends.',
+      description: 'A Know Me Quiz pack that works like your user manual: how you decide, what you value in a best friend, compliments.',
       lead: 'A user manual for you, delivered as a quiz.',
       body: [
         'How you usually make a decision, what you need most from a best friend, the compliment that actually lands. These are things people rarely say out loud, but they are easy to share as quiz answers.',
@@ -195,7 +195,7 @@ export default {
     'unexpected-side': {
       title: '10 questions that reveal a surprising side',
       summary: 'Your RPG role, your element, a week in someone else\'s life.',
-      description: 'A Know Me Quiz pack with playful questions that reveal a surprising side: which RPG role you would be, which element fits you, which life you would try for a week. Every question plus tips.',
+      description: 'A Know Me Quiz pack of playful questions: your RPG role, the element that fits you, the life you would try for a week.',
       lead: 'Playful questions that show how people see you, and how that compares with how you see yourself.',
       body: [
         'Which RPG role would you be? Which element fits you? Which life would you try for a week? These questions come at your personality from an angle that normal conversation never does.',
@@ -208,7 +208,7 @@ export default {
     'holiday-outings': {
       title: '10 questions about days off and outings',
       summary: 'New activities, festival buys and your job on a group trip.',
-      description: 'A Know Me Quiz pack about days off: the new activity you would try, your job on a group trip, how you would compete with friends. See every question and tips for planning together.',
+      description: 'A Know Me Quiz pack about days off: a new activity to try, your job on a group trip, how you compete with friends.',
       lead: 'A pack whose reveal tends to end with "okay, let\'s actually do that."',
       body: [
         'How you would compete with friends, which job you would take on during a trip, what new activity you would try. The way someone spends a free day says a lot about them, and friends who have gone out with you can draw on real memories.',
@@ -221,7 +221,7 @@ export default {
     'smartphone-social-fandom': {
       title: '10 questions about phones, social media, and fandoms',
       summary: 'What you screenshot, what you save and what you could talk about forever.',
-      description: 'A Know Me Quiz pack about phones and fandoms: the app you open when bored, what you screenshot, what you could talk about forever. Every question plus tips for sharing favorites.',
+      description: 'A Know Me Quiz pack about phones and fandoms: the app you open when bored, what you screenshot, your endless topic.',
       lead: 'You use your phone all day. Do your friends know how?',
       body: [
         'The app you open when you are bored, the thing you always screenshot, what you are most likely to save. People around you see you on your phone constantly, so they assume these are easy. They are often not.',
@@ -234,7 +234,7 @@ export default {
     'values-future': {
       title: '10 questions about values and the future',
       summary: 'What you would spend on, what matters in a friend, life after a lottery win.',
-      description: 'A Know Me Quiz pack about values and the future: what you would rather spend money on, what you would make free for life, what matters in a best friend. Best for a second round.',
+      description: 'A Know Me Quiz pack about values and the future: what you would spend on, what matters in a best friend. For round two.',
       lead: 'A deeper pack for the second time you play with someone.',
       body: [
         'What you would rather spend money on, what you would make free for life, what matters most to you in a friend. Some of these take a moment to answer, and that is what makes the conversation afterwards worth having.',
@@ -247,7 +247,7 @@ export default {
     'memories-past': {
       title: '10 questions about memories and my younger self',
       summary: 'Old obsessions, school events, the things you still keep.',
-      description: 'A Know Me Quiz pack about memories: what you used to be obsessed with, your favorite school event, the things you always keep. See every question and tips for sharing stories.',
+      description: 'A Know Me Quiz pack about memories: old obsessions, your favorite school event, the things you always keep. Tips included.',
       lead: 'Right or wrong, every answer here comes with a story.',
       body: [
         'What you used to be obsessed with, which school event you loved, what you are most likely to keep. Behind each answer there is usually an episode worth telling.',

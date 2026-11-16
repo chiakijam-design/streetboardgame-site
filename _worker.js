@@ -150,7 +150,13 @@ async function handleRequest(request, env) {
       let body = response.body;
       if (response.ok && /text\/html/i.test(headers.get('content-type') || '')) {
         const notice = '<aside style="max-width:68rem;margin:1rem auto;padding:1rem;background:#fff5d0;border:2px solid #333;line-height:1.8;font-family:sans-serif"><strong>改定前の版</strong><p>これは改定前の版です。現在の内容は各ページをご覧ください。</p><a href="/challenge">無料クイズ</a> / <a href="/contact">お問い合わせフォーム</a></aside>';
-        body = (await response.text()).replace(/<body\b[^>]*>/i, '$&' + notice);
+        // 2026-11-17: /creator-terms and /refund-policy are gone (410). Links to
+        // them inside an archived version point to the archived copy of the same
+        // period instead (the archive files themselves stay byte-identical).
+        const era = /^\/legal-history\/2026-10-23-/.test(path) ? '2026-10-23-' : '';
+        body = (await response.text())
+          .replace(/(href="|"url":")((?:https:\/\/www\.streetboardgame\.com)?)\/(creator-terms|refund-policy)"/g, (match, attr, origin, page) => `${attr}${origin}/legal-history/${era}${page}.html"`)
+          .replace(/<body\b[^>]*>/i, '$&' + notice);
       }
       return new Response(request.method === 'HEAD' ? null : body, { status: response.status, headers });
     }
