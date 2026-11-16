@@ -50,16 +50,19 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
   assert.equal(lastModifiedDates.every((date) => date <= todayInJapan), true);
   const lastModifiedByUrl = new Map(locations.map((location, index) => [location, lastModifiedDates[index]]));
   for (const updatedUrl of [
-    'https://www.streetboardgame.com/',
-    'https://www.streetboardgame.com/challenge',
     'https://www.streetboardgame.com/terms',
-    'https://www.streetboardgame.com/en/challenge',
     'https://www.streetboardgame.com/en/terms',
   ]) {
     const expectedDate = '2026-10-23';
     assert.equal(lastModifiedByUrl.get(updatedUrl), expectedDate, updatedUrl);
   }
-  assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/challenge/library'), '2026-11-12');
+  // 2026-11-16: reading copy on the top and /challenge, one heading per pack list.
+  for (const updatedUrl of [
+    'https://www.streetboardgame.com/',
+    'https://www.streetboardgame.com/challenge',
+    'https://www.streetboardgame.com/en/challenge',
+    'https://www.streetboardgame.com/challenge/library',
+  ]) assert.equal(lastModifiedByUrl.get(updatedUrl), '2026-11-16', updatedUrl);
   // 2026-11-14: contact form moved from Formspree to our own intake and Resend.
   assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/privacy'), '2026-11-14');
   assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/en/privacy'), '2026-11-14');

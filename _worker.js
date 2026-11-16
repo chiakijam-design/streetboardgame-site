@@ -9,7 +9,8 @@ import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.j
 import { questionPacks } from './src/challenge/packs.js';
 import { injectLibraryCatalog, removeLibraryCatalog } from './src/challenge/library-catalog.js';
 import { personalizeRoomPage } from './src/challenge/share-meta.js';
-import { injectChallengeCopy, injectHomeCopy, injectSearchCopy, matchPackPage, renderPackPage, SEARCH_COPY_LOCALES } from './src/content/search-copy.js';
+import { BOARD_COPY } from './src/i18n/challenge-board-copy.js';
+import { injectChallengeCopy, injectHomeCopy, injectSearchCopy, matchPackPage, setLibraryHeading, renderPackPage, SEARCH_COPY_LOCALES } from './src/content/search-copy.js';
 import { localeFromPath, stripLocalePrefix, SEARCH_INDEXED_LOCALES as SEARCH_LOCALE_LIST } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
@@ -363,7 +364,7 @@ async function handleRequest(request, env) {
       }
       const html = request.method === 'HEAD' ? null : await response.text();
       const localizedBody = html && path === '/challenge/library'
-        ? injectLibraryCatalog(applyChallengeLibraryMeta(html))
+        ? setLibraryHeading(injectLibraryCatalog(applyChallengeLibraryMeta(html)), 'ja')
         : html && path === '/challenge'
           ? injectChallengeCopy(applyChallengeShareMeta(html, url), 'ja')
           : html;
@@ -445,18 +446,31 @@ async function handleRequest(request, env) {
         pageId: CANONICAL_ORIGIN + '/challenge-guide#webpage',
         noscriptTitle: 'みんなに挑戦してもらう｜1〜10問クイズの遊び方',
         noscriptBody: '自分が先に1〜10問へ回答し、発行された専用URLを参加者へ送ると、最大50人があなたの答えを予想できます。',
+        // 画面の「よくある質問」と同じ6問・同じ文（2026-11-16）。
         faq: [
           {
-            question: 'どうやってクイズを作りますか？',
-            answer: '出題者名を入力して1〜10問へ回答すると、挑戦者へ送る専用URLが発行されます。',
+            question: 'どうやって理解度診断を作りますか？',
+            answer: '共通のお題から1問ずつ選び、自分の正解を登録して1〜10問を完成させます。問題文と5つの選択肢は編集でき、自分で問題を作ることもできます。',
           },
           {
             question: '何人まで挑戦できますか？',
-            answer: '1つのクイズに最大50人まで挑戦できます。',
+            answer: '1つの理解度診断へ最大50人まで参加できます。回答する人は、届いた参加URLから自分のスマホで1〜10問へ回答します。',
           },
           {
             question: '無料で遊べますか？',
             answer: 'クイズ作成、参加URL・QRコードの共有、1〜10問の答え合わせ、答え合わせレポートを無料で利用できます。',
+          },
+          {
+            question: '点数は必ず公開されますか？',
+            answer: BOARD_COPY.ja.notice,
+          },
+          {
+            question: 'スマホ以外でも遊べますか？',
+            answer: 'パソコンやタブレットのブラウザーでも遊べます。アプリのインストールや会員登録は必要ありません。',
+          },
+          {
+            question: 'クイズはいつまで遊べますか？',
+            answer: '作成から30日たつと、クイズと参加情報は自動で削除されます。',
           },
         ],
       },

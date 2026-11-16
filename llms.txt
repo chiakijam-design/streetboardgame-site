@@ -1,0 +1,42 @@
+# わたし理解度診断（Know Me Quiz）
+
+> 友達が自分のことをどれだけ分かっているかを当て合う、無料のブラウザークイズです。出題者が1〜10問を選んで先に自分の答えを登録し、発行された参加URLを送ると、1つのクイズに最大50人が答えを予想できます。会員登録やアプリのインストールは不要です。運営は Streetboardgame（運営者：平川智章）。
+
+A free browser quiz about how well your friends know you. The creator picks 1–10 questions, answers them first, and shares the link; up to 50 people can guess the creator's answers. No sign-up or app install. Operator: Chiaki Hirakawa. Search-indexed languages: Japanese (default), English, Spanish and Brazilian Portuguese.
+
+## 遊び方 / How it works
+
+- [トップ](https://www.streetboardgame.com/): 名前を入れてすぐにクイズを作れます。
+- [クイズを作る](https://www.streetboardgame.com/challenge): 1〜10問を選び、自分の正解を登録して参加URLを発行します。
+- [遊び方・作り方とよくある質問](https://www.streetboardgame.com/challenge-guide): 問題の選び方、URL・QRコードの送り方、結果の見方、よくある質問。
+- [About](https://www.streetboardgame.com/about): コンセプト、理解度ボードのしくみ、問い合わせ方法。
+- [English guide](https://www.streetboardgame.com/en/challenge-guide): How to create, share and read the results, with FAQ.
+
+## 10問パック / Question packs
+
+- [10問パックの一覧](https://www.streetboardgame.com/challenge/library)
+- [初対面でも答えやすい10問](https://www.streetboardgame.com/challenge/library/easy-first-meeting)
+- [学校・放課後の10問](https://www.streetboardgame.com/challenge/library/school-after-school)
+- [食べものの好み10問](https://www.streetboardgame.com/challenge/library/food-preferences)
+- [わたしのトリセツ10問](https://www.streetboardgame.com/challenge/library/my-manual)
+- [意外な一面が分かる10問](https://www.streetboardgame.com/challenge/library/unexpected-side)
+- [休日とおでかけの10問](https://www.streetboardgame.com/challenge/library/holiday-outings)
+- [スマホ・SNS・推しの10問](https://www.streetboardgame.com/challenge/library/smartphone-social-fandom)
+- [価値観と未来の10問](https://www.streetboardgame.com/challenge/library/values-future)
+- [思い出と昔の自分10問](https://www.streetboardgame.com/challenge/library/memories-past)
+- [English packs](https://www.streetboardgame.com/en/challenge/library)
+
+## 他の言語 / Other languages
+
+- [English](https://www.streetboardgame.com/en/)
+- [Español](https://www.streetboardgame.com/es/)
+- [Português (Brasil)](https://www.streetboardgame.com/pt/)
+
+## 決まりごと / Policies
+
+- [利用規約](https://www.streetboardgame.com/terms)
+- [プライバシーポリシー](https://www.streetboardgame.com/privacy)
+- [コンテンツ・肖像権ガイドライン](https://www.streetboardgame.com/content-guidelines)
+- [未成年者利用規定](https://www.streetboardgame.com/minor-policy)
+- [運営者情報](https://www.streetboardgame.com/legal)
+- [製品版（カードで遊ぶボードゲーム）](https://www.streetboardgame.com/product)
