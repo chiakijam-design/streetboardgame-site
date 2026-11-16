@@ -75,7 +75,8 @@ test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and li
     if (indexed) assert.doesNotMatch(response.headers.get('x-robots-tag') || '', /noindex/, route);
     else assert.equal(response.headers.get('x-robots-tag'), 'noindex, follow', route);
   }
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 44);
+  // 44 stable pages plus the 36 pack pages (9 packs x ja/en/es/pt, 2026-11-16).
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 80);
   for (const [, location] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
     assert.doesNotMatch(location, /[?#]|\/manage|\/ranking|\/remote/);
   }

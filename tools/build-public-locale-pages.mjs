@@ -33,8 +33,9 @@ async function listFiles(dir) {
   return files;
 }
 // Client bundles escape non-ASCII text, so compare against the decoded source.
+// src/content/ holds original copy per search language; it is never translated.
 const sharedRuntimeFiles = (await listFiles('src/'))
-  .filter((file) => file.endsWith('.js') && !file.startsWith('src/live/') && !file.startsWith('src/generated/'));
+  .filter((file) => file.endsWith('.js') && !file.startsWith('src/live/') && !file.startsWith('src/generated/') && !file.startsWith('src/content/'));
 const sharedRuntimeText = (await Promise.all([...sharedRuntimeFiles, '_worker.js']
   .map(async (file) => unescapeScriptText(await readFile(new URL(file, root), 'utf8'))))).join('\n');
 const scriptTextCache = new Map();

@@ -64,7 +64,7 @@ export function localizeDom(root = document) {
   const nodes = [];
   while (walker.nextNode()) nodes.push(walker.currentNode);
   nodes.forEach((node) => {
-    if (node.parentElement?.closest('script,style,[data-user-copy]')) return;
+    if (node.parentElement?.closest('script,style,[data-user-copy],[data-native-copy]')) return;
     const translated = translateText(node.nodeValue);
     if (translated !== node.nodeValue) node.nodeValue = translated;
   });

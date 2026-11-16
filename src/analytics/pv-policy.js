@@ -2,7 +2,9 @@ import {JP_BASIC_DESCRIPTION} from './jp-ga4-policy.js';
 import {pvCopy} from './pv-copy.js';
 import {PV_NOTICE_COPY,PV_STOP_COPY,PV_NOTICE_DETAILS,PV_NOTICE_REUSE} from './pv-notice-copy.js';
 import {PASSIVE_SCOPE,GOOGLE_OFF} from './passive-policy.js';
-const PUBLIC_PATHS=new Set(['/','/challenge','/challenge/library','/challenge/ranking','/challenge-guide','/about','/product','/terms','/privacy','/legal','/content-guidelines','/minor-policy']);
+import {questionPacks} from '../challenge/packs.js';
+// Pack pages (/challenge/library/<pack>) were added on 2026-11-16.
+const PUBLIC_PATHS=new Set(['/','/challenge','/challenge/library','/challenge/ranking','/challenge-guide','/about','/product','/terms','/privacy','/legal','/content-guidelines','/minor-policy',...questionPacks(false).map(pack=>'/challenge/library/'+pack.slug)]);
 export function pvPublicPath(path,locales){const parts=path.split('/').filter(Boolean);if(locales.includes(parts[0]))parts.shift();const route=parts.length?'/'+parts.join('/'):'/';return PUBLIC_PATHS.has(route)?route:null;}
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const json=value=>JSON.stringify(value).replace(/[<>&\u2028\u2029]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'));

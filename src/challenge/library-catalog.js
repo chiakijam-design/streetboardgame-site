@@ -37,7 +37,7 @@ function packSection(packs, byId) {
       ? `<ul class="library-catalog__titles">${included.map((question) => `<li>${escapeHtml(question.title)}</li>`).join('')}</ul>`
       : '';
     const note = extra > 0 ? `<p class="library-catalog__note">このほか、運営が追加したお題が${extra}問入っています。</p>` : '';
-    return `<article class="library-catalog__pack"><h3>${escapeHtml(pack.title)}</h3><p>${escapeHtml(pack.description)}</p>${list}${note}</article>`;
+    return `<article class="library-catalog__pack"><h3><a href="/challenge/library/${escapeHtml(pack.slug)}">${escapeHtml(pack.title)}</a></h3><p>${escapeHtml(pack.description)}</p>${list}${note}<p><a href="/challenge/library/${escapeHtml(pack.slug)}">このパックの紹介とお題を見る →</a></p></article>`;
   }).join('');
   return `<h2 id="library-catalog-packs">目的別の10問パック</h2><p>相手との関係や話したいテーマに合わせて選べるパックです。パックを選ぶと、その中から10問でクイズを作れます。</p>${items}`;
 }
