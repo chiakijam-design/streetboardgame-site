@@ -9,6 +9,7 @@ import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.j
 import { questionPacks } from './src/challenge/packs.js';
 import { injectLibraryCatalog, removeLibraryCatalog } from './src/challenge/library-catalog.js';
 import { personalizeRoomPage } from './src/challenge/share-meta.js';
+import { injectChallengeCopy, injectHomeCopy, injectSearchCopy, matchPackPage, renderPackPage, SEARCH_COPY_LOCALES } from './src/content/search-copy.js';
 import { localeFromPath, stripLocalePrefix, SEARCH_INDEXED_LOCALES as SEARCH_LOCALE_LIST } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
@@ -124,6 +125,21 @@ async function handleRequest(request, env) {
     // These build artifacts are fetched internally; stable locale URLs are
     // the public entry points, including historical invitation query strings.
     if (path.startsWith('/locale-pages/')) return new Response('Not Found', { status: 404 });
+
+    // One page per 10-question pack (2026-11-16), written separately for each
+    // search language. Other public languages go to their library page.
+    const packPage = matchPackPage(path);
+    if (packPage) {
+      if (!SEARCH_COPY_LOCALES.includes(packPage.locale)) {
+        if (!PUBLIC_LOCALES.includes(packPage.locale)) return new Response('Not Found', { status: 404, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } });
+        return Response.redirect(url.origin + '/' + packPage.locale + '/challenge/library', 301);
+      }
+      if (rawPath !== path) return Response.redirect(url.origin + path + url.search, 301);
+      return new Response(request.method === 'HEAD' ? null : renderPackPage(packPage.slug, packPage.locale), {
+        status: 200,
+        headers: { 'content-type': 'text/html; charset=UTF-8', 'cache-control': 'public, max-age=0, must-revalidate' },
+      });
+    }
 
     if (path.startsWith('/legal-history/')) {
       const response = await env.ASSETS.fetch(new Request(url, { method: 'GET' }));
@@ -261,6 +277,8 @@ async function handleRequest(request, env) {
         let baseHtml = await response.text();
         if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge/library') baseHtml = removeLibraryCatalog(applyChallengeLibraryMeta(baseHtml));
         rendered = localizePublicHtml(baseHtml, data, url, PUBLIC_LOCALES);
+        // Original copy for the search languages goes in after translation.
+        rendered = injectSearchCopy(rendered, locale, stripLocalePrefix(rawPath).replace(/\/+$/, '') || '/');
         if (url.searchParams.has('room') && stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge') {
           rendered = (await personalizeRoomPage(rendered, env, url, locale)).html;
         }
@@ -347,7 +365,7 @@ async function handleRequest(request, env) {
       const localizedBody = html && path === '/challenge/library'
         ? injectLibraryCatalog(applyChallengeLibraryMeta(html))
         : html && path === '/challenge'
-          ? applyChallengeShareMeta(html, url)
+          ? injectChallengeCopy(applyChallengeShareMeta(html, url), 'ja')
           : html;
       let body = localizedBody ? selectQuestionDataScript(localizedBody, 'ja') : localizedBody;
       if (body && path === '/challenge' && url.searchParams.has('room')) {
@@ -507,6 +525,14 @@ async function handleRequest(request, env) {
 
     // 静的アセットをそのまま返す (env.ASSETS は wrangler.jsonc の assets binding)
     const response = await env.ASSETS.fetch(request);
+
+    // トップ（日本語）：最初の画面の下、フッターの上に読みものを入れる（2026-11-16）
+    if (path === '' && response.ok && /text\/html/i.test(response.headers.get('content-type') || '')) {
+      const headers = new Headers(response.headers);
+      headers.delete('etag');
+      headers.delete('content-length');
+      return new Response(request.method === 'HEAD' ? null : injectHomeCopy(await response.text(), 'ja'), { status: 200, headers });
+    }
 
     // 存在しないURLは、検索エンジンにも正しく伝わる404ページを返す
     if (response.status === 404) {

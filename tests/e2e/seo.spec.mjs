@@ -7,7 +7,8 @@ test('current public metadata, sitemap, privacy and retirement are consistent', 
  expect(sitemap).not.toMatch(/live-challenge|creator-terms|\?room=|\/manage<|\/ranking</);
  const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
  // ja, en, es and pt are search-indexed (2026-11-15): 11 public pages each.
- expect(urls).toHaveLength(44);
+ // plus one page per 10-question pack in each of them (9 x 4, 2026-11-16).
+ expect(urls).toHaveLength(80);
  expect(sitemap).not.toMatch(/\/pricing(?:[<\/?#]|$)/);
  for (const locale of PUBLIC_LOCALES) {
   const prefix = locale === 'ja' ? '' : '/' + locale;

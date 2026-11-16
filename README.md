@@ -6,8 +6,9 @@
 
 - トップ `/`・遊び方 `/challenge-guide`・About `/about`・製品版 `/product`
 - クイズ `/challenge`（作る・答える・結果・理解度ボード）
+- 10問パックのページ `/challenge/library/<パック>`（日本語・英語・スペイン語・ポルトガル語の9パック×4言語）。トップ・`/challenge`・パックのページの読みものは `src/content/` に言語ごとに書き下ろし、翻訳データを通しません（2026-11-16）
 - 法務：利用規約 `/terms`・プライバシー `/privacy`・運営者情報 `/legal`・肖像権ガイド `/content-guidelines`・未成年者規定 `/minor-policy`
-- 33言語で表示します。検索に出すのは日本語と英語だけで、ほかの言語は `noindex`、hreflang も日本語・英語だけです（`src/i18n/locales.js` の `SEARCH_INDEXED_LOCALES`）。
+- 33言語で表示します。検索に出すのは日本語・英語・スペイン語・ポルトガル語で、ほかの言語は `noindex`、hreflang もこの4言語だけです（`src/i18n/locales.js` の `SEARCH_INDEXED_LOCALES`）。
 
 LIVE 版は 2026-10-23 に終了し、2026-11-15 にプログラムと本番 DB の表を削除しました（購入は0件、表の控えは AI-HANDOFF/records/backup/wata-live-20261115/）。旧 URL は 410 を返します。
 
