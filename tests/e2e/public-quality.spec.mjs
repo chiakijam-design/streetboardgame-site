@@ -1,5 +1,9 @@
 import { expect, test } from './test.mjs';
 
+// 2026-11-17：Playwright 1.65 は 32767px を超える画面写真を撮れない（mobile-safari の長い規約ページで失敗）。
+// 写真は確認用の記録なので、長すぎるページは見えている範囲だけ撮る。
+const canFullPage = page => page.evaluate(() => document.documentElement.scrollHeight * devicePixelRatio < 32000);
+
 test('current legal pages explain the free quiz and link only to previous versions (LIVE removed 2026-11-15)', async ({ page }, testInfo) => {
   for (const path of ['/legal', '/terms', '/privacy', '/minor-policy', '/content-guidelines']) {
     await page.goto(path + '?analytics=exclude');
@@ -14,7 +18,7 @@ test('current legal pages explain the free quiz and link only to previous versio
     }
     if (path !== '/legal') expect(visible).toContain('掲載候補として送信しない問題は、この目的では公開しません');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-    await page.screenshot({ path: testInfo.outputPath(path.slice(1) + '-current.png'), fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath(path.slice(1) + '-current.png'), fullPage: await canFullPage(page) });
   }
   await page.goto('/en/terms?analytics=exclude');
   await expect(page.locator('main')).toContainText('These Terms apply to the free quiz “Know Me Quiz”');
@@ -63,7 +67,7 @@ test('public pages retain useful content, working links and no LIVE entry', asyn
   await expect(page.locator('body')).toContainText('Googleの広告Cookie');
   await expect(page.locator('a[href="https://myadcenter.google.com/personalizationoff"]')).toBeVisible();
   await expect(page.locator('a[href="https://www.aboutads.info/choices/"]')).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath('privacy.png'), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath('privacy.png'), fullPage: await canFullPage(page) });
 });
 
 test('free quiz and Amazon product information stay separate, readable and keyboard accessible', async ({page}, info) => {
