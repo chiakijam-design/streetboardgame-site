@@ -5,6 +5,7 @@
   var measurementId = 'G-X07PVDQWYX';
   var eventLayerName = 'ga4EventLayer';
   var exclusionKey = 'watachan:analytics-excluded:v1';
+  var clarityProject = 'y40ha6gkld';
   var productionHosts = ['streetboardgame.com', 'www.streetboardgame.com'];
   var preferenceParameter = 'analytics';
   var preference = '';
@@ -238,6 +239,7 @@
     };
     function stop() {
       stopped = true; windowObject['ga-disable-' + measurementId] = true;
+      if (clarityLoaded && typeof windowObject.clarity === 'function') { try { windowObject.clarity('stop'); } catch (_) {} }
       windowObject.analyticsEnabled = false; windowObject.__WATACHAN_ANALYTICS_DISABLED__ = true;
       windowObject.gtag = windowObject.ga4Event = windowObject.trackEvent = function () {};
     }
@@ -248,6 +250,25 @@
       var script = documentObject.createElement('script'); script.async = true;
       script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(measurementId) + '&l=' + encodeURIComponent(eventLayerName);
       script.referrerPolicy = 'no-referrer'; documentObject.head.appendChild(script);
+      loadClarity();
+    }
+    // 2026-11-19 operator decision: restart Microsoft Clarity for the same Japan-only
+    // public scope as this direct GA4 (no consent UI, no positive consent written).
+    // Quiz screens (/challenge...) mask all page text because they show display
+    // names, question text and answers; Clarity masks input fields by default.
+    // Invitation URLs (?room= / ?share=) never start Clarity because Clarity
+    // records the full page URL. GTM stays off.
+    var clarityLoaded = false;
+    function loadClarity() {
+      if (clarityLoaded || stopped || u.searchParams.has('room') || u.searchParams.has('share')) return;
+      clarityLoaded = true;
+      var root = documentObject.documentElement;
+      if (root && typeof root.setAttribute === 'function' && (route === '/challenge' || route.indexOf('/challenge/') === 0)) root.setAttribute('data-clarity-mask', 'True');
+      windowObject.clarity = windowObject.clarity || function () { (windowObject.clarity.q = windowObject.clarity.q || []).push(arguments); };
+      windowObject.clarity('set', 'screen', screenNames[route] || 'other');
+      var tag = documentObject.createElement('script'); tag.async = true;
+      tag.src = 'https://www.clarity.ms/tag/' + clarityProject;
+      documentObject.head.appendChild(tag);
     }
     windowObject.trackEvent = function (name, params) {
       if (stopped || ['game_start', 'game_play', 'game_result', 'share'].indexOf(name) === -1) return;

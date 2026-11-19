@@ -26,11 +26,11 @@ test('clean ordinary URL in same origin storage reports the persisted exclusion'
  for(const kind of ['ga','cf'])assert.equal(attr(later,kind,'storage'),'stored');assert.equal(later.scripts.length,0);
 });
 test('normal visitor retains both SDK loader paths and gains no observation attributes',()=>{
- const r=run();assert.deepEqual(r.attributes,{});assert.equal(r.w.analyticsEnabled,true);assert.equal(r.scripts.length,2);
+ const r=run();assert.deepEqual(r.attributes,{'data-clarity-mask':'True'},'quiz screens only get the Clarity text mask (2026-11-19)');assert.equal(r.w.analyticsEnabled,true);assert.equal(r.scripts.length,3);
 });
 test('single include retains restoration behavior without creating an operator success marker',()=>{
  const r=run({url:'https://www.streetboardgame.com/?analytics=include',values:new Map([[marker,'1']])});
- assert.deepEqual(r.attributes,{});assert.equal(r.values.has(marker),false);assert.equal(r.scripts.length,2);
+ assert.deepEqual(r.attributes,{});assert.equal(r.values.has(marker),false);assert.equal(r.scripts.length,3);
 });
 for(const [name,option]of [['GPC',{gpc:true}],['DNT',{dnt:true}]])test(name+' stops collectors without falsely attributing operator exclusion',()=>{
  const r=run(option);assert.deepEqual(r.attributes,{});assert.equal(r.scripts.length,0);
@@ -61,5 +61,5 @@ test('unavailable DOM observation target does not alter the existing exclusion d
  const r=run({url:'https://www.streetboardgame.com/?analytics=exclude',root:false});assert.deepEqual(r.attributes,{});assert.equal(r.w.analyticsEnabled,false);assert.equal(r.scripts.length,0);
 });
 test('non-marker strings are never copied into diagnostic DOM',()=>{
- const r=run({values:new Map([[marker,'PRIVATE_SENTINEL_NOT_A_MARKER']])});assert.deepEqual(r.attributes,{});assert.equal(JSON.stringify(r.attributes).includes('PRIVATE_SENTINEL'),false);
+ const r=run({values:new Map([[marker,'PRIVATE_SENTINEL_NOT_A_MARKER']])});assert.deepEqual(r.attributes,{'data-clarity-mask':'True'});assert.equal(JSON.stringify(r.attributes).includes('PRIVATE_SENTINEL'),false);
 });

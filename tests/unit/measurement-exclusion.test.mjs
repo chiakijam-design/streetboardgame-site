@@ -27,7 +27,7 @@ for(const query of ['analytics=include&analytics=exclude','analytics=exclude&ana
 });
 test('single explicit include retains normal-user restoration compatibility, without overriding CF refusal',()=>{
   const r=documentRun({url:'https://www.streetboardgame.com/challenge?analytics=include',storage:new Map([[exclusion,'1']])});
-  assert.equal(r.storage.has(exclusion),false);assert.equal(r.w.analyticsEnabled,true);assert.equal(r.scripts.length,2);
+  assert.equal(r.storage.has(exclusion),false);assert.equal(r.w.analyticsEnabled,true);assert.equal(r.scripts.length,3);
   const stopped=documentRun({url:'https://www.streetboardgame.com/challenge?analytics=include',storage:new Map([[exclusion,'1'],[consent,JSON.stringify({v:1,choice:'deny',at:1})]])});
   assert.equal(stopped.scripts.length,0);assert.equal(JSON.parse(stopped.storage.get(consent)).choice,'deny');
 });
@@ -43,20 +43,20 @@ test('local, preview and lookalike hosts never load either collector',()=>{
 test('webdriver, GPC, DNT, failed storage and previous refusal suppress both collectors',()=>{
   for(const opts of [{webdriver:true},{gpc:true},{dnt:true},{denied:true},{denied:true,url:'https://www.streetboardgame.com/challenge?analytics=exclude'},{storage:new Map([[consent,JSON.stringify({v:1,choice:'deny',at:1})]])}])assert.equal(documentRun(opts).scripts.length,0,JSON.stringify(opts));
 });
-test('ordinary eligible control emits only one initial PV and no GTM/Clarity; repeated actions are not PV',()=>{
-  const r=documentRun();assert.equal(r.scripts.length,2);assert.ok(r.scripts.some(s=>s.src.includes('/gtag/js')));assert.ok(r.scripts.some(s=>s.src.includes('/beacon.min.js')));assert.equal(r.w.dataLayer,undefined);
+test('ordinary eligible control emits only one initial PV, no GTM and the direct Clarity tag (2026-11-19); repeated actions are not PV',()=>{
+  const r=documentRun();assert.equal(r.scripts.length,3);assert.ok(r.scripts.some(s=>s.src.includes('/gtag/js')));assert.ok(r.scripts.some(s=>s.src.includes('clarity.ms/tag/y40ha6gkld')));assert.ok(r.scripts.some(s=>s.src.includes('/beacon.min.js')));assert.equal(r.w.dataLayer,undefined);
   for(let i=0;i<3;i++)r.w.trackEvent('game_play',{game_type:'challenge'});
-  assert.equal(r.w.ga4EventLayer.filter(v=>v[0]==='event'&&v[1]==='page_view').length,1);assert.equal(r.scripts.length,2);
+  assert.equal(r.w.ga4EventLayer.filter(v=>v[0]==='event'&&v[1]==='page_view').length,1);assert.equal(r.scripts.length,3);
 });
 test('private and unknown routes never initialize collectors',()=>{
   for(const p of ['/challenge/manage','/question-ops','/api/questions','/unknown'])assert.equal(documentRun({url:'https://www.streetboardgame.com'+p}).scripts.length,0,p);
 });
 test('legacy secret parameters are removed before a public document collector is initialized',()=>{
   const r=documentRun({url:'https://www.streetboardgame.com/challenge?secret=FAKE_SECRET'});
-  assert.doesNotMatch(r.w.location.href,/secret|FAKE_SECRET/);assert.doesNotMatch(JSON.stringify(r.w.ga4EventLayer),/FAKE_SECRET/);assert.equal(r.scripts.length,2);
+  assert.doesNotMatch(r.w.location.href,/secret|FAKE_SECRET/);assert.doesNotMatch(JSON.stringify(r.w.ga4EventLayer),/FAKE_SECRET/);assert.equal(r.scripts.length,3);
 });
 test('candidate standalone scripts have new cache keys and the reviewed runtime pin matches its contents',()=>{
-  assert.match(fs.readFileSync(path.join(root,'src/analytics/passive-policy.js'),'utf8'),/20261109-jp-operator-observation-1/);
+  assert.match(fs.readFileSync(path.join(root,'src/analytics/passive-policy.js'),'utf8'),/20261119-jp-clarity-1/);
   assert.match(fs.readFileSync(path.join(root,'src/analytics/pv-policy.js'),'utf8'),/20261109-public-url-guard-1/);
   const bytes=fs.readFileSync(path.join(root,'analytics.js')),hash=crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob '+bytes.length+'\0'),bytes])).digest('hex');
   assert.match(fs.readFileSync(path.join(root,'tests/unit/global-pv.test.mjs'),'utf8'),new RegExp("assert.equal\\(sha,'"+hash+"'\\)"));
