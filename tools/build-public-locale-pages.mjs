@@ -82,6 +82,9 @@ for (const locale of PUBLIC_LOCALES.filter(value => value !== 'ja')) {
   for (const { page, path, html: template } of rendered) {
     let html = template.replace(CATALOG_MARKER, `<script data-watachan-locale-catalog src="${catalogPath}"></script>`);
     html = html.replace(/^[\t ]+$/gm, '');
+    // 2026-11-21 (Codex review #20): translated pages use the English question library, so the
+    // Japanese question data script is not shipped with them (same rule as the Worker's selectQuestionDataScript).
+    if (locale !== 'ja') html = html.replace(/\s*<script\b[^>]*data-build-entry=["']prototype_common_data["'][^>]*>\s*<\/script>/i, '');
     assert.ok(html.length < 100000, path + ' bounded Worker HTML');
     const hash = createHash('sha256').update(html).digest('hex').slice(0, 12);
     const name = `${locale}-${page === '/' ? 'index' : page.slice(1).replaceAll('/', '-')}-${hash}.html`;

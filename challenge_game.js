@@ -344,8 +344,20 @@ function finishConfirmationView() {
     </section>`);
 }
 
+// 2026-11-21 (Codex review #19): a one-question quiz reads in the singular in languages that
+// inflect the noun (the translated text is written for 10 questions).
+const SINGULAR_FIXES = {
+  en: [[/\bthe same 1 questions\b/gi, 'the same question'], [/\b1 questions\b/g, '1 question'], [/\ball 1 answers\b/gi, 'the answer'], [/\b1 answers\b/g, '1 answer']],
+  es: [[/\blas mismas 1 preguntas\b/gi, 'la misma pregunta'], [/\blas 1 preguntas\b/gi, 'la pregunta'], [/\b1 preguntas\b/g, '1 pregunta'], [/\b1 respuestas\b/g, '1 respuesta']],
+  pt: [[/\bas mesmas 1 perguntas\b/gi, 'a mesma pergunta'], [/\bàs 1 perguntas\b/gi, 'à pergunta'], [/\bas 1 perguntas\b/gi, 'a pergunta'], [/\b1 perguntas\b/g, '1 pergunta'], [/\b1 respostas\b/g, '1 resposta']],
+  fr: [[/\b1 questions\b/g, '1 question'], [/\b1 réponses\b/g, '1 réponse']],
+  de: [[/\b1 Fragen\b/g, '1 Frage'], [/\b1 Antworten\b/g, '1 Antwort']],
+  it: [[/\b1 domande\b/g, '1 domanda'], [/\b1 risposte\b/g, '1 risposta']],
+};
 function numberedCopy(source, count) {
-  return translateText(source).replaceAll('10', String(count));
+  const text = translateText(source).replaceAll('10', String(count));
+  if (Number(count) !== 1) return text;
+  return (SINGULAR_FIXES[currentLocale] || []).reduce((value, [pattern, replacement]) => value.replace(pattern, replacement), text);
 }
 
 function creatorEditView() {
@@ -1044,6 +1056,7 @@ function resultView() {
             ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
           </div>`}
       <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
+      <a class="challenge-secondary" href="#challenge-result-share" data-testid="jump-to-result-share">この結果をシェアしよう</a>
     </section>
     ${state.error ? `<p class="challenge-error" role="alert">${escapeHtml(errorMessage(state.error))}</p>` : ''}
     <section class="challenge-role-swap" data-testid="challenge-role-swap" aria-labelledby="challenge-next-title">
@@ -1086,10 +1099,11 @@ function resultView() {
     </details>
     <section class="challenge-panel">
       <div class="challenge-result-share-wrap">
-        <section class="challenge-result-share" data-testid="challenge-result-share"
+        <section class="challenge-result-share" id="challenge-result-share" data-testid="challenge-result-share"
           aria-labelledby="challenge-result-share-title">
           <span class="challenge-section-label">SHARE YOUR RESULT</span>
           <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
+          <label class="challenge-consent" data-testid="result-share-include-score"><input type="checkbox" id="result-share-include-score"><span>点数も入れる</span></label>
           ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) })}
 
         </section>
@@ -1955,7 +1969,8 @@ async function loadRoom() {
     });
     if (resultResponse.ok) {
       const result = await resultResponse.json();
-      setState({ result, ranking: result.board || [], mode: 'result' });
+      // 2026-11-21 (Codex review #14): a restored result shows the answer review open, as right after finishing.
+      setState({ result, ranking: result.board || [], mode: 'result', resultDetailsOpen: true });
       return;
     }
     const resumeResponse = await fetch(`/api/challenge/rooms/${roomCode}/join`, {
@@ -2400,6 +2415,10 @@ function resultShareText({ includeUrl = true } = {}) {
         `称号は「${tier.title}」`,
         '#わたちゃん',
       ];
+  // 2026-11-21 (Codex review #22): the score goes into the share text only when the person ticks it.
+  if (document.getElementById('result-share-include-score')?.checked) {
+    lines.splice(1, 0, numberedCopy('{0}/10問 正解', state.result.answers.length).replace('{0}', String(state.result.score)));
+  }
   if (includeUrl) {
     lines.push(
       numberedCopy(isEnglish ? 'Try the same 10 questions here:' : '同じ10問に挑戦するURLはこちら👇', state.result.answers.length),

@@ -23837,6 +23837,13 @@
       "contexts": [
         "prototype_app.jsx"
       ]
+    },
+    {
+      "id": "m9077462d8c27aa",
+      "source": "点数も入れる",
+      "contexts": [
+        "challenge_game.js"
+      ]
     }
   ]
 }

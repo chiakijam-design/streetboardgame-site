@@ -75,3 +75,25 @@ test('#5 #6 #17 source checks', () => {
   assert.match(src, /quickStart && !quickStartHasDraft\) return 'creator-edit'/);
   assert.match(src, /data-testid="manage-history"/);
 });
+
+test('#3 #9 #13 #19 #20 #21 #22 #23 #24 checks', async () => {
+  const { renderPackPage } = await import('../../src/content/search-copy.js');
+  const es = renderPackPage('easy-first-meeting', 'es');
+  assert.match(es, /og:image" content="[^"]*\/assets\/locale-share\/es\.png/);
+  assert.match(es, /class="pack-send"/);
+  assert.match(es, /line\.me\/R\/share\?text=/);
+  const searchCopy = readFileSync(new URL('../../src/content/search-copy.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(searchCopy, /\.pack-(?:top|langs|footer)(?: a)?\{[^}]*color:#fff/);
+  const publicHtml = readFileSync(new URL('../../src/i18n/public-html.js', import.meta.url), 'utf8');
+  assert.match(publicHtml, /locale === 'en' \? `\$\{origin\}\/assets\/ogp-challenge-en-v2\.jpg/);
+  assert.match(publicHtml, /#\(\?:webpage\|breadcrumb\)\$/);
+  const src = readFileSync(new URL('../../challenge_game.js', import.meta.url), 'utf8');
+  assert.match(src, /the same 1 questions/);
+  assert.match(src, /id="result-share-include-score"/);
+  assert.match(src, /data-testid="jump-to-result-share"/);
+  assert.match(src, /resultDetailsOpen: true \}\);/);
+  const perfect = readFileSync(new URL('../../src/challenge/perfect.js', import.meta.url), 'utf8');
+  assert.match(perfect, /if \(focus\) share\.focus/);
+  const tool = readFileSync(new URL('../../tools/build-public-locale-pages.mjs', import.meta.url), 'utf8');
+  assert.match(tool, /if \(locale !== 'ja'\) html = html\.replace/);
+});

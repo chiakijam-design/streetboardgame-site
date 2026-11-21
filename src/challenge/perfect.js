@@ -87,8 +87,11 @@ export function perfectPopupCopy(locale = 'ja') {
 // A small non-blocking sheet (no full-screen backdrop) so the result page stays
 // usable. `onShare` runs inside the click so the OS share sheet keeps the
 // user activation it needs.
-export function showPerfectSharePopup(doc = globalThis.document, { locale = 'ja', dir = 'ltr', onShare = () => {}, onClose = () => {} } = {}) {
+// 2026-11-21 (Codex review #24): the timed prompt no longer takes the keyboard focus (focus: false by
+// default); when focus did move into it, closing returns focus to where the person was.
+export function showPerfectSharePopup(doc = globalThis.document, { locale = 'ja', dir = 'ltr', onShare = () => {}, onClose = () => {}, focus = false } = {}) {
   if (!doc?.body) return () => {};
+  const previousFocus = doc.activeElement;
   doc.querySelector('[data-testid="challenge-perfect-popup"]')?.remove();
   const copy = perfectPopupCopy(locale);
   const popup = doc.createElement('section');
@@ -120,7 +123,9 @@ export function showPerfectSharePopup(doc = globalThis.document, { locale = 'ja'
     if (closed) return;
     closed = true;
     doc.removeEventListener('keydown', onKey);
+    const hadFocus = typeof popup.contains === 'function' && popup.contains(doc.activeElement);
     popup.remove();
+    if (hadFocus && previousFocus?.isConnected && typeof previousFocus.focus === 'function') previousFocus.focus({ preventScroll: true });
     onClose();
   }
   share.addEventListener('click', async () => {
@@ -130,7 +135,7 @@ export function showPerfectSharePopup(doc = globalThis.document, { locale = 'ja'
   close.addEventListener('click', closePopup);
   doc.addEventListener('keydown', onKey);
   doc.body.appendChild(popup);
-  share.focus?.({ preventScroll: true });
+  if (focus) share.focus?.({ preventScroll: true });
   return closePopup;
 }
 
