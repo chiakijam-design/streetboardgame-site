@@ -27,3 +27,43 @@ test('#11 invitation, board and management screens start before the question cat
   assert.ok(boot.indexOf("['join', 'ranking', 'manage'].includes(state.mode)") < boot.indexOf('await catalogLoad'));
   assert.match(boot, /setState\(\{ error: 'question-catalog-unavailable' \}\)/);
 });
+
+test('#15 a hidden question disappears from the pack page HTML as well as the interactive list', async () => {
+  const { resetHiddenQuestionCache } = await import('../../src/questions/hidden-public.js');
+  const { PACK_QUESTIONS } = await import('../../src/generated/pack-questions.js');
+  const worker = (await import('../../_worker.js')).default;
+  const target = PACK_QUESTIONS['easy-first-meeting'].ja.find((q) => q.title === 'コンビニでつい買うなら');
+  assert.ok(target?.id, 'pack data carries question IDs');
+  const env = { REMOTE_DB: { prepare: () => ({ all: async () => ({ results: [{ question_id: target.id }] }) }) } };
+  resetHiddenQuestionCache();
+  const hiddenPage = await (await worker.fetch(new Request('https://www.streetboardgame.com/challenge/library/easy-first-meeting'), env)).text();
+  assert.doesNotMatch(hiddenPage, /コンビニでつい買うなら/);
+  assert.match(hiddenPage, /昔好きだった教科は/);
+  resetHiddenQuestionCache();
+  const openEnv = { REMOTE_DB: { prepare: () => ({ all: async () => ({ results: [] }) }) } };
+  const openPage = await (await worker.fetch(new Request('https://www.streetboardgame.com/challenge/library/easy-first-meeting'), openEnv)).text();
+  assert.match(openPage, /コンビニでつい買うなら/);
+  resetHiddenQuestionCache();
+});
+
+test('#2 two rooms get different og:url values (public join URL only)', async () => {
+  const { applyRoomShareMeta } = await import('../../src/challenge/share-meta.js');
+  const html = '<head><title>x</title><meta property="og:url" content="https://www.streetboardgame.com/es/challenge"></head>';
+  const a = applyRoomShareMeta(html, 'es', { name: 'Ana', count: 10 }, 'https://www.streetboardgame.com/es/challenge?room=AAAAAAAA');
+  const b = applyRoomShareMeta(html, 'es', { name: 'Bea', count: 10 }, 'https://www.streetboardgame.com/es/challenge?room=BBBBBBBB');
+  assert.match(a, /og:url" content="https:\/\/www\.streetboardgame\.com\/es\/challenge\?room=AAAAAAAA"/);
+  assert.notEqual(a.match(/og:url" content="([^"]+)"/)[1], b.match(/og:url" content="([^"]+)"/)[1]);
+  assert.doesNotMatch(a, /manage/);
+});
+
+test('#7 #8 #12 #18 source checks', () => {
+  const src = readFileSync(new URL('../../challenge_game.js', import.meta.url), 'utf8');
+  assert.match(src, /const saved = saveManageRoom\(/);
+  assert.match(src, /return writeStorage\(MANAGE_HISTORY_KEY, next\);/);
+  assert.match(src, /input\.id = 'share-url-fallback';/);
+  assert.match(src, /document\.getElementById\('builder-question'\)\?\.focus\(\);/);
+  for (const file of ['privacy.html', 'terms.html', 'content-guidelines.html']) {
+    const page = readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(page, /href="\/contact"/, file);
+  }
+});

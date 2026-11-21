@@ -23753,6 +23753,13 @@
         "legacy-ui-ja",
         "challenge_game.js"
       ]
+    },
+    {
+      "id": "mfc31c04bba3f75",
+      "source": "この端末に保存できませんでした。このタブは閉じずに開いたままにしてください。",
+      "contexts": [
+        "challenge_game.js"
+      ]
     }
   ]
 }

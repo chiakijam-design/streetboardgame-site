@@ -55,7 +55,7 @@ function packTitle(slug, locale) {
 }
 
 function questionList(questions, copy) {
-  return `<ol class="wata-guide__questions">${questions.map((question) => `<li><b>${escapeHtml(question.title)}</b><span>${escapeHtml(copy.ui.choices)}${question.choices.map(escapeHtml).join(copy.ui.choiceSeparator)}</span></li>`).join('')}</ol>`;
+  return `<ol class="wata-guide__questions">${questions.map((question) => `<li${question.id ? ` data-qid="${escapeHtml(question.id)}"` : ''}><b>${escapeHtml(question.title)}</b><span>${escapeHtml(copy.ui.choices)}${question.choices.map(escapeHtml).join(copy.ui.choiceSeparator)}</span></li>`).join('')}</ol>`;
 }
 
 function packLinks(locale, slugs = PACK_SLUGS) {

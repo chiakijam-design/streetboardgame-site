@@ -95,12 +95,15 @@ export function roomShareCopy(locale, info) {
   return { title: copy.title(info.name, info.count), description: copy.description(info.name, info.count) };
 }
 
-export function applyRoomShareMeta(html, locale, info) {
+export function applyRoomShareMeta(html, locale, info, shareUrl = '') {
   if (!html || !info) return html;
   const { title, description } = roomShareCopy(locale, info);
   const t = escapeAttribute(title);
   const d = escapeAttribute(description);
-  return html
+  // 2026-11-21 (Codex review #2): the card's og:url names this room's public join URL in every language
+  // (never the management URL), so two different quizzes never claim the same card URL.
+  const withUrl = shareUrl ? html.replace(/(<meta\s+property="og:url"\s+content=")[^"]*("\s*\/?>)/i, `$1${escapeAttribute(shareUrl)}$2`) : html;
+  return withUrl
     .replace(/<title>[^<]*<\/title>/i, `<title>${t}</title>`)
     .replace(/(<meta\s+property="og:title"\s+content=")[^"]*("\s*\/?>)/i, `$1${t}$2`)
     .replace(/(<meta\s+property="og:description"\s+content=")[^"]*("\s*\/?>)/i, `$1${d}$2`)
@@ -114,5 +117,7 @@ export async function personalizeRoomPage(html, env, url, locale) {
   if (!html || !code) return { html, personalized: false };
   const info = await readRoomShareInfo(env, code);
   if (!info) return { html, personalized: false };
-  return { html: applyRoomShareMeta(html, locale, info), personalized: true };
+  const prefix = locale && locale !== 'ja' ? `/${locale}` : '';
+  const shareUrl = `https://www.streetboardgame.com${prefix}/challenge?room=${encodeURIComponent(code)}`;
+  return { html: applyRoomShareMeta(html, locale, info, shareUrl), personalized: true };
 }

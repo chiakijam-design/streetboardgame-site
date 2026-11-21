@@ -1365,6 +1365,8 @@ function bindEvents() {
       editingOriginalCard: original,
       error: '',
     });
+    // 2026-11-21 (Codex review #18): keep the keyboard position — move into the question field.
+    document.getElementById('builder-question')?.focus();
   });
   document.querySelector('[data-action="custom-question"]')?.addEventListener('click', () => {
     captureCreatorConsent();
@@ -1380,6 +1382,7 @@ function bindEvents() {
       choices: ['', '', '', '', ''],
     };
     setState({ cards, editingQuestion: true, editingOriginalCard: original, error: '' });
+    document.getElementById('builder-question')?.focus();
   });
   document.querySelector('[data-action="save-question-edit"]')?.addEventListener('click', saveCreatorQuestionEdit);
   document.querySelector('[data-action="cancel-question-edit"]')?.addEventListener('click', cancelCreatorQuestionEdit);
@@ -1522,6 +1525,7 @@ function saveCreatorQuestionEdit() {
   const next = { editingQuestion: false, editingOriginalCard: null, personalError:'', personalMessage:'', error: '' };
   saveCreatorDraft({ ...state, ...next });
   setState(next);
+  document.querySelector('[data-action="edit-question"]')?.focus();
 }
 
 function cancelCreatorQuestionEdit() {
@@ -1531,6 +1535,7 @@ function cancelCreatorQuestionEdit() {
   const next = { cards, editingQuestion: false, editingOriginalCard: null, error: '' };
   saveCreatorDraft({ ...state, ...next });
   setState(next);
+  document.querySelector('[data-action="edit-question"]')?.focus();
 }
 
 function skipCreatorQuestion(options = {}) {
@@ -1766,9 +1771,24 @@ async function copyValue(button) {
       : 'challenge_invite');
     return;
   }
-  const input = document.getElementById('share-url');
-  input?.select();
   setState({ error: 'copy-failed' });
+  // 2026-11-21 (Codex review #8): screens without the URL field (e.g. the board) show a read-only
+  // copy of the URL next to the button, so the "long-press the URL field" advice can be followed.
+  let input = document.getElementById('share-url');
+  if (!input && value) {
+    const again = [...document.querySelectorAll('[data-copy-value]')].find((item) => item.dataset.copyValue === value);
+    if (again) {
+      input = document.createElement('input');
+      input.id = 'share-url-fallback';
+      input.className = 'challenge-input';
+      input.readOnly = true;
+      input.value = value;
+      input.setAttribute('aria-label', 'URL');
+      again.after(input);
+    }
+  }
+  input?.focus();
+  input?.select();
 }
 
 async function prepareInvitationImage() {
@@ -2446,14 +2466,19 @@ function saveManageRoom(code, token, creatorName) {
     { code, token, creatorName, updatedAt: Date.now() },
     ...manageHistory().filter((item) => item.code !== code),
   ].slice(0, 5);
-  writeStorage(MANAGE_HISTORY_KEY, next);
+  return writeStorage(MANAGE_HISTORY_KEY, next);
 }
 
 function saveRecentChallenge() {
   if (!state.roomCode || !state.manageToken || !state.room) return;
-  saveManageRoom(state.roomCode, state.manageToken, state.room.creatorName);
+  // 2026-11-21 (Codex review #7): only report success when the device actually kept it.
+  const saved = saveManageRoom(state.roomCode, state.manageToken, state.room.creatorName);
   const message = document.querySelector('[data-testid="recent-challenge-save-message"]');
   const button = document.querySelector('[data-action="save-recent-challenge"]');
+  if (!saved) {
+    if (message) message.textContent = translateText('この端末に保存できませんでした。このタブは閉じずに開いたままにしてください。');
+    return;
+  }
   if (message) {
     message.textContent = isEnglish
       ? 'Saved to recent quizzes on this device.'
@@ -2491,8 +2516,10 @@ function removeStorage(key) {
 function writeStorage(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch (error) {
-    // 保存容量不足でもゲーム進行は継続する。
+    // 保存容量不足でもゲーム進行は継続する。呼び出し元が知らせられるように失敗を返す。
+    return false;
   }
 }
 

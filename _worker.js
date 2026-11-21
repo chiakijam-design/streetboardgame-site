@@ -8,6 +8,7 @@ import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
 import { questionPacks } from './src/challenge/packs.js';
 import { injectLibraryCatalog, removeLibraryCatalog } from './src/challenge/library-catalog.js';
+import { hiddenQuestionIds, stripHiddenQuestions } from './src/questions/hidden-public.js';
 import { personalizeRoomPage } from './src/challenge/share-meta.js';
 import { BOARD_COPY } from './src/i18n/challenge-board-copy.js';
 import { injectChallengeCopy, injectHomeCopy, injectSearchCopy, matchPackPage, setLibraryHeading, renderPackPage, SEARCH_COPY_LOCALES } from './src/content/search-copy.js';
@@ -136,7 +137,7 @@ async function handleRequest(request, env) {
         return Response.redirect(url.origin + '/' + packPage.locale + '/challenge/library', 301);
       }
       if (rawPath !== path) return Response.redirect(url.origin + path + url.search, 301);
-      return new Response(request.method === 'HEAD' ? null : renderPackPage(packPage.slug, packPage.locale), {
+      return new Response(request.method === 'HEAD' ? null : stripHiddenQuestions(renderPackPage(packPage.slug, packPage.locale), await hiddenQuestionIds(env)), {
         status: 200,
         headers: { 'content-type': 'text/html; charset=UTF-8', 'cache-control': 'public, max-age=0, must-revalidate' },
       });
@@ -286,6 +287,7 @@ async function handleRequest(request, env) {
         rendered = localizePublicHtml(baseHtml, data, url, PUBLIC_LOCALES);
         // Original copy for the search languages goes in after translation.
         rendered = injectSearchCopy(rendered, locale, stripLocalePrefix(rawPath).replace(/\/+$/, '') || '/');
+        rendered = stripHiddenQuestions(rendered, await hiddenQuestionIds(env));
         if (url.searchParams.has('room') && stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge') {
           rendered = (await personalizeRoomPage(rendered, env, url, locale)).html;
         }
@@ -374,7 +376,7 @@ async function handleRequest(request, env) {
         : html && path === '/challenge'
           ? injectChallengeCopy(applyChallengeShareMeta(html, url), 'ja')
           : html;
-      let body = localizedBody ? selectQuestionDataScript(localizedBody, 'ja') : localizedBody;
+      let body = localizedBody ? selectQuestionDataScript(stripHiddenQuestions(localizedBody, path === '/challenge/library' ? await hiddenQuestionIds(env) : null), 'ja') : localizedBody;
       if (body && path === '/challenge' && url.searchParams.has('room')) {
         const shared = await personalizeRoomPage(body, env, url, 'ja');
         body = shared.html;
