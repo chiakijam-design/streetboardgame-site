@@ -3297,6 +3297,17 @@
     "meafbd31f893c0c": "Kiskorúak használati szabályzata · Mennyire ismersz kvíz. A kvízek készítése és megválaszolása ingyenes.",
     "m8614393176815f": "Az üzemeltető adatai · Mennyire ismersz kvíz.",
     "meabab1758961bc": "{0} Ismerj meg kvíze 📒\nMennyire ismersz engem?\n10 kérdés a beszélgetéshez.\nHa minden kérdésre válaszolsz, a megjelenített neved és pontszámod felkerül a táblára. Bármikor újrapróbálhatod.\nPróbáld ki mind a 10 kérdést 👇\n{1}",
-    "mfc31c04bba3f75": "Nem sikerült menteni erre az eszközre. Kérjük, hagyd nyitva ezt a lapot."
+    "mfc31c04bba3f75": "Nem sikerült menteni erre az eszközre. Kérjük, hagyd nyitva ezt a lapot.",
+    "mb00b62cddc3776": "1–10 kérdés • Legfeljebb 50 fő",
+    "m972d14b1bcc40d": "Készíts 1–10 kérdéses Mennyire ismersz kvízt",
+    "med88c94e822e01": "Egy Mennyire ismersz kvízhez legfeljebb 50 fő csatlakozhat. Saját telefonon nyitják meg az URL-t és válaszolnak 1–10 kérdésre.",
+    "m465bec331c4b2d": "Ingyen készíts kvízt, ossz meg csatlakozási URL-t és QR-kódot, hasonlítsd össze a 1–10 választ és nézd a jelentést.",
+    "mf51fe31beea761": "Válassz közös kérdéseket egyesével, és rögzítsd saját helyes válaszodat mind a 1–10-hez. Szerkeszd a kérdést és az 5 válaszlehetőséget, vagy készíts saját kérdést.",
+    "m19bbc62bc3ac9b": "Játék, amelyben mások kitalálják válaszaidat, és ellenőrzésük elindítja következő beszélgetéseteket. A készítő 1–10 kérdést készít, és csatlakozási URL-t küld a résztvevőknek.",
+    "m93a4987136d9a2": "A készítő 1–10 kérdést választ, először rögzíti saját helyes válaszait, majd a kapott csatlakozási URL-t elküldi mindenkinek ebben az Ismerj meg kvízben. A válaszadók az URL-ről próbálják kitalálni válaszaidat.",
+    "m87e666a8cfcbb4": "1–10 kérdés beszélgetésindításhoz, a válaszok megtippelésén túl.",
+    "m3f28f47cd877a9": "Add meg a neved, és válassz vagy készíts 1–10 kérdést",
+    "m205fff529bd705": "Válassz kérdéseket a közös könyvtárból egyesével; hagyd ki, szerkeszd vagy készíts sajátot. 1–10 kérdés után tekintsd meg az egyező és eltérő válaszokat értékelő jelentést.",
+    "m5f249df1a83a82": "Válassz vagy írj kérdéseket (1–10)"
   }
 }
