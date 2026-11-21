@@ -67,3 +67,11 @@ test('#7 #8 #12 #18 source checks', () => {
     assert.doesNotMatch(page, /href="\/contact"/, file);
   }
 });
+
+test('#5 #6 #17 source checks', () => {
+  const src = readFileSync(new URL('../../challenge_game.js', import.meta.url), 'utf8');
+  assert.match(src, /await QRCode\.toCanvas\(qr, joinUrl/);
+  assert.match(src, /caption: resultShareText\(\),/);
+  assert.match(src, /quickStart && !quickStartHasDraft\) return 'creator-edit'/);
+  assert.match(src, /data-testid="manage-history"/);
+});

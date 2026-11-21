@@ -49,6 +49,7 @@ import { localizedCanvasContext, collectProtectedUserCopy } from './src/i18n/can
 import { trackAnalyticsEvent, trackGamePlay } from './src/analytics/events.js';
 import { sendChallengeDailyAction } from './src/analytics/client-daily-actions.js';
 import { sendChallengeShareAction } from './src/analytics/client-share-actions.js';
+import QRCode from 'qrcode';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -72,6 +73,9 @@ const roomCode = currentUrl.searchParams.get('room')?.trim().toUpperCase() || ''
 const preferredCardId = currentUrl.searchParams.get('question')?.trim() || '';
 const preferredPackSlug = currentUrl.searchParams.get('pack')?.trim() || '';
 const quickStart = readCreatorQuickStart('challenge');
+// 2026-11-21 (Codex review #6): when a draft already exists, starting from the home page shows the
+// start screen (with "resume" and "start a new one") instead of silently replacing the draft.
+const quickStartHasDraft = Boolean(quickStart && creatorDraft());
 const hashManageToken = new URLSearchParams(location.hash.slice(1)).get('manage') || '';
 const entryManageState = history.state?.[MANAGE_STATE_KEY];
 const historyManageToken = entryManageState?.code === roomCode && /^[a-f0-9]{48}$/i.test(entryManageState.token || '') ? entryManageState.token : '';
@@ -88,7 +92,7 @@ let state = {
   finishCount: 0,
   roomCode,
   room: null,
-  cards: quickStart ? pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard) : [],
+  cards: quickStart && !quickStartHasDraft ? pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard) : [],
   answers: [],
   questionIndex: 0,
   creatorName: quickStart?.name || '',
@@ -147,7 +151,7 @@ function initialMode() {
   if (pagePath === '/challenge/library') return 'library';
   if (pagePath === '/challenge/ranking') return 'ranking';
   if (pagePath === '/challenge/manage') return 'manage';
-  if (pagePath === '/challenge' && !roomCode && quickStart) return 'creator-edit';
+  if (pagePath === '/challenge' && !roomCode && quickStart && !quickStartHasDraft) return 'creator-edit';
   return roomCode ? (initialManageToken ? 'manage' : 'join') : 'create';
 }
 
@@ -669,8 +673,9 @@ function createStartView() {
     startCopy.intro,
     `<nav class="challenge-feature-nav" aria-label="挑戦モードのメニュー">
       <a href="/challenge/library">お題ライブラリ</a>
-      ${historyItems[0] ? `<a href="${manageUrl(historyItems[0].code)}">主催者用回答管理</a>` : ''}
+      ${historyItems.length === 1 ? `<a href="${manageUrl(historyItems[0].code)}">主催者用回答管理</a>` : ''}
     </nav>
+    ${historyItems.length > 1 ? `<details class="challenge-panel challenge-manage-history" data-testid="manage-history"><summary>主催者用回答管理</summary><ul>${historyItems.map((item) => `<li><a href="${manageUrl(item.code)}"><span data-user-copy>${escapeHtml(item.creatorName || '')}</span> <small>${escapeHtml(new Date(Number(item.updatedAt) || Date.now()).toLocaleString(document.documentElement.lang || 'ja', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}</small></a></li>`).join('')}</ul></details>` : ''}
     ${draft ? `<section class="challenge-panel challenge-resume" data-testid="creator-resume">
       <span class="challenge-section-label">途中保存あり</span>
       <h2>${escapeHtml(draft.creatorName)}さんのクイズ</h2>
@@ -2128,9 +2133,20 @@ function drawResultLines(context, lines, x, y, lineHeight, maxWidth) {
 
 async function createChallengeResultCanvas(result) {
   await document.fonts?.ready?.catch(() => {});
+  // 2026-11-21 (Codex review #5): the QR on the result image opens this quiz's public join URL
+  // (never the management URL), so people who see the image can try the same questions.
+  const joinUrl = `${location.origin}${languagePrefix}/challenge?room=${encodeURIComponent(result.code || '')}`;
+  const roomQr = async () => {
+    if (!result.code) return loadResultImage(RESULT_QR_IMAGE_SRC);
+    try {
+      const qr = document.createElement('canvas');
+      await QRCode.toCanvas(qr, joinUrl, { width: 184, margin: 1, errorCorrectionLevel: 'M' });
+      return qr;
+    } catch { return loadResultImage(RESULT_QR_IMAGE_SRC); }
+  };
   const [girlImage, qrImage] = await Promise.all([
     loadResultImage(RESULT_GIRL_IMAGE_SRC),
-    loadResultImage(RESULT_QR_IMAGE_SRC),
+    roomQr(),
   ]);
   const tier = localizedResultTier(result);
   const participantName = String(result.participant?.name || (isEnglish ? 'Player' : '回答者'));
@@ -2327,7 +2343,8 @@ function resultSharePayload() {
     storySrc: state.resultStoryUrl,
     storyFilename: 'watachan-challenge-score-story.png',
     title: translateText(isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード'),
-    text: resultShareText(), caption: resultShareText({ includeUrl: false }),
+    // 2026-11-21 (Codex review #5): the story text also carries the join URL (for the link sticker).
+    text: resultShareText(), caption: resultShareText(),
     url: `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`,
   };
 }
