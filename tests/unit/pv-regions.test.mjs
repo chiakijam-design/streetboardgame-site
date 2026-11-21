@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {pvRegionMode, PV_NOTICE_COUNTRIES, PV_NOTICE_START_UTC} from '../../src/analytics/pv-regions.js';
+import {pvRegionMode, PV_NOTICE_COUNTRIES, PV_NOTICE_START_UTC, PV_ALL_REGIONS_START_UTC} from '../../src/analytics/pv-regions.js';
+import {PASSIVE_SCOPE} from '../../src/analytics/passive-policy.js';
 import {PV_NOTICE_COPY,PV_STOP_COPY,PV_NOTICE_DETAILS,PV_NOTICE_REUSE,PV_RENEWAL_COPY,PV_CHANGE_COPY} from '../../src/analytics/pv-notice-copy.js';
 import {injectPVChoice} from '../../src/analytics/pv-policy.js';
 import {PV_COPY} from '../../src/analytics/pv-copy.js';
@@ -11,11 +12,16 @@ import worker from '../../_worker.js';
 const origin='https://www.streetboardgame.com';
 const template='<html><head></head><body><article class="legal-card"><h1>Fixture</h1></article></body></html>';
 const data=html=>JSON.parse(html.match(/id="wata-pv-config">([\s\S]*?)<\/script>/)[1]);
-test('only the reviewed edge country use notice; unknown and protected regions require consent',()=>{
+// 2026-11-22 (owner decision): every edge country, including unknown, uses the cookieless Cloudflare
+// statistics without any consent UI from PV_ALL_REGIONS_START_UTC; Japan keeps its earlier date.
+test('Japan starts on its reviewed date and every other or unknown edge country from the all-regions date',()=>{
  assert.deepEqual(PV_NOTICE_COUNTRIES,['JP']);
+ const all=Date.parse(PV_ALL_REGIONS_START_UTC);
  for(const country of PV_NOTICE_COUNTRIES)assert.equal(pvRegionMode({country},Date.parse(PV_NOTICE_START_UTC)+1),'notice');
- for(const country of ['AU','NZ','GB','FR','DE','NO','IS','LI','CH','US','CA','CN','XX','T1','','jp',' AU ',null,undefined,42])assert.equal(pvRegionMode({country}),'consent');
+ for(const country of ['AU','NZ','GB','FR','DE','NO','IS','LI','CH','US','CA','CN','XX','T1','','jp',' AU ']){assert.equal(pvRegionMode({country},all-1),'consent',String(country));assert.equal(pvRegionMode({country},all),'notice',String(country));}
+ for(const country of [null,undefined,42])assert.equal(pvRegionMode({country},all+1),'consent');
  assert.equal(pvRegionMode(null),'consent');assert.equal(pvRegionMode(undefined),'consent');
+ for(const locale of PUBLIC_LOCALES){assert.ok(PASSIVE_SCOPE[locale].includes('{date}'),locale);assert.ok(PASSIVE_SCOPE[locale].includes('{date2}'),locale);}
 });
 test('all34 privacy disclosures remain complete while passive config has no consent/notice UI',()=>{assert.deepEqual(Object.keys(PV_NOTICE_COPY).sort(),[...PUBLIC_LOCALES].sort());for(const locale of PUBLIC_LOCALES){const row=PV_NOTICE_COPY[locale];assert.equal(row.length,3);assert.match(PV_NOTICE_DETAILS[locale],/Cloudflare, Inc\./);assert.match(PV_NOTICE_DETAILS[locale],/IP/);const url=new URL(origin+(locale==='ja'?'':'/'+locale)+'/privacy?name=FAKE_NAME#FAKE_KEY');for(const mode of ['notice','consent','pending-notice']){const html=injectPVChoice(template,url,locale,PUBLIC_LOCALES,mode),config=data(html);assert.equal(config.mode,mode);assert.equal(config.policy,'passive');assert.ok(!Object.hasOwn(config,'copy'));assert.doesNotMatch(html,/FAKE_NAME|FAKE_KEY|data-wata-pv-notice|data-wata-pv-settings|<button|<dialog/);assert.match(html,/2026-11-07 00:00 JST/);assert.match(html,/Cloudflare/);}}});
 test('invalid injected mode falls back to consent',()=>assert.equal(data(injectPVChoice(template,new URL(origin), 'ja',PUBLIC_LOCALES,'all-countries')).mode,'consent'));
@@ -29,7 +35,7 @@ test('Worker captures trusted country before cloning and does not trust headers/
 test('shared template stays intact across JP to FR to AU to unknown requests',async()=>{
  let calls=0;const env={ASSETS:{async fetch(){calls++;return new Response(template,{headers:{'content-type':'text/html'}});}}};const rows=[];
  for(const country of ['JP','FR','AU',undefined]){let req=new Request(origin);if(country)Object.defineProperty(req,'cf',{value:{country}});const r=await worker.fetch(req,env);rows.push(data(await r.text()).mode);assert.match(r.headers.get('cache-control'),/no-store/);}
- assert.deepEqual(rows,[pvRegionMode({country:'JP'}),'consent','consent','consent']);assert.equal(calls,4);
+ assert.deepEqual(rows,[pvRegionMode({country:'JP'}),pvRegionMode({country:'FR'}),pvRegionMode({country:'AU'}),'consent']);assert.equal(calls,4);
 });
 test('HEAD is also non-cacheable; static assets retain their old cache policy',async()=>{
  const env={ASSETS:{async fetch(req){return new Response(req.method==='HEAD'?null:template,{headers:{'content-type':'text/html'}});}}};const r=await worker.fetch(new Request(origin+'/',{method:'HEAD'}),env);assert.equal(r.headers.get('cache-control'),'private, no-store');
