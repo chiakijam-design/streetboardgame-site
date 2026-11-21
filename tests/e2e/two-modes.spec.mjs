@@ -593,7 +593,9 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       expect(storyFile.suggestedFilename()).toBe('watachan-challenge-score-story.png');
       expect(await pngSize(storyFile)).toEqual({ width: 1080, height: 1920 });
       expect(await participant.evaluate(() => window.__copiedResultText)).toContain('称号は「');
-      expect(await participant.evaluate(() => window.__copiedResultText.includes(location.origin))).toBe(false);
+      // 2026-11-21 (Codex review #5): the story caption carries the public join URL for the link sticker.
+      expect(await participant.evaluate(() => window.__copiedResultText)).toContain('/challenge?room=');
+      expect(await participant.evaluate(() => window.__copiedResultText)).not.toContain('manage');
       const imageDownloadPromise = participant.waitForEvent('download');
       await resultShare.getByRole('button', { name: '結果画像を保存', exact: true }).click();
       const imageFile = await imageDownloadPromise;
