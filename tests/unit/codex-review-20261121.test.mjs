@@ -97,3 +97,12 @@ test('#3 #9 #13 #19 #20 #21 #22 #23 #24 checks', async () => {
   const tool = readFileSync(new URL('../../tools/build-public-locale-pages.mjs', import.meta.url), 'utf8');
   assert.ok(tool.includes(`html.indexOf('<script data-build-entry="prototype_common_data"')`));
 });
+
+test('#16 a site without question storage keeps the bundled cards (no review data exists)', async () => {
+  const saved = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({ error: 'question-storage-not-configured' }) });
+    const cards = await loadManagedQuestionCards([{ id: 'Q1', title: 'x', choices: [] }], 'challenge', 'ja', { strict: true });
+    assert.equal(cards.length, 1);
+  } finally { globalThis.fetch = saved; }
+});

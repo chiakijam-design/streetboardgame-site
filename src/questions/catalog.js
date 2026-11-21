@@ -12,7 +12,10 @@ export async function loadManagedQuestionCards(baseCards, series, language = 'ja
       cache: 'no-store',
     });
     if (!response.ok) {
-      if (strict) throw new Error('question-catalog-unavailable');
+      // A site without question storage (local/test servers) has no review data at all, so the
+      // bundled cards are the catalog. Only a failed read of existing review data is treated as unknown.
+      const body = await response.json().catch(() => null);
+      if (strict && body?.error !== 'question-storage-not-configured') throw new Error('question-catalog-unavailable');
       return applyQuestionViewHistory(baseCards);
     }
     const data = await response.json();
