@@ -850,8 +850,8 @@
       ]
     },
     {
-      "id": "m2f309acfd172cd",
-      "source": "{0}の「わたし理解度診断」📒\n私のこと、ちゃんと分かってるよね？\n当てるより、話すための10問。\n結果を公開するかは自分で選べて、再挑戦もOK。\n10問やってみて👇\n{1}",
+      "id": "meabab1758961bc",
+      "source": "{0}の「わたし理解度診断」📒\n私のこと、ちゃんと分かってるよね？\n当てるより、話すための10問。\n全問答えると、表示名と点数が理解度ボードに載ります。再挑戦もOK。\n10問やってみて👇\n{1}",
       "contexts": [
         "src/platform/share.js"
       ]
@@ -23751,6 +23751,97 @@
       "source": "Once 3 or more people have answered, you can see everyone's answers for each question.",
       "contexts": [
         "legacy-ui-ja",
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "mfc31c04bba3f75",
+      "source": "この端末に保存できませんでした。このタブは閉じずに開いたままにしてください。",
+      "contexts": [
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "mb00b62cddc3776",
+      "source": "1〜10問・最大50人",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m972d14b1bcc40d",
+      "source": "1〜10問の理解度診断を作る",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "med88c94e822e01",
+      "source": "1つの理解度診断へ最大50人まで参加できます。回答する人は、届いた参加URLから自分のスマホで1〜10問へ回答します。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m465bec331c4b2d",
+      "source": "クイズ作成、参加URL・QRコードの共有、1〜10問の答え合わせ、答え合わせレポートを無料で利用できます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "mf51fe31beea761",
+      "source": "共通のお題から1問ずつ選び、自分の正解を登録して1〜10問を完成させます。問題文と5つの選択肢は編集でき、自分で問題を作ることもできます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m19bbc62bc3ac9b",
+      "source": "自分の答えをみんなに予想してもらい、答え合わせから次の会話を生むゲームです。 出題者が1〜10問を作り、回答する人へ参加URLを送って遊びます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m93a4987136d9a2",
+      "source": "出題者が1〜10問を選び、自分の正解を先に登録して、発行された参加URLをみんなへ送る「わたし理解度診断」です。 回答する人は、届いたURLからあなたの答えを予想します。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m87e666a8cfcbb4",
+      "source": "当てるより、話すための1〜10問。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m3f28f47cd877a9",
+      "source": "名前を入力して、出題する1〜10問を選ぶ・作る",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m205fff529bd705",
+      "source": "問題は共通のお題ライブラリから1問ずつ選び、スキップ・編集・自作もできます。 1〜10問後は正解とすれ違いを振り返る答え合わせレポートを確認できます。",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m5f249df1a83a82",
+      "source": "出題する問題を選ぶ・作る（1〜10問）",
+      "contexts": [
+        "prototype_app.jsx"
+      ]
+    },
+    {
+      "id": "m9077462d8c27aa",
+      "source": "点数も入れる",
+      "contexts": [
         "challenge_game.js"
       ]
     }

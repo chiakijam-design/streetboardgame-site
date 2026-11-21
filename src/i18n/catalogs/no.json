@@ -63,7 +63,6 @@
     "m30d73ed5aa92dc": "{0}s resultat",
     "md311814ee55a36": "Send {0}s test til venner.",
     "mcdbd588108601b": "Svarene fordelte seg på {0} alternativer; den største gruppen hadde bare {1} personer.",
-    "m2f309acfd172cd": "{0}s «Know Me»-quiz 📒\nHvor godt kjenner du meg egentlig?\n10 spørsmål som starter samtaler.\nDu velger selv om resultatet publiseres, og kan spille igjen.\nPrøv de 10 spørsmålene 👇\n{1}",
     "m710e90e3a707cb": "Jeg forutsa svarene i {0}s «Know Me»-quiz 📒",
     "m0ceb1e54d8fe14": "Støttemelding fra {0}",
     "m68b116d4486c2c": "{0} personer",
@@ -3296,6 +3295,20 @@
     "m84dcf1d167e88e": "Bruksvilkår · Know Me Quiz. Det er gratis å lage og svare på quizer.",
     "m5f5e4b9880f5bc": "Retningslinjer for innhold og portrettrettigheter · Know Me Quiz. Det er gratis å lage og svare på quizer.",
     "meafbd31f893c0c": "Policy for mindreåriges bruk · Know Me Quiz. Det er gratis å lage og svare på quizer.",
-    "m8614393176815f": "Informasjon om operatøren · Know Me Quiz."
+    "m8614393176815f": "Informasjon om operatøren · Know Me Quiz.",
+    "meabab1758961bc": "{0}s «Know Me»-quiz 📒\nHvor godt kjenner du meg egentlig?\n10 spørsmål som starter samtaler.\nNår du har svart på alt, vises navnet og poengene dine på tavlen. Du kan spille igjen når som helst.\nPrøv de 10 spørsmålene 👇\n{1}",
+    "mfc31c04bba3f75": "Det kunne ikke lagres på denne enheten. La denne fanen være åpen.",
+    "mb00b62cddc3776": "1–10 spørsmål · maksimalt 50 personer",
+    "m972d14b1bcc40d": "Lag en test med 1–10 spørsmål",
+    "med88c94e822e01": "Opptil 50 personer kan delta i én test. De åpner deltakerlenken de har fått på sin egen mobil og svarer på 1–10 spørsmål.",
+    "m465bec331c4b2d": "Lag quizer, del deltaker-URL-er og QR-koder, sammenlign alle 1–10 svar og se svarrapporter gratis.",
+    "mf51fe31beea761": "Velg felles spørsmål ett om gangen og registrer ditt eget riktige svar til alle 1–10 er ferdige. Rediger spørsmålet og de 5 alternativene, eller lag dine egne spørsmål.",
+    "m19bbc62bc3ac9b": "Et spill der andre gjetter svarene dine og gjennomgangen setter i gang neste samtale. Oppretteren lager 1–10 spørsmål og sender deltakerne en deltakelses-URL.",
+    "m93a4987136d9a2": "Oppretteren velger 1–10 spørsmål, registrerer først sine egne riktige svar og sender den utstedte deltakelses-URL-en til alle i denne Know Me Quiz. Respondentene bruker URL-en til å gjette svarene dine.",
+    "m87e666a8cfcbb4": "1–10 spørsmål som setter i gang samtalen, utover å gjette svar.",
+    "m3f28f47cd877a9": "Skriv inn navnet ditt og velg eller lag 1–10 spørsmål",
+    "m205fff529bd705": "Velg spørsmål fra fellesbiblioteket ett om gangen; hopp over, rediger eller lag dine egne. Etter 1–10 spørsmål kan du se en rapport over samsvarende og ulike svar.",
+    "m5f249df1a83a82": "Velg eller skriv spørsmål (1–10)",
+    "m9077462d8c27aa": "Ta med poengsummen"
   }
 }

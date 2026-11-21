@@ -16,7 +16,7 @@ async function loadEnglishCards(root) {
   vm.runInNewContext(source, sandbox, { timeout: 1000 });
   const cards = sandbox.window.ENGLISH_COMMON_QUESTION_CARDS;
   if (!Array.isArray(cards) || !cards.length) throw new Error('ENGLISH_COMMON_QUESTION_CARDS not found');
-  return new Map(cards.map((card) => [String(card.id), { title: String(card.title), choices: card.choices.map(String) }]));
+  return new Map(cards.map((card) => [String(card.id), { id: String(card.id), title: String(card.title), choices: card.choices.map(String) }]));
 }
 
 async function loadTranslator(root, locale) {
@@ -30,7 +30,8 @@ async function loadTranslator(root, locale) {
 }
 
 export async function packQuestionData(root = new URL('..', import.meta.url)) {
-  const japanese = new Map((await loadBuiltInJapaneseCards(root)).map((card) => [card.id, { title: card.title, choices: card.choices }]));
+  // 2026-11-21 (Codex review #15): keep the question ID so public pages can drop hidden questions.
+  const japanese = new Map((await loadBuiltInJapaneseCards(root)).map((card) => [card.id, { id: String(card.id), title: card.title, choices: card.choices }]));
   const english = await loadEnglishCards(root);
   const translators = { es: await loadTranslator(root, 'es'), pt: await loadTranslator(root, 'pt') };
   const englishPacks = new Map(questionPacks(true).map((pack) => [pack.slug, pack]));
@@ -40,7 +41,7 @@ export async function packQuestionData(root = new URL('..', import.meta.url)) {
     // page lists the built-in ones, up to ten.
     const ja = pack.questionIds.map((id) => japanese.get(id)).filter(Boolean).slice(0, 10);
     const en = englishPacks.get(pack.slug).questionIds.map((id) => english.get(id)).filter(Boolean).slice(0, 10);
-    const translate = (locale) => en.map((card) => ({ title: translators[locale](card.title), choices: card.choices.map(translators[locale]) }));
+    const translate = (locale) => en.map((card) => ({ id: card.id, title: translators[locale](card.title), choices: card.choices.map(translators[locale]) }));
     data[pack.slug] = { ja, en, es: translate('es'), pt: translate('pt') };
   }
   return data;

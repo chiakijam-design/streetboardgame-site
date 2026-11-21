@@ -56,7 +56,6 @@
     "m30d73ed5aa92dc": "Rezultatul lui {0}",
     "md311814ee55a36": "Trimite chestionarul lui {0} prietenilor.",
     "mcdbd588108601b": "Răspunsurile s-au împărțit între {0} opțiuni; cea mai aleasă a avut {1} persoane.",
-    "m2f309acfd172cd": "Chestionarul „Cât de bine mă cunoști?” al lui {0} 📒\nMă cunoști bine, nu-i așa?\n10 întrebări pentru conversație, mai mult decât pentru ghicit.\nTu alegi dacă publici rezultatul și poți încerca din nou.\nÎncearcă cele 10 întrebări 👇\n{1}",
     "m710e90e3a707cb": "Am încercat să ghicesc răspunsurile lui {0} la „Cât de bine mă cunoști?” 📒",
     "m0ceb1e54d8fe14": "Mesajul de sprijin al lui {0}",
     "m68b116d4486c2c": "{0} persoane",
@@ -3296,6 +3295,20 @@
     "m84dcf1d167e88e": "Condiții de utilizare · Cât de bine mă cunoști? Crearea și completarea chestionarelor sunt gratuite.",
     "m5f5e4b9880f5bc": "Reguli privind conținutul și imaginea persoanei · Cât de bine mă cunoști? Crearea și completarea chestionarelor sunt gratuite.",
     "meafbd31f893c0c": "Politica de utilizare pentru minori · Cât de bine mă cunoști? Crearea și completarea chestionarelor sunt gratuite.",
-    "m8614393176815f": "Informații despre operator · Cât de bine mă cunoști?"
+    "m8614393176815f": "Informații despre operator · Cât de bine mă cunoști?",
+    "meabab1758961bc": "Chestionarul „Cât de bine mă cunoști?” al lui {0} 📒\nMă cunoști bine, nu-i așa?\n10 întrebări pentru conversație, mai mult decât pentru ghicit.\nDupă ce răspunzi la tot, numele afișat și scorul apar pe tabel. Poți încerca din nou oricând.\nÎncearcă cele 10 întrebări 👇\n{1}",
+    "mfc31c04bba3f75": "Nu s-a putut salva pe acest dispozitiv. Te rugăm să lași această filă deschisă.",
+    "mb00b62cddc3776": "1–10 întrebări · până la 50 persoane",
+    "m972d14b1bcc40d": "Creează un chestionar de 1–10 întrebări",
+    "med88c94e822e01": "Până la 50 persoane pot participa la un chestionar. Fiecare răspunde pe telefon la 1–10 întrebări folosind linkul primit.",
+    "m465bec331c4b2d": "Creează teste, distribuie URL-uri și coduri QR de participare, compară toate cele 1–10 răspunsuri și vezi gratuit rapoartele de verificare.",
+    "mf51fe31beea761": "Alege pe rând întrebări comune și înregistrează propriul răspuns corect pentru a completa toate cele 1–10. Editează întrebarea și cele 5 opțiuni sau creează propriile întrebări.",
+    "m19bbc62bc3ac9b": "Un joc în care ceilalți îți ghicesc răspunsurile, iar verificarea lor pornește următoarea conversație. Creatorul face 1–10 întrebări și trimite participanților un URL de participare.",
+    "m93a4987136d9a2": "În acest test „Cât de bine mă cunoști?”, creatorul alege 1–10 întrebări, înregistrează mai întâi propriile răspunsuri corecte și trimite tuturor URL-ul de participare emis. Respondenții folosesc URL-ul pentru a-ți ghici răspunsurile.",
+    "m87e666a8cfcbb4": "1–10 întrebări care pornesc conversații, dincolo de ghicitul răspunsurilor.",
+    "m3f28f47cd877a9": "Introdu numele și alege sau creează 1–10 întrebări",
+    "m205fff529bd705": "Alege pe rând întrebări din biblioteca comună; sari peste ele, editează-le sau creează-le pe ale tale. După 1–10 întrebări, vezi un raport despre răspunsurile care coincid și diferă.",
+    "m5f249df1a83a82": "Alege sau scrie întrebări (1–10)",
+    "m9077462d8c27aa": "Include și scorul"
   }
 }

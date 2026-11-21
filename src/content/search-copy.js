@@ -55,7 +55,7 @@ function packTitle(slug, locale) {
 }
 
 function questionList(questions, copy) {
-  return `<ol class="wata-guide__questions">${questions.map((question) => `<li><b>${escapeHtml(question.title)}</b><span>${escapeHtml(copy.ui.choices)}${question.choices.map(escapeHtml).join(copy.ui.choiceSeparator)}</span></li>`).join('')}</ol>`;
+  return `<ol class="wata-guide__questions">${questions.map((question) => `<li${question.id ? ` data-qid="${escapeHtml(question.id)}"` : ''}><b>${escapeHtml(question.title)}</b><span>${escapeHtml(copy.ui.choices)}${question.choices.map(escapeHtml).join(copy.ui.choiceSeparator)}</span></li>`).join('')}</ol>`;
 }
 
 function packLinks(locale, slugs = PACK_SLUGS) {
@@ -158,13 +158,30 @@ export function injectSearchCopy(html, locale, page) {
 
 const PAGE_STYLE = `*{box-sizing:border-box}body{margin:0;background:#EC4F88;color:#1A1A1A;font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}`
   + '.pack-page{width:min(100%,640px);margin:0 auto;padding:14px 14px 40px}'
-  + '.pack-top{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#fff;font-weight:900;font-size:14px}.pack-page .pack-top a{color:#fff;display:inline-flex;align-items:center;min-height:44px}'
+  + '.pack-top{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#1A1A1A;font-weight:900;font-size:14px}.pack-page .pack-top a{color:#1A1A1A;display:inline-flex;align-items:center;min-height:44px}'
   + '.pack-hero{margin:8px 0 16px;padding:20px 18px;background:#FFEAF1;border:3px solid #1A1A1A;border-radius:18px;box-shadow:5px 5px 0 #D63A75}'
   + '.pack-hero p.eyebrow{margin:0 0 6px;font-size:12px;font-weight:900;letter-spacing:.08em}.pack-hero h1{margin:0 0 10px;font-size:clamp(22px,6vw,28px);line-height:1.35}.pack-hero p{margin:0;font-size:15px;line-height:1.75}'
   + '.pack-create{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;margin-top:14px;padding:12px 16px;border:2.5px solid #1A1A1A;border-radius:14px;background:#1A1A1A;color:#fff!important;box-shadow:4px 4px 0 #5BD4E8;font-size:16px;font-weight:900;text-decoration:none;text-align:center}'
   + '.pack-card{margin-top:14px;padding:16px 16px 8px;background:#fff;border:3px solid #1A1A1A;border-radius:18px}'
-  + '.pack-langs{margin:14px 0 0;color:#fff;font-size:13px}.pack-page .pack-langs a{color:#fff;font-weight:800;margin-inline-end:12px;display:inline-flex;min-height:32px;align-items:center}'
-  + '.pack-footer{margin-top:22px;color:#fff;font-size:12px;line-height:1.8}.pack-page .pack-footer a{color:#fff;margin-inline-end:12px;display:inline-flex;min-height:32px;align-items:center}';
+  + '.pack-langs{margin:14px 0 0;color:#1A1A1A;font-size:13px}.pack-page .pack-langs a{color:#1A1A1A;font-weight:800;margin-inline-end:12px;display:inline-flex;min-height:32px;align-items:center}'
+  + '.pack-footer{margin-top:22px;color:#1A1A1A;font-size:12px;line-height:1.8}.pack-page .pack-footer a{color:#1A1A1A;margin-inline-end:12px;display:inline-flex;min-height:32px;align-items:center}';
+
+// 2026-11-21 (Codex review #23): a pack page can be sent to a friend without making a quiz first.
+const PACK_SEND_COPY = Object.freeze({
+  ja: 'この10問を友だちに送る',
+  en: 'Send these 10 questions to a friend',
+  es: 'Envía estas 10 preguntas a un amigo',
+  pt: 'Envie estas 10 perguntas a um amigo',
+});
+
+function packSendLinks(title, url) {
+  const text = `${title}\n${url}`;
+  return '<p class="pack-send">'
+    + `<a href="https://line.me/R/share?text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">LINE</a> `
+    + `<a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">X</a> `
+    + `<a href="https://api.whatsapp.com/send?text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`
+    + '</p>';
+}
 
 export function renderPackPage(slug, locale) {
   const copy = SEARCH_COPY[locale];
@@ -197,7 +214,8 @@ export function renderPackPage(slug, locale) {
     + `<title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(pack.description)}"><meta name="robots" content="index, follow">`
     + `<link rel="canonical" href="${url}">${alternates}`
     + `<meta property="og:type" content="article"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(pack.description)}"><meta property="og:url" content="${url}"><meta property="og:site_name" content="${escapeHtml(ui.siteName)}">`
-    + `<meta property="og:image" content="${ORIGIN}${locale === 'ja' ? '/assets/ogp-challenge-v4.jpg?v=20261115-jpg' : '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg'}"><meta name="twitter:card" content="summary_large_image">`
+    // 2026-11-21 (Codex review #3): Spanish and Portuguese pack pages use the same language image as their library page.
+    + `<meta property="og:image" content="${ORIGIN}${locale === 'ja' ? '/assets/ogp-challenge-v4.jpg?v=20261115-jpg' : locale === 'en' ? '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg' : `/assets/locale-share/${locale}.png?v=20261010-i18n-1`}"><meta name="twitter:card" content="summary_large_image">`
     + '<link rel="icon" href="/favicon.ico">'
     + `<script type="application/ld+json">${structured}</script>`
     + (['ja', 'en'].includes(locale) ? '' : '<script>window.__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__=true;</script>')
@@ -213,6 +231,7 @@ export function renderPackPage(slug, locale) {
     + card(ui.tips, list(pack.tips))
     + card(ui.talk, `<p>${inline(ui.talkLead)}</p>${list(pack.talk)}`)
     + card(ui.steps, `<ol class="wata-guide__steps">${ui.stepsList.map((item) => `<li>${inline(item)}</li>`).join('')}</ol><p class="wata-guide__cta"><a href="${createPath}">${escapeHtml(ui.create)} ▶</a></p>`)
+    + card(PACK_SEND_COPY[locale] || PACK_SEND_COPY.en, packSendLinks(pack.title, url))
     + card(ui.related, packLinks(locale, RELATED_PACKS[slug]) + `<p><a href="${libraryPath}">${escapeHtml(ui.allPacks)}</a></p>`)
     + `<p class="pack-langs">${escapeHtml(ui.otherLanguages)}: ${languages}</p>`
     + `<footer class="pack-footer">${ui.footer.map(([href, label]) => `<a href="${href}">${escapeHtml(label)}</a>`).join('')}<p>${escapeHtml(ui.footnote)}</p></footer>`

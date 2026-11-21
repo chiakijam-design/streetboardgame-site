@@ -1298,7 +1298,6 @@
     "m30d73ed5aa92dc": "{0}'s results",
     "md311814ee55a36": "Send {0}'s quiz to friends.",
     "mcdbd588108601b": "Answers split across {0} options, with at most {1} people choosing one.",
-    "m2f309acfd172cd": "{0}'s Know Me Quiz 📒\nHow well do you know me?\n10 questions made for conversation.\nChoose whether to publish your results, and try again anytime.\nTry all 10 questions 👇\n{1}",
     "m710e90e3a707cb": "I guessed the answers in {0}'s Know Me Quiz 📒",
     "m0ceb1e54d8fe14": "{0}'s support message",
     "m68b116d4486c2c": "{0} people",
@@ -3296,6 +3295,20 @@
     "m84dcf1d167e88e": "Terms of Use for Know Me Quiz. Creating and answering quizzes is free.",
     "m5f5e4b9880f5bc": "Content and image rights guidelines for Know Me Quiz. Creating and answering quizzes is free.",
     "meafbd31f893c0c": "Policy for minors using Know Me Quiz. Creating and answering quizzes is free.",
-    "m8614393176815f": "Operator information for Know Me Quiz."
+    "m8614393176815f": "Operator information for Know Me Quiz.",
+    "meabab1758961bc": "{0}'s Know Me Quiz 📒\nHow well do you know me?\n10 questions made for conversation.\nFinishing puts your display name and result on the board. You can retry anytime.\nTry all 10 questions 👇\n{1}",
+    "mfc31c04bba3f75": "This device could not save it. Please keep this tab open.",
+    "mb00b62cddc3776": "1–10 questions • Up to 50 people",
+    "m972d14b1bcc40d": "Create a 1–10-question Know Me Quiz",
+    "med88c94e822e01": "Up to 50 people can join one Know Me Quiz. Participants open the join URL on their own phones and answer 1–10 questions.",
+    "m465bec331c4b2d": "Create quizzes, share join URLs and QR codes, compare 1–10 answers, and view answer review reports for free.",
+    "mf51fe31beea761": "Choose shared questions one at a time and register your own correct answer to complete 1–10 questions. Edit the question and 5 choices or create your own questions.",
+    "m19bbc62bc3ac9b": "A game where others guess your answers and checking them sparks your next conversation. The creator makes 1–10 questions and sends participants a joining URL.",
+    "m93a4987136d9a2": "The creator chooses 1–10 questions, registers their own correct answers first, and sends the issued join URL to everyone in this Know Me Quiz. Respondents use the URL to guess your answers.",
+    "m87e666a8cfcbb4": "1–10 questions to spark conversation, beyond guessing answers.",
+    "m3f28f47cd877a9": "Enter your name and choose or create 1–10 questions",
+    "m205fff529bd705": "Choose questions from the shared question library one at a time; skip, edit, or create your own. After 1–10 questions, view a report reviewing matched and differing answers.",
+    "m5f249df1a83a82": "Choose or write questions (1–10)",
+    "m9077462d8c27aa": "Include my score"
   }
 }

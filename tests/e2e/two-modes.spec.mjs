@@ -544,7 +544,9 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
     await expect(resultShare).toHaveCSS('background-color', 'rgb(255, 227, 111)');
     await expect(resultShare.getByRole('heading', { name: 'この結果、友達に伝えよう' })).toBeVisible();
     await expect(participant.getByTestId('understanding-board')).toBeVisible();
-    await expect(resultShare.getByRole('checkbox')).toHaveCount(0);
+    // 2026-11-21: the only checkbox is the optional score line (unchecked); there is no board opt-in.
+    await expect(resultShare.getByRole('checkbox')).toHaveCount(1);
+    await expect(resultShare.locator('#result-share-include-score')).not.toBeChecked();
     await expect(resultShare.getByRole('button', { name: '結果を共有', exact: true })).toBeEnabled();
     await expect(resultShare.getByRole('button', { name: 'リンクをコピー', exact: true })).toBeVisible();
     await expect(resultShare.getByRole('button', { name: '結果画像を保存', exact: true })).toBeEnabled();
@@ -591,7 +593,9 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       expect(storyFile.suggestedFilename()).toBe('watachan-challenge-score-story.png');
       expect(await pngSize(storyFile)).toEqual({ width: 1080, height: 1920 });
       expect(await participant.evaluate(() => window.__copiedResultText)).toContain('称号は「');
-      expect(await participant.evaluate(() => window.__copiedResultText.includes(location.origin))).toBe(false);
+      // 2026-11-21 (Codex review #5): the story caption carries the public join URL for the link sticker.
+      expect(await participant.evaluate(() => window.__copiedResultText)).toContain('/challenge?room=');
+      expect(await participant.evaluate(() => window.__copiedResultText)).not.toContain('manage');
       const imageDownloadPromise = participant.waitForEvent('download');
       await resultShare.getByRole('button', { name: '結果画像を保存', exact: true }).click();
       const imageFile = await imageDownloadPromise;

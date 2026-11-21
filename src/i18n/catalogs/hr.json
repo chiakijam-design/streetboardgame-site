@@ -2766,7 +2766,6 @@
     "m6a8593c4611e04": "Plaćene poruke podrške nisu donacije. Tekst koji krši pravila može biti skriven i nakon plaćanja, a odgovori ili čitanje streamera nisu zajamčeni.",
     "mad9ca24f50f891": "Plaćene poruke podrške nisu donacije; prihvaćanje je dovršeno završetkom plaćanja. Sam izostanak odgovora ili čitanja ne daje pravo na povrat.",
     "m6b77b620b5407c": "Maloljetnicima treba izričit pristanak roditelja za registraciju streamera radi prodaje i primanja prihoda. Samo besplatno korištenje LIVE-a ne zahtijeva registraciju prodaje.",
-    "m2f309acfd172cd": "Kviz osobe {0} „Koliko me dobro poznaješ” 📒\nKoliko me dobro poznaješ?\n10 pitanja za razgovor.\nOdaberite želite li objaviti rezultate i pokušajte ponovno bilo kada.\nPokušajte svih 10 pitanja 👇\n{1}",
     "m4df4f832bd1632": "Izradite kviz s 10 pitanja i po 5 mogućnosti, dijelite URL pozivnice, odgovarajte, pregledavajte izvještaj o odgovorima, spremajte kartice rezultata i po želji koristite Ploču razumijevanja.",
     "mb46c1961514938": "Svaka kupnja omogućuje generiranje i preuzimanje visokokvalitetne slike kupljenog LIVE rezultata. Cijena koju streamer postavi iz gornjih mogućnosti prikazuje se prije kupnje.",
     "m12948301ccf3c1": "Besplatan alat za izradu kvizova „Koliko me dobro poznaješ” za dijeljenje ili prijenos uživo: prijatelji mogu odgovarati bilo kada s jednog URL-a, a streameri i gledatelji zajedno odgovarati i pregledavati svako pitanje uživo.",
@@ -3296,6 +3295,20 @@
     "m84dcf1d167e88e": "Uvjeti korištenja · Koliko me dobro poznaješ. Izrada kvizova i odgovaranje na njih besplatni su.",
     "m5f5e4b9880f5bc": "Smjernice za sadržaj i likove · Koliko me dobro poznaješ. Izrada kvizova i odgovaranje na njih besplatni su.",
     "meafbd31f893c0c": "Pravila korištenja za maloljetnike · Koliko me dobro poznaješ. Izrada kvizova i odgovaranje na njih besplatni su.",
-    "m8614393176815f": "Podaci o operateru · Koliko me dobro poznaješ."
+    "m8614393176815f": "Podaci o operateru · Koliko me dobro poznaješ.",
+    "meabab1758961bc": "Kviz osobe {0} „Koliko me dobro poznaješ” 📒\nKoliko me dobro poznaješ?\n10 pitanja za razgovor.\nKad odgovorite na sve, vaše ime i bodovi prikazuju se na ploči. Pokušajte ponovno bilo kada.\nPokušajte svih 10 pitanja 👇\n{1}",
+    "mfc31c04bba3f75": "Spremanje na ovaj uređaj nije uspjelo. Ostavite ovu karticu otvorenom.",
+    "mb00b62cddc3776": "1–10 pitanja • Do 50 osoba",
+    "m972d14b1bcc40d": "Izradi kviz „Koliko me dobro poznaješ” s 1–10 pitanja",
+    "med88c94e822e01": "U jednom kvizu „Koliko me dobro poznaješ” može sudjelovati do 50 ljudi. Sudionici otvaraju URL pozivnice na svojim telefonima i odgovaraju na 1–10 pitanja.",
+    "m465bec331c4b2d": "Besplatno izrađujte kvizove, dijelite URL pozivnice i QR kodove, uspoređujte svih 1–10 odgovora i pregledavajte izvještaje o odgovorima.",
+    "mf51fe31beea761": "Birajte zajednička pitanja jedno po jedno i unesite vlastiti točan odgovor kako biste dovršili svih 1–10. Uredite pitanje i 5 mogućnosti ili izradite vlastita pitanja.",
+    "m19bbc62bc3ac9b": "Igra u kojoj drugi pogađaju vaše odgovore, a provjera pokreće razgovor. Autor izrađuje 1–10 pitanja i šalje sudionicima poveznicu za pridruživanje.",
+    "m93a4987136d9a2": "Autor bira 1–10 pitanja, prvo registrira svoje točne odgovore i šalje poveznicu za pridruživanje svima u kvizu. Sudionici poveznicom pogađaju vaše odgovore.",
+    "m87e666a8cfcbb4": "1–10 pitanja koja potiču razgovor, više od pogađanja odgovora.",
+    "m3f28f47cd877a9": "Unesite ime i odaberite ili izradite 1–10 pitanja",
+    "m205fff529bd705": "Birajte pitanja iz zajedničke zbirke jedno po jedno; preskočite, uredite ili izradite vlastita. Nakon 1–10 pitanja pogledajte izvještaj s pregledom podudarnih i različitih odgovora.",
+    "m5f249df1a83a82": "Odaberite ili napišite pitanja (1–10)",
+    "m9077462d8c27aa": "Dodaj i rezultat"
   }
 }

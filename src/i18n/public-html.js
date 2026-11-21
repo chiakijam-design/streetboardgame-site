@@ -61,7 +61,9 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
       });
   });
   const details = LOCALE_DETAILS[locale];
-  const localizedShareImage = !['ja', 'en'].includes(locale) ? `${origin}/assets/locale-share/${locale}.png?v=20261010-i18n-1` : null;
+  // 2026-11-21 (Codex review #13): English pages use the existing English share image, not the Japanese one.
+  const localizedShareImage = locale === 'en' ? `${origin}/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg`
+    : locale !== 'ja' ? `${origin}/assets/locale-share/${locale}.png?v=20261010-i18n-1` : null;
   if (localizedShareImage) output = output.replace(/(<meta\b[^>]*\b(?:property|name)=["'](?:og:image(?::secure_url)?|twitter:image)["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${localizedShareImage}"`);
   // New locale traffic must not silently expand the existing analytics tags
   // before regional consent and cookie policy have been reviewed. This flag
@@ -74,6 +76,14 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
         if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, localizeValue(item, name)]));
         if (key === 'inLanguage') return locale;
         // schema.org の型名・ID は訳さない（2026-11-16：es/pt で Game が Juego/Jogo になっていた）。
+        // 2026-11-21 (Codex review #21): page-specific IDs (#webpage, #breadcrumb) follow the language URL;
+        // shared entities (organization, website, the game) keep one common ID across languages.
+        if (key === '@id' && typeof value === 'string' && /#(?:webpage|breadcrumb)$/.test(value)) {
+          try {
+            const idUrl = new URL(value);
+            if (idUrl.origin === origin) return origin + localeCanonicalPath(idUrl.pathname, locale) + idUrl.hash;
+          } catch { return value; }
+        }
         if (key.startsWith('@')) return value;
         if (typeof value !== 'string') return value;
         // Compare parsed origins, not string prefixes.

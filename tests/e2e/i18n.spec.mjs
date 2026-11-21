@@ -131,7 +131,9 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
   const resultShare = page.getByTestId('challenge-result-share');
   await expect(resultShare.getByRole('heading', { name: 'Share this result with friends' })).toBeVisible();
   await expect(page.getByTestId('understanding-board')).toBeVisible();
-  await expect(resultShare.getByRole('checkbox')).toHaveCount(0);
+  // 2026-11-21: the only checkbox is the optional score line (unchecked); there is no board opt-in.
+  await expect(resultShare.getByRole('checkbox')).toHaveCount(1);
+  await expect(resultShare.locator('#result-share-include-score')).not.toBeChecked();
   await expect(resultShare.getByRole('button', { name: 'Share result', exact: true })).toBeEnabled();
   await expect(resultShare.getByRole('button', { name: 'Copy link', exact: true })).toBeVisible();
   await expect(resultShare.getByRole('button', { name: 'Save result image', exact: true })).toBeEnabled();

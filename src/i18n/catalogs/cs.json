@@ -2766,7 +2766,6 @@
     "m6a8593c4611e04": "Placené zprávy podpory nejsou dary. Text porušující pravidla může být skryt i po zaplacení a odpovědi ani přečtení streamerem nejsou zaručeny.",
     "mad9ca24f50f891": "Placené zprávy podpory nejsou dary; přijetí je dokončeno po platbě. Samotná absence odpovědi nebo přečtení neopravňuje k vrácení peněz.",
     "m6b77b620b5407c": "Nezletilí potřebují výslovný souhlas rodičů k registraci streamera pro prodej a příjem výdělků. Pro samotné bezplatné používání LIVE není registrace prodeje potřebná.",
-    "m2f309acfd172cd": "Kvíz osoby {0} „Jak dobře mě znáš“ 📒\nJak dobře mě znáš?\n10 otázek pro rozhovor.\nVyberte, zda zveřejnit výsledky, a zkuste to znovu kdykoli.\nZkuste všech 10 otázek 👇\n{1}",
     "m4df4f832bd1632": "Vytvořte kvíz s 10 otázkami a 5 možnostmi u každé, sdílejte URL pozvánky, odpovídejte, prohlížejte rozbor odpovědí, ukládejte karty výsledků a volitelně používejte Tabuli porozumění.",
     "mb46c1961514938": "Každý nákup umožňuje vytvořit a stáhnout vysoce kvalitní obrázek zakoupeného výsledku LIVE. Cena nastavená streamerem z výše uvedených možností se zobrazí před nákupem.",
     "m12948301ccf3c1": "Bezplatný tvůrce kvízů „Jak dobře mě znáš“ pro sdílení nebo živé přenosy: přátelé mohou kdykoli odpovídat z jedné URL nebo streameři a diváci odpovídat společně a rozebírat každou otázku živě.",
@@ -3296,6 +3295,20 @@
     "m84dcf1d167e88e": "Podmínky používání · Jak dobře mě znáš. Vytváření kvízů a odpovídání na ně je zdarma.",
     "m5f5e4b9880f5bc": "Pravidla obsahu a podobizen · Jak dobře mě znáš. Vytváření kvízů a odpovídání na ně je zdarma.",
     "meafbd31f893c0c": "Pravidla používání nezletilými · Jak dobře mě znáš. Vytváření kvízů a odpovídání na ně je zdarma.",
-    "m8614393176815f": "Informace o provozovateli · Jak dobře mě znáš."
+    "m8614393176815f": "Informace o provozovateli · Jak dobře mě znáš.",
+    "meabab1758961bc": "Kvíz osoby {0} „Jak dobře mě znáš“ 📒\nJak dobře mě znáš?\n10 otázek pro rozhovor.\nPo zodpovězení všech otázek se vaše jméno a skóre zobrazí na tabuli. Zkusit to znovu můžete kdykoli.\nZkuste všech 10 otázek 👇\n{1}",
+    "mfc31c04bba3f75": "Na toto zařízení se to nepodařilo uložit. Nechte prosím tuto kartu otevřenou.",
+    "mb00b62cddc3776": "1–10 otázek • Až 50 osob",
+    "m972d14b1bcc40d": "Vytvořit kvíz „Jak dobře mě znáš“ s 1–10 otázkami",
+    "med88c94e822e01": "Jednoho kvízu „Jak dobře mě znáš“ se může účastnit až 50 lidí. Účastníci otevřou URL pozvánky na vlastních telefonech a odpoví na 1–10 otázek.",
+    "m465bec331c4b2d": "Zdarma vytvářejte kvízy, sdílejte URL pozvánek a QR kódy, porovnávejte všech 1–10 odpovědí a prohlížejte zprávy s rozborem odpovědí.",
+    "mf51fe31beea761": "Vybírejte sdílené otázky postupně a zadávejte vlastní správnou odpověď, dokud nedokončíte všech 1–10. Upravte otázku a 5 možností nebo vytvořte vlastní otázky.",
+    "m19bbc62bc3ac9b": "Hra, kde ostatní hádají vaše odpovědi a jejich porovnání otevře další rozhovor. Tvůrce vytvoří 1–10 otázek a pošle účastníkům URL pro připojení.",
+    "m93a4987136d9a2": "Tvůrce vybere 1–10 otázek, nejprve zadá vlastní správné odpovědi a pošle URL pro účast všem v tomto Know Me Quiz. Účastníci přes URL hádají vaše odpovědi.",
+    "m87e666a8cfcbb4": "1–10 otázek, které rozproudí rozhovor nad rámec hádání odpovědí.",
+    "m3f28f47cd877a9": "Zadejte jméno a vyberte nebo vytvořte 1–10 otázek",
+    "m205fff529bd705": "Vybírejte otázky ze sdílené knihovny postupně; přeskočte, upravte nebo vytvořte vlastní. Po 1–10 otázkách zobrazte zprávu s rozborem shodných a odlišných odpovědí.",
+    "m5f249df1a83a82": "Vyberte nebo napište otázky (1–10)",
+    "m9077462d8c27aa": "Přidat i skóre"
   }
 }

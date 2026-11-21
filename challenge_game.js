@@ -49,6 +49,7 @@ import { localizedCanvasContext, collectProtectedUserCopy } from './src/i18n/can
 import { trackAnalyticsEvent, trackGamePlay } from './src/analytics/events.js';
 import { sendChallengeDailyAction } from './src/analytics/client-daily-actions.js';
 import { sendChallengeShareAction } from './src/analytics/client-share-actions.js';
+import QRCode from 'qrcode';
 
 const COLORS = ['#77bb62', '#3f78bd', '#f5c83b', '#d3313b', '#ef8730'];
 const COLOR_NAMES = ['緑', '青', '黄', '赤', '橙'];
@@ -72,6 +73,9 @@ const roomCode = currentUrl.searchParams.get('room')?.trim().toUpperCase() || ''
 const preferredCardId = currentUrl.searchParams.get('question')?.trim() || '';
 const preferredPackSlug = currentUrl.searchParams.get('pack')?.trim() || '';
 const quickStart = readCreatorQuickStart('challenge');
+// 2026-11-21 (Codex review #6): when a draft already exists, starting from the home page shows the
+// start screen (with "resume" and "start a new one") instead of silently replacing the draft.
+const quickStartHasDraft = Boolean(quickStart && creatorDraft());
 const hashManageToken = new URLSearchParams(location.hash.slice(1)).get('manage') || '';
 const entryManageState = history.state?.[MANAGE_STATE_KEY];
 const historyManageToken = entryManageState?.code === roomCode && /^[a-f0-9]{48}$/i.test(entryManageState.token || '') ? entryManageState.token : '';
@@ -88,7 +92,7 @@ let state = {
   finishCount: 0,
   roomCode,
   room: null,
-  cards: quickStart ? pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard) : [],
+  cards: quickStart && !quickStartHasDraft ? pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard) : [],
   answers: [],
   questionIndex: 0,
   creatorName: quickStart?.name || '',
@@ -147,7 +151,7 @@ function initialMode() {
   if (pagePath === '/challenge/library') return 'library';
   if (pagePath === '/challenge/ranking') return 'ranking';
   if (pagePath === '/challenge/manage') return 'manage';
-  if (pagePath === '/challenge' && !roomCode && quickStart) return 'creator-edit';
+  if (pagePath === '/challenge' && !roomCode && quickStart && !quickStartHasDraft) return 'creator-edit';
   return roomCode ? (initialManageToken ? 'manage' : 'join') : 'create';
 }
 
@@ -340,8 +344,20 @@ function finishConfirmationView() {
     </section>`);
 }
 
+// 2026-11-21 (Codex review #19): a one-question quiz reads in the singular in languages that
+// inflect the noun (the translated text is written for 10 questions).
+const SINGULAR_FIXES = {
+  en: [[/\bthe same 1 questions\b/gi, 'the same question'], [/\b1 questions\b/g, '1 question'], [/\ball 1 answers\b/gi, 'the answer'], [/\b1 answers\b/g, '1 answer']],
+  es: [[/\blas mismas 1 preguntas\b/gi, 'la misma pregunta'], [/\blas 1 preguntas\b/gi, 'la pregunta'], [/\b1 preguntas\b/g, '1 pregunta'], [/\b1 respuestas\b/g, '1 respuesta']],
+  pt: [[/\bas mesmas 1 perguntas\b/gi, 'a mesma pergunta'], [/\bàs 1 perguntas\b/gi, 'à pergunta'], [/\bas 1 perguntas\b/gi, 'a pergunta'], [/\b1 perguntas\b/g, '1 pergunta'], [/\b1 respostas\b/g, '1 resposta']],
+  fr: [[/\b1 questions\b/g, '1 question'], [/\b1 réponses\b/g, '1 réponse']],
+  de: [[/\b1 Fragen\b/g, '1 Frage'], [/\b1 Antworten\b/g, '1 Antwort']],
+  it: [[/\b1 domande\b/g, '1 domanda'], [/\b1 risposte\b/g, '1 risposta']],
+};
 function numberedCopy(source, count) {
-  return translateText(source).replaceAll('10', String(count));
+  const text = translateText(source).replaceAll('10', String(count));
+  if (Number(count) !== 1) return text;
+  return (SINGULAR_FIXES[currentLocale] || []).reduce((value, [pattern, replacement]) => value.replace(pattern, replacement), text);
 }
 
 function creatorEditView() {
@@ -669,8 +685,9 @@ function createStartView() {
     startCopy.intro,
     `<nav class="challenge-feature-nav" aria-label="挑戦モードのメニュー">
       <a href="/challenge/library">お題ライブラリ</a>
-      ${historyItems[0] ? `<a href="${manageUrl(historyItems[0].code)}">主催者用回答管理</a>` : ''}
+      ${historyItems.length === 1 ? `<a href="${manageUrl(historyItems[0].code)}">主催者用回答管理</a>` : ''}
     </nav>
+    ${historyItems.length > 1 ? `<details class="challenge-panel challenge-manage-history" data-testid="manage-history"><summary>主催者用回答管理</summary><ul>${historyItems.map((item) => `<li><a href="${manageUrl(item.code)}"><span data-user-copy>${escapeHtml(item.creatorName || '')}</span> <small>${escapeHtml(new Date(Number(item.updatedAt) || Date.now()).toLocaleString(document.documentElement.lang || 'ja', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}</small></a></li>`).join('')}</ul></details>` : ''}
     ${draft ? `<section class="challenge-panel challenge-resume" data-testid="creator-resume">
       <span class="challenge-section-label">途中保存あり</span>
       <h2>${escapeHtml(draft.creatorName)}さんのクイズ</h2>
@@ -1039,6 +1056,7 @@ function resultView() {
             ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
           </div>`}
       <p class="challenge-note">画像はこの端末内で作成します。入力した名前や回答画像をサーバーへ追加保存しません。</p>
+      <a class="challenge-secondary" href="#challenge-result-share" data-testid="jump-to-result-share">この結果をシェアしよう</a>
     </section>
     ${state.error ? `<p class="challenge-error" role="alert">${escapeHtml(errorMessage(state.error))}</p>` : ''}
     <section class="challenge-role-swap" data-testid="challenge-role-swap" aria-labelledby="challenge-next-title">
@@ -1081,10 +1099,11 @@ function resultView() {
     </details>
     <section class="challenge-panel">
       <div class="challenge-result-share-wrap">
-        <section class="challenge-result-share" data-testid="challenge-result-share"
+        <section class="challenge-result-share" id="challenge-result-share" data-testid="challenge-result-share"
           aria-labelledby="challenge-result-share-title">
           <span class="challenge-section-label">SHARE YOUR RESULT</span>
           <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
+          <label class="challenge-consent" data-testid="result-share-include-score"><input type="checkbox" id="result-share-include-score"><span>点数も入れる</span></label>
           ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) })}
 
         </section>
@@ -1365,6 +1384,8 @@ function bindEvents() {
       editingOriginalCard: original,
       error: '',
     });
+    // 2026-11-21 (Codex review #18): keep the keyboard position — move into the question field.
+    document.getElementById('builder-question')?.focus();
   });
   document.querySelector('[data-action="custom-question"]')?.addEventListener('click', () => {
     captureCreatorConsent();
@@ -1380,6 +1401,7 @@ function bindEvents() {
       choices: ['', '', '', '', ''],
     };
     setState({ cards, editingQuestion: true, editingOriginalCard: original, error: '' });
+    document.getElementById('builder-question')?.focus();
   });
   document.querySelector('[data-action="save-question-edit"]')?.addEventListener('click', saveCreatorQuestionEdit);
   document.querySelector('[data-action="cancel-question-edit"]')?.addEventListener('click', cancelCreatorQuestionEdit);
@@ -1522,6 +1544,7 @@ function saveCreatorQuestionEdit() {
   const next = { editingQuestion: false, editingOriginalCard: null, personalError:'', personalMessage:'', error: '' };
   saveCreatorDraft({ ...state, ...next });
   setState(next);
+  document.querySelector('[data-action="edit-question"]')?.focus();
 }
 
 function cancelCreatorQuestionEdit() {
@@ -1531,6 +1554,7 @@ function cancelCreatorQuestionEdit() {
   const next = { cards, editingQuestion: false, editingOriginalCard: null, error: '' };
   saveCreatorDraft({ ...state, ...next });
   setState(next);
+  document.querySelector('[data-action="edit-question"]')?.focus();
 }
 
 function skipCreatorQuestion(options = {}) {
@@ -1766,9 +1790,24 @@ async function copyValue(button) {
       : 'challenge_invite');
     return;
   }
-  const input = document.getElementById('share-url');
-  input?.select();
   setState({ error: 'copy-failed' });
+  // 2026-11-21 (Codex review #8): screens without the URL field (e.g. the board) show a read-only
+  // copy of the URL next to the button, so the "long-press the URL field" advice can be followed.
+  let input = document.getElementById('share-url');
+  if (!input && value) {
+    const again = [...document.querySelectorAll('[data-copy-value]')].find((item) => item.dataset.copyValue === value);
+    if (again) {
+      input = document.createElement('input');
+      input.id = 'share-url-fallback';
+      input.className = 'challenge-input';
+      input.readOnly = true;
+      input.value = value;
+      input.setAttribute('aria-label', 'URL');
+      again.after(input);
+    }
+  }
+  input?.focus();
+  input?.select();
 }
 
 async function prepareInvitationImage() {
@@ -1930,7 +1969,8 @@ async function loadRoom() {
     });
     if (resultResponse.ok) {
       const result = await resultResponse.json();
-      setState({ result, ranking: result.board || [], mode: 'result' });
+      // 2026-11-21 (Codex review #14): a restored result shows the answer review open, as right after finishing.
+      setState({ result, ranking: result.board || [], mode: 'result', resultDetailsOpen: true });
       return;
     }
     const resumeResponse = await fetch(`/api/challenge/rooms/${roomCode}/join`, {
@@ -2108,9 +2148,20 @@ function drawResultLines(context, lines, x, y, lineHeight, maxWidth) {
 
 async function createChallengeResultCanvas(result) {
   await document.fonts?.ready?.catch(() => {});
+  // 2026-11-21 (Codex review #5): the QR on the result image opens this quiz's public join URL
+  // (never the management URL), so people who see the image can try the same questions.
+  const joinUrl = `${location.origin}${languagePrefix}/challenge?room=${encodeURIComponent(result.code || '')}`;
+  const roomQr = async () => {
+    if (!result.code) return loadResultImage(RESULT_QR_IMAGE_SRC);
+    try {
+      const qr = document.createElement('canvas');
+      await QRCode.toCanvas(qr, joinUrl, { width: 184, margin: 1, errorCorrectionLevel: 'M' });
+      return qr;
+    } catch { return loadResultImage(RESULT_QR_IMAGE_SRC); }
+  };
   const [girlImage, qrImage] = await Promise.all([
     loadResultImage(RESULT_GIRL_IMAGE_SRC),
-    loadResultImage(RESULT_QR_IMAGE_SRC),
+    roomQr(),
   ]);
   const tier = localizedResultTier(result);
   const participantName = String(result.participant?.name || (isEnglish ? 'Player' : '回答者'));
@@ -2307,7 +2358,8 @@ function resultSharePayload() {
     storySrc: state.resultStoryUrl,
     storyFilename: 'watachan-challenge-score-story.png',
     title: translateText(isEnglish ? 'Know Me Quiz | Score result card' : 'わたし理解度診断｜点数入り結果カード'),
-    text: resultShareText(), caption: resultShareText({ includeUrl: false }),
+    // 2026-11-21 (Codex review #5): the story text also carries the join URL (for the link sticker).
+    text: resultShareText(), caption: resultShareText(),
     url: `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`,
   };
 }
@@ -2363,6 +2415,10 @@ function resultShareText({ includeUrl = true } = {}) {
         `称号は「${tier.title}」`,
         '#わたちゃん',
       ];
+  // 2026-11-21 (Codex review #22): the score goes into the share text only when the person ticks it.
+  if (document.getElementById('result-share-include-score')?.checked) {
+    lines.splice(1, 0, numberedCopy('{0}/10問 正解', state.result.answers.length).replace('{0}', String(state.result.score)));
+  }
   if (includeUrl) {
     lines.push(
       numberedCopy(isEnglish ? 'Try the same 10 questions here:' : '同じ10問に挑戦するURLはこちら👇', state.result.answers.length),
@@ -2446,14 +2502,19 @@ function saveManageRoom(code, token, creatorName) {
     { code, token, creatorName, updatedAt: Date.now() },
     ...manageHistory().filter((item) => item.code !== code),
   ].slice(0, 5);
-  writeStorage(MANAGE_HISTORY_KEY, next);
+  return writeStorage(MANAGE_HISTORY_KEY, next);
 }
 
 function saveRecentChallenge() {
   if (!state.roomCode || !state.manageToken || !state.room) return;
-  saveManageRoom(state.roomCode, state.manageToken, state.room.creatorName);
+  // 2026-11-21 (Codex review #7): only report success when the device actually kept it.
+  const saved = saveManageRoom(state.roomCode, state.manageToken, state.room.creatorName);
   const message = document.querySelector('[data-testid="recent-challenge-save-message"]');
   const button = document.querySelector('[data-action="save-recent-challenge"]');
+  if (!saved) {
+    if (message) message.textContent = translateText('この端末に保存できませんでした。このタブは閉じずに開いたままにしてください。');
+    return;
+  }
   if (message) {
     message.textContent = isEnglish
       ? 'Saved to recent quizzes on this device.'
@@ -2491,8 +2552,10 @@ function removeStorage(key) {
 function writeStorage(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch (error) {
-    // 保存容量不足でもゲーム進行は継続する。
+    // 保存容量不足でもゲーム進行は継続する。呼び出し元が知らせられるように失敗を返す。
+    return false;
   }
 }
 
@@ -2546,8 +2609,21 @@ async function bootChallenge() {
     render();
     app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = true; });
   }
-  allCards = await loadManagedQuestionCards(allCards, 'challenge', isEnglish ? 'en' : 'ja');
-  questionCatalogReady = true;
+  // 2026-11-21 (Codex review #11): invitation, board and management screens use the room's own
+  // questions, so they start at once; the reviewed catalog keeps loading in the background.
+  // (Codex review #16): if the review status cannot be read, never fall back to the bundled cards.
+  const catalogLoad = loadManagedQuestionCards(allCards, 'challenge', isEnglish ? 'en' : 'ja', { strict: true })
+    .then((cards) => { allCards = cards; questionCatalogReady = true; return true; })
+    .catch(() => false);
+  if (['join', 'ranking', 'manage'].includes(state.mode)) {
+    startChallengeMode();
+    return;
+  }
+  if (!(await catalogLoad)) {
+    setState({ error: 'question-catalog-unavailable' });
+    app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = true; });
+    return;
+  }
   if (earlyStartScreen) {
     app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = false; });
     return;
@@ -2555,6 +2631,10 @@ async function bootChallenge() {
   if (quickStart && state.mode === 'creator-edit') {
     state.cards = pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard);
   }
+  startChallengeMode();
+}
+
+function startChallengeMode() {
   if (state.mode === 'library') {
   document.title = isEnglish ? '10-question packs | How well do you know me?' : '人気の10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   render();

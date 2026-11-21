@@ -26,7 +26,7 @@ function sortedCategories(catalog) {
 }
 
 function questionItem(question) {
-  return `<li><b>${escapeHtml(question.title)}</b><span>選択肢：${question.choices.map(escapeHtml).join('／')}</span></li>`;
+  return `<li data-qid="${escapeHtml(question.id)}"><b>${escapeHtml(question.title)}</b><span>選択肢：${question.choices.map(escapeHtml).join('／')}</span></li>`;
 }
 
 function packSection(packs, byId) {
@@ -34,7 +34,7 @@ function packSection(packs, byId) {
     const included = pack.questionIds.map((id) => byId.get(id)).filter(Boolean);
     const extra = pack.questionIds.length - included.length;
     const list = included.length
-      ? `<ul class="library-catalog__titles">${included.map((question) => `<li>${escapeHtml(question.title)}</li>`).join('')}</ul>`
+      ? `<ul class="library-catalog__titles">${included.map((question) => `<li data-qid="${escapeHtml(question.id)}">${escapeHtml(question.title)}</li>`).join('')}</ul>`
       : '';
     const note = extra > 0 ? `<p class="library-catalog__note">このほか、運営が追加したお題が${extra}問入っています。</p>` : '';
     return `<article class="library-catalog__pack"><h3><a href="/challenge/library/${escapeHtml(pack.slug)}">${escapeHtml(pack.title)}</a></h3><p>${escapeHtml(pack.description)}</p>${list}${note}<p><a href="/challenge/library/${escapeHtml(pack.slug)}">このパックの紹介とお題を見る →</a></p></article>`;

@@ -2026,7 +2026,6 @@
     "m3ac8bbaa58631e": "{0} trong\ncâu đố của {1}",
     "mf099dae4f5eaa0": "Mức độ {0} hiểu\n{1}",
     "m6985f89d1ed697": "Bạn hiểu {0} đến mức nào? Đoán đủ 10 câu trả lời 👇\n{1}",
-    "m2f309acfd172cd": "Câu đố Hiểu Tôi của {0} 📒\nBạn hiểu tôi đến mức nào?\n10 câu hỏi để mở đầu trò chuyện.\nTự chọn công khai kết quả và thử lại bất cứ lúc nào.\nThử đủ 10 câu 👇\n{1}",
     "m604cf2f80ce2a9": "| Đơn vị vận hành: Chiaki Hirakawa",
     "mcb600525f72135": "Bộ 10 câu hỏi | Bạn hiểu tôi đến mức nào?",
     "m70df6b1a444ca2": "Bạn Hiểu Tôi Đến Mức Nào? | Câu Đố Thấu Hiểu",
@@ -3296,6 +3295,20 @@
     "m84dcf1d167e88e": "Điều khoản sử dụng · Câu đố Hiểu Tôi. Tạo và trả lời câu đố hoàn toàn miễn phí.",
     "m5f5e4b9880f5bc": "Hướng dẫn về nội dung và hình ảnh cá nhân · Câu đố Hiểu Tôi. Tạo và trả lời câu đố hoàn toàn miễn phí.",
     "meafbd31f893c0c": "Chính sách sử dụng dành cho người chưa thành niên · Câu đố Hiểu Tôi. Tạo và trả lời câu đố hoàn toàn miễn phí.",
-    "m8614393176815f": "Thông tin đơn vị vận hành · Câu đố Hiểu Tôi."
+    "m8614393176815f": "Thông tin đơn vị vận hành · Câu đố Hiểu Tôi.",
+    "meabab1758961bc": "Câu đố Hiểu Tôi của {0} 📒\nBạn hiểu tôi đến mức nào?\n10 câu hỏi để mở đầu trò chuyện.\nKhi trả lời hết, tên hiển thị và điểm của bạn sẽ lên bảng. Có thể thử lại bất cứ lúc nào.\nThử đủ 10 câu 👇\n{1}",
+    "mfc31c04bba3f75": "Không thể lưu trên thiết bị này. Vui lòng giữ tab này mở.",
+    "mb00b62cddc3776": "1–10 câu hỏi • Tối đa 50 người",
+    "m972d14b1bcc40d": "Tạo Câu đố Hiểu Tôi 1–10 câu",
+    "med88c94e822e01": "Tối đa 50 người tham gia một Câu đố Hiểu Tôi. Người tham gia mở URL trên điện thoại riêng và trả lời 1–10 câu hỏi.",
+    "m465bec331c4b2d": "Tạo câu đố, chia sẻ URL tham gia và mã QR, so sánh cả 1–10 câu và xem báo cáo đánh giá câu trả lời miễn phí.",
+    "mf51fe31beea761": "Chọn câu hỏi dùng chung từng câu và đăng ký đáp án đúng của mình đủ 1–10 câu. Sửa câu hỏi và 5 lựa chọn hoặc tự tạo câu hỏi.",
+    "m19bbc62bc3ac9b": "Trò chơi người khác đoán đáp án của bạn, xem đáp án gợi câu chuyện tiếp theo. Người tạo làm 1–10 câu hỏi và gửi URL tham gia cho người chơi.",
+    "m93a4987136d9a2": "Người tạo chọn 1–10 câu, đăng ký đáp án đúng của mình trước, gửi URL tham gia cho mọi người trong Câu đố Hiểu Tôi này. Người trả lời dùng URL đoán đáp án của bạn.",
+    "m87e666a8cfcbb4": "1–10 câu hỏi gợi chuyện, không chỉ đoán đáp án.",
+    "m3f28f47cd877a9": "Nhập tên rồi chọn hoặc tạo 1–10 câu hỏi",
+    "m205fff529bd705": "Chọn từng câu từ thư viện dùng chung; bỏ qua, sửa hoặc tự tạo. Sau 1–10 câu, xem báo cáo câu trả lời trùng và khác.",
+    "m5f249df1a83a82": "Chọn hoặc viết câu hỏi (1–10)",
+    "m9077462d8c27aa": "Thêm cả điểm số"
   }
 }

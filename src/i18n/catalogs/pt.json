@@ -56,7 +56,6 @@
     "m30d73ed5aa92dc": "Resultado de {0}",
     "md311814ee55a36": "Envie o quiz de {0} para seus amigos.",
     "mcdbd588108601b": "As respostas dividiram-se entre {0} opções; a mais escolhida teve {1} pessoas.",
-    "m2f309acfd172cd": "O quiz «Quanto você me conhece?» de {0} 📒\nVocê me conhece bem mesmo, né?\n10 perguntas para conversar mais do que para acertar.\nVocê decide se publica o resultado e pode tentar de novo.\nExperimente as 10 perguntas 👇\n{1}",
     "m710e90e3a707cb": "Tentei adivinhar as respostas de {0} em «Quanto você me conhece?» 📒",
     "m0ceb1e54d8fe14": "Mensagem de apoio de {0}",
     "m68b116d4486c2c": "{0} pessoas",
@@ -3296,6 +3295,20 @@
     "m84dcf1d167e88e": "Termos de Serviço · Quanto você me conhece? Criar e responder quizzes é grátis.",
     "m5f5e4b9880f5bc": "Diretrizes de conteúdo e direito de imagem · Quanto você me conhece? Criar e responder quizzes é grátis.",
     "meafbd31f893c0c": "Regras de uso para menores · Quanto você me conhece? Criar e responder quizzes é grátis.",
-    "m8614393176815f": "Informações do operador · Quanto você me conhece?"
+    "m8614393176815f": "Informações do operador · Quanto você me conhece?",
+    "meabab1758961bc": "O quiz «Quanto você me conhece?» de {0} 📒\nVocê me conhece bem mesmo, né?\n10 perguntas para conversar mais do que para acertar.\nAo responder tudo, seu nome exibido e sua pontuação aparecem no quadro. Você pode tentar de novo.\nExperimente as 10 perguntas 👇\n{1}",
+    "mfc31c04bba3f75": "Não foi possível salvar neste dispositivo. Mantenha esta aba aberta.",
+    "mb00b62cddc3776": "1–10 perguntas · até 50 pessoas",
+    "m972d14b1bcc40d": "Criar um questionário de 1–10 perguntas",
+    "med88c94e822e01": "Até 50 pessoas podem participar de um quiz. Cada participante responde às 1–10 perguntas no celular pelo link recebido.",
+    "m465bec331c4b2d": "Criar questionários, compartilhar link ou QR, rever as 1–10 perguntas e consultar o relatório são gratuitos.",
+    "mf51fe31beea761": "Escolha perguntas compartilhadas uma por uma e salve suas respostas certas até completar 1–10. Você pode editar o texto e as 5 opções ou criar as suas.",
+    "m19bbc62bc3ac9b": "Os outros adivinham suas respostas e a revisão rende conversa. Crie 1–10 perguntas e envie o link para os participantes.",
+    "m93a4987136d9a2": "Em «Quanto você me conhece?», quem cria escolhe 1–10 perguntas, salva as respostas certas e envia o link para todos. Quem recebe tenta adivinhar as suas respostas.",
+    "m87e666a8cfcbb4": "1–10 perguntas para conversar mais do que acertar.",
+    "m3f28f47cd877a9": "Digite seu nome e escolha ou crie 1–10 perguntas",
+    "m205fff529bd705": "Escolha perguntas uma por uma na biblioteca comum; você pode pular, editar ou criar. Depois de 1–10, veja o relatório para revisar acertos e diferenças.",
+    "m5f249df1a83a82": "Escolha ou escreva perguntas (1–10)",
+    "m9077462d8c27aa": "Incluir minha pontuação"
   }
 }

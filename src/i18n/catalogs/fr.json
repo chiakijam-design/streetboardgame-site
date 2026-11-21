@@ -63,7 +63,6 @@
     "m30d73ed5aa92dc": "Résultats de {0}",
     "md311814ee55a36": "Envoyez le quiz de {0} à vos amis.",
     "mcdbd588108601b": "Les réponses se répartissent entre {0} choix, avec au maximum {1} personnes pour un choix.",
-    "m2f309acfd172cd": "Le quiz « Tu me connais ? » de {0} 📒\nTu me connais vraiment ?\n10 questions pour discuter.\nChoisissez de publier ou non vos résultats et réessayez quand vous voulez.\nEssayez les 10 questions 👇\n{1}",
     "m710e90e3a707cb": "J'ai deviné les réponses au quiz « Tu me connais ? » de {0} 📒",
     "m0ceb1e54d8fe14": "Message de soutien de {0}",
     "m68b116d4486c2c": "{0} personnes",
@@ -3296,6 +3295,20 @@
     "m84dcf1d167e88e": "Conditions d'utilisation · Quiz « Tu me connais ? » Créer un quiz et y répondre est gratuit.",
     "m5f5e4b9880f5bc": "Directives sur les contenus et le droit à l'image · Quiz « Tu me connais ? » Créer un quiz et y répondre est gratuit.",
     "meafbd31f893c0c": "Politique d’utilisation par les mineurs · Quiz « Tu me connais ? » Créer un quiz et y répondre est gratuit.",
-    "m8614393176815f": "Informations sur l’exploitant · Quiz « Tu me connais ? »"
+    "m8614393176815f": "Informations sur l’exploitant · Quiz « Tu me connais ? »",
+    "meabab1758961bc": "Le quiz « Tu me connais ? » de {0} 📒\nTu me connais vraiment ?\n10 questions pour discuter.\nUne fois toutes les réponses données, ton pseudo et ton résultat apparaissent sur le tableau. Tu peux réessayer quand tu veux.\nEssayez les 10 questions 👇\n{1}",
+    "mfc31c04bba3f75": "Impossible d’enregistrer sur cet appareil. Garde cet onglet ouvert.",
+    "mb00b62cddc3776": "1–10 questions • Jusqu'à 50 personnes",
+    "m972d14b1bcc40d": "Créer un quiz « Tu me connais ? » de 1–10 questions",
+    "med88c94e822e01": "Jusqu'à 50 personnes peuvent rejoindre un quiz « Tu me connais ? ». Chaque participant ouvre le lien sur son téléphone et répond aux 1–10 questions.",
+    "m465bec331c4b2d": "Créez les quiz, partagez liens et QR, comparez les 1–10 réponses et consultez les rapports gratuitement.",
+    "mf51fe31beea761": "Choisissez les questions communes une par une et vos bonnes réponses pour en finir 1–10. Modifiez texte et 5 choix ou créez vos questions.",
+    "m19bbc62bc3ac9b": "Un jeu où les autres devinent vos réponses et où leur vérification lance votre prochaine conversation. Le créateur prépare 1–10 questions et envoie aux participants une URL de participation.",
+    "m93a4987136d9a2": "Le créateur choisit 1–10 questions, enregistre ses bonnes réponses puis envoie le lien du quiz. Les répondants y devinent vos réponses.",
+    "m87e666a8cfcbb4": "1–10 questions pour discuter, au-delà des devinettes.",
+    "m3f28f47cd877a9": "Entrez un nom et choisissez ou créez 1–10 questions",
+    "m205fff529bd705": "Choisissez les questions communes une par une, ignorez, modifiez ou créez. Après 1–10, consultez le rapport des correspondances et différences.",
+    "m5f249df1a83a82": "Choisissez ou créez des questions (1–10)",
+    "m9077462d8c27aa": "Inclure mon score"
   }
 }
