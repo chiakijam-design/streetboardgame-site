@@ -2760,7 +2760,6 @@
     "m5efe3ee7c6f226": "Normal ve LIVE modlarında sorular, görünen adlar, yorumlar, yayıncı ve sonuç görsellerini güvenle işleme kuralları.",
     "m53896ca9828db1": ". İadeler, dolandırıcılık, ters ibrazlar, yasa veya politika ihlalleri ya da bu şartlarda belirtilen diğer nedenlerle pay alıkonulabilir, geri alınabilir veya mahsup edilebilir. Alıcılar yayıncıya pay ayrılmasını veya ödeme yapılmasını talep etme hakkı kazanmaz.",
     "m658c21f990eec9": ". Kimlik doğrulaması yapılabilir. Bazı kayıtların yasalar, işlemler, güvenlik, haklar veya devam eden bir oyun için saklanması gerekebilir; yasal olarak mümkün olduğunda ret nedeni açıklanır.",
-    "m2f309acfd172cd": "{0} için Beni Tanı Testi 📒\nBeni ne kadar iyi tanıyorsun?\nSohbet için hazırlanmış 10 soru.\nSonuçlarını yayımlayıp yayımlamamayı seç, istediğin zaman yeniden dene.\n10 sorunun hepsini dene 👇\n{1}",
     "m68a35df2901b62": "⚠️ Yayın hizmetinin yaş ve veli onayı kurallarını kontrol et. Genel kural olarak YouTube canlı yayını başlatmak için en az 16 yaşında olmalısın.",
     "m4df4f832bd1632": "Her biri 5 seçenekli 10 sorudan oluşan test oluştur, katılım URL'sini paylaş, yanıtla, yanıt değerlendirme raporunu görüntüle, sonuç kartlarını kaydet ve isteğe bağlı tanıma panosunu kullan.",
     "md5733866d43574": "Ücretli hizmet satan yayıncı olarak kaydolan 18 yaş altı kullanıcıların açık veli onayı alması gerekir. Stripe'ın yaş ve kimlik doğrulama koşullarına uy ve gerektiğinde Stripe hesabının yasal veliye ait olması dahil Stripe'ın belirttiği işlemleri tamamla. Ajanslardan, ortak yöneticilerden veya diğer hak sahiplerinden gereken onayları önceden al.",
@@ -3296,6 +3295,7 @@
     "m84dcf1d167e88e": "Kullanım Şartları · Beni Tanı Quizi. Quiz oluşturmak ve yanıtlamak ücretsizdir.",
     "m5f5e4b9880f5bc": "İçerik ve Görüntü Kullanımı Kuralları · Beni Tanı Quizi. Quiz oluşturmak ve yanıtlamak ücretsizdir.",
     "meafbd31f893c0c": "Reşit olmayanların kullanım politikası · Beni Tanı Quizi. Quiz oluşturmak ve yanıtlamak ücretsizdir.",
-    "m8614393176815f": "İşletmeci bilgileri · Beni Tanı Quizi."
+    "m8614393176815f": "İşletmeci bilgileri · Beni Tanı Quizi.",
+    "meabab1758961bc": "{0} için Beni Tanı Testi 📒\nBeni ne kadar iyi tanıyorsun?\nSohbet için hazırlanmış 10 soru.\nHepsini yanıtladığında görünen adın ve puanın panoda yer alır. İstediğin zaman yeniden deneyebilirsin.\n10 sorunun hepsini dene 👇\n{1}"
   }
 }

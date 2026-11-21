@@ -2730,7 +2730,6 @@
     "m9de36520db261d": "A közvetítők 480, 980 vagy 2,980 jent (adóval) állítanak be. Az ár nem módosítja a felbontást vagy letöltési határidőt.",
     "m53896ca9828db1": ". A részesedés visszatartható, visszavonható vagy beszámítható visszatérítés, csalás, visszaterhelés, jogszabály- vagy szabályzatsértés, illetve az adott feltételekben megjelölt más ok miatt. A vásárló nem szerez jogot arra, hogy részesedést vagy kifizetést követeljen a közvetítő számára.",
     "m658c21f990eec9": ". Személyazonosság-ellenőrzésre lehet szükség. Egyes adatokat jogi, tranzakciós, biztonsági, jogvédelmi vagy folyamatban lévő játékhoz kapcsolódó okból meg kell őrizni; ahol a jogszabályok lehetővé teszik, az elutasítás indokát ismertetjük.",
-    "m2f309acfd172cd": "{0} Ismerj meg kvíze 📒\nMennyire ismersz engem?\n10 kérdés a beszélgetéshez.\nTe döntöd el, közzéteszed-e az eredményedet, és bármikor újrapróbálhatod.\nPróbáld ki mind a 10 kérdést 👇\n{1}",
     "m68a35df2901b62": "⚠️ Ellenőrizd a közvetítési szolgáltatás korhatárra és gondviselői hozzájárulásra vonatkozó szabályait. Általános szabály szerint legalább 16 évesnek kell lenned YouTube-élőközvetítés indításához.",
     "m4df4f832bd1632": "Készíts kvízt 10 kérdéssel és kérdésenként 5 válaszlehetőséggel, oszd meg a csatlakozási URL-t, válaszolj, nézd meg a válaszértékelő jelentést, mentsd az eredménykártyákat, és igény szerint használd az ismereti táblát.",
     "md5733866d43574": "A fizetős szolgáltatásokat értékesítő közvetítőként regisztráló 18 év alatti felhasználóknak kifejezett gondviselői hozzájárulásra van szükségük. Kövesd a Stripe életkori és személyazonosság-ellenőrzési követelményeit, és végezd el az előírt eljárásokat, ideértve szükség esetén azt, hogy a Stripe-fiók tulajdonosa a törvényes gondviselő legyen. Előzetesen szerezd be az ügynökségek, társkezelők vagy más jogosultak szükséges jóváhagyását.",
@@ -3296,6 +3295,7 @@
     "m84dcf1d167e88e": "Felhasználási feltételek · Mennyire ismersz kvíz. A kvízek készítése és megválaszolása ingyenes.",
     "m5f5e4b9880f5bc": "Tartalom- és képmásirányelvek · Mennyire ismersz kvíz. A kvízek készítése és megválaszolása ingyenes.",
     "meafbd31f893c0c": "Kiskorúak használati szabályzata · Mennyire ismersz kvíz. A kvízek készítése és megválaszolása ingyenes.",
-    "m8614393176815f": "Az üzemeltető adatai · Mennyire ismersz kvíz."
+    "m8614393176815f": "Az üzemeltető adatai · Mennyire ismersz kvíz.",
+    "meabab1758961bc": "{0} Ismerj meg kvíze 📒\nMennyire ismersz engem?\n10 kérdés a beszélgetéshez.\nHa minden kérdésre válaszolsz, a megjelenített neved és pontszámod felkerül a táblára. Bármikor újrapróbálhatod.\nPróbáld ki mind a 10 kérdést 👇\n{1}"
   }
 }

@@ -63,7 +63,6 @@
     "m30d73ed5aa92dc": "{0}:n tulos",
     "md311814ee55a36": "Lähetä {0}:n testi ystäville.",
     "mcdbd588108601b": "Vastaukset jakautuivat {0} vaihtoehtoon; suurimmassa ryhmässä oli vain {1} henkilöä.",
-    "m2f309acfd172cd": "{0}:n ”Know Me” -visa 📒\nKuinka hyvin oikeasti tunnet minut?\n10 kysymystä keskustelun aloittamiseen.\nValitset itse, julkaisetko tuloksen, ja voit yrittää uudelleen.\nKokeile 10 kysymystä 👇\n{1}",
     "m710e90e3a707cb": "Ennustin vastaukset {0}:n ”Know Me” -visassa 📒",
     "m0ceb1e54d8fe14": "{0}:n tukiviesti",
     "m68b116d4486c2c": "{0} henkilöä",
@@ -3296,6 +3295,7 @@
     "m84dcf1d167e88e": "Käyttöehdot · Tuntemistietovisa. Visojen tekeminen ja niihin vastaaminen on ilmaista.",
     "m5f5e4b9880f5bc": "Sisältö- ja henkilökuvaohjeet · Tuntemistietovisa. Visojen tekeminen ja niihin vastaaminen on ilmaista.",
     "meafbd31f893c0c": "Alaikäisten käyttöä koskeva käytäntö · Tuntemistietovisa. Visojen tekeminen ja niihin vastaaminen on ilmaista.",
-    "m8614393176815f": "Ylläpitäjän tiedot · Tuntemistietovisa."
+    "m8614393176815f": "Ylläpitäjän tiedot · Tuntemistietovisa.",
+    "meabab1758961bc": "{0}:n ”Know Me” -visa 📒\nKuinka hyvin oikeasti tunnet minut?\n10 kysymystä keskustelun aloittamiseen.\nKun vastaat kaikkiin, näyttönimesi ja pisteesi näkyvät taululla. Voit yrittää uudelleen milloin vain.\nKokeile 10 kysymystä 👇\n{1}"
   }
 }

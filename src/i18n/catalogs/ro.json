@@ -56,7 +56,6 @@
     "m30d73ed5aa92dc": "Rezultatul lui {0}",
     "md311814ee55a36": "Trimite chestionarul lui {0} prietenilor.",
     "mcdbd588108601b": "Răspunsurile s-au împărțit între {0} opțiuni; cea mai aleasă a avut {1} persoane.",
-    "m2f309acfd172cd": "Chestionarul „Cât de bine mă cunoști?” al lui {0} 📒\nMă cunoști bine, nu-i așa?\n10 întrebări pentru conversație, mai mult decât pentru ghicit.\nTu alegi dacă publici rezultatul și poți încerca din nou.\nÎncearcă cele 10 întrebări 👇\n{1}",
     "m710e90e3a707cb": "Am încercat să ghicesc răspunsurile lui {0} la „Cât de bine mă cunoști?” 📒",
     "m0ceb1e54d8fe14": "Mesajul de sprijin al lui {0}",
     "m68b116d4486c2c": "{0} persoane",
@@ -3296,6 +3295,7 @@
     "m84dcf1d167e88e": "Condiții de utilizare · Cât de bine mă cunoști? Crearea și completarea chestionarelor sunt gratuite.",
     "m5f5e4b9880f5bc": "Reguli privind conținutul și imaginea persoanei · Cât de bine mă cunoști? Crearea și completarea chestionarelor sunt gratuite.",
     "meafbd31f893c0c": "Politica de utilizare pentru minori · Cât de bine mă cunoști? Crearea și completarea chestionarelor sunt gratuite.",
-    "m8614393176815f": "Informații despre operator · Cât de bine mă cunoști?"
+    "m8614393176815f": "Informații despre operator · Cât de bine mă cunoști?",
+    "meabab1758961bc": "Chestionarul „Cât de bine mă cunoști?” al lui {0} 📒\nMă cunoști bine, nu-i așa?\n10 întrebări pentru conversație, mai mult decât pentru ghicit.\nDupă ce răspunzi la tot, numele afișat și scorul apar pe tabel. Poți încerca din nou oricând.\nÎncearcă cele 10 întrebări 👇\n{1}"
   }
 }

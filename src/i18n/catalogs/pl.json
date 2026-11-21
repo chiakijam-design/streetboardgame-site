@@ -2766,7 +2766,6 @@
     "m6a8593c4611e04": "Płatne wiadomości wsparcia nie są darowiznami. Tekst łamiący zasady może zostać ukryty nawet po płatności, a odpowiedzi lub odczytanie przez prowadzącego nie są gwarantowane.",
     "mad9ca24f50f891": "Płatne wiadomości wsparcia nie są darowiznami; przyjęcie kończy się po zakończeniu płatności. Sam brak odpowiedzi lub odczytania nie uprawnia do zwrotu.",
     "m6b77b620b5407c": "Nieletni potrzebują wyraźnej zgody rodziców na rejestrację jako prowadzący ze sprzedażą i otrzymywaniem przychodów. Sama bezpłatna gra LIVE nie wymaga rejestracji sprzedaży.",
-    "m2f309acfd172cd": "Quiz {0} „Jak dobrze mnie znasz” 📒\nJak dobrze mnie znasz?\n10 pytań do rozmowy.\nWybierz, czy opublikować wyniki, i próbuj ponownie kiedy chcesz.\nOdpowiedz na wszystkie 10 pytań 👇\n{1}",
     "m4df4f832bd1632": "Utwórz quiz z 10 pytaniami i 5 opcjami każde, udostępniaj URL zaproszenia, odpowiadaj, przeglądaj raport z omówieniem odpowiedzi, zapisuj karty wyników i opcjonalnie korzystaj z Tablicy zrozumienia.",
     "mb46c1961514938": "Każdy zakup pozwala wygenerować i pobrać wysokiej jakości obraz kupionego wyniku LIVE. Cena ustawiona przez prowadzącego z powyższych opcji jest pokazywana przed zakupem.",
     "m12948301ccf3c1": "Bezpłatny kreator quizów „Jak dobrze mnie znasz” do udostępniania lub transmisji: znajomi odpowiadają kiedy chcą z jednego URL, a prowadzący i widzowie mogą odpowiadać razem i omawiać każde pytanie na żywo.",
@@ -3296,6 +3295,7 @@
     "m84dcf1d167e88e": "Warunki korzystania · Jak dobrze mnie znasz. Tworzenie quizów i odpowiadanie na nie jest bezpłatne.",
     "m5f5e4b9880f5bc": "Zasady dotyczące treści i wizerunku · Jak dobrze mnie znasz. Tworzenie quizów i odpowiadanie na nie jest bezpłatne.",
     "meafbd31f893c0c": "Zasady korzystania przez nieletnich · Jak dobrze mnie znasz. Tworzenie quizów i odpowiadanie na nie jest bezpłatne.",
-    "m8614393176815f": "Informacje o operatorze · Jak dobrze mnie znasz."
+    "m8614393176815f": "Informacje o operatorze · Jak dobrze mnie znasz.",
+    "meabab1758961bc": "Quiz {0} „Jak dobrze mnie znasz” 📒\nJak dobrze mnie znasz?\n10 pytań do rozmowy.\nPo odpowiedzi na wszystkie pytania Twoja nazwa i wynik pojawią się na tablicy. Możesz spróbować ponownie w każdej chwili.\nOdpowiedz na wszystkie 10 pytań 👇\n{1}"
   }
 }

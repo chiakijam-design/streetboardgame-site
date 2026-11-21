@@ -2546,8 +2546,21 @@ async function bootChallenge() {
     render();
     app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = true; });
   }
-  allCards = await loadManagedQuestionCards(allCards, 'challenge', isEnglish ? 'en' : 'ja');
-  questionCatalogReady = true;
+  // 2026-11-21 (Codex review #11): invitation, board and management screens use the room's own
+  // questions, so they start at once; the reviewed catalog keeps loading in the background.
+  // (Codex review #16): if the review status cannot be read, never fall back to the bundled cards.
+  const catalogLoad = loadManagedQuestionCards(allCards, 'challenge', isEnglish ? 'en' : 'ja', { strict: true })
+    .then((cards) => { allCards = cards; questionCatalogReady = true; return true; })
+    .catch(() => false);
+  if (['join', 'ranking', 'manage'].includes(state.mode)) {
+    startChallengeMode();
+    return;
+  }
+  if (!(await catalogLoad)) {
+    setState({ error: 'question-catalog-unavailable' });
+    app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = true; });
+    return;
+  }
   if (earlyStartScreen) {
     app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = false; });
     return;
@@ -2555,6 +2568,10 @@ async function bootChallenge() {
   if (quickStart && state.mode === 'creator-edit') {
     state.cards = pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard);
   }
+  startChallengeMode();
+}
+
+function startChallengeMode() {
   if (state.mode === 'library') {
   document.title = isEnglish ? '10-question packs | How well do you know me?' : '人気の10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
   render();

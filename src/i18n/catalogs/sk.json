@@ -2766,7 +2766,6 @@
     "m6a8593c4611e04": "Platené správy podpory nie sú dary. Text porušujúci pravidlá môže byť skrytý aj po zaplatení a odpovede ani prečítanie streamerom nie sú zaručené.",
     "mad9ca24f50f891": "Platené správy podpory nie sú dary; prijatie je dokončené po platbe. Samotná absencia odpovede alebo prečítania neoprávňuje na vrátenie peňazí.",
     "m6b77b620b5407c": "Maloletí potrebujú výslovný súhlas rodičov na registráciu streamera na predaj a príjem zárobkov. Na samotné bezplatné používanie LIVE nie je registrácia predaja potrebná.",
-    "m2f309acfd172cd": "Kvíz osoby {0} „Ako dobre ma poznáš“ 📒\nAko dobre ma poznáš?\n10 otázok na rozhovor.\nVyberte, či zverejniť výsledky, a skúste to znova kedykoľvek.\nSkúste všetkých 10 otázok 👇\n{1}",
     "m4df4f832bd1632": "Vytvorte kvíz s 10 otázkami a 5 možnosťami pri každej, zdieľajte URL pozvánky, odpovedajte, prezerajte rozbor odpovedí, ukladajte karty výsledkov a voliteľne používajte Tabuľu porozumenia.",
     "mb46c1961514938": "Každý nákup umožňuje vytvoriť a stiahnuť vysokokvalitný obrázok zakúpeného výsledku LIVE. Cena nastavená streamerom z vyššie uvedených možností sa zobrazí pred nákupom.",
     "m12948301ccf3c1": "Bezplatný tvorca kvízov „Ako dobre ma poznáš“ na zdieľanie alebo živé prenosy: priatelia môžu kedykoľvek odpovedať z jednej URL alebo streameri a diváci odpovedať spoločne a rozoberať každú otázku naživo.",
@@ -3296,6 +3295,7 @@
     "m84dcf1d167e88e": "Podmienky používania · Ako dobre ma poznáš. Vytváranie kvízov a odpovedanie na ne je zadarmo.",
     "m5f5e4b9880f5bc": "Pravidlá obsahu a podobizní · Ako dobre ma poznáš. Vytváranie kvízov a odpovedanie na ne je zadarmo.",
     "meafbd31f893c0c": "Pravidlá používania maloletými · Ako dobre ma poznáš. Vytváranie kvízov a odpovedanie na ne je zadarmo.",
-    "m8614393176815f": "Informácie o prevádzkovateľovi · Ako dobre ma poznáš."
+    "m8614393176815f": "Informácie o prevádzkovateľovi · Ako dobre ma poznáš.",
+    "meabab1758961bc": "Kvíz osoby {0} „Ako dobre ma poznáš“ 📒\nAko dobre ma poznáš?\n10 otázok na rozhovor.\nPo zodpovedaní všetkých otázok sa vaše meno a skóre zobrazia na tabuli. Skúsiť to znova môžete kedykoľvek.\nSkúste všetkých 10 otázok 👇\n{1}"
   }
 }

@@ -3,17 +3,23 @@ const MAX_QUESTION_VIEW_HISTORY = 500;
 const QUESTION_DEVICE_KEY = 'watachan:question-device:v1';
 const QUESTION_SELECTION_SESSION_KEY = 'watachan:selection-session:v1';
 
-export async function loadManagedQuestionCards(baseCards, series, language = 'ja') {
+// 2026-11-21 (Codex review #16): with { strict: true } a failed review lookup throws instead of
+// returning the bundled cards, so hidden questions never come back while the status is unknown.
+export async function loadManagedQuestionCards(baseCards, series, language = 'ja', { strict = false } = {}) {
   try {
     const response = await fetch('/api/questions/catalog', {
       headers: { accept: 'application/json' },
       cache: 'no-store',
     });
-    if (!response.ok) return applyQuestionViewHistory(baseCards);
+    if (!response.ok) {
+      if (strict) throw new Error('question-catalog-unavailable');
+      return applyQuestionViewHistory(baseCards);
+    }
     const data = await response.json();
     const cards = applyManagedQuestionCards(baseCards, data.questions, series, language, data.hiddenIds);
     return applyQuestionViewHistory(applyQuestionSelectionStats(cards, data.selectionStats, series));
   } catch (error) {
+    if (strict) throw error;
     return applyQuestionViewHistory(baseCards);
   }
 }

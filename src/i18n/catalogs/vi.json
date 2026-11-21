@@ -2026,7 +2026,6 @@
     "m3ac8bbaa58631e": "{0} trong\ncâu đố của {1}",
     "mf099dae4f5eaa0": "Mức độ {0} hiểu\n{1}",
     "m6985f89d1ed697": "Bạn hiểu {0} đến mức nào? Đoán đủ 10 câu trả lời 👇\n{1}",
-    "m2f309acfd172cd": "Câu đố Hiểu Tôi của {0} 📒\nBạn hiểu tôi đến mức nào?\n10 câu hỏi để mở đầu trò chuyện.\nTự chọn công khai kết quả và thử lại bất cứ lúc nào.\nThử đủ 10 câu 👇\n{1}",
     "m604cf2f80ce2a9": "| Đơn vị vận hành: Chiaki Hirakawa",
     "mcb600525f72135": "Bộ 10 câu hỏi | Bạn hiểu tôi đến mức nào?",
     "m70df6b1a444ca2": "Bạn Hiểu Tôi Đến Mức Nào? | Câu Đố Thấu Hiểu",
@@ -3296,6 +3295,7 @@
     "m84dcf1d167e88e": "Điều khoản sử dụng · Câu đố Hiểu Tôi. Tạo và trả lời câu đố hoàn toàn miễn phí.",
     "m5f5e4b9880f5bc": "Hướng dẫn về nội dung và hình ảnh cá nhân · Câu đố Hiểu Tôi. Tạo và trả lời câu đố hoàn toàn miễn phí.",
     "meafbd31f893c0c": "Chính sách sử dụng dành cho người chưa thành niên · Câu đố Hiểu Tôi. Tạo và trả lời câu đố hoàn toàn miễn phí.",
-    "m8614393176815f": "Thông tin đơn vị vận hành · Câu đố Hiểu Tôi."
+    "m8614393176815f": "Thông tin đơn vị vận hành · Câu đố Hiểu Tôi.",
+    "meabab1758961bc": "Câu đố Hiểu Tôi của {0} 📒\nBạn hiểu tôi đến mức nào?\n10 câu hỏi để mở đầu trò chuyện.\nKhi trả lời hết, tên hiển thị và điểm của bạn sẽ lên bảng. Có thể thử lại bất cứ lúc nào.\nThử đủ 10 câu 👇\n{1}"
   }
 }

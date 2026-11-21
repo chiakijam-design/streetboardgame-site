@@ -56,7 +56,6 @@
     "m30d73ed5aa92dc": "Resultado de {0}",
     "md311814ee55a36": "Envía el cuestionario de {0} a tus amigos.",
     "mcdbd588108601b": "Las respuestas se repartieron entre {0} opciones; la más elegida tuvo {1} personas.",
-    "m2f309acfd172cd": "El cuestionario «¿Cuánto me conoces?» de {0} 📒\n¿Seguro que me conoces bien?\n10 preguntas para conversar más que para acertar.\nTú decides si haces público el resultado, y puedes volver a intentarlo.\nPrueba las 10 preguntas 👇\n{1}",
     "m710e90e3a707cb": "He intentado adivinar las respuestas de {0} en «¿Cuánto me conoces?» 📒",
     "m0ceb1e54d8fe14": "Mensaje de apoyo de {0}",
     "m68b116d4486c2c": "{0} personas",
@@ -3296,6 +3295,7 @@
     "m84dcf1d167e88e": "Condiciones de uso · ¿Cuánto me conoces? Crear y responder cuestionarios es gratis.",
     "m5f5e4b9880f5bc": "Directrices sobre contenido y derechos de imagen · ¿Cuánto me conoces? Crear y responder cuestionarios es gratis.",
     "meafbd31f893c0c": "Normas de uso para menores · ¿Cuánto me conoces? Crear y responder cuestionarios es gratis.",
-    "m8614393176815f": "Información del operador · ¿Cuánto me conoces?"
+    "m8614393176815f": "Información del operador · ¿Cuánto me conoces?",
+    "meabab1758961bc": "El cuestionario «¿Cuánto me conoces?» de {0} 📒\n¿Seguro que me conoces bien?\n10 preguntas para conversar más que para acertar.\nAl responder todo, tu nombre visible y tu puntuación aparecen en el tablero. Puedes volver a intentarlo.\nPrueba las 10 preguntas 👇\n{1}"
   }
 }
