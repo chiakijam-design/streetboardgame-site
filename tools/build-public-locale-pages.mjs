@@ -84,7 +84,12 @@ for (const locale of PUBLIC_LOCALES.filter(value => value !== 'ja')) {
     html = html.replace(/^[\t ]+$/gm, '');
     // 2026-11-21 (Codex review #20): translated pages use the English question library, so the
     // Japanese question data script is not shipped with them (same rule as the Worker's selectQuestionDataScript).
-    if (locale !== 'ja') html = html.replace(/\s*<script\b[^>]*data-build-entry=["']prototype_common_data["'][^>]*>\s*<\/script>/i, '');
+    if (locale !== 'ja') {
+      // Cut out exactly the generated tag (no regex sanitizing of arbitrary HTML).
+      const start = html.indexOf('<script data-build-entry="prototype_common_data"');
+      const end = start < 0 ? -1 : html.indexOf('</script>', start);
+      if (end > start) html = html.slice(0, start) + html.slice(end + '</script>'.length);
+    }
     assert.ok(html.length < 100000, path + ' bounded Worker HTML');
     const hash = createHash('sha256').update(html).digest('hex').slice(0, 12);
     const name = `${locale}-${page === '/' ? 'index' : page.slice(1).replaceAll('/', '-')}-${hash}.html`;

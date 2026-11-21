@@ -95,5 +95,5 @@ test('#3 #9 #13 #19 #20 #21 #22 #23 #24 checks', async () => {
   const perfect = readFileSync(new URL('../../src/challenge/perfect.js', import.meta.url), 'utf8');
   assert.match(perfect, /if \(focus\) share\.focus/);
   const tool = readFileSync(new URL('../../tools/build-public-locale-pages.mjs', import.meta.url), 'utf8');
-  assert.match(tool, /if \(locale !== 'ja'\) html = html\.replace/);
+  assert.ok(tool.includes(`html.indexOf('<script data-build-entry="prototype_common_data"')`));
 });
