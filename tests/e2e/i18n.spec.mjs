@@ -148,7 +148,7 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
     const details = document.querySelector('[data-testid="challenge-result-details"]');
     const share = document.querySelector('[data-testid="challenge-result-share"]');
     const retry = document.querySelector('[data-action="retry-challenge"]');
-    const order = [swap, fresh, board, details, share, retry];
+    const order = [swap, fresh, share, board, details, retry]; // 2026-11-22 本人の決定：シェアは「次は私が出題する」のすぐ下
     return order.every(Boolean) && order.slice(1).every((element, i) => Boolean(order[i].compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
   })).toBe(true);
   await expect(page.getByRole('button', { name: 'Copy text only' })).toHaveCount(0);
