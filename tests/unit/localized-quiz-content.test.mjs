@@ -24,7 +24,7 @@ test('all invitation locales handle ordinary and redacted names at both question
       assert.ok(personal.title.includes('Alex'), locale);
       assert.ok(personal.description.includes(String(count)), locale);
       assert.ok(generic.description.includes(String(count)), locale);
-      assert.ok(!generic.title.includes('spam.com') && !generic.description.includes('spam.com'), locale);
+      assert.doesNotMatch(generic.title + ' ' + generic.description, /spam\.com/, locale); // 名前らしくない表示名は題・説明に入れない
       titles.add(personal.title);
     }
     assert.equal(titles.size, TARGET_LOCALES.length);
