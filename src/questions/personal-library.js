@@ -91,9 +91,14 @@ export function personalQuestionBatch(cards, answers, index, templates, idPrefix
   if (!Array.isArray(cards) || cards.length < 1 || cards.length > 10 || !Number.isInteger(index)
     || index < 0 || index >= cards.length || !Array.isArray(templates) || templates.length < 1
     || templates.length > cards.length - index) throw new Error('invalid');
+  // 2026-11-22（本人の答え・Gemini 見直し3）：選んだ問題は今の位置から差し替え、後ろの問題は残す（クイズの問題数を縮めない）。
+  // 差し替えた問題の答えだけ空にし、後ろの答えはそのまま（途中に未回答があるときは完成のボタンがその番号を案内する）
+  const end = index + templates.length;
+  const nextAnswers = answers.slice(0, index);
+  for (let i = end; i < answers.length; i += 1) if (answers[i] !== undefined) nextAnswers[i] = answers[i];
   return {
-    cards: [...cards.slice(0,index), ...templates.map((template,i) => personalQuestionCard(template, `${idPrefix}${i}`))],
-    answers: answers.slice(0,index),
+    cards: [...cards.slice(0,index), ...templates.map((template,i) => personalQuestionCard(template, `${idPrefix}${i}`)), ...cards.slice(end)],
+    answers: nextAnswers,
   };
 }
 
