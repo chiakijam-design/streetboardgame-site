@@ -50,3 +50,43 @@ export function challengeCompletionCopy(locale, count, maximum = 10) {
   if (locale === 'ar' && maximum === 2) help = 'يمكنك البدء بسؤال واحد وإضافة سؤال آخر.';
   return {label: label.replaceAll('{count}', String(count)), help};
 }
+
+// 2026-11-22（Gemini 見直し6）：途中の問題を飛ばした・直したあと、後ろに答えた問題が残っているときの案内（後ろを黙って消さない）
+const gapRows = `ja|Q{n}の答えを選ぶと、後ろの問題も含めて完成できます。
+en|Choose an answer for Q{n} to keep the questions after it.
+es|Elige la respuesta de Q{n} para incluir también las preguntas siguientes.
+fr|Choisissez la réponse de Q{n} pour inclure aussi les questions suivantes.
+de|Wähle die Antwort für Q{n}, um auch die folgenden Fragen einzuschließen.
+it|Scegli la risposta di Q{n} per includere anche le domande successive.
+pt|Escolha a resposta da Q{n} para incluir também as perguntas seguintes.
+ru|Выберите ответ на Q{n}, чтобы включить и следующие вопросы.
+uk|Виберіть відповідь на Q{n}, щоб додати й наступні запитання.
+pl|Wybierz odpowiedź na Q{n}, aby uwzględnić także kolejne pytania.
+nl|Kies het antwoord op Q{n} om ook de volgende vragen mee te nemen.
+sv|Välj svaret på Q{n} för att även ta med de följande frågorna.
+da|Vælg svaret på Q{n} for også at tage de følgende spørgsmål med.
+no|Velg svaret på Q{n} for å ta med de neste spørsmålene også.
+fi|Valitse vastaus kohtaan Q{n}, niin myös seuraavat kysymykset tulevat mukaan.
+cs|Vyberte odpověď na Q{n}, aby se zahrnuly i další otázky.
+el|Επιλέξτε απάντηση για την Q{n} ώστε να συμπεριληφθούν και οι επόμενες ερωτήσεις.
+ro|Alege răspunsul la Q{n} ca să incluzi și întrebările următoare.
+hu|Válaszd ki a Q{n} válaszát, hogy a következő kérdések is bekerüljenek.
+bg|Изберете отговор на Q{n}, за да включите и следващите въпроси.
+hr|Odaberi odgovor na Q{n} kako bi uključio i sljedeća pitanja.
+sk|Vyberte odpoveď na Q{n}, aby sa zahrnuli aj ďalšie otázky.
+tr|Sonraki soruları da eklemek için Q{n} sorusunun cevabını seç.
+ar|اختر إجابة Q{n} لتضمين الأسئلة التالية أيضًا.
+he|בחרו תשובה ל-Q{n} כדי לכלול גם את השאלות הבאות.
+hi|आगे के सवाल भी शामिल करने के लिए Q{n} का जवाब चुनें।
+bn|পরের প্রশ্নগুলোও রাখতে Q{n}-এর উত্তর বেছে নিন।
+id|Pilih jawaban untuk Q{n} agar pertanyaan berikutnya ikut disertakan.
+ms|Pilih jawapan untuk Q{n} supaya soalan seterusnya turut disertakan.
+th|เลือกคำตอบของ Q{n} เพื่อรวมคำถามถัดไปด้วย
+vi|Chọn đáp án cho Q{n} để giữ cả các câu hỏi phía sau.
+ko|Q{n}의 답을 고르면 뒤의 문제까지 포함해 완성할 수 있어요.
+zh-Hans|选择Q{n}的答案后，可连同后面的题目一起完成。
+zh-Hant|選擇Q{n}的答案後，可連同後面的題目一起完成。`;
+export const CHALLENGE_GAP_COPY = Object.freeze(Object.fromEntries(gapRows.split(String.fromCharCode(10)).map(row => { const [locale, text] = row.split('|'); return [locale, text]; })));
+export function challengeGapCopy(locale, questionNumber) {
+  return (CHALLENGE_GAP_COPY[locale] || CHALLENGE_GAP_COPY.en).replaceAll('{n}', String(questionNumber));
+}

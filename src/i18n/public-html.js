@@ -65,6 +65,8 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   const localizedShareImage = locale === 'en' ? `${origin}/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg`
     : locale !== 'ja' ? `${origin}/assets/locale-share/${locale}.png?v=20261010-i18n-1` : null;
   if (localizedShareImage) output = output.replace(/(<meta\b[^>]*\b(?:property|name)=["'](?:og:image(?::secure_url)?|twitter:image)["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${localizedShareImage}"`);
+  // 2026-11-22（Gemini 見直し10）：画像が PNG の言語は、画像の種類も PNG と書く
+  if (localizedShareImage && /\.png(?:\?|$)/.test(localizedShareImage)) output = output.replace(/(<meta\b[^>]*\bproperty=["']og:image:type["'][^>]*\bcontent=)["'][^"']*["']/gi, '$1"image/png"');
   // New locale traffic must not silently expand the existing analytics tags
   // before regional consent and cookie policy have been reviewed. This flag
   // precedes the legacy synchronous analytics script in the game template.
@@ -100,6 +102,11 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   });
   output = output.replace(/<html\b[^>]*>/i, `<html lang="${locale}" dir="${details.direction}">`);
   output = output.replace(/(<meta\b[^>]*\bproperty=["']og:locale["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${details.openGraphLocale}"`);
+  // 2026-11-22（Gemini 見直し10）：別の言語の印（og:locale:alternate）は、自分以外の検索対象の言語にする（英語のページで en_US が重ならない）
+  const altLocales = SEARCH_INDEXED_LOCALES.filter((language) => language !== locale && LOCALE_DETAILS[language]?.openGraphLocale)
+    .map((language) => `<meta property="og:locale:alternate" content="${LOCALE_DETAILS[language].openGraphLocale}">`).join('');
+  output = output.replace(/\s*<meta\b[^>]*\bproperty=["']og:locale:alternate["'][^>]*>/gi, '')
+    .replace(/(<meta\b[^>]*\bproperty=["']og:locale["'][^>]*>)/i, `$1${altLocales}`);
   const canonical = origin + localeCanonicalPath(requestUrl.pathname, locale);
   output = output.replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
     .replace(/(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${canonical}"`);

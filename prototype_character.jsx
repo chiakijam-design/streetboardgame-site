@@ -6,7 +6,7 @@
 
 (function() {
 
-const IMAGE_BASE = 'assets/character/';
+const IMAGE_BASE = '/assets/character/'; // 2026-11-22（Gemini 見直し29）
 
 // 各バリアントの画像と自然なアスペクト比 (height / width)
 const VARIANTS = {

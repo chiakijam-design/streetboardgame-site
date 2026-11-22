@@ -1,13 +1,14 @@
+import { resultQrCta, shareHashtag } from './src/i18n/qr-cta-copy.js';
 import { loadPersonalQuestions, changePersonalQuestions, autoSavePersonalQuestion, personalQuestionCard, personalQuestionBatch, restorePersonalQuestion, submissionEligibleCards, publicQuizCards } from './src/questions/personal-library.js';
 import { personalQuestionCopy } from './src/i18n/personal-question-copy.js';
 import { personalHistoryCopy, personalCompactCopy } from './src/i18n/personal-question-history-copy.js';
 import { personalBatchCopy } from './src/i18n/personal-question-batch-copy.js';
 import { personalAutosaveCopy } from './src/i18n/personal-question-autosave-copy.js';
-import { validQuizLength, answeredQuestionCount, completedCreatorQuiz } from './src/challenge/length.js';
+import { validQuizLength, answeredQuestionCount, completedCreatorQuiz, answerGapBeforeLater } from './src/challenge/length.js';
 import { boardCopy } from './src/i18n/challenge-board-copy.js';
 import { challengeCopy } from './src/i18n/challenge-copy.js';
 import { challengeResultCopy } from './src/i18n/challenge-result-copy.js';
-import { challengeCompletionCopy } from './src/i18n/challenge-completion-copy.js';
+import { challengeCompletionCopy, challengeGapCopy } from './src/i18n/challenge-completion-copy.js';
 import { challengeStartCopy } from './src/i18n/challenge-start-copy.js';
 import { participantAnswerOwnerText } from './src/i18n/challenge-participant-copy.js';
 import { weeklyQuestionPacks } from './src/challenge/packs.js';
@@ -329,8 +330,11 @@ function trackCurrentCreatorQuestionShown() {
 function finishEarlyControls() {
   const count = answeredQuestionCount(state.cards, state.answers);
   const copy = challengeCompletionCopy(currentLocale, count, state.cards.length);
-  return `<button class="challenge-secondary" data-action="finish-early" aria-describedby="challenge-finish-help" ${!count || state.loading ? 'disabled' : ''}>${escapeHtml(copy.label)}</button>
-    <p class="challenge-note" id="challenge-finish-help" data-testid="challenge-finish-help">${escapeHtml(copy.help)}</p>`;
+  // 2026-11-22（Gemini 見直し6）：途中に未回答があり、その後ろに答えた問題があるときは、完成で後ろを消さない（その番号の答えを選んでもらう）
+  const gap = answerGapBeforeLater(state.cards, state.answers);
+  const help = gap >= 0 ? challengeGapCopy(currentLocale, gap + 1) : copy.help;
+  return `<button class="challenge-secondary" data-action="finish-early" aria-describedby="challenge-finish-help" ${!count || gap >= 0 || state.loading ? 'disabled' : ''}>${escapeHtml(copy.label)}</button>
+    <p class="challenge-note" id="challenge-finish-help" data-testid="challenge-finish-help">${escapeHtml(help)}</p>`;
 }
 
 function finishConfirmationView() {
@@ -720,7 +724,7 @@ function createStartView() {
         placeholder="例：ちあき" value="${escapeHtml(state.creatorName)}"${nameErrorAttributes('creator-name')}>
       ${nameFieldError('creator-name')}
       <button class="challenge-primary" data-action="start-create">${escapeHtml(translateText('クイズを作る'))} <span>▶</span></button>
-      <p class="challenge-note">共通のお題ライブラリから出題します。回答途中はこの端末へ自動保存されます。</p><p>${escapeHtml(challengeCompletionCopy(currentLocale, 0).help)}</p>
+      <p class="challenge-note">共通のお題ライブラリから出題します。回答途中はこの端末へ自動保存されます。</p><p class="challenge-note">${escapeHtml(challengeCompletionCopy(currentLocale, 0).help)}</p>
     </section>`,
   );
 }
@@ -1051,7 +1055,7 @@ function resultView() {
       ${state.resultImageUrl
         ? `<img class="challenge-result-image" data-testid="challenge-result-image"
             src="${state.resultImageUrl}" width="1080" height="1350"
-            alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${result.score}/${result.answers.length}問正解、称号は${escapeHtml(tier.title)}">`
+            alt="${escapeHtml(result.participant.name)}さんの${escapeHtml(result.creatorName)}さん理解度、${result.score}/${result.answers.length}問正解、称号は${escapeHtml(isEnglish ? translateText(tier.title) : tier.title)}">`
         : `<div class="challenge-result-image-loading" role="status">
             ${state.resultImageError ? escapeHtml(state.resultImageError) : '名前と称号入りの結果画像を準備しています…'}
           </div>`}
@@ -1415,12 +1419,12 @@ function bindEvents() {
   });
   document.querySelector('[data-action="finish-early"]')?.addEventListener('click', () => {
     const count = answeredQuestionCount(state.cards, state.answers);
-    if (!state.loading && count) { captureCreatorConsent(); setState({ finishCount: count, error: '' }); }
+    if (!state.loading && count && answerGapBeforeLater(state.cards, state.answers) < 0) { captureCreatorConsent(); setState({ finishCount: count, error: '' }); }
   });
   document.querySelector('[data-action="cancel-finish"]')?.addEventListener('click', () => setState({ finishCount: 0 }));
   document.querySelector('[data-action="confirm-finish"]')?.addEventListener('click', () => {
     const count = answeredQuestionCount(state.cards, state.answers);
-    if (count && count === state.finishCount) createChallengeRoom(state.answers.slice(0, count));
+    if (count && count === state.finishCount && answerGapBeforeLater(state.cards, state.answers) < 0) createChallengeRoom(state.answers.slice(0, count));
   });
   document.querySelector('[data-action="resume-create"]')?.addEventListener('click', resumeCreate);
   document.querySelector('[data-action="delete-draft"]')?.addEventListener('click', deleteCreatorDraft);
@@ -2311,13 +2315,14 @@ async function createChallengeResultCanvas(result) {
   context.stroke();
   context.fillStyle = '#191919';
   context.font = '900 28px "Noto Sans JP", sans-serif';
-  context.fillText(isEnglish ? 'Share this result' : 'この結果をシェアしよう', 448, 1134);
+  // 2026-11-22（Gemini 見直し22）：結果の画像を見た友達に、QR から同じクイズに挑戦できると伝える
+  context.fillText(resultQrCta(currentLocale), 448, 1134, 300);
   context.fillStyle = '#d63a75';
   context.font = '900 22px "Noto Sans JP", sans-serif';
   context.fillText(isEnglish ? 'Which answers matched?' : 'どこが当たった？', 448, 1168);
   context.fillStyle = '#191919';
   context.font = '700 22px "Noto Sans JP", sans-serif';
-  context.fillText(isEnglish ? 'streetboardgame.com  /  #Watachan' : 'streetboardgame.com  /  #わたちゃん', 448, 1202);
+  context.fillText(`streetboardgame.com  /  ${shareHashtag(currentLocale)}`, 448, 1202);
   if (qrImage) {
     context.fillStyle = '#ffffff';
     resultRoundRect(context, 776, 1106, 108, 108, 18);
@@ -2399,6 +2404,14 @@ function stopPerfectCelebration() {
   closePerfectPopup = () => {};
 }
 
+// 2026-11-22（Gemini 見直し15）：日英以外は、日本語の題の訳があるときだけ使う（なければページに最初から入っているその言語の題を残す）
+function setScreenTitle(english, japanese) {
+  if (currentLocale === 'ja') { document.title = japanese; return; }
+  if (currentLocale === 'en') { document.title = english; return; }
+  const translated = translateText(japanese);
+  if (translated && translated !== japanese) document.title = translated;
+}
+
 function resultShareText({ includeUrl = true } = {}) {
   const tier = localizedResultTier(state.result);
   const shareUrl = `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`;
@@ -2407,7 +2420,7 @@ function resultShareText({ includeUrl = true } = {}) {
         `I guessed ${state.result.creatorName}’s answers!`,
         numberedCopy('Which ones matched? Check the answers and try the same 10 questions.', state.result.answers.length),
         `My title: “${translateText(tier.title)}”`,
-        '#Watachan',
+        shareHashtag(currentLocale),
       ]
     : [
         `${state.result.creatorName}の「わたし理解度診断」で答えを予想してみた📒`,
@@ -2580,7 +2593,8 @@ function errorMessage(code) {
     'room-full': 'このクイズは上限の50人に達しました。',
     'room-not-found': 'クイズが見つからないか、有効期限が切れています。',
     'questions-unavailable': '問題データを読み込めませんでした。',
-    'questions-incomplete': '10問すべての問題文と5つの選択肢を入力してください。',
+    'question-catalog-unavailable': '問題データを読み込めませんでした。', // 2026-11-22（Gemini 見直し32）：汎用の通信エラーにしない
+    'questions-incomplete': currentLocale === 'ja' ? '問題文と5つの選択肢をすべて入力してください。' : '10問すべての問題文と5つの選択肢を入力してください。', // 2026-11-22（Gemini 見直し32）
     'participant-forbidden': '参加情報を確認できません。もう一度URLを開いてください。',
     'answers-already-submitted': 'この参加者の回答はすでに確定しています。',
     'answers-not-submitted': '10問の回答が完了していません。',
@@ -2622,6 +2636,15 @@ async function bootChallenge() {
   if (!(await catalogLoad)) {
     setState({ error: 'question-catalog-unavailable' });
     app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = true; });
+    // 2026-11-22（Gemini 見直し32）：押せるボタンが1つもない状態にしない
+    const alertBox = app.querySelector('.challenge-error');
+    if (alertBox && !app.querySelector('[data-reload-page]')) {
+      const reload = document.createElement('button');
+      reload.type = 'button'; reload.className = 'challenge-secondary'; reload.dataset.reloadPage = '';
+      reload.textContent = '↻ ' + (currentLocale === 'ja' ? '再読み込み' : 'Reload');
+      reload.addEventListener('click', () => location.reload());
+      alertBox.after(reload);
+    }
     return;
   }
   if (earlyStartScreen) {
@@ -2636,14 +2659,14 @@ async function bootChallenge() {
 
 function startChallengeMode() {
   if (state.mode === 'library') {
-  document.title = isEnglish ? '10-question packs | How well do you know me?' : '人気の10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
+  setScreenTitle('10-question packs | How well do you know me?', '人気の10問パック｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？');
   render();
   scheduleLibraryTrends();
   } else if (state.mode === 'ranking') {
-  document.title = isEnglish ? 'Understanding Board | How well do you know me?' : '理解度ボード｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
+  setScreenTitle('Understanding Board | How well do you know me?', '理解度ボード｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？');
   loadRanking();
   } else if (state.mode === 'manage') {
-  document.title = isEnglish ? 'Manage responses | How well do you know me?' : '主催者用回答管理｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？';
+  setScreenTitle('Manage responses | How well do you know me?', '主催者用回答管理｜わたし理解度診断｜私のこと、ちゃんと分かってるよね？');
   loadManageRoom();
   } else if (state.mode === 'join') {
   loadRoom();
