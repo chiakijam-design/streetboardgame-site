@@ -6,7 +6,7 @@ export function usesWordSpaces(locale) { return !NO_SPACE_LOCALES.has(locale); }
 // 前もって作る HTML 用：<a> の前後で、文字と文字がくっついているところにだけ空白を入れる（script・style・コメントは触らない）
 export function spaceAroundLinks(html, locale) {
   if (!usesWordSpaces(locale)) return html;
-  return html.replace(/(<script\b[\s\S]*?<\/script\b[^>]*>|<style\b[\s\S]*?<\/style\b[^>]*>|<!--[\s\S]*?-->)|([\p{L}\p{N},;:])(<a\b)|(<\/a>)([\p{L}\p{N}(])/gu,
+  return html.replace(/(<script\b[\s\S]*?<\/script\b[^>]*>|<style\b[\s\S]*?<\/style\b[^>]*>|<!--[\s\S]*?--!?>)|([\p{L}\p{N},;:])(<a\b)|(<\/a\s*>)([\p{L}\p{N}(])/giu,
     (whole, protectedBlock, before, open, close, after) => {
       if (protectedBlock) return protectedBlock;
       if (open) return before + ' ' + open;
