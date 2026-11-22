@@ -1063,6 +1063,19 @@ function resultView() {
       <a class="challenge-secondary" href="#challenge-result-share" data-testid="jump-to-result-share">この結果をシェアしよう</a>
     </section>
     ${state.error ? `<p class="challenge-error" role="alert">${escapeHtml(errorMessage(state.error))}</p>` : ''}
+    <!-- 2026-11-22（Gemini 見直し21）：結果を見ていちばん気持ちが上がったときに押せるよう、シェアは結果の画像のすぐ下に -->
+    <section class="challenge-panel challenge-result-share-panel">
+      <div class="challenge-result-share-wrap">
+        <section class="challenge-result-share" id="challenge-result-share" data-testid="challenge-result-share"
+          aria-labelledby="challenge-result-share-title">
+          <span class="challenge-section-label">SHARE YOUR RESULT</span>
+          <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
+          <label class="challenge-consent" data-testid="result-share-include-score"><input type="checkbox" id="result-share-include-score"><span>点数も入れる</span></label>
+          ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) })}
+
+        </section>
+      </div>
+    </section>
     <section class="challenge-role-swap" data-testid="challenge-role-swap" aria-labelledby="challenge-next-title">
       <h2 id="challenge-next-title">${escapeHtml(challengeResultCopy(currentLocale, 'heading'))}</h2>
       <div class="challenge-result-next-actions">
@@ -1102,16 +1115,6 @@ function resultView() {
     </section>
     </details>
     <section class="challenge-panel">
-      <div class="challenge-result-share-wrap">
-        <section class="challenge-result-share" id="challenge-result-share" data-testid="challenge-result-share"
-          aria-labelledby="challenge-result-share-title">
-          <span class="challenge-section-label">SHARE YOUR RESULT</span>
-          <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
-          <label class="challenge-consent" data-testid="result-share-include-score"><input type="checkbox" id="result-share-include-score"><span>点数も入れる</span></label>
-          ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) })}
-
-        </section>
-      </div>
       <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>
       <p class="challenge-result-retry-note">${escapeHtml(result.participant?.rankingParticipating ? boardCopy(currentLocale, 'rule') : boardCopy(currentLocale, 'legacy'))}</p>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
@@ -1262,7 +1265,7 @@ function libraryView() {
                 alt="${escapeHtml(isEnglish ? currentLocale === 'en' ? pack.title + ' illustration' : translateText(pack.title) : pack.title + 'のイメージ画像')}">
             <div class="challenge-pack-copy">
               <span class="challenge-pack-count">10問パック</span>
-              <h2>${escapeHtml(pack.title)}</h2>
+              <h2>${['ja', 'en', 'es', 'pt'].includes(currentLocale) ? `<a href="${languagePrefix}/challenge/library/${encodeURIComponent(pack.slug)}" style="color:inherit;text-decoration:underline;text-underline-offset:.18em">${escapeHtml(pack.title)}</a>` : escapeHtml(pack.title)}</h2><!-- 2026-11-22（Gemini 見直し24）：題からパックの詳しいページ（会話のネタ・送り方）へ -->
               <p>${escapeHtml(pack.description)}</p>
               <details${questionCatalogReady ? '' : ' inert'}>
                 <summary>入っている10問を見る</summary>

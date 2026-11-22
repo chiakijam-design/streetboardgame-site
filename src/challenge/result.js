@@ -224,9 +224,18 @@ export function getChallengeReviewLines(result = {}) {
   ];
 }
 
+// 2026-11-22（Gemini 見直し25）：短いクイズも正解の割合で称号を変える（満点以外が全部同じにならないように）。
+// 数字の入らない称号だけを使う（「あと1問」は本当に1問だけ外したとき）。長い文は10問用の数字が入るので使わない
 function shortQuizTier(score, total, tiers) {
   const safeScore = Math.max(0, Math.min(total, Math.trunc(Number(score) || 0)));
-  return { ...tiers[safeScore === total ? 10 : 4], score: safeScore,
+  const ratio = safeScore / total;
+  const key = safeScore === total ? 10
+    : total >= 2 && total - safeScore === 1 ? 9
+      : ratio >= 0.75 ? 7
+        : ratio > 0.5 ? 6
+          : ratio === 0.5 ? 5
+            : 4;
+  return { ...tiers[key], score: safeScore, messageLong: undefined,
     tag: `${safeScore}/${total}`, message: tiers[10].message.split('\n')[1] };
 }
 
