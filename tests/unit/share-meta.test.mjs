@@ -52,13 +52,13 @@ test('display names are escaped in every tag', () => {
   assert.match(html, /&lt;b&gt;&quot;x&quot;&amp;yさんからの挑戦/);
 });
 
-test('Portuguese, Spanish and English copies; other locales fall back to English', async () => {
+test('Portuguese, Spanish and French invitation previews use localized copy', async () => {
   const env = { CHALLENGE_KV: kvWith({ 'challenge:ABCDEFGH': { creatorName: 'Ana', cards: [1], expiresAt: future } }) };
   const url = new URL('https://x/pt/challenge?room=ABCDEFGH');
   assert.match((await personalizeRoomPage(HTML, env, url, 'pt')).html, /Desafio de Ana .*1 pergunta\b|Desafio de Ana/);
   assert.match(applyRoomShareMeta(HTML, 'pt', { name: 'Ana', count: 1 }), /respostas de 1 pergunta\./);
   assert.match(applyRoomShareMeta(HTML, 'es', { name: 'Ana', count: 10 }), /El reto de Ana/);
-  assert.match(applyRoomShareMeta(HTML, 'fr', { name: 'Ana', count: 10 }), /Ana&#39;s challenge/);
+  assert.match(applyRoomShareMeta(HTML, 'fr', { name: 'Ana', count: 10 }), /Ana propose un quiz/);
 });
 
 test('control characters are stripped and names capped at 12 characters', async () => {

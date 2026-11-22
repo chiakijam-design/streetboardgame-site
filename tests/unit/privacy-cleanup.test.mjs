@@ -7,7 +7,9 @@ import { PRIVACY_RETENTION, runPrivacyCleanup, contactCutoff } from '../../src/p
 test('プライバシーポリシーは現在の公開範囲・子ども・第三者提供・統計情報を明記する', async () => {
   const document = await readFile(new URL('../../privacy.html', import.meta.url), 'utf8');
   for (const requiredText of [
-    '2026-11-15',
+    '2026-11-22',
+    'Workers Logs',
+    '毎時の自動処理でD1から削除します',
     '表示名と点数が理解度ボードに自動で載ります',
     '以前の非掲載結果は公開しません',
     '掲載候補として送信しない問題は、この目的では公開しません',
@@ -21,7 +23,7 @@ test('プライバシーポリシーは現在の公開範囲・子ども・第�
   ]) assert.equal(document.includes(requiredText), true, requiredText);
   assert.equal(document.includes('任意に選択または入力したコメント'), false);
   // LIVE was removed on 2026-11-15; its provisions live only in /legal-history/.
-  for (const liveText of ['LIVE', '購入者メールHMAC', 'Cloudflare Images', 'Stripe']) {
+  for (const liveText of ['LIVE', '購入者メールHMAC', 'Cloudflare Images', 'Stripe', '180日', 'R2', '返金', '決済', '投票', '予約', 'YouTube']) {
     assert.equal(document.includes(liveText), false, liveText);
   }
   assert.equal(document.includes('href="/legal-history/2026-11-14-privacy.html"'), true);

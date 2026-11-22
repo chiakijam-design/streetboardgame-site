@@ -1,3 +1,4 @@
+import { challengeResultCopy } from '../i18n/challenge-result-copy.js';
 import { createReviewContext, createReviewTemplateTools } from '../core/review.js';
 
 // messageLong: 4-line comment for the ja/en result card. Other locales keep
@@ -162,9 +163,9 @@ export function getChallengeResultTierEnglish(score, total = 10) {
   return CHALLENGE_RESULT_TIERS_EN[safeScore];
 }
 
-export function getChallengeReviewLinesEnglish(result = {}) {
+export function getChallengeReviewLinesEnglish(result = {}, locale = 'en') {
   const answers = Array.isArray(result.answers) ? result.answers : [];
-  if (answers.length > 0 && answers.length < 10) return shortQuizReview(result, answers);
+  if (answers.length > 0 && answers.length < 10) return shortQuizReview(result, answers, locale);
   const score = Math.max(0, Math.min(10, Math.trunc(Number(result.score) || 0)));
   const participant = String(result.participant?.name || 'This player').trim() || 'This player';
   const creator = String(result.creatorName || 'the creator').trim() || 'the creator';
@@ -189,7 +190,7 @@ export function getChallengeReviewLinesEnglish(result = {}) {
 
 export function getChallengeReviewLines(result = {}) {
   const answers = Array.isArray(result.answers) ? result.answers : [];
-  if (answers.length > 0 && answers.length < 10) return shortQuizReview(result, answers);
+  if (answers.length > 0 && answers.length < 10) return shortQuizReview(result, answers, 'ja');
   const cards = answers.map((answer) => answer?.card || {});
   const context = createReviewContext(answers, cards);
   const tier = getChallengeResultTier(result.score);
@@ -239,11 +240,17 @@ function shortQuizTier(score, total, tiers) {
     tag: `${safeScore}/${total}`, message: tiers[10].message.split('\n')[1] };
 }
 
-function shortQuizReview(result, answers) {
+function shortQuizReview(result, answers, locale) {
   const score = Math.max(0, Math.min(answers.length, Math.trunc(Number(result.score) || 0)));
   const correct = answers.filter(answer => answer.match === true || answer.isCorrect === true);
   const missed = answers.filter(answer => answer.match !== true && answer.isCorrect !== true);
   const titles = items => items.map(answer => String(answer.card?.title || '')).filter(Boolean).join(' · ') || '—';
-  return [`${score}/${answers.length}`, `✓ ${titles(correct)}`, `× ${titles(missed)}`,
-    String((missed[0] || correct[0])?.card?.title || '—')];
+  const separator = locale === 'ja' || locale.startsWith('zh-') ? '：' : ': ';
+  const labeled = (key, text) => challengeResultCopy(locale, key) + separator + text;
+  return [
+    `${score}/${answers.length}`,
+    labeled('hit', titles(correct)),
+    labeled('surprise', titles(missed)),
+    labeled('topic', String((missed[0] || correct[0])?.card?.title || '—')),
+  ];
 }

@@ -5,7 +5,7 @@ es|Terminar edición|Al confirmar, la pregunta y sus opciones se guardan automá
 fr|Terminer la modification|Confirmer une modification enregistre automatiquement la question et les choix dans ce navigateur. Les 30 questions les plus récentes sont conservées ; les plus anciennes et leurs versions sont remplacées au-delà.
 de|Bearbeitung abschließen|Beim Bestätigen werden Frage und Antworten automatisch in diesem Browser gespeichert. Die letzten 30 Fragen bleiben erhalten; ältere Fragen samt Versionen werden bei Überschreitung ersetzt.
 it|Termina modifica|Confermando la modifica, domanda e opzioni vengono salvate automaticamente in questo browser. Restano le 30 domande più recenti; le più vecchie e le loro versioni vengono sostituite oltre il limite.
-pt|Concluir edição|Confirmar a edição guarda automaticamente a pergunta e as opções neste navegador. Ficam as 30 mais recentes; as antigas e as suas versões são substituídas quando o limite é excedido.
+pt|Concluir edição|Ao confirmar a edição, a pergunta e as opções são salvas automaticamente neste navegador. As 30 perguntas mais recentes ficam salvas. Se você ultrapassar esse limite, as perguntas mais antigas e seu histórico são substituídos.
 ru|Завершить редактирование|При подтверждении вопрос и варианты автоматически сохраняются в браузере. Хранятся последние 30 вопросов; при превышении старые вопросы и их версии заменяются.
 uk|Завершити редагування|Після підтвердження запитання й варіанти автоматично зберігаються в браузері. Залишаються останні 30; старіші запитання та їхні версії замінюються понад ліміт.
 pl|Zakończ edycję|Po potwierdzeniu pytanie i opcje zapisują się automatycznie w tej przeglądarce. Zostaje 30 najnowszych pytań; starsze wraz z wersjami są zastępowane po przekroczeniu limitu.

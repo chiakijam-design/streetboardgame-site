@@ -5,7 +5,7 @@ es|Versiones guardadas (hasta 10)|Restaurar pregunta y opciones|Restaurar solo o
 fr|Versions enregistrées (10 maximum)|Rétablir question et choix|Rétablir les choix seuls|Aucune version précédente.
 de|Gespeicherte Versionen (bis zu 10)|Frage und Antworten wiederherstellen|Nur Antworten wiederherstellen|Noch keine frühere Version.
 it|Versioni salvate (fino a 10)|Ripristina domanda e opzioni|Ripristina solo le opzioni|Nessuna versione precedente.
-pt|Versões guardadas (até 10)|Restaurar pergunta e opções|Restaurar só as opções|Ainda não há versões anteriores.
+pt|Versões salvas (até 10)|Restaurar pergunta e opções|Restaurar apenas as opções|Ainda não há versões anteriores.
 ru|Сохранённые версии (до 10)|Вернуть вопрос и варианты|Вернуть только варианты|Предыдущих версий пока нет.
 uk|Збережені версії (до 10)|Відновити запитання й варіанти|Відновити лише варіанти|Попередніх версій ще немає.
 pl|Zapisane wersje (do 10)|Przywróć pytanie i opcje|Przywróć tylko opcje|Brak wcześniejszych wersji.

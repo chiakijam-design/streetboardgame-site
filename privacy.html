@@ -17,7 +17,7 @@
 <body>
   <header class="site-header"><div class="header-inner"><a class="brand" href="/">わたし理解度診断</a><a class="home-link" href="/">トップへ</a></div></header>
   <main class="page-shell">
-    <section class="hero"><p class="eyebrow">PRIVACY</p><h1>プライバシーポリシー</h1><p class="lead">取得する情報、公開範囲、利用目的、委託先、保存期間および利用者が選べることを説明します。</p><p class="meta">2026-11-15</p></section>
+    <section class="hero"><p class="eyebrow">PRIVACY</p><h1>プライバシーポリシー</h1><p class="lead">取得する情報、公開範囲、利用目的、委託先、保存期間および利用者が選べることを説明します。</p><p class="meta">2026-11-22</p></section>
     <nav class="legal-nav" aria-label="法務ページ"><strong>法務・ポリシー</strong><ul>
       <li><a href="/terms">利用規約</a></li><li><a aria-current="page" href="/privacy">プライバシー</a></li><li><a href="/legal">運営者情報</a></li><li><a href="/content-guidelines">肖像権ガイド</a></li><li><a href="/minor-policy">未成年者規定</a></li>
     </ul></nav>
@@ -51,12 +51,12 @@
 
         <li><strong>問い合わせ・アクセス：</strong>氏名、メールアドレス、問い合わせ内容、IPアドレス、Cookie、閲覧ページ、参照元、端末情報、障害ログ</li>
       </ul>
-      <p>カード番号、セキュリティコード、Googleパスワード、Googleアクセストークンおよびリフレッシュトークンは運営者のデータベースへ保存しません。IPハッシュは直ちに本人を表示する情報ではありませんが、重複・不正利用の照合に用いるため、安全管理の対象として取り扱います。</p>
+      <p>IPアドレスのハッシュ値は、不正利用や重複を検知するために使い、安全に管理します。</p>
 
       <section data-testid="personal-question-storage-policy"><h3>自分のお題</h3><p>編集を確定すると、問題文と選択肢をこのブラウザに自動保存します。最新30問を残し、超えた分は古い問題とその履歴から置き換えます。</p><p>問題文と選択肢だけをこのブラウザに保存します。正解は毎回選びます。共用ブラウザでは他の人も見られます。サイトデータを消すと失われ、別端末・別ブラウザには引き継がれません。</p><p>クイズを作成して共有すると、選んだ問題はサーバーに保存され、回答者に表示されます。</p></section>
       <h2>3. 利用目的</h2>
       <table class="data-table"><thead><tr><th>情報</th><th>利用目的</th></tr></thead><tbody>
-        <tr><td>ゲーム・参加者・投票情報</td><td>ゲームの作成、進行、集計、結果表示、称号・答え合わせレポートの生成、理解度ボード、主催者用回答管理、予約、再開および参加上限制御</td></tr>
+        <tr><td>クイズ・参加情報</td><td>クイズの作成・再開、参加人数の管理、採点、理解度ボードと答え合わせレポートの表示</td></tr>
         <tr><td>自作お題・自動検知・通報情報</td><td>個人情報らしい内容の送信防止、性的内容・いじめ・容姿攻撃・差別表現の重点審査、公開後の即時非公開および再審査</td></tr>
 
 
@@ -85,8 +85,8 @@
 
       <h2>5. 外部サービス・委託先</h2>
       <table class="data-table"><thead><tr><th>委託先・保存先</th><th>取り扱う情報と目的</th><th>運営者が定める保存期間</th></tr></thead><tbody>
-        <tr><td>Cloudflare Workers / CDN</td><td>サイト・API配信、通信保護、不正アクセス対策、障害ログ</td><td>Cloudflare契約上の期間。運営者がD1へ保存する障害・セキュリティイベントは180日</td></tr>
-        <tr><td>Cloudflare D1（ゲーム用）</td><td>ルーム、予約、参加者、投票、本人確認状態、運用イベント</td><td>ゲーム種別ごとの期間および運用ログ180日</td></tr>
+        <tr><td>Cloudflare Workers / CDN</td><td>サイト・API配信、通信保護、不正アクセス対策、障害ログ</td><td>Workers Logs に記録し、Cloudflare の設定に従って保存します。</td></tr>
+        <tr><td>Cloudflare D1（ゲーム用）</td><td>問題、回答、表示名、点数</td><td>作成から30日たつと、クイズと参加情報は自動で削除されます。</td></tr>
 
 
 
@@ -94,7 +94,7 @@
 
         <tr><td>Google Analytics 4（GA4）</td><td>Cookie、端末・閲覧・参照元情報による利用状況分析</td><td>ユーザー単位・イベント単位データ14か月</td></tr>
         <tr><td>Microsoft Clarity</td><td>閲覧ページ、端末・ブラウザ、クリック、スクロールおよび画面操作情報による操作性分析。Cookieは無効化し、すべての画面テキストを厳密にマスクします</td><td>セッション再現データ30日、クリック集計・ヒートマップ・お気に入り等は最長9か月</td></tr>
-        <tr><td>Cloudflare D1（お問い合わせ受付）</td><td>お問い合わせフォームから送信された氏名、メールアドレス、問い合わせ内容の受付・保管</td><td>対応完了後12か月</td></tr>
+        <tr><td>Cloudflare D1（お問い合わせ受付）</td><td>お問い合わせフォームから送信された氏名、メールアドレス、問い合わせ内容の受付・保管</td><td>受付から12か月</td></tr>
         <tr><td>Resend</td><td>受け付けた問い合わせ内容を運営者へ届けるメール送信</td><td>Resend契約上の期間</td></tr>
       </tbody></table>
       <p>運営者は、委託先を取り扱う情報と目的に応じて選定し、各社の契約、利用規約、セキュリティ情報および保存設定を確認し、必要かつ適切な監督を行います。これらの事業者が国外でデータを取り扱う場合は、所在国の制度や各社の保護措置を把握し、必要な安全管理措置を講じます。</p>
@@ -103,7 +103,7 @@
       <p>運営者は、次の場合を除き、個人データを第三者へ提供しません。</p>
       <ul>
         <li>本人の指示または同意に基づき、理解度ボード、自作お題その他の情報を公開する場合</li>
-        <li>本サービスの運営、決済、問い合わせ対応、分析その他の業務を委託するために必要な場合</li>
+        <li>運営、問い合わせ対応、分析を委託するために必要な場合</li>
         <li>合併、事業譲渡その他の事業承継に伴って提供する場合</li>
         <li>裁判所、警察、税務署その他の公的機関から、法令に基づく適法な要請を受けた場合</li>
         <li>人の生命・身体・財産の保護、利用者または第三者の権利・安全の保護に必要で、本人の同意を得ることが困難な場合その他法令で認められる場合</li>
@@ -126,11 +126,11 @@
 
 
 
-        <tr><td>運用・セキュリティイベント</td><td>180日</td></tr>
         <tr><td>GA4ユーザー・イベントデータ</td><td>14か月</td></tr>
-        <tr><td>問い合わせ</td><td>対応完了後12か月</td></tr>
+        <tr><td>問い合わせ</td><td>受付から12か月</td></tr>
       </tbody></table>
-      <p>D1・R2の期限切れデータは、Cloudflare Cron Triggerにより毎時自動削除または匿名化します。法令上の保存義務、係争、返金、不正調査、漏えい調査の対象となった情報は、必要な範囲で削除を保留する場合があります。</p>
+      <p>期限切れのクイズと参加情報は、毎時の自動処理でD1から削除します。</p>
+      <p>法令上の保存義務、係争、不正調査、漏えい調査の対象となった情報は、必要な範囲で削除を保留する場合があります。</p>
 
       <h2>9. Cookie・アクセス解析</h2>
       <p>本サービスは、機能維持、途中再開、利用状況の把握および改善のためCookie、localStorage、sessionStorageその他の類似技術を利用します。ブラウザ設定でCookieやサイトデータを無効化・削除できますが、途中再開、参加認証その他の一部機能が利用できなくなる場合があります。</p>
@@ -156,6 +156,6 @@
       <p>本ポリシー、個人情報の取扱い、開示等の請求または苦情については、<a href="/about?to=contact">お問い合わせフォーム</a>からStreetboardgame運営者へご連絡ください。</p>
     </article><details class="legal-card" data-testid="historical-provisions"><summary>改定前の版</summary><p><a href="/legal-history/2026-11-14-privacy.html">2026-11-14</a></p></details>
   </main>
-  <footer class="site-footer"><p><a href="/">わたし理解度診断</a>｜運営者：平川智章</p><p class="disclaimer">本サービスはYouTube、GoogleまたはInstagramの提携・承認サービスではありません。</p></footer>
+  <footer class="site-footer"><p><a href="/">わたし理解度診断</a>｜運営者：平川智章</p></footer>
 </body>
 </html>

@@ -1,3 +1,4 @@
+import { localizeLinkedDom } from './linked-paragraphs.js';
 import { spaceTextNextToLinks } from './inline-spacing.js';
 import { localeFromPath, LOCALE_DETAILS, switchLocalePath } from './locales.js';
 import { translateBoardPolicyCopy } from './challenge-board-copy.js';
@@ -61,6 +62,7 @@ export function localizeDom(root = document) {
   if (!isEnglish || !root) return;
   document.documentElement.lang = currentLocale;
   document.documentElement.dir = LOCALE_DETAILS[currentLocale].direction;
+  localizeLinkedDom(root, currentLocale);
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const nodes = [];
   while (walker.nextNode()) nodes.push(walker.currentNode);

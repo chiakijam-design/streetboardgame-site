@@ -1,3 +1,4 @@
+import { localizeLinkedHtml } from './linked-paragraphs.js';
 import { spaceAroundLinks } from './inline-spacing.js';
 import { createCatalogTranslator, requireCompleteCatalog } from './catalog-core.js';
 import { LOCALE_DETAILS, SEARCH_INDEXED_LOCALES, TARGET_LOCALES, localeCanonicalPath, localeFromPath, switchLocalePath, stripLocalePrefix } from './locales.js';
@@ -46,7 +47,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
     const decoded = decode(value);
     return escape(translateBoardPolicyCopy(decoded, locale) ?? (isHome ? translateHomeEntryCopy(decoded, locale) : undefined) ?? translateCurrentSiteCopy(decoded, locale, translator.translate) ?? translator.translate(decoded));
   };
-  let output = html.replace(/(<script\b[\s\S]*?<\/script\b[^>]*>|<style\b[\s\S]*?<\/style\b[^>]*>|<!--[\s\S]*?--!?>)|(<[^>]+>)|([^<]+)/gi, (whole, protectedBlock, tag, text) => {
+  let output = localizeLinkedHtml(html, locale, escape).replace(/(<script\b[\s\S]*?<\/script\b[^>]*>|<style\b[\s\S]*?<\/style\b[^>]*>|<!--[\s\S]*?--!?>)|(<[^>]+>)|([^<]+)/gi, (whole, protectedBlock, tag, text) => {
     if (protectedBlock) return protectedBlock;
     if (text) return copy(text);
     return tag.replace(/\b(src|srcset)=(['"])([\s\S]*?)\2/gi, (attribute, name, quote, value) => {

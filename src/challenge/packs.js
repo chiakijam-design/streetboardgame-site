@@ -15,7 +15,7 @@ const PACKS = Object.freeze([
         'Q007', 'Q045', 'Q424', 'Q426', 'Q440',
         'Q418', 'Q423', 'Q509', 'Q091', 'Q013',
       ],
-      en: ['ENF001', 'ENF008', 'ENF025', 'ENF005', 'ENF015', 'ENF020', 'ENF014', 'ENF026', 'ENF027', 'ENF010'],
+      en: ['ENF001', 'ENF025', 'ENF011', 'ENF014', 'ENF021', 'ENFA002', 'ENFA003', 'ENQ418', 'ENQ426', 'ENQ440'],
     },
   },
   {
@@ -33,7 +33,7 @@ const PACKS = Object.freeze([
         'Q214', 'HLD214', 'HLD213', 'HLD228', 'HLD496',
         'Q215', 'Q202', 'Q106', 'Q111', 'Q119', 'Q267', 'Q256', 'Q057',
       ],
-      en: ['ENF008', 'ENF040', 'ENF009', 'ENF010', 'ENF011', 'ENF018', 'ENF026', 'ENF017', 'ENF029', 'ENF030'],
+      en: ['ENF008', 'ENF009', 'ENF040', 'ENQ214', 'ENQ202', 'ENQ267', 'ENQ111', 'ENQ276', 'ENQ545', 'ENQ018'],
     },
   },
   {
@@ -51,7 +51,7 @@ const PACKS = Object.freeze([
         'HLD181', 'Q018', 'Q507', 'HLD199', 'HLD184',
         'Q001', 'Q013', 'Q012', 'Q003', 'Q002',
       ],
-      en: ['ENF001', 'ENF002', 'ENF003', 'ENF004', 'ENF005', 'ENF006', 'ENF007', 'ENF013', 'ENF014', 'ENF032'],
+      en: ['ENF002', 'ENF003', 'ENF004', 'ENF005', 'ENF006', 'ENF007', 'ENQ401', 'ENQ414', 'ENQ425', 'ENQ507'],
     },
   },
   {
@@ -69,7 +69,7 @@ const PACKS = Object.freeze([
         'Q302', 'HLD060', 'HLD158', 'HLD162', 'HLD297',
         'Q141', 'Q144', 'Q108', 'Q130', 'Q191', 'Q228', 'Q159', 'Q153', 'Q303',
       ],
-      en: ['ENF029', 'ENF030', 'ENF031', 'ENF039', 'ENF010', 'ENF012', 'ENF023', 'ENF024', 'ENF011', 'ENF021'],
+      en: ['ENF010', 'ENF031', 'ENF039', 'ENFA012', 'ENFA013', 'ENF024', 'ENQ302', 'ENQ402', 'ENQ436', 'ENQ442'],
     },
   },
   {
@@ -87,7 +87,7 @@ const PACKS = Object.freeze([
         'HLD381', 'HLD382', 'HLD384', 'HLD385', 'HLD388',
         'Q421', 'Q441', 'Q433', 'Q293', 'Q159', 'Q289', 'Q298',
       ],
-      en: ['ENF037', 'ENF038', 'ENF039', 'ENF029', 'ENF031', 'ENF035', 'ENF036', 'ENF026', 'ENF034', 'ENF017'],
+      en: ['ENF037', 'ENF038', 'ENF035', 'ENF036', 'ENQ441', 'ENQ179', 'ENQ432', 'ENQ433', 'ENQ434', 'ENQ417'],
     },
   },
   {
@@ -105,7 +105,7 @@ const PACKS = Object.freeze([
         'HLD189', 'Q519', 'HLD111', 'HLD149', 'HLD113',
         'Q022', 'Q034', 'Q039', 'Q012', 'Q420', 'Q524', 'Q525', 'Q418', 'Q423',
       ],
-      en: ['ENF015', 'ENF016', 'ENF017', 'ENF018', 'ENF019', 'ENF020', 'ENF025', 'ENF004', 'ENF034', 'ENF036'],
+      en: ['ENF016', 'ENF017', 'ENF018', 'ENF019', 'ENF020', 'ENFA009', 'ENFA010', 'ENQ429', 'ENQ522', 'ENQ306'],
     },
   },
   {
@@ -123,7 +123,7 @@ const PACKS = Object.freeze([
         'HLD255', 'HLD127', 'HLD132', 'HLD442', 'HLD141',
         'Q549', 'Q099', 'Q091', 'Q150', 'Q137', 'Q208',
       ],
-      en: ['ENF015', 'ENF027', 'ENF028', 'ENF014', 'ENF025', 'ENF026', 'ENF013', 'ENF017', 'ENF020', 'ENF001'],
+      en: ['ENF015', 'ENF027', 'ENF028', 'ENQ416', 'ENQ549', 'ENQ431', 'ENQ301', 'ENQ544', 'ENQ523', 'ENQ137'],
     },
   },
   {
@@ -141,7 +141,7 @@ const PACKS = Object.freeze([
         'HLD063', 'HLD152', 'HLD336', 'HLD174', 'Q435',
         'Q141', 'Q144', 'Q159', 'Q130', 'Q153', 'Q302', 'Q303', 'Q439',
       ],
-      en: ['ENF012', 'ENF013', 'ENF029', 'ENF030', 'ENF031', 'ENF032', 'ENF033', 'ENF034', 'ENF023', 'ENF010'],
+      en: ['ENF012', 'ENF029', 'ENF030', 'ENF032', 'ENF033', 'ENF034', 'ENF023', 'ENQ435', 'ENQ308', 'ENQ439'],
     },
   },
   {
@@ -159,7 +159,7 @@ const PACKS = Object.freeze([
         'HLD277', 'HLD124', 'HLD271', 'HLD275', 'HLD397',
         'Q206', 'Q202', 'Q209', 'Q215', 'Q219', 'Q214', 'Q137', 'Q099', 'Q013',
       ],
-      en: ['ENF026', 'ENF040', 'ENF014', 'ENF005', 'ENF004', 'ENF008', 'ENF017', 'ENF018', 'ENF027', 'ENF029'],
+      en: ['ENF026', 'ENFA006', 'ENFA007', 'ENQ206', 'ENQ219', 'ENQ430', 'ENQ419', 'ENQ423', 'ENQ543', 'ENQ516'],
     },
   },
 ]);

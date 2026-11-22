@@ -1175,6 +1175,13 @@
       "contexts": [
         "2026-11-15:site-name"
       ]
+    },
+    {
+      "id": "mc6281654fd5fde",
+      "source": "♡ 遊び方",
+      "contexts": [
+        "about:heading"
+      ]
     }
   ]
 }
