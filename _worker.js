@@ -137,6 +137,8 @@ async function handleRequest(request, env) {
         return Response.redirect(url.origin + '/' + packPage.locale + '/challenge/library', 301);
       }
       if (rawPath !== path) return Response.redirect(url.origin + path + url.search, 301);
+      // 2026-11-22（Gemini 見直し9）：/ja/ 付きは日本語の正しい住所へ（同じページを2つの住所で出さない）
+      if (/^\/ja\//.test(path)) return Response.redirect(url.origin + path.slice(3) + url.search, 301);
       return new Response(request.method === 'HEAD' ? null : stripHiddenQuestions(renderPackPage(packPage.slug, packPage.locale), await hiddenQuestionIds(env)), {
         status: 200,
         headers: { 'content-type': 'text/html; charset=UTF-8', 'cache-control': 'public, max-age=0, must-revalidate' },
@@ -193,6 +195,11 @@ async function handleRequest(request, env) {
     if (rawPath === '/en') {
       return Response.redirect(url.origin + '/en/' + url.search, 301);
     }
+    // 2026-11-22（Gemini 見直し9）：ほかの言語のトップも /es → /es/ にそろえる
+    const bareLocale = /^\/([a-z]{2}(?:-[A-Za-z]{2,4})?)$/.exec(rawPath);
+    if (bareLocale && bareLocale[1] !== 'ja' && PUBLIC_LOCALES.includes(bareLocale[1])) {
+      return Response.redirect(url.origin + rawPath + '/' + url.search, 301);
+    }
     if (cleanHtmlPaths[rawPath]) {
       return Response.redirect(url.origin + cleanHtmlPaths[rawPath] + url.search, 301);
     }
@@ -228,6 +235,10 @@ async function handleRequest(request, env) {
 
     const locale = localeFromPath(rawPath);
     const preparedPath = rawPath !== '/en' && PUBLIC_LOCALE_PAGES[path];
+    // 2026-11-22（Gemini 見直し9）：言語のページの下の階層は、末尾の / なしが正しい住所（/en/challenge/ → /en/challenge）
+    if (preparedPath && rawPath !== path && path.split('/').filter(Boolean).length > 1) {
+      return Response.redirect(url.origin + path + url.search, 301);
+    }
     if (preparedPath) {
       const prepared = await env.ASSETS.fetch(new Request(new URL(preparedPath, url.origin), { method: 'GET' }));
       if (prepared.ok) {
@@ -241,11 +252,14 @@ async function handleRequest(request, env) {
         } else if (!SEARCH_INDEXED_LOCALES.has(locale)) {
           headers.set('x-robots-tag', 'noindex, follow');
         }
+        // 2026-11-22（Gemini 見直し1）：前もって作った多言語ページにも、非公開にしたお題を残さない
+        const hiddenIds = request.method === 'HEAD' ? null : await hiddenQuestionIds(env);
         if (request.method !== 'HEAD' && url.searchParams.has('room') && stripLocalePrefix(path) === '/challenge') {
-          const shared = await personalizeRoomPage(await prepared.text(), env, url, locale);
+          const shared = await personalizeRoomPage(stripHiddenQuestions(await prepared.text(), hiddenIds), env, url, locale);
           if (shared.personalized) headers.set('cache-control', 'no-store');
           return new Response(shared.html, { status: 200, headers });
         }
+        if (hiddenIds && hiddenIds.size) return new Response(stripHiddenQuestions(await prepared.text(), hiddenIds), { status: 200, headers });
         return new Response(request.method === 'HEAD' ? null : prepared.body, { status: 200, headers });
       }
     }
@@ -376,7 +390,7 @@ async function handleRequest(request, env) {
         : html && path === '/challenge'
           ? injectChallengeCopy(applyChallengeShareMeta(html, url), 'ja')
           : html;
-      let body = localizedBody ? selectQuestionDataScript(stripHiddenQuestions(localizedBody, path === '/challenge/library' ? await hiddenQuestionIds(env) : null), 'ja') : localizedBody;
+      let body = localizedBody ? selectQuestionDataScript(stripHiddenQuestions(localizedBody, await hiddenQuestionIds(env)), 'ja') : localizedBody;
       if (body && path === '/challenge' && url.searchParams.has('room')) {
         const shared = await personalizeRoomPage(body, env, url, 'ja');
         body = shared.html;
@@ -537,7 +551,7 @@ async function handleRequest(request, env) {
     // 旧Wix URL → 正規URLへ恒久リダイレクト
     const redirectMap = {
       '/watachan': '/',
-      '/contact': '/?screen=about&to=contact',
+      '/contact': '/about?to=contact',
     };
 
     if (redirectMap[path]) {
@@ -553,7 +567,7 @@ async function handleRequest(request, env) {
       const headers = new Headers(response.headers);
       headers.delete('etag');
       headers.delete('content-length');
-      return new Response(request.method === 'HEAD' ? null : injectHomeCopy(await response.text(), 'ja'), { status: 200, headers });
+      return new Response(request.method === 'HEAD' ? null : stripHiddenQuestions(injectHomeCopy(await response.text(), 'ja'), await hiddenQuestionIds(env)), { status: 200, headers });
     }
 
     // 存在しないURLは、検索エンジンにも正しく伝わる404ページを返す
@@ -731,6 +745,9 @@ function applyChallengeLibraryMeta(html) {
     .replace(/<link rel="alternate" hreflang="x-default" href="[^"]*">/, `<link rel="alternate" hreflang="x-default" href="${url}">`)
     .replace(/<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${title}">`)
     .replace(/<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${description}">`)
+    // 2026-11-22（Gemini 見直し11）：X が先に読む twitter:title・twitter:description も 10問パックの言葉に
+    .replace(/<meta name="twitter:title" content="[^"]*">/, `<meta name="twitter:title" content="${title}">`)
+    .replace(/<meta name="twitter:description" content="[^"]*">/, `<meta name="twitter:description" content="${description}">`)
     .replace(/<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${url}">`)
     .replace(
       /<script type="application\/ld\+json">[\s\S]*?<\/script>/,

@@ -164,6 +164,7 @@ const PAGE_STYLE = `*{box-sizing:border-box}body{margin:0;background:#EC4F88;col
   + '.pack-create{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;margin-top:14px;padding:12px 16px;border:2.5px solid #1A1A1A;border-radius:14px;background:#1A1A1A;color:#fff!important;box-shadow:4px 4px 0 #5BD4E8;font-size:16px;font-weight:900;text-decoration:none;text-align:center}'
   + '.pack-card{margin-top:14px;padding:16px 16px 8px;background:#fff;border:3px solid #1A1A1A;border-radius:18px}'
   + '.pack-langs{margin:14px 0 0;color:#1A1A1A;font-size:13px}.pack-page .pack-langs a{color:#1A1A1A;font-weight:800;margin-inline-end:12px;display:inline-flex;min-height:32px;align-items:center}'
+  + '.pack-send{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 10px}.pack-page .pack-send a,.pack-send button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:88px;padding:8px 16px;border:2.5px solid #1A1A1A;border-radius:999px;background:#fff;color:#1A1A1A;font:inherit;font-size:15px;font-weight:900;text-decoration:none;cursor:pointer}.pack-send button[hidden]{display:none}'
   + '.pack-footer{margin-top:22px;color:#1A1A1A;font-size:12px;line-height:1.8}.pack-page .pack-footer a{color:#1A1A1A;margin-inline-end:12px;display:inline-flex;min-height:32px;align-items:center}';
 
 // 2026-11-21 (Codex review #23): a pack page can be sent to a friend without making a quiz first.
@@ -173,15 +174,26 @@ const PACK_SEND_COPY = Object.freeze({
   es: 'Envía estas 10 preguntas a un amigo',
   pt: 'Envie estas 10 perguntas a um amigo',
 });
+// 2026-11-22（Gemini 見直し19）：Instagram やメッセージに貼れるよう、リンクのコピーも置く
+const PACK_COPY_LINK = Object.freeze({
+  ja: ['リンクをコピー', 'コピーしました'],
+  en: ['Copy link', 'Copied'],
+  es: ['Copiar enlace', 'Enlace copiado'],
+  pt: ['Copiar link', 'Link copiado'],
+});
 
-function packSendLinks(title, url) {
+function packSendLinks(title, url, locale = 'ja') {
   const text = `${title}\n${url}`;
+  const [copyLabel, copiedLabel] = PACK_COPY_LINK[locale] || PACK_COPY_LINK.en;
   return '<p class="pack-send">'
     + `<a href="https://line.me/R/share?text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">LINE</a> `
     + `<a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">X</a> `
-    + `<a href="https://api.whatsapp.com/send?text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`
-    + '</p>';
+    + `<a href="https://api.whatsapp.com/send?text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">WhatsApp</a> `
+    + `<button type="button" data-pack-copy="${escapeHtml(url)}" data-copied="${escapeHtml(copiedLabel)}" hidden>${escapeHtml(copyLabel)}</button>`
+    + '</p><script defer src="/pack-send.js?v=20261122"></script>';
 }
+
+const PACK_OG_LOCALE = Object.freeze({ ja: 'ja_JP', en: 'en_US', es: 'es_ES', pt: 'pt_BR' });
 
 export function renderPackPage(slug, locale) {
   const copy = SEARCH_COPY[locale];
@@ -189,6 +201,7 @@ export function renderPackPage(slug, locale) {
   const ui = copy.ui;
   const title = pack.title + ui.titleSuffix;
   const url = packPageUrl(slug, locale);
+  const image = ORIGIN + (locale === 'ja' ? '/assets/ogp-challenge-v4.jpg?v=20261115-jpg' : locale === 'en' ? '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg' : `/assets/locale-share/${locale}.png?v=20261010-i18n-1`);
   const libraryPath = prefix(locale) + '/challenge/library';
   const createPath = `${prefix(locale)}/challenge?pack=${encodeURIComponent(slug)}`;
   const alternates = SEARCH_COPY_LOCALES.map((language) => `<link rel="alternate" hreflang="${language}" href="${packPageUrl(slug, language)}">`).join('')
@@ -215,7 +228,10 @@ export function renderPackPage(slug, locale) {
     + `<link rel="canonical" href="${url}">${alternates}`
     + `<meta property="og:type" content="article"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(pack.description)}"><meta property="og:url" content="${url}"><meta property="og:site_name" content="${escapeHtml(ui.siteName)}">`
     // 2026-11-21 (Codex review #3): Spanish and Portuguese pack pages use the same language image as their library page.
-    + `<meta property="og:image" content="${ORIGIN}${locale === 'ja' ? '/assets/ogp-challenge-v4.jpg?v=20261115-jpg' : locale === 'en' ? '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg' : `/assets/locale-share/${locale}.png?v=20261010-i18n-1`}"><meta name="twitter:card" content="summary_large_image">`
+    // 2026-11-22（Gemini 見直し12）：言語・画像の種類と大きさ・説明、X 用の題・説明・画像も出す
+    + `<meta property="og:locale" content="${PACK_OG_LOCALE[locale] || 'en_US'}">`
+    + `<meta property="og:image" content="${image}"><meta property="og:image:secure_url" content="${image}"><meta property="og:image:type" content="${image.includes('.png') ? 'image/png' : 'image/jpeg'}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${escapeHtml(title)}">`
+    + `<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(pack.description)}"><meta name="twitter:image" content="${image}"><meta name="twitter:image:alt" content="${escapeHtml(title)}">`
     + '<link rel="icon" href="/favicon.ico">'
     + `<script type="application/ld+json">${structured}</script>`
     + (['ja', 'en'].includes(locale) ? '' : '<script>window.__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__=true;</script>')
@@ -231,7 +247,7 @@ export function renderPackPage(slug, locale) {
     + card(ui.tips, list(pack.tips))
     + card(ui.talk, `<p>${inline(ui.talkLead)}</p>${list(pack.talk)}`)
     + card(ui.steps, `<ol class="wata-guide__steps">${ui.stepsList.map((item) => `<li>${inline(item)}</li>`).join('')}</ol><p class="wata-guide__cta"><a href="${createPath}">${escapeHtml(ui.create)} ▶</a></p>`)
-    + card(PACK_SEND_COPY[locale] || PACK_SEND_COPY.en, packSendLinks(pack.title, url))
+    + card(PACK_SEND_COPY[locale] || PACK_SEND_COPY.en, packSendLinks(pack.title, url, locale))
     + card(ui.related, packLinks(locale, RELATED_PACKS[slug]) + `<p><a href="${libraryPath}">${escapeHtml(ui.allPacks)}</a></p>`)
     + `<p class="pack-langs">${escapeHtml(ui.otherLanguages)}: ${languages}</p>`
     + `<footer class="pack-footer">${ui.footer.map(([href, label]) => `<a href="${href}">${escapeHtml(label)}</a>`).join('')}<p>${escapeHtml(ui.footnote)}</p></footer>`

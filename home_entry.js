@@ -20,6 +20,7 @@ if ((window.__INITIAL_SCREEN || 'top') === 'top') {
     }
     error.textContent = message;
     input.setAttribute('aria-describedby', error.id);
+    input.focus(); // 2026-11-22（Gemini 見直し32）
   }
   input.addEventListener('input', () => showError(''));
   form.addEventListener('submit', (event) => {

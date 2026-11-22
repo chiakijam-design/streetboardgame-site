@@ -2,11 +2,13 @@ import { currentLocale, localizeDom } from './runtime.js';
 import { LOCALE_DETAILS, switchLocalePath } from './locales.js';
 
 const data = window.__WATACHAN_I18N__;
+const LANGUAGE_SWITCH_LABEL = { ja: '言語を切り替える', en: 'Change language', es: 'Cambiar idioma', pt: 'Mudar idioma', fr: 'Changer de langue', de: 'Sprache ändern', it: 'Cambia lingua', ko: '언어 변경', 'zh-Hans': '切换语言', 'zh-Hant': '切換語言', ru: 'Сменить язык', uk: 'Змінити мову', pl: 'Zmień język', nl: 'Taal wijzigen', tr: 'Dili değiştir', id: 'Ganti bahasa', vi: 'Đổi ngôn ngữ', th: 'เปลี่ยนภาษา', ar: 'تغيير اللغة', he: 'החלפת שפה', hi: 'भाषा बदलें' };
 if (data) {
   const start = () => {
     document.querySelectorAll('.site-language-switch,.site-language-offer').forEach((element) => element.remove());
     const select = document.createElement('select');
-    select.setAttribute('aria-label', LOCALE_DETAILS[currentLocale].name);
+    // 2026-11-22（Gemini 見直し30）：読み上げで、言語を切り替える場所だと分かる名前に
+    select.setAttribute('aria-label', LANGUAGE_SWITCH_LABEL[currentLocale] || 'Language');
     select.dataset.localeSwitcher = '';
     select.style.cssText = 'display:block;box-sizing:border-box;max-width:calc(100% - 16px);height:44px;min-height:44px;padding:4px 8px;font:inherit;line-height:1.35;margin:8px;position:relative;z-index:10';
     for (const locale of data.publicLocales) {

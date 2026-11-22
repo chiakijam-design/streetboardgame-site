@@ -36,6 +36,9 @@ async function cleanupGameDatabase(env, now, summary) {
   // Transient, hashed rate-limit windows and expired operator sessions.
   await safeRun(env.REMOTE_DB, 'DELETE FROM rate_limits WHERE expires_at < ?', [now]);
   await safeRun(env.REMOTE_DB, 'DELETE FROM admin_sessions WHERE expires_at < ?', [now]);
+  // 2026-11-22（Gemini 見直し32）：お題の選択の記録（IP・端末のハッシュ付き）は30日を過ぎたら消す。
+  // 使い道は1時間の回数の確かめと重複よけだけ（数の合計は question_selection_stats に残る）
+  await safeRun(env.REMOTE_DB, 'DELETE FROM question_selection_events WHERE created_at < ?', [now - 30 * 24 * 60 * 60 * 1000]);
   // Contact messages: the policy promises at most 12 months after resolution; we delete
   // 12 calendar months after receipt, which is never later than that.
   const deletedContacts = await safeRun(

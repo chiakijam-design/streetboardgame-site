@@ -15,7 +15,8 @@ test('all locale invitation captions keep the actual count and preserve public U
     assert.equal(payload.url,`https://example.test${LOCALE_DETAILS[locale].prefix}/challenge?room=ABCD10EF`);
     assert.ok(payload.text.includes('Name10'));
     assert.doesNotMatch(JSON.stringify(payload),/PRIVATE_MANAGE_TOKEN|PRIVATE_ANSWER|#manage=/);
-    if(count<10){assert.ok(payload.text.includes(`(${count})`));assert.doesNotMatch(payload.text,/10 questions|10問/);}
+    // 2026-11-22（Gemini 見直し14）：短いクイズも初めて送る招待の文。問題数を入れ、役割交代の文は使わない
+    if(count<10){assert.ok(payload.text.includes(String(count)));assert.doesNotMatch(payload.text,/10 questions|10問/);assert.ok(!payload.text.includes(challengeCopy(locale,'swap')));assert.ok(payload.text.includes('ABCD10EF'));}
   }
 });
 
@@ -32,6 +33,6 @@ test('real invitation image preparation passes short and legacy counts to captio
       createChallengeInviteCanvas:async args=>{canvasCount=args.questionCount;return {toDataURL:()=> 'data:image/png;base64,LOCAL'};},render(){}};
     vm.createContext(c);vm.runInContext(fn,c);await c.prepareInvitationImage();
     assert.equal(c.invitationImage.error,false);assert.equal(c.invitationImage.busy,false);
-    assert.equal(canvasCount,count);if(count<10)assert.ok(caption.includes(`(${count})`));
+    assert.equal(canvasCount,count);if(count<10)assert.ok(caption.includes(count===1?'1 question':`all ${count} answers`));
   }
 });

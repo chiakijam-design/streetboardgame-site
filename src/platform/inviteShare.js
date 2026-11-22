@@ -1,3 +1,4 @@
+import { inviteQrCta } from '../i18n/qr-cta-copy.js';
 import QRCode from 'qrcode';
 import { buildChallengeInviteText } from './share.js';
 import { LOCALE_DETAILS } from '../i18n/locales.js';
@@ -51,10 +52,30 @@ export function challengeInvitePayload({ origin, locale, room, src = '', transla
   const url = `${base.origin}${details.prefix}/challenge?room=${room.code}`;
   const creatorName = String(room.creatorName || '').slice(0, 12);
   const count = Array.isArray(room.cards) ? room.cards.length : 10;
+  // 2026-11-22（Gemini 見直し14）：10問より短いクイズも、初めて送る招待の文（役割交代の「私のことも当ててみて」は使わない）
   const text = count > 0 && count < 10
-    ? `${creatorName} · ${challengeCopy(locale, 'swap')} (${count})\n${url}`
+    ? shortInviteText({ locale, creatorName, url, count, translate })
     : translate(buildChallengeInviteText({ creatorName, url, isEnglish: locale === 'en' }));
   return { src, filename: 'watachan-challenge-invitation.png', title: translate('わたし理解度診断'), text, caption: text, url };
+}
+
+function shortInviteText({ locale, creatorName, url, count, translate }) {
+  const one = count === 1;
+  if (locale === 'ja') return `${creatorName}の「わたし理解度診断」📒\n私のこと、ちゃんと分かってるよね？\n当てるより、話すための${count}問。\n全問答えると、表示名と点数が理解度ボードに載ります。再挑戦もOK。\n${count}問やってみて👇\n${url}`;
+  if (locale === 'en') return `How well do you know ${creatorName}? ${one ? 'Guess my answer to 1 question' : `Guess all ${count} answers`} 👇\n${url}`;
+  if (locale === 'es') return `¿Cuánto conoces a ${creatorName}? ${one ? 'Adivina mi respuesta a 1 pregunta' : `Adivina mis ${count} respuestas`} 👇\n${url}`;
+  if (locale === 'pt') return `Quanto você conhece ${creatorName}? ${one ? 'Adivinhe minha resposta a 1 pergunta' : `Adivinhe minhas ${count} respostas`} 👇\n${url}`;
+  // 名前や住所の中の「10」は変えない（いったん印に置き換えて訳し、問題数だけを直してから戻す）
+  const NAME = '\u2060N\u2060', LINK = '\u2060U\u2060';
+  const translated = singularCount(translate(buildChallengeInviteText({ creatorName: NAME, url: LINK, isEnglish: false })).replaceAll('10', String(count)), count);
+  return translated.replaceAll(NAME, creatorName).replaceAll(LINK, url);
+}
+
+// 1問のときに「1 questions」などにしない（主な言語の複数形を単数に）
+function singularCount(text, count) {
+  if (count !== 1) return text;
+  return text.replace(/\b1 questions\b/g, '1 question').replace(/\b1 preguntas\b/g, '1 pregunta').replace(/\b1 perguntas\b/g, '1 pergunta')
+    .replace(/\b1 Fragen\b/g, '1 Frage').replace(/\b1 domande\b/g, '1 domanda');
 }
 
 export async function createChallengeInviteCanvas({ payload, creatorName, locale, translate, girlImage, questionCount = 10, documentRef = document }) {
@@ -83,11 +104,12 @@ export async function createChallengeInviteCanvas({ payload, creatorName, locale
   ctx.font = '700 38px "Noto Sans JP", sans-serif';
   ctx.fillText(translate('私のこと、ちゃんと分かってるよね？'), 540, 700, 840);
   ctx.font = '700 30px "Noto Sans JP", sans-serif';
-  ctx.fillText(translate('当てるより、話すための10問。').replaceAll('10', String(questionCount)), 540, 754, 840);
+  ctx.fillText(singularCount(translate('当てるより、話すための10問。').replaceAll('10', String(questionCount)), questionCount), 540, 754, 840);
   const qr = documentRef.createElement('canvas');
   await QRCode.toCanvas(qr, payload.url, { width: 360, margin: 2, errorCorrectionLevel: 'M' });
   ctx.drawImage(qr, 360, 810, 360, 360);
   ctx.font = '700 30px "Noto Sans JP", sans-serif';
-  ctx.fillText(translate('参加URL・QRコードを友達へ送る'), 540, 1238, 840);
+  // 2026-11-22（Gemini 見直し13）：QR の下は、受け取った友達への呼びかけ（出題者向けの手順は書かない）
+  ctx.fillText(inviteQrCta(locale), 540, 1238, 840);
   return canvas;
 }

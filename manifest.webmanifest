@@ -1,7 +1,7 @@
 {
   "name": "わたし理解度診断｜私のこと、ちゃんと分かってるよね？",
   "short_name": "理解度診断",
-  "description": "自分の10問を作って参加URLを送り、友達や視聴者に挑戦してもらう無料クイズゲーム。",
+  "description": "自分の10問を作って参加URLを送り、友達に挑戦してもらう無料クイズゲーム。",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -38,9 +38,9 @@
       "icons": [{ "src": "/assets/favicon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
-      "name": "ライブ配信でみんなに挑戦してもらう",
-      "short_name": "ライブ版",
-      "url": "/live-challenge",
+      "name": "目的別の10問パックから選ぶ",
+      "short_name": "10問パック",
+      "url": "/challenge/library",
       "icons": [{ "src": "/assets/favicon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
