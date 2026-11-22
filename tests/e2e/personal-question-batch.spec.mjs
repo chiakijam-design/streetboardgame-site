@@ -15,8 +15,10 @@ for(const locale of ['', '/en','/ar'])test(`${locale||'ja'} choose three from th
   for(let i=0;i<3;i++)await page.locator('[data-personal-select]').nth(i).check();
   await page.screenshot({path:testInfo.outputPath(`batch${locale.replace('/','-')}.png`)});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.locator('[data-action="personal-use-batch"]').click();await expect(page.locator('.challenge-q-number')).toHaveText('Q1/3');await expect(page.locator('#personal-submit-consent')).not.toBeChecked();
-  for(let i=0;i<3;i++){await expect(page.locator('.challenge-q-number')).toHaveText(`Q${i+1}/3`);await page.locator('[data-action="builder-answer"]').nth(i).click();}
+  // 2026-11-22（本人の答え）：選んだ3問は今の位置から差し替え、後ろの問題は残して10問のまま続ける。3問で完成するときは「クイズを完成」から
+  await page.locator('[data-action="personal-use-batch"]').click();await expect(page.locator('.challenge-q-number')).toHaveText('Q1/10');await expect(page.locator('#personal-submit-consent')).not.toBeChecked();
+  for(let i=0;i<3;i++){await expect(page.locator('.challenge-q-number')).toHaveText(`Q${i+1}/10`);await page.locator('[data-action="builder-answer"]').nth(i).click();}
+  await expect(page.locator('.challenge-q-number')).toHaveText('Q4/10');await page.locator('[data-action="finish-early"]').click();await page.locator('[data-action="confirm-finish"]').click();
   await expect(page.getByTestId('challenge-share-screen')).toBeVisible();expect(creation.cards.map(c=>c.title)).toEqual(items.slice(-3).reverse().map(i=>i.title));expect(creation.answers).toEqual([0,1,2]);expect(sent).toHaveLength(0);expect(JSON.stringify(creation)).not.toContain('personalTemplateId');
 });
 test('answered prefix survives a batch, remaining limit is enforced, and thirty-first replaces oldest',async({page})=>{

@@ -94,19 +94,21 @@ test('case-only text edits are preserved as real historical versions',()=>{
   assert.equal(next.items[0].history[0].title,question.title);
 });
 
-for(const count of [1,2,3,9,10])test(`batch ${count} resets all chosen answers/consents and creates only selected questions`,()=>{
+for(const count of [1,2,3,9,10])test(`batch ${count} resets chosen answers/consents, replaces from the current position and keeps the rest`,()=>{
   const cards=Array.from({length:10},(_,i)=>({...question,id:`old${i}`}));
   const templates=Array.from({length:count},(_,i)=>({...question,id:`saved${i}`,personalSubmissionConsent:true,answer:4}));
   const batch=personalQuestionBatch(cards,[4,4,4],0,templates,'USRbatch');
-  assert.equal(batch.cards.length,count);assert.deepEqual(batch.answers,[]);
-  assert.equal(batch.cards.every(c=>c.personalSubmissionConsent===false && c.answer===undefined),true);
+  const kept=[];for(let i=count;i<3;i++)kept[i]=4; // 差し替えなかった後ろの答えは残る
+  assert.equal(batch.cards.length,10);assert.deepEqual(batch.answers,kept);
+  assert.equal(batch.cards.slice(0,count).every(c=>c.personalSubmissionConsent===false && c.answer===undefined),true);
+  assert.deepEqual(batch.cards.slice(count),cards.slice(count));
   assert.equal(batch.cards[0].personalTemplateId,'saved0');
   assert.equal(JSON.stringify(publicQuizCards(batch.cards)).includes('personalTemplateId'),false);
 });
 test('batch preserves answered prefix, respects remaining slots, rejects zero and never exceeds ten',()=>{
   const cards=Array.from({length:10},(_,i)=>({...question,id:`old${i}`}));
   const batch=personalQuestionBatch(cards,[0,1,2,3],2,[question,question],'USRprefix');
-  assert.deepEqual(batch.cards.slice(0,2),cards.slice(0,2));assert.deepEqual(batch.answers,[0,1]);assert.equal(batch.cards.length,4);
+  assert.deepEqual(batch.cards.slice(0,2),cards.slice(0,2));assert.deepEqual(batch.answers,[0,1]);assert.equal(batch.cards.length,10);assert.deepEqual(batch.cards.slice(4),cards.slice(4));
   assert.throws(()=>personalQuestionBatch(cards,[],0,[],'USRzero'));
   assert.throws(()=>personalQuestionBatch(cards,[],9,[question,question],'USRover'));
   assert.equal(PERSONAL_QUESTIONS_LIMIT,30);
