@@ -5,7 +5,7 @@ es|Crear un cuestionario|Crear un cuestionario con {count} pregunta|Crear un cue
 fr|Créer un quiz|Créer un quiz avec {count} question|Créer un quiz avec {count} questions|Vous pouvez créer un quiz dès 1 question et en ajouter jusqu’à {max}.
 de|Quiz erstellen|Quiz mit {count} Frage erstellen|Quiz mit {count} Fragen erstellen|Du kannst mit 1 Frage beginnen und bis zu {max} Fragen hinzufügen.
 it|Crea un quiz|Crea un quiz con {count} domanda|Crea un quiz con {count} domande|Puoi iniziare con 1 domanda e aggiungerne fino a {max}.
-pt|Criar um quiz|Criar um quiz com {count} pergunta|Criar um quiz com {count} perguntas|Podes criar com 1 pergunta e adicionar até {max} perguntas.
+pt|Criar um quiz|Criar um quiz com {count} pergunta|Criar um quiz com {count} perguntas|Você pode começar com 1 pergunta e incluir até {max}.
 ru|Создать тест|Создать тест из {count} вопроса|Создать тест из {count} вопросов|Можно создать тест из 1 вопроса и добавить до {max} вопросов.
 uk|Створити тест|Створити тест з {count} запитання|Створити тест з {count} запитань|Можна створити тест з 1 запитання та додати до {max} запитань.
 pl|Utwórz quiz|Utwórz quiz z {count} pytania|Utwórz quiz z {count} pytań|Możesz zacząć od 1 pytania i dodać maksymalnie {max} pytań.
@@ -58,7 +58,7 @@ es|Elige la respuesta de Q{n} para incluir también las preguntas siguientes.
 fr|Choisissez la réponse de Q{n} pour inclure aussi les questions suivantes.
 de|Wähle die Antwort für Q{n}, um auch die folgenden Fragen einzuschließen.
 it|Scegli la risposta di Q{n} per includere anche le domande successive.
-pt|Escolha a resposta da Q{n} para incluir também as perguntas seguintes.
+pt|Escolha a resposta da pergunta {n} para incluir também as perguntas seguintes.
 ru|Выберите ответ на Q{n}, чтобы включить и следующие вопросы.
 uk|Виберіть відповідь на Q{n}, щоб додати й наступні запитання.
 pl|Wybierz odpowiedź na Q{n}, aby uwzględnić także kolejne pytania.

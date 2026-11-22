@@ -431,11 +431,6 @@
     "操作が集中しています。少し待ってから試してください。": "The service is busy. Wait a moment and try again.",
     "通信に失敗しました。接続を確認してください。": "The request failed. Check your connection.",
     "通信に失敗しました。少し待ってから試してください。": "The request failed. Wait a moment and try again.",
-    "授業や放課後の過ごし方を予想して、学校の思い出を話せます。": "School life, after-school moments, and everyday student choices.",
-    "元気が出ることや助けてほしいときを予想して、自分との付き合い方を伝えられます。": "A personal guide to my energy, habits, support needs, and communication style.",
-    "よく開くアプリや推しの楽しみ方を予想して、普段は話さない好みを知れます。": "Everyday phone, social, video, and fandom choices that are easy to share.",
-    "いつもと違う選択や意外な好みを予想して、第一印象との違いを話せます。": "Reveal personality, quirks, and choices that may not match a first impression.",
-    "♡ 遊び方": "遊び方",
     "みんなの答え": "Everyone's answers",
     "3人以上が答えると、問題ごとのみんなの答えが見られます。": "Once 3 or more people have answered, you can see everyone's answers for each question."
   },
@@ -1098,6 +1093,7 @@
       "id": "ma373f76fce68e5",
       "source": "「他の人も使えるようにする」がONの問題は、運営が確認・編集してお題ライブラリへ掲載することがあります。",
       "contexts": [
+        "terms.html:body",
         "content-guidelines.html:body"
       ]
     },
@@ -1575,20 +1571,6 @@
       ]
     },
     {
-      "id": "mb1034b0f820cd4",
-      "source": "10〜12歳の人は保護者と一緒に使い、18歳未満の人がお金を払うときは保護者の同意をもらってください。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "mb4fd57948d9b06",
-      "source": "10. Cookie・アクセス解析",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m8a94acf42c2c97",
       "source": "10. Cookies and analytics",
       "contexts": [
@@ -1725,13 +1707,6 @@
       ]
     },
     {
-      "id": "mbf19bb7ea9aa92",
-      "source": "10歳から12歳までの利用者は、保護者の管理・見守りのもとで利用してください。年齢、購入、配信または収益受取りに個別条件がある機能は、その条件を満たさない限り利用できません。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m983549bbada4ff",
       "source": "11. Changes, suspension, and termination",
       "contexts": [
@@ -1750,13 +1725,6 @@
       "source": "11. 外部サービスとの関係",
       "contexts": [
         "content-guidelines.html:body"
-      ]
-    },
-    {
-      "id": "m97492fc3021548",
-      "source": "11. 安全管理",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -1795,13 +1763,6 @@
       ]
     },
     {
-      "id": "mf338eb440502c4",
-      "source": "12. 開示・訂正・利用停止・削除等",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "mc2652cb823d9b8",
       "source": "13〜18歳のメインターゲットに最も直接的に合います。",
       "contexts": [
@@ -1823,13 +1784,6 @@
       ]
     },
     {
-      "id": "ma30124a75a6adb",
-      "source": "13. 未成年者",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m7f8df4a43b43ac",
       "source": "13px 14px",
       "contexts": [
@@ -1848,13 +1802,6 @@
       "source": "14. Notices and changes to these Terms",
       "contexts": [
         "en/terms.html:body"
-      ]
-    },
-    {
-      "id": "m87455ebc344db9",
-      "source": "14. 国外での取扱い",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -1886,13 +1833,6 @@
       ]
     },
     {
-      "id": "md2b4ddab173c7a",
-      "source": "15. 改定・準拠法",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m399ba9616143a2",
       "source": "15px 16px",
       "contexts": [
@@ -1911,13 +1851,6 @@
       "source": "16. Governing law and courts",
       "contexts": [
         "en/terms.html:body"
-      ]
-    },
-    {
-      "id": "m50caedeffacca8",
-      "source": "16. お問い合わせ窓口",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -1960,13 +1893,6 @@
       "source": "180円（税込）",
       "contexts": [
         "pricing.html:body"
-      ]
-    },
-    {
-      "id": "m69dd6b56648395",
-      "source": "180日",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -2594,7 +2520,6 @@
       "id": "meae2cc7a630f96",
       "source": "5. YouTube API Services",
       "contexts": [
-        "privacy.html:body",
         "en/privacy.html:body"
       ]
     },
@@ -2697,13 +2622,6 @@
       ]
     },
     {
-      "id": "m817aec3f8503fa",
-      "source": "6. 外部サービス・委託先",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m2a4466c9f4a6a3",
       "source": "6. 有料販売を行う配信者登録",
       "contexts": [
@@ -2764,13 +2682,6 @@
       "source": "7. 画像・肖像・著作物",
       "contexts": [
         "minor-policy.html:body"
-      ]
-    },
-    {
-      "id": "m323bfbfb060aa0",
-      "source": "7. 第三者提供",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -2851,13 +2762,6 @@
       ]
     },
     {
-      "id": "m06c0b3e058c7db",
-      "source": "8. 統計情報",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m3ea4a41469e915",
       "source": "8. 返金申請方法",
       "contexts": [
@@ -2919,13 +2823,6 @@
       "source": "9. Retention",
       "contexts": [
         "en/privacy.html:body"
-      ]
-    },
-    {
-      "id": "ma8781e205b1ddc",
-      "source": "9. 保存期間",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -3137,7 +3034,8 @@
       "id": "m0c5cab9f732845",
       "source": "A funny story",
       "contexts": [
-        "question:english:ENFA015:choice:2"
+        "question:english:ENFA015:choice:2",
+        "question:english:ENQ137:choice:1"
       ]
     },
     {
@@ -3404,14 +3302,16 @@
       "id": "m3eac161518fc38",
       "source": "Anime",
       "contexts": [
-        "question:english:ENF026:choice:1"
+        "question:english:ENF026:choice:1",
+        "question:english:ENQ219:choice:2"
       ]
     },
     {
       "id": "meea65de9d92960",
       "source": "Another country",
       "contexts": [
-        "question:english:ENFA017:choice:3"
+        "question:english:ENFA017:choice:3",
+        "question:english:ENQ435:choice:2"
       ]
     },
     {
@@ -3758,6 +3658,7 @@
         "question:japanese:Q432:choice:1",
         "question:japanese:Q537:choice:1",
         "question:english:ENFA020:choice:1",
+        "question:english:ENQ432:choice:1",
         "pricing.html:body"
       ]
     },
@@ -3807,7 +3708,8 @@
       "id": "mff7c5467ce4966",
       "source": "Bugs",
       "contexts": [
-        "question:english:ENF035:choice:1"
+        "question:english:ENF035:choice:1",
+        "question:english:ENQ516:choice:2"
       ]
     },
     {
@@ -3838,7 +3740,8 @@
       "id": "mc15349bf7fce73",
       "source": "Camping",
       "contexts": [
-        "question:english:ENFA008:choice:0"
+        "question:english:ENFA008:choice:0",
+        "question:english:ENQ522:choice:1"
       ]
     },
     {
@@ -3937,7 +3840,8 @@
       "id": "m449c9a81fecc0b",
       "source": "Check my phone",
       "contexts": [
-        "question:english:ENFA005:choice:3"
+        "question:english:ENFA005:choice:3",
+        "question:english:ENQ436:choice:0"
       ]
     },
     {
@@ -4094,7 +3998,8 @@
       "id": "ma09948e8f60826",
       "source": "Christmas",
       "contexts": [
-        "question:english:ENFA006:choice:2"
+        "question:english:ENFA006:choice:2",
+        "question:english:ENQ423:choice:0"
       ]
     },
     {
@@ -4179,17 +4084,9 @@
       ]
     },
     {
-      "id": "m07d72bcd2c7b70",
-      "source": "Cloudflare D1（購入履歴専用）",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m93e3fd0a4f4ba4",
       "source": "Cloudflare Images",
       "contexts": [
-        "privacy.html:body",
         "en/privacy.html:body"
       ]
     },
@@ -4197,7 +4094,6 @@
       "id": "m9f2f1eda3218d7",
       "source": "Cloudflare R2",
       "contexts": [
-        "privacy.html:body",
         "en/privacy.html:body"
       ]
     },
@@ -4214,20 +4110,6 @@
       "source": "Cloudflare, Stripe, Google, YouTube, Microsoft, Formspree, and other providers may process information outside Japan. The operator reviews public information, contracts, and safeguards and provides information or obtains consent where required by law.",
       "contexts": [
         "en/privacy.html:body"
-      ]
-    },
-    {
-      "id": "me52fbf7cb6f41e",
-      "source": "Cloudflare、Stripe、Google、YouTube、Microsoft、Formspreeその他の外部サービスの利用により、利用者情報が日本国外で保存または処理される場合があります。運営者は、委託先の公表情報、契約および安全管理措置を確認し、法令上必要な場合は、提供先の国・地域の制度や保護措置について情報提供し、本人または保護者の同意を取得します。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "m2e24d4a3c44cf2",
-      "source": "Cloudflare契約上の期間。運営者がD1へ保存する障害・セキュリティイベントは180日",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -4416,7 +4298,9 @@
       "source": "Cooking",
       "contexts": [
         "question:english:ENF016:choice:3",
-        "question:english:ENF024:choice:2"
+        "question:english:ENF024:choice:2",
+        "question:english:ENQ441:choice:0",
+        "question:english:ENQ549:choice:0"
       ]
     },
     {
@@ -4794,19 +4678,15 @@
       ]
     },
     {
-      "id": "m5d734f7ae4dca9",
-      "source": "D1・R2の期限切れデータは、Cloudflare Cron Triggerにより毎時自動削除または匿名化します。法令上の保存義務、係争、返金、不正調査、漏えい調査の対象となった情報は、必要な範囲で削除を保留する場合があります。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "mbdeca6e14467d9",
       "source": "Days off",
       "contexts": [
         "question:english:ENF015:category",
         "question:english:ENF016:category",
-        "question:english:ENF017:category"
+        "question:english:ENF017:category",
+        "question:english:ENQ429:category",
+        "question:english:ENQ522:category",
+        "question:english:ENQ306:category"
       ]
     },
     {
@@ -4849,7 +4729,8 @@
       "id": "m9f1fb3fe270dc7",
       "source": "Dessert",
       "contexts": [
-        "question:english:ENF001:choice:1"
+        "question:english:ENF001:choice:1",
+        "question:english:ENQ202:choice:3"
       ]
     },
     {
@@ -5342,7 +5223,8 @@
       "id": "m2a427a8fbd077a",
       "source": "Fandom news",
       "contexts": [
-        "question:english:ENF013:choice:2"
+        "question:english:ENF013:choice:2",
+        "question:english:ENQ137:choice:2"
       ]
     },
     {
@@ -5436,7 +5318,11 @@
         "question:english:ENF004:category",
         "question:english:ENF005:category",
         "question:english:ENF006:category",
-        "question:english:ENF007:category"
+        "question:english:ENF007:category",
+        "question:english:ENQ401:category",
+        "question:english:ENQ414:category",
+        "question:english:ENQ425:category",
+        "question:english:ENQ507:category"
       ]
     },
     {
@@ -5533,7 +5419,6 @@
       "id": "ma54ec6bf405e61",
       "source": "Formspree",
       "contexts": [
-        "privacy.html:body",
         "en/privacy.html:body"
       ]
     },
@@ -5582,7 +5467,10 @@
       "contexts": [
         "question:english:ENF012:category",
         "question:english:ENF013:category",
-        "question:english:ENF014:category"
+        "question:english:ENF014:category",
+        "question:english:ENQ418:category",
+        "question:english:ENQ426:category",
+        "question:english:ENQ440:category"
       ]
     },
     {
@@ -5612,7 +5500,8 @@
       "source": "Fruit",
       "contexts": [
         "question:english:ENF003:choice:4",
-        "question:english:ENFA002:choice:3"
+        "question:english:ENFA002:choice:3",
+        "question:english:ENQ440:choice:2"
       ]
     },
     {
@@ -5729,13 +5618,6 @@
       ]
     },
     {
-      "id": "m8af791ab2bcca5",
-      "source": "Google / YouTube API Services",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m2f1d3ac281b001",
       "source": "Google / YouTube APIs",
       "contexts": [
@@ -5782,13 +5664,6 @@
       "source": "Google security settings",
       "contexts": [
         "en/privacy.html:body"
-      ]
-    },
-    {
-      "id": "m33fac5d2f659d6",
-      "source": "Googleセキュリティ設定",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -6041,7 +5916,8 @@
       "source": "Hot springs",
       "contexts": [
         "question:english:ENFA009:choice:0",
-        "question:english:ENFA010:choice:0"
+        "question:english:ENFA010:choice:0",
+        "question:english:ENQ429:choice:3"
       ]
     },
     {
@@ -6315,13 +6191,6 @@
       "source": "Instagram LIVE / YouTube LIVE",
       "contexts": [
         "live_challenge.js"
-      ]
-    },
-    {
-      "id": "ma14abd66ea84d1",
-      "source": "Instagram、YouTubeその他の配信サービスを利用する場合、各配信サービスが定める年齢・保護者同意等の規約にも従ってください。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -6710,13 +6579,6 @@
       ]
     },
     {
-      "id": "m644cf5c748b39b",
-      "source": "LIVE：",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m9bfbbe79780b89",
       "source": "Livestream challenge",
       "contexts": [
@@ -6735,13 +6597,6 @@
       "source": "LIVEチャットの保存先が設定されていません。",
       "contexts": [
         "live_challenge.js"
-      ]
-    },
-    {
-      "id": "mf6a2165234beb7",
-      "source": "LIVEでは、配信者が回答を締め切ったあとに答えが公開されます。画面の案内に従って次の問題へ進んでください。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -6784,13 +6639,6 @@
       "source": "LIVE初見でも即答できる10問",
       "contexts": [
         "src/challenge/packs.js"
-      ]
-    },
-    {
-      "id": "mfa4f352780dbb6",
-      "source": "LIVE参加者名・投票・回答",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -6873,27 +6721,6 @@
       ]
     },
     {
-      "id": "m3d1295fd5b65f0",
-      "source": "LIVE配信者が登録した画像の形式・サイズ確認およびプレビュー・有料画像用の変換",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "maa76033ee64852",
-      "source": "LIVE配信者との契約、画像・配信者名・配信アカウント名等の利用許諾、Stripe本人確認、収益分配、不正利用対策",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "m7e4669db4adac6",
-      "source": "LIVE配信者には、個々の購入者を特定できる情報ではなく、原則として売上、返金、分配に必要な集計情報を提供します。個人情報または統計情報を広告事業者、データ販売事業者、AI開発事業者へ販売しません。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "mc15a9cd4663c44",
       "source": "LIVE配信者の画像・配信者名等の利用許諾、結果画像と有料応援メッセージの売上70%分配、返金・チャージバック、月次送金等を定めます。",
       "contexts": [
@@ -6901,24 +6728,9 @@
       ]
     },
     {
-      "id": "m936b489170eba9",
-      "source": "LIVE配信者の登録画像・プレビュー",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "md3eca73c8655bb",
-      "source": "LIVE配信者の登録画像、無料プレビュー、有料結果画像の非公開保存",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m44b9f1ce650128",
       "source": "LIVE配信者向け収益分配規約",
       "contexts": [
-        "terms.html:body",
         "creator-terms.html:body",
         "minor-policy.html:body"
       ]
@@ -6929,13 +6741,6 @@
       "contexts": [
         "creator-terms.html:title",
         "creator-terms.html:body"
-      ]
-    },
-    {
-      "id": "m4002d99ac52874",
-      "source": "LIVE配信者登録（有料販売を利用する場合）：",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -7061,7 +6866,14 @@
       "id": "me7218b5e4a5649",
       "source": "Memories",
       "contexts": [
-        "question:english:ENF040:category"
+        "question:english:ENF040:category",
+        "question:english:ENQ206:category",
+        "question:english:ENQ219:category",
+        "question:english:ENQ430:category",
+        "question:english:ENQ419:category",
+        "question:english:ENQ423:category",
+        "question:english:ENQ543:category",
+        "question:english:ENQ516:category"
       ]
     },
     {
@@ -7167,7 +6979,10 @@
       "id": "m6eb00b4b2614a1",
       "source": "Music",
       "contexts": [
-        "question:english:ENF008:choice:4"
+        "question:english:ENF008:choice:4",
+        "question:english:ENQ442:choice:1",
+        "question:english:ENQ549:choice:2",
+        "question:english:ENQ219:choice:0"
       ]
     },
     {
@@ -7820,7 +7635,14 @@
         "question:english:ENF029:category",
         "question:english:ENF030:category",
         "question:english:ENF031:category",
-        "question:english:ENF032:category"
+        "question:english:ENF032:category",
+        "question:english:ENQ302:category",
+        "question:english:ENQ402:category",
+        "question:english:ENQ436:category",
+        "question:english:ENQ442:category",
+        "question:english:ENQ435:category",
+        "question:english:ENQ308:category",
+        "question:english:ENQ439:category"
       ]
     },
     {
@@ -7828,7 +7650,8 @@
       "source": "Photos",
       "contexts": [
         "question:english:ENF017:choice:2",
-        "question:english:ENF018:choice:2"
+        "question:english:ENF018:choice:2",
+        "question:english:ENQ544:choice:4"
       ]
     },
     {
@@ -8456,7 +8279,8 @@
         "legacy-ui-en",
         "question:japanese:Q432:choice:3",
         "question:japanese:Q537:choice:3",
-        "question:english:ENFA020:choice:3"
+        "question:english:ENFA020:choice:3",
+        "question:english:ENQ432:choice:3"
       ]
     },
     {
@@ -8859,7 +8683,14 @@
         "question:english:ENF008:category",
         "question:english:ENF009:category",
         "question:english:ENF010:category",
-        "question:english:ENF011:category"
+        "question:english:ENF011:category",
+        "question:english:ENQ214:category",
+        "question:english:ENQ202:category",
+        "question:english:ENQ267:category",
+        "question:english:ENQ111:category",
+        "question:english:ENQ276:category",
+        "question:english:ENQ545:category",
+        "question:english:ENQ018:category"
       ]
     },
     {
@@ -9376,7 +9207,8 @@
       "id": "mcae5addaab3eae",
       "source": "Snacks",
       "contexts": [
-        "question:english:ENFA002:choice:0"
+        "question:english:ENFA002:choice:0",
+        "question:english:ENQ276:choice:1"
       ]
     },
     {
@@ -9417,7 +9249,15 @@
       "contexts": [
         "question:english:ENF015:choice:0",
         "question:english:ENF027:category",
-        "question:english:ENF028:category"
+        "question:english:ENF028:category",
+        "question:english:ENQ416:category",
+        "question:english:ENQ549:category",
+        "question:english:ENQ431:category",
+        "question:english:ENQ301:category",
+        "question:english:ENQ544:category",
+        "question:english:ENQ523:category",
+        "question:english:ENQ137:category",
+        "question:english:ENQ219:choice:4"
       ]
     },
     {
@@ -9481,7 +9321,8 @@
       "id": "m9b1f5daf0a3d61",
       "source": "Sports",
       "contexts": [
-        "question:english:ENF026:choice:3"
+        "question:english:ENF026:choice:3",
+        "question:english:ENQ544:choice:1"
       ]
     },
     {
@@ -9699,9 +9540,7 @@
       "id": "me0d9e0cfc1e7e5",
       "source": "Streetboardgame",
       "contexts": [
-        "terms.html:body",
         "en/terms.html:body",
-        "privacy.html:body",
         "en/privacy.html:body",
         "legal.html:body",
         "creator-terms.html:body",
@@ -9796,13 +9635,6 @@
       ]
     },
     {
-      "id": "me3fd63b56d654e",
-      "source": "Streetboardgameの通常挑戦モード、ライブ配信モード、自作問題および有料機能を安全に利用するための共通ルールです。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m7622313d5cf75f",
       "source": "Streetboardgameの通常版・LIVE版、有料機能、配信者登録を未成年者が安全に利用するための保護者同意と注意事項です。",
       "contexts": [
@@ -9834,14 +9666,14 @@
       "id": "ma33fbcf83f7be3",
       "source": "Stretch",
       "contexts": [
-        "question:english:ENFA005:choice:2"
+        "question:english:ENFA005:choice:2",
+        "question:english:ENQ436:choice:1"
       ]
     },
     {
       "id": "m961a6062ba1ba2",
       "source": "Stripe",
       "contexts": [
-        "privacy.html:body",
         "en/privacy.html:body"
       ]
     },
@@ -9857,13 +9689,6 @@
       "source": "Stripe/legal periods; operator records 7 years",
       "contexts": [
         "en/privacy.html:body"
-      ]
-    },
-    {
-      "id": "m2116d1145c3bc2",
-      "source": "Stripeの規約・法令に基づく期間。運営者の取引記録は7年",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -10653,7 +10478,8 @@
       "id": "m3e42e385075b9b",
       "source": "Threads",
       "contexts": [
-        "question:japanese:Q416:choice:3"
+        "question:japanese:Q416:choice:3",
+        "question:english:ENQ416:choice:3"
       ]
     },
     {
@@ -10732,7 +10558,8 @@
         "question:english:ENF020:category",
         "question:english:ENF033:choice:1",
         "question:english:ENF034:choice:0",
-        "question:english:ENFA014:choice:2"
+        "question:english:ENFA014:choice:2",
+        "question:english:ENQ549:choice:1"
       ]
     },
     {
@@ -11119,6 +10946,7 @@
       "source": "Watch videos",
       "contexts": [
         "question:english:ENFA003:choice:0",
+        "question:english:ENQ306:choice:2",
         "en/index.html:body"
       ]
     },
@@ -11243,7 +11071,13 @@
         "question:english:ENF033:category",
         "question:english:ENF034:category",
         "question:english:ENF035:category",
-        "question:english:ENF036:category"
+        "question:english:ENF036:category",
+        "question:english:ENQ441:category",
+        "question:english:ENQ179:category",
+        "question:english:ENQ432:category",
+        "question:english:ENQ433:category",
+        "question:english:ENQ434:category",
+        "question:english:ENQ417:category"
       ]
     },
     {
@@ -11720,7 +11554,8 @@
       "id": "m4b68ab3847feda",
       "source": "X",
       "contexts": [
-        "question:japanese:Q416:choice:0"
+        "question:japanese:Q416:choice:0",
+        "question:english:ENQ416:choice:0"
       ]
     },
     {
@@ -11747,6 +11582,7 @@
         "question:japanese:Q432:choice:2",
         "question:japanese:Q537:choice:2",
         "question:english:ENFA020:choice:2",
+        "question:english:ENQ432:choice:2",
         "pricing.html:body"
       ]
     },
@@ -12127,13 +11963,6 @@
       ]
     },
     {
-      "id": "m64cf63f67e316f",
-      "source": "YouTube、Instagram、LINE、X、Stripeその他の外部サービスを利用する場合、各サービスの利用規約、年齢条件およびプライバシーポリシーが適用されます。YouTube関連機能には",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m889cd7549c3e32",
       "source": "YouTube、Instagram、Stripeその他の外部サービスには、各サービスの利用規約、年齢条件およびプライバシーポリシーが適用されます。本規定と外部サービスの条件が異なる場合は、より厳しい年齢・同意・安全条件を守ってください。本規定と",
       "contexts": [
@@ -12148,39 +11977,10 @@
       ]
     },
     {
-      "id": "m6d8ec72a9ecc62",
-      "source": "YouTube公開情報・本人が取得を許可した字幕",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "m690ea8f3d4f346",
-      "source": "YouTube利用規約",
-      "contexts": [
-        "terms.html:body",
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m0b2fcd6b22ce7a",
       "source": "YouTube連携その他の自動生成機能が提供される場合、公開情報または配信者本人が取得を許可した情報から作られた問題候補であっても、正確性、権利処理および適切性は保証されません。公開・利用する前に、出題者または配信者が問題文と5個の選択肢を確認し、誤情報、個人情報、センシティブな話題または無断転載となる表現を修正・削除してください。",
       "contexts": [
         "content-guidelines.html:body"
-      ]
-    },
-    {
-      "id": "m0f95dad6e8439f",
-      "source": "YouTube連携を選んだ場合のチャンネル確認、動画内の発言・場面を反映した問題候補の生成および有料販売時の所有確認",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "mf03214d9c26d9e",
-      "source": "YouTube連携を選んだ場合の公開チャンネル・動画情報、本人が取得を許可した公開動画字幕、チャンネル所有確認",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -12509,20 +12309,6 @@
       ]
     },
     {
-      "id": "m69e2693da3d22a",
-      "source": "および",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "ma55487c4683828",
-      "source": "および適用法令に従います。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m10d0bd0b841b40",
       "source": "オリジナル結果画像生成・ダウンロードサービス",
       "contexts": [
@@ -12537,24 +12323,10 @@
       ]
     },
     {
-      "id": "m7008398100871c",
-      "source": "オリジナル結果画像生成・ダウンロードサービスは配信者が480円、980円、2,980円から設定し、応援機能は180円、480円、980円、1,980円、2,980円から選択できます。いずれも購入画面に税込価格を表示します。支払方法、提供時期その他の条件は購入手続の最終確認画面および",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "mc464cc0b455da4",
       "source": "オリジナル結果画像生成・ダウンロードサービス利用料：",
       "contexts": [
         "legal.html:body"
-      ]
-    },
-    {
-      "id": "meffd1318c193d2",
-      "source": "オリジナル高画質結果画像生成・ダウンロードサービスおよび、有料メッセージをLIVEチャットへ表示できる応援機能に関する決済・提供",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -12753,24 +12525,10 @@
       ]
     },
     {
-      "id": "m273f921bea8732",
-      "source": "カード決済、本人確認、Connectアカウント、返金・収益分配",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m97389451976c4f",
       "source": "カード決済手数料、Stripe Connectの送金・入金に関して運営者側に発生する費用および運営側のConnectアカウント費用は運営者が負担し、配信者に表示する分配率は「売上の70%」を維持します。ただし、配信者側の金融機関またはStripeアカウントの契約に基づき配信者自身に発生する費用は、配信者の負担となる場合があります。",
       "contexts": [
         "creator-terms.html:body"
-      ]
-    },
-    {
-      "id": "mb28b98efeb441c",
-      "source": "カード番号、セキュリティコード、Googleパスワード、Googleアクセストークンおよびリフレッシュトークンは運営者のデータベースへ保存しません。IPハッシュは直ちに本人を表示する情報ではありませんが、重複・不正利用の照合に用いるため、安全管理の対象として取り扱います。",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -12946,13 +12704,6 @@
       ]
     },
     {
-      "id": "ma16c04d0059086",
-      "source": "が適用されます。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m29f70e8431b1dc",
       "source": "キャンセル・返金：",
       "contexts": [
@@ -13079,13 +12830,6 @@
       ]
     },
     {
-      "id": "mff75de0b4c38c2",
-      "source": "ゲーム・参加者・投票情報",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m935836fe6fa44a",
       "source": "ゲームシリーズの紹介ページ",
       "contexts": [
@@ -13093,24 +12837,10 @@
       ]
     },
     {
-      "id": "md0b3b22db1265f",
-      "source": "ゲームタイトル、問題・選択肢、予約日時、参加者名、投票・回答、結果、ルーム操作履歴、およびYouTube連携を選んだ場合のチャンネルURL・チャンネルID・チャンネル名、公開動画のタイトル・説明・タグ、本人がGoogle認証で取得を許可した公開動画の字幕",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "me70b95dd85fcc2",
       "source": "ゲームの世界",
       "contexts": [
         "question:japanese:Q412:choice:0"
-      ]
-    },
-    {
-      "id": "m35e6ced0331142",
-      "source": "ゲームの作成、進行、集計、結果表示、称号・答え合わせレポートの生成、理解度ボード、主催者用回答管理、予約、再開および参加上限制御",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -13125,13 +12855,6 @@
       "source": "ゲーム機",
       "contexts": [
         "question:japanese:Q510:choice:4"
-      ]
-    },
-    {
-      "id": "m255ee9c9f22c9d",
-      "source": "ゲーム種別ごとの期間および運用ログ180日",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -13376,7 +13099,6 @@
       "id": "m065be5c1eeeef1",
       "source": "コンテンツ・肖像権ガイドライン",
       "contexts": [
-        "terms.html:body",
         "creator-terms.html:body",
         "minor-policy.html:body",
         "content-guidelines.html:body"
@@ -13920,13 +13642,6 @@
       ]
     },
     {
-      "id": "m2a703abae1e16b",
-      "source": "で連携を解除できます。削除依頼を受けた対象データは、法令上保存が必要なものを除き削除します。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m427566260604d1",
       "source": "と",
       "contexts": [
@@ -14073,16 +13788,8 @@
       "id": "mdfa1012b680e67",
       "source": "に従います。",
       "contexts": [
-        "terms.html:body",
         "minor-policy.html:body",
         "content-guidelines.html:body"
-      ]
-    },
-    {
-      "id": "m7bb422da072cf8",
-      "source": "に従います。名称の変更によって法令上認められる取消し、返金その他の権利を制限するものではありません。応援機能は寄付、贈与、募金、クラウドファンディングまたは投資ではなく、本サービス上で提供される有料応援メッセージ機能の利用料金として取り扱います。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -14090,27 +13797,6 @@
       "source": "に従ってください。",
       "contexts": [
         "minor-policy.html:body"
-      ]
-    },
-    {
-      "id": "mbb7a18f7684831",
-      "source": "に従って分配されます。返金、不正利用、チャージバック、法令・規約違反その他同規約に定める事情がある場合、分配は保留、取消しまたは相殺されることがあります。購入者は、配信者への分配または送金時期を請求する権利を取得しません。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "mec33499bb2fecf",
-      "source": "に従って取り扱います。利用者は、回答者へ参加URLを送る前に、回答内容が出題者または配信者にどのように表示されるかを必要に応じて説明してください。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "m91a63445f48d81",
-      "source": "に表示します。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -14381,8 +14067,7 @@
       "id": "meb2839609a0ecf",
       "source": "プライバシーポリシー｜Streetboardgame",
       "contexts": [
-        "privacy.html:title",
-        "privacy.html:body"
+        "privacy.html:title"
       ]
     },
     {
@@ -14709,13 +14394,6 @@
       ]
     },
     {
-      "id": "m30dfd7f555c9d8",
-      "source": "も適用されます。外部サービスの内容、障害、仕様変更、アカウント制限その他外部事業者が管理する事項について、運営者は管理できません。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m882cde3a807aac",
       "source": "やばい",
       "contexts": [
@@ -14767,13 +14445,6 @@
       "source": "ライター",
       "contexts": [
         "question:japanese:Q403:choice:3"
-      ]
-    },
-    {
-      "id": "m84e8f2c2b88b58",
-      "source": "ライブ配信：",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -14842,13 +14513,6 @@
       ]
     },
     {
-      "id": "m7681c6b622ff0a",
-      "source": "ルーム、予約、参加者、投票、本人確認状態、運用イベント",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "med9a028d4c3b43",
       "source": "ルール違反のメッセージは支払い後でも非表示になることがあります。未成年の人は、支払う前に保護者の同意を得てください。",
       "contexts": [
@@ -14903,6 +14567,8 @@
       "source": "わたし理解度診断",
       "contexts": [
         "index.html:body",
+        "terms.html:body",
+        "privacy.html:body",
         "challenge_game.js",
         "prototype_app.jsx"
       ]
@@ -15223,13 +14889,6 @@
       ]
     },
     {
-      "id": "m37bebcc00f60df",
-      "source": "主催者用URL、LIVEのスタッフ用URL、配信者用URL、参加コード、運営用パスワードその他第三者に知られると操作権限を得られる情報は、利用者自身の責任で管理し、権限のない第三者へ共有してはいけません。インターネット通信には安全上の危険があることを理解し、端末の更新や不審なリンクを開かないなど合理的な対策を行ってください。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "ma574d38a63ead3",
       "source": "主催者用回答管理：",
       "contexts": [
@@ -15262,20 +14921,6 @@
       "source": "予約",
       "contexts": [
         "question:japanese:Q022:choice:1"
-      ]
-    },
-    {
-      "id": "m0751cea9e8cf4c",
-      "source": "予約中のLIVE企画",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "m05606f39897cba",
-      "source": "予約枠終了まで。キャンセル・強制終了・完了後は24時間",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -15470,13 +15115,6 @@
       "source": "他人が写っている画像、他人が作ったイラスト、ロゴ、動画の切り抜きその他の著作物を、本人または権利者の許可なく登録・公開してはいけません。未成年者が識別できる画像を利用する場合は、本人に加えて保護者の同意も取得してください。裸、下着、水着、入浴・更衣中の場面その他未成年者を性的または危険な状況で示す画像は登録できません。詳しくは",
       "contexts": [
         "minor-policy.html:body"
-      ]
-    },
-    {
-      "id": "m374d2d1642c15a",
-      "source": "他人の写真や作品を勝手に使わず、お金がかかる機能は内容と金額を確認して使ってください。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -15984,20 +15622,6 @@
       ]
     },
     {
-      "id": "m951267607ec239",
-      "source": "出題者が選択または作成した10問の正解を登録し、参加者がその答えを予想して答え合わせを行う「みんなに挑戦してもらう」モード",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "m475d835ba552f4",
-      "source": "出題者名、挑戦者が入力した理解度ボード表示名、選ばれた問題、回答、一致した問題数、自動生成された称号・答え合わせレポート、理解度ボード掲載への同意日時、作成・回答日時",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m3c9802d1a4d1bb",
       "source": "出題者名、配信者名、参加者名、理解度ボードの自由入力コメントにも、本名、学校名、連絡先、秘密URLその他、本人または第三者を特定・追跡できる情報を入力しないでください。相手から聞いた私生活上の情報を、本人の同意なく問題やコメントとして公開することも禁止します。",
       "contexts": [
@@ -16106,13 +15730,6 @@
       ]
     },
     {
-      "id": "mf09d6dcd3cef47",
-      "source": "利用者がYouTube連携を選んだ場合、公開チャンネル・動画の情報をチャンネル確認および問題候補の作成に利用します。配信者本人がGoogle認証を選んだ場合は、本人が管理する過去1年の公開動画から、再生数を主軸に公開日の新しさも加味して優先した最大8本の字幕を取得し、実際の発言・場面を反映した問題候補の生成に利用します。Googleアクセストークンは処理後に失効させ、ログイン認証情報、パスワード、アクセストークンおよびリフレッシュトークンを保存しません。YouTube機能の利用には",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m7da8fe040264c4",
       "source": "利用者が任意のチェック欄で送信に同意した問題文、選択肢、送信元モード、送信日時、自動検知した審査フラグおよび不正投稿防止用のIPハッシュ",
       "contexts": [
@@ -16131,13 +15748,6 @@
       "source": "利用者コンテンツの著作権その他の権利は、利用者または元の権利者に残ります。利用者は、送信または登録したコンテンツについて、本サービスの提供、ゲームの進行、審査、編集、共通お題ライブラリへの掲載、無料・有料結果画像の生成・表示・ダウンロード提供、再提供、サポート、不正利用調査および権利侵害対応に必要な範囲で、運営者へ無償かつ非独占的な利用を許可します。",
       "contexts": [
         "content-guidelines.html:body"
-      ]
-    },
-    {
-      "id": "m06c3f6d48bce94",
-      "source": "利用者は",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -16162,29 +15772,8 @@
       ]
     },
     {
-      "id": "mfee4fbc6a9b9fd",
-      "source": "利用者は、本規約に同意したうえで本サービスを利用します。本サービスの利用を開始した時点で、本規約に同意したものとみなします。本規約の全部または一部に同意できない場合、本サービスを利用できません。有料サービスの申込み、クリエイター向け収益分配その他個別の機能には、申込み画面または各法務ページに表示する個別条件も適用されます。本規約と個別条件が矛盾する場合、その機能については個別条件が優先します。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "mfa80392b809322",
       "source": "利用者は、次の行為をしてはなりません。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "m704d94baed5028",
-      "source": "利用者は、理解度ボードへ掲載する前に同じ問題へもう一度挑戦できます。再挑戦すると現在の回答と結果は上書きされ、すでに理解度ボードへ掲載していた場合は、再掲載を選ぶまで現在の掲載が取り消されます。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "m60689c0ae0233f",
-      "source": "利用者は、自らの判断と責任で本サービスを利用し、自らが作成、回答、共有、配信または購入した行為とその結果について責任を負います。出題者、配信者、回答者その他利用者間の交流やトラブルは、当事者間で解決するものとします。ただし、運営者は、安全確保または規約違反への対応に必要な範囲で、確認、利用制限その他の措置を行うことがあります。",
       "contexts": [
         "terms.html:body"
       ]
@@ -16221,8 +15810,7 @@
       "id": "m94edb670f67a1b",
       "source": "利用規約｜Streetboardgame",
       "contexts": [
-        "terms.html:title",
-        "terms.html:body"
+        "terms.html:title"
       ]
     },
     {
@@ -16255,24 +15843,10 @@
       ]
     },
     {
-      "id": "m1d96085653b49b",
-      "source": "制定日：2026年7月22日　最終改定日：2026年7月28日　規約バージョン：1.15",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m04795d2ff4df5c",
       "source": "制定日：2026年7月22日　最終改定日：2026年7月28日　規約バージョン：1.7",
       "contexts": [
         "creator-terms.html:body"
-      ]
-    },
-    {
-      "id": "m1d590d9a719899",
-      "source": "制定日：2026年7月22日　最終改定日：2026年8月18日　ポリシーバージョン：1.9",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -16450,13 +16024,6 @@
       ]
     },
     {
-      "id": "m745c14076b3ae3",
-      "source": "参加URLや主催者用URLは役割が違います。主催者用URLやスタッフ用URLは他の人に送らないでください。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "md06e29e624a0e5",
       "source": "参加受付は終了しました",
       "contexts": [
@@ -16582,8 +16149,6 @@
       "id": "mc139f2c4ac944a",
       "source": "収益分配規約",
       "contexts": [
-        "terms.html:body",
-        "privacy.html:body",
         "legal.html:body",
         "creator-terms.html:body",
         "refund-policy.html:body",
@@ -16603,13 +16168,6 @@
     {
       "id": "md5fdad1f0f7178",
       "source": "取り扱う情報と目的",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "m81118610980493",
-      "source": "取得から30日。毎時の定期削除対象",
       "contexts": [
         "privacy.html:body"
       ]
@@ -16838,13 +16396,6 @@
       ]
     },
     {
-      "id": "m7ea2006b2b7bda",
-      "source": "商品、価格、購入日時、Stripeの決済・顧客・領収書識別子、Stripeが取得する購入者メールアドレス、ダウンロード状況。運営者のD1には購入者メールアドレスの平文を保存せず、購入権限の回復照合に使う一方向HMACだけを保存します。カード番号は運営者のサーバーに保存しません。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m4d962dc4f54d37",
       "source": "商品券",
       "contexts": [
@@ -16904,6 +16455,7 @@
       "id": "mb8f4ade9afce8f",
       "source": "問題ごとの回答内容は、秘密の主催者用URLを持つ出題者へ表示します。主催者用URLは回答者へ公開しません。",
       "contexts": [
+        "terms.html:body",
         "privacy.html:body"
       ]
     },
@@ -17129,13 +16681,6 @@
       ]
     },
     {
-      "id": "mb5b7bfa6745736",
-      "source": "変換後の画像は非公開R2へ保存し、上記R2の期間で削除",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m7eab6afe19fd94",
       "source": "外で見せる自分は",
       "contexts": [
@@ -17236,13 +16781,6 @@
       ]
     },
     {
-      "id": "ma576bd8c7cadd8",
-      "source": "契約・本人確認情報",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m8421078e858afd",
       "source": "契約、収益、権利侵害に関する連絡は",
       "contexts": [
@@ -17271,24 +16809,10 @@
       ]
     },
     {
-      "id": "m216d62d752defd",
-      "source": "契約同意：",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m9bb50934df4c16",
       "source": "契約成立は、必要な本人確認、配信アカウントまたはチャンネルの管理権限確認、Stripe Connect登録および運営者の審査が完了し、運営者が有料販売を承認した時点とします。販売登録は招待制・手動審査制とし、招待コードは審査対象の配信者と正式な運営スタッフだけが利用できます。現時点の販売登録では、YouTubeチャンネルの管理権限確認を使用します。",
       "contexts": [
         "creator-terms.html:body"
-      ]
-    },
-    {
-      "id": "m5b5f3f43c97531",
-      "source": "契約期間中および終了後7年",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -17381,13 +16905,6 @@
         "refund-policy.html:body",
         "minor-policy.html:body",
         "content-guidelines.html:body"
-      ]
-    },
-    {
-      "id": "m7fd4be41f4c0ce",
-      "source": "字幕は取得から30日、保存した問題・チャンネル情報は対象LIVEゲームの保存期間まで。OAuth確認用stateは最長10分",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -17895,22 +17412,8 @@
       ]
     },
     {
-      "id": "medabc3c206b143",
-      "source": "対応完了後12か月",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "mb8e1cf9f8949d8",
       "source": "対象",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "maf11b88558badd",
-      "source": "対象LIVE終了後24時間",
       "contexts": [
         "privacy.html:body"
       ]
@@ -18215,31 +17718,10 @@
       ]
     },
     {
-      "id": "m4e29adc10fb4aa",
-      "source": "応援メッセージにも第5条および第7条が適用されます。運営者または配信者は、法令、本規約、安全上の理由または通報対応のため、決済完了後でもメッセージを事前通知なく非表示にできます。規約違反、通報または配信者による非表示だけを理由とする返金は行いません。ただし、決済されたにもかかわらず運営者側の不具合により応援受付が記録されず復旧できない場合、未成年者による取消しその他法令上必要な場合は、",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m406fc90f8f6d4b",
       "source": "応援メッセージの内容",
       "contexts": [
         "pricing.html:body"
-      ]
-    },
-    {
-      "id": "m47dd2d3f71f9ab",
-      "source": "応援機能の販売・役務提供事業者および購入者との契約当事者はStreetboardgame運営者であり、配信者は購入者に対する販売者ではありません。決済が確定した応援機能の売上の70%は、別途審査・登録・契約を完了した配信者へ、",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "me94ba469a9e3d7",
-      "source": "応援機能は、購入者が選択した金額の決済完了後、任意で入力したメッセージを金額に応じた色でLIVEチャットへ表示し、配信者へ応援の到着を通知する有料機能です。メッセージを入力しないで利用することもできます。応援機能の購入によって、物品、結果画像、配信者からの返答・読み上げ・お礼、配信内容への影響、特別な権利または継続的な表示が保証されるものではありません。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -18489,13 +17971,6 @@
       ]
     },
     {
-      "id": "maa371babe247ee",
-      "source": "投票の水増し、決済の不正利用、チャージバックの濫用",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "mda7cde05a93ead",
       "source": "持ち物",
       "contexts": [
@@ -18514,13 +17989,6 @@
       "source": "挑戦するなら",
       "contexts": [
         "question:japanese:Q034:title"
-      ]
-    },
-    {
-      "id": "m20579715d2d419",
-      "source": "挑戦モードの理解度ボード掲載は任意です。掲載を選んだ利用者は、本名や学校名など本人を特定しやすい情報を避けた表示名と一致した問題数が、コメントなしで同じクイズの参加者へ公開されることに同意します。理解度ボードは点数順の順位付けを行わず、10問の回答完了順で表示します。理解度ボードへ載せない場合も、回答、答え合わせ、結果確認および結果カードの保存を利用できます。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -18575,13 +18043,6 @@
       ]
     },
     {
-      "id": "m1c2791913b8655",
-      "source": "掲載は任意です。掲載に同意した利用者の表示名と一致した問題数だけを、コメントなしで同じクイズの参加者へ表示します。掲載しない利用者は理解度ボードへ表示しません。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "mc2bd082522dd77",
       "source": "掲載候補として{0}問を運営へ送信しました。承認されるまで公開ライブラリには追加されません。",
       "contexts": [
@@ -18597,16 +18058,10 @@
       ]
     },
     {
-      "id": "md47c2258afbe36",
-      "source": "掲載候補として送信しない問題は、共通お題ライブラリへ掲載する目的では利用しません。利用者が登録する画像、名称、文章等の詳しい扱いは",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m857597f551474e",
       "source": "掲載候補への送信に同意した問題文と選択肢は、運営者の審査・編集後に共通お題ライブラリで他の利用者へ公開する場合があります。掲載候補として送信しない問題は、この目的では公開しません。",
       "contexts": [
+        "terms.html:body",
         "privacy.html:body"
       ]
     },
@@ -19015,13 +18470,6 @@
       ]
     },
     {
-      "id": "m6a8593c4611e04",
-      "source": "有料の応援メッセージは寄付ではありません。支払い後でも、ルール違反の文章は非表示になり、配信者からの返事や読み上げは保証されません。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m7dc540810bb9f3",
       "source": "有料応援メッセージが利用規約、法令、安全上の理由、通報対応または配信者によるモデレーションのため非表示になっただけでは、その注文は当然には返金または分配取消しの対象になりません。ただし、不正利用、配信者の関与する規約違反、権利侵害その他運営者が調査を必要とする事情がある場合は、分配を保留できます。",
       "contexts": [
@@ -19106,13 +18554,6 @@
       ]
     },
     {
-      "id": "m48fc4ef793cf5c",
-      "source": "有料結果画像・購入者名・ダウンロード用情報",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "ma000cdba5b4b10",
       "source": "有料販売を利用する配信者が、画像登録機能の提供を受けた場合に登録する写真、似顔絵、アバター、プロフィール画像、ロゴ",
       "contexts": [
@@ -19154,31 +18595,10 @@
       ]
     },
     {
-      "id": "m5343d241bb7c84",
-      "source": "期限切れ・失効済みの有料販売用招待記録",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "mb13de77a4a17fb",
-      "source": "期限切れまたは失効から90日。招待コードの平文は保存せずハッシュのみ保存",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "mb2e91a3ad5d098",
       "source": "未利用",
       "contexts": [
         "prototype_app.jsx"
-      ]
-    },
-    {
-      "id": "m1583e3c0d046d5",
-      "source": "未完了のチャンネル所有確認",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -19214,13 +18634,6 @@
       "source": "未成年者が写る画像や未成年者を特定できる情報を使用する場合は、本人に加えて保護者その他必要な関係者の明示的な同意を得てください。裸、水着、入浴中その他性的に受け取られるおそれのある子どもの画像は登録できません。",
       "contexts": [
         "content-guidelines.html:body"
-      ]
-    },
-    {
-      "id": "m22a049ac41222b",
-      "source": "未成年者が有料機能を申し込む場合は、購入内容と金額について保護者の同意を得なければなりません。保護者名義の決済手段を無断で使用してはいけません。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -19324,13 +18737,6 @@
       ]
     },
     {
-      "id": "m2bfa465e945ea2",
-      "source": "本サービスの運営、決済、問い合わせ対応、分析その他の業務を委託するために必要な場合",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m4e3c0c2098535f",
       "source": "本サービスは、13歳から18歳までの中高生を主な対象、19歳から20歳までの大学生・専門学生を副次的な対象、10歳から12歳までの小学生を制限付きの対象として設計しています。ただし、これはサービス上の対象区分であり、法令上の成年・未成年の区分を変更するものではありません。10歳から12歳までの利用者は、保護者の管理・見守りのもとで利用してください。18歳以上でも、決済手段、配信サービス、所属事務所、学校または家庭のルールに別の条件がある場合は、それにも従ってください。",
       "contexts": [
@@ -19340,13 +18746,6 @@
     {
       "id": "mf8bc96a6294666",
       "source": "本サービスは、機能維持、途中再開、利用状況の把握および改善のためCookie、localStorage、sessionStorageその他の類似技術を利用します。ブラウザ設定でCookieやサイトデータを無効化・削除できますが、途中再開、参加認証その他の一部機能が利用できなくなる場合があります。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "m4e413f9c81c8d8",
-      "source": "本サービスはYouTube API Servicesを利用する場合があります。本サービスはYouTube、Googleまたはその関係会社が提供、後援、承認するサービスではありません。",
       "contexts": [
         "privacy.html:body"
       ]
@@ -19376,7 +18775,6 @@
       "id": "m717ef7f6d2039b",
       "source": "本サービスはYouTube、GoogleまたはInstagramの提携・承認サービスではありません。",
       "contexts": [
-        "privacy.html:body",
         "creator-terms.html:body"
       ]
     },
@@ -19388,17 +18786,9 @@
       ]
     },
     {
-      "id": "m68e3551370fc27",
-      "source": "本サービスはYouTube、Googleまたはその関係会社が提供、後援、承認するサービスではありません。「YouTube」はGoogle LLCの商標です。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "mb63dafdf093d80",
       "source": "本サービスはYouTubeまたはGoogleの提携・承認サービスではありません。",
       "contexts": [
-        "terms.html:body",
         "legal.html:body",
         "refund-policy.html:body",
         "minor-policy.html:body"
@@ -19414,13 +18804,6 @@
     {
       "id": "m079a0e39ce553e",
       "source": "本ポリシー、個人情報の取扱い、開示等の請求または苦情については、",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "m5d098a311bb83a",
-      "source": "本ポリシーは、Streetboardgameのウェブサイト、「みんなに挑戦してもらう」通常版、「ライブ配信でみんなに挑戦してもらう」LIVE版、自作問題、有料機能および関連機能（以下「本サービス」）を閲覧または利用するすべての利用者に適用されます。",
       "contexts": [
         "privacy.html:body"
       ]
@@ -19551,13 +18934,6 @@
       "source": "本規約は、Streetboardgame運営者（以下「運営者」）と、「ライブ配信でみんなに挑戦してもらう」モードで有料販売機能を利用する配信者、VTuber、チャンネル・配信アカウント運営者その他の契約者（以下「配信者」）との間に適用されます。無料LIVEの作成・参加だけを行う利用者には、本規約への同意および販売登録は必要ありません。",
       "contexts": [
         "creator-terms.html:body"
-      ]
-    },
-    {
-      "id": "m769194d3e87df3",
-      "source": "本規約は、平川智章が「Streetboardgame運営者」として提供するウェブサイト、みんなに挑戦してもらうモード、ライブ配信モード、既存購入者向け機能およびこれらに付随する機能（総称して「本サービス」）の利用条件を定めます。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -19721,22 +19097,8 @@
       ]
     },
     {
-      "id": "mf7897c47d84757",
-      "source": "氏名・事業者情報、連絡先、配信アカウント・チャンネル情報、登録画像、招待の発行・利用・失効日時、Stripe ConnectアカウントID、収益・返金・送金記録",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "mbd01da22cd1f7c",
       "source": "氏名、メールアドレス、問い合わせ内容、IPアドレス、Cookie、閲覧ページ、参照元、端末情報、障害ログ",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "m53b26ec5e56f72",
-      "source": "氏名、メールアドレス、問い合わせ内容の受信",
       "contexts": [
         "privacy.html:body"
       ]
@@ -19824,13 +19186,6 @@
       "source": "決断する時に頼るのは",
       "contexts": [
         "question:japanese:Q144:title"
-      ]
-    },
-    {
-      "id": "m5582984dcc7f3c",
-      "source": "決済、結果画像の提供、返金、チャージバック対応、会計・税務記録",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -20249,20 +19604,6 @@
       ]
     },
     {
-      "id": "m0cdf7362d4a2c2",
-      "source": "無料の結果カード保存機能と、有料の「オリジナル高画質結果画像生成・ダウンロードサービス」は別の機能です。有料サービスは、購入者名、LIVE結果、配信者名・チャンネル名およびクリエイターが登録した画像を用いて、2,160×2,700pxの高画質結果画像を生成し、決済日から30日間ダウンロードできるようにするサービスです。決済完了後に生成を開始し、生成済み画像のダウンロードリンクが利用可能になった時点で本サービスの提供完了とします。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "m0f05bb84dbfaf6",
-      "source": "無料機能の内容は変更または終了する場合があります。有料サービスの購入後の提供、返金その他の取扱いは、申込み時の条件、返金ポリシーおよび適用法令に従います。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m71f85e6d86b796",
       "source": "無料結果画像：",
       "contexts": [
@@ -20412,8 +19753,6 @@
       "source": "特商法表記",
       "contexts": [
         "index.html:body",
-        "terms.html:body",
-        "privacy.html:body",
         "legal.html:body",
         "creator-terms.html:body",
         "refund-policy.html:body",
@@ -20427,7 +19766,6 @@
       "id": "ma2ac31c2075d26",
       "source": "特定商取引法に基づく表記",
       "contexts": [
-        "terms.html:body",
         "legal.html:body",
         "minor-policy.html:body",
         "pricing.html:body",
@@ -20552,20 +19890,6 @@
       ]
     },
     {
-      "id": "me6021d6915e8ea",
-      "source": "理解度ボードへの掲載は自分で選べます。掲載せずにもう一度答えを予想することもできます。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "me790356ed0b529",
-      "source": "理解度ボードへ載せるかは自分で選べます。載せない場合も回答、答え合わせ、結果確認はできます。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "med03298264df80",
       "source": "甘い",
       "contexts": [
@@ -20635,13 +19959,6 @@
       "contexts": [
         "question:japanese:Q169:choice:2",
         "question:japanese:Q533:choice:2"
-      ]
-    },
-    {
-      "id": "mbfdc229e42989d",
-      "source": "申請から90日。OAuth確認用stateは期限経過後に消去",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -20715,20 +20032,6 @@
       ]
     },
     {
-      "id": "m37d1a94c53d625",
-      "source": "画像変換サービスの混雑、制限または障害が発生した場合、運営者は購入処理を直ちに失敗とせず、変換前の元画像を用いるなど、申込み内容に照らして合理的な代替方法で提供を継続することがあります。代替提供でも申込み内容を満たせない場合の取扱いは、返金・キャンセルポリシーに従います。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "m164e32d031cad8",
-      "source": "画像提供用情報30日、取引・会計記録7年",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "ma04d859b15b126",
       "source": "疲れ",
       "contexts": [
@@ -20754,13 +20057,6 @@
       "source": "登山",
       "contexts": [
         "question:japanese:Q034:choice:0"
-      ]
-    },
-    {
-      "id": "md5fd5e393a3ffa",
-      "source": "登録画像・プレビューは対象LIVE終了後24時間以内、有料結果画像は購入後30日",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -20902,13 +20198,6 @@
       "source": "確認した",
       "contexts": [
         "live_challenge.js"
-      ]
-    },
-    {
-      "id": "mecbe4cf974ee65",
-      "source": "確認済み契約・本人確認記録",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -21077,13 +20366,6 @@
       ]
     },
     {
-      "id": "m02ec1cad92845a",
-      "source": "第10条（個人情報等の取扱い）",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m37f15e50744452",
       "source": "第10条（禁止コンテンツ・権利侵害）",
       "contexts": [
@@ -21091,24 +20373,10 @@
       ]
     },
     {
-      "id": "ma77a8a35e096ed",
-      "source": "第11条（サービスの変更・中断・終了）",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "mf324880c4eea67",
       "source": "第11条（契約期間・終了）",
       "contexts": [
         "creator-terms.html:body"
-      ]
-    },
-    {
-      "id": "m467d6c9b32da85",
-      "source": "第12条（利用者の責任・利用者間のトラブル）",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -21123,48 +20391,6 @@
       "source": "第13条（お問い合わせ）",
       "contexts": [
         "creator-terms.html:body"
-      ]
-    },
-    {
-      "id": "m38527556e0cf47",
-      "source": "第13条（保証・責任の範囲）",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "m2d6231b565e992",
-      "source": "第14条（運営者からの連絡）",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "m620cf5dc56a770",
-      "source": "第15条（規約の変更）",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "mcebde0d4cd996e",
-      "source": "第16条（分離可能性）",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "m1937f5dccec88a",
-      "source": "第17条（準拠法・管轄）",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "m0fff8de90377d6",
-      "source": "第18条（お問い合わせ）",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -21280,13 +20506,6 @@
       ]
     },
     {
-      "id": "mc4782f0db45abd",
-      "source": "第9条（有料サービス・返金）",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m31acf64520edcd",
       "source": "第9条（本人確認・不正対策）",
       "contexts": [
@@ -21322,13 +20541,6 @@
       ]
     },
     {
-      "id": "m5791455df3ebd9",
-      "source": "答え合わせレポートは、10問の一致・不一致と回答内容に基づき、全体の理解度、よく分かっていた分野、意外にずれた分野、および次に話すと楽しそうな話題を自動生成する娯楽上の文章です。専門家による評価、心理診断、相性診断または事実の保証ではありません。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m30607c8bebddef",
       "source": "答え合わせレポートは、回答の一致・不一致に基づいて本サービス内の処理で自動生成します。現在、答え合わせレポートの生成のために回答内容を外部のAIサービスへ送信しません。",
       "contexts": [
@@ -21354,13 +20566,6 @@
       "source": "節約",
       "contexts": [
         "question:japanese:Q540:choice:0"
-      ]
-    },
-    {
-      "id": "ma0eadb2b62bd46",
-      "source": "管理画面の二要素認証と短期セッション、ゲーム用D1と購入履歴用D1の分離、R2の非公開化、Content Security Policy、通信の暗号化、権限分離、期限切れデータの自動削除、ログ監視を実施します。秘密URLや参加コードは、利用者側でも第三者に漏れないよう管理してください。",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -21673,13 +20878,6 @@
       ]
     },
     {
-      "id": "m5be46396fc26d9",
-      "source": "自作お題：",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m11fc08fcfe0d2e",
       "source": "自作お題の掲載候補・審査フラグ・通報記録",
       "contexts": [
@@ -21928,13 +21126,6 @@
       ]
     },
     {
-      "id": "ma972cbd62e042f",
-      "source": "虚偽のチャンネル情報、本人情報、年齢または振込先を登録する行為",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m0897f429729130",
       "source": "虫",
       "contexts": [
@@ -22008,13 +21199,6 @@
       "contexts": [
         "question:japanese:Q108:title",
         "question:japanese:Q527:title"
-      ]
-    },
-    {
-      "id": "mb53ef80af3a385",
-      "source": "規約バージョン、同意日時、IPアドレス、ConnectアカウントID、利用端末・ブラウザ情報",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -22257,34 +21441,6 @@
       ]
     },
     {
-      "id": "mc4095ac73781b4",
-      "source": "購入・決済・返金・分配記録",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "me3866e1599648e",
-      "source": "購入・決済情報",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "m94fc028ae0acde",
-      "source": "購入：",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
-      "id": "mac393311de928b",
-      "source": "購入ID、Stripe決済ID、提供・返金状態。ゲーム用D1とは別データベース",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m24f1a58083e864",
       "source": "購入を決める前に、事業者の所在地・電話番号の開示を請求するためのフォームです。確認したい有料サービスと購入予定時期を追記して送信してください。",
       "contexts": [
@@ -22299,13 +21455,6 @@
       ]
     },
     {
-      "id": "mafb68712c2ee10",
-      "source": "購入後30日。その後R2画像を削除し、購入権限からゲームコード・参加者ID・名前・購入者メールHMAC・アクセス用ハッシュを消去",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "mbfa1181c870710",
       "source": "購入日から30日間。受取画面を紛失した場合は、購入情報を添えて",
       "contexts": [
@@ -22317,13 +21466,6 @@
       "source": "購入日から30日間。決済完了後に本サービスへ戻った画面からダウンロードできます。受取画面を紛失した場合は購入情報を添えてお問い合わせください。",
       "contexts": [
         "legal.html:body"
-      ]
-    },
-    {
-      "id": "mae101ded354c8d",
-      "source": "購入日から7年。ゲームデータとは別の購入履歴専用D1に保存",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -22456,7 +21598,6 @@
       "id": "mf5cc8937728531",
       "source": "返金・キャンセルポリシー",
       "contexts": [
-        "terms.html:body",
         "legal.html:body",
         "refund-policy.html:body",
         "minor-policy.html:body",
@@ -22483,8 +21624,6 @@
       "id": "m6c11d2a907de32",
       "source": "返金ポリシー",
       "contexts": [
-        "terms.html:body",
-        "privacy.html:body",
         "legal.html:body",
         "creator-terms.html:body",
         "refund-policy.html:body",
@@ -22507,24 +21646,10 @@
       ]
     },
     {
-      "id": "m51f18340bcc934",
-      "source": "返金条件は",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m193de4ed2fb0d9",
       "source": "追加負担：",
       "contexts": [
         "pricing.html:body"
-      ]
-    },
-    {
-      "id": "ma6af55ef7da37b",
-      "source": "送信したお題は運営が編集して公開することがあり、公開後も通報により非公開になることがあります。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -22651,13 +21776,6 @@
       ]
     },
     {
-      "id": "md13884dd277ff2",
-      "source": "通常版のクイズ・参加情報",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m179680f67cdb0e",
       "source": "通常版のクイズ作成・回答は無料です。LIVE版も無料で作成・参加でき、有料サービスを有効にしたLIVEでは、視聴者が結果画像や応援メッセージを任意で購入できます。",
       "contexts": [
@@ -22739,6 +21857,7 @@
       "id": "m76b9392860af1d",
       "source": "運営者：平川智章",
       "contexts": [
+        "terms.html:body",
         "pricing.html:body"
       ]
     },
@@ -22747,13 +21866,6 @@
       "source": "運営者からStripe Connectアカウントへの送金と、Stripe Connect残高から配信者の銀行口座等への入金は別の処理です。銀行口座等への着金日は、配信者のStripe入金スケジュール、審査、休業日、情報不備または法令対応等により異なります。",
       "contexts": [
         "creator-terms.html:body"
-      ]
-    },
-    {
-      "id": "mdcaf0b4b778629",
-      "source": "運営者から利用者への連絡は、本サービス内または本サイト上への掲示、購入時等に登録された連絡先への送信、その他運営者が適切と判断する方法で行います。",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -22766,13 +21878,6 @@
     {
       "id": "m99fc14e38b68ea",
       "source": "運営者の許可なく、ボット、スクリプト、スクレイパーその他の自動手段により問題、回答、理解度ボード等を収集、作成または操作する行為",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
-      "id": "mcd1e0e02753f63",
-      "source": "運営者の軽過失により利用者に損害が生じた場合、運営者は通常かつ直接の損害に限って責任を負い、有料サービスに関する損害賠償額は、当該損害の原因となった有料サービスについて利用者が支払った金額を上限とします。この制限は、運営者の故意または重過失による場合、利用者の生命または身体に生じた損害、その他法令上制限できない責任には適用しません。",
       "contexts": [
         "terms.html:body"
       ]
@@ -22796,13 +21901,6 @@
       "source": "運営者は、利用者が入力・送信する情報と、本サービスの利用時に自動的に生成される情報を、次の範囲で取得します。",
       "contexts": [
         "privacy.html:body"
-      ]
-    },
-    {
-      "id": "m6cd592a2a368c5",
-      "source": "運営者は、利用者の個人情報、回答、理解度ボード情報、利用記録その他の情報を",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -22876,13 +21974,6 @@
       ]
     },
     {
-      "id": "mb4b5c286547bbd",
-      "source": "運営者は、禁止事項への違反、決済の不正利用、安全上の危険その他合理的な理由がある場合、参加コードの無効化、利用の停止、有料機能または収益分配の保留その他必要な措置を行うことができます。",
-      "contexts": [
-        "terms.html:body"
-      ]
-    },
-    {
       "id": "m39b95d91b73fd7",
       "source": "運営者は、結果画像売上と有料応援メッセージ売上を区分し、返金・チャージバック・相殺の対象注文、理由および金額を合理的な範囲で売上明細に表示します。",
       "contexts": [
@@ -22929,13 +22020,6 @@
       "source": "運営責任者",
       "contexts": [
         "legal.html:body"
-      ]
-    },
-    {
-      "id": "m1ce8914ba8bc74",
-      "source": "運用・セキュリティイベント",
-      "contexts": [
-        "privacy.html:body"
       ]
     },
     {
@@ -23067,13 +22151,6 @@
       ]
     },
     {
-      "id": "m2aa535b1808b31",
-      "source": "配信者が選択肢別人数の表示を有効にした場合、個人名を付けない集計人数を配信者と視聴者へ表示します。視聴者本人の回答・正誤・結果カードは当該視聴者に表示します。",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "ma05a5c2e0fee3e",
       "source": "配信者と同じ答えなら1点",
       "contexts": [
@@ -23085,13 +22162,6 @@
       "source": "配信者と視聴者が同じ10問に同時回答し、締切後に答え合わせをするゲームです。無料の結果画像は540×675px、SAMPLE表示ありです。",
       "contexts": [
         "pricing.html:body"
-      ]
-    },
-    {
-      "id": "m2d3b7a25d6f507",
-      "source": "配信者と視聴者が同じ10問へ同時回答し、配信者が各問の回答を締め切ったあとに配信者の答えを公開して次の問題へ進む「ライブ配信でみんなに挑戦してもらう」モード",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -23236,13 +22306,6 @@
       ]
     },
     {
-      "id": "madd86331c25288",
-      "source": "配信者本人が取得を許可した公開動画字幕",
-      "contexts": [
-        "privacy.html:body"
-      ]
-    },
-    {
       "id": "m81c5030d9db605",
       "source": "配信者用URLおよびスタッフ用URLは、LIVEを操作できる秘密のURLです。視聴者へ送る参加URLまたは6桁の参加コードと取り違えず、権限のない人へ共有しないでください。配信中も、氏名、年齢、住所、学校、電話番号その他の個人情報を話したり、背景へ映したりしないでください。",
       "contexts": [
@@ -23382,13 +22445,6 @@
       "source": "電話番号の開示",
       "contexts": [
         "legal.html:body"
-      ]
-    },
-    {
-      "id": "mc8d1bcc0dd02c5",
-      "source": "非提携について：",
-      "contexts": [
-        "terms.html:body"
       ]
     },
     {
@@ -23743,6 +22799,7 @@
       "source": "Everyone's answers",
       "contexts": [
         "legacy-ui-ja",
+        "legacy-ui-en",
         "challenge_game.js"
       ]
     },
@@ -23751,6 +22808,7 @@
       "source": "Once 3 or more people have answered, you can see everyone's answers for each question.",
       "contexts": [
         "legacy-ui-ja",
+        "legacy-ui-en",
         "challenge_game.js"
       ]
     },
@@ -23843,6 +22901,2072 @@
       "source": "点数も入れる",
       "contexts": [
         "challenge_game.js"
+      ]
+    },
+    {
+      "id": "ma137f17a19a09c",
+      "source": "·",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "mbed4353116b6d3",
+      "source": "10. 安全管理",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m0cd53abfb46ed2",
+      "source": "11. 開示・訂正・利用停止・削除等",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m42eb0f62d974cf",
+      "source": "12. 未成年者",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "mb40330420f1859",
+      "source": "13. 改定・準拠法",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "maf8b44d92256ca",
+      "source": "14. お問い合わせ窓口",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m9a5028763b8b55",
+      "source": "2026-10-23",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "m57cac9f860ba59",
+      "source": "2026-11-14",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m3b2aee34f2a1e2",
+      "source": "2026-11-15",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "mdf8e31284b7270",
+      "source": "2026-11-22",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m431e2bda50e206",
+      "source": "5. 外部サービス・委託先",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "mf05ce3682d43cd",
+      "source": "6. 第三者提供",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m56f46c7a0a574b",
+      "source": "7. 統計情報",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "mddcb32bd7c507c",
+      "source": "8. 保存期間",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m033e06ba66f3e7",
+      "source": "9. Cookie・アクセス解析",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m2f40b8fa960d1d",
+      "source": "A barbecue",
+      "contexts": [
+        "question:english:ENQ522:choice:0"
+      ]
+    },
+    {
+      "id": "mb1d16849924e24",
+      "source": "A bird",
+      "contexts": [
+        "question:english:ENQ418:choice:2"
+      ]
+    },
+    {
+      "id": "m7bcae3c913662f",
+      "source": "A café",
+      "contexts": [
+        "question:english:ENQ214:choice:0"
+      ]
+    },
+    {
+      "id": "ma7a8377f636804",
+      "source": "A cat",
+      "contexts": [
+        "question:english:ENQ418:choice:1"
+      ]
+    },
+    {
+      "id": "m202ee7958ffcaf",
+      "source": "A city",
+      "contexts": [
+        "question:english:ENQ435:choice:0"
+      ]
+    },
+    {
+      "id": "m852deee69dec20",
+      "source": "A convenience store",
+      "contexts": [
+        "question:english:ENQ214:choice:1"
+      ]
+    },
+    {
+      "id": "md2894c61cfd420",
+      "source": "A dog",
+      "contexts": [
+        "question:english:ENQ418:choice:0"
+      ]
+    },
+    {
+      "id": "m05694b4395c66c",
+      "source": "A drawing relay",
+      "contexts": [
+        "question:english:ENQ267:choice:4"
+      ]
+    },
+    {
+      "id": "mcab6a8b1bee0b3",
+      "source": "A fish",
+      "contexts": [
+        "question:english:ENQ418:choice:3"
+      ]
+    },
+    {
+      "id": "m42f0992cb31248",
+      "source": "A food discovery",
+      "contexts": [
+        "question:english:ENQ137:choice:0"
+      ]
+    },
+    {
+      "id": "mf8212d4747111d",
+      "source": "A gadget",
+      "contexts": [
+        "question:english:ENQ276:choice:2"
+      ]
+    },
+    {
+      "id": "m7d4b1020248f0b",
+      "source": "A gift voucher",
+      "contexts": [
+        "question:english:ENQ276:choice:0"
+      ]
+    },
+    {
+      "id": "m6d65cbae0b8281",
+      "source": "A good laugh",
+      "contexts": [
+        "question:english:ENQ302:choice:2"
+      ]
+    },
+    {
+      "id": "maa16e22c612f95",
+      "source": "A good meal",
+      "contexts": [
+        "question:english:ENQ442:choice:4"
+      ]
+    },
+    {
+      "id": "me61468158391bf",
+      "source": "A joke prize",
+      "contexts": [
+        "question:english:ENQ276:choice:4"
+      ]
+    },
+    {
+      "id": "mbc6cd01ae61ec7",
+      "source": "A little space",
+      "contexts": [
+        "question:english:ENQ302:choice:1"
+      ]
+    },
+    {
+      "id": "mb5336e69282db5",
+      "source": "A movie",
+      "contexts": [
+        "question:english:ENQ544:choice:0"
+      ]
+    },
+    {
+      "id": "m7cbc0599c8e652",
+      "source": "A musician",
+      "contexts": [
+        "question:english:ENQ431:choice:3"
+      ]
+    },
+    {
+      "id": "ma4efd54c482b17",
+      "source": "A pop idol",
+      "contexts": [
+        "question:english:ENQ431:choice:0"
+      ]
+    },
+    {
+      "id": "me9eeb5e56abfb2",
+      "source": "A reptile",
+      "contexts": [
+        "question:english:ENQ418:choice:4"
+      ]
+    },
+    {
+      "id": "m66125c575a80d2",
+      "source": "A restaurant",
+      "contexts": [
+        "question:english:ENQ214:choice:2"
+      ]
+    },
+    {
+      "id": "m89378878ad094a",
+      "source": "A special holiday meal",
+      "contexts": [
+        "question:english:ENQ543:choice:1"
+      ]
+    },
+    {
+      "id": "m563dc50d6276e7",
+      "source": "A sweet treat",
+      "contexts": [
+        "question:english:ENQ302:choice:4"
+      ]
+    },
+    {
+      "id": "m08916d0897ef14",
+      "source": "A tutoring center",
+      "contexts": [
+        "question:english:ENQ214:choice:3"
+      ]
+    },
+    {
+      "id": "m5535f318218ac7",
+      "source": "A variety show",
+      "contexts": [
+        "question:english:ENQ544:choice:2"
+      ]
+    },
+    {
+      "id": "m8628f37dadec60",
+      "source": "A walk",
+      "contexts": [
+        "question:english:ENQ522:choice:4"
+      ]
+    },
+    {
+      "id": "mde474089920c50",
+      "source": "A worry",
+      "contexts": [
+        "question:english:ENQ137:choice:3"
+      ]
+    },
+    {
+      "id": "m63bf2167882e66",
+      "source": "aboutads.info",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m64cff1319d2fd2",
+      "source": "Action",
+      "contexts": [
+        "question:english:ENQ426:choice:2"
+      ]
+    },
+    {
+      "id": "m1d9381557df513",
+      "source": "Active games",
+      "contexts": [
+        "question:english:ENQ430:choice:0"
+      ]
+    },
+    {
+      "id": "mccbb1178cb12d7",
+      "source": "Affection",
+      "contexts": [
+        "question:english:ENQ442:choice:3"
+      ]
+    },
+    {
+      "id": "m9088524aaa4bab",
+      "source": "After checking the notification",
+      "contexts": [
+        "question:english:ENQ301:choice:3"
+      ]
+    },
+    {
+      "id": "m62250700180338",
+      "source": "After thinking it over",
+      "contexts": [
+        "question:english:ENQ301:choice:1"
+      ]
+    },
+    {
+      "id": "m972d53350fb323",
+      "source": "Age twenty",
+      "contexts": [
+        "question:english:ENQ419:choice:4"
+      ]
+    },
+    {
+      "id": "m75c90c7d69181a",
+      "source": "An achievement",
+      "contexts": [
+        "question:english:ENQ137:choice:4"
+      ]
+    },
+    {
+      "id": "m26968c1a59c767",
+      "source": "An actor",
+      "contexts": [
+        "question:english:ENQ431:choice:2"
+      ]
+    },
+    {
+      "id": "md22f81f4ea511b",
+      "source": "An anime character",
+      "contexts": [
+        "question:english:ENQ431:choice:1"
+      ]
+    },
+    {
+      "id": "maa7c353ecfc051",
+      "source": "An event venue",
+      "contexts": [
+        "question:english:ENQ214:choice:4"
+      ]
+    },
+    {
+      "id": "m1dd10f244a6277",
+      "source": "Animation",
+      "contexts": [
+        "question:english:ENQ426:choice:4"
+      ]
+    },
+    {
+      "id": "m21f44d442b0559",
+      "source": "Anime songs",
+      "contexts": [
+        "question:english:ENQ523:choice:3"
+      ]
+    },
+    {
+      "id": "mf7e0f97656541b",
+      "source": "April Fools' Day",
+      "contexts": [
+        "question:english:ENQ423:choice:2"
+      ]
+    },
+    {
+      "id": "mec1345a87fbf02",
+      "source": "Athletics",
+      "contexts": [
+        "question:english:ENQ308:choice:2"
+      ]
+    },
+    {
+      "id": "ma8a4a61c11599a",
+      "source": "Be yourself",
+      "contexts": [
+        "question:english:ENQ206:choice:3"
+      ]
+    },
+    {
+      "id": "me882154bb2efd8",
+      "source": "Bread",
+      "contexts": [
+        "question:english:ENQ440:choice:0"
+      ]
+    },
+    {
+      "id": "m0fd1eb21954026",
+      "source": "Brown sauce",
+      "contexts": [
+        "question:english:ENQ401:choice:3"
+      ]
+    },
+    {
+      "id": "m3a02a39316b59a",
+      "source": "Browse the shops",
+      "contexts": [
+        "question:english:ENQ306:choice:3"
+      ]
+    },
+    {
+      "id": "m7f084a7aef03aa",
+      "source": "Butter and soy sauce",
+      "contexts": [
+        "question:english:ENQ414:choice:4"
+      ]
+    },
+    {
+      "id": "mbcac7b66292487",
+      "source": "Card games",
+      "contexts": [
+        "question:english:ENQ267:choice:2"
+      ]
+    },
+    {
+      "id": "m48735c4fae42d1",
+      "source": "Cat",
+      "contexts": [
+        "question:english:ENQ433:choice:0"
+      ]
+    },
+    {
+      "id": "m6fd348681d1971",
+      "source": "Catch up with friends",
+      "contexts": [
+        "question:english:ENQ306:choice:1"
+      ]
+    },
+    {
+      "id": "me3cbfe3ceca218",
+      "source": "Cereal",
+      "contexts": [
+        "question:english:ENQ440:choice:3"
+      ]
+    },
+    {
+      "id": "ma4a4eec3a24f7e",
+      "source": "Charades",
+      "contexts": [
+        "question:english:ENQ267:choice:1"
+      ]
+    },
+    {
+      "id": "m766e8c65fa30d3",
+      "source": "Choosing clothes",
+      "contexts": [
+        "question:english:ENQ545:choice:0"
+      ]
+    },
+    {
+      "id": "m2020b25b8c2108",
+      "source": "Clear my mind",
+      "contexts": [
+        "question:english:ENQ436:choice:4"
+      ]
+    },
+    {
+      "id": "m58644031ea3097",
+      "source": "Climb Mount Fuji",
+      "contexts": [
+        "question:english:ENQ417:choice:4"
+      ]
+    },
+    {
+      "id": "mf243c9f63db2cf",
+      "source": "Cloudflare D1（お問い合わせ受付）",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m85f1c8c8e324b6",
+      "source": "Comedy",
+      "contexts": [
+        "question:english:ENQ426:choice:1",
+        "question:english:ENQ549:choice:3"
+      ]
+    },
+    {
+      "id": "m003f4b1c2f180f",
+      "source": "Coming home",
+      "contexts": [
+        "question:english:ENQ179:choice:4"
+      ]
+    },
+    {
+      "id": "m3981a2b9c1ef7f",
+      "source": "Communication",
+      "contexts": [
+        "question:english:ENQ308:choice:0"
+      ]
+    },
+    {
+      "id": "m01e538fb6dd529",
+      "source": "Consommé",
+      "contexts": [
+        "question:english:ENQ414:choice:2"
+      ]
+    },
+    {
+      "id": "mc43612e396baa1",
+      "source": "Cosmetics",
+      "contexts": [
+        "question:english:ENQ276:choice:3"
+      ]
+    },
+    {
+      "id": "m2d9098a5568e2b",
+      "source": "Cry",
+      "contexts": [
+        "question:english:ENQ402:choice:4"
+      ]
+    },
+    {
+      "id": "m4e34de35184a28",
+      "source": "Current hits",
+      "contexts": [
+        "question:english:ENQ523:choice:1"
+      ]
+    },
+    {
+      "id": "ma2082a6c839b56",
+      "source": "Curry",
+      "contexts": [
+        "question:english:ENQ202:choice:0"
+      ]
+    },
+    {
+      "id": "m4ec118f321c4a7",
+      "source": "Dark places",
+      "contexts": [
+        "question:english:ENQ516:choice:3"
+      ]
+    },
+    {
+      "id": "m0eb129bf94594a",
+      "source": "Dog",
+      "contexts": [
+        "question:english:ENQ433:choice:1"
+      ]
+    },
+    {
+      "id": "m49d112cf30fc92",
+      "source": "Doing puzzles",
+      "contexts": [
+        "question:english:ENQ430:choice:4"
+      ]
+    },
+    {
+      "id": "m39de4731eedc9d",
+      "source": "Drawing",
+      "contexts": [
+        "question:english:ENQ430:choice:3"
+      ]
+    },
+    {
+      "id": "mff1a5e75ab1db9",
+      "source": "Eat something sweet",
+      "contexts": [
+        "question:english:ENQ402:choice:1"
+      ]
+    },
+    {
+      "id": "m1a5bd9af86e31b",
+      "source": "Educational videos",
+      "contexts": [
+        "question:english:ENQ549:choice:4"
+      ]
+    },
+    {
+      "id": "m483438f7252d3b",
+      "source": "Elementary school",
+      "contexts": [
+        "question:english:ENQ419:choice:1"
+      ]
+    },
+    {
+      "id": "m32b8b45ff49809",
+      "source": "Enjoy a fandom",
+      "contexts": [
+        "question:english:ENQ306:choice:4"
+      ]
+    },
+    {
+      "id": "m4728b09ab02d67",
+      "source": "Explore Antarctica",
+      "contexts": [
+        "question:english:ENQ417:choice:1"
+      ]
+    },
+    {
+      "id": "m00d20d0632f5e1",
+      "source": "Fashion",
+      "contexts": [
+        "question:english:ENQ219:choice:3"
+      ]
+    },
+    {
+      "id": "m84f139aa554199",
+      "source": "Fermented soybeans",
+      "contexts": [
+        "question:english:ENQ425:choice:0"
+      ]
+    },
+    {
+      "id": "m79cea8ff2ba190",
+      "source": "Fishing",
+      "contexts": [
+        "question:english:ENQ522:choice:2"
+      ]
+    },
+    {
+      "id": "mc0387f96f3a741",
+      "source": "Fixing my hair",
+      "contexts": [
+        "question:english:ENQ545:choice:1"
+      ]
+    },
+    {
+      "id": "mf38d550bf2f5a3",
+      "source": "Fried bread",
+      "contexts": [
+        "question:english:ENQ202:choice:1"
+      ]
+    },
+    {
+      "id": "m866ec404e44b7d",
+      "source": "Fried chicken",
+      "contexts": [
+        "question:english:ENQ018:choice:1"
+      ]
+    },
+    {
+      "id": "m4e7bcd0c8d5b25",
+      "source": "Garlic",
+      "contexts": [
+        "question:english:ENQ414:choice:3"
+      ]
+    },
+    {
+      "id": "m9f982e96125cd1",
+      "source": "Getting out of bed",
+      "contexts": [
+        "question:english:ENQ545:choice:4"
+      ]
+    },
+    {
+      "id": "m206efdf26cb9a9",
+      "source": "Go quiet",
+      "contexts": [
+        "question:english:ENQ402:choice:0"
+      ]
+    },
+    {
+      "id": "mfeecf13fecc871",
+      "source": "Go to bed earlier",
+      "contexts": [
+        "question:english:ENQ206:choice:4"
+      ]
+    },
+    {
+      "id": "m5640e7f368b219",
+      "source": "Google Ads Settings",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m2696093ce6d5d3",
+      "source": "Google AdSense",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m6fbc0dcb438be8",
+      "source": "Google Advertising",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m0cd31280fd2268",
+      "source": "Googleなどの第三者配信事業者は、当サイトや他サイトへのアクセスに基づくCookieを使用する場合があります。Googleの広告Cookieにより、Googleとそのパートナーは広告をパーソナライズできます。Google Ads Settingsまたはaboutads.infoでパーソナライズ広告を無効にできます。",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "mccbe22682162a0",
+      "source": "Gorilla",
+      "contexts": [
+        "question:english:ENQ433:choice:4"
+      ]
+    },
+    {
+      "id": "m049566b6b12d6a",
+      "source": "Halloween",
+      "contexts": [
+        "question:english:ENQ423:choice:1"
+      ]
+    },
+    {
+      "id": "m51f6173c683e9b",
+      "source": "Hamburger steak",
+      "contexts": [
+        "question:english:ENQ018:choice:3"
+      ]
+    },
+    {
+      "id": "m2582756ac42269",
+      "source": "Having breakfast",
+      "contexts": [
+        "question:english:ENQ545:choice:2"
+      ]
+    },
+    {
+      "id": "m28f5efbd6e185e",
+      "source": "Help me out!",
+      "contexts": [
+        "question:english:ENQ111:choice:4"
+      ]
+    },
+    {
+      "id": "mbf8e957560eeef",
+      "source": "Helping others",
+      "contexts": [
+        "question:english:ENQ439:choice:2"
+      ]
+    },
+    {
+      "id": "m8ed82c87b59287",
+      "source": "High school",
+      "contexts": [
+        "question:english:ENQ419:choice:3"
+      ]
+    },
+    {
+      "id": "m271a22f75d73e1",
+      "source": "Horror",
+      "contexts": [
+        "question:english:ENQ426:choice:0"
+      ]
+    },
+    {
+      "id": "m1080581c628110",
+      "source": "How do I usually reply to a message?",
+      "contexts": [
+        "question:english:ENQ301:title"
+      ]
+    },
+    {
+      "id": "m6e94be8aa7b063",
+      "source": "How would I spend three unexpected hours off?",
+      "contexts": [
+        "question:english:ENQ306:title"
+      ]
+    },
+    {
+      "id": "mfc9db3ed6581b7",
+      "source": "I can do this!",
+      "contexts": [
+        "question:english:ENQ111:choice:1"
+      ]
+    },
+    {
+      "id": "m3d09066deaaaf8",
+      "source": "I skip breakfast",
+      "contexts": [
+        "question:english:ENQ440:choice:4"
+      ]
+    },
+    {
+      "id": "m1614d885426f5d",
+      "source": "I'm sleepy",
+      "contexts": [
+        "question:english:ENQ111:choice:2"
+      ]
+    },
+    {
+      "id": "m12beff868e5877",
+      "source": "In batches",
+      "contexts": [
+        "question:english:ENQ301:choice:2"
+      ]
+    },
+    {
+      "id": "mbad57ef7837c8e",
+      "source": "Instagram",
+      "contexts": [
+        "question:english:ENQ416:choice:1"
+      ]
+    },
+    {
+      "id": "m4800ec58ee9bf9",
+      "source": "International music",
+      "contexts": [
+        "question:english:ENQ523:choice:4"
+      ]
+    },
+    {
+      "id": "m680274b27b43c7",
+      "source": "Intuition",
+      "contexts": [
+        "question:english:ENQ439:choice:0"
+      ]
+    },
+    {
+      "id": "md53895c6eb7816",
+      "source": "Invisibility",
+      "contexts": [
+        "question:english:ENQ434:choice:4"
+      ]
+    },
+    {
+      "id": "m9e968e3ce6f5b6",
+      "source": "IPアドレスのハッシュ値は、不正利用や重複を検知するために使い、安全に管理します。",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m48fa6c87d381ca",
+      "source": "It depends on who sent it",
+      "contexts": [
+        "question:english:ENQ301:choice:4"
+      ]
+    },
+    {
+      "id": "m80a58b7864de59",
+      "source": "It never ends!",
+      "contexts": [
+        "question:english:ENQ111:choice:3"
+      ]
+    },
+    {
+      "id": "m1d16040bfeb9a3",
+      "source": "It'll be okay",
+      "contexts": [
+        "question:english:ENQ206:choice:0"
+      ]
+    },
+    {
+      "id": "mbfa5555890e870",
+      "source": "Keep studying",
+      "contexts": [
+        "question:english:ENQ206:choice:2"
+      ]
+    },
+    {
+      "id": "m33bb607db77d2f",
+      "source": "Ketchup",
+      "contexts": [
+        "question:english:ENQ401:choice:2"
+      ]
+    },
+    {
+      "id": "m19c806275b45ff",
+      "source": "Lightly salted",
+      "contexts": [
+        "question:english:ENQ414:choice:0"
+      ]
+    },
+    {
+      "id": "m974c8aa0d88a64",
+      "source": "Listen to music",
+      "contexts": [
+        "question:english:ENQ436:choice:3"
+      ]
+    },
+    {
+      "id": "m49c4605816cfbf",
+      "source": "Listening",
+      "contexts": [
+        "question:english:ENQ441:choice:1"
+      ]
+    },
+    {
+      "id": "m6ce89669f0f523",
+      "source": "Making art",
+      "contexts": [
+        "question:english:ENQ441:choice:3"
+      ]
+    },
+    {
+      "id": "mecc7f27c5da6df",
+      "source": "Mayonnaise",
+      "contexts": [
+        "question:english:ENQ401:choice:4"
+      ]
+    },
+    {
+      "id": "me39f6cf0ab03f6",
+      "source": "Middle school",
+      "contexts": [
+        "question:english:ENQ419:choice:2"
+      ]
+    },
+    {
+      "id": "m329d81722740ef",
+      "source": "Mild",
+      "contexts": [
+        "question:english:ENQ507:choice:4"
+      ]
+    },
+    {
+      "id": "m8189b8409b18b1",
+      "source": "Milk",
+      "contexts": [
+        "question:english:ENQ202:choice:4"
+      ]
+    },
+    {
+      "id": "md53a8ab17f5f91",
+      "source": "Mind reading",
+      "contexts": [
+        "question:english:ENQ434:choice:0"
+      ]
+    },
+    {
+      "id": "m5ccc2e8715d7a1",
+      "source": "Money",
+      "contexts": [
+        "question:english:ENQ439:choice:4"
+      ]
+    },
+    {
+      "id": "m00d2733ad526e2",
+      "source": "My hometown",
+      "contexts": [
+        "question:english:ENQ435:choice:3"
+      ]
+    },
+    {
+      "id": "m981959c64d6282",
+      "source": "My partner",
+      "contexts": [
+        "question:english:ENQ431:choice:4"
+      ]
+    },
+    {
+      "id": "m4b28d6381e7294",
+      "source": "My principles",
+      "contexts": [
+        "question:english:ENQ439:choice:1"
+      ]
+    },
+    {
+      "id": "mb888c239f34c04",
+      "source": "Nature walks",
+      "contexts": [
+        "question:english:ENQ429:choice:4"
+      ]
+    },
+    {
+      "id": "mf31b4d542284ba",
+      "source": "Near the sea",
+      "contexts": [
+        "question:english:ENQ435:choice:4"
+      ]
+    },
+    {
+      "id": "m6ee2017dd48e6c",
+      "source": "Needles",
+      "contexts": [
+        "question:english:ENQ516:choice:0"
+      ]
+    },
+    {
+      "id": "m26ad24352da2e9",
+      "source": "Oh wow!",
+      "contexts": [
+        "question:english:ENQ111:choice:0"
+      ]
+    },
+    {
+      "id": "m478defdae124fa",
+      "source": "Old favorites",
+      "contexts": [
+        "question:english:ENQ523:choice:0"
+      ]
+    },
+    {
+      "id": "mef793ca3229dbc",
+      "source": "Old videos",
+      "contexts": [
+        "question:english:ENQ544:choice:3"
+      ]
+    },
+    {
+      "id": "md1c211ac075126",
+      "source": "Packing my bag",
+      "contexts": [
+        "question:english:ENQ545:choice:3"
+      ]
+    },
+    {
+      "id": "m4da1051334b7d8",
+      "source": "Personal style",
+      "contexts": [
+        "question:english:ENQ308:choice:3"
+      ]
+    },
+    {
+      "id": "mbd38ed7732402b",
+      "source": "Pink",
+      "contexts": [
+        "question:english:ENQ432:choice:0"
+      ]
+    },
+    {
+      "id": "m0c2649d3f8c7c4",
+      "source": "Play a game",
+      "contexts": [
+        "question:english:ENQ436:choice:2"
+      ]
+    },
+    {
+      "id": "m7f98c6186a4e1f",
+      "source": "Play more",
+      "contexts": [
+        "question:english:ENQ206:choice:1"
+      ]
+    },
+    {
+      "id": "m4ff6cff644656b",
+      "source": "Playing games",
+      "contexts": [
+        "question:english:ENQ543:choice:4"
+      ]
+    },
+    {
+      "id": "m70d083ce511722",
+      "source": "Playing house",
+      "contexts": [
+        "question:english:ENQ430:choice:2"
+      ]
+    },
+    {
+      "id": "m5b5ebe6663aa8e",
+      "source": "Potato salad",
+      "contexts": [
+        "question:english:ENQ018:choice:4"
+      ]
+    },
+    {
+      "id": "m5b190248e0cc1c",
+      "source": "Preschool",
+      "contexts": [
+        "question:english:ENQ419:choice:0"
+      ]
+    },
+    {
+      "id": "m7d465fb9b93148",
+      "source": "Purple",
+      "contexts": [
+        "question:english:ENQ432:choice:4"
+      ]
+    },
+    {
+      "id": "mda5326cfa19a7a",
+      "source": "Quiet company",
+      "contexts": [
+        "question:english:ENQ302:choice:3"
+      ]
+    },
+    {
+      "id": "m3932fed0771b4a",
+      "source": "Raw egg",
+      "contexts": [
+        "question:english:ENQ425:choice:4"
+      ]
+    },
+    {
+      "id": "m8dedd3d75f98ad",
+      "source": "Reading picture books",
+      "contexts": [
+        "question:english:ENQ430:choice:1"
+      ]
+    },
+    {
+      "id": "m9d493bcfbff32e",
+      "source": "Reading the room",
+      "contexts": [
+        "question:english:ENQ441:choice:4"
+      ]
+    },
+    {
+      "id": "m9ebed9ddc0e3be",
+      "source": "Regional food",
+      "contexts": [
+        "question:english:ENQ429:choice:2"
+      ]
+    },
+    {
+      "id": "ma1a630718268bb",
+      "source": "Remembering things",
+      "contexts": [
+        "question:english:ENQ441:choice:2"
+      ]
+    },
+    {
+      "id": "m1f94843777aed8",
+      "source": "Resend",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m0cafd8e99ff0b6",
+      "source": "Resend契約上の期間",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m32059a8788953c",
+      "source": "Resilience",
+      "contexts": [
+        "question:english:ENQ308:choice:4"
+      ]
+    },
+    {
+      "id": "m1b9bc7b7376e6c",
+      "source": "Rice",
+      "contexts": [
+        "question:english:ENQ440:choice:1"
+      ]
+    },
+    {
+      "id": "m846f9d4876908c",
+      "source": "Right away",
+      "contexts": [
+        "question:english:ENQ301:choice:0"
+      ]
+    },
+    {
+      "id": "m7e030ba13fc31c",
+      "source": "Rolled omelet",
+      "contexts": [
+        "question:english:ENQ018:choice:0"
+      ]
+    },
+    {
+      "id": "m3bc3567a7fc651",
+      "source": "Romance",
+      "contexts": [
+        "question:english:ENQ426:choice:3"
+      ]
+    },
+    {
+      "id": "mb18988a0843b59",
+      "source": "Salmon flakes",
+      "contexts": [
+        "question:english:ENQ425:choice:1"
+      ]
+    },
+    {
+      "id": "m150fe5514030b1",
+      "source": "Salt",
+      "contexts": [
+        "question:english:ENQ401:choice:1"
+      ]
+    },
+    {
+      "id": "m6548e19b0b37a0",
+      "source": "Salty",
+      "contexts": [
+        "question:english:ENQ507:choice:1"
+      ]
+    },
+    {
+      "id": "m5be1159ff2e2a2",
+      "source": "Sausages",
+      "contexts": [
+        "question:english:ENQ018:choice:2"
+      ]
+    },
+    {
+      "id": "maa54e4d665a0c1",
+      "source": "Seasoned seaweed",
+      "contexts": [
+        "question:english:ENQ425:choice:3"
+      ]
+    },
+    {
+      "id": "mb47866d85b7759",
+      "source": "Seaweed and salt",
+      "contexts": [
+        "question:english:ENQ414:choice:1"
+      ]
+    },
+    {
+      "id": "m5f6c12b4112cb7",
+      "source": "Seaweed rice",
+      "contexts": [
+        "question:english:ENQ202:choice:2"
+      ]
+    },
+    {
+      "id": "m556beb9be6eaa9",
+      "source": "See the northern lights",
+      "contexts": [
+        "question:english:ENQ417:choice:0"
+      ]
+    },
+    {
+      "id": "mf9930bd85a4693",
+      "source": "Seeing Earth",
+      "contexts": [
+        "question:english:ENQ179:choice:1"
+      ]
+    },
+    {
+      "id": "m320cf2c625fe62",
+      "source": "Seeing the future",
+      "contexts": [
+        "question:english:ENQ434:choice:1"
+      ]
+    },
+    {
+      "id": "md466bcf52eb692",
+      "source": "Sleep",
+      "contexts": [
+        "question:english:ENQ442:choice:2",
+        "question:english:ENQ306:choice:0"
+      ]
+    },
+    {
+      "id": "mbd32faba5c7e19",
+      "source": "Sleeping in",
+      "contexts": [
+        "question:english:ENQ543:choice:2"
+      ]
+    },
+    {
+      "id": "m275fae28d97c7e",
+      "source": "Sloth",
+      "contexts": [
+        "question:english:ENQ433:choice:3"
+      ]
+    },
+    {
+      "id": "m84ee44bfa68dc3",
+      "source": "Someone listening",
+      "contexts": [
+        "question:english:ENQ302:choice:0"
+      ]
+    },
+    {
+      "id": "mc4a9004cac8de2",
+      "source": "Sour",
+      "contexts": [
+        "question:english:ENQ507:choice:3"
+      ]
+    },
+    {
+      "id": "m519276d502f858",
+      "source": "Soy sauce",
+      "contexts": [
+        "question:english:ENQ401:choice:0"
+      ]
+    },
+    {
+      "id": "mc9265bcd85bbc1",
+      "source": "Space food",
+      "contexts": [
+        "question:english:ENQ179:choice:2"
+      ]
+    },
+    {
+      "id": "mbb766bf175b312",
+      "source": "Speaking in class",
+      "contexts": [
+        "question:english:ENQ516:choice:4"
+      ]
+    },
+    {
+      "id": "md2e3dad7ad9809",
+      "source": "Spicy",
+      "contexts": [
+        "question:english:ENQ507:choice:2"
+      ]
+    },
+    {
+      "id": "m4d32daa311ac49",
+      "source": "Spicy cod roe",
+      "contexts": [
+        "question:english:ENQ425:choice:2"
+      ]
+    },
+    {
+      "id": "m94665327e0455c",
+      "source": "Stargazing",
+      "contexts": [
+        "question:english:ENQ522:choice:3"
+      ]
+    },
+    {
+      "id": "m0939f8f7e58bf9",
+      "source": "Stopping time",
+      "contexts": [
+        "question:english:ENQ434:choice:3"
+      ]
+    },
+    {
+      "id": "ma96bebd0ba404c",
+      "source": "Study skills",
+      "contexts": [
+        "question:english:ENQ308:choice:1"
+      ]
+    },
+    {
+      "id": "m01e7c30f7fec47",
+      "source": "Sweet",
+      "contexts": [
+        "question:english:ENQ507:choice:0"
+      ]
+    },
+    {
+      "id": "md64f27a08723d4",
+      "source": "Take a walk",
+      "contexts": [
+        "question:english:ENQ402:choice:2"
+      ]
+    },
+    {
+      "id": "m6e8b0b64a415ac",
+      "source": "Taking pictures",
+      "contexts": [
+        "question:english:ENQ179:choice:3"
+      ]
+    },
+    {
+      "id": "me6d31c360010c3",
+      "source": "Teleportation",
+      "contexts": [
+        "question:english:ENQ434:choice:2"
+      ]
+    },
+    {
+      "id": "m381859160029bb",
+      "source": "Temples and shrines",
+      "contexts": [
+        "question:english:ENQ429:choice:0"
+      ]
+    },
+    {
+      "id": "mdc35f94b97bcc3",
+      "source": "The countryside",
+      "contexts": [
+        "question:english:ENQ435:choice:1"
+      ]
+    },
+    {
+      "id": "m151e5bf67eb168",
+      "source": "The radio",
+      "contexts": [
+        "question:english:ENQ523:choice:2"
+      ]
+    },
+    {
+      "id": "m519bce7bc2dab4",
+      "source": "Thunder",
+      "contexts": [
+        "question:english:ENQ516:choice:1"
+      ]
+    },
+    {
+      "id": "m1bb6fcfbf1368a",
+      "source": "TikTok",
+      "contexts": [
+        "question:english:ENQ416:choice:2"
+      ]
+    },
+    {
+      "id": "m33b93476cf597a",
+      "source": "Time",
+      "contexts": [
+        "question:english:ENQ439:choice:3"
+      ]
+    },
+    {
+      "id": "m12f5291fa71cc5",
+      "source": "Time with animals",
+      "contexts": [
+        "question:english:ENQ442:choice:0"
+      ]
+    },
+    {
+      "id": "m58185e5dde03a4",
+      "source": "Tour Japan",
+      "contexts": [
+        "question:english:ENQ417:choice:2"
+      ]
+    },
+    {
+      "id": "mfd16c1f32fde48",
+      "source": "Toys",
+      "contexts": [
+        "question:english:ENQ219:choice:1"
+      ]
+    },
+    {
+      "id": "m5854688e8825e4",
+      "source": "Travel around the world",
+      "contexts": [
+        "question:english:ENQ417:choice:3"
+      ]
+    },
+    {
+      "id": "m36cbeb8a4b9c2e",
+      "source": "Trivia",
+      "contexts": [
+        "question:english:ENQ267:choice:0"
+      ]
+    },
+    {
+      "id": "m860bd0e3b2c6d9",
+      "source": "Valentine's Day",
+      "contexts": [
+        "question:english:ENQ423:choice:3"
+      ]
+    },
+    {
+      "id": "m6edf03966cda22",
+      "source": "Vent online",
+      "contexts": [
+        "question:english:ENQ402:choice:3"
+      ]
+    },
+    {
+      "id": "m7620700ff051c7",
+      "source": "Visiting a shrine",
+      "contexts": [
+        "question:english:ENQ543:choice:0"
+      ]
+    },
+    {
+      "id": "md2b19d3c95e5b7",
+      "source": "Visiting relatives",
+      "contexts": [
+        "question:english:ENQ543:choice:3"
+      ]
+    },
+    {
+      "id": "mc91bff552910b0",
+      "source": "Weightlessness",
+      "contexts": [
+        "question:english:ENQ179:choice:0"
+      ]
+    },
+    {
+      "id": "ma2a5639765ce5e",
+      "source": "Werewolf",
+      "contexts": [
+        "question:english:ENQ267:choice:3"
+      ]
+    },
+    {
+      "id": "mc9d4b0bd5b1194",
+      "source": "What did I love doing as a child?",
+      "contexts": [
+        "question:english:ENQ430:title"
+      ]
+    },
+    {
+      "id": "m987d1744a656e5",
+      "source": "What do I do just before bed?",
+      "contexts": [
+        "question:english:ENQ436:title"
+      ]
+    },
+    {
+      "id": "m0436e39d338a52",
+      "source": "What do I do when I feel frustrated?",
+      "contexts": [
+        "question:english:ENQ402:title"
+      ]
+    },
+    {
+      "id": "m2ed793a1fa92aa",
+      "source": "What is my usual breakfast?",
+      "contexts": [
+        "question:english:ENQ440:title"
+      ]
+    },
+    {
+      "id": "me09c14d9be1e57",
+      "source": "What makes me feel at ease?",
+      "contexts": [
+        "question:english:ENQ442:title"
+      ]
+    },
+    {
+      "id": "m1ef88c0f69251c",
+      "source": "What matters most to me in a big decision?",
+      "contexts": [
+        "question:english:ENQ439:title"
+      ]
+    },
+    {
+      "id": "m0b67b8f515928f",
+      "source": "What might I be unexpectedly good at?",
+      "contexts": [
+        "question:english:ENQ441:title"
+      ]
+    },
+    {
+      "id": "ma32d41d6a90cd2",
+      "source": "What takes me longest before school?",
+      "contexts": [
+        "question:english:ENQ545:title"
+      ]
+    },
+    {
+      "id": "m4fcde7b6fa4e6f",
+      "source": "What used to make me nervous as a child?",
+      "contexts": [
+        "question:english:ENQ516:title"
+      ]
+    },
+    {
+      "id": "md9fab85f551e61",
+      "source": "What was my favorite part of school lunch?",
+      "contexts": [
+        "question:english:ENQ202:title"
+      ]
+    },
+    {
+      "id": "m7f7149f48ab857",
+      "source": "What would excite me most on a space trip?",
+      "contexts": [
+        "question:english:ENQ179:title"
+      ]
+    },
+    {
+      "id": "m37caf57389de8e",
+      "source": "What would help me most when I'm feeling down?",
+      "contexts": [
+        "question:english:ENQ302:title"
+      ]
+    },
+    {
+      "id": "m481da1083b72c3",
+      "source": "What would I love to find in my lunchbox?",
+      "contexts": [
+        "question:english:ENQ018:title"
+      ]
+    },
+    {
+      "id": "m324535365d03a0",
+      "source": "What would I plan for a trip around Japan?",
+      "contexts": [
+        "question:english:ENQ429:title"
+      ]
+    },
+    {
+      "id": "m0e61ce6de75863",
+      "source": "What would I play on a family road trip?",
+      "contexts": [
+        "question:english:ENQ523:title"
+      ]
+    },
+    {
+      "id": "mcfa05d59ba7f1a",
+      "source": "What would I put on a fried egg?",
+      "contexts": [
+        "question:english:ENQ401:title"
+      ]
+    },
+    {
+      "id": "m43f749f1f50c47",
+      "source": "What would I say during a busy school week?",
+      "contexts": [
+        "question:english:ENQ111:title"
+      ]
+    },
+    {
+      "id": "m50e8d2a0825adf",
+      "source": "What would I share first in a group chat?",
+      "contexts": [
+        "question:english:ENQ137:title"
+      ]
+    },
+    {
+      "id": "mee6d91d909ccd8",
+      "source": "What would I show everyone on a shared screen?",
+      "contexts": [
+        "question:english:ENQ544:title"
+      ]
+    },
+    {
+      "id": "mf5a26d396f697b",
+      "source": "What would I tell my younger self?",
+      "contexts": [
+        "question:english:ENQ206:title"
+      ]
+    },
+    {
+      "id": "m87f61f512b8dd2",
+      "source": "Where would I like to live in the future?",
+      "contexts": [
+        "question:english:ENQ435:title"
+      ]
+    },
+    {
+      "id": "m872619ad358bc9",
+      "source": "Where would I want my first part-time job?",
+      "contexts": [
+        "question:english:ENQ214:title"
+      ]
+    },
+    {
+      "id": "mf2a54d7c518305",
+      "source": "Which animal best represents me?",
+      "contexts": [
+        "question:english:ENQ433:title"
+      ]
+    },
+    {
+      "id": "m9d9c0222170ccf",
+      "source": "Which celebration do I remember most fondly?",
+      "contexts": [
+        "question:english:ENQ423:title"
+      ]
+    },
+    {
+      "id": "m95f65c353ae623",
+      "source": "Which color matches my personality?",
+      "contexts": [
+        "question:english:ENQ432:title"
+      ]
+    },
+    {
+      "id": "md67d4252171dc3",
+      "source": "Which flavor do I like best?",
+      "contexts": [
+        "question:english:ENQ507:title"
+      ]
+    },
+    {
+      "id": "m3ae4722476f552",
+      "source": "Which game would I excel at during a class party?",
+      "contexts": [
+        "question:english:ENQ267:title"
+      ]
+    },
+    {
+      "id": "m5c07348cbe6a18",
+      "source": "Which kind of video would I watch first?",
+      "contexts": [
+        "question:english:ENQ549:title"
+      ]
+    },
+    {
+      "id": "m24766fad613ecb",
+      "source": "Which movie genre would I pick?",
+      "contexts": [
+        "question:english:ENQ426:title"
+      ]
+    },
+    {
+      "id": "m686749ca93fd66",
+      "source": "Which New Year's tradition do I remember best?",
+      "contexts": [
+        "question:english:ENQ543:title"
+      ]
+    },
+    {
+      "id": "me38b88eb12b8ce",
+      "source": "Which old trend would I enjoy talking about?",
+      "contexts": [
+        "question:english:ENQ219:title"
+      ]
+    },
+    {
+      "id": "md3d44c989e46ee",
+      "source": "Which once-in-a-lifetime adventure would I try?",
+      "contexts": [
+        "question:english:ENQ417:title"
+      ]
+    },
+    {
+      "id": "mcbcbf35ef2dfd3",
+      "source": "Which outdoor activity would I pick?",
+      "contexts": [
+        "question:english:ENQ522:title"
+      ]
+    },
+    {
+      "id": "mc83056cb80e34d",
+      "source": "Which pet would I pick?",
+      "contexts": [
+        "question:english:ENQ418:title"
+      ]
+    },
+    {
+      "id": "m9c75590ee50dd5",
+      "source": "Which potato chip flavor would I pick?",
+      "contexts": [
+        "question:english:ENQ414:title"
+      ]
+    },
+    {
+      "id": "m633ce65706687f",
+      "source": "Which prize would I pick at a school fair?",
+      "contexts": [
+        "question:english:ENQ276:title"
+      ]
+    },
+    {
+      "id": "maa20c68613477f",
+      "source": "Which skill would I most like to develop?",
+      "contexts": [
+        "question:english:ENQ308:title"
+      ]
+    },
+    {
+      "id": "m341ec33e3bce8f",
+      "source": "Which social platform do I use the most?",
+      "contexts": [
+        "question:english:ENQ416:title"
+      ]
+    },
+    {
+      "id": "m66068a2fda256e",
+      "source": "Which stage of life would I revisit for a day?",
+      "contexts": [
+        "question:english:ENQ419:title"
+      ]
+    },
+    {
+      "id": "m127426244c163f",
+      "source": "Which superpower would I choose?",
+      "contexts": [
+        "question:english:ENQ434:title"
+      ]
+    },
+    {
+      "id": "m907b1f3ba240c3",
+      "source": "Which topping would I choose for rice?",
+      "contexts": [
+        "question:english:ENQ425:title"
+      ]
+    },
+    {
+      "id": "mc3ac593ee6666a",
+      "source": "White Day",
+      "contexts": [
+        "question:english:ENQ423:choice:4"
+      ]
+    },
+    {
+      "id": "m5daf9f68666fda",
+      "source": "Who am I most likely to cheer for?",
+      "contexts": [
+        "question:english:ENQ431:title"
+      ]
+    },
+    {
+      "id": "mea858afbf837aa",
+      "source": "Wolf",
+      "contexts": [
+        "question:english:ENQ433:choice:2"
+      ]
+    },
+    {
+      "id": "m07adc003ba83f1",
+      "source": "Workers Logs に記録し、Cloudflare の設定に従って保存します。",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m25403a5c1249e7",
+      "source": "World Heritage sites",
+      "contexts": [
+        "question:english:ENQ429:choice:1"
+      ]
+    },
+    {
+      "id": "mfb7accfff8c6f8",
+      "source": "YouTube",
+      "contexts": [
+        "question:english:ENQ416:choice:4"
+      ]
+    },
+    {
+      "id": "m276c499c23a08e",
+      "source": "お問い合わせフォームから送信された氏名、メールアドレス、問い合わせ内容の受付・保管",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m1982fb5404e11e",
+      "source": "クイズ・参加情報",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m80818ea3dca8cc",
+      "source": "クイズの作成・再開、参加人数の管理、採点、理解度ボードと答え合わせレポートの表示",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "md946a370877c78",
+      "source": "クイズを作成して共有すると、選んだ問題はサーバーに保存され、回答者に表示されます。",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m6b41b282751374",
+      "source": "クイズ作成・回答は無料です。",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "mcff651135b94bc",
+      "source": "プライバシーポリシー｜わたし理解度診断",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m9cd4a3e7743561",
+      "source": "以前の非掲載結果は公開しません。再挑戦を完了すると、表示名とその点数が自動で載ります。",
+      "contexts": [
+        "terms.html:body",
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m9a0753fbe0a982",
+      "source": "運営、問い合わせ対応、分析を委託するために必要な場合",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "mff48075f971356",
+      "source": "運営者情報",
+      "contexts": [
+        "terms.html:body",
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "mab158bc0ab42e8",
+      "source": "回答を完了すると、表示名と点数が理解度ボードに自動で載ります。",
+      "contexts": [
+        "terms.html:body",
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m7a9f346a9c8681",
+      "source": "改定前の版",
+      "contexts": [
+        "terms.html:body",
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "mc5c17abdd39e02",
+      "source": "期限切れのクイズと参加情報は、毎時の自動処理でD1から削除します。",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m259594e5442a4d",
+      "source": "作成から30日たつと、クイズと参加情報は自動で削除されます。",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m076367e1d9ab17",
+      "source": "自分のお題",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "ma3bef034b1534c",
+      "source": "受け付けた問い合わせ内容を運営者へ届けるメール送信",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "mb78cee181fbe0e",
+      "source": "受付から12か月",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m4f3b986abaab59",
+      "source": "出題者が選択または作成した1〜10問の正解を登録し、参加者がその答えを予想して答え合わせを行う「みんなに挑戦してもらう」モード",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "m17a882d82993be",
+      "source": "出題者名・表示名、問題・選択肢・回答・結果、最高点、作成・回答・掲載・更新日時",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m5a074dd21f7c80",
+      "source": "第10条（サービスの変更・中断・終了）",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "m6765d630b1f193",
+      "source": "第11条（保証・責任の範囲）",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "md7e7c98923b656",
+      "source": "第12条（規約の変更）",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "m7687f48ca2f496",
+      "source": "第13条（分離可能性）",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "mc30e2040d9bf1c",
+      "source": "第14条（準拠法・管轄）",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "m95129d06deb71e",
+      "source": "第15条（お問い合わせ）",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "m092878a5692a0c",
+      "source": "第9条（個人情報等の取扱い）",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "mff96de53047e8d",
+      "source": "答え合わせレポートは、1〜10問の一致・不一致と回答内容に基づき、全体の理解度、よく分かっていた分野、意外にずれた分野、および次に話すと楽しそうな話題を自動生成する娯楽上の文章です。専門家による評価、心理診断、相性診断または事実の保証ではありません。",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "md4908aeecc1394",
+      "source": "同じクイズのURLを知る人に、表示名と点数だけを表示します。個別の回答内容は出題者と回答した本人だけが確認できます。",
+      "contexts": [
+        "terms.html:body",
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "ma85c3602d17fa0",
+      "source": "同じ端末から再挑戦すると最高点を更新します。点数順で、同点は最初に載った順です。",
+      "contexts": [
+        "terms.html:body",
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "mfa0ad84d50256d",
+      "source": "編集を確定すると、問題文と選択肢をこのブラウザに自動保存します。最新30問を残し、超えた分は古い問題とその履歴から置き換えます。",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m12a98da48b17e4",
+      "source": "法令上の保存義務、係争、不正調査、漏えい調査の対象となった情報は、必要な範囲で削除を保留する場合があります。",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m978fd9d6765adf",
+      "source": "本ポリシーは、無料のクイズ「わたし理解度診断」と関連機能における利用者情報の取扱いに適用します。",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m899ffa044fe03e",
+      "source": "本規約は、無料のクイズ「わたし理解度診断」と関連機能（以下「本サービス」）に適用します。利用者は、本規約に同意したうえで本サービスを利用してください。",
+      "contexts": [
+        "terms.html:body"
+      ]
+    },
+    {
+      "id": "m0531afa34fab15",
+      "source": "問題、回答、表示名、点数",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "m05e196c513a91f",
+      "source": "問題文と選択肢だけをこのブラウザに保存します。正解は毎回選びます。共用ブラウザでは他の人も見られます。サイトデータを消すと失われ、別端末・別ブラウザには引き継がれません。",
+      "contexts": [
+        "privacy.html:body"
+      ]
+    },
+    {
+      "id": "md072216349ca1e",
+      "source": "利用規約（クイズの利用条件と禁止事項）｜わたし理解度診断",
+      "contexts": [
+        "terms.html:body"
       ]
     }
   ]

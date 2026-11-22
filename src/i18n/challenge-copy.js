@@ -6,7 +6,7 @@ es|Terminar con estas respuestas|¿Crear un cuestionario solo con las preguntas 
 fr|Terminer avec ces réponses|Créer un quiz avec seulement les questions répondues ?|Créer ce quiz|Envoyer à un ami|Aucune réponse. Envoie d'abord le lien du quiz à un ami.|Thèmes de la semaine|Les thèmes ne sont pas prêts. Choisis dans la bibliothèque ci-dessous.|Devine aussi mes réponses
 de|Mit diesen Antworten abschließen|Quiz nur mit den beantworteten Fragen erstellen?|Dieses Quiz erstellen|An Freunde senden|Noch keine Antworten. Sende den Quiz-Link zuerst an eine Person.|Themen dieser Woche|Die Themen sind noch nicht bereit. Wähle unten aus der Bibliothek.|Errate auch meine Antworten
 it|Termina con queste risposte|Creare un quiz solo con le domande già risposte?|Crea questo quiz|Invia a un amico|Nessuna risposta. Invia prima il link del quiz a un amico.|Temi della settimana|I temi non sono ancora pronti. Scegli dalla raccolta qui sotto.|Indovina anche le mie risposte
-pt|Concluir com estas respostas|Criar um quiz só com as perguntas respondidas?|Criar este quiz|Enviar a um amigo|Ainda não há respostas. Envia primeiro o link a um amigo.|Temas desta semana|Os temas ainda não estão prontos. Escolhe na biblioteca abaixo.|Adivinha também as minhas respostas
+pt|Concluir com estas respostas|Criar um quiz só com as perguntas respondidas?|Criar este quiz|Enviar para um amigo|Ainda não há respostas. Envie o link para um amigo.|Temas desta semana|Os temas ainda não estão disponíveis. Escolha um pacote na biblioteca abaixo.|Tente adivinhar minhas respostas também
 ru|Завершить с этими ответами|Создать тест только из отвеченных вопросов?|Создать этот тест|Отправить другу|Ответов пока нет. Сначала отправьте ссылку одному другу.|Темы этой недели|Темы пока не готовы. Выберите в библиотеке ниже.|Угадай и мои ответы
 uk|Завершити з цими відповідями|Створити тест лише з питань із відповідями?|Створити цей тест|Надіслати другу|Відповідей ще немає. Спочатку надішліть посилання одному другу.|Теми цього тижня|Теми ще не готові. Виберіть у бібліотеці нижче.|Вгадай і мої відповіді
 pl|Zakończ z tymi odpowiedziami|Utworzyć quiz tylko z pytań z odpowiedziami?|Utwórz ten quiz|Wyślij znajomemu|Brak odpowiedzi. Najpierw wyślij link jednej osobie.|Tematy tego tygodnia|Tematy nie są gotowe. Wybierz z biblioteki poniżej.|Zgadnij też moje odpowiedzi
@@ -42,7 +42,7 @@ export const CHALLENGE_CONVERSATION_COPY = Object.freeze({
   ja:'理由を聞いて、もっと話そう。',en:'Ask why and keep the conversation going.',
   es:'Pregunta por qué y sigue conversando.',fr:'Demande pourquoi et continue la conversation.',
   de:'Frag nach dem Warum und redet weiter.',it:'Chiedi perché e continuate a parlare.',
-  pt:'Pergunta por quê e continua a conversa.',ru:'Спроси почему и продолжай разговор.',
+  pt:'Pergunte o motivo e continue a conversa.',ru:'Спроси почему и продолжай разговор.',
   uk:'Запитай чому й продовжуй розмову.',pl:'Zapytaj dlaczego i rozmawiajcie dalej.',
   nl:'Vraag waarom en praat verder.',sv:'Fråga varför och fortsätt prata.',
   da:'Spørg hvorfor, og tal videre.',no:'Spør hvorfor og fortsett samtalen.',

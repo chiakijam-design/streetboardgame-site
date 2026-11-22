@@ -58,7 +58,21 @@ function visit(node, context) {
     else if (value && typeof value === 'object') visit(value, context);
   }
 }
-for (const file of files) visit(babelParse(await readFile(new URL(file, root), 'utf8'), file, false), file);
+const previousOrder = new Map();
+if (process.argv.includes('--inventory-only')) {
+  // Refresh the HTML and question inventories without re-extracting unrelated UI templates.
+  const previous = JSON.parse(await readFile(new URL('data/translation-corpus.json', root), 'utf8'));
+  for (const { id, source, contexts } of previous.entries) {
+    previousOrder.set(id, previousOrder.size);
+    for (const context of contexts) {
+      if (context.startsWith('question:') || /\.html:(body|title|description)$/.test(context)) continue;
+      if (!sources.has(source)) sources.set(source, new Set());
+      sources.get(source).add(context);
+    }
+  }
+} else {
+  for (const file of files) visit(babelParse(await readFile(new URL(file, root), 'utf8'), file, false), file);
+}
 // Templates produced by the legacy Japanese-to-English pattern translator.
 [
   'Question {0} of 10', '{0}/10 correct', 'Show {0}/10', '{0}/10 matched',
@@ -76,6 +90,11 @@ const entries = [...sources].sort(([a], [b]) => a.localeCompare(b)).map(([source
   id: 'm' + createHash('sha256').update(source).digest('hex').slice(0, 14),
   source, contexts: [...contexts],
 }));
+if (previousOrder.size) {
+  // Keep reviewed entries in place and append new inventory strings in source order.
+  const rank = entry => previousOrder.get(entry.id) ?? previousOrder.size;
+  entries.sort((left, right) => rank(left) - rank(right));
+}
 await writeFile(new URL('data/translation-corpus.json', root), JSON.stringify({
   schemaVersion: 1, status: 'public-source-only',
   aliases,

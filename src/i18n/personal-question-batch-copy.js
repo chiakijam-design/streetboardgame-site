@@ -4,7 +4,7 @@ es|Continuar con {count} preguntas|Elige hasta {max} preguntas. Selecciona cada 
 fr|Continuer avec {count} questions|Choisissez jusqu’à {max} questions, puis chaque réponse dans l’ordre pour terminer le quiz.
 de|Mit {count} Fragen fortfahren|Wähle bis zu {max} Fragen. Wähle dann jede Antwort der Reihe nach, um das Quiz abzuschließen.
 it|Continua con {count} domande|Scegli fino a {max} domande, poi ogni risposta in ordine per completare il quiz.
-pt|Continuar com {count} perguntas|Escolha até {max} perguntas e depois cada resposta por ordem para concluir o quiz.
+pt|Continuar com {count} perguntas|Escolha até {max} perguntas. Depois, marque a resposta de cada uma na ordem para concluir o quiz.
 ru|Продолжить с {count} вопросами|Выберите до {max} вопросов, затем ответы по порядку, чтобы завершить викторину.
 uk|Продовжити з {count} запитаннями|Виберіть до {max} запитань, потім відповіді по черзі, щоб завершити тест.
 pl|Kontynuuj z {count} pytaniami|Wybierz do {max} pytań, a następnie odpowiedzi po kolei, aby ukończyć quiz.

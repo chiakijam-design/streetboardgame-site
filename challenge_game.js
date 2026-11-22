@@ -1043,7 +1043,7 @@ function resultView() {
   if (!result) return errorView();
   const tier = localizedResultTier(result);
   const displayResult = isEnglish ? { ...result, answers: result.answers.map((answer) => ({ ...answer, card: localizedQuestionCard(answer.card, translateText) })) } : result;
-  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(displayResult).map((line, index) => index === 0 ? line.replace(`“${tier.title}”`, `“${translateText(tier.title)}”`) : line) : getChallengeReviewLines(result);
+  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(displayResult, currentLocale).map((line, index) => index === 0 ? line.replace(`“${tier.title}”`, `“${translateText(tier.title)}”`) : line) : getChallengeReviewLines(result);
   if (result.answers.length < QUESTION_COUNT) reviewLines[3] = `${reviewLines[3]} — ${challengeCopy(currentLocale, 'talk')}`;
   if (tier.perfect) {
     reviewLines[0] = reviewLines[0].replace(`「${tier.baseTitle}」`, `「${tier.title}」`)

@@ -34,7 +34,7 @@ export default {
     {
       h: 'Como o jogo funciona',
       p: [
-        'Aqui o quiz é sobre você, mas quem responde são os outros. Primeiro você responde: o que compraria numa loja de conveniência, qual app abre quando está entediado, sobre o que falaria sem parar. Depois manda o link para a galera, e cada um tenta adivinhar o que você escolheu.',
+        'Aqui o quiz é sobre você, mas quem responde são os outros. Primeiro você responde: o que compraria numa loja de conveniência, qual app abre quando está entediado, sobre o que falaria sem parar. Depois você manda o link para a galera, e cada um tenta adivinhar o que você escolheu.',
         'Cada pergunta tem cinco opções. No final, todo mundo vê quantas acertou e onde errou, e é aí que começa a parte boa: os erros são os que mais rendem conversa. Não precisa baixar nada nem criar conta. Tudo funciona no navegador do celular.',
       ],
     },
@@ -84,7 +84,7 @@ export default {
         ['Meus amigos precisam de conta ou de app?', 'Não. Eles abrem o link no navegador, digitam um nome de exibição e pronto.'],
         ['Quantas pessoas podem responder?', 'Até 50 pessoas por quiz.'],
         ['Quantas perguntas vale a pena colocar?', 'De 1 a 10. Para quem você acabou de conhecer, 3 a 5 perguntas deixam tudo leve. Para os amigos mais próximos, vá de 10.'],
-        ['Dá para tentar de novo?', 'Sim, pelo mesmo aparelho. O ranking guarda a melhor pontuação.'],
+        ['Dá para tentar de novo?', 'Sim, pelo mesmo aparelho. O ranking salva a melhor pontuação.'],
         ['Posso escrever minhas próprias perguntas?', 'Pode. Você escreve a pergunta e as cinco opções. Os detalhes estão na [página de como jogar](/pt/challenge-guide).'],
       ],
       cta: ['Digite seu nome e crie seu quiz ▲', '#top-creator-name'],

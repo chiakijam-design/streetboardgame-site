@@ -28,12 +28,12 @@ test('日本語標準ライブラリは復元した158問を重複IDなし・各
   }
 });
 
-test('英語標準ライブラリは60問・各5択の共通配列として分離する', () => {
+test('英語標準ライブラリは104問・各5択の共通配列として分離する', () => {
   const context = { window: {} };
   vm.runInNewContext(text('prototype_english_common_data.js'), context);
   const cards = context.window.ENGLISH_COMMON_QUESTION_CARDS;
-  assert.equal(cards.length, 60);
-  assert.equal(new Set(cards.map((card) => card.id)).size, 60);
+  assert.equal(cards.length, 104);
+  assert.equal(new Set(cards.map((card) => card.id)).size, 104);
   for (const card of cards) {
     assert.match(card.id, /^EN/);
     assert.equal(card.choices.length, 5, card.id);

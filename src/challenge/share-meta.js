@@ -17,7 +17,49 @@ export function isUnsafeShareName(name) {
   return moderationFlags.length > 0 || personalInfoFlags.some((flag) => flag === 'sns-id' || flag === 'phone-number');
 }
 
+// Question counts are labels or counters so the same text also works for one question.
+function invite(sender, generic, question, instructions) {
+  const from = name => sender.replace('{name}', () => name);
+  const body = count => instructions.replace('{count}', String(count));
+  return {
+    genericTitle: generic + ' | ' + question,
+    genericDescription: count => question + ' ' + body(count),
+    title: name => from(name) + ' | ' + question,
+    description: (name, count) => from(name) + ' — ' + body(count),
+  };
+}
+
 const COPY = {
+  "ar": invite("تحدٍّ من {name}", "تحدٍّ من صديق", "إلى أي مدى تعرفني؟", "خمّن إجاباتي. عدد الأسئلة: {count}. لا حاجة إلى التسجيل."),
+  "bg": invite("Предизвикателство от {name}", "Приятелско предизвикателство", "Колко добре ме познаваш?", "Познай моите отговори. Брой въпроси: {count}. Без регистрация."),
+  "bn": invite("{name} তোমাকে চ্যালেঞ্জ করেছে", "বন্ধুর চ্যালেঞ্জ", "আমাকে কতটা চেনো?", "আমার উত্তরগুলো অনুমান করো। প্রশ্নের সংখ্যা: {count}। নিবন্ধনের দরকার নেই।"),
+  "cs": invite("Výzva od {name}", "Výzva od kamaráda", "Jak dobře mě znáš?", "Zkus uhodnout moje odpovědi. Počet otázek: {count}. Bez registrace."),
+  "da": invite("En udfordring fra {name}", "En udfordring fra en ven", "Hvor godt kender du mig?", "Gæt mine svar. Antal spørgsmål: {count}. Ingen tilmelding."),
+  "de": invite("Ein Quiz von {name}", "Ein Quiz aus deinem Freundeskreis", "Wie gut kennst du mich?", "Errate meine Antworten. Anzahl der Fragen: {count}. Ohne Anmeldung."),
+  "el": invite("Πρόκληση από {name}", "Μια φιλική πρόκληση", "Πόσο καλά με ξέρεις;", "Μάντεψε τις απαντήσεις μου. Αριθμός ερωτήσεων: {count}. Χωρίς εγγραφή."),
+  "fi": invite("Haaste käyttäjältä {name}", "Haaste ystävältä", "Kuinka hyvin tunnet minut?", "Arvaa vastaukseni. Kysymyksiä: {count}. Et tarvitse tiliä."),
+  "fr": invite("{name} propose un quiz", "Un défi entre amis", "Tu me connais bien ?", "Devine mes réponses. Nombre de questions : {count}. Sans inscription."),
+  "he": invite("אתגר מאת {name}", "אתגר בין חברים", "עד כמה אנחנו מכירים?", "אפשר לנחש מה עניתי. מספר השאלות: {count}. אין צורך בהרשמה."),
+  "hi": invite("{name} की चुनौती", "दोस्त की चुनौती", "तुम मुझे कितना जानते हो?", "मेरे जवाबों का अंदाज़ा लगाओ। सवालों की संख्या: {count}। पंजीकरण ज़रूरी नहीं है।"),
+  "hr": invite("Izazov šalje {name}", "Prijateljski izazov", "Koliko me dobro poznaješ?", "Pogodi moje odgovore. Broj pitanja: {count}. Bez registracije."),
+  "hu": invite("A kihívás feladója: {name}", "Baráti kihívás", "Mennyire ismersz?", "Találd ki a válaszaimat! A kérdések száma: {count}. Regisztráció nélkül."),
+  "id": invite("Tantangan dari {name}", "Tantangan dari teman", "Seberapa baik kamu mengenalku?", "Coba tebak jawabanku. Jumlah pertanyaan: {count}. Tidak perlu mendaftar."),
+  "it": invite("La sfida di {name}", "Una sfida tra amici", "Quanto mi conosci?", "Prova a indovinare le mie risposte. Numero di domande: {count}. Non serve registrarsi."),
+  "ko": invite("{name}님의 도전장", "친구가 보낸 도전장", "나를 얼마나 잘 알까?", "내가 고른 답을 맞혀 봐! 총 {count}문제. 가입 없이 참여할 수 있어."),
+  "ms": invite("Cabaran daripada {name}", "Cabaran daripada rakan", "Sejauh mana kamu mengenali saya?", "Cuba teka jawapan saya. Bilangan soalan: {count}. Tak perlu mendaftar."),
+  "nl": invite("Een quiz van {name}", "Een quiz voor vrienden", "Hoe goed ken je mij?", "Raad mijn antwoorden. Aantal vragen: {count}. Aanmelden is niet nodig."),
+  "no": invite("En utfordring fra {name}", "En utfordring fra en venn", "Hvor godt kjenner du meg?", "Gjett svarene mine. Antall spørsmål: {count}. Ingen registrering."),
+  "pl": invite("Wyzwanie od {name}", "Wyzwanie od znajomej osoby", "Jak dobrze mnie znasz?", "Zgadnij moje odpowiedzi. Liczba pytań: {count}. Bez rejestracji."),
+  "ro": invite("O provocare de la {name}", "O provocare între prieteni", "Cât de bine mă cunoști?", "Ghicește răspunsurile mele. Număr de întrebări: {count}. Fără înscriere."),
+  "ru": invite("Вызов от {name}", "Дружеский вызов", "Хорошо ли ты меня знаешь?", "Угадай мои ответы. Количество вопросов: {count}. Без регистрации."),
+  "sk": invite("Výzva od {name}", "Kamarátska výzva", "Ako dobre ma poznáš?", "Skús uhádnuť moje odpovede. Počet otázok: {count}. Bez registrácie."),
+  "sv": invite("En utmaning från {name}", "En utmaning från en vän", "Hur väl känner du mig?", "Gissa mina svar. Antal frågor: {count}. Inget konto behövs."),
+  "th": invite("คำท้าจาก {name}", "คำท้าจากเพื่อน", "คุณรู้จักฉันดีแค่ไหน?", "ลองทายคำตอบของฉันให้ครบ {count} ข้อ เล่นได้โดยไม่ต้องสมัคร"),
+  "tr": invite("Testi hazırlayan: {name}", "Bir arkadaşından davet", "Beni ne kadar iyi tanıyorsun?", "Cevaplarımı tahmin et. Soru sayısı: {count}. Kayıt gerekmez."),
+  "uk": invite("Виклик від {name}", "Дружній виклик", "Як добре ти мене знаєш?", "Спробуй вгадати мої відповіді. Кількість запитань: {count}. Без реєстрації."),
+  "vi": invite("Thử thách từ {name}", "Thử thách từ một người bạn", "Bạn hiểu mình đến đâu?", "Đoán câu trả lời của mình nhé! Số câu hỏi: {count}. Không cần đăng ký."),
+  "zh-Hans": invite("来自{name}的挑战", "来自朋友的挑战", "你有多了解我？", "猜猜我选了哪些答案！共{count}道题，无需注册。"),
+  "zh-Hant": invite("來自{name}的挑戰", "來自朋友的挑戰", "你有多了解我？", "猜猜我選了哪些答案！共{count}題，免註冊。"),
   ja: {
     genericTitle: '友だちからの挑戦｜私のこと、ちゃんと分かってるよね？',
     genericDescription: (count) => `友だちのこと、どれだけ分かってる？${count}問の答えを当てよう。登録不要。`,
@@ -104,11 +146,11 @@ export function applyRoomShareMeta(html, locale, info, shareUrl = '') {
   // (never the management URL), so two different quizzes never claim the same card URL.
   const withUrl = shareUrl ? html.replace(/(<meta\s+property="og:url"\s+content=")[^"]*("\s*\/?>)/i, `$1${escapeAttribute(shareUrl)}$2`) : html;
   return withUrl
-    .replace(/<title>[^<]*<\/title>/i, `<title>${t}</title>`)
-    .replace(/(<meta\s+property="og:title"\s+content=")[^"]*("\s*\/?>)/i, `$1${t}$2`)
-    .replace(/(<meta\s+property="og:description"\s+content=")[^"]*("\s*\/?>)/i, `$1${d}$2`)
-    .replace(/(<meta\s+name="twitter:title"\s+content=")[^"]*("\s*\/?>)/i, `$1${t}$2`)
-    .replace(/(<meta\s+name="twitter:description"\s+content=")[^"]*("\s*\/?>)/i, `$1${d}$2`);
+    .replace(/<title>[^<]*<\/title>/i, () => `<title>${t}</title>`)
+    .replace(/(<meta\s+property="og:title"\s+content=")[^"]*("\s*\/?>)/i, (_, open, close) => open + t + close)
+    .replace(/(<meta\s+property="og:description"\s+content=")[^"]*("\s*\/?>)/i, (_, open, close) => open + d + close)
+    .replace(/(<meta\s+name="twitter:title"\s+content=")[^"]*("\s*\/?>)/i, (_, open, close) => open + t + close)
+    .replace(/(<meta\s+name="twitter:description"\s+content=")[^"]*("\s*\/?>)/i, (_, open, close) => open + d + close);
 }
 
 // Convenience: look the room up and personalize. Returns { html, personalized }.
