@@ -391,6 +391,8 @@ async function handleRequest(request, env) {
           ? injectChallengeCopy(applyChallengeShareMeta(html, url), 'ja')
           : html;
       let body = localizedBody ? selectQuestionDataScript(stripHiddenQuestions(localizedBody, await hiddenQuestionIds(env)), 'ja') : localizedBody;
+      // 2026-11-22（Gemini 見直し27）：管理・ボードの画面は、ページの中の印も noindex に（HTTP の印と同じ）
+      if (body && (path === '/challenge/manage' || path === '/challenge/ranking')) body = body.replace(/(<meta\b[^>]*\bname=["']robots["'][^>]*\bcontent=)["'][^"']*["']/i, '$1"noindex, nofollow, noarchive"');
       if (body && path === '/challenge' && url.searchParams.has('room')) {
         const shared = await personalizeRoomPage(body, env, url, 'ja');
         body = shared.html;

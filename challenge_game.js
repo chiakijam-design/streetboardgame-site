@@ -1262,7 +1262,7 @@ function libraryView() {
                 alt="${escapeHtml(isEnglish ? currentLocale === 'en' ? pack.title + ' illustration' : translateText(pack.title) : pack.title + 'のイメージ画像')}">
             <div class="challenge-pack-copy">
               <span class="challenge-pack-count">10問パック</span>
-              <h2>${escapeHtml(pack.title)}</h2>
+              <h2>${['ja', 'en', 'es', 'pt'].includes(currentLocale) ? `<a href="${languagePrefix}/challenge/library/${encodeURIComponent(pack.slug)}" style="color:inherit;text-decoration:underline;text-underline-offset:.18em">${escapeHtml(pack.title)}</a>` : escapeHtml(pack.title)}</h2><!-- 2026-11-22（Gemini 見直し24）：題からパックの詳しいページ（会話のネタ・送り方）へ -->
               <p>${escapeHtml(pack.description)}</p>
               <details${questionCatalogReady ? '' : ' inert'}>
                 <summary>入っている10問を見る</summary>

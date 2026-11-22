@@ -166,10 +166,12 @@ export function TopPage() {
         <Rules />
       </section>
 
+      {/* 2026-11-22（Gemini 見直し16）：右の空きに10問パックへの入口 */}
       <nav aria-label="ゲームシリーズの紹介ページ" style={{ padding: '4px 24px 0', position: 'relative', zIndex: 1 }}>
-        <h2 style={{ margin: '0 0 10px', color: theme.white, fontSize: 14 }}>まずはどんなゲームか知りたい</h2>
+        <h2 id="top-guide-links-title" style={{ margin: '0 0 10px', color: theme.white, fontSize: 14 }}>まずはどんなゲームか知りたい</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 10 }}>
           <ModeLink href="/challenge-guide" icon="📣" title="みんなに挑戦してもらう" note="1〜10問・最大50人" />
+          <ModeLink href="/challenge/library" icon="📚" title="人気の10問パック" note="お題ライブラリ" />
         </div>
       </nav>
       <p style={{ margin: '16px 24px 0', textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -399,7 +401,7 @@ export function ChallengeGuide() {
       <Decor />
       <header data-testid="challenge-guide-hero" style={{
         minHeight: 240,
-        padding: '50px 22px 31px',
+        padding: '76px 22px 31px', // 2026-11-22（Gemini 見直し17）：左上の「← トップへ」と重ならない高さ
         position: 'relative',
         overflow: 'hidden',
         background: theme.black,
@@ -670,7 +672,7 @@ export function AboutPage() {
       <Decor />
       <header data-testid="about-hero" style={{
         minHeight: 228,
-        padding: '48px 22px 28px',
+        padding: '76px 22px 28px', // 2026-11-22（Gemini 見直し17）
         position: 'relative',
         overflow: 'hidden',
         background: theme.black,
@@ -1326,7 +1328,7 @@ function productSectionTitle() {
 
 function Header({ title, label }) {
   return (
-    <header style={{ padding: '48px 22px 30px', background: theme.black, color: theme.white, textAlign: 'center', position: 'relative' }}>
+    <header style={{ padding: '76px 22px 30px', background: theme.black, color: theme.white, textAlign: 'center', position: 'relative' }}>
       <a href="/" style={{ position: 'absolute', top: 18, left: 18, padding: '10px 14px', borderRadius: 999, background: theme.white, color: theme.black, border: `2px solid ${theme.black}`, textDecoration: 'none', fontWeight: 900 }}>
         ← トップへ
       </a>

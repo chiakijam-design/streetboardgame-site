@@ -98,6 +98,19 @@ footer a {
   font-size: 16px !important;
 }
 
+/* 2026-11-22（Gemini 見直し18）：狭いスマホの5列の色ボタンで、英語・西語・葡語の色名が語の途中で折れてボタンが縦に伸びないように
+   （補助の文字の下限 12px は守る） */
+@media (max-width: 420px) {
+  .challenge-color-choice span {
+    font-size: clamp(12px, 3.5vw, 16px) !important;
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    letter-spacing: -0.02em;
+    max-width: 100%;
+  }
+}
+
 .challenge-answer-pad-heading small,
 .challenge-answer-pad > p,
 .challenge-choice small,
