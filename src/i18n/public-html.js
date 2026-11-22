@@ -1,3 +1,4 @@
+import { spaceAroundLinks } from './inline-spacing.js';
 import { createCatalogTranslator, requireCompleteCatalog } from './catalog-core.js';
 import { LOCALE_DETAILS, SEARCH_INDEXED_LOCALES, TARGET_LOCALES, localeCanonicalPath, localeFromPath, switchLocalePath, stripLocalePrefix } from './locales.js';
 import { LOCALE_SHELL_ASSET } from '../generated/locale-assets.js';
@@ -60,6 +61,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
         catch { return attribute; }
       });
   });
+  output = spaceAroundLinks(output, locale); // 2026-11-22（Gemini 見直し4）
   const details = LOCALE_DETAILS[locale];
   // 2026-11-21 (Codex review #13): English pages use the existing English share image, not the Japanese one.
   const localizedShareImage = locale === 'en' ? `${origin}/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg`

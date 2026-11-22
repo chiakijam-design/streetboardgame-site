@@ -1,3 +1,4 @@
+import { spaceTextNextToLinks } from './inline-spacing.js';
 import { localeFromPath, LOCALE_DETAILS, switchLocalePath } from './locales.js';
 import { translateBoardPolicyCopy } from './challenge-board-copy.js';
 import { createCatalogTranslator, requireCompleteCatalog } from './catalog-core.js';
@@ -66,7 +67,7 @@ export function localizeDom(root = document) {
   nodes.forEach((node) => {
     if (node.parentElement?.closest('script,style,[data-user-copy],[data-native-copy]')) return;
     const translated = translateText(node.nodeValue);
-    if (translated !== node.nodeValue) node.nodeValue = translated;
+    if (translated !== node.nodeValue) node.nodeValue = spaceTextNextToLinks(node, translated, currentLocale); // 2026-11-22（Gemini 見直し4）
   });
   root.querySelectorAll?.('*').forEach((element) => {
     for (const name of ['src', 'srcset']) {
