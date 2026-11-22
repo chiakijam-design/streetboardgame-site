@@ -103,8 +103,8 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
     } catch { return whole; }
   });
   output = output.replace(/<html\b[^>]*>/i, `<html lang="${locale}" dir="${details.direction}">`);
-  // 2026-11-22（Gemini 見直し28）：日本語以外は system-ui で表示するため、日本語フォントの読み込みと事前接続を外す
-  output = output.replace(/\s*<link\b[^>]*\brel=["']preconnect["'][^>]*\bhref=["']https:\/\/fonts\.(?:googleapis|gstatic)\.com["'][^>]*>/gi, '')
+  // 2026-11-22（Gemini 見直し28）：日本語・英語以外は system-ui で表示するため、日本語フォントの読み込みと事前接続を外す（英語は英語用の小さなフォントを使う決まり）
+  if (locale !== 'en') output = output.replace(/\s*<link\b[^>]*\brel=["']preconnect["'][^>]*\bhref=["']https:\/\/fonts\.(?:googleapis|gstatic)\.com["'][^>]*>/gi, '')
     .replace(/<link\b[^>]*\bid=["'](brand|game)-font-styles["'][^>]*>/gi, '<meta id="$1-font-styles" name="font-loading" content="system-ui">')
     .replace(/\s*<noscript\b[^>]*>\s*<link\b[^>]*(?:fonts\.googleapis\.com|home-font-)[^>]*>\s*<\/noscript>/gi, '');
   // 2026-11-22（Gemini 見直し27）：検索に出さないページは、ページの中の印も noindex にそろえる（HTTP の X-Robots-Tag と同じ）

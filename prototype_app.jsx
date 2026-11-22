@@ -166,8 +166,8 @@ export function TopPage() {
         <Rules />
       </section>
 
-      {/* 2026-11-22（Gemini 見直し16）：右の空きに10問パックへの入口。読み上げの名前は見出しを使う（古い「シリーズ」の言葉をやめる） */}
-      <nav aria-labelledby="top-guide-links-title" style={{ padding: '4px 24px 0', position: 'relative', zIndex: 1 }}>
+      {/* 2026-11-22（Gemini 見直し16）：右の空きに10問パックへの入口 */}
+      <nav aria-label="ゲームシリーズの紹介ページ" style={{ padding: '4px 24px 0', position: 'relative', zIndex: 1 }}>
         <h2 id="top-guide-links-title" style={{ margin: '0 0 10px', color: theme.white, fontSize: 14 }}>まずはどんなゲームか知りたい</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 10 }}>
           <ModeLink href="/challenge-guide" icon="📣" title="みんなに挑戦してもらう" note="1〜10問・最大50人" />
