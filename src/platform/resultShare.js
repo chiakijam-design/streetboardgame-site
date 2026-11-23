@@ -7,6 +7,25 @@ export function whatsappShareUrl(text) {
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 
+// 2026-11-23（本人の指示）：シェアのリンクに「どこへ送ったか」の印を付ける（1回のシェアで何人来たかを数えるため）。
+// 値は analytics.js が受け付けるものだけにする（それ以外の値だと、来た人の計測が止まる）。
+const SHARE_SOURCES = { line: 'line', x: 'x', whatsapp: 'whatsapp', copy: 'copy', instagram: 'instagram', 'instagram-link': 'instagram', native: 'share', save: 'share' };
+export function tagShareUrl(url, action, campaign = 'share') {
+  try {
+    const tagged = new URL(url);
+    tagged.searchParams.set('utm_source', SHARE_SOURCES[action] || 'share');
+    tagged.searchParams.set('utm_medium', 'social');
+    tagged.searchParams.set('utm_campaign', /^[A-Za-z0-9_.-]{1,60}$/.test(campaign) ? campaign : 'share');
+    return tagged.toString();
+  } catch { return url; }
+}
+export function tagSharePayload(payload, action) {
+  if (!payload?.url) return payload;
+  const tagged = tagShareUrl(payload.url, action, payload.campaign || 'share');
+  const swap = (value) => (typeof value === 'string' ? value.split(payload.url).join(tagged) : value);
+  return { ...payload, url: tagged, text: swap(payload.text), caption: swap(payload.caption) };
+}
+
 export function resultSocialUrl(action, text) {
   if (action === 'whatsapp') return whatsappShareUrl(text);
   if (action === 'line') return `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
@@ -88,14 +107,14 @@ globalThis.window?.addEventListener('pagehide', () => releaseActive?.());
 export function bindResultShare(root, { getPayload, translate, beforeAction = () => true, track = () => {} }) {
   const controls = root.querySelector('[data-result-share-controls]');
   if (!controls) return;
-  controls.querySelector('[data-result-share-url]').value = getPayload()?.url || '';
+  controls.querySelector('[data-result-share-url]').value = tagSharePayload(getPayload(), 'copy')?.url || '';
   controls.querySelectorAll('[data-result-share]').forEach((button) => button.addEventListener('click', async () => {
     if (busy) return;
     const action = button.dataset.resultShare;
     // The normal game's optional board preference is applied separately. If it
     // needs a network update, the user clicks again after that update finishes.
     if (!beforeAction()) return;
-    const payload = getPayload();
+    const payload = tagSharePayload(getPayload(), action);
     if (!payload) return;
     const actionToken = {};
     busy = actionToken;

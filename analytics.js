@@ -204,7 +204,7 @@
       if (key === 'room') { if (!/^[A-Z2-9]{8}$/.test(value)) safeQuery = false; }
       else if (key === 'share') { if (value !== 'challenge-20260726-1') safeQuery = false; }
       else if (key === 'analytics') { if (!/^(?:include|exclude)$/.test(value)) safeQuery = false; }
-      else if (key === 'utm_source') { if (!/^(?:instagram|line|x|twitter|facebook|copy|direct)$/.test(value)) safeQuery = false; }
+      else if (key === 'utm_source') { if (!/^(?:instagram|line|x|twitter|facebook|whatsapp|copy|share|direct)$/.test(value)) safeQuery = false; }
       else if (key === 'utm_medium') { if (!/^(?:social|referral|organic|email|qr)$/.test(value)) safeQuery = false; }
       // 2026-11-22（Gemini 見直し2）：パック・お題の指定・役割交代・LINE の外部ブラウザ・SNS の広告の印でも止めない。
       // 送る住所（page_location）はもともと ? 以降を外している。SNS の識別の印（fbclid など）が付くときは Clarity だけ始めない（住所を丸ごと残すため）
@@ -240,6 +240,8 @@
     var config = Object.assign({ send_page_view: false }, privacy, pageContext);
     if (u.searchParams.has('utm_source')) config.campaign_source = u.searchParams.get('utm_source');
     if (u.searchParams.has('utm_medium')) config.campaign_medium = u.searchParams.get('utm_medium');
+    // 2026-11-23（本人の指示）：シェアのリンクの印（result・invite など）も GA4 に渡す（どのシェアから来たかを数えるため）
+    if (u.searchParams.has('utm_campaign')) config.campaign_name = u.searchParams.get('utm_campaign');
     queue('config', measurementId, config);
     queue('event', 'page_view', Object.assign({ send_to: measurementId }, pageContext));
     var values = {
