@@ -13,7 +13,7 @@ import { challengeStartCopy } from './src/i18n/challenge-start-copy.js';
 import { participantAnswerOwnerText } from './src/i18n/challenge-participant-copy.js';
 import { weeklyQuestionPacks } from './src/challenge/packs.js';
 import { publicQuestionExamples } from './src/challenge/examples.js';
-import { resultShareMarkup, bindResultShare, shareResult } from './src/platform/resultShare.js';
+import { resultShareMarkup, bindResultShare, shareResult, tagSharePayload, tagShareUrl } from './src/platform/resultShare.js';
 import { isPerfectResult, perfectTitle, launchConfetti, playFanfare, showPerfectSharePopup } from './src/challenge/perfect.js';
 import { INVITE_SHARE_LABELS, challengeInvitePayload, createChallengeInviteCanvas } from './src/platform/inviteShare.js';
 import { createStoryCanvas } from './src/platform/storyImage.js';
@@ -1460,7 +1460,7 @@ function bindEvents() {
       ? { ...challengeInvitePayload({ origin: location.origin, locale: currentLocale, room: state.room,
         src: invitationImage.key === invitationKey() ? invitationImage.src : '', translate: translateText }),
         storySrc: invitationImage.key === invitationKey() ? invitationImage.storySrc || '' : '',
-        storyFilename: 'watachan-challenge-invitation-story.png' }
+        storyFilename: 'watachan-challenge-invitation-story.png', campaign: 'invite' }
       : state.result ? resultSharePayload() : null,
     track: (action, outcome) => {
       if (outcome === 'pressed') trackShareButtonPress(action);
@@ -2157,7 +2157,8 @@ async function createChallengeResultCanvas(result) {
   await document.fonts?.ready?.catch(() => {});
   // 2026-11-21 (Codex review #5): the QR on the result image opens this quiz's public join URL
   // (never the management URL), so people who see the image can try the same questions.
-  const joinUrl = `${location.origin}${languagePrefix}/challenge?room=${encodeURIComponent(result.code || '')}`;
+  // 2026-11-23（本人の指示）：結果の画像の QR から来た人も数えられるように印を付ける
+  const joinUrl = `${location.origin}${languagePrefix}/challenge?room=${encodeURIComponent(result.code || '')}&utm_source=share&utm_medium=qr&utm_campaign=result_image`;
   const roomQr = async () => {
     if (!result.code) return loadResultImage(RESULT_QR_IMAGE_SRC);
     try {
@@ -2369,6 +2370,7 @@ function resultSharePayload() {
     // 2026-11-21 (Codex review #5): the story text also carries the join URL (for the link sticker).
     text: resultShareText(), caption: resultShareText(),
     url: `${location.origin}${languagePrefix}/challenge?room=${state.result.code}`,
+    campaign: 'result',
   };
 }
 
@@ -2391,7 +2393,7 @@ function celebratePerfectResult() {
       dir: document.documentElement.dir || 'ltr',
       onShare: async () => {
         trackShareButtonPress('native');
-        const outcome = await shareResult(resultSharePayload());
+        const outcome = await shareResult(tagSharePayload(resultSharePayload(), 'native'));
         trackAnalyticsEvent('result_share_action', { game_type: 'challenge', action: 'perfect-popup', outcome });
         if (outcome === 'unavailable') {
           document.querySelector('[data-testid="challenge-result-share"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
