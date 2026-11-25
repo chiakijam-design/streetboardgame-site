@@ -84,6 +84,9 @@ const HTML_STYLE_MAP = {
   'guide/first-meeting-questions.html': [
     'legal',
   ],
+  'guide/couple-quiz-questions.html': [
+    'legal',
+  ],
 };
 
 const HTML_LAZY_ENTRY_MAP = {};

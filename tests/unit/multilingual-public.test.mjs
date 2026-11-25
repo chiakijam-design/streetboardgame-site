@@ -77,7 +77,7 @@ test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and li
   }
   // 44 stable pages plus the 36 pack pages (9 packs x ja/en/es/pt, 2026-11-16),
   // plus the Japanese guide pages (2026-11-25: /guide/ and its articles).
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 83);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 84);
   for (const [, location] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
     assert.doesNotMatch(location, /[?#]|\/manage|\/ranking|\/remote/);
   }
