@@ -1,3 +1,4 @@
+import { PUBLIC_LOCALE_PAGES } from '../../src/generated/public-locale-pages.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
@@ -182,7 +183,7 @@ test('改定前のプライバシーポリシーを legal-history に残し、�
   assert.doesNotMatch(current, /Formspree/);
   assert.match(current, /Cloudflare D1（お問い合わせ受付）/);
   assert.match(current, /<td>Resend<\/td>/);
-  const english = readFileSync(new URL('../../en/privacy.html', import.meta.url), 'utf8');
+  const english = readFileSync(new URL('../..' + PUBLIC_LOCALE_PAGES['/en/privacy'], import.meta.url), 'utf8');
   assert.doesNotMatch(english, /Formspree/);
   assert.match(english, /<td>Resend<\/td>/);
 });

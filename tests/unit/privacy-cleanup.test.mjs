@@ -1,3 +1,4 @@
+import { PUBLIC_LOCALE_PAGES } from '../../src/generated/public-locale-pages.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -30,11 +31,11 @@ test('プライバシーポリシーは現在の公開範囲・子ども・第�
   for (const retiredText of ['YouTuber登録', 'YouTuberとの契約', 'YouTuber元画像', '遠隔ゲーム']) {
     assert.equal(document.includes(retiredText), false, retiredText);
   }
-  const englishDocument = await readFile(new URL('../../en/privacy.html', import.meta.url), 'utf8');
-  assert.equal(englishDocument.includes('Version 1.10'), true);
+  const englishDocument = await readFile(new URL('../..' + PUBLIC_LOCALE_PAGES['/en/privacy'], import.meta.url), 'utf8');
+  assert.equal(englishDocument.includes('2026-11-22'), true);
   assert.equal(englishDocument.includes('optional selected or self-written comment'), false);
-  assert.equal(englishDocument.includes('Answer content is not currently sent to an external AI service'), true);
-  assert.equal(englishDocument.includes('Cloudflare Images'), true);
+  assert.equal(englishDocument.includes('Answers are not currently sent to external AI services'), true);
+  assert.equal(englishDocument.includes('Cloudflare Images'), false);
   assert.equal(englishDocument.includes('Microsoft Clarity'), true);
 });
 

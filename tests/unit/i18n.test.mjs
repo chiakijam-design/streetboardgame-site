@@ -1,3 +1,4 @@
+import { PUBLIC_LOCALE_PAGES } from '../../src/generated/public-locale-pages.js';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import test from 'node:test';
@@ -88,24 +89,24 @@ test('英語ルート・hreflang・専用OGP・初回言語案内を静的構成
   const worker = text('_worker.js');
   const sitemap = text('sitemap.xml');
   for (const route of ['/en/', '/en/challenge', '/en/terms', '/en/privacy']) {
-    assert.ok(worker.includes(route.replace(/\/$/, '') || '/en'), route);
+    assert.ok(PUBLIC_LOCALE_PAGES[route.replace(/\/$/, '')], route);
     assert.ok(sitemap.includes(`<loc>https://www.streetboardgame.com${route}</loc>`), route);
   }
-  for (const page of ['en/index.html', 'en/terms.html', 'en/privacy.html']) {
+  for (const page of [PUBLIC_LOCALE_PAGES['/en'].slice(1), PUBLIC_LOCALE_PAGES['/en/terms'].slice(1), PUBLIC_LOCALE_PAGES['/en/privacy'].slice(1)]) {
     const html = text(page);
-    assert.match(html, /<html lang="en">/);
+    assert.match(html, /<html lang="en" dir="ltr">/);
     assert.match(html, /hreflang="ja"/);
     assert.match(html, /hreflang="en"/);
   }
   assert.ok(!existsSync(new URL('language_switch.js', rootUrl)), 'the old language switch is gone (2026-11-15)');
   for (const page of [
     'index.html',
-    'en/index.html',
+    PUBLIC_LOCALE_PAGES['/en'].slice(1),
     'challenge.html',
     'terms.html',
     'privacy.html',
-    'en/terms.html',
-    'en/privacy.html',
+    PUBLIC_LOCALE_PAGES['/en/terms'].slice(1),
+    PUBLIC_LOCALE_PAGES['/en/privacy'].slice(1),
   ]) {
     assert.doesNotMatch(text(page), /language_switch\.js/, page);
   }

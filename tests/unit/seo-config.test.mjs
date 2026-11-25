@@ -1,3 +1,4 @@
+import { PUBLIC_LOCALE_PAGES } from '../../src/generated/public-locale-pages.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -75,13 +76,13 @@ test('公開説明は現行の二本立てと答え合わせ中心の方針に�
   const challenge = await readFile('challenge.html', 'utf8');
   const top = await readFile('index.html', 'utf8');
   const topApp = await readFile('prototype_app.jsx', 'utf8');
-  const englishTop = await readFile('en/index.html', 'utf8');
+  const englishTop = await readFile(PUBLIC_LOCALE_PAGES['/en'].slice(1), 'utf8');
 
   assert.doesNotMatch(challenge, /友達や家族/);
   assert.doesNotMatch(top, /相手を理解できるまで、何度でも挑戦できます/);
   assert.doesNotMatch(topApp, /家族や友達/);
   assert.doesNotMatch(englishTop, /who (?:knows|understands) you best/i);
-  assert.match(englishTop, /See where your answers match/);
+  assert.match(englishTop, /Choose your correct answers/);
 });
 
 test('運営画面は検索除外・キャッシュ禁止・参照元非送信を重ねて指定する', async () => {

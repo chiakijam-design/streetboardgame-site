@@ -57,12 +57,6 @@ const CHALLENGE_PAGE_PATHS = new Set([
   '/challenge/library',
 ]);
 const LIVE_CHALLENGE_PATH = '/live-challenge';
-const ENGLISH_CHALLENGE_PAGE_PATHS = new Set([
-  '/en/challenge',
-  '/en/challenge/manage',
-  '/en/challenge/ranking',
-  '/en/challenge/library',
-]);
 const LEGAL_PAGE_FILES = Object.freeze({
   '/terms': '/terms.html',
   '/privacy': '/privacy.html',
@@ -263,9 +257,6 @@ async function handleRequest(request, env) {
         return new Response(request.method === 'HEAD' ? null : prepared.body, { status: 200, headers });
       }
     }
-    const extendedEnglishPage = locale === 'en' && PUBLIC_LOCALES.length > 2
-      && !['/en', '/en/', '/en/live-challenge', '/en/terms', '/en/privacy'].includes(path)
-      && !ENGLISH_CHALLENGE_PAGE_PATHS.has(path);
     if (locale !== 'ja') {
       if (!PUBLIC_LOCALES.includes(locale)) return new Response('Not Found', { status: 404, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } });
       const assetRoute = localizedAssetRoute(rawPath);
@@ -310,65 +301,6 @@ async function handleRequest(request, env) {
       catch { return new Response('Translation unavailable', { status: 503, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } }); }
       return new Response(request.method === 'HEAD' ? null : rendered, { status: response.status, headers });
     }
-
-    if (path === '/en') {
-      const pageUrl = new URL('/en/index.html', url.origin);
-      const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
-        method: 'GET',
-        headers: request.headers,
-      }));
-      const headers = new Headers(response.headers);
-      headers.set('content-type', 'text/html; charset=UTF-8');
-      return new Response(request.method === 'HEAD' ? null : await response.text(), {
-        status: response.status,
-        headers,
-      });
-    }
-
-    if (rawPath !== '/en/' && rawPath.endsWith('/') && (
-      path === '/en/live-challenge'
-      || ENGLISH_CHALLENGE_PAGE_PATHS.has(path)
-      || path === '/en/terms'
-      || path === '/en/privacy'
-    )) {
-      return Response.redirect(url.origin + path + url.search, 301);
-    }
-
-
-    if (ENGLISH_CHALLENGE_PAGE_PATHS.has(path)) {
-      const pageUrl = new URL('/challenge.html', url.origin);
-      const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
-        method: 'GET',
-        headers: request.headers,
-      }));
-      const headers = new Headers(response.headers);
-      headers.set('content-type', 'text/html; charset=UTF-8');
-      if (url.searchParams.has('room') || path.endsWith('/manage') || path.endsWith('/ranking')) {
-        headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
-      }
-      const html = request.method === 'HEAD' ? null : await response.text();
-      let rendered = html ? applyEnglishGameMeta(html, 'challenge', url) : null;
-      if (rendered && path === '/en/challenge/library') rendered = applyChallengeLibraryMeta(rendered);
-      return new Response(rendered, {
-        status: response.status,
-        headers,
-      });
-    }
-
-    if (path === '/en/terms' || path === '/en/privacy') {
-      const pageUrl = new URL(path === '/en/terms' ? '/en/terms.html' : '/en/privacy.html', url.origin);
-      const response = await env.ASSETS.fetch(new Request(pageUrl.toString(), {
-        method: 'GET',
-        headers: request.headers,
-      }));
-      const headers = new Headers(response.headers);
-      headers.set('content-type', 'text/html; charset=UTF-8');
-      return new Response(request.method === 'HEAD' ? null : await response.text(), {
-        status: response.status,
-        headers,
-      });
-    }
-
 
     if (rawPath !== '/' && rawPath.endsWith('/') && CHALLENGE_PAGE_PATHS.has(path)) {
       return Response.redirect(url.origin + path + url.search, 301);
@@ -814,127 +746,6 @@ function isVersionedStaticAsset(url) {
   const version = String(url.searchParams.get('v') || '');
   return VERSIONED_STATIC_ASSET_PATH.test(url.pathname)
     && /^[a-z0-9][a-z0-9._-]{0,63}$/i.test(version);
-}
-
-function applyEnglishGameMeta(html, kind, requestUrl) {
-  html = selectQuestionDataScript(html, 'en');
-  const isLive = kind === 'live';
-  const canonicalPath = isLive ? '/en/live-challenge' : '/en/challenge';
-  const title = isLive
-    ? 'Livestream Challenge | Play with Instagram or YouTube viewers'
-    : 'Challenge Your Friends | How well do they know you?';
-  const description = isLive
-    ? 'Answer the same 10 questions with your livestream viewers. Earn one point for every match and give each viewer a personal result card.'
-    : 'Create a free quiz with 1–10 questions, share one link, and see how well up to 50 friends know your answers.';
-  const ogTitle = isLive ? 'Challenge your livestream viewers | Understanding Quiz' : 'How well do you know me? | Understanding Quiz';
-  const shareUrl = new URL(canonicalPath, CANONICAL_ORIGIN);
-  const room = String(requestUrl.searchParams.get('room') || '').trim();
-  if (room) shareUrl.searchParams.set('room', room);
-  const canonicalUrl = CANONICAL_ORIGIN + canonicalPath;
-  const gameId = canonicalUrl + '#game';
-  const breadcrumbId = canonicalUrl + '#breadcrumb';
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'WebPage',
-        '@id': canonicalUrl + '#webpage',
-        name: title,
-        url: canonicalUrl,
-        description,
-        inLanguage: 'en',
-        breadcrumb: { '@id': breadcrumbId },
-        primaryImageOfPage: {
-          '@type': 'ImageObject',
-          url: CANONICAL_ORIGIN + '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg',
-          width: 1729,
-          height: 910,
-        },
-        mainEntity: { '@id': gameId },
-      },
-      {
-        '@type': 'BreadcrumbList',
-        '@id': breadcrumbId,
-        itemListElement: [
-          {
-            '@type': 'ListItem',
-            position: 1,
-            name: 'Understanding Quiz',
-            item: CANONICAL_ORIGIN + '/en/',
-          },
-          {
-            '@type': 'ListItem',
-            position: 2,
-            name: ogTitle,
-            item: canonicalUrl,
-          },
-        ],
-      },
-      {
-        '@type': ['WebApplication', 'Game'],
-        '@id': gameId,
-        name: ogTitle,
-        url: canonicalUrl,
-        description,
-        image: CANONICAL_ORIGIN + '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg',
-        applicationCategory: 'GameApplication',
-        operatingSystem: 'Any',
-        isAccessibleForFree: true,
-        inLanguage: 'en',
-        offers: {
-          '@type': 'Offer',
-          price: '0',
-          priceCurrency: 'JPY',
-        },
-      },
-    ],
-  };
-  let localized = html
-    .replace(/<html lang="[^"]*">/i, '<html lang="en">')
-    .replace(/<title>.*?<\/title>/i, `<title>${title}</title>`)
-    .replace(/<meta name="description" content="[^"]*"\s*\/?>/i, `<meta name="description" content="${description}">`)
-    .replace(/<link rel="canonical" href="[^"]*"\s*\/?>/i, `<link rel="canonical" href="${CANONICAL_ORIGIN + canonicalPath}">`)
-    .replace(/<meta property="og:title" content="[^"]*"\s*\/?>/i, `<meta property="og:title" content="${ogTitle}">`)
-    .replace(/<meta property="og:site_name" content="[^"]*"\s*\/?>/i, '<meta property="og:site_name" content="Understanding Quiz">')
-    .replace(/<meta property="og:description" content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${description}">`)
-    .replace(/<meta property="og:url" content="[^"]*"\s*\/?>/i, `<meta property="og:url" content="${shareUrl.toString()}">`)
-    .replace(/<meta property="og:image" content="[^"]*"\s*\/?>/i, '<meta property="og:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg">')
-    .replace(/<meta property="og:image:secure_url" content="[^"]*"\s*\/?>/i, '<meta property="og:image:secure_url" content="https://www.streetboardgame.com/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg">')
-    .replace(/<meta property="og:image:width" content="[^"]*"\s*\/?>/i, '<meta property="og:image:width" content="1729">')
-    .replace(/<meta property="og:image:height" content="[^"]*"\s*\/?>/i, '<meta property="og:image:height" content="910">')
-    .replace(/<meta property="og:image:alt" content="[^"]*"\s*\/?>/i, `<meta property="og:image:alt" content="${ogTitle}">`)
-    .replace(/<meta name="twitter:title" content="[^"]*"\s*\/?>/i, `<meta name="twitter:title" content="${ogTitle}">`)
-    .replace(/<meta name="twitter:description" content="[^"]*"\s*\/?>/i, `<meta name="twitter:description" content="${description}">`)
-    .replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/i, '<meta name="twitter:image" content="https://www.streetboardgame.com/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg">')
-    .replace(/<meta name="twitter:image:alt" content="[^"]*"\s*\/?>/i, `<meta name="twitter:image:alt" content="${ogTitle}">`)
-    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/i, `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>`);
-  if (/<meta property="og:locale" content="[^"]*"\s*\/?>/i.test(localized)) {
-    localized = localized.replace(/<meta property="og:locale" content="[^"]*"\s*\/?>/i, '<meta property="og:locale" content="en_US">');
-  } else {
-    localized = localized.replace('<meta property="og:type" content="website">', '<meta property="og:type" content="website">\n  <meta property="og:locale" content="en_US">');
-  }
-  if (/<meta property="og:locale:alternate" content="[^"]*"\s*\/?>/i.test(localized)) {
-    localized = localized.replace(/<meta property="og:locale:alternate" content="[^"]*"\s*\/?>/i, '<meta property="og:locale:alternate" content="ja_JP">');
-  } else {
-    localized = localized.replace('<meta property="og:locale" content="en_US">', '<meta property="og:locale" content="en_US">\n  <meta property="og:locale:alternate" content="ja_JP">');
-  }
-  localized = localized
-    .replace('わたし理解度診断｜LIVE版', 'Know Me Quiz | Live')
-    .replace('<h1>私のこと、ちゃんと<br>分かってるよね？</h1>', '<h1>How well do you<br>know me?</h1>')
-    .replace('私のこと、ちゃんと分かってるよね？', 'How well do you know me?')
-    .replace('<strong>当てるより、話すための10問。</strong>', '<strong>10 questions made for conversation.</strong>')
-    .replace('配信者と視聴者が同時回答し、答えが一致するたび1点。最後に一人ずつ結果カードが出ます。', 'The streamer and viewers answer together. Earn one point for every match and get a personal result card.')
-    .replace('← トップへ', '← Home')
-    .replace('トップへ', 'Home')
-    .replace('最大1,000人', 'Up to 1,000 players')
-    .replace('ライブ配信で<br>みんなに挑戦してもらう', 'Challenge your<br>livestream viewers')
-    .replace('配信者と視聴者が同じ10問に同時回答。答えが一致するたび1点、最後に一人ずつ結果カードが出ます。', 'The streamer and viewers answer the same 10 questions together. Earn one point for every match and get a personal result card.')
-    .replace('Instagramライブ', 'Instagram Live')
-    .replace('YouTubeライブ', 'YouTube Live')
-    .replace('無料・連携不要', 'Free · no account link')
-    .replace('利用規約', 'Terms')
-    .replace('プライバシー', 'Privacy');
-  return localized;
 }
 
 function selectQuestionDataScript(html, language) {
