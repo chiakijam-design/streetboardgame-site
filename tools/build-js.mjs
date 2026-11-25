@@ -74,6 +74,13 @@ const HTML_STYLE_MAP = {
  'terms.html': [
     'legal',
   ],
+  // 2026-11-25（AdSense の見直し・本人の了承）：読みもの（日本語の静的なページ）
+  'guide/index.html': [
+    'legal',
+  ],
+  'guide/self-quiz-questions.html': [
+    'legal',
+  ],
 };
 
 const HTML_LAZY_ENTRY_MAP = {};
