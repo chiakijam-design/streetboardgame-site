@@ -1,7 +1,7 @@
 import { guardTestRedirect, guardTestFetch } from './test-redirect-guard.mjs';
 import http from 'node:http';
 import path from 'node:path';
-import { readFile, unlink, writeFile } from 'node:fs/promises';
+import { readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 
@@ -123,12 +123,18 @@ async function fetchStaticAsset(request) {
     return new Response('Forbidden', { status: 403 });
   }
 
+  // 2026-11-25：Cloudflare の静的なファイルの配り方（auto-trailing-slash）と同じく、
+  // /guide/ は guide/index.html、/guide/x は guide/x.html も探す（読みもののページ）。
+  let found = absolute;
+  for (const candidate of [absolute, path.join(absolute, 'index.html'), absolute + '.html']) {
+    try { if ((await stat(candidate)).isFile()) { found = candidate; break; } } catch {}
+  }
   try {
-    const data = await readFile(absolute);
+    const data = await readFile(found);
     return new Response(request.method === 'HEAD' ? null : data, {
       status: 200,
       headers: {
-        'content-type': mime[path.extname(absolute).toLowerCase()] || 'application/octet-stream',
+        'content-type': mime[path.extname(found).toLowerCase()] || 'application/octet-stream',
         'cache-control': HASHED_BUILD_ASSET_PATH.test(parsed.pathname)
           ? 'public, max-age=31536000, immutable'
           : 'no-store',
