@@ -81,7 +81,8 @@ test('#3 #9 #13 #19 #20 #21 #22 #23 #24 checks', async () => {
   const es = renderPackPage('easy-first-meeting', 'es');
   assert.match(es, /og:image" content="[^"]*\/assets\/locale-share\/es\.png/);
   assert.match(es, /class="pack-send"/);
-  assert.match(es, /line\.me\/R\/share\?text=/);
+  assert.match(es, /line\.me\/R\/msg\/text\/\?/);
+  assert.match(es, /utm_source%3Dline%26utm_medium%3Dsocial%26utm_campaign%3Dpack_easy-first-meeting/);
   const searchCopy = readFileSync(new URL('../../src/content/search-copy.js', import.meta.url), 'utf8');
   assert.doesNotMatch(searchCopy, /\.pack-(?:top|langs|footer)(?: a)?\{[^}]*color:#fff/);
   const publicHtml = readFileSync(new URL('../../src/i18n/public-html.js', import.meta.url), 'utf8');

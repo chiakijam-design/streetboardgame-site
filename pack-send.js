@@ -1,13 +1,29 @@
-// 2026-11-22（Gemini 見直し19）：10問パックのページの「リンクをコピー」。コピーできる端末だけボタンを出す
 (function () {
   var button = document.querySelector('[data-pack-copy]');
-  if (!button || !navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') return;
+  var fallback = document.querySelector('[data-pack-copy-fallback]');
+  if (!button || !fallback) return;
   button.hidden = false;
   var label = button.textContent;
-  button.addEventListener('click', function () {
-    navigator.clipboard.writeText(button.getAttribute('data-pack-copy')).then(function () {
-      button.textContent = button.getAttribute('data-copied');
-      setTimeout(function () { button.textContent = label; }, 2000);
-    }, function () {});
+  button.addEventListener('click', async function () {
+    var copied = false;
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(fallback.value);
+        copied = true;
+      } catch {}
+    }
+    if (!copied) {
+      fallback.hidden = false;
+      fallback.focus();
+      fallback.select();
+      try { copied = document.execCommand('copy'); } catch {}
+    }
+    if (!copied) return;
+    if (!fallback.hidden) {
+      fallback.hidden = true;
+      button.focus();
+    }
+    button.textContent = button.getAttribute('data-copied');
+    setTimeout(function () { button.textContent = label; }, 2000);
   });
 })();

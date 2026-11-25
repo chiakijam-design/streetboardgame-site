@@ -11,6 +11,7 @@
 // `data-native-copy` keeps the browser-side translator away from this text.
 import { PACK_QUESTIONS } from '../generated/pack-questions.js';
 import { questionPacks } from '../challenge/packs.js';
+import { resultSocialUrl, tagShareUrl } from '../platform/resultShare.js';
 import JA from './copy-ja.js';
 import EN from './copy-en.js';
 import ES from './copy-es.js';
@@ -182,15 +183,17 @@ const PACK_COPY_LINK = Object.freeze({
   pt: ['Copiar link', 'Link copiado'],
 });
 
-function packSendLinks(title, url, locale = 'ja') {
-  const text = `${title}\n${url}`;
+function packSendLinks(title, url, slug, locale) {
   const [copyLabel, copiedLabel] = PACK_COPY_LINK[locale] || PACK_COPY_LINK.en;
+  const tagged = (method) => tagShareUrl(url, method, `pack_${slug}`);
+  const copyUrl = escapeHtml(tagged('copy'));
+  const socialUrl = (method) => escapeHtml(resultSocialUrl(method, `${title}\n${tagged(method)}`));
   return '<p class="pack-send">'
-    + `<a href="https://line.me/R/share?text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">LINE</a> `
-    + `<a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">X</a> `
-    + `<a href="https://api.whatsapp.com/send?text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">WhatsApp</a> `
-    + `<button type="button" data-pack-copy="${escapeHtml(url)}" data-copied="${escapeHtml(copiedLabel)}" hidden>${escapeHtml(copyLabel)}</button>`
-    + '</p><script defer src="/pack-send.js?v=20261122"></script>';
+    + `<a href="${socialUrl('line')}" target="_blank" rel="noopener noreferrer">LINE</a> `
+    + `<a href="${socialUrl('x')}" target="_blank" rel="noopener noreferrer">X</a> `
+    + `<a href="${socialUrl('whatsapp')}" target="_blank" rel="noopener noreferrer">WhatsApp</a> `
+    + `<button type="button" data-pack-copy="${copyUrl}" data-copied="${escapeHtml(copiedLabel)}" hidden>${escapeHtml(copyLabel)}</button>`
+    + `</p><input type="text" data-pack-copy-fallback dir="ltr" aria-label="${escapeHtml(copyLabel)}" value="${copyUrl}" style="max-width:100%" readonly hidden><script defer src="/pack-send.js?v=20261125"></script>`;
 }
 
 const PACK_OG_LOCALE = Object.freeze({ ja: 'ja_JP', en: 'en_US', es: 'es_ES', pt: 'pt_BR' });
@@ -247,7 +250,7 @@ export function renderPackPage(slug, locale) {
     + card(ui.tips, list(pack.tips))
     + card(ui.talk, `<p>${inline(ui.talkLead)}</p>${list(pack.talk)}`)
     + card(ui.steps, `<ol class="wata-guide__steps">${ui.stepsList.map((item) => `<li>${inline(item)}</li>`).join('')}</ol><p class="wata-guide__cta"><a href="${createPath}">${escapeHtml(ui.create)} ▶</a></p>`)
-    + card(PACK_SEND_COPY[locale] || PACK_SEND_COPY.en, packSendLinks(pack.title, url, locale))
+    + card(PACK_SEND_COPY[locale] || PACK_SEND_COPY.en, packSendLinks(pack.title, url, slug, locale))
     + card(ui.related, packLinks(locale, RELATED_PACKS[slug]) + `<p><a href="${libraryPath}">${escapeHtml(ui.allPacks)}</a></p>`)
     + `<p class="pack-langs">${escapeHtml(ui.otherLanguages)}: ${languages}</p>`
     + `<footer class="pack-footer">${ui.footer.map(([href, label]) => `<a href="${href}">${escapeHtml(label)}</a>`).join('')}<p>${escapeHtml(ui.footnote)}</p></footer>`

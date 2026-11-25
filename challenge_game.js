@@ -1254,7 +1254,7 @@ function rankingView() {
     `${understandingBoard(state.ranking, state.room.questionCount || QUESTION_COUNT)}
     <section class="challenge-panel">
       <a class="challenge-secondary" href="/challenge?room=${state.room.code}">このクイズに挑戦する</a>
-      <button class="challenge-secondary" data-action="copy-url" data-copy-value="${escapeHtml(challengeUrl(state.room.code))}">挑戦用URLをコピー</button>
+      <button class="challenge-secondary" data-action="copy-url" data-copy-value="${escapeHtml(tagShareUrl(challengeUrl(state.room.code), 'copy', 'board'))}">挑戦用URLをコピー</button>
       <a class="challenge-secondary" href="/challenge">自分も作る</a>
     </section>`);
 }

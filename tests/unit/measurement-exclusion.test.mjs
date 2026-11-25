@@ -8,7 +8,7 @@ const root=fileURLToPath(new URL('../../',import.meta.url));
 const source={ga:fs.readFileSync(path.join(root,'analytics.js'),'utf8'),cf:fs.readFileSync(path.join(root,'global-pv.js'),'utf8')};
 const exclusion='watachan:analytics-excluded:v1',consent='watachan:cf-pv-consent:v1';
 
-function documentRun({url='https://www.streetboardgame.com/challenge',storage=new Map(),denied=false,webdriver=false,gpc=false,dnt=false}={}){
+function documentRun({url='https://www.streetboardgame.com/challenge',storage=new Map(),denied=false,webdriver=false,gpc=false,dnt=false,onlyCloudflare=false}={}){
   let current=new URL(url);
   const scripts=[],events={},config={v:1,policy:'passive',mode:'notice',token:'f'.repeat(32),locales:['ja','en','fr','ar'],publicPaths:['/','/challenge','/privacy']};
   const location={get href(){return current.href;},get origin(){return current.origin;},get hostname(){return current.hostname;},get pathname(){return current.pathname;},get protocol(){return current.protocol;},reload(){}};
@@ -17,7 +17,7 @@ function documentRun({url='https://www.streetboardgame.com/challenge',storage=ne
   const d={readyState:'complete',referrer:'',getElementById(){return{textContent:JSON.stringify(config)};},querySelector(){return scripts.find(s=>/^https:\/\/static\.cloudflareinsights\.com\//.test(String(s.src)))??null;},createElement(){return{dataset:{},setAttribute(){},addEventListener(){}};},head:{appendChild(s){scripts.push(s);}},addEventListener(){}};
   const context=vm.createContext({window:w,document:d,URL,Date,encodeURIComponent});
   // No fetch, XMLHttpRequest or external SDK exists in this VM.
-  vm.runInContext(source.ga,context);vm.runInContext(source.cf,context);
+  if(!onlyCloudflare)vm.runInContext(source.ga,context);vm.runInContext(source.cf,context);
   return{w,scripts,storage,events};
 }
 
@@ -35,6 +35,25 @@ test('explicit excluded profile survives reload, new document/tab, redirect losi
   const store=new Map();const first=documentRun({url:'https://www.streetboardgame.com/challenge?analytics=exclude',storage:store});assert.equal(first.scripts.length,0);
   for(const p of ['/challenge','/en/challenge','/fr/challenge','/ar/privacy','/challenge/manage','/challenge?room=FAKE2345']){
     const r=documentRun({url:'https://www.streetboardgame.com'+p,storage:store});assert.equal(r.scripts.length,0,p);r.w.history.pushState({},'','/challenge');r.w.trackEvent('game_play',{game_type:'challenge'});assert.equal(r.scripts.length,0,p);
+  }
+});
+test('法務ページでも計測停止を解除でき、Cloudflare独自の停止は維持する',()=>{
+  const storage=new Map([[exclusion,'1'],[consent,JSON.stringify({v:1,choice:'deny',at:1})]]);
+  const r=documentRun({url:'https://www.streetboardgame.com/fr/privacy?analytics=include',storage,onlyCloudflare:true});
+  assert.equal(storage.has(exclusion),false);
+  assert.equal(JSON.parse(storage.get(consent)).choice,'deny');
+  assert.equal(r.scripts.length,0);
+});
+test('公開導線では許可した識別子と目印を送信せずにGA4だけを開始する',()=>{
+  for(const path of ['/about?to=contact#contact-section','/challenge?s=20&t=synthetic&msclkid=synthetic#challenge-result-share']){
+    const r=documentRun({url:'https://www.streetboardgame.com'+path});
+    assert.equal(r.w.analyticsEnabled,true,path);
+    assert.equal(r.scripts.length,1,path);
+    assert.match(r.scripts[0].src,/googletagmanager/);
+    assert.doesNotMatch(JSON.stringify(r.w.ga4EventLayer),/synthetic|contact-section|result-share/);
+  }
+  for(const path of ['/challenge?private=synthetic','/challenge#private-anchor']){
+    assert.equal(documentRun({url:'https://www.streetboardgame.com'+path}).scripts.length,0,path);
   }
 });
 test('local, preview and lookalike hosts never load either collector',()=>{
@@ -56,8 +75,8 @@ test('legacy secret parameters are removed before a public document collector is
   assert.doesNotMatch(r.w.location.href,/secret|FAKE_SECRET/);assert.doesNotMatch(JSON.stringify(r.w.ga4EventLayer),/FAKE_SECRET/);assert.equal(r.scripts.length,3);
 });
 test('candidate standalone scripts have new cache keys and the reviewed runtime pin matches its contents',()=>{
-  assert.match(fs.readFileSync(path.join(root,'src/analytics/passive-policy.js'),'utf8'),/20261123-share-utm-1/);
-  assert.match(fs.readFileSync(path.join(root,'src/analytics/pv-policy.js'),'utf8'),/20261109-public-url-guard-1/);
+  assert.match(fs.readFileSync(path.join(root,'src/analytics/passive-policy.js'),'utf8'),/20261125-share-utm-2/);
+  assert.match(fs.readFileSync(path.join(root,'src/analytics/pv-policy.js'),'utf8'),/20261125-preference-2/);
   const bytes=fs.readFileSync(path.join(root,'analytics.js')),hash=crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob '+bytes.length+'\0'),bytes])).digest('hex');
   assert.match(fs.readFileSync(path.join(root,'tests/unit/global-pv.test.mjs'),'utf8'),new RegExp("assert.equal\\(sha,'"+hash+"'\\)"));
 });

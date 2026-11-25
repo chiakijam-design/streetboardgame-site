@@ -10,11 +10,11 @@ export function whatsappShareUrl(text) {
 // 2026-11-23（本人の指示）：シェアのリンクに「どこへ送ったか」の印を付ける（1回のシェアで何人来たかを数えるため）。
 // 値は analytics.js が受け付けるものだけにする（それ以外の値だと、来た人の計測が止まる）。
 const SHARE_SOURCES = { line: 'line', x: 'x', whatsapp: 'whatsapp', copy: 'copy', instagram: 'instagram', 'instagram-link': 'instagram', native: 'share', save: 'share' };
-export function tagShareUrl(url, action, campaign = 'share') {
+export function tagShareUrl(url, action, campaign = 'share', medium = 'social') {
   try {
     const tagged = new URL(url);
     tagged.searchParams.set('utm_source', SHARE_SOURCES[action] || 'share');
-    tagged.searchParams.set('utm_medium', 'social');
+    tagged.searchParams.set('utm_medium', medium === 'qr' ? 'qr' : 'social');
     tagged.searchParams.set('utm_campaign', /^[A-Za-z0-9_.-]{1,60}$/.test(campaign) ? campaign : 'share');
     return tagged.toString();
   } catch { return url; }
