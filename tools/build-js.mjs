@@ -81,6 +81,9 @@ const HTML_STYLE_MAP = {
   'guide/self-quiz-questions.html': [
     'legal',
   ],
+  'guide/first-meeting-questions.html': [
+    'legal',
+  ],
 };
 
 const HTML_LAZY_ENTRY_MAP = {};
