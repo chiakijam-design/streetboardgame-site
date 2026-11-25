@@ -579,6 +579,7 @@ function sanitizeCards(value) {
       category: String(card && card.category || '').slice(0, 40),
       title,
       choices,
+      ...(card?.custom === true ? { custom: true } : {}),
     };
   });
 }
@@ -1035,7 +1036,8 @@ async function recordQuestionPlays(env, cards, playedAt) {
   // Verify both the ID and the text. A room can contain an edited copy using a catalog ID.
   cards = cards.flatMap((card) => {
     const approved = catalog.has(card.id) ? approvedLibraryCard(catalog.get(card.id)) : builtInLibraryCards.get(card.id);
-    return approved && card.title === approved.title && JSON.stringify(card.choices) === JSON.stringify(approved.choices) ? [approved] : [];
+    return approved && card.custom !== true && card.title === approved.title
+      && JSON.stringify(card.choices) === JSON.stringify(approved.choices) ? [approved] : [];
   });
   if (!cards.length) return;
   if (d1) {

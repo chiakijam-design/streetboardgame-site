@@ -1,3 +1,5 @@
+import { isCustomQuestionCopy } from './display-copy.js';
+
 // Translate labels at drawing time, leaving user values in local memory.
 export function localizedCanvasContext(context, translate, direction = 'ltr') {
   if (!context) return context;
@@ -26,7 +28,7 @@ export function collectProtectedUserCopy(state, sourceCards = []) {
   function visit(value, inChat = false) {
     if (!value || typeof value !== 'object' || seen.has(value)) return;
     seen.add(value);
-    const custom = value.sourceKind === 'custom' || value.custom === true || /^(?:CUS|custom-)/.test(String(value.sourceId || value.id || ''));
+    const custom = isCustomQuestionCopy(value);
     const source = sourceById.get(String(value.sourceId || value.id || ''));
     for (const [key, item] of Object.entries(value)) {
       if (typeof item === 'string' && (/^(?:name|creatorName|participantName|hostName|subjectName|viewerName|playerName|displayName)$/.test(key)

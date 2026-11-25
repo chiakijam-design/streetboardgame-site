@@ -1547,7 +1547,7 @@ function autoSaveCreatorEdit() {
 
 function saveCreatorQuestionEdit() {
   if (state.mode !== 'creator-edit' || !state.editingQuestion || state.personalView || state.loading) return;
-  if (!autoSaveCreatorEdit()) return setState({error:'questions-incomplete'});
+  if (!autoSaveCreatorEdit()) return setState({error:'question-incomplete'});
   const next = { editingQuestion: false, editingOriginalCard: null, personalError:'', personalMessage:'', error: '' };
   saveCreatorDraft({ ...state, ...next });
   setState(next);
@@ -2599,7 +2599,7 @@ function errorMessage(code) {
     'room-not-found': 'クイズが見つからないか、有効期限が切れています。',
     'questions-unavailable': '問題データを読み込めませんでした。',
     'question-catalog-unavailable': '問題データを読み込めませんでした。', // 2026-11-22（Gemini 見直し32）：汎用の通信エラーにしない
-    'questions-incomplete': currentLocale === 'ja' ? '問題文と5つの選択肢をすべて入力してください。' : '10問すべての問題文と5つの選択肢を入力してください。', // 2026-11-22（Gemini 見直し32）
+    'question-incomplete': '問題文と5つの選択肢をすべて入力してください。',
     'participant-forbidden': '参加情報を確認できません。もう一度URLを開いてください。',
     'answers-already-submitted': 'この参加者の回答はすでに確定しています。',
     'answers-not-submitted': '10問の回答が完了していません。',
@@ -2646,7 +2646,7 @@ async function bootChallenge() {
     if (alertBox && !app.querySelector('[data-reload-page]')) {
       const reload = document.createElement('button');
       reload.type = 'button'; reload.className = 'challenge-secondary'; reload.dataset.reloadPage = '';
-      reload.textContent = '↻ ' + (currentLocale === 'ja' ? '再読み込み' : 'Reload');
+      reload.textContent = '↻ ' + translateText('再読み込み');
       reload.addEventListener('click', () => location.reload());
       alertBox.after(reload);
     }

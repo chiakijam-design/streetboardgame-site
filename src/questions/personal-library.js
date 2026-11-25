@@ -107,7 +107,9 @@ export function submissionEligibleCards(cards, generalConsent) {
 }
 
 export function publicQuizCards(cards) {
-  return cards.map(({ id, sourceId, category, title, choices }) => ({ id, sourceId, category, title, choices: [...choices] }));
+  return cards.map(({ id, sourceId, category, title, choices, custom, personalQuestion }) => ({
+    id, sourceId, category, title, choices: [...choices], ...(custom === true || personalQuestion === true ? { custom: true } : {}),
+  }));
 }
 
 // Automatic save is local only. A persistence failure never opts a question into
