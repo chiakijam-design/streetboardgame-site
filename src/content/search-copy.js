@@ -93,6 +93,21 @@ const SHARED_STYLE = '.wata-guide{text-align:start;font-family:inherit;font-weig
   + '.wata-guide__faq{margin:0}.wata-guide__faq dt{margin-top:12px;font-size:14px;font-weight:900}.wata-guide__faq dd{margin:4px 0 0;font-size:14px}'
   + '.wata-guide__cta a{display:inline-flex;align-items:center;min-height:44px}';
 
+// 2026-11-25（AdSense「有用性の低いコンテンツ」の直し）：日本語のページから読みもの（/guide/）へつなぐ。
+// 読みものは日本語だけなので、ほかの言語のページには出さない。
+export const GUIDE_LINKS_JA = Object.freeze([
+  ['/guide/self-quiz-questions', '自分クイズの問題例50'],
+  ['/guide/first-meeting-questions', '初対面で盛り上がる質問の選び方'],
+  ['/guide/couple-quiz-questions', 'カップル・夫婦で遊ぶ理解度クイズ'],
+  ['/guide/team-icebreaker-quiz', '職場・チームのアイスブレイクに使う自分クイズ'],
+  ['/guide/kind-questions-and-answer-check', 'みんなが楽しめる質問の選び方と、答え合わせのコツ'],
+]);
+export function guideLinksJa(heading = '<h2>読みもの</h2>') {
+  return heading + '<p>問題の選び方や、場面ごとの遊び方をまとめています。</p><ul class="wata-guide__reading">'
+    + GUIDE_LINKS_JA.map(([href, label]) => `<li><a href="${href}">${escapeHtml(label)}</a></li>`).join('')
+    + '<li><a href="/guide/">読みもの一覧</a></li></ul>';
+}
+
 // Top page: one card per section, styled like the name form above it, on a
 // strip with the same width and color as the page above.
 export function renderHomeCopy(locale) {
@@ -104,6 +119,7 @@ export function renderHomeCopy(locale) {
     + '</style>';
   return `<div class="wata-guide wata-guide--home" data-native-copy data-wata-guide="home" lang="${locale}">${style}`
     + copy.home.map((part) => `<section class="wata-guide__card">${section(part, locale)}</section>`).join('')
+    + (locale === 'ja' ? `<section class="wata-guide__card" data-guide-links>${guideLinksJa()}</section>` : '')
     + '</div>';
 }
 
@@ -118,6 +134,7 @@ export function renderChallengeCopy(locale) {
     + '</style>';
   return `<section class="challenge-panel wata-guide wata-guide--challenge" data-native-copy data-wata-guide="challenge" lang="${locale}">${style}`
     + copy.challenge.map((part) => section(part, locale)).join('')
+    + (locale === 'ja' ? `<div data-guide-links>${guideLinksJa()}</div>` : '')
     + '</section>';
 }
 
@@ -265,6 +282,7 @@ export function renderPackPage(slug, locale) {
     + card(ui.steps, `<ol class="wata-guide__steps">${ui.stepsList.map((item) => `<li>${inline(item)}</li>`).join('')}</ol><p class="wata-guide__cta"><a href="${createPath}">${escapeHtml(ui.create)} ▶</a></p>`)
     + card(PACK_SEND_COPY[locale] || PACK_SEND_COPY.en, packSendLinks(pack.title, url, slug, locale))
     + card(ui.related, packLinks(locale, RELATED_PACKS[slug]) + `<p><a href="${libraryPath}">${escapeHtml(ui.allPacks)}</a></p>`)
+    + (locale === 'ja' ? card('読みもの', guideLinksJa('')) : '')
     + `<p class="pack-langs">${escapeHtml(ui.otherLanguages)}: ${languages}</p>`
     + `<footer class="pack-footer">${ui.footer.map(([href, label]) => `<a href="${href}">${escapeHtml(label)}</a>`).join('')}<p>${escapeHtml(ui.footnote)}</p></footer>`
     + '</main></body></html>\n';
