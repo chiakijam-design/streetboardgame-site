@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
+import { ENGLISH_LIBRARY_CARDS } from '../../src/generated/library-catalog.js';
 import {
   CHALLENGE_MAX_PARTICIPANTS,
   CHALLENGE_QUESTION_COUNT,
@@ -263,10 +264,19 @@ test('通常版で採用済みのお題を使うと元のお題IDで今週の作
 
 test('挑戦者の得点と10問の答え合わせを本人だけに返し、順位は返さない', async () => {
   const env = { CHALLENGE_KV: new MemoryKV() };
+  const publicCards = ENGLISH_LIBRARY_CARDS.slice(0, 8);
+  const privateCards = [
+    { ...cards[0], id: 'USRPRIVATE' },
+    { ...ENGLISH_LIBRARY_CARDS[8], title: 'Private edit' },
+  ];
+  await env.CHALLENGE_KV.put('challenge:question-stats', JSON.stringify({
+    USROLD: { title: 'Private old question', playCount: 99 },
+    [publicCards[0].id]: { title: 'Private legacy text', playCount: 3 },
+  }));
   const created = await (await api(env, '/api/challenge/rooms', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ creatorName: '出題者', cards, answers: Array(CHALLENGE_QUESTION_COUNT).fill(0) }),
+    body: JSON.stringify({ creatorName: '出題者', cards: [...publicCards, ...privateCards], answers: Array(CHALLENGE_QUESTION_COUNT).fill(0) }),
   })).json();
 
   const joined = await (await api(env, `/api/challenge/rooms/${created.code}/join`, {
@@ -334,8 +344,32 @@ test('挑戦者の得点と10問の答え合わせを本人だけに返し、順
   assert.equal(managed.participants[0].answers.every((answer) => answer.match), true);
 
   const library = await (await api(env, '/api/challenge/library')).json();
-  assert.equal(library.questions.length, 10);
-  assert.equal(library.questions.every((question) => question.playCount === 1), true);
+  assert.deepEqual(library.questions.map(({ id }) => id), publicCards.map(({ id }) => id));
+  assert.equal(library.questions[0].title, publicCards[0].title);
+  assert.equal(library.questions[0].playCount, 4);
+  const stored = await env.CHALLENGE_KV.get('challenge:question-stats', { type: 'json' });
+  assert.ok(privateCards.every(({ id }) => !Object.hasOwn(stored, id)));
+});
+
+test('公開のお題一覧は過去の回答内容を使わず、非公開のお題を順位計算から除く', async () => {
+  const sqlite = new DatabaseSync(':memory:');
+  try {
+    for (const file of ['0010_challenge_rooms.sql', '0011_challenge_ranking_library.sql', '0012_question_catalog_moderation.sql']) {
+      sqlite.exec(readFileSync(new URL('../../migrations/' + file, import.meta.url), 'utf8'));
+    }
+    const [publicCard, hiddenCard] = ENGLISH_LIBRARY_CARDS;
+    const choices = JSON.stringify(hiddenCard.choices);
+    sqlite.prepare(`INSERT INTO question_catalog
+      (question_id, source_kind, title, choices_json, status, created_at, updated_at)
+      VALUES (?, 'static', ?, ?, 'hidden', 1, 1)`).run(hiddenCard.id, hiddenCard.title, choices);
+    const insert = sqlite.prepare('INSERT INTO challenge_question_stats VALUES (?, ?, ?, ?, ?, 1)');
+    insert.run('USRPRIVATE', 'Private snapshot', 'Private', choices, 100);
+    insert.run(hiddenCard.id, 'Hidden snapshot', 'Hidden', choices, 50);
+    insert.run(publicCard.id, 'Edited snapshot', 'Private', choices, 1);
+    const response = await api({ REMOTE_DB: d1Adapter(sqlite) }, '/api/challenge/library');
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).questions, [{ ...publicCard, playCount: 1, lastPlayedAt: 1 }]);
+  } finally { sqlite.close(); }
 });
 
 test('選択した1問だけを順番に確定し、正解を漏らさず正誤を即時返す', async () => {

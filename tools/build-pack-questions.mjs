@@ -4,20 +4,10 @@
 // curated English cards, and Spanish / Portuguese use the reviewed catalog
 // translations of those English cards (the same text the quiz shows).
 import { readFile, writeFile } from 'node:fs/promises';
-import vm from 'node:vm';
-import { loadBuiltInJapaneseCards } from './build-library-catalog.mjs';
+import { loadBuiltInEnglishCards, loadBuiltInJapaneseCards } from './build-library-catalog.mjs';
 import { questionPacks } from '../src/challenge/packs.js';
 
 export const PACK_PAGE_LOCALES = Object.freeze(['ja', 'en', 'es', 'pt']);
-
-async function loadEnglishCards(root) {
-  const source = await readFile(new URL('prototype_english_common_data.js', root), 'utf8');
-  const sandbox = { window: {} };
-  vm.runInNewContext(source, sandbox, { timeout: 1000 });
-  const cards = sandbox.window.ENGLISH_COMMON_QUESTION_CARDS;
-  if (!Array.isArray(cards) || !cards.length) throw new Error('ENGLISH_COMMON_QUESTION_CARDS not found');
-  return new Map(cards.map((card) => [String(card.id), { id: String(card.id), title: String(card.title), choices: card.choices.map(String) }]));
-}
 
 async function loadTranslator(root, locale) {
   const data = JSON.parse(await readFile(new URL(`locale-assets/${locale}.json`, root), 'utf8'));
@@ -32,7 +22,7 @@ async function loadTranslator(root, locale) {
 export async function packQuestionData(root = new URL('..', import.meta.url)) {
   // 2026-11-21 (Codex review #15): keep the question ID so public pages can drop hidden questions.
   const japanese = new Map((await loadBuiltInJapaneseCards(root)).map((card) => [card.id, { id: String(card.id), title: card.title, choices: card.choices }]));
-  const english = await loadEnglishCards(root);
+  const english = new Map((await loadBuiltInEnglishCards(root)).map(({ id, title, choices }) => [id, { id, title, choices }]));
   const translators = { es: await loadTranslator(root, 'es'), pt: await loadTranslator(root, 'pt') };
   const englishPacks = new Map(questionPacks(true).map((pack) => [pack.slug, pack]));
   const data = {};
