@@ -44,7 +44,7 @@ test('通常版の実プレイ操作で game_start、game_result、share が発�
   const challengeUrl = await shareControls.locator('[data-result-share-url]').inputValue();
   const invitation = new URL(challengeUrl);
   expect(invitation.pathname).toBe('/challenge');
-  expect([...invitation.searchParams.keys()]).toEqual(['room']);
+  expect([...invitation.searchParams.keys()].filter((key) => !key.startsWith('utm_'))).toEqual(['room']);
   expect(invitation.searchParams.get('room')).toMatch(/^[A-Z2-9]{8}$/);
   expect(invitation.hash).toBe('');
   await copyButton.click();

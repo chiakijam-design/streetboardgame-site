@@ -1,6 +1,7 @@
 import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
 import { expect, test } from './test.mjs';
 import fs from 'node:fs/promises';
+import { withoutUtm } from './utm.mjs';
 
 // Width/height from a downloaded PNG's IHDR header.
 async function pngSize(download) {
@@ -69,7 +70,7 @@ async function createChallenge(page, creatorName = 'ちあき') {
   const invitation = new URL(url);
   expect(invitation.origin).toBe(new URL(page.url()).origin);
   expect(invitation.pathname).toBe('/challenge');
-  expect([...invitation.searchParams.keys()]).toEqual(['room']);
+  expect([...invitation.searchParams.keys()].filter((key) => !key.startsWith('utm_'))).toEqual(['room']);
   expect(invitation.searchParams.get('room')).toMatch(/^[A-Z2-9]{8}$/);
   expect(invitation.hash).toBe('');
   return url;
@@ -444,7 +445,7 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
   await expect(hostShare.locator('[data-result-share-status]')).toHaveText('Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。');
   const invitationCaption = await page.evaluate(() => window.__instagramCopiedUrl);
   expect(invitationCaption).toContain('ちあき');
-  expect(invitationCaption.split('\n').at(-1)).toBe(challengeUrl);
+  expect(withoutUtm(invitationCaption.split('\n').at(-1))).toBe(withoutUtm(challengeUrl));
   expect(invitationCaption).not.toContain('/manage');
   const isolatedManageKey = await page.evaluate(() => history.state.wataChallengeManage.token);
   expect(invitationCaption).not.toContain(isolatedManageKey);

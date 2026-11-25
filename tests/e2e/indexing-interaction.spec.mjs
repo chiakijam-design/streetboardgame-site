@@ -1,5 +1,6 @@
 import { createIsolatedContext } from '../helpers/test-network-guard.mjs';
 import { test, expect } from './test.mjs';
+import { withoutUtm } from './utm.mjs';
 test.use({ hasTouch: true });
 
 // Remove tags until nothing changes (no nested leftovers).
@@ -57,13 +58,13 @@ test('カード内タップと5色ボタンで通常版を完走し、二重送�
   const url = await shareControls.locator('[data-result-share-url]').inputValue();
   const invitation = new URL(url);
   expect(invitation.pathname).toBe('/challenge');
-  expect([...invitation.searchParams.keys()]).toEqual(['room']);
+  expect([...invitation.searchParams.keys()].filter((key) => !key.startsWith('utm_'))).toEqual(['room']);
   expect(invitation.hash).toBe('');
   await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
     configurable: true, value: { writeText: async text => { window.__HOST_INVITATION_COPIED__ = text; } },
   }));
   await shareControls.getByRole('button', { name: 'リンクをコピー', exact: true }).click();
-  expect(await page.evaluate(() => window.__HOST_INVITATION_COPIED__)).toBe(url);
+  expect(withoutUtm(await page.evaluate(() => window.__HOST_INVITATION_COPIED__))).toBe(withoutUtm(url));
   const playerContext = await createIsolatedContext(browser, {
     viewport: page.viewportSize(), hasTouch: true,
     isMobile: testInfo.project.name.startsWith('mobile-'),

@@ -1,6 +1,7 @@
 import { expect, test } from './test.mjs';
 import { PUBLIC_LOCALES } from '../../src/generated/public-locales.js';
 
+import { withoutUtm } from './utm.mjs';
 const ORIGIN = 'https://www.streetboardgame.com';
 const expanded = PUBLIC_LOCALES.length === 34;
 
@@ -184,12 +185,12 @@ test('英語の作成完了画面も共有と保存の導線を英語で表示�
   expect(await controls.locator('button').allTextContents()).toHaveLength(8);
   expect((await controls.locator('button').allTextContents()).join('')).not.toMatch(/[ぁ-んァ-ン一-龯]/);
   const invitationUrl = new URL(page.url()).origin + `/en/challenge?room=${created.code}`;
-  await expect(controls.locator('[data-result-share-url]')).toHaveValue(invitationUrl);
+  await expect.poll(async () => withoutUtm(await controls.locator('[data-result-share-url]').inputValue())).toBe(invitationUrl);
   await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
     configurable: true, value: { writeText: async text => { window.__EN_INVITATION_COPIED__ = text; } },
   }));
   await controls.getByRole('button', { name: 'Copy link', exact: true }).click();
-  expect(await page.evaluate(() => window.__EN_INVITATION_COPIED__)).toBe(invitationUrl);
+  expect(withoutUtm(await page.evaluate(() => window.__EN_INVITATION_COPIED__))).toBe(invitationUrl);
   expect(invitationUrl).not.toContain(created.manageToken);
   await expect(shareScreen.getByRole('link', { name: 'View the Understanding Board' })).toBeVisible();
   await expect(shareScreen.getByRole('button', { name: 'Save to recent quizzes' })).toBeVisible();

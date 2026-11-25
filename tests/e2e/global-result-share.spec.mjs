@@ -1,5 +1,6 @@
 import { expect, test } from './test.mjs';
 
+import { withoutUtm } from './utm.mjs';
 test('OS share cancellation, rapid clicks, errors and returning preserve fallback controls', async ({ page, request }) => {
   const cards = Array.from({ length: 10 }, (_, index) => ({ id: `share-fixture-${index}`, title: `Fixture ${index}`, category: 'Fixture', choices: ['One', 'Two', 'Three', 'Four', 'Five'] }));
   const created = await request.post('/api/challenge/rooms', { data: { creatorName: 'Fixture', cards, answers: Array(10).fill(0) } });
@@ -51,14 +52,14 @@ test('OS share cancellation, rapid clicks, errors and returning preserve fallbac
   await native.click();
   await expect(controls.locator('[data-result-share-status]')).toContainText('リンクをコピー');
   await controls.locator('[data-result-share="copy"]').click();
-  expect(await page.evaluate(() => window.__SHARE_COPIED__)).toBe(new URL(page.url()).origin + `/challenge?room=${code}`);
+  expect(withoutUtm(await page.evaluate(() => window.__SHARE_COPIED__))).toBe(new URL(page.url()).origin + `/challenge?room=${code}`);
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('blocked'); } } });
     document.execCommand = () => false;
   });
   await controls.locator('[data-result-share="copy"]').click();
   await expect(controls.locator('[data-result-share-status]')).toContainText('コピーできませんでした');
-  await expect(controls.locator('[data-result-share-url]')).toHaveValue(new URL(page.url()).origin + `/challenge?room=${code}`);
+  await expect.poll(async () => withoutUtm(await controls.locator('[data-result-share-url]').inputValue())).toBe(new URL(page.url()).origin + `/challenge?room=${code}`);
   await page.evaluate(() => { window.__SHARE_MODE__ = 'pending'; });
   await native.click();
   await page.getByRole('link', { name: '新しい問題で作る', exact: true }).click();

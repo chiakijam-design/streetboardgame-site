@@ -2,6 +2,7 @@ import { expect, test } from './test.mjs';
 import { TARGET_LOCALES, LOCALE_DETAILS } from '../../src/i18n/locales.js';
 import { INVITE_SHARE_LABELS } from '../../src/platform/inviteShare.js';
 
+import { withoutUtm } from './utm.mjs';
 const code = 'QADEMO88';
 const manageToken = 'abcdef'.repeat(8); // Valid API-format synthetic capability only.
 const cards = Array.from({ length: 10 }, (_, i) => ({ id: `fixture-${i}`, title: `Fixture ${i}`, category: 'Fixture', choices: ['One', 'Two', 'Three', 'Four', 'Five'] }));
@@ -37,10 +38,10 @@ test.describe('host invitation panel in all locales', () => {
     await expect(controls.locator('[data-result-share=native] .share-card-copy strong')).toHaveText(INVITE_SHARE_LABELS[locale][0]);
     await expect(controls.locator('[data-result-share=save] .share-card-copy strong')).toHaveText(INVITE_SHARE_LABELS[locale][1]);
     const publicUrl = new URL(page.url()).origin + `${prefix}/challenge?room=${code}`;
-    await expect(controls.locator('[data-result-share-url]')).toHaveValue(publicUrl);
+    await expect.poll(async () => withoutUtm(await controls.locator('[data-result-share-url]').inputValue())).toBe(publicUrl);
     await controls.locator('[data-result-share=native]').click();
     const payload = await page.evaluate(() => window.__INVITE_PAYLOAD__);
-    expect(payload.url).toBe(publicUrl);
+    expect(withoutUtm(payload.url)).toBe(publicUrl);
     expect(payload.filenames).toEqual(['watachan-challenge-invitation.png']);
     expect(JSON.stringify(payload)).not.toMatch(/PRIVATE_|synthetic-management|\/manage|score|participant/i);
     for (const action of ['x', 'line', 'whatsapp']) await controls.locator(`[data-result-share=${action}]`).click();
@@ -52,7 +53,7 @@ test.describe('host invitation panel in all locales', () => {
       expect(target).toBe('_blank'); expect(options).toBe('noopener,noreferrer');
     }
     await controls.locator('[data-result-share=copy]').click();
-    expect(await page.evaluate(() => window.__SHARE_COPIED__)).toBe(publicUrl);
+    expect(withoutUtm(await page.evaluate(() => window.__SHARE_COPIED__))).toBe(publicUrl);
     await expect(page.locator('a.challenge-share-action.board')).toHaveAttribute('href', `${prefix}/challenge/ranking?room=${code}`);
     await expect(page.getByTestId('host-answer-management')).toContainText('PRIVATE_PARTICIPANT');
     await page.locator('[data-action=save-recent-challenge]').click();
@@ -86,5 +87,5 @@ test('host cancellation, rapid clicks, returning, copy failure and invitation PN
   expect(file.suggestedFilename()).toBe('watachan-challenge-invitation.png');
   await file.saveAs('/tmp/wata-host-invitation-'+test.info().project.name+'.png');
   await page.locator('a.challenge-share-action.board').click();await page.goBack();await expect(page.locator('[data-result-share=native]')).toBeEnabled();
-  await expect(page.locator('[data-result-share-url]')).toHaveValue(new URL(page.url()).origin+`/challenge?room=${code}`);
+  await expect.poll(async () => withoutUtm(await page.locator('[data-result-share-url]').inputValue())).toBe(new URL(page.url()).origin+`/challenge?room=${code}`);
 });
