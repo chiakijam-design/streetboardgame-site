@@ -153,6 +153,8 @@ test('英語参加者は10問へ回答し、英語結果カード・称号・総
     return order.every(Boolean) && order.slice(1).every((element, i) => Boolean(order[i].compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
   })).toBe(true);
   await expect(page.getByRole('button', { name: 'Copy text only' })).toHaveCount(0);
+  // 満点の案内がボードへのリンクに重なる前に、通常の閉じる操作で案内を消す。
+  await page.getByTestId('challenge-perfect-popup').locator('.challenge-perfect-popup-close').click();
   await page.getByRole('link', { name: 'View the Understanding Board' }).click();
   await expect(page.getByTestId('understanding-board')).toContainText('Higher scores come first');
   await expect(page.getByTestId('understanding-board')).toContainText('10/10');
