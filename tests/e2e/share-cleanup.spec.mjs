@@ -1,6 +1,7 @@
 import { expect, test } from './test.mjs';
 import { INVITE_SHARE_LABELS } from '../../src/platform/inviteShare.js';
 
+import { withoutUtm } from './utm.mjs';
 const code = 'QADEMO88';
 test('390px by 667px creator controls fit before and after the first answer', async ({ page, request }, testInfo) => {
   await request.post('/__test/reset');
@@ -90,7 +91,7 @@ for (const scene of ['host', 'result']) for (const [locale, width] of [['ja', 39
     await expect(help).not.toHaveAttribute('open', '');
     await page.keyboard.press('Tab'); await expect(help.locator('summary')).toBeFocused();
     await page.keyboard.press('Enter'); await expect(controls.locator('[data-result-share-url]')).toBeVisible();
-    await expect(controls.locator('[data-result-share-url]')).toHaveValue(url);
+    await expect.poll(async () => withoutUtm(await controls.locator('[data-result-share-url]').inputValue())).toBe(url);
     await page.keyboard.press('Enter'); await expect(controls.locator('[data-result-share-url]')).toBeHidden();
     if (scene === 'result') {
       await expect(page.getByTestId('understanding-board')).toBeVisible();
@@ -115,7 +116,7 @@ for (const scene of ['host', 'result']) test(`${scene}: unsupported, failed, can
   await expect(status).toContainText('リンクをコピー');
   await expect(controls.locator('[data-result-share-url]')).toBeVisible();
   await controls.locator('[data-result-share=copy]').click();
-  expect(await page.evaluate(() => window.__copies)).toEqual([url]);
+  expect((await page.evaluate(() => window.__copies)).map(withoutUtm)).toEqual([url]);
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('denied'); } } });
     document.execCommand = () => false;
@@ -124,7 +125,7 @@ for (const scene of ['host', 'result']) test(`${scene}: unsupported, failed, can
   await controls.locator('[data-result-share=copy]').click();
   await expect(status).toContainText('コピーできませんでした');
   await expect(controls.locator('[data-result-share-url]')).toBeVisible();
-  await expect(controls.locator('[data-result-share-url]')).toHaveValue(url);
+  await expect.poll(async () => withoutUtm(await controls.locator('[data-result-share-url]').inputValue())).toBe(url);
   await page.evaluate(() => { URL.createObjectURL = () => { throw new Error('save unavailable'); }; });
   await controls.locator('[data-result-share=save]').click();
   await expect(status).toContainText('画像を保存できませんでした');

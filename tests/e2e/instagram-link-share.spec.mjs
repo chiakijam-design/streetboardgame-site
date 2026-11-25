@@ -1,6 +1,7 @@
 import { expect, test } from './test.mjs';
 import { shareCardCopy } from '../../src/platform/shareCardCopy.js';
 
+import { withoutUtm } from './utm.mjs';
 const cards=Array.from({length:10},(_,i)=>({id:'fixture-'+i,sourceKind:'custom',title:'Fixture '+i,category:'Fixture',choices:['One','Two','Three','Four','Five']}));
 async function fixture(page,scene,locale){
  await page.addInitScript(()=>{
@@ -42,7 +43,7 @@ for(const scene of ['host','result'])for(const locale of ['ja','en','ar'])for(co
   const instructionBox=await instruction.boundingBox();
   expect(instructionBox.width).toBeGreaterThan(20);expect(instructionBox.height).toBeGreaterThanOrEqual(12);
   await instagram.focus();await expect(instagram).toBeFocused();await expect(instagram).toHaveCSS('outline-style','solid');await instagram.press('Enter');
-  expect(await page.evaluate(()=>window.__COPIED__)).toBe(publicUrl);
+  expect(withoutUtm(await page.evaluate(() => window.__COPIED__))).toBe(publicUrl);
   expect(await page.evaluate(()=>window.__COPY_CALLS__)).toBe(1);expect(await page.evaluate(()=>window.__OPEN_CALLS__)).toBe(0);
   await expect(controls.locator('[data-result-share-status]')).toHaveText(shareCardCopy(locale).instagramInstruction);
   expect(publicUrl).not.toMatch(/manage|PRIVATE_|synthetic-|#/);
@@ -68,10 +69,10 @@ for(const scene of ['host','result'])test(`${scene}: clipboard denial, fallback,
  expect(await page.evaluate(()=>window.__COPY_CALLS__)).toBe(1);
  await page.evaluate(()=>{window.__OLD_RESOLVE__=window.__COPY_RESOLVE__;window.dispatchEvent(new Event('pagehide'));});await expect(button).toBeEnabled();
  await button.click();await page.evaluate(()=>window.__OLD_RESOLVE__());await expect(button).toBeDisabled();await page.evaluate(()=>window.__COPY_RESOLVE__());await expect(button).toBeEnabled();
- await expect(controls.locator('[data-result-share-status]')).toHaveText(shareCardCopy('ja').instagramInstruction);expect(await page.evaluate(()=>window.__COPIED__)).toBe(publicUrl);
+ await expect(controls.locator('[data-result-share-status]')).toHaveText(shareCardCopy('ja').instagramInstruction);expect(withoutUtm(await page.evaluate(() => window.__COPIED__))).toBe(publicUrl);
  await page.evaluate(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new DOMException('Denied','NotAllowedError');}}});document.execCommand=()=>false;});
- await button.click();await expect(controls.locator('[data-result-share-status]')).toContainText('コピーできませんでした');await expect(controls.locator('[data-result-share-url]')).toHaveValue(publicUrl);
+ await button.click();await expect(controls.locator('[data-result-share-status]')).toContainText('コピーできませんでした');await expect.poll(async () => withoutUtm(await controls.locator('[data-result-share-url]').inputValue())).toBe(publicUrl);
  await page.evaluate(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:undefined});document.execCommand=()=>{const selected=document.querySelector('textarea[readonly]');window.__FALLBACK_COPIED__=selected?.value;window.__FALLBACK_SELECTION__=[selected?.selectionStart,selected?.selectionEnd];return true;};});
- await button.click();expect(await page.evaluate(()=>window.__FALLBACK_COPIED__)).toBe(publicUrl);expect(await page.evaluate(()=>window.__FALLBACK_SELECTION__)).toEqual([0,publicUrl.length]);expect(await page.evaluate(()=>window.__OPEN_CALLS__)).toBe(0);
- await page.reload();await expect(page.locator('[data-result-share=instagram-link]')).toBeEnabled();await expect(page.locator('[data-result-share-url]')).toHaveValue(publicUrl);
+ await button.click();expect(withoutUtm(await page.evaluate(() => window.__FALLBACK_COPIED__))).toBe(publicUrl);expect(await page.evaluate(()=>window.__FALLBACK_SELECTION__)).toEqual([0,(await page.evaluate(()=>window.__FALLBACK_COPIED__)).length]);expect(await page.evaluate(()=>window.__OPEN_CALLS__)).toBe(0);
+ await page.reload();await expect(page.locator('[data-result-share=instagram-link]')).toBeEnabled();await expect.poll(async () => withoutUtm(await page.locator('[data-result-share-url]').inputValue())).toBe(publicUrl);
 });

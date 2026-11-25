@@ -2,6 +2,7 @@ import { expect, test } from './test.mjs';
 import { PUBLIC_LOCALES } from '../../src/generated/public-locales.js';
 import { LOCALE_DETAILS, switchLocalePath } from '../../src/i18n/locales.js';
 import { readFileSync } from 'node:fs';
+import { withoutUtm } from './utm.mjs';
 const oldJapaneseCards = JSON.parse(readFileSync(new URL('../../data/i18n-source-inventory.json', import.meta.url), 'utf8')).questions.japanese.slice(0, 9);
 
 const prefixForLocale = locale => LOCALE_DETAILS[locale].prefix;
@@ -108,9 +109,9 @@ test.describe('completed multilingual release', () => {
       await expect(controls.locator('[data-result-share="native"]')).toBeEnabled();
       await controls.locator('[data-result-share="native"]').click();
       await expect.poll(() => page.evaluate(() => window.__WATACHAN_TEST_SHARED_FILES__.length)).toBe(1);
-      expect(await page.evaluate(() => window.__WATACHAN_TEST_SHARED_URLS__[0])).toBe(new URL(page.url()).origin + prefixForLocale(locale) + '/challenge?room=' + code);
+      expect(withoutUtm(await page.evaluate(() => window.__WATACHAN_TEST_SHARED_URLS__[0]))).toBe(new URL(page.url()).origin + prefixForLocale(locale) + '/challenge?room=' + code);
       await controls.locator('[data-result-share="copy"]').click();
-      expect(await page.evaluate(() => window.__WATACHAN_TEST_COPIED__)).toBe(new URL(page.url()).origin + prefixForLocale(locale) + '/challenge?room=' + code);
+      expect(withoutUtm(await page.evaluate(() => window.__WATACHAN_TEST_COPIED__))).toBe(new URL(page.url()).origin + prefixForLocale(locale) + '/challenge?room=' + code);
       await controls.locator('[data-result-share="whatsapp"]').click();
       const whatsapp = new URL(await page.evaluate(() => window.__WATACHAN_TEST_OPENED__));
       expect(whatsapp.origin + whatsapp.pathname).toBe('https://wa.me/');
