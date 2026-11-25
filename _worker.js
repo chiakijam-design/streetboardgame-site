@@ -269,7 +269,7 @@ async function handleRequest(request, env) {
     if (locale !== 'ja') {
       if (!PUBLIC_LOCALES.includes(locale)) return new Response('Not Found', { status: 404, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } });
       const assetRoute = localizedAssetRoute(rawPath);
-      if (!assetRoute) return new Response('Not Found', { status: 404 });
+      if (!assetRoute) return renderNotFound(request, env, locale);
       const dictionary = await env.ASSETS.fetch(new Request(new URL(`/locale-assets/${locale}.json`, url.origin), { method: 'GET' }));
       if (!dictionary.ok) return new Response('Not Found', { status: 404, headers: { 'x-robots-tag': 'noindex', 'cache-control': 'no-store' } });
       let data;
@@ -283,6 +283,7 @@ async function handleRequest(request, env) {
       const response = assetRoute.endsWith('.html')
         ? await env.ASSETS.fetch(baseRequest)
         : await handleRequest(baseRequest, env);
+      if (response.status === 404) return renderNotFound(request, env, locale);
       if (!response.ok || !/text\/html/i.test(response.headers.get('content-type') || '')) return response;
       const headers = new Headers(response.headers);
       headers.delete('etag');
@@ -405,14 +406,7 @@ async function handleRequest(request, env) {
     }
 
     if (RETIRED_GAME_PATHS.has(path)) {
-      return new Response(request.method === 'HEAD' ? null : 'Not Found', {
-        status: 404,
-        headers: {
-          'content-type': 'text/plain; charset=UTF-8',
-          'cache-control': 'no-store',
-          'x-robots-tag': 'noindex, nofollow, noarchive',
-        },
-      });
+      return renderNotFound(request, env);
     }
 
     if (rawPath !== '/' && rawPath.endsWith('/') && path === '/question-ops') {
@@ -574,17 +568,14 @@ async function handleRequest(request, env) {
 
     // 存在しないURLは、検索エンジンにも正しく伝わる404ページを返す
     if (response.status === 404) {
-      const notFoundUrl = new URL('/404.html', url.origin);
-      const notFoundResponse = await env.ASSETS.fetch(new Request(notFoundUrl.toString(), {
-        method: 'GET',
-        headers: request.headers,
-      }));
-      const headers = new Headers(notFoundResponse.headers);
-      headers.set('content-type', 'text/html; charset=UTF-8');
-      headers.set('cache-control', 'no-cache, must-revalidate');
-      headers.set('x-robots-tag', 'noindex, follow');
-      const body = request.method === 'HEAD' ? null : await notFoundResponse.arrayBuffer();
-      return new Response(body, { status: 404, headers });
+      return renderNotFound(request, env);
+    }
+
+    if (response.ok && (path === '/llms.txt' || /^\/assets\/locale-share-v2\/[a-z-]+\.jpg$/i.test(path))) {
+      const headers = new Headers(response.headers);
+      if (path === '/llms.txt') headers.set('content-type', 'text/plain; charset=UTF-8');
+      else headers.set('cache-control', 'public, max-age=86400, stale-while-revalidate=604800');
+      return new Response(response.body, { status: response.status, headers });
     }
 
     if (response.ok && (HASHED_BUILD_ASSET_PATH.test(url.pathname) || isVersionedStaticAsset(url))) {
@@ -594,6 +585,26 @@ async function handleRequest(request, env) {
     }
 
     return response;
+}
+
+async function renderNotFound(request, env, locale = 'ja') {
+  const origin = new URL(request.url).origin;
+  const headers = {
+    'content-type': 'text/html; charset=UTF-8',
+    'cache-control': 'no-cache, must-revalidate',
+    'x-robots-tag': 'noindex, follow',
+  };
+  if (request.method === 'HEAD') return new Response(null, { status: 404, headers });
+  const template = await env.ASSETS.fetch(new Request(new URL('/404.html', origin)));
+  let html = await template.text();
+  if (!template.ok) headers['content-type'] = 'text/plain; charset=UTF-8';
+  else if (locale !== 'ja') {
+    try {
+      const dictionary = await env.ASSETS.fetch(new Request(new URL(`/locale-assets/${locale}.json`, origin)));
+      if (dictionary.ok) html = localizePublicHtml(html, await dictionary.json(), new URL(`/${locale}/`, origin), [], { errorPage: true });
+    } catch { /* 訳が読めなくても案内ページを返す。 */ }
+  }
+  return new Response(html, { status: 404, headers });
 }
 
 async function withSecurityHeaders(response, request, env, pvMode = 'consent', googleRegion = null) {
@@ -660,6 +671,10 @@ async function withSecurityHeaders(response, request, env, pvMode = 'consent', g
   let body = response.body;
   if (isHtml && response.body) {
     body = await response.text();
+    if (new URL(request.url).searchParams.has('room') && headers.get('x-robots-tag') === 'noindex, nofollow, noarchive') {
+      body = body.replace(/<meta\b(?=[^>]*\bname=["']robots["'])[^>]*>/gi, '')
+        .replace(/<\/head>/i, '<meta name="robots" content="noindex, nofollow, noarchive"></head>');
+    }
     // Public account ownership verification only; this does not load ads.
     body = body.replace(/<meta\b(?=[^>]*\bname=["']google-adsense-account["'])[^>]*>/gi, '')
       .replace(/<\/head>/i, '<meta name="google-adsense-account" content="ca-pub-8959934584200203"></head>');

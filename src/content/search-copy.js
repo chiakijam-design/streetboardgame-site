@@ -20,6 +20,12 @@ import PT from './copy-pt.js';
 const ORIGIN = 'https://www.streetboardgame.com';
 export const SEARCH_COPY = Object.freeze({ ja: JA, en: EN, es: ES, pt: PT });
 export const SEARCH_COPY_LOCALES = Object.freeze(Object.keys(SEARCH_COPY));
+const HOME_PAGE_TITLES = Object.freeze({
+  ja: '友達と遊べる無料クイズ作成｜わたし理解度診断',
+  en: 'Know Me Quiz | Free Quiz Maker for Friends',
+  es: 'Know Me Quiz | Crea un quiz gratis para tus amigos',
+  pt: 'Know Me Quiz | Crie um quiz grátis para seus amigos',
+});
 export const PACK_SLUGS = Object.freeze(questionPacks(false).map((pack) => pack.slug));
 // Related packs, chosen by theme (same in every language).
 export const RELATED_PACKS = Object.freeze({
@@ -119,12 +125,17 @@ export function renderChallengeCopy(locale) {
 export function renderLibraryPackLinks(locale) {
   const copy = SEARCH_COPY[locale];
   if (!copy) return '';
+  const examples = [...new Map(PACK_SLUGS.flatMap((slug) => PACK_QUESTIONS[slug][locale].slice(0, 4))
+    .map((question) => [question.id, question])).values()];
   return `<section class="challenge-panel wata-guide" data-native-copy data-wata-guide="library" lang="${locale}"><style>${SHARED_STYLE}</style>`
-    + `<h2>${escapeHtml(copy.ui.packListTitle)}</h2><p>${inline(copy.ui.packListLead)}</p>${packLinks(locale)}</section>`;
+    + `<h2>${escapeHtml(copy.ui.packListTitle)}</h2><p>${inline(copy.ui.packListLead)}</p>${packLinks(locale)}`
+    + (locale === 'ja' ? '' : `<details data-library-examples><summary>${escapeHtml(copy.ui.questions)}</summary>${questionList(examples, copy)}</details>`)
+    + '</section>';
 }
 
 export function injectHomeCopy(html, locale) {
   if (!html || !SEARCH_COPY[locale] || html.includes('data-wata-guide="home"')) return html;
+  html = html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(HOME_PAGE_TITLES[locale])}</title>`);
   const end = html.indexOf('<!-- /home-prerender -->');
   if (end < 0) return html;
   const mainEnd = html.lastIndexOf('</main>', end);
@@ -159,7 +170,7 @@ export function injectSearchCopy(html, locale, page) {
 
 const PAGE_STYLE = `*{box-sizing:border-box}body{margin:0;background:#EC4F88;color:#1A1A1A;font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}`
   + '.pack-page{width:min(100%,640px);margin:0 auto;padding:14px 14px 40px}'
-  + '.pack-top{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#1A1A1A;font-weight:900;font-size:14px}.pack-page .pack-top a{color:#1A1A1A;display:inline-flex;align-items:center;min-height:44px}'
+  + '.pack-top{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;color:#1A1A1A;font-weight:900;font-size:14px}.pack-page .pack-top a{color:#1A1A1A;display:inline-flex;align-items:center;min-height:44px}'
   + '.pack-hero{margin:8px 0 16px;padding:20px 18px;background:#FFEAF1;border:3px solid #1A1A1A;border-radius:18px;box-shadow:5px 5px 0 #D63A75}'
   + '.pack-hero p.eyebrow{margin:0 0 6px;font-size:12px;font-weight:900;letter-spacing:.08em}.pack-hero h1{margin:0 0 10px;font-size:clamp(22px,6vw,28px);line-height:1.35}.pack-hero p{margin:0;font-size:15px;line-height:1.75}'
   + '.pack-create{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;margin-top:14px;padding:12px 16px;border:2.5px solid #1A1A1A;border-radius:14px;background:#1A1A1A;color:#fff!important;box-shadow:4px 4px 0 #5BD4E8;font-size:16px;font-weight:900;text-decoration:none;text-align:center}'
@@ -204,7 +215,9 @@ export function renderPackPage(slug, locale) {
   const ui = copy.ui;
   const title = pack.title + ui.titleSuffix;
   const url = packPageUrl(slug, locale);
-  const image = ORIGIN + (locale === 'ja' ? '/assets/ogp-challenge-v4.jpg?v=20261115-jpg' : locale === 'en' ? '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg' : `/assets/locale-share/${locale}.png?v=20261010-i18n-1`);
+  const image = ORIGIN + (locale === 'ja' ? '/assets/ogp-challenge-v4.jpg?v=20261115-jpg' : locale === 'en' ? '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg' : `/assets/locale-share-v2/${locale}.jpg`);
+  const alternateOpenGraphLocales = SEARCH_COPY_LOCALES.filter((language) => language !== locale)
+    .map((language) => `<meta property="og:locale:alternate" content="${PACK_OG_LOCALE[language]}">`).join('');
   const libraryPath = prefix(locale) + '/challenge/library';
   const createPath = `${prefix(locale)}/challenge?pack=${encodeURIComponent(slug)}`;
   const alternates = SEARCH_COPY_LOCALES.map((language) => `<link rel="alternate" hreflang="${language}" href="${packPageUrl(slug, language)}">`).join('')
@@ -227,13 +240,13 @@ export function renderPackPage(slug, locale) {
     .map((language) => `<a href="${packPagePath(slug, language)}" hreflang="${language}" lang="${language}">${escapeHtml(SEARCH_COPY[language].ui.languageName)}</a>`).join('');
   return '<!doctype html>\n'
     + `<html lang="${locale}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">`
-    + `<title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(pack.description)}"><meta name="robots" content="index, follow">`
+    + `<title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(pack.description)}"><meta name="robots" content="index, follow, max-image-preview:large">`
     + `<link rel="canonical" href="${url}">${alternates}`
     + `<meta property="og:type" content="article"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(pack.description)}"><meta property="og:url" content="${url}"><meta property="og:site_name" content="${escapeHtml(ui.siteName)}">`
     // 2026-11-21 (Codex review #3): Spanish and Portuguese pack pages use the same language image as their library page.
     // 2026-11-22（Gemini 見直し12）：言語・画像の種類と大きさ・説明、X 用の題・説明・画像も出す
-    + `<meta property="og:locale" content="${PACK_OG_LOCALE[locale] || 'en_US'}">`
-    + `<meta property="og:image" content="${image}"><meta property="og:image:secure_url" content="${image}"><meta property="og:image:type" content="${image.includes('.png') ? 'image/png' : 'image/jpeg'}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${escapeHtml(title)}">`
+    + `<meta property="og:locale" content="${PACK_OG_LOCALE[locale]}">${alternateOpenGraphLocales}`
+    + `<meta property="og:image" content="${image}"><meta property="og:image:secure_url" content="${image}"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${escapeHtml(title)}">`
     + `<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(pack.description)}"><meta name="twitter:image" content="${image}"><meta name="twitter:image:alt" content="${escapeHtml(title)}">`
     + '<link rel="icon" href="/favicon.ico">'
     + `<script type="application/ld+json">${structured}</script>`
@@ -241,7 +254,7 @@ export function renderPackPage(slug, locale) {
     + '<script defer src="/analytics.js"></script>'
     + `<style>${PAGE_STYLE}${SHARED_STYLE}.pack-card h2{font-size:18px}</style></head>`
     + `<body><main class="pack-page wata-guide" data-native-copy data-pack-page="${slug}">`
-    + `<header class="pack-top"><a href="${prefix(locale)}/">${escapeHtml(ui.siteName)}</a><a href="${libraryPath}">${escapeHtml(ui.libraryName)}</a></header>`
+    + `<nav class="pack-top" aria-label="${escapeHtml(ui.libraryName)}"><a href="${prefix(locale)}/">${escapeHtml(ui.siteName)}</a><span aria-hidden="true">›</span><a href="${libraryPath}">${escapeHtml(ui.libraryName)}</a><span aria-hidden="true">›</span><span aria-current="page">${escapeHtml(pack.title)}</span></nav>`
     + `<section class="pack-hero"><p class="eyebrow">${escapeHtml(ui.packEyebrow)}</p><h1>${escapeHtml(pack.title)}</h1><p>${inline(pack.lead)}</p>`
     + `<a class="pack-create" href="${createPath}">${escapeHtml(ui.create)} ▶</a></section>`
     + card(ui.about, pack.body.map((text) => `<p>${inline(text)}</p>`).join(''))

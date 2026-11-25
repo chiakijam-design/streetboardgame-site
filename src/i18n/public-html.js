@@ -43,7 +43,7 @@ export function injectPublicLocaleShell(html, requestUrl, publicLocales) {
 // Input is the site's own static HTML, never submitted names or answer data.
 // Script/style blocks remain byte-for-byte untouched. Translation is escaped
 // as text, and query/hash capabilities are excluded from public metadata.
-export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGET_LOCALES) {
+export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGET_LOCALES, { errorPage = false } = {}) {
   const locale = data.catalog.locale;
   requireCompleteCatalog(data.entries, data.catalog, localeFromPath(requestUrl.pathname));
   const translator = createCatalogTranslator(data.entries, data.catalog.messages, { aliases: data.aliases });
@@ -80,10 +80,12 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   const details = LOCALE_DETAILS[locale];
   // 2026-11-21 (Codex review #13): English pages use the existing English share image, not the Japanese one.
   const localizedShareImage = locale === 'en' ? `${origin}/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg`
-    : locale !== 'ja' ? `${origin}/assets/locale-share/${locale}.png?v=20261010-i18n-1` : null;
+    : locale !== 'ja' ? `${origin}/assets/locale-share-v2/${locale}.jpg` : null;
   if (localizedShareImage) output = output.replace(/(<meta\b[^>]*\b(?:property|name)=["'](?:og:image(?::secure_url)?|twitter:image)["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${localizedShareImage}"`);
-  // 2026-11-22（Gemini 見直し10）：画像が PNG の言語は、画像の種類も PNG と書く
-  if (localizedShareImage && /\.png(?:\?|$)/.test(localizedShareImage)) output = output.replace(/(<meta\b[^>]*\bproperty=["']og:image:type["'][^>]*\bcontent=)["'][^"']*["']/gi, '$1"image/png"');
+  if (localizedShareImage) output = output.replace(/(<meta\b[^>]*\bproperty=["']og:image:type["'][^>]*\bcontent=)["'][^"']*["']/gi, '$1"image/jpeg"');
+  const imageAlt = output.match(/<meta\b[^>]*\bproperty="og:title"[^>]*\bcontent="([^"]+)"/i)?.[1];
+  if (imageAlt) output = output.replace(/(<meta\b[^>]*\b(?:property|name)=["'](?:og|twitter):image:alt["'][^>]*\bcontent=)["'][^"']*["']/gi,
+    (_, prefix) => `${prefix}"${imageAlt}"`);
   // New locale traffic must not silently expand the existing analytics tags
   // before regional consent and cookie policy have been reviewed. This flag
   // precedes the legacy synchronous analytics script in the game template.
@@ -97,7 +99,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
         // schema.org の型名・ID は訳さない（2026-11-16：es/pt で Game が Juego/Jogo になっていた）。
         // 2026-11-21 (Codex review #21): page-specific IDs (#webpage, #breadcrumb) follow the language URL;
         // shared entities (organization, website, the game) keep one common ID across languages.
-        if (key === '@id' && typeof value === 'string' && /#(?:webpage|breadcrumb)$/.test(value)) {
+        if (key === '@id' && typeof value === 'string' && /#(?:webpage|breadcrumb|faq)$/.test(value)) {
           try {
             const idUrl = new URL(value);
             if (idUrl.origin === origin) return origin + localeCanonicalPath(idUrl.pathname, locale) + idUrl.hash;
@@ -125,9 +127,11 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
       : '')
     .replace(/\s*<noscript\b[^>]*>\s*<link\b[^>]*(?:fonts\.googleapis\.com|home-font-)[^>]*>\s*<\/noscript>/gi, '');
   // 2026-11-22（Gemini 見直し27）：検索に出さないページは、ページの中の印も noindex にそろえる（HTTP の X-Robots-Tag と同じ）
-  const robotsValue = /\/(?:manage|ranking)\/?$/.test(requestUrl.pathname) ? 'noindex, nofollow, noarchive'
+  const robotsValue = errorPage ? 'noindex, follow'
+    : /\/(?:manage|ranking)\/?$/.test(requestUrl.pathname) ? 'noindex, nofollow, noarchive'
     : !SEARCH_INDEXED_LOCALES.includes(locale) ? 'noindex, follow' : null;
   if (robotsValue) output = output.replace(/(<meta\b[^>]*\bname=["']robots["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${robotsValue}"`);
+  if (errorPage) return output;
   output = output.replace(/(<meta\b[^>]*\bproperty=["']og:locale["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${details.openGraphLocale}"`);
   // 2026-11-22（Gemini 見直し10）：別の言語の印（og:locale:alternate）は、自分以外の検索対象の言語にする（英語のページで en_US が重ならない）
   const altLocales = SEARCH_INDEXED_LOCALES.filter((language) => language !== locale && LOCALE_DETAILS[language]?.openGraphLocale)
