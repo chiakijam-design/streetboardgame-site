@@ -31,7 +31,8 @@ function harness() {
     captureCreatorConsent(){},trackGamePlay(){},trackDailyResultAction(){},
     changedQuestionCandidates:()=>[],saveManageRoom(){},removeStorage:key=>saved.delete(key),
     readStorage:key=>saved.get(key),saveCreatorDraft:v=>saved.set('draft',structuredClone(v)),
-    history:{state:null,url:'',replaceState(next,_,url){this.state=next;this.url=url;}},setState:patch=>Object.assign(context.state,patch),
+    history:{state:null,url:'',previousUrl:'',replaceState(next,_,url){this.state=next;this.url=url;},
+      pushState(next,_,url){this.previousUrl=this.url;this.replaceState(next,_,url);}},setState:patch=>Object.assign(context.state,patch),
     challengeUrl:code=>`https://local.test/challenge?room=${code}`,
     async fetch(path,options){requests++;return handleChallengeApi(new Request('https://local.test'+path,options),{CHALLENGE_KV:kv},path);},
   };
@@ -58,8 +59,12 @@ for(const count of [1,2,3,9,10]) test(`real creator flow publishes ${count} answ
 });
 for(const count of [1,2,9,10])test(`role swap / saved resume retains exactly ${count} questions and no original answers`,async()=>{
   const h=harness(),c=h.context;
+  c.history.url='/challenge?room=LOCAL234';
   c.state.result={participant:{name:'Local player'},answers:cards.slice(0,count).map(card=>({card,correct:4,selected:2}))};
   c.startRoleSwap();assert.equal(c.state.cards.length,count);assert.equal(c.state.answers.length,0);
+  assert.equal(c.history.previousUrl,'/challenge?room=LOCAL234');
+  assert.equal(c.history.url,'/challenge?role=swap');
+  assert.equal(c.history.state.wataRoleSwap,true);
   assert.equal(c.state.creatorName,'Local player');assert.equal(h.requests(),0);
   c.state.mode='create';c.resumeCreate();assert.equal(c.state.mode,'creator-edit');
   assert.equal(c.state.cards.length,count);assert.equal(c.state.questionIndex,0);

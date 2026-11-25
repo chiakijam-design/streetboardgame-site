@@ -147,7 +147,7 @@ export function isPerfectResult(result) {
 export function perfectTitle(creatorName, locale = 'ja') {
   const name = String(creatorName || '').replace(/\s+/g, ' ').trim().slice(0, 24) || (locale === 'ja' ? '出題者' : 'Creator');
   const template = PERFECT_TITLE_TEMPLATES[locale] || PERFECT_TITLE_TEMPLATES.en;
-  return template.replace('{name}', name);
+  return template.replace('{name}', () => name);
 }
 
 export function prefersReducedMotion() {
