@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import {test,expect} from './test.mjs';
 import fs from 'node:fs/promises';
 import {challengeResultCopy as copy} from '../../src/i18n/challenge-result-copy.js';
@@ -40,6 +41,6 @@ for(const [width,locale,count] of cases)test(`${before?'before':'after'} ${local
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
  await fs.mkdir(out,{recursive:true});
  await page.evaluate(()=>{const e=document.querySelector('.challenge-result-image-section');window.scrollTo(0,e.offsetTop+e.offsetHeight-100);});
- await page.screenshot({path:new URL(`${before?'before':'after'}-${locale}-${width}-${count}-${info.project.name}.png`,out).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
+ await page.screenshot({path:fileURLToPath(new URL(`${before?'before':'after'}-${locale}-${width}-${count}-${info.project.name}.png`,out))});
  if(!before&&locale==='ja'&&width===390){await page.locator('[data-action="swap-roles"]').click();const paper=page.getByTestId('challenge-builder-paper-card');await expect(paper.getByRole('button')).toHaveCount(5);await expect(page.locator('[data-action="builder-answer"].is-selected')).toHaveCount(0);await expect(paper).toContainText('Synthetic question 1');}
 });

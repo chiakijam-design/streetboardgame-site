@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { handleChallengeApi } from '../../src/challenge/api.js';
 import { SHARE_ACTIONS, SHARE_ACTION_SURFACES, recordShareAction } from '../../src/analytics/share-actions.js';
 import { sendChallengeShareAction } from '../../src/analytics/client-share-actions.js';
+import { resultShareMarkup } from '../../src/platform/resultShare.js';
 
 const MIGRATION = readFileSync(new URL('../../migrations/0031_play_daily_share_actions.sql', import.meta.url), 'utf8');
 
@@ -43,8 +44,8 @@ async function setup(options) {
 const rows = (db) => db.prepare('SELECT day, surface, action, count FROM play_daily_share_actions ORDER BY surface, action').all().map((row) => ({ ...row }));
 
 test('allowed list matches every share button in resultShare.js and the migration CHECK', () => {
-  const markup = readFileSync(new URL('../../src/platform/resultShare.js', import.meta.url), 'utf8');
-  const rendered = [...markup.matchAll(/\$\{card\('([a-z-]+)'/g)].map((match) => match[1]);
+  const markup = resultShareMarkup({ escape: String, translate: String });
+  const rendered = [...markup.matchAll(/data-result-share="([a-z-]+)"/g)].map((match) => match[1]);
   assert.deepEqual([...rendered].sort(), [...SHARE_ACTIONS].sort());
   assert.deepEqual(SHARE_ACTION_SURFACES, ['result', 'invite']);
   const db = database();

@@ -3430,6 +3430,8 @@
     "mfa0ad84d50256d": "Confirming an edit automatically saves the question and choices in this browser. The latest 30 questions are kept; older questions and their versions are replaced when the limit is exceeded.",
     "m12a98da48b17e4": "Deletion may be deferred as necessary for information subject to statutory retention duties, disputes, fraud investigations, or data breach investigations.",
     "m05e196c513a91f": "Only question text and choices are saved in this browser. Choose the answer each time. Others using this browser can see them. Clearing site data removes them; they do not transfer to another device or browser.",
-    "mc6281654fd5fde": "♡ How to play"
+    "mc6281654fd5fde": "♡ How to play",
+    "m1f586c96c0524b": "Enter the question and all five choices.",
+    "m2322ab25033631": "Reload"
   }
 }

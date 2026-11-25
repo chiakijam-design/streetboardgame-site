@@ -204,7 +204,7 @@
       if (key === 'room') { if (!/^[A-Z2-9]{8}$/.test(value)) safeQuery = false; }
       else if (key === 'share') { if (value !== 'challenge-20260726-1') safeQuery = false; }
       else if (key === 'analytics') { if (!/^(?:include|exclude)$/.test(value)) safeQuery = false; }
-      else if (key === 'utm_source') { if (!/^(?:instagram|line|x|twitter|facebook|whatsapp|copy|share|direct)$/.test(value)) safeQuery = false; }
+      else if (key === 'utm_source') { if (!/^(?:instagram|line|x|twitter|facebook|whatsapp|copy|share|direct|threads|tiktok|youtube|note)$/.test(value)) safeQuery = false; }
       else if (key === 'utm_medium') { if (!/^(?:social|referral|organic|email|qr)$/.test(value)) safeQuery = false; }
       // 2026-11-22（Gemini 見直し2）：パック・お題の指定・役割交代・LINE の外部ブラウザ・SNS の広告の印でも止めない。
       // 送る住所（page_location）はもともと ? 以降を外している。SNS の識別の印（fbclid など）が付くときは Clarity だけ始めない（住所を丸ごと残すため）
@@ -212,11 +212,19 @@
       else if (key === 'question') { if (!/^[A-Za-z0-9_-]{1,40}$/.test(value)) safeQuery = false; }
       else if (key === 'role') { if (value !== 'swap') safeQuery = false; }
       else if (key === 'openExternalBrowser') { if (value !== '1') safeQuery = false; }
+      else if (key === 'to') { if (route !== '/about' || value !== 'contact') safeQuery = false; }
       else if (key === 'utm_campaign' || key === 'utm_content' || key === 'utm_term') { if (!/^[A-Za-z0-9_.-]{1,60}$/.test(value)) safeQuery = false; }
-      else if (key === 'fbclid' || key === 'gclid' || key === 'igshid' || key === 'ttclid' || key === 'twclid') { clarityQuery = false; }
+      else if (/^(?:fbclid|gclid|igshid|ttclid|twclid|msclkid|srsltid|ldtag_cl)$/.test(key)) clarityQuery = false;
+      else if (key === 's' || key === 't') {
+        if (!(key === 's' ? /^\d{1,4}$/ : /^[A-Za-z0-9_-]{1,128}$/).test(value)) safeQuery = false;
+        clarityQuery = false;
+      }
       else safeQuery = false;
     });
-    if ((publicRoutes.indexOf(route) === -1 && !packRoute) || !safeQuery || u.hash || !jpBasicPreferenceReady()
+    var safeHash = !u.hash || route === '/about' && u.hash === '#contact-section'
+      || route === '/challenge' && u.hash === '#challenge-result-share';
+    if (u.hash) clarityQuery = false;
+    if ((publicRoutes.indexOf(route) === -1 && !packRoute) || !safeQuery || !safeHash || !jpBasicPreferenceReady()
       || windowObject['ga-disable-' + measurementId] === true) {
       windowObject.analyticsEnabled = false; windowObject.__WATACHAN_ANALYTICS_DISABLED__ = true;
       windowObject.gtag = windowObject.ga4Event = windowObject.trackEvent = function () {};
@@ -247,7 +255,7 @@
     var values = {
       game_type: ['challenge'], play_mode: ['async'], player_role: ['creator', 'participant'], play_criteria: ['accepted_answer'],
       method: ['copy', 'native', 'line', 'x', 'twitter', 'facebook', 'instagram', 'instagram-link', 'whatsapp', 'image', 'download'],
-      content_type: ['challenge_invite', 'challenge_result'], item_id: ['challenge_invite', 'challenge_result']
+      content_type: ['challenge_invite', 'challenge_result', 'challenge_board'], item_id: ['challenge_invite', 'challenge_result', 'challenge_board']
     };
     function stop() {
       stopped = true; windowObject['ga-disable-' + measurementId] = true;

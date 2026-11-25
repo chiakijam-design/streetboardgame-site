@@ -116,7 +116,7 @@ test.describe('completed multilingual release', () => {
       const whatsapp = new URL(await page.evaluate(() => window.__WATACHAN_TEST_OPENED__));
       expect(whatsapp.origin + whatsapp.pathname).toBe('https://wa.me/');
       expect(whatsapp.searchParams.get('text')).toContain(prefixForLocale(locale) + '/challenge?room=' + code);
-      if (['ja', 'ar', 'de', 'hi'].includes(locale)) await controls.screenshot({ path: `/tmp/wata-global-share-${locale}-${isMobile ? 'mobile' : 'pc'}.png` });
+      if (['ja', 'ar', 'de', 'hi'].includes(locale)) await controls.screenshot({ path: test.info().outputPath(`wata-global-share-${locale}-${isMobile ? 'mobile' : 'pc'}.png`) });
       if (isMobile) {
         await page.locator('[data-action="save-result-image"]').click();
         await expect.poll(() => page.evaluate(() => window.__WATACHAN_TEST_SHARED_FILES__.length)).toBe(2);

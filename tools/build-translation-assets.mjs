@@ -31,10 +31,17 @@ for (const location of existing.keys()) if (/\/(?:live-challenge|creator-terms|p
 const localeOf = (location) => { const first = new URL(location).pathname.split('/')[1]; return TARGET_LOCALES.includes(first) ? first : 'ja'; };
 for (const location of existing.keys()) if (!SEARCH_INDEXED_LOCALES.includes(localeOf(location))) existing.delete(location);
 const publicPages = ['/', '/challenge', '/challenge/library', '/challenge-guide', '/about', '/product', '/terms', '/privacy', '/legal', '/content-guidelines', '/minor-policy'];
+const policyDates = new Map(await Promise.all(publicPages.slice(-5).map(async (page) => {
+  const html = await readFile(new URL(page.slice(1) + '.html', root), 'utf8');
+  const revision = html.match(/<p class="meta">(\d{4}-\d{2}-\d{2})<\/p>/)?.[1];
+  if (!revision) throw new Error(`Missing policy revision date: ${page}`);
+  return [page, revision];
+})));
 const date = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo' }).format(new Date());
 for (const locale of SEARCH_INDEXED_LOCALES) for (const page of publicPages) {
   const location = 'https://www.streetboardgame.com' + switchLocalePath(page, locale);
-  if (!existing.has(location)) existing.set(location, date);
+  if (policyDates.has(page)) existing.set(location, policyDates.get(page));
+  else if (!existing.has(location)) existing.set(location, date);
 }
 await writeFile(sitemapPath, '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + [...existing].map(([location, date]) => `  <url>\n    <loc>${location}</loc>\n    <lastmod>${date}</lastmod>\n  </url>`).join('\n') + '\n</urlset>\n');
 console.log(`Validated and packaged ${catalogs.length} catalogs. Runtime/SEO/visual checks still required before deployment.`);

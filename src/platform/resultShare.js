@@ -10,11 +10,11 @@ export function whatsappShareUrl(text) {
 // 2026-11-23（本人の指示）：シェアのリンクに「どこへ送ったか」の印を付ける（1回のシェアで何人来たかを数えるため）。
 // 値は analytics.js が受け付けるものだけにする（それ以外の値だと、来た人の計測が止まる）。
 const SHARE_SOURCES = { line: 'line', x: 'x', whatsapp: 'whatsapp', copy: 'copy', instagram: 'instagram', 'instagram-link': 'instagram', native: 'share', save: 'share' };
-export function tagShareUrl(url, action, campaign = 'share') {
+export function tagShareUrl(url, action, campaign = 'share', medium = 'social') {
   try {
     const tagged = new URL(url);
     tagged.searchParams.set('utm_source', SHARE_SOURCES[action] || 'share');
-    tagged.searchParams.set('utm_medium', 'social');
+    tagged.searchParams.set('utm_medium', medium === 'qr' ? 'qr' : 'social');
     tagged.searchParams.set('utm_campaign', /^[A-Za-z0-9_.-]{1,60}$/.test(campaign) ? campaign : 'share');
     return tagged.toString();
   } catch { return url; }
@@ -156,18 +156,22 @@ export function bindResultShare(root, { getPayload, translate, beforeAction = ()
         record(copied ? 'copied' : 'failed');
         say(copied ? 'コピーしました' : 'コピーできませんでした。参加URLを長押ししてコピーしてください。');
       } else if (action === 'save' || action === 'instagram') {
-        if (action === 'instagram') {
-          const copied = await copyText(payload.caption);
+        const copyAttempt = action === 'instagram' ? copyText(payload.caption).catch(() => false).then((copied) => {
           record(copied ? 'copied' : 'failed');
-          if (busy !== actionToken || !controls.isConnected) return;
-          if (!copied) { showFallback(); say('コピーできませんでした。参加URLを長押ししてコピーしてください。'); return; }
-        }
+          return copied;
+        }) : null;
         // Story button: the 1080x1920 story image when available (request 5).
         const story = action === 'instagram' && payload.storySrc;
         const outcome = await saveImageBlob(dataUrlToBlob(story ? payload.storySrc : payload.src),
           story ? payload.storyFilename || payload.filename : payload.filename, payload.title);
         record(outcome === 'downloaded' ? 'download-requested' : 'handed-off-save');
-        if (action === 'instagram') say('Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。');
+        if (copyAttempt) {
+          if (await copyAttempt) say('Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。');
+          else {
+            showFallback();
+            say('コピーできませんでした。参加URLを長押ししてコピーしてください。');
+          }
+        }
       } else {
         // Standard HTTPS destinations; installation and app routing belong to
         // the browser/OS, without visibility timers or guessed app packages.

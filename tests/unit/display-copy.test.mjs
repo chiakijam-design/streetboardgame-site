@@ -12,6 +12,9 @@ test('official question display copy is translated without altering stored IDs o
   assert.deepEqual(card.choices, ['One', 'Two']);
   const custom = { ...card, id: 'CUS001' };
   assert.equal(localizedQuestionCard(custom, () => { throw new Error('User-authored copy must stay intact'); }), custom);
+  for (const own of [{ ...card, id: 'USR001', sourceId: card.id }, { ...card, custom: true }]) {
+    assert.equal(localizedQuestionCard(own, () => { throw new Error('自作のお題は翻訳しない'); }), own);
+  }
 });
 
 test('translated PNG paragraphs and names retain all words within the permitted line count', () => {

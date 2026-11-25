@@ -17,6 +17,7 @@ test('only a full score counts as perfect', () => {
 test('perfect title puts the creator name into every locale', () => {
   assert.equal(perfectTitle('ゆう', 'ja'), 'ゆう王');
   assert.equal(perfectTitle('Alex', 'en'), 'King of Alex');
+  assert.equal(perfectTitle("A$&B$'C", 'en'), "King of A$&B$'C");
   assert.equal(perfectTitle('', 'ja'), '出題者王');
   assert.equal(perfectTitle('A'.repeat(40), 'ja'), `${'A'.repeat(24)}王`);
   // Same locale set as the existing result-screen copy (ja + 33 languages).

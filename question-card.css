@@ -106,5 +106,5 @@ html:not([lang="ja"]) .notebook-question-card-copy,
 html:not([lang="ja"]) .top-question-card .notebook-question-card-copy,
 html:not([lang="ja"]) .live-active-question,
 html:not([lang="ja"]) .live-active-question * {
-  font-family: "Noto Sans JP", sans-serif !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
 }

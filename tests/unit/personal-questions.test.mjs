@@ -25,7 +25,8 @@ test('editing or deleting a saved template cannot mutate an issued snapshot or r
   changePersonalQuestions(store,{type:'delete',id:first.id});
   assert.equal(loadPersonalQuestions(store).items.length,0); assert.equal(issued[0].title,'Local question?');
   card.choices[0]='Changed'; assert.equal(issued[0].choices[0],'One');
-  assert.deepEqual(Object.keys(issued[0]).sort(),['category','choices','id','sourceId','title']);
+  assert.equal(issued[0].custom,true);
+  assert.deepEqual(Object.keys(issued[0]).sort(),['category','choices','custom','id','sourceId','title']);
 });
 test('personal submission requires its own explicit opt-in even when general consent is on',()=>{
   const ordinary={id:'normal'}, personal=personalQuestionCard(question,'USRtest');

@@ -4,12 +4,13 @@ import { readFile } from 'node:fs/promises';
 import worker from '../../_worker.js';
 import { LIBRARY_CATALOG } from '../../src/generated/library-catalog.js';
 import { libraryCatalogQuestionCount, renderLibraryCatalogSection, removeLibraryCatalog, injectLibraryCatalog } from '../../src/challenge/library-catalog.js';
-import { loadBuiltInJapaneseCards, libraryCatalogModule } from '../../tools/build-library-catalog.mjs';
+import { loadBuiltInEnglishCards, loadBuiltInJapaneseCards, libraryCatalogModule } from '../../tools/build-library-catalog.mjs';
 
 test('generated library catalog matches the built-in Japanese question cards', async () => {
   const cards = await loadBuiltInJapaneseCards(new URL('../../', import.meta.url));
+  const englishCards = await loadBuiltInEnglishCards(new URL('../../', import.meta.url));
   const generated = await readFile(new URL('../../src/generated/library-catalog.js', import.meta.url), 'utf8');
-  assert.equal(generated, libraryCatalogModule(cards), 'run node tools/build-library-catalog.mjs');
+  assert.equal(generated, libraryCatalogModule(cards, englishCards), 'run node tools/build-library-catalog.mjs');
   assert.equal(libraryCatalogQuestionCount(LIBRARY_CATALOG), cards.length);
 });
 

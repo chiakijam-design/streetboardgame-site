@@ -24,13 +24,54 @@ A free browser quiz about how well your friends know you. The creator picks 1–
 - [スマホ・SNS・推しの10問](https://www.streetboardgame.com/challenge/library/smartphone-social-fandom)
 - [価値観と未来の10問](https://www.streetboardgame.com/challenge/library/values-future)
 - [思い出と昔の自分10問](https://www.streetboardgame.com/challenge/library/memories-past)
-- [English packs](https://www.streetboardgame.com/en/challenge/library)
 
 ## 他の言語 / Other languages
 
 - [English](https://www.streetboardgame.com/en/)
 - [Español](https://www.streetboardgame.com/es/)
 - [Português (Brasil)](https://www.streetboardgame.com/pt/)
+
+### English
+
+- [English quiz creator](https://www.streetboardgame.com/en/challenge)
+- [English packs](https://www.streetboardgame.com/en/challenge/library)
+- [10 easy questions for new friends](https://www.streetboardgame.com/en/challenge/library/easy-first-meeting)
+- [10 school and after-school questions](https://www.streetboardgame.com/en/challenge/library/school-after-school)
+- [10 questions about food preferences](https://www.streetboardgame.com/en/challenge/library/food-preferences)
+- [10 questions for my personal manual](https://www.streetboardgame.com/en/challenge/library/my-manual)
+- [10 questions that reveal a surprising side](https://www.streetboardgame.com/en/challenge/library/unexpected-side)
+- [10 questions about days off and outings](https://www.streetboardgame.com/en/challenge/library/holiday-outings)
+- [10 questions about phones, social media, and fandoms](https://www.streetboardgame.com/en/challenge/library/smartphone-social-fandom)
+- [10 questions about values and the future](https://www.streetboardgame.com/en/challenge/library/values-future)
+- [10 questions about memories and my younger self](https://www.streetboardgame.com/en/challenge/library/memories-past)
+
+### Español
+
+- [Crear un quiz](https://www.streetboardgame.com/es/challenge)
+- [Paquetes en español](https://www.streetboardgame.com/es/challenge/library)
+- [10 preguntas fáciles para nuevos amigos](https://www.streetboardgame.com/es/challenge/library/easy-first-meeting)
+- [10 preguntas sobre la escuela y después de clase](https://www.streetboardgame.com/es/challenge/library/school-after-school)
+- [10 preguntas sobre gustos culinarios](https://www.streetboardgame.com/es/challenge/library/food-preferences)
+- [10 preguntas para mi manual personal](https://www.streetboardgame.com/es/challenge/library/my-manual)
+- [10 preguntas para descubrir una faceta sorprendente](https://www.streetboardgame.com/es/challenge/library/unexpected-side)
+- [10 preguntas sobre días libres y salidas](https://www.streetboardgame.com/es/challenge/library/holiday-outings)
+- [10 preguntas sobre celulares, redes sociales y aficiones](https://www.streetboardgame.com/es/challenge/library/smartphone-social-fandom)
+- [10 preguntas sobre valores y el futuro](https://www.streetboardgame.com/es/challenge/library/values-future)
+- [10 preguntas sobre recuerdos y mi yo de antes](https://www.streetboardgame.com/es/challenge/library/memories-past)
+
+### Português (Brasil)
+
+- [Criar um quiz](https://www.streetboardgame.com/pt/challenge)
+- [Pacotes em português](https://www.streetboardgame.com/pt/challenge/library)
+- [10 perguntas fáceis para novos amigos](https://www.streetboardgame.com/pt/challenge/library/easy-first-meeting)
+- [10 perguntas sobre a escola e depois das aulas](https://www.streetboardgame.com/pt/challenge/library/school-after-school)
+- [10 perguntas sobre preferências alimentares](https://www.streetboardgame.com/pt/challenge/library/food-preferences)
+- [10 perguntas para o meu manual pessoal](https://www.streetboardgame.com/pt/challenge/library/my-manual)
+- [10 perguntas que revelam um lado surpreendente](https://www.streetboardgame.com/pt/challenge/library/unexpected-side)
+- [10 perguntas sobre dias de folga e passeios](https://www.streetboardgame.com/pt/challenge/library/holiday-outings)
+- [10 perguntas sobre celulares, redes sociais e interesses](https://www.streetboardgame.com/pt/challenge/library/smartphone-social-fandom)
+- [10 perguntas sobre valores e o futuro](https://www.streetboardgame.com/pt/challenge/library/values-future)
+- [10 perguntas sobre memórias e o meu eu de antes](https://www.streetboardgame.com/pt/challenge/library/memories-past)
 
 ## 決まりごと / Policies
 

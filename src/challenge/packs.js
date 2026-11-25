@@ -164,45 +164,6 @@ const PACKS = Object.freeze([
   },
 ]);
 
-const LIVE_PACKS = Object.freeze([
-  {
-    slug: 'live-comment-split',
-    title: { ja: 'LIVEで答えが割れる10問', en: '10 live questions that split the answers' },
-    description: {
-      ja: '選択人数を表示した時に、回答の偏りや分散を楽しみやすい構成です。',
-      en: 'Five-way choices designed to make divided answers and live reactions fun.',
-    },
-    image: '/assets/question-packs/live-comment-split.svg',
-    featured: true,
-    ids: {
-      ja: [
-        'Q406', 'Q410', 'Q412', 'HLD144', 'Q434',
-        'HLD143', 'HLD313', 'HLD315', 'Q433', 'Q438',
-        'Q401', 'Q407', 'Q414', 'Q425', 'Q427',
-      ],
-      en: ['ENF035', 'ENF033', 'ENF034', 'ENF036', 'ENF037', 'ENF038', 'ENF039', 'ENF016', 'ENF019', 'ENF032'],
-    },
-  },
-  {
-    slug: 'live-first-viewers',
-    title: { ja: 'LIVE初見でも即答できる10問', en: '10 instant-answer questions for first-time viewers' },
-    description: {
-      ja: '配信者を詳しく知らない初見視聴者も参加しやすいパックです。',
-      en: 'Quick, visual choices that brand-new viewers can answer immediately.',
-    },
-    image: '/assets/question-packs/live-first-viewers.svg',
-    featured: false,
-    ids: {
-      ja: [
-        'HLD096', 'Q423', 'Q407', 'Q422', 'Q418',
-        'HLD085', 'Q293', 'Q432', 'HLD159', 'Q442',
-        'Q001', 'Q007', 'Q424', 'Q426', 'Q440',
-      ],
-      en: ['ENF001', 'ENF005', 'ENF006', 'ENF008', 'ENF015', 'ENF016', 'ENF025', 'ENF031', 'ENF038', 'ENF010'],
-    },
-  },
-]);
-
 function localizePacks(packs, isEnglish = false) {
   const language = isEnglish ? 'en' : 'ja';
   return packs.map((pack) => ({
@@ -234,23 +195,12 @@ export function weeklyQuestionPacks(isEnglish = false, now = Date.now()) {
     packs: Array.from({ length: Math.min(3, packs.length) }, (_, index) => packs[(start + index) % packs.length]) };
 }
 
-export function liveExclusiveQuestionPacks(isEnglish = false) {
-  return localizePacks(LIVE_PACKS, isEnglish);
-}
-
 export function questionPackBySlug(slug, isEnglish = false) {
   return questionPacks(isEnglish).find((pack) => pack.slug === String(slug || '')) || null;
 }
 
-export function liveQuestionPackBySlug(slug, isEnglish = false) {
-  return [...questionPacks(isEnglish), ...liveExclusiveQuestionPacks(isEnglish)]
-    .find((pack) => pack.slug === String(slug || '')) || null;
-}
-
-export function questionPackCards(cards, slug, isEnglish = false, count = 10, options = {}) {
-  const pack = options.includeLive
-    ? liveQuestionPackBySlug(slug, isEnglish)
-    : questionPackBySlug(slug, isEnglish);
+export function questionPackCards(cards, slug, isEnglish = false, count = 10) {
+  const pack = questionPackBySlug(slug, isEnglish);
   if (!pack) return [];
   const byId = new Map((cards || []).map((card) => [String(card.id), card]));
   return pack.questionIds

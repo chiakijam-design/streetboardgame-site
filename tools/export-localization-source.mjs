@@ -18,10 +18,10 @@ async function questionLibrary(file, globalName) {
 const japanese = await questionLibrary('prototype_common_data.js', 'COMMON_QUESTION_CARDS');
 const english = await questionLibrary('prototype_english_common_data.js', 'ENGLISH_COMMON_QUESTION_CARDS');
 const htmlFiles = [
-  'index.html', 'en/index.html', 'challenge.html',
-  'terms.html', 'en/terms.html', 'privacy.html', 'en/privacy.html', 'legal.html',
+  'index.html', 'challenge.html',
+  'terms.html', 'privacy.html', 'legal.html',
   'minor-policy.html',
-  'content-guidelines.html', 'pricing.html', '404.html',
+  'content-guidelines.html', '404.html',
 ];
 const pages = {};
 for (const file of htmlFiles) {

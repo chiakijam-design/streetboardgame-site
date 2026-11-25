@@ -7,6 +7,7 @@ import { answeredQuestionCount, completedCreatorQuiz, validQuizLength } from '..
 import { challengeCopy } from '../../src/i18n/challenge-copy.js';
 import { challengeCompletionCopy } from '../../src/i18n/challenge-completion-copy.js';
 import { boardCopy } from '../../src/i18n/challenge-board-copy.js';
+import { tagShareUrl } from '../../src/platform/resultShare.js';
 import { submissionEligibleCards, publicQuizCards } from '../../src/questions/personal-library.js';
 
 // Execute the real client flow functions against the real API and a fresh KV.
@@ -26,7 +27,7 @@ function harness() {
   const saved=new Map();let requests=0;
   const context={QUESTION_COUNT:10,CREATOR_DRAFT_KEY:'draft',MANAGE_STATE_KEY:'wataChallengeManage',state:{mode:'creator-edit',cards:structuredClone(cards),answers:[],questionIndex:0,creatorName:'Local creator',finishCount:0,loading:false,questionSubmissionConsent:false},
     allCards:structuredClone(cards),currentLocale:'ja',languagePrefix:'',validQuizLength,answeredQuestionCount,completedCreatorQuiz,challengeCopy,challengeCompletionCopy,boardCopy,
-    structuredClone,Date,Number,Array,JSON,Map,Set,console,window:{},submissionEligibleCards,publicQuizCards,
+    structuredClone,Date,Number,Array,JSON,Map,Set,console,window:{},tagShareUrl,submissionEligibleCards,publicQuizCards,
     escapeHtml:x=>String(x).replaceAll('<','&lt;'),translateText:x=>x,shell:(...args)=>args,
     captureCreatorConsent(){},trackGamePlay(){},trackDailyResultAction(){},
     changedQuestionCandidates:()=>[],saveManageRoom(){},removeStorage:key=>saved.delete(key),

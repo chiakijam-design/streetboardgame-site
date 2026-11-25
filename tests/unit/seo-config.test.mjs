@@ -1,3 +1,4 @@
+import { PUBLIC_LOCALE_PAGES } from '../../src/generated/public-locale-pages.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -49,23 +50,22 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
   const todayInJapan = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo' }).format(new Date());
   assert.equal(lastModifiedDates.every((date) => date <= todayInJapan), true);
   const lastModifiedByUrl = new Map(locations.map((location, index) => [location, lastModifiedDates[index]]));
-  for (const updatedUrl of [
-    'https://www.streetboardgame.com/terms',
-    'https://www.streetboardgame.com/en/terms',
-  ]) {
-    const expectedDate = '2026-10-23';
-    assert.equal(lastModifiedByUrl.get(updatedUrl), expectedDate, updatedUrl);
+  for (const policy of ['terms', 'privacy', 'legal', 'content-guidelines', 'minor-policy']) {
+    const html = await readFile(`${policy}.html`, 'utf8');
+    const revision = html.match(/<p class="meta">(\d{4}-\d{2}-\d{2})<\/p>/)?.[1];
+    assert.ok(revision, policy);
+    for (const prefix of ['', '/en', '/es', '/pt']) {
+      const url = `https://www.streetboardgame.com${prefix}/${policy}`;
+      assert.equal(lastModifiedByUrl.get(url), revision, url);
+    }
   }
-  // 2026-11-16: reading copy on the top and /challenge, one heading per pack list.
+  // 各ページに実際に行った内容の更新日を記録する。
+  assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/'), '2026-11-25');
   for (const updatedUrl of [
-    'https://www.streetboardgame.com/',
     'https://www.streetboardgame.com/challenge',
     'https://www.streetboardgame.com/en/challenge',
     'https://www.streetboardgame.com/challenge/library',
   ]) assert.equal(lastModifiedByUrl.get(updatedUrl), '2026-11-16', updatedUrl);
-  // 2026-11-14: contact form moved from Formspree to our own intake and Resend.
-  assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/privacy'), '2026-11-14');
-  assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/en/privacy'), '2026-11-14');
   // Search-indexed locales only: ja (no prefix), en, es and pt (2026-11-15).
   assert.equal(locations.some((location) => /^https:\/\/www\.streetboardgame\.com\/(?!(?:en|es|pt)\/)[a-z]{2}(?:-[A-Za-z]+)?\//.test(location)), false);
   assert.equal(locationSet.has('https://www.streetboardgame.com/es/challenge'), true);
@@ -76,13 +76,13 @@ test('公開説明は現行の二本立てと答え合わせ中心の方針に�
   const challenge = await readFile('challenge.html', 'utf8');
   const top = await readFile('index.html', 'utf8');
   const topApp = await readFile('prototype_app.jsx', 'utf8');
-  const englishTop = await readFile('en/index.html', 'utf8');
+  const englishTop = await readFile(PUBLIC_LOCALE_PAGES['/en'].slice(1), 'utf8');
 
   assert.doesNotMatch(challenge, /友達や家族/);
   assert.doesNotMatch(top, /相手を理解できるまで、何度でも挑戦できます/);
   assert.doesNotMatch(topApp, /家族や友達/);
   assert.doesNotMatch(englishTop, /who (?:knows|understands) you best/i);
-  assert.match(englishTop, /See where your answers match/);
+  assert.match(englishTop, /Choose your correct answers/);
 });
 
 test('運営画面は検索除外・キャッシュ禁止・参照元非送信を重ねて指定する', async () => {

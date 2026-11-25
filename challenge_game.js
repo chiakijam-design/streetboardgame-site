@@ -184,6 +184,16 @@ function escapeHtml(value) {
 
 function render() {
   if (!app) return;
+  const viewKey = state.loading ? '' : `${state.mode}:${state.roomCode}`;
+  const sameView = viewKey && app.dataset.viewKey === viewKey;
+  const openPeople = sameView && state.mode === 'manage'
+    ? new Set([...app.querySelectorAll('[data-participant-details][open]')].map((detail) => detail.dataset.participantDetails))
+    : null;
+  if (sameView && state.mode === 'result') {
+    state.resultShareIncludeScore = app.querySelector('#result-share-include-score')?.checked ?? state.resultShareIncludeScore;
+    state.resultDetailsOpen = app.querySelector('.challenge-result-details')?.open ?? state.resultDetailsOpen;
+  }
+  app.dataset.viewKey = viewKey;
   protectUserCopy([...collectProtectedUserCopy(state, allCards), ...state.cards.filter(card => card.personalQuestion).flatMap(card => [card.title, ...card.choices])]);
   document.documentElement.dataset.challengeMode = state.mode;
   const questionViewportKey = !state.editingQuestion
@@ -203,6 +213,9 @@ function render() {
                   : state.mode === 'library' ? libraryView()
                     : errorView();
   app.innerHTML = body;
+  if (openPeople) app.querySelectorAll('[data-participant-details]').forEach((detail) => {
+    detail.open = openPeople.has(detail.dataset.participantDetails);
+  });
   const answerOwner = state.mode === 'participant-answer' ? app.querySelector('[data-testid="participant-answer-owner"]') : null;
   if (answerOwner) answerOwner.textContent = participantAnswerOwnerText(currentLocale, state.room?.creatorName);
   if (state.mode === 'creator-edit' && (state.personalView || state.editingQuestion || state.cards[state.questionIndex]?.personalQuestion)) {
@@ -212,6 +225,7 @@ function render() {
   app.removeAttribute('aria-busy');
   localizeDom(app);
   bindEvents();
+  if (state.mode === 'manage') paintRecentChallengeSave();
   scheduleDailyReportView();
   trackCurrentCreatorQuestionShown();
   if (state.mode === 'manage' && state.room && invitationImage.key !== invitationKey()) prepareInvitationImage();
@@ -979,7 +993,7 @@ function questionSubmissionNotice() {
 }
 
 function participantDetail(participant, cards) {
-  return `<details class="challenge-participant">
+  return `<details class="challenge-participant" data-participant-details="${escapeHtml(participant.id)}">
     <summary>
       <span>${escapeHtml(participant.name)}<small>${participant.rankingParticipating ? '理解度ボード掲載' : '理解度ボード非掲載'}</small></span>
       <b>${participant.submitted ? `${participant.score}/${cards.length}問` : '回答中'}</b>
@@ -1043,11 +1057,11 @@ function resultView() {
   if (!result) return errorView();
   const tier = localizedResultTier(result);
   const displayResult = isEnglish ? { ...result, answers: result.answers.map((answer) => ({ ...answer, card: localizedQuestionCard(answer.card, translateText) })) } : result;
-  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(displayResult, currentLocale).map((line, index) => index === 0 ? line.replace(`“${tier.title}”`, `“${translateText(tier.title)}”`) : line) : getChallengeReviewLines(result);
+  const reviewLines = isEnglish ? getChallengeReviewLinesEnglish(displayResult, currentLocale).map((line, index) => index === 0 ? line.replace(`“${tier.title}”`, () => `“${translateText(tier.title)}”`) : line) : getChallengeReviewLines(result);
   if (result.answers.length < QUESTION_COUNT) reviewLines[3] = `${reviewLines[3]} — ${challengeCopy(currentLocale, 'talk')}`;
   if (tier.perfect) {
-    reviewLines[0] = reviewLines[0].replace(`「${tier.baseTitle}」`, `「${tier.title}」`)
-      .replace(`“${tier.baseTitle}”`, `“${tier.title}”`).replace(`“${translateText(tier.baseTitle)}”`, `“${tier.title}”`);
+    reviewLines[0] = reviewLines[0].replace(`「${tier.baseTitle}」`, () => `「${tier.title}」`)
+      .replace(`“${tier.baseTitle}”`, () => `“${tier.title}”`).replace(`“${translateText(tier.baseTitle)}”`, () => `“${tier.title}”`);
   }
   return `
     <section class="challenge-result-image-section" aria-labelledby="challenge-result-score-title">
@@ -1079,7 +1093,7 @@ function resultView() {
           aria-labelledby="challenge-result-share-title">
           <span class="challenge-section-label">SHARE YOUR RESULT</span>
           <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
-          <label class="challenge-consent" data-testid="result-share-include-score"><input type="checkbox" id="result-share-include-score"><span>点数も入れる</span></label>
+          <label class="challenge-consent" data-testid="result-share-include-score"><input type="checkbox" id="result-share-include-score"${state.resultShareIncludeScore ? ' checked' : ''}><span>点数も入れる</span></label>
           ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) })}
 
         </section>
@@ -1223,8 +1237,10 @@ function understandingBoard(participants, count) {
 }
 
 async function refreshBoard() {
-  const response = await fetch(`/api/challenge/rooms/${state.roomCode}/ranking`);
+  const { roomCode, mode } = state;
+  const response = await fetch(`/api/challenge/rooms/${roomCode}/ranking`);
   const data = await response.json();
+  if (state.roomCode !== roomCode || state.mode !== mode) return;
   if (!response.ok) throw new Error(data.error || 'room-not-found');
   setState({ ranking: data.participants || [] });
 }
@@ -1235,7 +1251,7 @@ function rankingView() {
     `${understandingBoard(state.ranking, state.room.questionCount || QUESTION_COUNT)}
     <section class="challenge-panel">
       <a class="challenge-secondary" href="/challenge?room=${state.room.code}">このクイズに挑戦する</a>
-      <button class="challenge-secondary" data-action="copy-url" data-copy-value="${escapeHtml(challengeUrl(state.room.code))}">挑戦用URLをコピー</button>
+      <button class="challenge-secondary" data-action="copy-url" data-copy-value="${escapeHtml(tagShareUrl(challengeUrl(state.room.code), 'copy', 'board'))}">挑戦用URLをコピー</button>
       <a class="challenge-secondary" href="/challenge">自分も作る</a>
     </section>`);
 }
@@ -1547,7 +1563,7 @@ function autoSaveCreatorEdit() {
 
 function saveCreatorQuestionEdit() {
   if (state.mode !== 'creator-edit' || !state.editingQuestion || state.personalView || state.loading) return;
-  if (!autoSaveCreatorEdit()) return setState({error:'questions-incomplete'});
+  if (!autoSaveCreatorEdit()) return setState({error:'question-incomplete'});
   const next = { editingQuestion: false, editingOriginalCard: null, personalError:'', personalMessage:'', error: '' };
   saveCreatorDraft({ ...state, ...next });
   setState(next);
@@ -2084,6 +2100,7 @@ async function loadResult(token = state.participantToken) {
     loading: false,
     answerPending: false,
     result: data,
+    resultShareIncludeScore: false,
     resultDetailsOpen: true,
     ranking: data.board || [],
     resultImageUrl: '',
@@ -2237,12 +2254,10 @@ async function createChallengeResultCanvas(result) {
   context.fillStyle = tier.perfect ? '#a87400' : '#ec4683';
   context.font = '700 31px "Noto Sans JP", sans-serif';
   context.textAlign = 'left';
-  const scoreLabelLines = splitResultText(
-    isEnglish ? `${participantName} on\n${creatorName}’s quiz` : `${participantName}さんの\n${creatorName}さん理解度`,
-    isEnglish ? 24 : 13,
-    2,
-  );
-  drawResultLines(context, scoreLabelLines, 202, 326, 42, !['ja', 'en'].includes(currentLocale) ? 420 : undefined);
+  const scoreLabelLines = isEnglish
+    ? [`${participantName} on`, `${creatorName}’s quiz`]
+    : [`${participantName}さんの`, `${creatorName}さん理解度`];
+  drawResultLines(context, scoreLabelLines, 202, 326, 42, 420);
 
   context.shadowColor = '#191919';
   context.shadowOffsetX = 8;
@@ -2339,9 +2354,11 @@ async function createChallengeResultCanvas(result) {
 
 async function prepareResultImage() {
   if (!state.result || state.resultImageBusy || state.resultImageUrl) return;
+  const result = state.result;
   state.resultImageBusy = true;
   try {
-    const canvas = await createChallengeResultCanvas(state.result);
+    const canvas = await createChallengeResultCanvas(result);
+    if (state.result !== result || state.mode !== 'result') return;
     const imageUrl = canvas.toDataURL('image/png');
     let storyUrl = '';
     try { storyUrl = createStoryCanvas(canvas, { locale: currentLocale, direction: document.documentElement.dir || 'ltr', background: isPerfectResult(state.result) ? 'gold' : '#ec4683', crop: { x: 68, y: 50, width: 944, height: 1250, radius: 42 } }).toDataURL('image/png'); } catch { /* optional */ }
@@ -2353,6 +2370,7 @@ async function prepareResultImage() {
       resultImageError: '',
     });
   } catch (error) {
+    if (state.result !== result || state.mode !== 'result') return;
     setState({
       resultImageBusy: false,
       resultImageError: '結果画像を作成できませんでした。ページを再読み込みしてください。',
@@ -2527,6 +2545,13 @@ function saveRecentChallenge() {
   if (!state.roomCode || !state.manageToken || !state.room) return;
   // 2026-11-21 (Codex review #7): only report success when the device actually kept it.
   const saved = saveManageRoom(state.roomCode, state.manageToken, state.room.creatorName);
+  state.recentChallengeSave = { code: state.roomCode, saved };
+  paintRecentChallengeSave();
+}
+
+function paintRecentChallengeSave() {
+  if (state.recentChallengeSave?.code !== state.roomCode) return;
+  const { saved } = state.recentChallengeSave;
   const message = document.querySelector('[data-testid="recent-challenge-save-message"]');
   const button = document.querySelector('[data-action="save-recent-challenge"]');
   if (!saved) {
@@ -2599,7 +2624,7 @@ function errorMessage(code) {
     'room-not-found': 'クイズが見つからないか、有効期限が切れています。',
     'questions-unavailable': '問題データを読み込めませんでした。',
     'question-catalog-unavailable': '問題データを読み込めませんでした。', // 2026-11-22（Gemini 見直し32）：汎用の通信エラーにしない
-    'questions-incomplete': currentLocale === 'ja' ? '問題文と5つの選択肢をすべて入力してください。' : '10問すべての問題文と5つの選択肢を入力してください。', // 2026-11-22（Gemini 見直し32）
+    'question-incomplete': '問題文と5つの選択肢をすべて入力してください。',
     'participant-forbidden': '参加情報を確認できません。もう一度URLを開いてください。',
     'answers-already-submitted': 'この参加者の回答はすでに確定しています。',
     'answers-not-submitted': '10問の回答が完了していません。',
@@ -2646,7 +2671,7 @@ async function bootChallenge() {
     if (alertBox && !app.querySelector('[data-reload-page]')) {
       const reload = document.createElement('button');
       reload.type = 'button'; reload.className = 'challenge-secondary'; reload.dataset.reloadPage = '';
-      reload.textContent = '↻ ' + (currentLocale === 'ja' ? '再読み込み' : 'Reload');
+      reload.textContent = '↻ ' + translateText('再読み込み');
       reload.addEventListener('click', () => location.reload());
       alertBox.after(reload);
     }

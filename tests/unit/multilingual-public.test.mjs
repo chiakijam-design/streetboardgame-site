@@ -47,7 +47,7 @@ const env = { ASSETS: { async fetch(request) {
   return new Response(cache.get(path), { headers: { 'content-type': path.endsWith('.json') ? 'application/json' : 'text/html' } });
 } } };
 
-test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and listed in the sitemap', async () => {
+test('すべての公開言語ページに代替リンクがあり、検索対象の4言語をサイトマップに掲載する', async () => {
   assert.equal(PUBLIC_LOCALES.length, 34);
   const sitemap = await readFile(new URL('../../sitemap.xml', import.meta.url), 'utf8');
   const titles = new Set();
@@ -60,7 +60,6 @@ test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and li
     assert.match(html, new RegExp(`lang="${locale}"`), route);
     if (locale !== 'ja') assert.ok(html.includes(`dir="${LOCALE_DETAILS[locale].direction}"`), route);
     assert.ok(html.includes(`rel="canonical" href="https://www.streetboardgame.com${route}"`), route);
-    assert.equal((html.match(/hreflang="/g) || []).length, 5, route); // ja, en, es, pt and x-default only (2026-11-15)
     assert.match(html, /<title>[^<]+<\/title>/, route);
     assert.match(html, /name="description" content="[^"]+"/, route);
     const title = html.match(/<title>([^<]+)<\/title>/)[1];

@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import { buildChallengeInviteText } from './share.js';
 import { LOCALE_DETAILS } from '../i18n/locales.js';
 import { challengeCopy } from '../i18n/challenge-copy.js';
+import { tagShareUrl } from './resultShare.js';
 
 // Machine-generated UI translations; native review has not been performed.
 export const INVITE_SHARE_LABELS = Object.freeze({
@@ -106,7 +107,7 @@ export async function createChallengeInviteCanvas({ payload, creatorName, locale
   ctx.font = '700 30px "Noto Sans JP", sans-serif';
   ctx.fillText(singularCount(translate('当てるより、話すための10問。').replaceAll('10', String(questionCount)), questionCount), 540, 754, 840);
   const qr = documentRef.createElement('canvas');
-  await QRCode.toCanvas(qr, payload.url, { width: 360, margin: 2, errorCorrectionLevel: 'M' });
+  await QRCode.toCanvas(qr, tagShareUrl(payload.url, 'save', 'invite_qr', 'qr'), { width: 360, margin: 2, errorCorrectionLevel: 'M' });
   ctx.drawImage(qr, 360, 810, 360, 360);
   ctx.font = '700 30px "Noto Sans JP", sans-serif';
   // 2026-11-22（Gemini 見直し13）：QR の下は、受け取った友達への呼びかけ（出題者向けの手順は書かない）

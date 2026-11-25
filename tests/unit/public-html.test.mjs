@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
+import worker from '../../_worker.js';
 import { localizePublicHtml, localizedAssetRoute, safeScriptJson, injectPublicLocaleShell } from '../../src/i18n/public-html.js';
 
 const data = { entries: [{ id: 'greeting', source: 'Welcome' }], aliases: {}, catalog: {
@@ -15,6 +17,7 @@ test('server copy is escaped, scripts preserved and room capabilities absent fro
   assert.match(output, /rel="canonical" href="https:\/\/www.streetboardgame.com\/ar\/challenge"/);
   assert.doesNotMatch(output.match(/<head>[\s\S]*?<\/head>/)[0], /public-code|#manage/);
   assert.match(output, /hreflang="ja"/);
+  assert.match(output, /<body><div data-locale-switcher-slot[^>]*min-height:60px/);
   assert.ok(output.indexOf('__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__') < output.indexOf('<title>'));
 });
 test('route selection never localizes APIs, management tools or retired games', () => {
@@ -25,6 +28,34 @@ test('route selection never localizes APIs, management tools or retired games', 
 });
 test('serialized public catalog cannot close its script element', () => {
   assert.doesNotMatch(safeScriptJson({ copy: '</script><script>alert(1)</script>' }), /</);
+});
+
+test('招待リンクの検索指示と、見つからないページへの案内を各言語で返す', async () => {
+  const env = { ASSETS: { async fetch(request) {
+    const path = new URL(request.url).pathname;
+    try {
+      return new Response(await readFile(new URL('../..' + path, import.meta.url)), {
+        headers: { 'content-type': path.endsWith('.html') ? 'text/html' : 'application/json' },
+      });
+    } catch { return new Response('Not Found', { status: 404 }); }
+  } } };
+  const get = (path) => worker.fetch(new Request('https://www.streetboardgame.com' + path), env);
+  for (const path of ['/challenge?room=ROOM2345', '/en/challenge?room=ROOM2345']) {
+    const response = await get(path);
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive', path);
+    const html = await response.text();
+    assert.match(html, /name="robots" content="noindex, nofollow, noarchive"/, path);
+    assert.doesNotMatch(html, /name="robots" content="index, follow/, path);
+  }
+  for (const [path, lang, home] of [['/en/missing-page', 'en', '/en/'], ['/love', 'ja', '/']]) {
+    const response = await get(path);
+    assert.equal(response.status, 404, path);
+    assert.equal(response.headers.get('x-robots-tag'), 'noindex, follow', path);
+    const html = await response.text();
+    assert.ok(html.includes(`lang="${lang}"`), path);
+    assert.ok(html.includes(`href="${home}"`), path);
+  }
 });
 
 test('localized HTML preserves root asset locations while retaining responsive image descriptors', () => {
@@ -55,6 +86,6 @@ test('localized social metadata and structured images use the same language-spec
   const image = 'https://www.streetboardgame.com/assets/ogp-challenge-v4.jpg?v=20261115-jpg';
   const html = `<html><head><meta property="og:image" content="${image}"><meta property="og:image:secure_url" content="${image}"><meta name="twitter:image" content="${image}"><script type="application/ld+json">{"image":"${image}"}</script></head><body></body></html>`;
   const output = localizePublicHtml(html, data, new URL('https://www.streetboardgame.com/ar/challenge?room=TEST'), ['ja', 'ar']);
-  assert.equal((output.match(/assets\/locale-share\/ar\.png\?v=20261010-i18n-1/g) || []).length, 4);
+  assert.equal((output.match(/assets\/locale-share-v2\/ar\.jpg/g) || []).length, 4);
   assert.doesNotMatch(output, /assets\/ogp-challenge-v4/);
 });

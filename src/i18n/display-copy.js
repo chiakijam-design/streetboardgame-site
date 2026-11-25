@@ -1,5 +1,11 @@
+export function isCustomQuestionCopy(card) {
+  const customId = /^(?:CUS|USR|custom-)/;
+  return Boolean(card && (card.sourceKind === 'custom' || card.custom === true
+    || card.personalQuestion === true || customId.test(card.id) || customId.test(card.sourceId)));
+}
+
 export function localizedQuestionCard(card, translate) {
-  if (!card || card.sourceKind === 'custom' || card.custom === true || /^(?:CUS|custom-)/.test(String(card.sourceId || card.id || ''))) return card;
+  if (!card || isCustomQuestionCopy(card)) return card;
   const copy = { ...card };
   for (const key of ['title', 'text', 'category']) if (typeof card[key] === 'string') copy[key] = translate(card[key]);
   for (const key of ['choices', 'options']) if (Array.isArray(card[key])) copy[key] = card[key].map(translate);

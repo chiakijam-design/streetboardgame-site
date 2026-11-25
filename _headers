@@ -92,6 +92,12 @@
   Content-Type: text/plain; charset=utf-8
   Cache-Control: public, max-age=60, must-revalidate
 
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+
+/assets/locale-share-v2/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 /.well-known/security.txt
   Content-Type: text/plain; charset=utf-8
   Cache-Control: public, max-age=3600, must-revalidate

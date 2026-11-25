@@ -7,6 +7,7 @@ import { rootPublicResource, rootPublicSourceSet } from './resource-paths.js';
 import { translateHomeEntryCopy } from './home-entry-copy.js';
 import { translateBoardPolicyCopy } from './challenge-board-copy.js';
 import { translateCurrentSiteCopy } from './current-site-copy.js';
+import { renderNotebookQuestionCard } from '../challenge/question-card.js';
 
 const origin = 'https://www.streetboardgame.com';
 const entityValues = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0', ndash: '–', mdash: '—' };
@@ -26,19 +27,23 @@ export function safeScriptJson(value) {
   return JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (char) => '\\u' + char.charCodeAt(0).toString(16).padStart(4, '0'));
 }
 
+function reserveLocaleSwitcher(html) {
+  return html.replace(/<body\b[^>]*>/i, '$&<div data-locale-switcher-slot style="display:flow-root;min-height:60px"></div>');
+}
+
 export function injectPublicLocaleShell(html, requestUrl, publicLocales) {
   const locale = localeFromPath(requestUrl.pathname);
   const canonical = origin + localeCanonicalPath(requestUrl.pathname, locale);
   const links = publicLocales.filter((language) => SEARCH_INDEXED_LOCALES.includes(language)).map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('');
   const data = { publicLocales, entries: [], aliases: {}, catalog: { locale, messages: {}, provenance: { method: 'original', nativeReview: false } } };
-  return html.replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
+  return reserveLocaleSwitcher(html).replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
     .replace(/<\/head>/i, `<link rel="canonical" href="${canonical}">${links}<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}"><script>window.__WATACHAN_I18N__=${safeScriptJson(data)};</script><script defer src="${LOCALE_SHELL_ASSET}"></script></head>`);
 }
 
 // Input is the site's own static HTML, never submitted names or answer data.
 // Script/style blocks remain byte-for-byte untouched. Translation is escaped
 // as text, and query/hash capabilities are excluded from public metadata.
-export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGET_LOCALES) {
+export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGET_LOCALES, { errorPage = false } = {}) {
   const locale = data.catalog.locale;
   requireCompleteCatalog(data.entries, data.catalog, localeFromPath(requestUrl.pathname));
   const translator = createCatalogTranslator(data.entries, data.catalog.messages, { aliases: data.aliases });
@@ -62,14 +67,25 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
         catch { return attribute; }
       });
   });
+  if (isHome && locale !== 'ja') {
+    let sampleIndex = 0;
+    output = output.replace(/(<div\b[^>]*\bdata-testid="top-question-card"[^>]*>)[\s\S]*?<p class="notebook-card-accessible-choices">([^<]*)<\/p><ol class="notebook-card-accessible-choices">([\s\S]*?)<\/ol>/g,
+      (sample, open, title, list) => {
+        const choices = [...list.matchAll(/<li>([^<]*)<\/li>/g)].map((item) => decode(item[1]));
+        if (choices.length !== 5) return sample;
+        return open + renderNotebookQuestionCard({ title: decode(title), choices }, { locale, definitionPrefix: `notebook-sample-${++sampleIndex}` });
+      });
+  }
   output = spaceAroundLinks(output, locale); // 2026-11-22（Gemini 見直し4）
   const details = LOCALE_DETAILS[locale];
   // 2026-11-21 (Codex review #13): English pages use the existing English share image, not the Japanese one.
   const localizedShareImage = locale === 'en' ? `${origin}/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg`
-    : locale !== 'ja' ? `${origin}/assets/locale-share/${locale}.png?v=20261010-i18n-1` : null;
+    : locale !== 'ja' ? `${origin}/assets/locale-share-v2/${locale}.jpg` : null;
   if (localizedShareImage) output = output.replace(/(<meta\b[^>]*\b(?:property|name)=["'](?:og:image(?::secure_url)?|twitter:image)["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${localizedShareImage}"`);
-  // 2026-11-22（Gemini 見直し10）：画像が PNG の言語は、画像の種類も PNG と書く
-  if (localizedShareImage && /\.png(?:\?|$)/.test(localizedShareImage)) output = output.replace(/(<meta\b[^>]*\bproperty=["']og:image:type["'][^>]*\bcontent=)["'][^"']*["']/gi, '$1"image/png"');
+  if (localizedShareImage) output = output.replace(/(<meta\b[^>]*\bproperty=["']og:image:type["'][^>]*\bcontent=)["'][^"']*["']/gi, '$1"image/jpeg"');
+  const imageAlt = output.match(/<meta\b[^>]*\bproperty="og:title"[^>]*\bcontent="([^"]+)"/i)?.[1];
+  if (imageAlt) output = output.replace(/(<meta\b[^>]*\b(?:property|name)=["'](?:og|twitter):image:alt["'][^>]*\bcontent=)["'][^"']*["']/gi,
+    (_, prefix) => `${prefix}"${imageAlt}"`);
   // New locale traffic must not silently expand the existing analytics tags
   // before regional consent and cookie policy have been reviewed. This flag
   // precedes the legacy synchronous analytics script in the game template.
@@ -83,7 +99,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
         // schema.org の型名・ID は訳さない（2026-11-16：es/pt で Game が Juego/Jogo になっていた）。
         // 2026-11-21 (Codex review #21): page-specific IDs (#webpage, #breadcrumb) follow the language URL;
         // shared entities (organization, website, the game) keep one common ID across languages.
-        if (key === '@id' && typeof value === 'string' && /#(?:webpage|breadcrumb)$/.test(value)) {
+        if (key === '@id' && typeof value === 'string' && /#(?:webpage|breadcrumb|faq)$/.test(value)) {
           try {
             const idUrl = new URL(value);
             if (idUrl.origin === origin) return origin + localeCanonicalPath(idUrl.pathname, locale) + idUrl.hash;
@@ -104,14 +120,18 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
     } catch { return whole; }
   });
   output = output.replace(/<html\b[^>]*>/i, `<html lang="${locale}" dir="${details.direction}">`);
-  // 2026-11-22（Gemini 見直し28）：日本語・英語以外は system-ui で表示するため、日本語フォントの読み込みと事前接続を外す（英語は英語用の小さなフォントを使う決まり）
-  if (locale !== 'en') output = output.replace(/\s*<link\b[^>]*\brel=["']preconnect["'][^>]*\bhref=["']https:\/\/fonts\.(?:googleapis|gstatic)\.com["'][^>]*>/gi, '')
-    .replace(/<link\b[^>]*\bid=["'](brand|game)-font-styles["'][^>]*>/gi, '<meta id="$1-font-styles" name="font-loading" content="system-ui">')
+  // 英語のトップは既存のローカルフォントを使い、ほかの翻訳ページは端末フォントを使う。
+  if (!(locale === 'en' && isHome)) output = output.replace(/\s*<link\b[^>]*\brel=["']preconnect["'][^>]*\bhref=["']https:\/\/fonts\.(?:googleapis|gstatic)\.com["'][^>]*>/gi, '')
+    .replace(/<link\b[^>]*\bid=["'](brand|game)-font-styles["'][^>]*>\s*<script>[^<]*<\/script>/gi, (_, kind) => kind === 'brand'
+      ? '<script>if(window.__INITIAL_SCREEN&&window.__INITIAL_SCREEN!=="top")document.documentElement.dataset.initialScreen=window.__INITIAL_SCREEN;</script>'
+      : '')
     .replace(/\s*<noscript\b[^>]*>\s*<link\b[^>]*(?:fonts\.googleapis\.com|home-font-)[^>]*>\s*<\/noscript>/gi, '');
   // 2026-11-22（Gemini 見直し27）：検索に出さないページは、ページの中の印も noindex にそろえる（HTTP の X-Robots-Tag と同じ）
-  const robotsValue = /\/(?:manage|ranking)\/?$/.test(requestUrl.pathname) ? 'noindex, nofollow, noarchive'
+  const robotsValue = errorPage ? 'noindex, follow'
+    : /\/(?:manage|ranking)\/?$/.test(requestUrl.pathname) ? 'noindex, nofollow, noarchive'
     : !SEARCH_INDEXED_LOCALES.includes(locale) ? 'noindex, follow' : null;
   if (robotsValue) output = output.replace(/(<meta\b[^>]*\bname=["']robots["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${robotsValue}"`);
+  if (errorPage) return output;
   output = output.replace(/(<meta\b[^>]*\bproperty=["']og:locale["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${details.openGraphLocale}"`);
   // 2026-11-22（Gemini 見直し10）：別の言語の印（og:locale:alternate）は、自分以外の検索対象の言語にする（英語のページで en_US が重ならない）
   const altLocales = SEARCH_INDEXED_LOCALES.filter((language) => language !== locale && LOCALE_DETAILS[language]?.openGraphLocale)
@@ -121,15 +141,17 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   const canonical = origin + localeCanonicalPath(requestUrl.pathname, locale);
   output = output.replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
     .replace(/(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${canonical}"`);
-  const alternate = publicLocales.filter((language) => SEARCH_INDEXED_LOCALES.includes(language)).map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('');
+  const alternate = publicLocales.filter((language) => SEARCH_INDEXED_LOCALES.includes(language))
+    .map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('')
+    + `<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}">`;
   const publicData = { entries: data.entries, aliases: data.aliases, catalog: data.catalog, publicLocales };
-  const additions = `<link rel="canonical" href="${canonical}">${alternate}<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}">`
+  const additions = `<link rel="canonical" href="${canonical}">${alternate}`
     + `<style>html[lang="${locale}"] body{font-family:system-ui,sans-serif}html[dir=rtl] input,html[dir=rtl] textarea{direction:rtl}html[dir=rtl] [data-user-copy]{unicode-bidi:plaintext}button,a,p,h1,h2,h3{overflow-wrap:anywhere}html[lang="${locale}"] [data-testid=top-rules-title-line]{white-space:normal!important;overflow-wrap:anywhere}.challenge-result-share-button small span,.challenge-result-share-divider span{white-space:normal}.challenge-result-share-copy{max-width:100%}</style>`
     + `<script>window.__WATACHAN_I18N__=${safeScriptJson(publicData)};</script>`
     + (LOCALE_SHELL_ASSET ? `<script defer src="${LOCALE_SHELL_ASSET}"></script>` : '');
   output = output.replace(/<\/head>/i, additions + '</head>');
   // The canonical URL intentionally omits ?room and all management fragments.
-  return output;
+  return reserveLocaleSwitcher(output);
 }
 
 export function localizedAssetRoute(pathname) {

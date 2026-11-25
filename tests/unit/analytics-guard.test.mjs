@@ -1,3 +1,4 @@
+import { PUBLIC_LOCALE_PAGES } from '../../src/generated/public-locale-pages.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -193,7 +194,7 @@ test('主要HTMLはGTMローダーを読み込み、運用・法務画面は読�
   const publicPages = [
     'index.html',
     'challenge.html',
-    'en/index.html',
+    PUBLIC_LOCALE_PAGES['/en'].slice(1),
   ];
   for (const page of publicPages) {
     const html = await readFile(new URL(`../../${page}`, import.meta.url), 'utf8');
@@ -208,8 +209,8 @@ test('主要HTMLはGTMローダーを読み込み、運用・法務画面は読�
     'legal-history/refund-policy.html',
     'content-guidelines.html',
     'minor-policy.html',
-    'en/terms.html',
-    'en/privacy.html',
+    PUBLIC_LOCALE_PAGES['/en/terms'].slice(1),
+    PUBLIC_LOCALE_PAGES['/en/privacy'].slice(1),
   ];
   for (const page of excludedPages) {
     const html = await readFile(new URL(`../../${page}`, import.meta.url), 'utf8');

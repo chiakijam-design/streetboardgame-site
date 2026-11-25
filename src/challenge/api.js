@@ -4,6 +4,7 @@ import { enforceChallengeRateLimit, CHALLENGE_PLAY_LIMITS } from './rate-limit.j
 import { CHALLENGE_DAILY_ACTIONS, recordDailyAction } from '../analytics/daily-actions.js';
 import { validShareAction, recordShareAction } from '../analytics/share-actions.js';
 import { validQuizLength } from './length.js';
+import { ENGLISH_LIBRARY_CARDS, LIBRARY_CATALOG } from '../generated/library-catalog.js';
 
 export const CHALLENGE_MAX_PARTICIPANTS = 50;
 // Respondents see per-question choice counts only when this many people have finished,
@@ -578,6 +579,7 @@ function sanitizeCards(value) {
       category: String(card && card.category || '').slice(0, 40),
       title,
       choices,
+      ...(card?.custom === true ? { custom: true } : {}),
     };
   });
 }
@@ -1005,8 +1007,40 @@ async function managedParticipants(env, code, room) {
   }));
 }
 
+const builtInLibraryCards = new Map([
+  ...LIBRARY_CATALOG.flatMap(({ name, questions }) => questions.map((card) => ({ ...card, category: name }))),
+  ...ENGLISH_LIBRARY_CARDS,
+].map((card) => [card.id, card]));
+
+function approvedLibraryCard(row) {
+  if (!row) return null;
+  if (!row.status) return builtInLibraryCards.get(row.question_id);
+  if (row.status !== 'approved') return null;
+  return {
+    id: row.question_id, title: row.catalog_title, category: row.catalog_category,
+    choices: JSON.parse(row.catalog_choices),
+  };
+}
+
 async function recordQuestionPlays(env, cards, playedAt) {
-  if (await ensureD1(env)) {
+  const d1 = await ensureD1(env);
+  const ids = cards.map((card) => card.id);
+  const catalog = new Map();
+  if (d1) {
+    const { results } = await env.REMOTE_DB.prepare(`
+      SELECT question_id, status, title AS catalog_title, category AS catalog_category, choices_json AS catalog_choices
+      FROM question_catalog WHERE question_id IN (${ids.map(() => '?').join(', ')})
+    `).bind(...ids).all();
+    for (const row of results) catalog.set(row.question_id, row);
+  }
+  // Verify both the ID and the text. A room can contain an edited copy using a catalog ID.
+  cards = cards.flatMap((card) => {
+    const approved = catalog.has(card.id) ? approvedLibraryCard(catalog.get(card.id)) : builtInLibraryCards.get(card.id);
+    return approved && card.custom !== true && card.title === approved.title
+      && JSON.stringify(card.choices) === JSON.stringify(approved.choices) ? [approved] : [];
+  });
+  if (!cards.length) return;
+  if (d1) {
     const statements = cards.map((card) => env.REMOTE_DB.prepare(`
       INSERT INTO challenge_question_stats
         (question_id, title, category, choices_json, play_count, last_played_at)
@@ -1040,22 +1074,29 @@ async function recordQuestionPlays(env, cards, playedAt) {
 async function popularQuestions(env) {
   if (await ensureD1(env)) {
     const result = await env.REMOTE_DB.prepare(`
-      SELECT question_id, title, category, choices_json, play_count, last_played_at
-      FROM challenge_question_stats
+      SELECT s.question_id, s.play_count, s.last_played_at,
+        c.status, c.title AS catalog_title, c.category AS catalog_category, c.choices_json AS catalog_choices
+      FROM challenge_question_stats AS s
+      LEFT JOIN question_catalog AS c ON c.question_id = s.question_id
+      WHERE c.status = 'approved' OR (c.question_id IS NULL AND s.question_id IN (SELECT value FROM json_each(?)))
       ORDER BY play_count DESC, last_played_at DESC
       LIMIT 50
-    `).all();
+    `).bind(JSON.stringify([...builtInLibraryCards.keys()])).all();
+    // Old statistics may contain private snapshots. Only return text from the public catalog.
     return (result?.results || []).map((row) => ({
-      id: row.question_id,
-      title: row.title,
-      category: row.category,
-      choices: JSON.parse(row.choices_json),
+      ...approvedLibraryCard(row),
       playCount: Number(row.play_count),
       lastPlayedAt: Number(row.last_played_at),
     }));
   }
   const current = await env.CHALLENGE_KV.get('challenge:question-stats', { type: 'json' }) || {};
-  return Object.values(current)
+  return Object.entries(current)
+    .filter(([id]) => builtInLibraryCards.has(id))
+    .map(([id, stats]) => ({
+      ...builtInLibraryCards.get(id),
+      playCount: Number(stats.playCount),
+      lastPlayedAt: Number(stats.lastPlayedAt),
+    }))
     .sort((left, right) => Number(right.playCount) - Number(left.playCount)
       || Number(right.lastPlayedAt) - Number(left.lastPlayedAt))
     .slice(0, 50);
