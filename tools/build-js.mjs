@@ -90,6 +90,9 @@ const HTML_STYLE_MAP = {
   'guide/team-icebreaker-quiz.html': [
     'legal',
   ],
+  'guide/kind-questions-and-answer-check.html': [
+    'legal',
+  ],
 };
 
 const HTML_LAZY_ENTRY_MAP = {};
