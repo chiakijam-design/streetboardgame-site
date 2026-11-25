@@ -50,7 +50,8 @@ test('schema.org types are never translated', async () => {
 });
 
 test('the challenge heading reads as one sentence and the pack list has its own heading', async () => {
-  const expected = { en: 'You really know me, right?', es: '¿Me conoces de verdad?', pt: 'Você me conhece de verdade, né?' };
+  // 2026-11-25（Gemini 見直し2）：トップの3行とクイズの2行を、どの言語でも同じ1つの文にした
+  const expected = { en: 'You know me really well, right?', es: 'Me conoces de verdad, ¿no?', pt: 'Você me conhece de verdade, né?' };
   for (const [locale, text] of Object.entries(expected)) assert.deepEqual(h1(await get(`/${locale}/challenge`)), [text], locale);
   for (const locale of ['ja', 'en', 'es', 'pt']) {
     const path = (locale === 'ja' ? '' : '/' + locale) + '/challenge/library';

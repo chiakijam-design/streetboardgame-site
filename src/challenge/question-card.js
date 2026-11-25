@@ -29,7 +29,8 @@ function cardTitle(card) {
 function splitLine(value, limit, locale = 'ja') {
   const text = String(value || '').trim();
   if (text.length <= limit) return [text];
-  if (!['ja', 'en'].includes(locale)) return wrapLocalizedText(text, locale, 2);
+  // 2026-11-25（Gemini 見直し3）：英語も単語の区切りで折り返す（文字数の半分で切ると単語の途中で分かれていた）
+  if (locale !== 'ja') return wrapLocalizedText(text, locale, 2);
   const preferredBreak = Math.ceil(text.length / 2);
   return [text.slice(0, preferredBreak), text.slice(preferredBreak)];
 }
@@ -85,7 +86,7 @@ function dynamicQuestionCardSvg(card, locale = 'ja') {
     <path d="${ruledLinesPath}" fill="none" stroke="#9DD0E5" stroke-width="4"/>
     <path d="M68 55 L690 55 L681 198 L66 198 Z" fill="#75C7E6" opacity=".9"/>
     <g class="notebook-question-card-copy" fill="#111111">
-      ${textElement(titleLines, { x: 378, y: 132, size: titleSize, lineGap: 45, className: 'notebook-question-card-title', locale, fitWidth: !['ja', 'en'].includes(locale) ? 610 : 0 })}
+      ${textElement(titleLines, { x: 378, y: 132, size: titleSize, lineGap: 45, className: 'notebook-question-card-title', locale, fitWidth: locale !== 'ja' ? 610 : 0 })}
       ${choices.map((choice, index) => {
         const lines = splitLine(choice, 12, locale);
         const size = lines.length > 1 ? 34 : choice.length >= 14 ? 32 : choice.length >= 10 ? 36 : 42;
@@ -97,7 +98,7 @@ function dynamicQuestionCardSvg(card, locale = 'ja') {
             lineGap: 38,
             className: 'notebook-question-card-choice',
             locale,
-            fitWidth: !['ja', 'en'].includes(locale) ? 530 : 0,
+            fitWidth: locale !== 'ja' ? 530 : 0,
           })}`;
       }).join('')}
     </g>
