@@ -23,15 +23,17 @@ if (data) {
       try { localStorage.setItem('watachan:language:v1', select.value); } catch {}
       location.assign(destination);
     });
-    document.body.prepend(select);
+    const slot = document.querySelector('[data-locale-switcher-slot]');
     // Existing answer/edit and LIVE sessions use the full viewport. Keep the
     // switcher available after the game instead of consuming their top space.
     const placeSwitcher = () => {
       const { challengeMode = '', liveChallengeView = '' } = document.documentElement.dataset;
       const fullscreen = challengeMode === 'creator-edit' || challengeMode.endsWith('-answer')
         || ['host', 'viewer'].includes(liveChallengeView);
+      if (slot) slot.style.display = fullscreen ? 'none' : 'flow-root';
       if (fullscreen && document.body.lastElementChild !== select) document.body.append(select);
-      else if (!fullscreen && document.body.firstElementChild !== select) document.body.prepend(select);
+      else if (!fullscreen && slot && select.parentElement !== slot) slot.append(select);
+      else if (!fullscreen && !slot && document.body.firstElementChild !== select) document.body.prepend(select);
     };
     placeSwitcher();
     new MutationObserver(placeSwitcher).observe(document.documentElement, {

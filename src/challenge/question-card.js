@@ -47,7 +47,7 @@ function textElement(lines, { x, y, size, lineGap = 44, className = '', locale =
   </text>`;
 }
 
-function dynamicQuestionCardSvg(card, locale = 'ja') {
+function dynamicQuestionCardSvg(card, locale = 'ja', definitionPrefix) {
   const title = cardTitle(card);
   const choices = normalizedChoices(card);
   const titleLines = splitLine(title, 13, locale);
@@ -57,8 +57,7 @@ function dynamicQuestionCardSvg(card, locale = 'ja') {
     .map((x) => `M ${x - 30} -1 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0`)
     .join(' ');
   const ruledLinesPath = LINE_YS.map((y) => `M 0 ${y} H ${CARD_WIDTH}`).join(' ');
-  svgInstanceSerial += 1;
-  const definitionPrefix = `notebook-card-${svgInstanceSerial.toString(36)}`;
+  definitionPrefix ||= `notebook-card-${(++svgInstanceSerial).toString(36)}`;
   const dotShadowId = `${definitionPrefix}-dot-shadow`;
   const curlId = `${definitionPrefix}-curl`;
 
@@ -111,7 +110,7 @@ function dynamicQuestionCardSvg(card, locale = 'ja') {
 // from them. On answer screens the labelled choice buttons carry the choices
 // (the page heading carries the title); sample cards without buttons carry a
 // visually hidden title and choice list instead.
-export function renderNotebookQuestionCard(card, { answerAction = '', disabled = false, locale = 'ja' } = {}) {
+export function renderNotebookQuestionCard(card, { answerAction = '', disabled = false, locale = 'ja', definitionPrefix } = {}) {
   const accessibleChoices = normalizedChoices(card)
     .map((choice) => `<li>${escapeMarkup(choice)}</li>`)
     .join('');
@@ -122,5 +121,5 @@ export function renderNotebookQuestionCard(card, { answerAction = '', disabled =
       ${disabled ? 'disabled aria-busy="true"' : ''}></button>`).join('') : '';
   const accessibleText = answerAction ? ''
     : `<p class="notebook-card-accessible-choices">${escapeMarkup(cardTitle(card))}</p><ol class="notebook-card-accessible-choices">${accessibleChoices}</ol>`;
-  return `${dynamicQuestionCardSvg(card, locale)}${accessibleText}${choiceButtons}`;
+  return `${dynamicQuestionCardSvg(card, locale, definitionPrefix)}${accessibleText}${choiceButtons}`;
 }

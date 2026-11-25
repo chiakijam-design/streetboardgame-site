@@ -14,7 +14,8 @@ test('server copy is escaped, scripts preserved and room capabilities absent fro
   assert.match(output, /href="\/ar\/challenge\?room=public-code#manage=private"/);
   assert.match(output, /rel="canonical" href="https:\/\/www.streetboardgame.com\/ar\/challenge"/);
   assert.doesNotMatch(output.match(/<head>[\s\S]*?<\/head>/)[0], /public-code|#manage/);
-  assert.match(output, /hreflang="ja"/);
+  assert.doesNotMatch(output, /hreflang=/);
+  assert.match(output, /<body><div data-locale-switcher-slot[^>]*min-height:60px/);
   assert.ok(output.indexOf('__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__') < output.indexOf('<title>'));
 });
 test('route selection never localizes APIs, management tools or retired games', () => {

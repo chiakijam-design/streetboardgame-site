@@ -7,6 +7,7 @@ import { rootPublicResource, rootPublicSourceSet } from './resource-paths.js';
 import { translateHomeEntryCopy } from './home-entry-copy.js';
 import { translateBoardPolicyCopy } from './challenge-board-copy.js';
 import { translateCurrentSiteCopy } from './current-site-copy.js';
+import { renderNotebookQuestionCard } from '../challenge/question-card.js';
 
 const origin = 'https://www.streetboardgame.com';
 const entityValues = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0', ndash: '–', mdash: '—' };
@@ -26,12 +27,16 @@ export function safeScriptJson(value) {
   return JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (char) => '\\u' + char.charCodeAt(0).toString(16).padStart(4, '0'));
 }
 
+function reserveLocaleSwitcher(html) {
+  return html.replace(/<body\b[^>]*>/i, '$&<div data-locale-switcher-slot style="display:flow-root;min-height:60px"></div>');
+}
+
 export function injectPublicLocaleShell(html, requestUrl, publicLocales) {
   const locale = localeFromPath(requestUrl.pathname);
   const canonical = origin + localeCanonicalPath(requestUrl.pathname, locale);
   const links = publicLocales.filter((language) => SEARCH_INDEXED_LOCALES.includes(language)).map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('');
   const data = { publicLocales, entries: [], aliases: {}, catalog: { locale, messages: {}, provenance: { method: 'original', nativeReview: false } } };
-  return html.replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
+  return reserveLocaleSwitcher(html).replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
     .replace(/<\/head>/i, `<link rel="canonical" href="${canonical}">${links}<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}"><script>window.__WATACHAN_I18N__=${safeScriptJson(data)};</script><script defer src="${LOCALE_SHELL_ASSET}"></script></head>`);
 }
 
@@ -62,6 +67,15 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
         catch { return attribute; }
       });
   });
+  if (isHome && locale !== 'ja') {
+    let sampleIndex = 0;
+    output = output.replace(/(<div\b[^>]*\bdata-testid="top-question-card"[^>]*>)[\s\S]*?<p class="notebook-card-accessible-choices">([^<]*)<\/p><ol class="notebook-card-accessible-choices">([\s\S]*?)<\/ol>/g,
+      (sample, open, title, list) => {
+        const choices = [...list.matchAll(/<li>([^<]*)<\/li>/g)].map((item) => decode(item[1]));
+        if (choices.length !== 5) return sample;
+        return open + renderNotebookQuestionCard({ title: decode(title), choices }, { locale, definitionPrefix: `notebook-sample-${++sampleIndex}` });
+      });
+  }
   output = spaceAroundLinks(output, locale); // 2026-11-22（Gemini 見直し4）
   const details = LOCALE_DETAILS[locale];
   // 2026-11-21 (Codex review #13): English pages use the existing English share image, not the Japanese one.
@@ -104,9 +118,11 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
     } catch { return whole; }
   });
   output = output.replace(/<html\b[^>]*>/i, `<html lang="${locale}" dir="${details.direction}">`);
-  // 2026-11-22（Gemini 見直し28）：日本語・英語以外は system-ui で表示するため、日本語フォントの読み込みと事前接続を外す（英語は英語用の小さなフォントを使う決まり）
-  if (locale !== 'en') output = output.replace(/\s*<link\b[^>]*\brel=["']preconnect["'][^>]*\bhref=["']https:\/\/fonts\.(?:googleapis|gstatic)\.com["'][^>]*>/gi, '')
-    .replace(/<link\b[^>]*\bid=["'](brand|game)-font-styles["'][^>]*>/gi, '<meta id="$1-font-styles" name="font-loading" content="system-ui">')
+  // 非日本語ページは端末フォントを使う。
+  if (locale !== 'ja') output = output.replace(/\s*<link\b[^>]*\brel=["']preconnect["'][^>]*\bhref=["']https:\/\/fonts\.(?:googleapis|gstatic)\.com["'][^>]*>/gi, '')
+    .replace(/<link\b[^>]*\bid=["'](brand|game)-font-styles["'][^>]*>\s*<script>[^<]*<\/script>/gi, (_, kind) => kind === 'brand'
+      ? '<script>if(window.__INITIAL_SCREEN&&window.__INITIAL_SCREEN!=="top")document.documentElement.dataset.initialScreen=window.__INITIAL_SCREEN;</script>'
+      : '')
     .replace(/\s*<noscript\b[^>]*>\s*<link\b[^>]*(?:fonts\.googleapis\.com|home-font-)[^>]*>\s*<\/noscript>/gi, '');
   // 2026-11-22（Gemini 見直し27）：検索に出さないページは、ページの中の印も noindex にそろえる（HTTP の X-Robots-Tag と同じ）
   const robotsValue = /\/(?:manage|ranking)\/?$/.test(requestUrl.pathname) ? 'noindex, nofollow, noarchive'
@@ -121,15 +137,17 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   const canonical = origin + localeCanonicalPath(requestUrl.pathname, locale);
   output = output.replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
     .replace(/(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${canonical}"`);
-  const alternate = publicLocales.filter((language) => SEARCH_INDEXED_LOCALES.includes(language)).map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('');
+  const alternate = !SEARCH_INDEXED_LOCALES.includes(locale) ? '' : publicLocales.filter((language) => SEARCH_INDEXED_LOCALES.includes(language))
+    .map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('')
+    + `<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}">`;
   const publicData = { entries: data.entries, aliases: data.aliases, catalog: data.catalog, publicLocales };
-  const additions = `<link rel="canonical" href="${canonical}">${alternate}<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}">`
+  const additions = `<link rel="canonical" href="${canonical}">${alternate}`
     + `<style>html[lang="${locale}"] body{font-family:system-ui,sans-serif}html[dir=rtl] input,html[dir=rtl] textarea{direction:rtl}html[dir=rtl] [data-user-copy]{unicode-bidi:plaintext}button,a,p,h1,h2,h3{overflow-wrap:anywhere}html[lang="${locale}"] [data-testid=top-rules-title-line]{white-space:normal!important;overflow-wrap:anywhere}.challenge-result-share-button small span,.challenge-result-share-divider span{white-space:normal}.challenge-result-share-copy{max-width:100%}</style>`
     + `<script>window.__WATACHAN_I18N__=${safeScriptJson(publicData)};</script>`
     + (LOCALE_SHELL_ASSET ? `<script defer src="${LOCALE_SHELL_ASSET}"></script>` : '');
   output = output.replace(/<\/head>/i, additions + '</head>');
   // The canonical URL intentionally omits ?room and all management fragments.
-  return output;
+  return reserveLocaleSwitcher(output);
 }
 
 export function localizedAssetRoute(pathname) {

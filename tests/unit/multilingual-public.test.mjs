@@ -47,7 +47,7 @@ const env = { ASSETS: { async fetch(request) {
   return new Response(cache.get(path), { headers: { 'content-type': path.endsWith('.json') ? 'application/json' : 'text/html' } });
 } } };
 
-test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and listed in the sitemap', async () => {
+test('公開ページのうち検索対象の4言語だけに言語の代替リンクとサイトマップ掲載がある', async () => {
   assert.equal(PUBLIC_LOCALES.length, 34);
   const sitemap = await readFile(new URL('../../sitemap.xml', import.meta.url), 'utf8');
   const titles = new Set();
@@ -60,7 +60,6 @@ test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and li
     assert.match(html, new RegExp(`lang="${locale}"`), route);
     if (locale !== 'ja') assert.ok(html.includes(`dir="${LOCALE_DETAILS[locale].direction}"`), route);
     assert.ok(html.includes(`rel="canonical" href="https://www.streetboardgame.com${route}"`), route);
-    assert.equal((html.match(/hreflang="/g) || []).length, 5, route); // ja, en, es, pt and x-default only (2026-11-15)
     assert.match(html, /<title>[^<]+<\/title>/, route);
     assert.match(html, /name="description" content="[^"]+"/, route);
     const title = html.match(/<title>([^<]+)<\/title>/)[1];
@@ -71,6 +70,7 @@ test('all 374 stable locale pages render SEO HTML; only ja/en are indexed and li
     descriptions.add(`${locale}:${description}`);
     assert.equal((html.match(/name="google-adsense-account"/g) || []).length, 1, route);
     const indexed = ['ja', 'en', 'es', 'pt'].includes(locale);
+    assert.equal((html.match(/hreflang="/g) || []).length, indexed ? 5 : 0, route);
     assert.equal(sitemap.includes(`<loc>https://www.streetboardgame.com${route}</loc>`), indexed, route);
     if (indexed) assert.doesNotMatch(response.headers.get('x-robots-tag') || '', /noindex/, route);
     else assert.equal(response.headers.get('x-robots-tag'), 'noindex, follow', route);
