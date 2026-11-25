@@ -60,6 +60,8 @@ export function renderLibraryCatalogSection(catalog = LIBRARY_CATALOG, packs = q
     + '<li>付き合いの長い相手には、「もしも・妄想」や「性格・価値観」のお題で、まだ知らない一面を当ててもらうと盛り上がります。</li>'
     + '<li>答え合わせのあとは、選んだ理由をひと言ずつ話してみてください。点数より、その会話がこのゲームの本番です。</li>'
     + '</ul>'
+    // 2026-11-25（AdSense の直し）：日本語の読みもの（/guide/）へつなぐ
+    + '<p>お題の選び方は、<a href="/guide/kind-questions-and-answer-check">みんなが楽しめる質問の選び方と、答え合わせのコツ</a>や<a href="/guide/self-quiz-questions">自分クイズの問題例50</a>など、<a href="/guide/">読みもの</a>にもまとめています。</p>'
     + packSection(packs, byId)
     + `<h2 id="library-catalog-categories">カテゴリ別のお題</h2><p>カテゴリ名を押すと、そのカテゴリのお題と選択肢が開きます。</p><ul class="library-catalog__index">${index}</ul>${lists}`
     + '<a class="library-catalog__cta" href="/challenge">このお題でクイズを作る ▶</a>'
