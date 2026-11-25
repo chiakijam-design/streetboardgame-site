@@ -9,7 +9,7 @@ test('current public metadata, sitemap, privacy and retirement are consistent', 
  // ja, en, es and pt are search-indexed (2026-11-15): 11 public pages each.
  // plus one page per 10-question pack in each of them (9 x 4, 2026-11-16),
  // plus the Japanese guide pages (2026-11-25: /guide/ and its articles).
- expect(urls).toHaveLength(84);
+ expect(urls).toHaveLength(85);
  expect(sitemap).not.toMatch(/\/pricing(?:[<\/?#]|$)/);
  for (const locale of PUBLIC_LOCALES) {
   const prefix = locale === 'ja' ? '' : '/' + locale;
