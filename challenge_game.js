@@ -147,7 +147,6 @@ let resultFeedbackObserver = null;
 let resultFeedbackTimer = 0;
 let resultFeedbackQueue = [];
 let resultFeedbackBusy = false;
-let hasRoleSwapHistory = history.state?.wataRoleSwap === true;
 
 function initialMode() {
   if (pagePath === '/challenge/library') return 'library';
@@ -734,7 +733,6 @@ function createStartView() {
           ? 'このパックの10問を順番に使います。問題・選択肢はあとから編集できます。'
           : '現在使える問題が10問に満たないため、このパックは利用できません。'}</small>
       </div>` : ''}
-      ${!preferredPackSlug && !preferredCardId ? `<div class="challenge-button-row" data-testid="start-pack-links">${questionPacks(isEnglish).slice(0, 3).map((pack) => `<a class="challenge-secondary" href="${languagePrefix}/challenge?pack=${encodeURIComponent(pack.slug)}">${escapeHtml(translateText(pack.title))}</a>`).join('')}</div>` : ''}
       <label class="challenge-label" for="creator-name">出題者の名前（12文字まで）</label>
       <input id="creator-name" class="challenge-input" maxlength="12" autocomplete="nickname"
         placeholder="例：ちあき" value="${escapeHtml(state.creatorName)}"${nameErrorAttributes('creator-name')}>
@@ -1134,7 +1132,6 @@ function resultView() {
       <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>
       <p class="challenge-result-retry-note">${escapeHtml(result.participant?.rankingParticipating ? boardCopy(currentLocale, 'rule') : boardCopy(currentLocale, 'legacy'))}</p>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
-      <a class="challenge-secondary" href="/challenge/library">お題ライブラリ</a>
       <a class="challenge-secondary" href="/">トップへ戻る</a>
     </section>
   `;
@@ -1977,8 +1974,7 @@ function startRoleSwap() {
     editingOriginalCard: null,
     error: '',
   };
-  history.pushState({ wataRoleSwap: true }, '', `${languagePrefix}/challenge?role=swap`);
-  hasRoleSwapHistory = true;
+  history.replaceState(null, '', `${languagePrefix}/challenge?role=swap`);
   saveCreatorDraft(next);
   setState(next);
 }
@@ -2649,8 +2645,7 @@ async function bootChallenge() {
   // The ordinary start screen does not need catalog data to paint. Keep its
   // actions disabled until reviewed questions arrive, without replacing any
   // name the visitor types while the request is pending.
-  const restoreRoleSwap = history.state?.wataRoleSwap === true && new URLSearchParams(location.search).get('role') === 'swap' && creatorDraft();
-  const earlyStartScreen = state.mode === 'create' && !preferredCardId && !preferredPackSlug && !restoreRoleSwap;
+  const earlyStartScreen = state.mode === 'create' && !preferredCardId && !preferredPackSlug;
   // Static pack artwork/copy need not wait for the reviewed question catalog.
   // Do not expose bundled question details before current review status arrives.
   if (state.mode === 'library') render();
@@ -2686,7 +2681,6 @@ async function bootChallenge() {
     app.querySelectorAll('button[data-action]').forEach((button) => { button.disabled = false; });
     return;
   }
-  if (restoreRoleSwap) return resumeCreate();
   if (quickStart && state.mode === 'creator-edit') {
     state.cards = pickChallengeCards(allCards, QUESTION_COUNT).map(toCreatorDraftCard);
   }
@@ -2712,7 +2706,4 @@ function startChallengeMode() {
 }
 
 localizeDom(document);
-window.addEventListener('popstate', (event) => {
-  if (hasRoleSwapHistory || event.state?.wataRoleSwap === true) location.reload();
-});
 bootChallenge();

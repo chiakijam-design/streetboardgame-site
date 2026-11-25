@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import {test,expect} from './test.mjs';
 import fs from 'node:fs/promises';
 const phase=process.env.WATA_BOARD_DESIGN_PHASE||'after';
@@ -29,7 +30,7 @@ for(const [width,locale,n] of cases)test(`${phase} ${locale} ${width}px ${n} row
   if(n){const c=await board.locator('li strong').first().evaluate(e=>({fg:getComputedStyle(e).color,bg:getComputedStyle(e).backgroundColor}));const lum=v=>{const rgb=v.match(/[\d.]+/g).slice(0,3).map(Number).map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];};const l=[lum(c.fg),lum(c.bg)].sort((a,b)=>b-a);expect((l[0]+.05)/(l[1]+.05)).toBeGreaterThanOrEqual(4.5);}
   if(locale==='ar')await expect(page.locator('html')).toHaveAttribute('dir','rtl');
  }
- await fs.mkdir(out,{recursive:true});await board.screenshot({path:new URL(`${phase}-${locale}-${width}-${n}.png`,out).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
+ await fs.mkdir(out,{recursive:true});await board.screenshot({path:fileURLToPath(new URL(`${phase}-${locale}-${width}-${n}.png`,out))});
 });
 if(phase==='after')test('refresh stays keyboard-accessible and readable after a load error',async ({page,context,request})=>{
  const args={page,context,request};
@@ -38,7 +39,7 @@ if(phase==='after')test('refresh stays keyboard-accessible and readable after a 
  const count=state.count();await state.refresh.press('Enter');await expect.poll(state.count).toBeGreaterThan(count);await expect(state.board.locator('li')).toHaveCount(8);
  state.fail();await args.page.locator('[data-action="refresh-board"]').click();await expect(args.page.locator('.challenge-error')).toBeVisible();await expect(state.board.locator('li')).toHaveCount(8);
  expect(await args.page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
- await state.board.screenshot({path:new URL('after-refresh-error.png',out).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
+ await state.board.screenshot({path:fileURLToPath(new URL('after-refresh-error.png',out))});
 });
 if(phase==='after')test('loading placeholder resolves to the same board without overflow',async ({page,context,request})=>{
  await context.route('**/*',r=>['127.0.0.1','localhost'].includes(new URL(r.request().url()).hostname)?r.continue():r.abort());

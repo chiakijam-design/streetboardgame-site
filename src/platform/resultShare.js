@@ -77,15 +77,6 @@ export function resultShareMarkup({ translate, escape, locale = 'ja', ready = tr
     <span class="share-card-copy"><strong>${t(label)}</strong><small id="result-share-${action}-hint">${t(hint)}</small></span>
     ${arrow ? '<span class="share-card-arrow" aria-hidden="true">›</span>' : ''}
   </button>`;
-  const socialCards = {
-    x: card('x', 'X', '参加URLつきで投稿', 'x', 'data-action="share-result-x"'),
-    line: card('line', 'LINE', '参加URLを友達へ送る', 'line', 'data-action="share-result-line"'),
-    whatsapp: card('whatsapp', 'WhatsApp', '参加URLを友達へ送る', 'whatsapp'),
-    instagram: card('instagram-link', 'Instagram', 'リンクをコピーして投稿', 'instagram', '', false, `Instagram: ${translate('リンクをコピー')}`),
-  };
-  const socialOrder = locale === 'ja' ? ['line', 'x', 'instagram', 'whatsapp']
-    : ['es', 'pt'].includes(locale) ? ['whatsapp', 'instagram', 'x', 'line']
-      : ['x', 'line', 'whatsapp', 'instagram'];
   return `<div data-result-share-controls data-result-share-locale="${escape(locale)}"${showNativeHint ? ' data-native-hint-visible' : ''}>
     ${card('native', nativeLabel, nativeHint, 'native', '', true)}
     <div class="challenge-result-share-buttons" data-result-share-row>
@@ -93,7 +84,10 @@ export function resultShareMarkup({ translate, escape, locale = 'ja', ready = tr
       ${card('save', saveLabel, copy.saveHint, 'save', `data-action="${saveAction}" ${ready ? '' : 'disabled'}`)}
     </div>
     <div class="challenge-result-share-buttons" data-result-share-row data-result-share-social>
-      ${socialOrder.map((action) => socialCards[action]).join('')}
+      ${card('x', 'X', '参加URLつきで投稿', 'x', 'data-action="share-result-x"')}
+      ${card('line', 'LINE', '参加URLを友達へ送る', 'line', 'data-action="share-result-line"')}
+      ${card('whatsapp', 'WhatsApp', '参加URLを友達へ送る', 'whatsapp')}
+      ${card('instagram-link', 'Instagram', 'リンクをコピーして投稿', 'instagram', '', false, `Instagram: ${translate('リンクをコピー')}`)}
     </div>
     ${card('instagram', 'ストーリー用：文章コピー＋画像保存', copy.saveHint, 'instagram', `data-action="share-result-instagram" ${ready ? '' : 'disabled'}`, true)}
     <details data-result-share-fallback><summary>${t('参加URL')} · ${t(copy.imageSummary)}</summary>

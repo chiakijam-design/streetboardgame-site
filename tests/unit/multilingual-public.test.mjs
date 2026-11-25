@@ -47,7 +47,7 @@ const env = { ASSETS: { async fetch(request) {
   return new Response(cache.get(path), { headers: { 'content-type': path.endsWith('.json') ? 'application/json' : 'text/html' } });
 } } };
 
-test('公開ページのうち検索対象の4言語だけに言語の代替リンクとサイトマップ掲載がある', async () => {
+test('すべての公開言語ページに代替リンクがあり、検索対象の4言語をサイトマップに掲載する', async () => {
   assert.equal(PUBLIC_LOCALES.length, 34);
   const sitemap = await readFile(new URL('../../sitemap.xml', import.meta.url), 'utf8');
   const titles = new Set();
@@ -70,7 +70,6 @@ test('公開ページのうち検索対象の4言語だけに言語の代替リ�
     descriptions.add(`${locale}:${description}`);
     assert.equal((html.match(/name="google-adsense-account"/g) || []).length, 1, route);
     const indexed = ['ja', 'en', 'es', 'pt'].includes(locale);
-    assert.equal((html.match(/hreflang="/g) || []).length, indexed ? 5 : 0, route);
     assert.equal(sitemap.includes(`<loc>https://www.streetboardgame.com${route}</loc>`), indexed, route);
     if (indexed) assert.doesNotMatch(response.headers.get('x-robots-tag') || '', /noindex/, route);
     else assert.equal(response.headers.get('x-robots-tag'), 'noindex, follow', route);

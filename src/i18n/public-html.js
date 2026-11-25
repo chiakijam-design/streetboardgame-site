@@ -120,8 +120,8 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
     } catch { return whole; }
   });
   output = output.replace(/<html\b[^>]*>/i, `<html lang="${locale}" dir="${details.direction}">`);
-  // 非日本語ページは端末フォントを使う。
-  if (locale !== 'ja') output = output.replace(/\s*<link\b[^>]*\brel=["']preconnect["'][^>]*\bhref=["']https:\/\/fonts\.(?:googleapis|gstatic)\.com["'][^>]*>/gi, '')
+  // 英語のトップは既存のローカルフォントを使い、ほかの翻訳ページは端末フォントを使う。
+  if (!(locale === 'en' && isHome)) output = output.replace(/\s*<link\b[^>]*\brel=["']preconnect["'][^>]*\bhref=["']https:\/\/fonts\.(?:googleapis|gstatic)\.com["'][^>]*>/gi, '')
     .replace(/<link\b[^>]*\bid=["'](brand|game)-font-styles["'][^>]*>\s*<script>[^<]*<\/script>/gi, (_, kind) => kind === 'brand'
       ? '<script>if(window.__INITIAL_SCREEN&&window.__INITIAL_SCREEN!=="top")document.documentElement.dataset.initialScreen=window.__INITIAL_SCREEN;</script>'
       : '')
@@ -141,7 +141,7 @@ export function localizePublicHtml(html, data, requestUrl, publicLocales = TARGE
   const canonical = origin + localeCanonicalPath(requestUrl.pathname, locale);
   output = output.replace(/<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>/gi, '')
     .replace(/(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=)["'][^"']*["']/gi, `$1"${canonical}"`);
-  const alternate = !SEARCH_INDEXED_LOCALES.includes(locale) ? '' : publicLocales.filter((language) => SEARCH_INDEXED_LOCALES.includes(language))
+  const alternate = publicLocales.filter((language) => SEARCH_INDEXED_LOCALES.includes(language))
     .map((language) => `<link rel="alternate" hreflang="${language}" href="${origin}${localeCanonicalPath(requestUrl.pathname, language)}">`).join('')
     + `<link rel="alternate" hreflang="x-default" href="${origin}${localeCanonicalPath(requestUrl.pathname, 'ja')}">`;
   const publicData = { entries: data.entries, aliases: data.aliases, catalog: data.catalog, publicLocales };

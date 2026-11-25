@@ -85,7 +85,7 @@ test('host cancellation, rapid clicks, returning, copy failure and invitation PN
   await page.evaluate(() => { Object.defineProperty(navigator,'share',{configurable:true,value:undefined}); });
   const download = page.waitForEvent('download');await controls.locator('[data-result-share=save]').click();const file=await download;
   expect(file.suggestedFilename()).toBe('watachan-challenge-invitation.png');
-  await file.saveAs('/tmp/wata-host-invitation-'+test.info().project.name+'.png');
+  await file.saveAs(test.info().outputPath('wata-host-invitation.png'));
   await page.locator('a.challenge-share-action.board').click();await page.goBack();await expect(page.locator('[data-result-share=native]')).toBeEnabled();
   await expect.poll(async () => withoutUtm(await page.locator('[data-result-share-url]').inputValue())).toBe(new URL(page.url()).origin+`/challenge?room=${code}`);
 });
