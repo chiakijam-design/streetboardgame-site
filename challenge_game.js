@@ -1620,6 +1620,7 @@ function toCreatorDraftCard(card) {
 }
 
 function resumeCreate() {
+  pendingRoleSwap = null;
   const draft = creatorDraft();
   if (!draft) return setState({ error: 'draft-not-found' });
   setState({
@@ -1636,6 +1637,7 @@ function resumeCreate() {
 
 function deleteCreatorDraft() {
   removeStorage(CREATOR_DRAFT_KEY);
+  if (pendingRoleSwap) return beginRoleSwap(pendingRoleSwap);
   setState({ error: '' });
 }
 
@@ -1940,6 +1942,10 @@ async function retryChallenge() {
   }
 }
 
+// 2026-11-26 (Codex review 11/26 #1-1): the creator draft has a single slot, so swapping roles used to
+// overwrite a quiz the person was still making. When a draft exists, show the start screen with its
+// "resume" and "delete" buttons first; deleting the old draft then continues the role swap.
+let pendingRoleSwap = null;
 function startRoleSwap() {
   if (!state.result) return;
   const cards = (state.result.answers || [])
@@ -1974,6 +1980,17 @@ function startRoleSwap() {
     editingOriginalCard: null,
     error: '',
   };
+  if (creatorDraft()) {
+    pendingRoleSwap = next;
+    history.replaceState(null, '', `${languagePrefix}/challenge`);
+    setState({ ...next, mode: 'create', cards: [] });
+    return;
+  }
+  beginRoleSwap(next);
+}
+
+function beginRoleSwap(next) {
+  pendingRoleSwap = null;
   history.replaceState(null, '', `${languagePrefix}/challenge?role=swap`);
   saveCreatorDraft(next);
   setState(next);
