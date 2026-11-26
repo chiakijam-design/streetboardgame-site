@@ -3432,6 +3432,10 @@
     "m05e196c513a91f": "Vain kysymys ja vaihtoehdot tallennetaan tähän selaimeen. Valitse vastaus joka kerta. Muut selaimen käyttäjät voivat nähdä ne. Sivustotietojen poisto poistaa ne; ne eivät siirry toiseen laitteeseen tai selaimeen.",
     "mc6281654fd5fde": "♡ Näin pelaat",
     "m1f586c96c0524b": "Kirjoita kysymys ja kaikki viisi vastausvaihtoehtoa.",
-    "m2322ab25033631": "Lataa uudelleen"
+    "m2322ab25033631": "Lataa uudelleen",
+    "m2c8d8d2fbb19b3": "Jos aloitat vastaamisen uudelleen, aiemmat vastauksesi eivät enää näy tekijän vastausten hallinnassa.",
+    "mb02b0eb854acbf": "Kysymys, joka ei ole enää käytettävissä, vaihdettiin toiseen. Valitse vastauksesi tähän kysymykseen uudelleen.",
+    "m93eb50b42859b1": "Visassasi on kysymys, joka ei ole enää käytettävissä. Lataa sivu uudelleen ja vaihda kysymys.",
+    "m5ba1822ca7f70d": "Lisää pisteet myös tekstiin (kuvassa pisteet näkyvät aina)"
   }
 }

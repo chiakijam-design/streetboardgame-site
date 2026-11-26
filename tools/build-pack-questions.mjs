@@ -29,9 +29,14 @@ export async function packQuestionData(root = new URL('..', import.meta.url)) {
   for (const pack of questionPacks(false)) {
     // Packs can also hold operator-added questions from the database; the
     // page lists the built-in ones, up to ten.
-    const ja = pack.questionIds.map((id) => japanese.get(id)).filter(Boolean).slice(0, 10);
-    const en = englishPacks.get(pack.slug).questionIds.map((id) => english.get(id)).filter(Boolean).slice(0, 10);
-    const translate = (locale) => en.map((card) => ({ id: card.id, title: translators[locale](card.title), choices: card.choices.map(translators[locale]) }));
+    // 2026-11-27（Codex 見直し 11/26 ①-11）：予備のお題も持っておき、公開のときに非公開のお題を除いてから先頭の10問を出す
+    // （作成画面の questionPackCards と同じ順・同じ数。予備がないと「10問」のページに8〜9問しか並ばなかった）
+    const ja = pack.questionIds.map((id) => japanese.get(id)).filter(Boolean);
+    const en = englishPacks.get(pack.slug).questionIds.map((id) => english.get(id)).filter(Boolean);
+    const translate = (locale) => en.flatMap((card, index) => {
+      try { return [{ id: card.id, title: translators[locale](card.title), choices: card.choices.map(translators[locale]) }]; }
+      catch (error) { if (index < 10) throw error; return []; } // 予備で訳がないものは載せない
+    });
     data[pack.slug] = { ja, en, es: translate('es'), pt: translate('pt') };
   }
   return data;

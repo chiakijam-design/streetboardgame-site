@@ -4,6 +4,7 @@ import { enforceChallengeRateLimit, CHALLENGE_PLAY_LIMITS } from './rate-limit.j
 import { CHALLENGE_DAILY_ACTIONS, recordDailyAction } from '../analytics/daily-actions.js';
 import { validShareAction, recordShareAction } from '../analytics/share-actions.js';
 import { validQuizLength } from './length.js';
+import { hiddenQuestionIds } from '../questions/hidden-public.js';
 import { ENGLISH_LIBRARY_CARDS, LIBRARY_CATALOG } from '../generated/library-catalog.js';
 
 export const CHALLENGE_MAX_PARTICIPANTS = 50;
@@ -116,6 +117,11 @@ async function createRoom(request, env) {
   const answerKey = sanitizeAnswers(body.answers);
   if (!validQuizLength(cards.length) || answerKey.length !== cards.length) {
     throw apiError('ten-questions-required', 400);
+  }
+  // 2026-11-27（Codex 見直し 11/26 ①-9）：途中保存のあとに非公開になった共通のお題を、新しいクイズに入れない
+  const hidden = await hiddenQuestionIds(env);
+  if (hidden?.size && cards.some((card) => hidden.has(card.sourceId) || hidden.has(card.id))) {
+    throw apiError('question-hidden', 409);
   }
 
   const now = Date.now();
@@ -536,13 +542,18 @@ export function aggregateAnswerStats(cards, participants, minimum = ANSWER_STATS
     && Array.isArray(participant.answers)
     && participant.answers.length === cards.length);
   if (completed.length < minimum) return { minimum, completed: completed.length, questions: null };
+  // 2026-11-27（Codex 見直し 11/26 ①-4）：1人終わるたびに数を更新すると、増える前と後の差から、その人が各問で何を
+  // 選んだかが分かってしまう。終わった順に minimum 人ずつまとめて数え、まとまりが増えたときだけ更新する。
+  const ordered = completed.slice().sort((a, b) => Number(a.completedAt) - Number(b.completedAt));
+  const counted = ordered.slice(0, Math.floor(ordered.length / minimum) * minimum);
   return {
     minimum,
     completed: completed.length,
+    counted: counted.length,
     questions: cards.map((card, index) => {
       const choiceCount = Array.isArray(card?.choices) ? card.choices.length : 0;
       const counts = Array(choiceCount).fill(0);
-      for (const participant of completed) {
+      for (const participant of counted) {
         const raw = participant.answers[index];
         const selected = Number(raw && typeof raw === 'object' ? raw.selected : raw);
         if (Number.isInteger(selected) && selected >= 0 && selected < choiceCount) counts[selected] += 1;

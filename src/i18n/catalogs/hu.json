@@ -3432,6 +3432,10 @@
     "m05e196c513a91f": "Csak a szöveg és a lehetőségek maradnak ebben a böngészőben. A választ mindig újra válaszd ki. Más böngészőhasználók is láthatják. A webhelyadatok törlése eltávolítja; más eszközre vagy böngészőbe nem kerül át.",
     "mc6281654fd5fde": "♡ Hogyan játssz",
     "m1f586c96c0524b": "Add meg a kérdést és mind az öt válaszlehetőséget.",
-    "m2322ab25033631": "Újratöltés"
+    "m2322ab25033631": "Újratöltés",
+    "m2c8d8d2fbb19b3": "Ha újra elkezdesz válaszolni, a korábbi válaszaid már nem jelennek meg a készítő válaszkezelőjében.",
+    "mb02b0eb854acbf": "Egy már nem elérhető kérdést egy másikra cseréltünk. Válaszd ki újra a válaszodat erre a kérdésre.",
+    "m93eb50b42859b1": "A kvízed olyan kérdést tartalmaz, amely már nem elérhető. Töltsd újra az oldalt, és cseréld le.",
+    "m5ba1822ca7f70d": "A pontszám a szövegbe is kerüljön (a képen mindig látszik a pontszám)"
   }
 }

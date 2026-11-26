@@ -3432,6 +3432,10 @@
     "m05e196c513a91f": "Only question text and choices are saved in this browser. Choose the answer each time. Others using this browser can see them. Clearing site data removes them; they do not transfer to another device or browser.",
     "mc6281654fd5fde": "♡ How to play",
     "m1f586c96c0524b": "Enter the question and all five choices.",
-    "m2322ab25033631": "Reload"
+    "m2322ab25033631": "Reload",
+    "m2c8d8d2fbb19b3": "Once you start answering again, your previous answers no longer appear in the creator's response manager.",
+    "mb02b0eb854acbf": "A question that is no longer available was replaced with another one. Please choose your answer to this question again.",
+    "m93eb50b42859b1": "Your quiz includes a question that is no longer available. Reload the page and replace it.",
+    "m5ba1822ca7f70d": "Add the score to the share text too (the image always shows the score)"
   }
 }

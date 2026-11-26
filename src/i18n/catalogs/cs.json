@@ -3432,6 +3432,10 @@
     "m05e196c513a91f": "V prohlížeči se ukládá jen text a možnosti. Odpověď vybíráte pokaždé znovu. Ostatní uživatelé prohlížeče je mohou vidět. Smazání dat webu je odstraní; nepřenášejí se na jiné zařízení či prohlížeč.",
     "mc6281654fd5fde": "♡ Jak hrát",
     "m1f586c96c0524b": "Zadejte otázku a všech pět možností odpovědi.",
-    "m2322ab25033631": "Načíst znovu"
+    "m2322ab25033631": "Načíst znovu",
+    "m2c8d8d2fbb19b3": "Pokud začnete odpovídat znovu, vaše předchozí odpovědi se už nebudou zobrazovat ve správě odpovědí autora.",
+    "mb02b0eb854acbf": "Otázka, která už není dostupná, byla nahrazena jinou. Vyberte prosím odpověď na tuto otázku znovu.",
+    "m93eb50b42859b1": "Váš kvíz obsahuje otázku, která už není dostupná. Načtěte stránku znovu a otázku vyměňte.",
+    "m5ba1822ca7f70d": "Přidat skóre i do textu (obrázek skóre vždy zobrazuje)"
   }
 }

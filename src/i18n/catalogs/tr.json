@@ -3432,6 +3432,10 @@
     "m05e196c513a91f": "Yalnızca soru ve seçenekler bu tarayıcıda saklanır. Yanıtı her seferinde seçin. Tarayıcıyı kullanan başkaları görebilir. Site verileri silinirse kaybolur; başka cihaz veya tarayıcıya aktarılmaz.",
     "mc6281654fd5fde": "♡ Nasıl oynanır",
     "m1f586c96c0524b": "Soruyu ve beş seçeneğin tamamını girin.",
-    "m2322ab25033631": "Yeniden yükle"
+    "m2322ab25033631": "Yeniden yükle",
+    "m2c8d8d2fbb19b3": "Yeniden cevaplamaya başladığınızda, önceki cevaplarınız artık oluşturucunun cevap yönetiminde görünmez.",
+    "mb02b0eb854acbf": "Artık kullanılamayan bir soru başka bir soruyla değiştirildi. Lütfen bu sorunun cevabını yeniden seçin.",
+    "m93eb50b42859b1": "Testinizde artık kullanılamayan bir soru var. Sayfayı yeniden yükleyip soruyu değiştirin.",
+    "m5ba1822ca7f70d": "Puanı paylaşım metnine de ekle (görselde puan her zaman yer alır)"
   }
 }
