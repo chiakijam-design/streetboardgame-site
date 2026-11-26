@@ -46,11 +46,13 @@
       "/vi", "/vi/*", "/ko", "/ko/*", "/zh-Hans", "/zh-Hans/*", "/zh-Hant", "/zh-Hant/*",
       "/*.html",
       "/challenge", "/challenge/",
-      "/live-challenge", "/live-challenge/*", "/live", "/live/*", "/live-guide",
+      // 2026-11-26：live で始まる道（/live・/live/*・/live-challenge・/live-guide・/live-ops）を1つにまとめ、上限100件の中で読みもの（/guide/）を足す
+      "/live*",
+      // 2026-11-26（Codex 見直し②-4）：読みものも Worker を通す（PV の計測・広告アカウントの確認タグ・nonce 付き CSP）
+      "/guide", "/guide/", "/guide/*",
       "/about", "/about/",
       "/product", "/product/",
       "/pricing", "/pricing/",
-      "/live-ops", "/live-ops/",
       "/question-ops", "/question-ops/",
       "/terms", "/terms/",
       "/privacy", "/privacy/",
