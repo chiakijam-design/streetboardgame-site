@@ -3,8 +3,12 @@ import {pvCopy} from './pv-copy.js';
 import {PV_NOTICE_COPY,PV_STOP_COPY,PV_NOTICE_DETAILS,PV_NOTICE_REUSE} from './pv-notice-copy.js';
 import {PASSIVE_SCOPE,GOOGLE_OFF} from './passive-policy.js';
 import {questionPacks} from '../challenge/packs.js';
+// 2026-11-26 (Codex review 11/26 #2-4): the Japanese reading pages (/guide/) were outside the measured
+// scope, so their views and the moves from an article to a quiz were not counted. Keep this list in step
+// with GUIDE_LINKS_JA in src/content/search-copy.js (a unit test checks it).
+export const GUIDE_PATHS=Object.freeze(['/guide','/guide/self-quiz-questions','/guide/first-meeting-questions','/guide/couple-quiz-questions','/guide/team-icebreaker-quiz','/guide/kind-questions-and-answer-check']);
 // Pack pages (/challenge/library/<pack>) were added on 2026-11-16.
-const PUBLIC_PATHS=new Set(['/','/challenge','/challenge/library','/challenge/ranking','/challenge-guide','/about','/product','/terms','/privacy','/legal','/content-guidelines','/minor-policy',...questionPacks(false).map(pack=>'/challenge/library/'+pack.slug)]);
+const PUBLIC_PATHS=new Set(['/','/challenge','/challenge/library','/challenge/ranking','/challenge-guide','/about','/product','/terms','/privacy','/legal','/content-guidelines','/minor-policy',...GUIDE_PATHS,...questionPacks(false).map(pack=>'/challenge/library/'+pack.slug)]);
 export function pvPublicPath(path,locales){const parts=path.split('/').filter(Boolean);if(locales.includes(parts[0]))parts.shift();const route=parts.length?'/'+parts.join('/'):'/';return PUBLIC_PATHS.has(route)?route:null;}
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const json=value=>JSON.stringify(value).replace(/[<>&\u2028\u2029]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'));

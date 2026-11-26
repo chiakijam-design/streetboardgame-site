@@ -19,13 +19,13 @@ function clientFunction(name) {
   const tail=source.slice(start),next=tail.slice(1).search(/\n(?:async )?function /);
   return next<0?tail:tail.slice(0,next+1);
 }
-const code=['answerQuestion','createChallengeRoom','startRoleSwap','toCreatorDraftCard',
+const code=['answerQuestion','createChallengeRoom','startRoleSwap','beginRoleSwap','deleteCreatorDraft','toCreatorDraftCard',
   'finishConfirmationView','creatorDraft','resumeCreate','rankingView','understandingBoard','numberedCopy','manageUrl','replaceManageUrl'].map(clientFunction).join('\n');
 const cards=Array.from({length:10},(_,i)=>({id:`T${i}`,sourceId:`T${i}`,title:`Topic ${i}`,choices:['A','B','C','D','E']}));
 function harness() {
   const values=new Map(),kv={async get(key,options={}){const v=values.get(key);return v?options.type==='json'?JSON.parse(v):v:null;},async put(key,v){values.set(key,String(v));}};
   const saved=new Map();let requests=0;
-  const context={QUESTION_COUNT:10,CREATOR_DRAFT_KEY:'draft',MANAGE_STATE_KEY:'wataChallengeManage',state:{mode:'creator-edit',cards:structuredClone(cards),answers:[],questionIndex:0,creatorName:'Local creator',finishCount:0,loading:false,questionSubmissionConsent:false},
+  const context={pendingRoleSwap:null,QUESTION_COUNT:10,CREATOR_DRAFT_KEY:'draft',MANAGE_STATE_KEY:'wataChallengeManage',state:{mode:'creator-edit',cards:structuredClone(cards),answers:[],questionIndex:0,creatorName:'Local creator',finishCount:0,loading:false,questionSubmissionConsent:false},
     allCards:structuredClone(cards),currentLocale:'ja',languagePrefix:'',validQuizLength,answeredQuestionCount,completedCreatorQuiz,challengeCopy,challengeCompletionCopy,boardCopy,
     structuredClone,Date,Number,Array,JSON,Map,Set,console,window:{},tagShareUrl,submissionEligibleCards,publicQuizCards,
     escapeHtml:x=>String(x).replaceAll('<','&lt;'),translateText:x=>x,shell:(...args)=>args,
@@ -66,6 +66,16 @@ for(const count of [1,2,9,10])test(`role swap / saved resume retains exactly ${c
   assert.equal(c.state.cards.length,count);assert.equal(c.state.questionIndex,0);
   for(let index=0;index<count;index++) await c.answerQuestion(0);
   assert.equal(c.state.mode,'manage');assert.equal(c.state.room.cards.length,count);
+});
+// 2026-11-26 (Codex review 11/26 #1-1): an unfinished creator draft is not overwritten by a role swap
+test('role swap with an unfinished draft shows the resume / delete choice; delete continues the swap',()=>{
+  const h=harness(),c=h.context;
+  const old={creatorName:'Old maker',cards:structuredClone(cards),answers:[{cardId:'T0',selected:1}],questionIndex:1,questionSubmissionConsent:true};h.saved.set('draft',structuredClone(old));
+  c.state.result={participant:{name:'Local player'},answers:cards.slice(0,3).map(card=>({card,correct:4,selected:2}))};
+  c.startRoleSwap();assert.equal(c.state.mode,'create');assert.equal(h.saved.get('draft').creatorName,'Old maker','old draft kept');
+  c.deleteCreatorDraft();assert.equal(c.state.mode,'creator-edit');assert.equal(c.state.cards.length,3);assert.equal(h.saved.get('draft').creatorName,'Local player');
+  h.saved.set('draft',structuredClone(old));c.state.result={participant:{name:'P2'},answers:cards.slice(0,2).map(card=>({card,correct:4,selected:2}))};
+  c.startRoleSwap();c.resumeCreate();assert.equal(c.state.creatorName,'Old maker','resume keeps the old quiz');assert.equal(c.pendingRoleSwap,null);
 });
 test('zero answers cannot publish; a failed request retains the complete draft for retry',async()=>{
   const h=harness(),c=h.context;await c.createChallengeRoom([]);assert.equal(h.requests(),0);
