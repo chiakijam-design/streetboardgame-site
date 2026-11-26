@@ -31,12 +31,14 @@ const fnSrc=(name)=>{const s=game.indexOf(`function ${name}(`);const t=game.slic
 test('#1-9 a draft question hidden after saving is swapped out on resume / publish, and the server refuses it',()=>{
  const toCard=(c)=>({...c,sourceId:c.id,choices:c.choices.slice(0,5)});
  const cat=Array.from({length:14},(_,i)=>({id:`Q${i}`,title:`T${i}`,choices:['a','b','c','d','e']}));
- const ctx={questionCatalogReady:true,allCards:cat.filter(c=>c.id!=='Q3'),pickChallengeCards,toCreatorDraftCard:toCard,String,Set,Boolean,Array};
+ const ctx={questionCatalogReady:true,allCards:cat.filter(c=>c.id!=='Q3'),hiddenQuestionIdSet:()=>new Set(['Q3']),pickChallengeCards,toCreatorDraftCard:toCard,String,Set,Boolean,Array};
  vm.createContext(ctx);vm.runInContext(fnSrc('replaceUnavailableDraftCards'),ctx);
  const draft=cat.slice(0,10).map(toCard),r=ctx.replaceUnavailableDraftCards(draft,[0,1,2,3,4,0,1,2,3,4]);
  assert.equal(r.replaced,1);assert.equal(r.firstIndex,3);assert.equal(r.answers[3],null);assert.equal(r.answers[4],4);
  assert.ok(!r.cards.some(c=>c.sourceId==='Q3'));assert.equal(new Set(r.cards.map(c=>c.sourceId)).size,10,'no duplicate');
- assert.equal(ctx.replaceUnavailableDraftCards(draft.filter(c=>c.id!=='Q3'),[]).replaced,0,'custom / available cards stay');
+ assert.equal(ctx.replaceUnavailableDraftCards(draft.filter(c=>c.id!=='Q3'),[]).replaced,0,'available cards stay');
+ const swapped=[...draft.filter(c=>c.id!=='Q3'),{id:'USR1',sourceId:'USR1',title:'from the other quiz',choices:['a','b','c','d','e']}];
+ assert.equal(ctx.replaceUnavailableDraftCards(swapped,[]).replaced,0,'a role-swap card that is not in the catalog but not hidden stays');
  assert.ok(fnSrc('resumeCreate').includes('replaceUnavailableDraftCards(draft.cards, draft.answers)'));
  assert.ok(fnSrc('createChallengeRoom').includes('replaceUnavailableDraftCards(state.cards, answers)'));
  const api=fs.readFileSync('src/challenge/api.js','utf8');assert.ok(api.includes("throw apiError('question-hidden', 409);"));
@@ -71,6 +73,6 @@ test('#1-2 #1-3 #1-5 #1-6 #1-7 #1-10 smaller fixes stay in place',()=>{
  assert.ok(fnSrc('syncParticipantProgress').includes('if (answerCount <= failedIndex) return false;'),'1-3 an unsaved answer still shows the error');
  assert.ok(fnSrc('render').includes("heading.focus({ preventScroll: true })"),'1-5');
  assert.ok(worker.includes("baseHtml = setLibraryHeading(removeLibraryCatalog(applyChallengeLibraryMeta(baseHtml)), 'ja')"),'1-6');
- assert.ok(game.includes('data-testid="retry-clears-answers"'),'1-7');
+ assert.ok(game.includes('<p class="challenge-note" data-testid="retry-clears-answers">'),'1-7 (not the retry-note class, which tests read as the board rule)');
  assert.ok(/legal-history[\s\S]{0,2500}noindex, nofollow, noarchive"'\)/.test(worker),'1-10');
 });

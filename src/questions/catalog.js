@@ -3,6 +3,9 @@ const MAX_QUESTION_VIEW_HISTORY = 500;
 const QUESTION_DEVICE_KEY = 'watachan:question-device:v1';
 const QUESTION_SELECTION_SESSION_KEY = 'watachan:selection-session:v1';
 
+let hiddenIdCache = new Set();
+export function hiddenQuestionIdSet() { return hiddenIdCache; }
+
 // 2026-11-21 (Codex review #16): with { strict: true } a failed review lookup throws instead of
 // returning the bundled cards, so hidden questions never come back while the status is unknown.
 export async function loadManagedQuestionCards(baseCards, series, language = 'ja', { strict = false } = {}) {
@@ -19,6 +22,11 @@ export async function loadManagedQuestionCards(baseCards, series, language = 'ja
       return applyQuestionViewHistory(baseCards);
     }
     const data = await response.json();
+    // 2026-11-27（Codex 見直し 11/26 ①-9）：非公開になったお題の番号を覚えておく（途中保存の下書きから外すため）
+    hiddenIdCache = new Set([
+      ...(Array.isArray(data.hiddenIds) ? data.hiddenIds : []),
+      ...(Array.isArray(data.questions) ? data.questions : []).filter((row) => row?.status && row.status !== 'approved').map((row) => row.id),
+    ].map(String));
     const cards = applyManagedQuestionCards(baseCards, data.questions, series, language, data.hiddenIds);
     return applyQuestionViewHistory(applyQuestionSelectionStats(cards, data.selectionStats, series));
   } catch (error) {

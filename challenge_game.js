@@ -22,6 +22,7 @@ import { questionPackBySlug, questionPackCards, questionPacks } from './src/chal
 import {
   changedQuestionCandidates,
   loadManagedQuestionCards,
+  hiddenQuestionIdSet,
   loadQuestionTrendMetrics,
   recordQuestionSelectionEvent,
   reportManagedQuestion,
@@ -1142,7 +1143,7 @@ function resultView() {
       <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>
       <p class="challenge-result-retry-note">${escapeHtml(result.participant?.rankingParticipating ? boardCopy(currentLocale, 'rule') : boardCopy(currentLocale, 'legacy'))}</p>
       <!-- 2026-11-27（Codex 見直し 11/26 ①-7）：再挑戦を始めると、前回の答えは出題者の回答管理から消える（途中でやめても）。先に知らせる -->
-      <p class="challenge-result-retry-note" data-testid="retry-clears-answers">${escapeHtml(translateText('もう一度答えはじめると、前回の答えは出題者の回答管理に表示されなくなります。'))}</p>
+      <p class="challenge-note" data-testid="retry-clears-answers">${escapeHtml(translateText('もう一度答えはじめると、前回の答えは出題者の回答管理に表示されなくなります。'))}</p>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
       <a class="challenge-secondary" href="/">トップへ戻る</a>
     </section>
@@ -1653,17 +1654,15 @@ function resumeCreate() {
 }
 
 // 2026-11-27（Codex 見直し 11/26 ①-9）：途中保存のあとに通報などで非公開になった共通のお題は、
-// 再開や発行のときに今の一覧にないので、そのまま使うと自作のお題として新しいクイズに入ってしまっていた。
-// 今の一覧にないお題は、まだ使っていない公開中のお題に差し替え、その問題の答えだけを選び直してもらう。
+// 再開や発行のときにそのまま使うと、自作のお題として新しいクイズに入ってしまっていた。
+// 審査で非公開になったお題（一覧の hiddenIds）だけを、まだ使っていない公開中のお題に差し替え、その問題の答えだけを選び直してもらう。
+// （「次は自分が出題」で引き継いだ相手の自作のお題などは、一覧になくても非公開ではないので、そのまま使う）
 function replaceUnavailableDraftCards(cards, answers) {
   const list = Array.isArray(cards) ? cards : [];
   const nextAnswers = Array.isArray(answers) ? answers.slice() : [];
-  if (!questionCatalogReady) return { cards: list, answers: nextAnswers, replaced: 0, firstIndex: -1 };
-  const available = new Set(allCards.map((card) => String(card.id)));
-  const unavailable = (card) => {
-    const sourceId = String(card?.sourceId || '');
-    return Boolean(sourceId) && !available.has(sourceId);
-  };
+  const hidden = questionCatalogReady ? hiddenQuestionIdSet() : null;
+  if (!hidden || !hidden.size) return { cards: list, answers: nextAnswers, replaced: 0, firstIndex: -1 };
+  const unavailable = (card) => hidden.has(String(card?.sourceId || '')) || hidden.has(String(card?.id || ''));
   if (!list.some(unavailable)) return { cards: list, answers: nextAnswers, replaced: 0, firstIndex: -1 };
   const used = new Set(list.map((card) => String(card?.sourceId || '')).filter(Boolean));
   const fresh = pickChallengeCards(allCards.filter((card) => !used.has(String(card.id))), list.length);

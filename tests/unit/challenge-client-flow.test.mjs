@@ -27,7 +27,7 @@ function harness() {
   const values=new Map(),kv={async get(key,options={}){const v=values.get(key);return v?options.type==='json'?JSON.parse(v):v:null;},async put(key,v){values.set(key,String(v));}};
   const saved=new Map();let requests=0;
   const context={pendingRoleSwap:null,QUESTION_COUNT:10,CREATOR_DRAFT_KEY:'draft',MANAGE_STATE_KEY:'wataChallengeManage',state:{mode:'creator-edit',cards:structuredClone(cards),answers:[],questionIndex:0,creatorName:'Local creator',finishCount:0,loading:false,questionSubmissionConsent:false},
-    allCards:structuredClone(cards),questionCatalogReady:true,pickChallengeCards,currentLocale:'ja',languagePrefix:'',validQuizLength,answeredQuestionCount,completedCreatorQuiz,challengeCopy,challengeCompletionCopy,boardCopy,
+    allCards:structuredClone(cards),questionCatalogReady:true,pickChallengeCards,hiddenQuestionIdSet:()=>new Set(),currentLocale:'ja',languagePrefix:'',validQuizLength,answeredQuestionCount,completedCreatorQuiz,challengeCopy,challengeCompletionCopy,boardCopy,
     structuredClone,Date,Number,Array,JSON,Map,Set,console,window:{},tagShareUrl,submissionEligibleCards,publicQuizCards,
     escapeHtml:x=>String(x).replaceAll('<','&lt;'),translateText:x=>x,shell:(...args)=>args,
     captureCreatorConsent(){},trackGamePlay(){},trackDailyResultAction(){},

@@ -19,8 +19,13 @@ const env = { ASSETS: { async fetch(request) {
 const get = (path) => worker.fetch(new Request('https://www.streetboardgame.com' + path), env);
 // Visible text without JavaScript, as a crawler reads it.
 function visibleText(html) {
-  return html.replace(/<head[\s\S]*?<\/head>/i, '').replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, 'x').replace(/\s+/g, ' ').trim();
+  // 2026-11-27：CodeQL の決まりに合わせ、閉じタグの空白も許し、消し残しがなくなるまでくり返す（テストの中だけの文字数の数え方）
+  let text = html, before;
+  do {
+    before = text;
+    text = text.replace(/<head[\s\S]*?<\/head\s*>/gi, '').replace(/<script[\s\S]*?<\/script[^>]*>/gi, '').replace(/<style[\s\S]*?<\/style[^>]*>/gi, '');
+  } while (text !== before);
+  return text.replace(/<[^>]*>/g, ' ').replace(/[<>]/g, ' ').replace(/&[a-z#0-9]+;/gi, 'x').replace(/\s+/g, ' ').trim();
 }
 const size = (locale, text) => (locale === 'ja' ? text.replace(/\s/g, '').length : text.split(' ').length);
 
