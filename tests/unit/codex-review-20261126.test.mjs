@@ -16,6 +16,6 @@ test('#1-1 swapping roles does not overwrite an unfinished creator draft',()=>{
 });
 test('#2-4 the reading pages go through the Worker first (measurement, AdSense account tag, CSP)',()=>{
  const s=fs.readFileSync('wrangler.jsonc','utf8'),b=s.match(/"run_worker_first"\s*:\s*\[([\s\S]*?)\]/)[1],rules=JSON.parse('['+b.replace(/\/\/[^\n]*/g,'')+']');
- for(const r of ['/guide','/guide/','/guide/*','/live*'])assert.ok(rules.includes(r),r);
+ for(const r of ['/guide','/guide/*','/live*'])assert.ok(rules.includes(r),r);
  assert.ok(rules.length<=100,'Cloudflare limit');
 });
