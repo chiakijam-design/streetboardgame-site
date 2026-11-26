@@ -3432,6 +3432,10 @@
     "m05e196c513a91f": "Solo el texto y las opciones se guardan en este navegador. Elige la respuesta cada vez. Quienes compartan el navegador pueden verlas. Borrar los datos del sitio las elimina; no se transfieren a otro dispositivo ni navegador.",
     "mc6281654fd5fde": "♡ Cómo jugar",
     "m1f586c96c0524b": "Escribe la pregunta y las cinco opciones.",
-    "m2322ab25033631": "Recargar"
+    "m2322ab25033631": "Recargar",
+    "m2c8d8d2fbb19b3": "Si vuelves a responder, tus respuestas anteriores dejarán de aparecer en la gestión de respuestas del creador.",
+    "mb02b0eb854acbf": "Una pregunta que ya no está disponible se ha cambiado por otra. Vuelve a elegir tu respuesta para esta pregunta.",
+    "m93eb50b42859b1": "Tu quiz incluye una pregunta que ya no está disponible. Recarga la página y cámbiala.",
+    "m5ba1822ca7f70d": "Añadir la puntuación también al texto (la imagen siempre muestra la puntuación)"
   }
 }

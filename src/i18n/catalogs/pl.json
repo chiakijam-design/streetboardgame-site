@@ -3432,6 +3432,10 @@
     "m05e196c513a91f": "W przeglądarce zapisywane są tylko pytanie i opcje. Odpowiedź wybierasz za każdym razem. Inni użytkownicy przeglądarki mogą je zobaczyć. Usunięcie danych strony je usuwa; nie są przenoszone na inne urządzenia ani przeglądarki.",
     "mc6281654fd5fde": "♡ Jak grać",
     "m1f586c96c0524b": "Wpisz pytanie i wszystkie pięć odpowiedzi.",
-    "m2322ab25033631": "Odśwież"
+    "m2322ab25033631": "Odśwież",
+    "m2c8d8d2fbb19b3": "Jeśli zaczniesz odpowiadać ponownie, Twoje poprzednie odpowiedzi przestaną być widoczne w zarządzaniu odpowiedziami twórcy.",
+    "mb02b0eb854acbf": "Pytanie, które nie jest już dostępne, zostało zastąpione innym. Wybierz ponownie odpowiedź na to pytanie.",
+    "m93eb50b42859b1": "Twój quiz zawiera pytanie, które nie jest już dostępne. Odśwież stronę i je zamień.",
+    "m5ba1822ca7f70d": "Dodaj wynik także do tekstu (obraz zawsze pokazuje wynik)"
   }
 }

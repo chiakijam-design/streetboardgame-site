@@ -22,6 +22,7 @@ import { questionPackBySlug, questionPackCards, questionPacks } from './src/chal
 import {
   changedQuestionCandidates,
   loadManagedQuestionCards,
+  hiddenQuestionIdSet,
   loadQuestionTrendMetrics,
   recordQuestionSelectionEvent,
   reportManagedQuestion,
@@ -244,7 +245,17 @@ function render() {
     stopResultFeedbackSequence();
   }
   if (questionViewportKey && questionViewportKey !== lastQuestionViewportKey) {
-    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
+    // 2026-11-27（Codex 見直し 11/26 ①-5）：同じ画面のまま次（前）の問題へ進んだときは、押したボタンが消えるので、
+    // 新しい問題の見出しへフォーカスを移す（キーボード・読み上げで続きが分かるように）。画面に入った最初はそのまま。
+    const movedQuestion = lastQuestionViewportKey.split(':')[0] === state.mode;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      const heading = movedQuestion ? app.querySelector('.notebook-card-accessible-title') : null;
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      }
+    });
   }
   lastQuestionViewportKey = questionViewportKey;
   updateAdHost(app, currentAdCandidate(), translateText('広告'));
@@ -1093,7 +1104,7 @@ function resultView() {
           aria-labelledby="challenge-result-share-title">
           <span class="challenge-section-label">SHARE YOUR RESULT</span>
           <h2 id="challenge-result-share-title">この結果、友達に伝えよう</h2>
-          <label class="challenge-consent" data-testid="result-share-include-score"><input type="checkbox" id="result-share-include-score"${state.resultShareIncludeScore ? ' checked' : ''}><span>点数も入れる</span></label>
+          <label class="challenge-consent" data-testid="result-share-include-score"><input type="checkbox" id="result-share-include-score"${state.resultShareIncludeScore ? ' checked' : ''}><span>共有文にも点数を入れる（画像には点数が入ります）</span></label>
           ${resultShareMarkup({ locale: currentLocale, translate: translateText, escape: escapeHtml, ready: Boolean(state.resultImageUrl) })}
 
         </section>
@@ -1131,6 +1142,8 @@ function resultView() {
     <section class="challenge-panel">
       <button class="challenge-secondary" data-action="retry-challenge">もう一度、答えを予想する</button>
       <p class="challenge-result-retry-note">${escapeHtml(result.participant?.rankingParticipating ? boardCopy(currentLocale, 'rule') : boardCopy(currentLocale, 'legacy'))}</p>
+      <!-- 2026-11-27（Codex 見直し 11/26 ①-7）：再挑戦を始めると、前回の答えは出題者の回答管理から消える（途中でやめても）。先に知らせる -->
+      <p class="challenge-note" data-testid="retry-clears-answers">${escapeHtml(translateText('もう一度答えはじめると、前回の答えは出題者の回答管理に表示されなくなります。'))}</p>
       <a class="challenge-secondary" href="/challenge/ranking?room=${result.code}">理解度ボードを見る</a>
       <a class="challenge-secondary" href="/">トップへ戻る</a>
     </section>
@@ -1623,16 +1636,47 @@ function resumeCreate() {
   pendingRoleSwap = null;
   const draft = creatorDraft();
   if (!draft) return setState({ error: 'draft-not-found' });
+  const swap = replaceUnavailableDraftCards(draft.cards, draft.answers);
+  const questionIndex = swap.firstIndex >= 0
+    ? swap.firstIndex
+    : Math.min(Math.max(Number(draft.questionIndex) || 0, 0), draft.cards.length - 1);
+  if (swap.replaced) saveCreatorDraft({ ...draft, cards: swap.cards, answers: swap.answers, questionIndex });
   setState({
     mode: 'creator-edit',
     creatorName: draft.creatorName,
-    cards: draft.cards,
-    answers: draft.answers,
-    questionIndex: Math.min(Math.max(Number(draft.questionIndex) || 0, 0), draft.cards.length - 1),
+    cards: swap.cards,
+    answers: swap.answers,
+    questionIndex,
     questionSubmissionConsent: draft.questionSubmissionConsent !== false,
     editingQuestion: false,
-    error: '',
+    error: swap.replaced ? 'draft-question-replaced' : '',
   });
+}
+
+// 2026-11-27（Codex 見直し 11/26 ①-9）：途中保存のあとに通報などで非公開になった共通のお題は、
+// 再開や発行のときにそのまま使うと、自作のお題として新しいクイズに入ってしまっていた。
+// 審査で非公開になったお題（一覧の hiddenIds）だけを、まだ使っていない公開中のお題に差し替え、その問題の答えだけを選び直してもらう。
+// （「次は自分が出題」で引き継いだ相手の自作のお題などは、一覧になくても非公開ではないので、そのまま使う）
+function replaceUnavailableDraftCards(cards, answers) {
+  const list = Array.isArray(cards) ? cards : [];
+  const nextAnswers = Array.isArray(answers) ? answers.slice() : [];
+  const hidden = questionCatalogReady ? hiddenQuestionIdSet() : null;
+  if (!hidden || !hidden.size) return { cards: list, answers: nextAnswers, replaced: 0, firstIndex: -1 };
+  const unavailable = (card) => hidden.has(String(card?.sourceId || '')) || hidden.has(String(card?.id || ''));
+  if (!list.some(unavailable)) return { cards: list, answers: nextAnswers, replaced: 0, firstIndex: -1 };
+  const used = new Set(list.map((card) => String(card?.sourceId || '')).filter(Boolean));
+  const fresh = pickChallengeCards(allCards.filter((card) => !used.has(String(card.id))), list.length);
+  let replaced = 0;
+  let firstIndex = -1;
+  const nextCards = list.map((card, index) => {
+    if (!unavailable(card) || !fresh[replaced]) return card;
+    const substitute = toCreatorDraftCard(fresh[replaced]);
+    replaced += 1;
+    if (firstIndex < 0) firstIndex = index;
+    nextAnswers[index] = null;
+    return substitute;
+  });
+  return { cards: nextCards, answers: nextAnswers, replaced, firstIndex };
 }
 
 function deleteCreatorDraft() {
@@ -1710,6 +1754,9 @@ async function answerParticipantQuestion(choice) {
     saveParticipantDraft(next);
     setState(next);
   } catch (error) {
+    // 2026-11-27（Codex 見直し 11/26 ①-3）：答えはサーバーに保存されたのに返事を受け取れなかったとき（通信の切れ・
+    // 別のタブで先に答えた）は、同じ問題に残って違う答えを押すと 409 で進めなくなっていた。サーバーの進み具合に合わせて戻す。
+    if (await syncParticipantProgress(questionIndex).catch(() => false)) return;
     setState({
       answerPending: false,
       mode: 'participant-answer',
@@ -1718,9 +1765,41 @@ async function answerParticipantQuestion(choice) {
   }
 }
 
+async function syncParticipantProgress(failedIndex) {
+  if (!state.roomCode || !state.participantToken) return false;
+  const headers = { 'x-challenge-participant-token': state.participantToken };
+  const resultResponse = await fetch(`/api/challenge/rooms/${state.roomCode}/result`, { headers });
+  if (resultResponse.ok) {
+    removeStorage(participantDraftKey(state.roomCode));
+    await loadResult();
+    return true;
+  }
+  const resumeResponse = await fetch(`/api/challenge/rooms/${state.roomCode}/join`, {
+    method: 'POST',
+    headers: { ...headers, 'content-type': 'application/json' },
+    body: '{}',
+  });
+  if (!resumeResponse.ok) return false;
+  const data = await resumeResponse.json();
+  const answerCount = Math.min(Math.max(Number(data.participant?.answerCount) || 0, 0), state.cards.length - 1);
+  // この問題の答えがまだ保存されていなければ、今までどおり誤りを出して押し直してもらう
+  if (answerCount <= failedIndex) return false;
+  const next = { questionIndex: answerCount, answerPending: false, mode: 'participant-answer', error: '' };
+  saveParticipantDraft({ ...state, ...next });
+  setState(next);
+  return true;
+}
+
 async function createChallengeRoom(answers) {
   const completed = completedCreatorQuiz(state.cards, answers);
   if (state.loading || !completed || completed.answers.length !== answers.length) return;
+  // 2026-11-27（①-9）：作っている間に非公開になったお題があれば、発行せずに差し替えて選び直してもらう
+  const swap = replaceUnavailableDraftCards(state.cards, answers);
+  if (swap.replaced) {
+    const next = { cards: swap.cards, answers: swap.answers, questionIndex: swap.firstIndex, editingQuestion: false, error: 'draft-question-replaced' };
+    saveCreatorDraft({ ...state, ...next });
+    return setState(next);
+  }
   const cards = completed.cards.map((card, index) => {
     const source = allCards.find((item) => String(item.id) === String(card.sourceId || ''));
     const changed = !source || card.title !== source.title
@@ -2650,6 +2729,8 @@ function errorMessage(code) {
     'retry-failed': '再挑戦を開始できませんでした。',
     'manage-forbidden': '主催者用URLを確認できません。',
     'draft-not-found': '途中保存データが見つかりません。',
+    'draft-question-replaced': '使えなくなったお題を、別のお題に入れ替えました。この問題の答えを選び直してください。',
+    'question-hidden': '使えなくなったお題が入っています。ページを読み込み直して、お題を入れ替えてください。',
     'copy-failed': '自動コピーできませんでした。URL欄を長押ししてコピーしてください。',
     'library-failed': '人気のお題を読み込めませんでした。',
     'question-report-reason-required': '通報理由を選んでください。',

@@ -19,15 +19,21 @@ const env = { ASSETS: { async fetch(request) {
 const get = (path) => worker.fetch(new Request('https://www.streetboardgame.com' + path), env);
 // Visible text without JavaScript, as a crawler reads it.
 function visibleText(html) {
-  return html.replace(/<head[\s\S]*?<\/head>/i, '').replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, 'x').replace(/\s+/g, ' ').trim();
+  // 2026-11-27：CodeQL の決まりに合わせ、閉じタグの空白も許し、消し残しがなくなるまでくり返す（テストの中だけの文字数の数え方）
+  let text = html, before;
+  do {
+    before = text;
+    text = text.replace(/<head[\s\S]*?<\/head\s*>/gi, '').replace(/<script[\s\S]*?<\/script[^>]*>/gi, '').replace(/<style[\s\S]*?<\/style[^>]*>/gi, '');
+  } while (text !== before);
+  return text.replace(/<[^>]*>/g, ' ').replace(/[<>]/g, ' ').replace(/&[a-z#0-9]+;/gi, 'x').replace(/\s+/g, ' ').trim();
 }
 const size = (locale, text) => (locale === 'ja' ? text.replace(/\s/g, '').length : text.split(' ').length);
 
 test('pack question data is generated from the current question sources', async () => {
   assert.equal(await readFile(new URL('src/generated/pack-questions.js', root), 'utf8'), packQuestionModule(await packQuestionData(root)));
   for (const slug of PACK_SLUGS) for (const locale of SEARCH_COPY_LOCALES) {
-    assert.equal(PACK_QUESTIONS[slug][locale].length, 10, `${locale} ${slug}`);
+    // 2026-11-27（①-11）：予備のお題も持つ（公開のときに非公開を除いて先頭の10問を出す）
+    assert.ok(PACK_QUESTIONS[slug][locale].length >= 10, `${locale} ${slug}`);
     assert.ok(PACK_QUESTIONS[slug][locale].every(({ choices }) => choices.length === 5));
   }
 });
@@ -93,7 +99,7 @@ test('each pack has its own indexable page in ja, en, es and pt', async () => {
     for (const language of SEARCH_COPY_LOCALES) assert.ok(html.includes(`hreflang="${language}" href="https://www.streetboardgame.com${packPagePath(slug, language)}"`), `${path} ${language}`);
     assert.ok(html.includes(`<html lang="${locale}">`));
     assert.ok(html.includes(`href="${locale === 'ja' ? '' : '/' + locale}/challenge?pack=${slug}"`), path + ' creates a quiz with the pack');
-    for (const question of PACK_QUESTIONS[slug][locale]) assert.ok(html.includes(question.title.replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;')), `${path}: ${question.title}`);
+    for (const question of PACK_QUESTIONS[slug][locale].slice(0, 10)) assert.ok(html.includes(question.title.replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;')), `${path}: ${question.title}`);
     for (const related of RELATED_PACKS[slug]) assert.ok(html.includes(`href="${packPagePath(related, locale)}"`));
     assert.doesNotMatch(html, /adsbygoogle|pagead2/, 'no ads');
     assert.ok(size(locale, visibleText(html)) >= (locale === 'ja' ? 1100 : 450), path);

@@ -3432,6 +3432,10 @@
     "m05e196c513a91f": "Seuls le texte et les choix sont conservés dans ce navigateur. Choisissez la réponse à chaque fois. Les autres utilisateurs du navigateur peuvent les voir. Effacer les données du site les supprime ; aucun transfert vers un autre appareil ou navigateur.",
     "mc6281654fd5fde": "♡ Comment jouer",
     "m1f586c96c0524b": "Saisissez la question et les cinq choix.",
-    "m2322ab25033631": "Recharger"
+    "m2322ab25033631": "Recharger",
+    "m2c8d8d2fbb19b3": "Si vous recommencez, vos réponses précédentes n'apparaîtront plus dans la gestion des réponses du créateur.",
+    "mb02b0eb854acbf": "Une question qui n'est plus disponible a été remplacée par une autre. Choisissez à nouveau votre réponse à cette question.",
+    "m93eb50b42859b1": "Votre quiz contient une question qui n'est plus disponible. Rechargez la page et remplacez-la.",
+    "m5ba1822ca7f70d": "Ajouter aussi le score au texte (l'image affiche toujours le score)"
   }
 }

@@ -3432,6 +3432,10 @@
     "m05e196c513a91f": "Bare spørsmål og alternativer lagres i denne nettleseren. Velg svaret hver gang. Andre brukere kan se dem. Sletting av nettstedsdata fjerner dem; de overføres ikke til andre enheter eller nettlesere.",
     "mc6281654fd5fde": "♡ Slik spiller du",
     "m1f586c96c0524b": "Skriv inn spørsmålet og alle fem svaralternativene.",
-    "m2322ab25033631": "Last inn på nytt"
+    "m2322ab25033631": "Last inn på nytt",
+    "m2c8d8d2fbb19b3": "Hvis du begynner å svare på nytt, vises ikke de forrige svarene dine lenger i skaperens svaroversikt.",
+    "mb02b0eb854acbf": "Et spørsmål som ikke lenger er tilgjengelig, er byttet ut med et annet. Velg svaret ditt på dette spørsmålet på nytt.",
+    "m93eb50b42859b1": "Quizen din inneholder et spørsmål som ikke lenger er tilgjengelig. Last inn siden på nytt og bytt det ut.",
+    "m5ba1822ca7f70d": "Legg også poengsummen i teksten (bildet viser alltid poengsummen)"
   }
 }

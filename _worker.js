@@ -8,7 +8,7 @@ import { runPrivacyCleanup } from './src/privacy/cleanup.js';
 import { infoPageMarkup, infoPageFontStyles } from './src/generated/info-pages.js';
 import { questionPacks } from './src/challenge/packs.js';
 import { injectLibraryCatalog, removeLibraryCatalog } from './src/challenge/library-catalog.js';
-import { hiddenQuestionIds, stripHiddenQuestions } from './src/questions/hidden-public.js';
+import { hiddenQuestionIds, stripHiddenQuestions, trimPackQuestions } from './src/questions/hidden-public.js';
 import { personalizeRoomPage } from './src/challenge/share-meta.js';
 import { BOARD_COPY } from './src/i18n/challenge-board-copy.js';
 import { injectChallengeCopy, injectHomeCopy, injectSearchCopy, matchPackPage, setLibraryHeading, renderPackPage, SEARCH_COPY_LOCALES } from './src/content/search-copy.js';
@@ -133,7 +133,7 @@ async function handleRequest(request, env) {
       if (rawPath !== path) return Response.redirect(url.origin + path + url.search, 301);
       // 2026-11-22（Gemini 見直し9）：/ja/ 付きは日本語の正しい住所へ（同じページを2つの住所で出さない）
       if (/^\/ja\//.test(path)) return Response.redirect(url.origin + path.slice(3) + url.search, 301);
-      return new Response(request.method === 'HEAD' ? null : stripHiddenQuestions(renderPackPage(packPage.slug, packPage.locale), await hiddenQuestionIds(env)), {
+      return new Response(request.method === 'HEAD' ? null : trimPackQuestions(stripHiddenQuestions(renderPackPage(packPage.slug, packPage.locale), await hiddenQuestionIds(env))), {
         status: 200,
         headers: { 'content-type': 'text/html; charset=UTF-8', 'cache-control': 'public, max-age=0, must-revalidate' },
       });
@@ -153,7 +153,9 @@ async function handleRequest(request, env) {
         const era = /^\/legal-history\/2026-10-23-/.test(path) ? '2026-10-23-' : '';
         body = (await response.text())
           .replace(/(href="|"url":")((?:https:\/\/www\.streetboardgame\.com)?)\/(creator-terms|refund-policy)"/g, (match, attr, origin, page) => `${attr}${origin}/legal-history/${era}${page}.html"`)
-          .replace(/<body\b[^>]*>/i, '$&' + notice);
+          .replace(/<body\b[^>]*>/i, '$&' + notice)
+          // 2026-11-27（Codex 見直し 11/26 ①-10）：ページの中の robots の印も HTTP の印とそろえる（保存している原本は変えない）
+          .replace(/(<meta\b[^>]*\bname=["']robots["'][^>]*\bcontent=)["'][^"']*["']/i, '$1"noindex, nofollow, noarchive"');
       }
       return new Response(request.method === 'HEAD' ? null : body, { status: response.status, headers });
     }
@@ -289,7 +291,8 @@ async function handleRequest(request, env) {
       let rendered;
       try {
         let baseHtml = await response.text();
-        if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge/library') baseHtml = removeLibraryCatalog(applyChallengeLibraryMeta(baseHtml));
+        // 2026-11-27（Codex 見直し 11/26 ①-6）：読みもののない言語でも、一覧の最初の見出しをクイズ作成の文ではなく「10問パック」の訳にする
+        if (stripLocalePrefix(rawPath).replace(/\/+$/, '') === '/challenge/library') baseHtml = setLibraryHeading(removeLibraryCatalog(applyChallengeLibraryMeta(baseHtml)), 'ja');
         rendered = localizePublicHtml(baseHtml, data, url, PUBLIC_LOCALES);
         // Original copy for the search languages goes in after translation.
         rendered = injectSearchCopy(rendered, locale, stripLocalePrefix(rawPath).replace(/\/+$/, '') || '/');
