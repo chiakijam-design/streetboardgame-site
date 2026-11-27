@@ -178,6 +178,13 @@ const UI_TEXT = new Map(Object.entries({
   '載せなくても、結果の保存・共有・再挑戦はできます': 'You can still save, share, and retry without adding your result.',
   'Instagram用': 'For Instagram',
   'ストーリー用：文章コピー＋画像保存': 'For Stories: copy text + save image',
+  // 2026-11-27 (Codex review 11/26 #2-7, #2-8)
+  'このURLのクイズは見つからないか、期限が切れています。送ってくれた人に新しいURLをもらうか、ほかのお題で遊べます。': 'This quiz could not be found or has expired. Ask the person who sent it for a new link, or play with other questions.',
+  'つながりにくくなっている可能性があります。少し待ってから、もう一度読み込んでください。': 'The connection may be unstable. Please wait a moment and reload.',
+  'もう一度読み込む': 'Reload',
+  '10問パックから選んで作る': 'Pick a 10-question pack and make a quiz',
+  'ストーリー用：画像を保存＋リンクをコピー': 'For Stories: save image + copy link',
+  '画像を保存し、参加URLをコピーしました。ストーリーに画像を載せ、リンクスタンプにURLを貼り付けてください。': 'Image saved and link copied. Add the image to your Story and paste the link into the link sticker.',
   'Xで結果を投稿': 'Post result on X',
   '画像だけ保存': 'Save image only',
   '理解度ボードに載せました。': 'Added to the Understanding Board.',

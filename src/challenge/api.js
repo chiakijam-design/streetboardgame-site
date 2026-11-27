@@ -3,6 +3,7 @@ import { recordOpsEvent } from '../ops/events.js';
 import { enforceChallengeRateLimit, CHALLENGE_PLAY_LIMITS } from './rate-limit.js';
 import { CHALLENGE_DAILY_ACTIONS, recordDailyAction } from '../analytics/daily-actions.js';
 import { validShareAction, recordShareAction } from '../analytics/share-actions.js';
+import { validShareFunnel, recordShareFunnel } from '../analytics/share-funnel.js';
 import { validQuizLength } from './length.js';
 import { hiddenQuestionIds } from '../questions/hidden-public.js';
 import { ENGLISH_LIBRARY_CARDS, LIBRARY_CATALOG } from '../generated/library-catalog.js';
@@ -86,6 +87,12 @@ export async function handleChallengeApi(request, env, path) {
 
     const shareActionMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/share-actions$/);
     if (shareActionMatch && request.method === 'POST') return await recordShareButtonAction(request, env, shareActionMatch[1]);
+
+    // 2026-11-27 (Codex review 11/26 #2-13): anonymous daily counts for visitors from a shared link.
+    if (path === '/api/challenge/funnel' && request.method === 'POST') {
+      await enforceChallengeRateLimit(env, request.headers.get('CF-Connecting-IP'), 'funnel', 120);
+      return await recordShareFunnelStep(request, env);
+    }
 
     const resultMatch = path.match(/^\/api\/challenge\/rooms\/([A-Z2-9]{8})\/result$/);
     if (resultMatch && request.method === 'GET') {
@@ -1170,4 +1177,14 @@ function jsonResponse(data, status = 200) {
       'cache-control': 'no-store',
     },
   });
+}
+
+// 2026-11-27 (Codex review 11/26 #2-13): {step, channel, locale} only; anything else is rejected.
+async function recordShareFunnelStep(request, env) {
+  const text = await request.text();
+  if (text.length > 160) throw apiError('invalid-action', 400);
+  let body;
+  try { body = JSON.parse(text); } catch { throw apiError('invalid-action', 400); }
+  if (!body || !validShareFunnel(body.step, body.channel, body.locale)) throw apiError('invalid-action', 400);
+  return jsonResponse({ stored: await recordShareFunnel(env, body.step, body.channel, body.locale) });
 }

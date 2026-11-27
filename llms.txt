@@ -12,6 +12,27 @@ A free browser quiz about how well your friends know you. The creator picks 1–
 - [About](https://www.streetboardgame.com/about): コンセプト、理解度ボードのしくみ、問い合わせ方法。
 - [English guide](https://www.streetboardgame.com/en/challenge-guide): How to create, share and read the results, with FAQ.
 
+## 読みもの / Articles (Japanese)
+
+- [読みもの一覧](https://www.streetboardgame.com/guide/): 自分クイズの問題例と、場面ごとの遊び方の記事の一覧。
+- [自分クイズの問題例50](https://www.streetboardgame.com/guide/self-quiz-questions): 何を出せばいいか迷う人向け。ジャンル別の問題例と、選択肢の作り方。
+- [初対面で盛り上がる質問の選び方](https://www.streetboardgame.com/guide/first-meeting-questions): クラス替え・新しい職場・サークルで自己紹介に使いたい人向け。
+- [カップル・夫婦で遊ぶ理解度クイズ](https://www.streetboardgame.com/guide/couple-quiz-questions): パートナーと遊ぶときの質問の選び方と、けんかにならないコツ。
+- [職場・チームのアイスブレイク](https://www.streetboardgame.com/guide/team-icebreaker-quiz): 新メンバー紹介や朝会で使いたい人向けの質問と進め方。
+- [みんなが楽しめる質問の選び方と答え合わせのコツ](https://www.streetboardgame.com/guide/kind-questions-and-answer-check): 誰も傷つけない問題選びと、点数が低かった人への声のかけ方。
+
+## Guides / Guías / Guias
+
+- [Guides (English)](https://www.streetboardgame.com/en/guide/): Question ideas for a “how well do you know me” quiz, and how to play it with new friends, best friends, partners, coworkers and family.
+  - [40 “How Well Do You Know Me?” Questions for Friends](https://www.streetboardgame.com/en/guide/how-well-do-you-know-me-questions)
+  - [How Well Do You Know Me? Quiz Ideas for Friends, Couples and Coworkers](https://www.streetboardgame.com/en/guide/quiz-ideas-for-friends-couples-coworkers)
+- [Guías (Español)](https://www.streetboardgame.com/es/guide/): Ideas de preguntas para un cuestionario de “¿cuánto me conoces?” y cómo jugarlo con amigos nuevos, mejores amigos, pareja, compañeros de trabajo y familia.
+  - [40 preguntas de “¿Cuánto me conoces?” para tus amigos](https://www.streetboardgame.com/es/guide/preguntas-cuanto-me-conoces)
+  - [¿Cuánto me conoces? Ideas para jugar con amigos, pareja y compañeros](https://www.streetboardgame.com/es/guide/preguntas-para-amigos-pareja-companeros)
+- [Guias (Português (Brasil))](https://www.streetboardgame.com/pt/guide/): Ideias de perguntas para um quiz de “quanto você me conhece?” e como jogar com amigos novos, melhores amigos, namorado ou namorada, colegas de trabalho e família.
+  - [40 perguntas de “Quanto você me conhece?” para mandar aos amigos](https://www.streetboardgame.com/pt/guide/perguntas-quanto-voce-me-conhece)
+  - [Quanto você me conhece? Ideias para jogar com amigos, casal e colegas](https://www.streetboardgame.com/pt/guide/perguntas-para-amigos-casal-colegas)
+
 ## 10問パック / Question packs
 
 - [10問パックの一覧](https://www.streetboardgame.com/challenge/library)

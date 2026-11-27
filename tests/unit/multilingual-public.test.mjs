@@ -76,7 +76,8 @@ test('すべての公開言語ページに代替リンクがあり、検索対�
   }
   // 44 stable pages plus the 36 pack pages (9 packs x ja/en/es/pt, 2026-11-16),
   // plus the Japanese guide pages (2026-11-25: /guide/ and its articles).
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 86);
+  // 2026-11-27 (Codex review 11/26 #2-1): + the en/es/pt guides (3 lists and 6 articles).
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 95);
   for (const [, location] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
     assert.doesNotMatch(location, /[?#]|\/manage|\/ranking|\/remote/);
   }

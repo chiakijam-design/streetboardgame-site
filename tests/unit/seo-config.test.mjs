@@ -61,11 +61,14 @@ test('sitemapは正規URL・正確な更新日だけを掲載する', async () =
   }
   // 各ページに実際に行った内容の更新日を記録する。
   assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/'), '2026-11-25');
+  assert.equal(lastModifiedByUrl.get('https://www.streetboardgame.com/challenge/library'), '2026-11-16');
+  // 2026-11-27 (Codex review 11/26 #2-5): the creator and guide titles now say what the page is for.
   for (const updatedUrl of [
     'https://www.streetboardgame.com/challenge',
     'https://www.streetboardgame.com/en/challenge',
-    'https://www.streetboardgame.com/challenge/library',
-  ]) assert.equal(lastModifiedByUrl.get(updatedUrl), '2026-11-16', updatedUrl);
+    'https://www.streetboardgame.com/challenge-guide',
+    'https://www.streetboardgame.com/en/challenge-guide',
+  ]) assert.equal(lastModifiedByUrl.get(updatedUrl), '2026-11-27', updatedUrl);
   // Search-indexed locales only: ja (no prefix), en, es and pt (2026-11-15).
   assert.equal(locations.some((location) => /^https:\/\/www\.streetboardgame\.com\/(?!(?:en|es|pt)\/)[a-z]{2}(?:-[A-Za-z]+)?\//.test(location)), false);
   assert.equal(locationSet.has('https://www.streetboardgame.com/es/challenge'), true);

@@ -11,7 +11,7 @@ import { injectLibraryCatalog, removeLibraryCatalog } from './src/challenge/libr
 import { hiddenQuestionIds, stripHiddenQuestions, trimPackQuestions } from './src/questions/hidden-public.js';
 import { personalizeRoomPage } from './src/challenge/share-meta.js';
 import { BOARD_COPY } from './src/i18n/challenge-board-copy.js';
-import { injectChallengeCopy, injectHomeCopy, injectSearchCopy, matchPackPage, setLibraryHeading, renderPackPage, SEARCH_COPY_LOCALES } from './src/content/search-copy.js';
+import { injectChallengeCopy, injectHomeCopy, injectSearchCopy, matchPackPage, setLibraryHeading, renderPackPage, SEARCH_COPY_LOCALES, matchIntlGuide, intlGuidePath, renderIntlGuide } from './src/content/search-copy.js';
 import { localeFromPath, stripLocalePrefix, SEARCH_INDEXED_LOCALES as SEARCH_LOCALE_LIST } from './src/i18n/locales.js';
 import { localizePublicHtml, localizedAssetRoute, injectPublicLocaleShell } from './src/i18n/public-html.js';
 import { PUBLIC_LOCALES } from './src/generated/public-locales.js';
@@ -38,7 +38,8 @@ const SEARCH_INDEXED_LOCALES = new Set(SEARCH_LOCALE_LIST);
 // paths, rather than every subdomain or every path on those hosts.
 const CLARITY_COLLECT_SOURCES = Array.from('abcdefghijklmnopqrstuvwxyz',
   (letter) => `https://${letter}.clarity.ms/collect`).join(' ');
-const HASHED_BUILD_ASSET_PATH = /^\/(?:dist\/(?:[a-z0-9_]+-[a-z0-9]{8}\.js|[a-z0-9-]+-[a-f0-9]{12}\.css)|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12}\.js)$/i;
+// 2026-11-27 (Codex review 11/26 #2-12): translation scripts are named by a hash of their content (tools/build-public-locale-pages.mjs), so they are cached for a year too.
+const HASHED_BUILD_ASSET_PATH = /^\/(?:dist\/(?:[a-z0-9_]+-[a-z0-9]{8}\.js|[a-z0-9-]+-[a-f0-9]{12}\.css)|assets\/vendor\/react(?:-dom)?\.production\.min-[a-f0-9]{12}\.js|locale-assets\/[a-z]{2}(?:-[A-Za-z]{4})?-[a-f0-9]{12}\.js)$/i;
 const VERSIONED_STATIC_ASSET_PATH = /\.(?:css|js|png|jpe?g|svg|webp|woff2)$/i;
 const RETIRED_GAME_PATHS = new Set([
   '/love',
@@ -134,6 +135,17 @@ async function handleRequest(request, env) {
       // 2026-11-22（Gemini 見直し9）：/ja/ 付きは日本語の正しい住所へ（同じページを2つの住所で出さない）
       if (/^\/ja\//.test(path)) return Response.redirect(url.origin + path.slice(3) + url.search, 301);
       return new Response(request.method === 'HEAD' ? null : trimPackQuestions(stripHiddenQuestions(renderPackPage(packPage.slug, packPage.locale), await hiddenQuestionIds(env))), {
+        status: 200,
+        headers: { 'content-type': 'text/html; charset=UTF-8', 'cache-control': 'public, max-age=0, must-revalidate' },
+      });
+    }
+
+    // 2026-11-27 (Codex review 11/26 #2-1): reading pages for the English, Spanish and Portuguese searches.
+    const intlGuide = matchIntlGuide(rawPath);
+    if (intlGuide) {
+      const canonicalPath = intlGuidePath(intlGuide.locale, intlGuide.key);
+      if (rawPath !== canonicalPath) return Response.redirect(url.origin + canonicalPath + url.search, 301);
+      return new Response(request.method === 'HEAD' ? null : renderIntlGuide(intlGuide.locale, intlGuide.key), {
         status: 200,
         headers: { 'content-type': 'text/html; charset=UTF-8', 'cache-control': 'public, max-age=0, must-revalidate' },
       });
@@ -388,7 +400,8 @@ async function handleRequest(request, env) {
 
     const pageMap = {
       '/challenge-guide': {
-        title: 'みんなに挑戦してもらう｜1〜10問クイズの遊び方・作り方',
+        // 2026-11-27（Codex 見直し 11/26 ②-5）：検索結果の題で、このページでできること（作り方・答え方）が分かるようにする
+        title: '自分クイズの作り方・答え方｜わたし理解度診断',
         description: '「わたし理解度診断」の作り方と遊び方。問題の選び方、URL・QRコードの送り方、答え合わせレポートの見方を紹介します。',
         url: CANONICAL_ORIGIN + '/challenge-guide',
         ogTitle: 'みんなに挑戦してもらう｜わたし理解度診断',
@@ -769,9 +782,16 @@ function applyChallengeShareMeta(html, requestUrl) {
   shareUrl.searchParams.set('room', room);
   const shareVersion = String(requestUrl.searchParams.get('share') || '').trim();
   if (/^[a-z0-9-]{1,40}$/i.test(shareVersion)) shareUrl.searchParams.set('share', shareVersion);
+  // 2026-11-27 (Codex review 11/26 #2-3): a friend who opens an invitation sees what to do while the
+  // game script is still loading (the empty panel is replaced by the script as before).
   return html.replace(
     /<meta property="og:url" content="[^"]*">/,
     `<meta property="og:url" content="${shareUrl.toString()}">`,
+  ).replace(
+    '<div class="challenge-app-placeholder__panel" aria-hidden="true"></div>',
+    '<div class="challenge-app-placeholder__panel" data-testid="join-boot-guide" style="padding:18px 20px;font-size:15px;line-height:1.8;font-weight:700">'
+      + '<p style="margin:0 0 8px">友だちが先に答えた問題に、5つの選択肢から予想して答えるクイズです。</p>'
+      + '<p style="margin:0">ニックネームを入れて始めます。登録やアプリは不要です。</p></div>',
   );
 }
 

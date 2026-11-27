@@ -30,7 +30,7 @@ function harness() {
     allCards:structuredClone(cards),questionCatalogReady:true,pickChallengeCards,hiddenQuestionIdSet:()=>new Set(),currentLocale:'ja',languagePrefix:'',validQuizLength,answeredQuestionCount,completedCreatorQuiz,challengeCopy,challengeCompletionCopy,boardCopy,
     structuredClone,Date,Number,Array,JSON,Map,Set,console,window:{},tagShareUrl,submissionEligibleCards,publicQuizCards,
     escapeHtml:x=>String(x).replaceAll('<','&lt;'),translateText:x=>x,shell:(...args)=>args,
-    captureCreatorConsent(){},trackGamePlay(){},trackDailyResultAction(){},
+    captureCreatorConsent(){},trackGamePlay(){},trackDailyResultAction(){},sendShareFunnel(){},rememberShareArrival(){},
     changedQuestionCandidates:()=>[],saveManageRoom(){},removeStorage:key=>saved.delete(key),
     readStorage:key=>saved.get(key),saveCreatorDraft:v=>saved.set('draft',structuredClone(v)),
     history:{state:null,url:'',replaceState(next,_,url){this.state=next;this.url=url;}},setState:patch=>Object.assign(context.state,patch),

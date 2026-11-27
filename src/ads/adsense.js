@@ -70,6 +70,9 @@ export function updateAdHost(anchor, candidate, label, win = globalThis.window) 
   const unit = doc.createElement('ins');
   unit.className = 'adsbygoogle';
   unit.style.display = 'block';
+  // 2026-11-27 (Codex review 11/26 #2-10): keep room for a typical responsive unit before it fills, so links
+  // below the game do not jump when an ad appears. Recheck per placement and width when ads are turned back on.
+  unit.style.minHeight = '250px';
   unit.dataset.adClient = config.client;
   unit.dataset.adSlot = adSlotFor(placement, config);
   unit.dataset.adFormat = 'auto';

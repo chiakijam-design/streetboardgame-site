@@ -96,7 +96,7 @@ test('作成完了後は共通共有パネルの8操作と2つの管理導線を
   await expect(controls.locator('[data-result-share-row]')).toHaveCount(2);
   await expect(controls.locator('button')).toHaveCount(8);
   await controls.locator('summary').click();
-  await expect(controls.getByRole('button', { name: 'ストーリー用：文章コピー＋画像保存' })).toBeVisible();
+  await expect(controls.getByRole('button', { name: 'ストーリー用：画像を保存＋リンクをコピー' })).toBeVisible();
   expect(await controls.locator('button').evaluateAll((buttons) => {
     const panel = buttons[0].closest('[data-result-share-controls]').getBoundingClientRect();
     return buttons.every(button => {
@@ -442,10 +442,10 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
   // Story button saves the vertical 1080x1920 invitation (request 5).
   expect(invitationFile.suggestedFilename()).toBe('watachan-challenge-invitation-story.png');
   expect(await pngSize(invitationFile)).toEqual({ width: 1080, height: 1920 });
-  await expect(hostShare.locator('[data-result-share-status]')).toHaveText('Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。');
+  // 2026-11-27 (Codex review 11/26 #2-8): the Stories button copies only the join URL for the link sticker.
+  await expect(hostShare.locator('[data-result-share-status]')).toHaveText('画像を保存し、参加URLをコピーしました。ストーリーに画像を載せ、リンクスタンプにURLを貼り付けてください。');
   const invitationCaption = await page.evaluate(() => window.__instagramCopiedUrl);
-  expect(invitationCaption).toContain('ちあき');
-  expect(withoutUtm(invitationCaption.split('\n').at(-1))).toBe(withoutUtm(challengeUrl));
+  expect(withoutUtm(invitationCaption)).toBe(withoutUtm(challengeUrl));
   expect(invitationCaption).not.toContain('/manage');
   const isolatedManageKey = await page.evaluate(() => history.state.wataChallengeManage.token);
   expect(invitationCaption).not.toContain(isolatedManageKey);
@@ -593,9 +593,8 @@ test('出題者10問→共有URL→挑戦者10問→答え合わせ・点数入�
       const storyFile = await downloadPromise;
       expect(storyFile.suggestedFilename()).toBe('watachan-challenge-score-story.png');
       expect(await pngSize(storyFile)).toEqual({ width: 1080, height: 1920 });
-      expect(await participant.evaluate(() => window.__copiedResultText)).toContain('称号は「');
-      // 2026-11-21 (Codex review #5): the story caption carries the public join URL for the link sticker.
-      expect(await participant.evaluate(() => window.__copiedResultText)).toContain('/challenge?room=');
+      // 2026-11-27 (Codex review 11/26 #2-8): the Stories button copies only the public join URL, ready for the link sticker.
+      expect(await participant.evaluate(() => window.__copiedResultText)).toMatch(/^https?:\/\/[^\s]+\/challenge\?room=[^\s]+$/);
       expect(await participant.evaluate(() => window.__copiedResultText)).not.toContain('manage');
       const imageDownloadPromise = participant.waitForEvent('download');
       await resultShare.getByRole('button', { name: '結果画像を保存', exact: true }).click();

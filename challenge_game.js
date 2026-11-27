@@ -50,6 +50,7 @@ import { stripLocalePrefix } from './src/i18n/locales.js';
 import { localizedCanvasContext, collectProtectedUserCopy } from './src/i18n/canvas-copy.js';
 import { trackAnalyticsEvent, trackGamePlay } from './src/analytics/events.js';
 import { sendChallengeDailyAction } from './src/analytics/client-daily-actions.js';
+import { rememberShareArrival, sendShareFunnel } from './src/analytics/client-share-funnel.js';
 import { sendChallengeShareAction } from './src/analytics/client-share-actions.js';
 import QRCode from 'qrcode';
 
@@ -1029,7 +1030,7 @@ function joinView() {
       'FULL',
       '参加受付は終了しました',
       `このクイズは上限の${room.maxParticipants}人に達しました。`,
-      '<section class="challenge-panel"><a class="challenge-primary" href="/challenge">自分も作る</a></section>',
+      `<section class="challenge-panel" data-testid="challenge-full-choices"><a class="challenge-primary" href="${languagePrefix}/challenge/library">10問パックから選んで作る</a><a class="challenge-secondary" href="${languagePrefix}/challenge">自分も作る</a><a class="challenge-secondary" href="/challenge/ranking?room=${room.code}">理解度ボードを見る</a></section>`,
     );
   }
   return shell(
@@ -1390,16 +1391,29 @@ function scheduleLibraryTrends() {
 }
 
 function errorView() {
+  // 2026-11-27 (Codex review 11/26 #2-7): say which case it is, and leave a way to keep playing
+  // (the question packs, or making one's own). A connection problem gets a reload button instead.
+  const notFound = state.error === 'room-not-found';
+  const knownError = notFound || ['manage-forbidden', 'participant-forbidden', 'room-full'].includes(state.error);
+  const lead = notFound
+    ? 'このURLのクイズは見つからないか、期限が切れています。送ってくれた人に新しいURLをもらうか、ほかのお題で遊べます。'
+    : knownError ? errorMessage(state.error)
+      : 'つながりにくくなっている可能性があります。少し待ってから、もう一度読み込んでください。';
   return shell(
     'ERROR',
     'クイズを開けませんでした',
-    'URLの期限が切れているか、通信に失敗した可能性があります。',
-    '<section class="challenge-panel"><a class="challenge-primary" href="/challenge">新しいクイズを作る</a></section>',
+    lead,
+    `<section class="challenge-panel" data-testid="challenge-error-choices">
+      ${knownError ? '' : '<button class="challenge-primary" type="button" data-action="reload-page">もう一度読み込む</button>'}
+      <a class="${knownError ? 'challenge-primary' : 'challenge-secondary'}" href="${languagePrefix}/challenge/library">10問パックから選んで作る</a>
+      <a class="challenge-secondary" href="${languagePrefix}/challenge">新しいクイズを作る</a>
+    </section>`,
   );
 }
 
 function bindEvents() {
   bindPersonalLibrary();
+  document.querySelector('[data-action="reload-page"]')?.addEventListener('click', () => location.reload());
   const resultDetails = app.querySelector('[data-testid="challenge-result-details"]');
   resultDetails?.addEventListener('toggle', () => { state.resultDetailsOpen = resultDetails.open; });
   document.querySelector('[data-action="start-create"]')?.addEventListener('click', startCreate);
@@ -1818,6 +1832,7 @@ async function createChallengeRoom(answers) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'create-failed');
     saveManageRoom(data.code, data.manageToken, data.room.creatorName);
+    sendShareFunnel('created', currentLocale, data.code);
     removeStorage(CREATOR_DRAFT_KEY);
     replaceManageUrl(data.code, data.manageToken);
     setState({
@@ -1949,6 +1964,7 @@ async function joinRoom() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'join-failed');
     saveParticipantToken(state.roomCode, data.participantToken);
+    sendShareFunnel('joined', currentLocale, state.roomCode);
     if (data.participant.submitted) {
       setState({ participantToken: data.participantToken });
       await loadResult(data.participantToken);
@@ -2078,9 +2094,11 @@ function beginRoleSwap(next) {
 async function loadRoom() {
   setState({ loading: true, error: '' });
   try {
+    rememberShareArrival();
     const response = await fetch(`/api/challenge/rooms/${roomCode}`);
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'room-not-found');
+    sendShareFunnel('arrived', currentLocale, roomCode);
     setState({ loading: false, room: data.room, cards: data.room.cards, mode: 'join' });
     if (!state.participantToken) return;
     const resultResponse = await fetch(`/api/challenge/rooms/${roomCode}/result`, {
@@ -2185,6 +2203,7 @@ async function loadResult(token = state.participantToken) {
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'result-failed');
+  sendShareFunnel('completed', currentLocale, state.roomCode);
   trackAnalyticsEvent('game_result', {
     game_type: 'challenge',
     play_mode: 'async',

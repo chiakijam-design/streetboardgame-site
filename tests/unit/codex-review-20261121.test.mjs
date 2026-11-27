@@ -79,7 +79,8 @@ test('#5 #6 #17 source checks', () => {
 test('#3 #9 #13 #19 #20 #21 #22 #23 #24 checks', async () => {
   const { renderPackPage } = await import('../../src/content/search-copy.js');
   const es = renderPackPage('easy-first-meeting', 'es');
-  assert.match(es, /og:image" content="[^"]*\/assets\/locale-share-v2\/es\.jpg/);
+  // 2026-11-27 (Codex review 11/26 #2-2): pack pages use their own pack share image.
+  assert.match(es, /og:image" content="[^"]*\/assets\/pack-share\/es-easy-first-meeting\.jpg/);
   assert.match(es, /class="pack-send"/);
   assert.match(es, /line\.me\/R\/msg\/text\/\?/);
   assert.match(es, /utm_source%3Dline%26utm_medium%3Dsocial%26utm_campaign%3Dpack_easy-first-meeting/);
