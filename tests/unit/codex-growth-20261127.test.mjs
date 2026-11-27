@@ -15,7 +15,7 @@ test('#2-1 en/es/pt guides render with real pack questions, short descriptions a
     const found = matchIntlGuide(path);
     assert.ok(found, path);
     const html = renderIntlGuide(found.locale, found.key);
-    assert.match(html, new RegExp(`<link rel="canonical" href="https://www\\.streetboardgame\\.com${path.replace(/[/.]/g, '\\$&')}">`));
+    assert.ok(html.includes(`<link rel="canonical" href="https://www.streetboardgame.com${path}">`), path);
     assert.doesNotMatch(html.slice(html.indexOf('<main')), /undefined|\*/, path);
     const description = html.match(/<meta name="description" content="([^"]*)"/)[1];
     assert.ok(description.length <= 160, path);
