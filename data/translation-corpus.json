@@ -436,7 +436,15 @@
     "もう一度答えはじめると、前回の答えは出題者の回答管理に表示されなくなります。": "Once you start answering again, your previous answers no longer appear in the creator's response manager.",
     "使えなくなったお題を、別のお題に入れ替えました。この問題の答えを選び直してください。": "A question that is no longer available was replaced with another one. Please choose your answer to this question again.",
     "使えなくなったお題が入っています。ページを読み込み直して、お題を入れ替えてください。": "Your quiz includes a question that is no longer available. Reload the page and replace it.",
-    "共有文にも点数を入れる（画像には点数が入ります）": "Add the score to the share text too (the image always shows the score)"
+    "共有文にも点数を入れる（画像には点数が入ります）": "Add the score to the share text too (the image always shows the score)",
+    "友だちに出す自分クイズを作る｜わたし理解度診断": "Make a quiz about yourself for your friends | Know Me Quiz",
+    "自分クイズの作り方・答え方｜わたし理解度診断": "How to make and answer a quiz about yourself | Know Me Quiz",
+    "このURLのクイズは見つからないか、期限が切れています。送ってくれた人に新しいURLをもらうか、ほかのお題で遊べます。": "This quiz could not be found or has expired. Ask the person who sent it for a new link, or play with other questions.",
+    "つながりにくくなっている可能性があります。少し待ってから、もう一度読み込んでください。": "The connection may be unstable. Please wait a moment and reload.",
+    "もう一度読み込む": "Reload",
+    "10問パックから選んで作る": "Pick a 10-question pack and make a quiz",
+    "ストーリー用：画像を保存＋リンクをコピー": "For Stories: save image + copy link",
+    "画像を保存し、参加URLをコピーしました。ストーリーに画像を載せ、リンクスタンプにURLを貼り付けてください。": "Image saved and link copied. Add the image to your Story and paste the link into the link sticker."
   },
   "instructions": "Translate every source. Preserve {N} placeholders, numbers, URLs, product names and identifiers. Do not edit policy meaning. Machine-generated; no native review claim.",
   "entries": [
@@ -25003,6 +25011,78 @@
     {
       "id": "m5ba1822ca7f70d",
       "source": "Add the score to the share text too (the image always shows the score)",
+      "contexts": [
+        "legacy-ui-ja",
+        "legacy-ui-en",
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "m77412c9e272493",
+      "source": "Make a quiz about yourself for your friends | Know Me Quiz",
+      "contexts": [
+        "legacy-ui-ja",
+        "legacy-ui-en",
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "m1e929e37f8d350",
+      "source": "How to make and answer a quiz about yourself | Know Me Quiz",
+      "contexts": [
+        "legacy-ui-ja",
+        "legacy-ui-en",
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "m4f65d3ab1b7747",
+      "source": "This quiz could not be found or has expired. Ask the person who sent it for a new link, or play with other questions.",
+      "contexts": [
+        "legacy-ui-ja",
+        "legacy-ui-en",
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "m44e3ad1154ea5b",
+      "source": "The connection may be unstable. Please wait a moment and reload.",
+      "contexts": [
+        "legacy-ui-ja",
+        "legacy-ui-en",
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "mbdc090ec61e3fc",
+      "source": "Reload",
+      "contexts": [
+        "legacy-ui-ja",
+        "legacy-ui-en",
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "m994bf77cded934",
+      "source": "Pick a 10-question pack and make a quiz",
+      "contexts": [
+        "legacy-ui-ja",
+        "legacy-ui-en",
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "mec2f9788c4d31c",
+      "source": "For Stories: save image + copy link",
+      "contexts": [
+        "legacy-ui-ja",
+        "legacy-ui-en",
+        "challenge_game.js"
+      ]
+    },
+    {
+      "id": "m47068bd17048db",
+      "source": "Image saved and link copied. Add the image to your Story and paste the link into the link sticker.",
       "contexts": [
         "legacy-ui-ja",
         "legacy-ui-en",

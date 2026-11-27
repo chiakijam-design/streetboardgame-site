@@ -16,6 +16,7 @@ import JA from './copy-ja.js';
 import EN from './copy-en.js';
 import ES from './copy-es.js';
 import PT from './copy-pt.js';
+import { INTL_GUIDES, INTL_GUIDE_LOCALES, INTL_GUIDE_KEYS } from './intl-guides.js';
 
 const ORIGIN = 'https://www.streetboardgame.com';
 export const SEARCH_COPY = Object.freeze({ ja: JA, en: EN, es: ES, pt: PT });
@@ -120,6 +121,7 @@ export function renderHomeCopy(locale) {
   return `<div class="wata-guide wata-guide--home" data-native-copy data-wata-guide="home" lang="${locale}">${style}`
     + copy.home.map((part) => `<section class="wata-guide__card">${section(part, locale)}</section>`).join('')
     + (locale === 'ja' ? `<section class="wata-guide__card" data-guide-links>${guideLinksJa()}</section>` : '')
+    + (INTL_GUIDES[locale] ? `<section class="wata-guide__card" data-guide-links>${intlGuideLinks(locale)}</section>` : '')
     + '</div>';
 }
 
@@ -232,7 +234,8 @@ export function renderPackPage(slug, locale) {
   const ui = copy.ui;
   const title = pack.title + ui.titleSuffix;
   const url = packPageUrl(slug, locale);
-  const image = ORIGIN + (locale === 'ja' ? '/assets/ogp-challenge-v4.jpg?v=20261115-jpg' : locale === 'en' ? '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg' : `/assets/locale-share-v2/${locale}.jpg`);
+  // 2026-11-27 (Codex review 11/26 #2-2): each pack has its own share image with its title and artwork (tools/build-pack-share-images.mjs).
+  const image = ORIGIN + `/assets/pack-share/${locale}-${slug}.jpg?v=20261127`;
   const alternateOpenGraphLocales = SEARCH_COPY_LOCALES.filter((language) => language !== locale)
     .map((language) => `<meta property="og:locale:alternate" content="${PACK_OG_LOCALE[language]}">`).join('');
   const libraryPath = prefix(locale) + '/challenge/library';
@@ -283,6 +286,85 @@ export function renderPackPage(slug, locale) {
     + card(PACK_SEND_COPY[locale] || PACK_SEND_COPY.en, packSendLinks(pack.title, url, slug, locale))
     + card(ui.related, packLinks(locale, RELATED_PACKS[slug]) + `<p><a href="${libraryPath}">${escapeHtml(ui.allPacks)}</a></p>`)
     + (locale === 'ja' ? card('読みもの', guideLinksJa('')) : '')
+    + (INTL_GUIDES[locale] ? card(INTL_GUIDES[locale].label, intlGuideLinks(locale, '')) : '')
+    + `<p class="pack-langs">${escapeHtml(ui.otherLanguages)}: ${languages}</p>`
+    + `<footer class="pack-footer">${ui.footer.map(([href, label]) => `<a href="${href}">${escapeHtml(label)}</a>`).join('')}<p>${escapeHtml(ui.footnote)}</p></footer>`
+    + '</main></body></html>\n';
+}
+
+// 2026-11-27 (Codex review 11/26 #2-1): reading pages for the English, Spanish and Portuguese searches
+// (/en/guide/, /es/guide/, /pt/guide/ and two articles each). Text: src/content/intl-guides.js.
+export const intlGuidePath = (locale, key) => `/${locale}/guide/` + (key ? INTL_GUIDES[locale].articles[key].slug : '');
+export function intlGuidePaths() {
+  return INTL_GUIDE_LOCALES.flatMap((locale) => [intlGuidePath(locale), ...INTL_GUIDE_KEYS.map((key) => intlGuidePath(locale, key))]);
+}
+export function matchIntlGuide(path) {
+  const match = /^\/(en|es|pt)\/guide(?:\/([a-z0-9-]+))?\/?$/.exec(path);
+  if (!match || !INTL_GUIDES[match[1]]) return null;
+  if (!match[2]) return { locale: match[1], key: null };
+  const key = INTL_GUIDE_KEYS.find((item) => INTL_GUIDES[match[1]].articles[item].slug === match[2]);
+  return key ? { locale: match[1], key } : null;
+}
+export function intlGuideLinks(locale, heading) {
+  const guide = INTL_GUIDES[locale];
+  return (heading === '' ? '' : `<h2>${escapeHtml(guide.label)}</h2>`)
+    + `<ul class="wata-guide__reading">${INTL_GUIDE_KEYS.map((key) => `<li><a href="${intlGuidePath(locale, key)}">${escapeHtml(guide.articles[key].title)}</a></li>`).join('')}`
+    + `<li><a href="${intlGuidePath(locale)}">${escapeHtml(guide.back)}</a></li></ul>`;
+}
+export function renderIntlGuide(locale, key) {
+  const guide = INTL_GUIDES[locale];
+  const copy = SEARCH_COPY[locale];
+  const ui = copy.ui;
+  const article = key ? guide.articles[key] : null;
+  const title = article ? article.title : guide.indexTitle;
+  const description = article ? article.description : guide.indexDescription;
+  const path = intlGuidePath(locale, key);
+  const url = ORIGIN + path;
+  const image = ORIGIN + (locale === 'en' ? '/assets/ogp-challenge-en-v2.jpg?v=20261115-jpg' : `/assets/locale-share-v2/${locale}.jpg`);
+  const alternates = INTL_GUIDE_LOCALES.map((language) => `<link rel="alternate" hreflang="${language}" href="${ORIGIN + intlGuidePath(language, key)}">`).join('')
+    + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + intlGuidePath('en', key)}">`;
+  const crumbs = [[ui.siteName, ORIGIN + prefix(locale) + '/'], [guide.label, ORIGIN + intlGuidePath(locale)]].concat(article ? [[article.title, url]] : []);
+  const structured = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': [
+      article
+        ? { '@type': 'Article', headline: article.title, description, inLanguage: locale, datePublished: '2026-11-27', dateModified: '2026-11-27', mainEntityOfPage: url, image,
+          author: { '@type': 'Organization', name: 'STREET BOARD GAME', url: ORIGIN + '/about' }, publisher: { '@type': 'Organization', name: 'STREET BOARD GAME', url: ORIGIN + '/' } }
+        : { '@type': 'CollectionPage', name: title, url, inLanguage: locale,
+          hasPart: INTL_GUIDE_KEYS.map((item) => ({ '@type': 'Article', headline: guide.articles[item].title, url: ORIGIN + intlGuidePath(locale, item) })) },
+      { '@type': 'BreadcrumbList', itemListElement: crumbs.map(([name, item], index) => ({ '@type': 'ListItem', position: index + 1, name, item })) },
+    ],
+  }).replace(/[<>&\u2028\u2029]/g, (char) => '\\u' + char.charCodeAt(0).toString(16).padStart(4, '0'));
+  const card = (body) => `<section class="pack-card">${body}</section>`;
+  const createPath = prefix(locale) + '/challenge';
+  const libraryPath = prefix(locale) + '/challenge/library';
+  const body = article
+    ? article.parts.map((part) => card(section(part, locale))).join('')
+      + card(`<p class="wata-guide__cta"><a href="${createPath}">${escapeHtml(guide.playNow)} ▶</a></p><p><a href="${libraryPath}">${escapeHtml(guide.packsLink)}</a></p>`)
+      + card(intlGuideLinks(locale))
+    : card(`<ul class="wata-guide__packs">${INTL_GUIDE_KEYS.map((item) => `<li><a href="${intlGuidePath(locale, item)}">${escapeHtml(guide.articles[item].title)}</a><span>${escapeHtml(guide.articles[item].description)}</span></li>`).join('')}</ul>`)
+      + card(`<p class="wata-guide__cta"><a href="${createPath}">${escapeHtml(guide.playNow)} ▶</a></p><p><a href="${libraryPath}">${escapeHtml(guide.packsLink)}</a></p>`);
+  const languages = INTL_GUIDE_LOCALES.filter((language) => language !== locale)
+    .map((language) => `<a href="${intlGuidePath(language, key)}" hreflang="${language}" lang="${language}">${escapeHtml(SEARCH_COPY[language].ui.languageName)}</a>`).join('');
+  return '<!doctype html>\n'
+    + `<html lang="${locale}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">`
+    + `<title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"><meta name="robots" content="index, follow, max-image-preview:large">`
+    + `<link rel="canonical" href="${url}">${alternates}`
+    + `<meta property="og:type" content="${article ? 'article' : 'website'}"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${url}"><meta property="og:site_name" content="${escapeHtml(ui.siteName)}">`
+    + `<meta property="og:locale" content="${PACK_OG_LOCALE[locale]}"><meta property="og:image" content="${image}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">`
+    + `<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${image}">`
+    + '<link rel="icon" href="/favicon.ico">'
+    + `<script type="application/ld+json">${structured}</script>`
+    + (locale === 'en' ? '' : '<script>window.__WATACHAN_ANALYTICS_LOCALE_REVIEW_PENDING__=true;</script>')
+    + '<script defer src="/analytics.js"></script>'
+    + `<style>${PAGE_STYLE}${SHARED_STYLE}.pack-card h2{font-size:18px}</style></head>`
+    + `<body><main class="pack-page wata-guide" data-native-copy data-intl-guide="${key || 'index'}">`
+    + `<nav class="pack-top" aria-label="${escapeHtml(guide.label)}"><a href="${prefix(locale)}/">${escapeHtml(ui.siteName)}</a><span aria-hidden="true">›</span>`
+    + (article ? `<a href="${intlGuidePath(locale)}">${escapeHtml(guide.label)}</a><span aria-hidden="true">›</span><span aria-current="page">${escapeHtml(article.title)}</span>` : `<span aria-current="page">${escapeHtml(guide.label)}</span>`)
+    + '</nav>'
+    + `<section class="pack-hero"><p class="eyebrow">${escapeHtml(guide.label)}</p><h1>${escapeHtml(article ? article.title : guide.label)}</h1><p>${inline(article ? article.lead : guide.indexLead)}</p>`
+    + `<a class="pack-create" href="${createPath}">${escapeHtml(guide.playNow)} ▶</a></section>`
+    + body
     + `<p class="pack-langs">${escapeHtml(ui.otherLanguages)}: ${languages}</p>`
     + `<footer class="pack-footer">${ui.footer.map(([href, label]) => `<a href="${href}">${escapeHtml(label)}</a>`).join('')}<p>${escapeHtml(ui.footnote)}</p></footer>`
     + '</main></body></html>\n';

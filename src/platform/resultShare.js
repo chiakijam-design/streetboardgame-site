@@ -89,7 +89,7 @@ export function resultShareMarkup({ translate, escape, locale = 'ja', ready = tr
       ${card('whatsapp', 'WhatsApp', '参加URLを友達へ送る', 'whatsapp')}
       ${card('instagram-link', 'Instagram', 'リンクをコピーして投稿', 'instagram', '', false, `Instagram: ${translate('リンクをコピー')}`)}
     </div>
-    ${card('instagram', 'ストーリー用：文章コピー＋画像保存', copy.saveHint, 'instagram', `data-action="share-result-instagram" ${ready ? '' : 'disabled'}`, true)}
+    ${card('instagram', 'ストーリー用：画像を保存＋リンクをコピー', copy.saveHint, 'instagram', `data-action="share-result-instagram" ${ready ? '' : 'disabled'}`, true)}
     <details data-result-share-fallback><summary>${t('参加URL')} · ${t(copy.imageSummary)}</summary>
       <input type="text" readonly dir="ltr" aria-label="${t('参加URL')}" data-result-share-url>
       <p>${t('共有先によって画像やリンクが届かない場合は、リンクをコピーするか画像を保存してください。')}</p>
@@ -156,7 +156,8 @@ export function bindResultShare(root, { getPayload, translate, beforeAction = ()
         record(copied ? 'copied' : 'failed');
         say(copied ? 'コピーしました' : 'コピーできませんでした。参加URLを長押ししてコピーしてください。');
       } else if (action === 'save' || action === 'instagram') {
-        const copyAttempt = action === 'instagram' ? copyText(payload.caption).catch(() => false).then((copied) => {
+        // 2026-11-27 (Codex review 11/26 #2-8): the Stories button copies the join link for the link sticker, not the caption.
+        const copyAttempt = action === 'instagram' ? copyText(payload.url).catch(() => false).then((copied) => {
           record(copied ? 'copied' : 'failed');
           return copied;
         }) : null;
@@ -166,7 +167,7 @@ export function bindResultShare(root, { getPayload, translate, beforeAction = ()
           story ? payload.storyFilename || payload.filename : payload.filename, payload.title);
         record(outcome === 'downloaded' ? 'download-requested' : 'handed-off-save');
         if (copyAttempt) {
-          if (await copyAttempt) say('Instagramには保存した画像を投稿し、コピーした文章を貼り付けてください。');
+          if (await copyAttempt) say('画像を保存し、参加URLをコピーしました。ストーリーに画像を載せ、リンクスタンプにURLを貼り付けてください。');
           else {
             showFallback();
             say('コピーできませんでした。参加URLを長押ししてコピーしてください。');
